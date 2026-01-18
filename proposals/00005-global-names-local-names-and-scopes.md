@@ -408,7 +408,7 @@ What if `trigger<draw>` above needed to refer to something defined outside of
 `quality<fqun:/drawings/graph>`? In that case, it might have a line that looked
 like:
 
-`create a quality<fqun://drawings/circle>::potential_form<outline> in form<outline_dot>`
+`create a quality<fqun:/drawings/circle>::potential_form<outline> in form<outline_dot>`
 
 In other words, the only thing that changes is the first element in the chain of
 names. For global names it's the global name first, and then the local names
