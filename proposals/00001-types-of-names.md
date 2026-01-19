@@ -98,7 +98,7 @@ and then `name` is any form of name the developer would like to use. For
 example, a quality that we want to name "adder" would look like this:
 `quality<adder>`.
 
-At the time of this proposal, the types of names we are aware of are:
+Some potential types of names could be:
 
 ```
 quality
@@ -109,12 +109,12 @@ potential_form
 trigger
 ```
 
-Other types of names would require an update to this proposal (before this
-proposal is marked as Finalized) or a new language proposal.
+However, until syntax is actually defined for a type of name, it doesn't exist
+in the language.
 
-Note that this proposal only covers the types and the syntax (the fact that
-names are prefixed by the type and surrounded by `<>`). It does not standardize
-the names themselves.
+Note that this proposal only covers the idea of types and the syntax (the fact
+that names are prefixed by the type and surrounded by `<>`). It does not
+standardize the names themselves.
 
 ## A Real Program
 
