@@ -1,0 +1,3 @@
+define the constraint<define-lang.org:bank:/positive> {
+    the value is greater than 0.
+}

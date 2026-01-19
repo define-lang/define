@@ -1,0 +1,10 @@
+define the potential position<define-lang.org:bank:/account/balance> {
+    it may only contain dimension points where {
+        it has a value that is a decimal.
+        it has the constraint<define-lang.org:bank:/non_negative>.
+    }
+    when it is assigned {
+        create a dimension point in this position.
+        set the value in this position to 0.
+    }
+}

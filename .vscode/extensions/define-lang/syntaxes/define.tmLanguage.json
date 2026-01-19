@@ -7,73 +7,208 @@
       "match": "#.*$"
     },
     {
+      "comment": "Define potential position/action",
+      "name": "storage.type.define",
+      "match": "\\bdefine\\s+the\\s+potential\\s+(position|action)\\b"
+    },
+    {
+      "comment": "Define constraint",
+      "name": "storage.type.define",
+      "match": "\\bdefine\\s+the\\s+constraint\\b"
+    },
+    {
       "comment": "Multi-word definition keywords",
-      "name": "keyword.control.define",
-      "match": "\\bdefine\\s+the\\s+(quality|trigger|position)\\b"
+      "name": "storage.type.define",
+      "match": "\\bdefine\\s+the\\s+position\\b"
     },
     {
-      "comment": "Trigger declaration",
-      "name": "keyword.control.trigger",
-      "match": "\\bit\\s+triggers\\s+when\\b"
+      "comment": "Action/Trigger happens when",
+      "name": "keyword.control.conditional",
+      "match": "\\bit\\s+happens\\s+when\\b"
     },
     {
-      "comment": "Trigger action block",
-      "name": "keyword.control.action",
+      "comment": "Action block (and it does)",
+      "name": "keyword.control",
       "match": "\\band\\s+it\\s+does\\b"
     },
     {
-      "comment": "Position constraint",
-      "name": "keyword.control.constraint",
+      "comment": "Requirements block (and it requires)",
+      "name": "keyword.control",
+      "match": "\\band\\s+it\\s+requires\\b"
+    },
+    {
+      "comment": "Require that statement",
+      "name": "keyword.control",
+      "match": "\\brequire\\s+that\\b"
+    },
+    {
+      "comment": "Conditional if",
+      "name": "keyword.control.conditional",
+      "match": "\\bif\\b"
+    },
+    {
+      "comment": "Conditional then",
+      "name": "keyword.control.conditional",
+      "match": "\\bthen\\b"
+    },
+    {
+      "comment": "When it is assigned",
+      "name": "keyword.control.conditional",
+      "match": "\\bwhen\\s+it\\s+is\\s+assigned\\b"
+    },
+    {
+      "comment": "Position constraint - may only contain",
+      "name": "keyword.other",
       "match": "\\bit\\s+may\\s+only\\s+contain\\s+dimension\\s+points\\s+where\\b"
     },
     {
+      "comment": "Destruction constraint - may only be destroyed by",
+      "name": "keyword.other",
+      "match": "\\bit\\s+may\\s+only\\s+be\\s+destroyed\\s+by\\b"
+    },
+    {
+      "comment": "Destruction constraint - may not be destroyed",
+      "name": "keyword.other",
+      "match": "\\bit\\s+may\\s+not\\s+be\\s+destroyed\\b"
+    },
+    {
+      "comment": "Dimension point must have requirement",
+      "name": "keyword.other",
+      "match": "\\bthis\\s+dimension\\s+point\\s+must\\s+have\\b"
+    },
+    {
+      "comment": "Has a value that is a decimal",
+      "name": "keyword.other",
+      "match": "\\bit\\s+has\\s+a\\s+value\\s+that\\s+is\\s+a\\s+decimal\\b"
+    },
+    {
+      "comment": "Value declaration (legacy)",
+      "name": "keyword.other",
+      "match": "\\bit\\s+has\\s+a\\s+numeric\\s+value\\b"
+    },
+    {
+      "comment": "Constraint declaration",
+      "name": "keyword.other",
+      "match": "\\bit\\s+has\\s+the\\s+constraint\\b"
+    },
+    {
+      "comment": "Action declaration",
+      "name": "keyword.other",
+      "match": "\\bit\\s+has\\s+the\\s+action\\b"
+    },
+    {
       "comment": "Quality check",
-      "name": "keyword.control.check",
+      "name": "keyword.other",
       "match": "\\bit\\s+has\\s+the\\s+quality\\b"
     },
     {
+      "comment": "Has the same qualities as",
+      "name": "keyword.other",
+      "match": "\\bit\\s+has\\s+the\\s+same\\s+qualities\\s+as\\b"
+    },
+    {
       "comment": "Create dimension point",
-      "name": "keyword.other.create",
+      "name": "support.function",
       "match": "\\bcreate\\s+a\\s+dimension\\s+point\\s+in\\b"
     },
     {
+      "comment": "Destroy dimension point",
+      "name": "support.function",
+      "match": "\\bdestroy\\s+the\\s+dimension\\s+point\\s+in\\b"
+    },
+    {
       "comment": "Assign quality",
-      "name": "keyword.other.assign",
+      "name": "support.function",
       "match": "\\bassign\\s+the\\s+quality\\b"
     },
     {
       "comment": "To the dimension point",
-      "name": "keyword.other.to-point",
+      "name": "support.function",
       "match": "\\bto\\s+the\\s+dimension\\s+point\\s+in\\b"
     },
     {
       "comment": "Set value",
-      "name": "keyword.other.set",
+      "name": "support.function",
       "match": "\\bset\\s+the\\s+value\\s+in\\b"
     },
     {
+      "comment": "The value in",
+      "name": "keyword.other",
+      "match": "\\bthe\\s+value\\s+in\\b"
+    },
+    {
       "comment": "Move dimension point",
-      "name": "keyword.other.move",
+      "name": "support.function",
       "match": "\\bmove\\s+the\\s+dimension\\s+point\\s+in\\b"
     },
     {
       "comment": "This quality is assigned",
-      "name": "keyword.other.assigned",
+      "name": "variable.language",
       "match": "\\bthis\\s+quality\\s+is\\s+assigned\\b"
     },
     {
-      "comment": "The position/value reference",
-      "name": "keyword.other.reference",
-      "match": "\\bthe\\s+(position|value)\\b"
+      "comment": "This position reference",
+      "name": "variable.language",
+      "match": "\\bthis\\s+position\\b"
+    },
+    {
+      "comment": "This action reference",
+      "name": "variable.language",
+      "match": "\\bthis\\s+action\\b"
+    },
+    {
+      "comment": "The position reference",
+      "name": "keyword.other",
+      "match": "\\bthe\\s+position\\b"
+    },
+    {
+      "comment": "The value reference",
+      "name": "keyword.other",
+      "match": "\\bthe\\s+value\\b"
+    },
+    {
+      "comment": "Has a dimension point check",
+      "name": "keyword.other",
+      "match": "\\bhas\\s+a\\s+dimension\\s+point\\b"
     },
     {
       "comment": "Is empty check",
-      "name": "keyword.other.empty",
+      "name": "keyword.other",
       "match": "\\bis\\s+empty\\b"
     },
     {
+      "comment": "Comparison - is greater than",
+      "name": "keyword.operator.comparison",
+      "match": "\\bis\\s+greater\\s+than\\b"
+    },
+    {
+      "comment": "Comparison - is less than",
+      "name": "keyword.operator.comparison",
+      "match": "\\bis\\s+less\\s+than\\b"
+    },
+    {
+      "comment": "Comparison - is equal to",
+      "name": "keyword.operator.comparison",
+      "match": "\\bis\\s+equal\\s+to\\b"
+    },
+    {
+      "comment": "Arithmetic - plus",
+      "name": "keyword.operator.arithmetic",
+      "match": "\\bplus\\b"
+    },
+    {
+      "comment": "Arithmetic - minus",
+      "name": "keyword.operator.arithmetic",
+      "match": "\\bminus\\b"
+    },
+    {
+      "comment": "Arithmetic - divided by",
+      "name": "keyword.operator.arithmetic",
+      "match": "\\bdivided\\s+by\\b"
+    },
+    {
       "comment": "To keyword (for set value to)",
-      "name": "keyword.other.to",
+      "name": "keyword.other",
       "match": "\\bto\\b"
     },
     {
@@ -82,18 +217,18 @@
       "match": "\\b(AND|OR|NOT)\\b"
     },
     {
-      "comment": "Quality identifier with angle brackets",
-      "name": "entity.name.type.quality",
-      "match": "quality<[^>]+>"
+      "comment": "Constraint identifier with angle brackets",
+      "name": "entity.name.type",
+      "match": "constraint<[^>]+>"
     },
     {
-      "comment": "Trigger identifier with angle brackets",
-      "name": "entity.name.function.trigger",
-      "match": "trigger<[^>]+>"
+      "comment": "Action identifier with angle brackets (function)",
+      "name": "entity.name.function",
+      "match": "action<[^>]+>"
     },
     {
-      "comment": "Position identifier with angle brackets",
-      "name": "variable.other.position",
+      "comment": "Position identifier with angle brackets (variable)",
+      "name": "variable",
       "match": "position<[^>]+>"
     },
     {
@@ -110,6 +245,11 @@
       "comment": "Curly Braces",
       "name": "punctuation.section.block",
       "match": "\\{|\\}"
+    },
+    {
+      "comment": "Parentheses for grouping",
+      "name": "punctuation.section.parens",
+      "match": "\\(|\\)"
     },
     {
       "comment": "Statement terminator",

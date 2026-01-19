@@ -1,63 +1,8 @@
-define the quality<define-lang.org:bank> {
-    define the trigger<do_transfers> {
-        it triggers when {
-            this quality is assigned.
-        } and it does {
-            define the position<account1> {
-                it may only contain dimension points where {
-                    it has the quality<define-lang.org:bank:/account>.
-                }
-            }
-            create a dimension point in position<account1>.
-            assign the quality<define-lang.org:bank:/account> to the dimension point in position<account1>.
-            create a dimension point in position<account1>::trigger<deposit>::position<amount>.
-            # This is much too repetitive.
-            assign the quality<define-lang.org:bank:/account> to the dimension point in position<account1>::trigger<deposit>::position<amount>.
-            set the value in position<account1>::trigger<deposit>::position<amount> to 100.
-            create a dimension point in position<account1>::trigger<deposit>::position<run>.
-
-            define the position<account2> {
-                it may only contain dimension points where {
-                    it has the quality<define-lang.org:bank:/account>.
-                }
-            }
-            create a dimension point in position<account2>.
-            assign the quality<define-lang.org:bank:/account> to the dimension point in position<account2>.
-            create a dimension point in position<account2>::trigger<deposit>::position<amount>.
-            # This is much too repetitive.
-            assign the quality<define-lang.org:bank:/account> to the dimension point in position<account2>::trigger<deposit>::position<amount>.
-            set the value in position<account2>::trigger<deposit>::position<amount> to 50.
-            create a dimension point in position<account2>::trigger<deposit>::position<run>.
-
-            # We probably need "wait until."
-            it triggers when {
-                the position<account1>::trigger<deposit>::position<run> is empty.
-                AND
-                the position<account2>::trigger<deposit>::position<run> is empty.
-            } and it does {
-                create a dimension point in position<account1>::trigger<transfer_to>::position<amount>.
-                assign the quality<define-lang.org:bank:/nonzero> to the dimension point in position<account1>::trigger<transfer_to>::position<amount>.
-                set the value in position<account1>::trigger<transfer_to>::position<amount> to 50.
-                move the dimension point in position<account2> to position<account1>::trigger<transfer_to>::position<to>.
-                create a dimension point in position<account1>::trigger<transfer_to>::position<run>.
-
-                # During parallelism, we will need to ensure there is an enforced order of triggers
-                # that get attached so that we know the order of these triggers resolving.
-                it triggers when {
-                    the position<account1>::trigger<transfer_to>::position<run> is empty.
-                } and it does {
-                    move the dimension point in position<account1>::trigger<transfer_to>::position<to> to position<account2>.
-                    create a dimension point in position<account2>::trigger<transfer_to>::position<amount>.
-                    assign the quality<define-lang.org:bank:/nonzero> to the dimension point in position<account2>::trigger<transfer_to>::position<amount>.
-                    # This number is too high, it will definitely fail.
-                    set the value in position<account2>::trigger<transfer_to>::position<amount> to 200.
-                    move the dimension point in position<account1> to  position<account2>::trigger<transfer_to>::position<to>.
-                    # At some point here now a constraint will fail because the trigger attempts
-                    # to reduce this to below 0.
-                    create a dimension point in position<account2>::trigger<transfer_to>::position<run>.
-                }
-            }
-        }
+define the potential position<define-lang.org:bank:/bank> {
+    it may only contain dimension points where {
+        it has the action</do_transfers>.
     }
-    # Should we enforce an invariant that the vault always has the cash of all the accounts?
+    when it is assigned {
+        create a dimension point in action</do_transfers>::position<run>.
+    }
 }

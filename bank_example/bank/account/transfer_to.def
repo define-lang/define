@@ -1,0 +1,72 @@
+define the potential action<define-lang.org:bank:/account/transfer_to> {
+    this dimension point must have position</account/balance>.
+    this dimension point must have action</account/withdraw>.
+
+    define the position<run> {
+        it may only be destroyed by this action.
+    }
+    define the position<to> {
+        it may only contain dimension points where {
+            it has the action</account/deposit>.
+        }
+    }
+    define the position<amount> {
+        it may only contain dimension points where {
+            it has a value that is a decimal.
+            it has the constraint</positive>.
+        }
+    }
+
+    it happens when {
+        the position<run> has a dimension point.
+        AND
+        the position<to> has a dimension point.
+        AND
+        the position<amount> has a dimension point.
+    } and it requires {
+        the value in position</account/balance> is greater than the value in position<amount>.
+        OR
+        the value in position</account/balance> is equal to the value in position<amount>.
+    } and it does {
+        define the position<original_balance> {
+            it may only contain dimension points where {
+                it has the same qualities as position<to>::position</account/balance>.
+            }
+        }
+        create a dimension point in position<original_balance>.
+        set the value in position<original_balance> to position<to>::position</account/balance>.
+
+        # This feels like something the compiler should be able to optimize away.
+        if {
+            NOT action</account/withdraw> has a dimension point.
+        } then {
+            create a dimension point in action</account/withdraw>::position<amount>.
+        }
+        set the value in action</account/withdraw>::position<amount> to position<amount>.
+        create a dimension point in action</account/withdraw>::position<run>.
+
+        it happens when {
+            NOT action</account/withdraw>::position<run> has a dimension point.
+        } and it does {
+            # This feels like something the compiler should be able to optimize away.
+            if {
+                NOT position<to>::action</account/deposit>::position<amount> has a dimension point.
+            } then {
+                # It's too easy to human-error this and write the wrong trigger names.
+                create a dimension point in position<to>::action</account/deposit>::position<amount>.
+            }
+            set the value in position<to>::action</account/deposit>::position<amount> to position<amount>.
+            create a dimension point in position<to>::action</account/deposit>::position<run>.
+
+            it happens when {
+                NOT position<to>::action</account/deposit>::position<run> has a dimension point.
+            } and it does {
+                require that {
+                    the position<to>::position</account/balance> is equal to position<original_balance> plus position<amount>.
+                }
+
+                destroy the dimension point in position<run>.
+            }
+        }
+    }
+}

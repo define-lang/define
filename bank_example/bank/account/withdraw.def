@@ -1,0 +1,26 @@
+define the potential action<define-lang.org:bank:/account/withdraw> {
+    this dimension point must have position</account/balance>.
+
+    define the position<run> {
+        it may only be destroyed by this action.
+    }
+    define the position<amount> {
+        it may only contain dimension points where {
+            it has a value that is a decimal.
+            it has the constraint</positive>.
+        }
+    }
+
+    it happens when {
+        the position<run> has a dimension point.
+        AND
+        the position<amount> has a dimension point.
+    } and it requires {
+        the value in position</account/balance> is greater than the value in position<amount>.
+        OR
+        the value in position</account/balance> is equal to the value in position<amount>.
+    } and it does {
+        set the value in position</account/balance> to position</account/balance> minus position<amount>.
+        destroy the dimension point in position<run>.
+    }
+}

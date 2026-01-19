@@ -1,9 +1,0 @@
-define the quality<define-lang.org:bank:/account/nonzero> {
-    # We will have to prevent multiple qualities with a value from being
-    # assigned, or we will need some way to differentiate which value is
-    # being set.
-    it has a numeric value.
-    it has the constraint {
-        the value is greater than 0.
-    }
-}

@@ -1,0 +1,5 @@
+define the constraint<define-lang.org:bank:/non_negative> {
+    the value is greater than 0.
+    OR
+    the value is equal to 0.
+}
