@@ -1,4 +1,4 @@
-# Define Language Proposal 22: Defining Qualities
+# Define Language Proposal X: Defining Qualities
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
