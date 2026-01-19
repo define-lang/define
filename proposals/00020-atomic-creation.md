@@ -35,17 +35,15 @@ same thing, without a clear reason for a developer to choose one or the other.
 
 ## Solution
 
-We will add a syntax that looks like this:
+We do not change the syntax for creating dimension points. Instead, we simply
+say that dimension points will always be created with any mandatory qualities
+required by their position.
 
-```
-create a dimension point in position<foo> {
-    with the required qualities.
-}
-```
-
-That will look at the position definition and then go through the qualities
-listed in order and assign those qualities. However, the constraint on that
-position will not be checked until the end of the block.
+When creating a dimension point, the compiler will look at the position
+definition and then go through the qualities listed in order and assign those
+qualities in that sequence. However, the
+`it may only contain dimension points where` constraint on that position will
+not be checked until the end of the block.
 
 Conceptually, what is happening here is that a dimension point is being created
 in an anonymous position, and then being moved into the position that has the
@@ -54,16 +52,16 @@ way.
 
 ### Optimization
 
-In reality, the compiler doesn't need to check the constraint after running this
-syntax, because it knows for sure that the dimension point has exactly the
-qualities assigned.
+In reality, the compiler doesn't need to check the constraint after assigning
+the qualities, because it knows for sure that the dimension point has exactly
+the qualities assigned.
 
 ### Recursion
 
 In the future, we will have syntax that causes quality assignment to create
 other dimension points and assign them qualities. That happens exactly the same
 way as this syntax and resolves in the same way. Each creation resolves and
-constraints are enforced when the block ends.
+constraints are enforced when each block ends.
 
 In order to guarantee logical constraint safety, we _may_ have to enforce that
 all such triggers happen synchronously and atomically in sequence, but we will
@@ -73,7 +71,7 @@ cross that bridge when we get there.
 
 Note that there's an important point here: this gives semantics and side effects
 to the way that position constraints are defined, because this creation syntax
-relies on the ordering of the `it has the quality` statements in the position
+relies on the ordering of the `it has the` statements in the position
 definition. However, these semantics and side effects apply _only_ to the
 creation statement. In other words, the compiler may choose to _check_ the
 constraint in any order. It's only _creation_ that happens in a specific order
@@ -89,9 +87,7 @@ define the position<ball> {
     }
 }
 
-create a dimension point in position<ball> {
-    with the required qualities.
-}
+create a dimension point in position<ball>.
 ```
 
 That creates a dimension point in `position<ball>`, assigns it the quality red,
@@ -106,23 +102,37 @@ in almost all situations.
 
 It does _not_ create multiple ways to do the same thing, because this is the
 _only_ way you can successfully apply a quality to a constrained position.
-Trying to create the dimension point and then assign it a quality will fail
+Trying to create the dimension point and then assigning it a quality will fail
 because you will momentarily have a dimension point without the required
 qualities.
 
 The one thing I don't like about it is that it hides the fact that those
 qualities will be assigned in a particular order. However, the order is still
 _knowable_: it's the order listed in the position definition. It does make it
-hard to re-order the `it must have the quality` statements in code in the
-future, but I think that's an acceptable trade-off.
+hard to re-order the `it must have the` statements in code in the future, but I
+think that's an acceptable trade-off.
 
-This syntax _does_ mean that we have to know the full definition of a position
-when we create a dimension point in it. That should be fine, since all dimension
-points must be defined before you can put something into them. The one thing we
-would have to address is: what happens if you want to call an API but you don't
-have the full source code for the API? We will perhaps need "interface
+This syntax _does_ mean that the compiler has to know the full definition of a
+position when it creates a dimension point in it. That should be fine, since all
+dimension points must be defined before you can put something into them. The one
+thing we would have to address is: what happens if you want to call an API but
+you don't have the full source code for the API? We will perhaps need "interface
 definition" files in the future that contain the interfaces without the contents
 of the triggers.
+
+### Alternative: Explicitly Note That You're Assigning Qualities
+
+This proposal originally proposed the syntax:
+
+```
+create a dimension point in position<foo> {
+    with the required qualities.
+}
+```
+
+The problem is: you _always_ want to do that. You literally _can't_ create a
+dimension point in that position any other way. All this does is add two more
+lines with no value.
 
 ### Alternative: "Assign" Statements Inside of the Block
 
@@ -151,8 +161,8 @@ the "options" you choose, during creation.)
 ## Forward Compatibility
 
 It is forward compatible except that it prevents us from re-ordering
-`it has the quality` statements in code. Otherwise, it provides only one way to
-do something and has unambiguous syntax.
+`it has the` statements in code. Otherwise, it provides only one way to do
+something and has unambiguous syntax.
 
 ## Refactoring Existing Systems
 
