@@ -21,7 +21,9 @@ statement, and vice-versa? If so, why or why not?
 
 The decisions were:
 
-Qualities may not contain the definitions of other qualities.
+Qualities may not contain the definitions of other qualities. To be clear, this
+means that `define the potential` statments may not contain within them other
+`define the potential` statements.
 
 ## A Real Program
 
