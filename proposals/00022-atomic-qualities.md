@@ -444,6 +444,41 @@ position. In other words, you can have both a `withdraw` and a `deposit` action
 that both affect the same `balance` position. In this way, multiple actions can
 coordinate with each other without "knowing about" each other.
 
+### Duplicate Assignments
+
+While manually _writing_ duplicate assignments (multiple `assign the` or
+`this dimension point requires` statements with the same exact arguments in the
+same local name scope) should be forbidden by the compiler, quality requirement
+statements across different definitions may attempt to assign the same quality
+more than once to the same dimension point. If this happens, only the first
+assignment actually occurs, and all later assignments are ignored by the
+compiler.
+
+For example, imagine this program:
+
+```
+define the potential action<mv:example.com:bank:/account/withdraw> {
+    this dimension point must have position<mv:example.com:bank:/account/balance>.
+}
+define the potiential action<mv:example.com:bank:/account/deposit> {
+    this dimension point must have position<mv:example.com:bank:/account/balance>.
+}
+
+define the position<account> {
+    it may only contain dimension points where {
+        it has the action<mv:example.com:bank:/account/withdraw>.
+        it has the action<mv:example.com:bank:/account/deposit>.
+    }
+}
+create a dimension point in position<account>.
+```
+
+That program only assigns the `position<mv:example.com:bank:/account/balance>`
+once.
+
+In other words, the `this dimension point must have` syntax really means: assign
+this quality to the dimension point _if it does not already have this quality_.
+
 ### Forbidding Circular Dependencies
 
 Circular dependencies created by quality requirement statements are forbidden.
