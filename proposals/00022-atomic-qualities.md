@@ -484,6 +484,13 @@ this quality to the dimension point _if it does not already have this quality_.
 Circular dependencies created by quality requirement statements are forbidden.
 The compiler will throw an error indicating that this is forbidden.
 
+### No Dead Dependencies
+
+If a definition contains a quality requirement statement, the definition must
+actually somehow reference the quality that was required. Otherwise the compiler
+will throw an error indicating that the quality requirement statement is
+unnecessary.
+
 ## A Real Program
 
 See the example in "Atomic Qualities" for the closest approximation of what a
