@@ -8,10 +8,9 @@
 ## Problems
 
 We are able to define actions. We will get around to defining their trigger
-conditions and how you define what they do. But first, what does "trigger" even
-mean for an action? When its conditions are met, what happens? More importantly,
-if multiple different actions trigger based on the same conditions, what
-happens?
+conditions and how you define what they do. But first, we have to resolve a
+problem: if multiple different actions trigger based on the same conditions,
+what happens?
 
 For example, imagine this program:
 
