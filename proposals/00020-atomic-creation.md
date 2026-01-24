@@ -56,6 +56,12 @@ In reality, the compiler doesn't need to check the constraint after assigning
 the qualities, because it knows for sure that the dimension point has exactly
 the qualities assigned.
 
+### Parallelization
+
+If the compiler can prove that it is safe to do so, the compiler may choose to
+apply qualities to the dimension point concurrently. "Safe" means that applying
+them concurrently would have the same outcome as applying them in sequence.
+
 ### Recursion
 
 In the future, we will have syntax that causes quality assignment to create
