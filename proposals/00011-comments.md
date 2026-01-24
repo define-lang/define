@@ -49,8 +49,13 @@ Define does not support block comments (such as `/* */` or `<!-- -->`). If a
 developer needs to write a multi-line comment, they must use multiple
 single-line comments, one per line.
 
-The parser fully ignores comments, as though the entire comment did not exist.
-They do not appear in the AST.
+When compiling Define programs, the parser fully ignores comments as though the
+entire comment did not exist. They do not appear in the AST during compilation.
+
+Refactoring and static analysis tools for Define may set a parser mode that
+includes comments so that the can preserve comments appropriately. How that
+interacts with the AST or the specifics of how comments are preserved is
+reserved for later proposals.
 
 ## A Real Program
 
