@@ -89,6 +89,9 @@ In other words, in the above example, the only use of `mv:example.com:bank:`
 would be in the `define the potential action` section. All other global names
 would start with a `/` only.
 
+To be clear, this is required, so that we enforce there being only one way to do
+things.
+
 ## A Real Program
 
 This turns the above program into:
