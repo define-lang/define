@@ -304,12 +304,12 @@ This solves most problems by forcing the programmer to create an extremely rigid
 structure that decides exactly how all conflicts will be resolved. The
 `red_heavy` quality has to decide exactly how `red` and `heavy` combine.
 
-It does get fairly akward when you have three, four, or more different qualities
-that you potentially want to combine on many different dimension points. You
-have to start creating a _lot_ of composed qualities to solve that problem. It
-also makes removing qualities more awkward. The compiler has to understand that
-a `red_heavy` ball _is_ both `red` and `heavy`, otherwise all the parts of the
-program that expect only a `heavy` ball will fail.
+It does get fairly awkward when you have three, four, or more different
+qualities that you potentially want to combine on many different dimension
+points. You have to start creating a _lot_ of composed qualities to solve that
+problem. It also makes removing qualities more awkward. The compiler has to
+understand that a `red_heavy` ball _is_ both `red` and `heavy`, otherwise all
+the parts of the program that expect only a `heavy` ball will fail.
 
 Although we are used to this system, as programmers, in reality it is
 unintuitive. I simply want to say that a ball is red and it's heavy, and an
@@ -321,7 +321,7 @@ _idea_ is unintuitive that you must combine all qualities into a single quality.
 #### Require Global Names
 
 In this option, there is never a `balance` position. Instead, the name of the
-position is alwyays prefixed with the name of the quality. So when you access it
+position is always prefixed with the name of the quality. So when you access it
 on a position, it looks like:
 `position<x>::quality<mv:example.com:bank:/account>::position<balance>`. This
 prevents name conflicts entirely, as long as you make it so that the name prefix
@@ -460,7 +460,7 @@ For example, imagine this program:
 define the potential action<mv:example.com:bank:/account/withdraw> {
     this dimension point must have position<mv:example.com:bank:/account/balance>.
 }
-define the potiential action<mv:example.com:bank:/account/deposit> {
+define the potential action<mv:example.com:bank:/account/deposit> {
     this dimension point must have position<mv:example.com:bank:/account/balance>.
 }
 
@@ -526,20 +526,20 @@ Plus, down the line you still end up with a lot of confusing naming conflicts.
 
 Our solution not only solves the name conflict problem, it solves numerous other
 problems created by traditional object-oriented systems. It almost entirely
-eliminates the "god object" antipattern where mutliple different pieces of
+eliminates the "god object" antipattern where multiple different pieces of
 unrelated functionality are grouped together into the same class. It almost
-_enforces_ the "single responsibilty principle" that is the hallmark of good
+_enforces_ the "single responsibility principle" that is the hallmark of good
 object-oriented design. One could still write actions that are too complex, but
 creating a _structure_ that is too complex becomes (a) harder and (b) much more
 obvious, because you can see it in the dependency tree.
 
 Atomic Qualities also allow us to keep most of the positive properties of "Merge
-Definitions" by allowing mutliple different actions to refer to the same point
+Definitions" by allowing multiple different actions to refer to the same point
 in space, as long as it really is _exactly_ the same point in space.
 
 ## Forward Compatibility
 
-We have changed nothing about Define's forward compatibilty guarantees via this
+We have changed nothing about Define's forward compatibility guarantees via this
 change. In fact, we have guaranteed them by eliminating name conflicts. Every
 aspect of this proposal is deterministic, unambiguous, and surrenders completely
 to static analysis.

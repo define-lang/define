@@ -60,7 +60,7 @@ create a dimension point in position<x>::position<mv:example.com:example:/my_bal
 move the dimension point in position<x>::position<mv:example.com:example:/my_ball> to position<new_spot>.
 ```
 
-Essentialy what that program does is create a ball, move it to two different
+Essentially what that program does is create a ball, move it to two different
 locations ("left" and "right"), then create another ball and move it into a new
 spot. It's a rather confusing program, but it's a _valid_ program.
 
@@ -70,7 +70,7 @@ that? We have a few options for what can happen.
 
 ### Forbid Multiple Actions From Triggering
 
-We could implement a rule in the compiler that mutliple actions may not trigger
+We could implement a rule in the compiler that multiple actions may not trigger
 on the same set of conditions, and cause an error to occur if that happens. In
 addition to this being extremely limiting, it leads to breaking programs in
 unexpected ways when two different parts of a program (or two different
@@ -147,7 +147,7 @@ There are two ways to do explicit ordering.
 
 The first is to create some method where actions can inherently have some sort
 of priority over other actions. This either requires assigning numeric
-priorities to actions or inventing some complex algorithm that attemps to
+priorities to actions or inventing some complex algorithm that attempts to
 analyze actions to determine which one should go first. Both of those options
 are incredibly hard for programmers to maintain, confusing to understand in
 terms of which actions go first, and are very hard to guarantee get implemented
@@ -214,7 +214,7 @@ is, in our example program above, when do we define `new_spot` and move
 `my_ball` into it?
 
 Because simultaneity is _possible_, we now have to make this decision for
-_every_ trigger, beause they need to behave consistently whether we trigger one
+_every_ trigger, because they need to behave consistently whether we trigger one
 action or many (otherwise we unpredictably change the behavior of programs when
 we create multiple triggers). We have a few options:
 
@@ -288,7 +288,7 @@ happens when explicitly requested by the programmer, and so programmers now have
 to think about what should or shouldn't be running concurrently (one of the
 harder programming problems to get right).
 
-We stil have to handle paradoxes in this model, although the scope of analysis
+We still have to handle paradoxes in this model, although the scope of analysis
 we have to do in the compiler is smaller. It's not "everything in the whole
 program is running in parallel," it's "these actions are running in parallel, do
 they do something in conflict?" Of course, if you start those actions at the
@@ -376,7 +376,7 @@ happen in that situation."
 The problem is: what if the conflict is in some part of the system far away from
 the part that you maintain? It can be very hard to reason through how to resolve
 conflicts with something you don't understand. Also, what if you're maintaining
-a library, and you are introdocing potential conflicts into the code of your
+a library, and you are introducing potential conflicts into the code of your
 users without you knowing it? How do you decide what to do about those
 conflicts?
 
@@ -426,9 +426,9 @@ code, but only when there are logical conflicts that _require_ you to make that
 decision. That once again gets us back into the problem of explicit conflict
 resolution.
 
-#### Optimisitic Concurrency (Software Transactional Memory)
+#### Optimistic Concurrency (Software Transactional Memory)
 
-Languages like Haskell do something called Optimistic Concurrency with Softwre
+Languages like Haskell do something called Optimistic Concurrency with Software
 Transactional Memory. It works by treating actions like database transactions.
 Here's how it does that:
 
@@ -463,7 +463,7 @@ all of our guarantees and safety.
 
 One option is to simply deny _both_ paradox actions from happening. In our
 example above, `move_left` and `move_right` would both try to move `my_ball` to
-a different postiion, and it would simply _fail_. That is, `my_ball` would stay
+a different position, and it would simply _fail_. That is, `my_ball` would stay
 right where it is, and then the code that attempts to create a new dimension
 point in `my_ball` would fail, as would any code later in `move_left` and
 `move_right` that depended on something being in `left` or `right`.
@@ -652,7 +652,7 @@ allow optimized resolution of certain types of conflicts. I'm not sure it's
 correct for us to introduce that _in the language_, though---it might just be
 some library.
 
-For now, choosing Forbid Paradoxes gives us maximum flexiliby for forward
+For now, choosing Forbid Paradoxes gives us maximum flexibility for forward
 compatibility, because it allows us to defer any decision about what to do with
 paradoxes into the future.
 

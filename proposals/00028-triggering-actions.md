@@ -9,8 +9,8 @@
 
 How do actions actually get triggered?
 
-We need some basic syntax for the Trigger Condtions Block and semantics for what
-that block means.
+We need some basic syntax for the Trigger Conditions Block and semantics for
+what that block means.
 
 ## Solution
 

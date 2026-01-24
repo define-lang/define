@@ -10,10 +10,14 @@
         "omniverse",
         "Onmiverse",
         "refactorable",
-        "textproto"
+        "textproto",
+        "unassignment",
+        "unassignments"
     ],
     "flagWords": [
         "fqdn"
     ],
-    "ignorePaths": ["cspell.json"]
+    "ignorePaths": [
+        "cspell.json"
+    ]
 }
