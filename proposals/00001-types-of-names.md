@@ -84,8 +84,10 @@ clock = time.time()
 ```
 
 Where suddenly the whole class `clock` no longer exists and has been replaced by
-a floating point number. This problem exists in every programming language that
-I am familiar with.
+a floating point number.
+
+This general problem (that you can't guarantee what type of thing a name is
+talking about) exists in every programming language that I am familiar with.
 
 ## Solution
 
