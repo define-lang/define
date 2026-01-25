@@ -129,6 +129,29 @@ would produce a more optimal program. So ordering triggers will not prevent
 paradoxes. That is, the compiler will act like the trigger is "reading from" all
 of those positions and will deny paradoxes against them.
 
+### Checking Conditions
+
+As noted in [DLP 28](00028-triggering-actions.md), actions only _check_ their
+conditions when the state of dimension points in the program change. However, at
+that time they will check all of their conditions. So for example, imagine you
+have these conditions:
+
+```
+the position<foo> has a dimension point
+AND
+NOT the position<bar> has a dimension point
+```
+
+Let's pretend that when that action was assigned, the `position<foo>` already
+had a dimension point, and `position<bar>` was already empty. Then the program
+destroys the dimension point in `position<foo>`. Nothing happens, because the
+trigger conditions don't match. However, then we create a dimension point in
+`position<foo>`. The action would fire, even though nothing has changed about
+the _state_ of `position<bar>`.
+
+In other words, only one of the positions listed in a trigger condition has to
+change its state in order for the action to check its conditions.
+
 ## A Real Program
 
 ```
