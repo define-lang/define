@@ -7,7 +7,7 @@
 
 ## Problems
 
-# 1: Flat Package Namespaces Become Land Grabs
+### 1: Flat Package Namespaces Become Land Grabs
 
 When you have a flat namespace for all of a programming language's packages, you
 start to quickly run out of useful names. For example, in the early days of
@@ -16,7 +16,7 @@ names, like `http`, `server`, `client`, etc. This forces library publishers to
 start using crazy names like `http_req_2` instead of intuitive names for their
 libraries.
 
-# 2: Typosquatting
+### 2: Typosquatting
 
 If I publish a package named `fast_log` and a different developer publishes a
 package named `fsat_log` or `faster_log` then developers can accidentally
@@ -31,7 +31,7 @@ accidental packages. Sometimes they are even legally required to do so. That is
 too much burden for a language whose community is potentially composed of
 volunteers.
 
-# 3: Verification and Ownership of Names
+### 3: Verification and Ownership of Names
 
 With a flat namespace of universes, anybody can publish a package named
 `aws-sdk` and I would have no idea if that was published by Amazon or some
