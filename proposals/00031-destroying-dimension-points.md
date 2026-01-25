@@ -1,0 +1,398 @@
+# Define Language Proposal 31: Destroying Dimension Points
+
+- **Author:** Max Kanat-Alexander
+- **Status:** Draft
+- **Date Proposed:** January 24, 2026
+- **Date Finalized:**
+
+## Problems
+
+Computer programs have to be able to say "this dimension point no longer
+exists." So, we need a syntax for that.
+
+### Cascading Destruction
+
+Destroying a dimension point has consequences for any position it defines. They
+can no longer be referenced, and thus must also somehow be destroyed. Imagine
+this program:
+
+```
+define the potential position<mv:example.com:example/walls> {
+    this dimension point must have position</paint_color>.
+}
+
+define the potential position<mv:example.com:example:/room> {
+    this dimension point must have position</floor>.
+    this dimension point must have position</walls>.
+    this dimension point must have position</ceiling>.
+}
+
+define the position<house> {
+    it may only contain dimension points where {
+        it has the position<mv:example.com:example:/room>.
+    }
+}
+create a dimension point in position<house>.
+create a dimension point in position<house>::position</floor>.
+create a dimension point in position<house>::position</walls>.
+create a dimension point in position<house>::position</walls>::position</paint_color>.
+create a dimension point in position<house>::position</ceiling>.
+
+destroy the dimension point in position<house>.
+```
+
+How does one implement that, conceptually? Does every dimension point vanish
+instantaneously, all simultaneously? Do we do them in order, somehow?
+
+### Block Ending and Automatic Destruction
+
+One of the interesting questions for Define is what happens to variables only
+defined in an Action Statements Block when that block ends?
+
+Many modern programming languages handle destruction for you (garbage
+collection). They just track when dimension points (variables, objects, etc.) no
+longer can possibly be relevant and then free up the memory associated with that
+dimension point. Most of the time, we need to control the existence of dimension
+points more directly, in Define. However, at the end of an Action Statements
+Block there is no longer any way to reference any of the positions indicated in
+that block, so there is no point in keeping the dimension points around.
+
+### Trigger Paradoxes
+
+There are a few weird situations that happen with destruction and triggers.
+Consider this action and it being defined on this dimension point:
+
+```
+define the potential action<mv:example.com:example:/ensure_floor> {
+    this dimension point must have position</floor>.
+
+    it happens when {
+        NOT the position</floor> has a dimension point.
+    } and it does {
+        create a dimension point in position</floor>.
+    }
+}
+
+define the position<house> {
+    it may only contain dimension points where {
+        it has the action</ensure_floor>.
+    }
+}
+create a dimension point in position<house>.
+```
+
+All right, so far so good. What happens when we do this is pretty clear:
+
+`destroy the dimension point in position<house>::position</floor>.`
+
+But what happens when we do this?
+
+`destroy the dimension point in position<house>.`
+
+Does the `ensure_floor` action occur or not? If it does, do we get into an
+infinite loop because we keep trying to delete and re-create `floor`? We have to
+figure out what's supposed to happen, there. What if the action's behavior is
+necessary in order to ensure something gets cleaned up that exists outside the
+program (like deleting a temporary file)?
+
+## Solution
+
+Dimension points can be explicitly destroyed by doing:
+
+`destroy the dimension point in position<name>.`
+
+This is called a destruction statement. It may be contained in an Action
+Statements Block.
+
+It is an error to attempt to destroy a dimension point that does not exist, and
+the compiler will forbid it.
+
+### Automatic Destruction
+
+At the end of an Action Statements Block, any dimension points still existing in
+positions that are only defined locally within that Action Statements Block are
+automatically destroyed in reverse order from when they were created.
+
+In essence, the compiler inserts destruction statements at the end of an Action
+Statements Block to implement this. Currently, the language allows the compiler
+to deterministically know which positions will or won't contain dimension
+points.
+
+In the future, if the compiler is uncertain about whether a position still
+contains a dimension point, the compiler will insert code that only destroys
+dimension points in positions if there is a dimension point there.
+
+Hitting a `wait until` statement does _not_ count as exiting the Action
+Statements Block, and does not trigger automatic destruction. Automatic
+destruction occurs only when a position can no longer possibly be referenced.
+
+### Optimization of Destruction
+
+In situations where the compiler knows that destruction is free of side effects
+(there are no action triggers watching for the destruction of that dimension
+point, including no triggers watching any of the other positions that dimension
+point transitively defines), the compiler may choose to automatically destroy
+local dimension points within an Action Statements Block the instant they are no
+longer relevant to the code in the Action Statements Block.
+
+When safe, the compiler may choose to destroy multiple dimension points
+simultaneously (in parallel).
+
+### Cascading Destruction
+
+When a dimension point is destroyed, all of the dimension points in the
+positions it defines are also destroyed.
+
+Conceptually what happens when this occurs is that qualities are unassigned from
+the dimension point in reverse order to how they were assigned to it. (Note:
+because requirement statements assign qualities topologically in order according
+to their dependency tree, this inherently means that qualities will be removed
+in reverse topological order when that matters.)
+
+Before a position quality is unassigned, its dimension point is destroyed.
+
+Thus, in our example above in the Trigger Paradoxes section, the `ensure_floor`
+action would not run when destroying `position<house>`, because that action
+would be removed from `position<house>` before `position</floor>` was removed.
+
+During this process we inherently violate position constraints on the dimension
+point we are destroying. As such, this behaves similarly to creating a dimension
+point with respect to position constraints: all constraints defined by the
+position definition are suspended at the start of destruction until destruction
+completes.
+
+Before removing an action from a dimension point, destroy all dimension points
+that are still contained in positions defined in the Action Definition Block, in
+reverse order of when the positions were defined. (Reverse the order in which
+the position definitions are written in the Action Definition Block.) Destroying
+these dimension points may not trigger the action that we are mid removing (but
+may trigger another action). Once we start removing an action from a dimension
+point (and thus have to destroy the dimension points it defines) it may no
+longer trigger or check its conditions.
+
+Destruction completes as though it were a written series of unassignment and
+destruction statements in code to perform all necessary unassignments and all
+cascading of destruction. Thus, any action that triggers due to destruction of a
+dimension point fires immediately after its destruction is complete. This means
+that if a dimension point defines a position, the destruction of a dimension
+point in that child position may trigger an action asynchronously before the
+destruction of the parent dimension point is complete.
+
+The compiler may optimize this process and does not have to actually manually
+unassign every quality, it just needs to ensure identical behavior occurs as if
+it _had_ done so.
+
+Actions that would trigger due to the removal of a quality from a dimension
+point do not fire due to this quality removal process that happens automatically
+during destruction.
+
+## A Real Program
+
+```
+define the potential position<mv:example.com:example:/kitchen>.
+define the potential position<mv:example.com:example:/trash_can>.
+define the potential position<mv:example.com:example:/backyard>.
+define the potential position<mv:example.com:example:/toy>.
+define the potential position<mv:example.com:example:/bedroom> {
+    this dimension point must have position</toy>.
+}
+define the potential position<mv:example.com:example:/house> {
+    it may only contain dimension points where {
+        it has the position</kitchen>.
+        it has the position</bedroom>.
+        it has the position</backyard>.
+    }
+}
+
+define the potential action<mv:example.com:example:/enter_house> {
+    this dimension point must have position</house>.
+
+    define the position<door>.
+
+    it happens when {
+        the position<door> has a dimension point.
+    } and it does {
+        create a dimension point in position</house>.
+        create a dimension point in position</house>::position</bedroom>.
+        create a dimension point in position</house>::position</backyard>.
+        create a dimension point in position</house>::position</kitchen>.
+        destroy the dimension point in position<door>.
+    }
+}
+
+define the potential action<mv:example.com:example:/make_bed> {
+    define the position<do_it>.
+    define the position<bed>.
+
+    it happens when {
+        the position<do_it> has a dimension point.
+    } and it does {
+        create a dimension point in position<bed>.
+        destroy the dimension point in position<do_it>.
+    }
+}
+
+define the potential action<mv:example.com:example:/get_angry> {
+    this dimension point must have action</make_bed>.
+
+    define the position<cooled_down>.
+    define the position<got_angry>.
+
+    it happens when {
+        NOT action</make_bed>::position<bed> has a dimension point.
+    } and it does {
+        create a dimension point in position<got_angry>.
+        define the position<toy>.
+        create a dimension point in position<toy>.
+        create a dimension point in position<cooled_down>.
+        # The dimension point toy is now automatically destroyed here.
+    }
+}
+
+define the potential action<mv:example.com:example:/clean_kitchen> {
+    this dimension point must have action</enter_house>.
+    this dimension point must have position</trash_can>.
+
+    define the position<remember_to_clean>.
+    define the position<trash>.
+
+    it happens when {
+        the position<remember_to_clean> has a dimension point.
+        AND
+        the position<trash> has a dimension point.
+    } and it does {
+        create a dimension point in action<enter_house>::position<door>.
+        move the dimension point in position<trash> to position</trash_can>.
+        destroy the dimension point in position</trash_can>.
+        destroy the dimension point in position<remember_to_clean>.
+    }
+}
+
+define the potential action<mv:example.com:example:/run_program> {
+    it happens when {
+        # Some syntax that causes it to trigger when the program starts
+    } and it does {
+        define the position<person> {
+            it may only contain dimension points where {
+                it has the action</clean_kitchen>.
+                it has the action</get_angry>.
+                it has the action</make_bed>.
+                it has the position</house>.
+            }
+        }
+        define the position<dog>.
+        create a dimension point in position<dog>.
+
+        # This assigns positions in the following order:
+        # 1. position</house>
+        # 2. position</trash_can>
+        # 3. action</clean_kitchen>
+        # 4. action</make_bed>
+        # 5. action</get_angry>
+        #
+        # Most of that happens via quality requirement statements.
+        create a dimension point in position<person>.
+
+        create a dimension point in position<person>::action</clean_kitchen>::position<trash>.
+
+        # This creates the house by calling enter_house. It assigns the following positions
+        # to position</house>, in the following order:
+        # 1. position</kitchen>.
+        # 2. position</bedroom>.
+        # 3. position</backyard>.
+        #
+        # Note that it creates dimension points in a different order (which doesn't matter).
+        create a dimension point in position<person>::action</clean_kitchen>::position<remember_to_clean>.
+
+        # We are a magical person who can clean the kitchen and make the bed simultaneously.
+        create a dimension point in position<person>::action</make_bed>::position<do_it>.
+
+        # Note that the entry into a wait until section does not count as
+        # exiting the current action, so destruction does not yet occur.
+        wait until {
+            NOT the position<person>::action</clean_kitchen>::position<remember_to_clean> has a dimension point.
+            AND
+            the position<person>::action</make_bed>::position<bed> has a dimension point.
+        }
+
+        # This triggers get_angry.
+        destroy the dimension point in position<person>::action</make_bed>::position<bed>.
+        create a dimension point in position<person>::action</make_bed>::position<do_it>.
+
+        wait until {
+            the position<person>::action</make_bed>::position<bed> has a dimension point.
+        }
+
+        destroy the dimension point in position<person>::position</house>::position</bedroom>.
+        # Now automatically, at the end of the action, here is what happens:
+        # 1. The dimension point in position<person> starts destruction, which
+        #    triggers these changes on that dimension point:
+        #    (a) Destroy the dimension point in action</get_angry>::position<got_angry>.
+        #    (b) Destroy the dimension point in action</get_angry>::position<cooled_down>.
+        #    (c) Remove the action</get_angry>
+        #    (d) Destroy the dimension point in action</make_bed>::position<bed>.
+        #    (e) Remove the action</make_bed>
+        #    (f) Remove the action</clean_kitchen>
+        #    (g) Remove the position</trash_can>
+        #    (h) Start destruction of the dimension point in position</house>,
+        #        which triggers these changes on that dimension point:
+        #        i. Destroy the dimension point in position</backyard>.
+        #        ii. Remove the position</backyard>.
+        #        iii. Remove the position</bedroom> (already empty).
+        #        iv. Destroy the dimension point in position</kitchen>.
+        #        v. Remove the position</kitchen>.
+        #   (i) Destruction of the dimension point in position</house> completes. If
+        #       any actions were watching for position<person>::position</house> to
+        #       become empty, they would now fire (though this could only be a "wait
+        #       until" block).
+        # 2. Destruction of the dimension point in position<person> completes. If any
+        #    actions were watching for position<person> to become empty, they would now
+        #    fire (though this could only be a "wait until" block.)
+        # 3. The dimension point in position<dog> is destroyed, and any relevant trigger
+        #    conditions check themselves.
+        # 4. position<person> and position<dog> simultaneously cease to exist and may no
+        #    longer be referenced by any part of the program.
+    }
+}
+```
+
+## Why This is the Right Solution
+
+This is the only ordering that guarantees safe destruction.
+
+We auto-destroy dimension points in reverse order of their creation because that
+is the sequence in which they could be depending on each other. The same reason
+that we specify cascading destruction happens in reverse assignment order (and
+thus reverse topological order).
+
+Another option would be to forbid destruction if a dimension point defines any
+other dimension points besides itself, but that just creates toil for the human
+developer that they can get wrong, not to mention a maintenance nightmare where
+you have to update destruction statements any time you add a new required
+position to an action.
+
+We also could require explicit destruction statements for all created local
+dimension points, but why? Why keep something around that you can't reference
+anymore anywhere in the program?
+
+## Forward Compatibility
+
+Any time we set an order for anything, we create a forward compatibility risk,
+as programmers then rely on that being the order. The ordering described in this
+proposal is safe as long as it is the _only possible logical order_, which I
+believe that it is, though we should attempt to prove or disprove that.
+
+Otherwise, the syntax is unambiguous. The "end of action" behavior is also
+unambiguous because we can tell where actions end in the syntax.
+
+## Refactoring Existing Systems
+
+I believe this is actually better than the destruction semantics of most
+programming languages, because we _have_ the topology of how positions depend on
+each other (at least, currently, for potential positions assigned to dimension
+points). However, it is also different than the destruction semantics of other
+languages. That means that when we refactor those languages into Define, we may
+need to explicitly implement their destruction semantics in some cases.
+
+Otherwise, there were no previous destruction syntax or semantics in Define to
+refactor.
