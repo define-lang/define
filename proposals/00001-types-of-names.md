@@ -62,8 +62,8 @@ That shows a module name (`time`), a class name (`Clock`), a method name
 (`my_clock`).
 
 Python provides conventions for those names that you _can_ follow: you are
-supposed to name classes with CamelCase and variables with
-lowercase*and_underscores. But you don't \_have* to.
+supposed to name classes with `CamelCase` and variables with
+`lowercase_and_underscores`. But you don't _have_ to.
 
 This creates a problem for the reader: they don't know what a name actually
 is---they are just guessing based on context. It creates a problem for the
