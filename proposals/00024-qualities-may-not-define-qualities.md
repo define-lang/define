@@ -8,7 +8,7 @@
 ## Problems
 
 With [DLP 21](00021-defining-machines.md) I described the machine definition
-syntax, which includedd the ability for actions to define local positions, but
+syntax, which included the ability for actions to define local positions, but
 _not_ the ability to define other named actions. Why? And should we allow
 position definitions to contain the definition of other positions, or not?
 
@@ -22,7 +22,7 @@ statement, and vice-versa? If so, why or why not?
 The decisions were:
 
 Qualities may not contain the definitions of other qualities. To be clear, this
-means that `define the potential` statments may not contain within them other
+means that `define the potential` statements may not contain within them other
 `define the potential` statements.
 
 ## A Real Program
@@ -85,7 +85,7 @@ This prevents a feature from existing that is very confusing to interpret. I'm
 not confident it affects forward compatibility one way or another, but it does
 prevent us from having a lot of programs where the programmer misunderstood the
 semantics. Having those programs actually introduces its own unique sort of
-forward-compatibilty problem: "I thought I was doing something and then you
+forward-compatibility problem: "I thought I was doing something and then you
 refactored it and it broke," when in reality it was always broken.
 
 ## Refactoring Existing Systems
