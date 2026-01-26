@@ -358,12 +358,17 @@ define the potential action<mv:example.com:example:/run_program> {
 
 ## Why This is the Right Solution
 
-This is the only ordering that guarantees safe destruction.
+The cascade is specified in the only order that guarantees safe destruction.
 
-We auto-destroy dimension points in reverse order of their creation because that
-is the sequence in which they could be depending on each other. The same reason
-that we specify cascading destruction happens in reverse assignment order (and
-thus reverse topological order).
+In terms of the order of destroying action-defined points and the order of
+destroying locally-defined dimension points, at this time I believe it doesn't
+matter what order we choose, as long as we choose a deterministic order so that
+static analysis can know exactly what is going to happen in the program, in what
+sequence. Reverse order of creation seems like the most future-proof choice in
+case we make dimension points able to depend on each other in some way where
+this would matter.
+
+### Alternative Solutions
 
 Another option would be to forbid destruction if a dimension point defines any
 other dimension points besides itself, but that just creates toil for the human
@@ -375,12 +380,20 @@ We also could require explicit destruction statements for all created local
 dimension points, but why? Why keep something around that you can't reference
 anymore anywhere in the program?
 
+In terms of ordering, we could have chosen reverse position definition order for
+local and action-defined positions. I'm not yet convinced it matters what order
+we choose. It may turn out to be simpler to implement reverse definition order
+in the compiler, in which case I may change my mind.
+
 ## Forward Compatibility
 
 Any time we set an order for anything, we create a forward compatibility risk,
 as programmers then rely on that being the order. The ordering described in this
-proposal is safe as long as it is the _only possible logical order_, which I
-believe that it is, though we should attempt to prove or disprove that.
+proposal should safe. For the cascade, I believe I have specified it to occur in
+the only possible logical order that is safe and prevents impossible situations
+(like trying to refer to positions that don't exist while tearing down a
+dimension point). For positions in actions and local positions, I believe I have
+chosen the most future-proof destruction order, though I'm less confident.
 
 Otherwise, the syntax is unambiguous. The "end of action" behavior is also
 unambiguous because we can tell where actions end in the syntax.
