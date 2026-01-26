@@ -393,7 +393,7 @@ the dimension point in that position have the specific quality listed.
 Potential positions and actions may express that they require other positions
 and/or actions to appear on the dimension point, using this syntax:
 
-`this dimension point must have type<name>.`
+`this dimension point must have the type<name>.`
 
 Where `type` is `position` or `action`. We call this a "quality requirement
 statement." In shorthand, we refer to this as "requiring" a quality.
@@ -414,7 +414,7 @@ account:
 
 ```
 define the potential action<mv:example.com:bank:/account/withdraw> {
-    this dimension point must have position<mv:example.com:bank:/account/balance>.
+    this dimension point must have the position<mv:example.com:bank:/account/balance>.
 
     define the position<amount> {
         it may only contain dimension points where {
@@ -458,10 +458,10 @@ For example, imagine this program:
 
 ```
 define the potential action<mv:example.com:bank:/account/withdraw> {
-    this dimension point must have position<mv:example.com:bank:/account/balance>.
+    this dimension point must have the position<mv:example.com:bank:/account/balance>.
 }
 define the potential action<mv:example.com:bank:/account/deposit> {
-    this dimension point must have position<mv:example.com:bank:/account/balance>.
+    this dimension point must have the position<mv:example.com:bank:/account/balance>.
 }
 
 define the position<account> {
@@ -476,8 +476,9 @@ create a dimension point in position<account>.
 That program only assigns the `position<mv:example.com:bank:/account/balance>`
 once.
 
-In other words, the `this dimension point must have` syntax really means: assign
-this quality to the dimension point _if it does not already have this quality_.
+In other words, the `this dimension point must have the` syntax really means:
+assign this quality to the dimension point _if it does not already have this
+quality_.
 
 ### Forbidding Circular Dependencies
 

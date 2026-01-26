@@ -1,5 +1,5 @@
 define the potential action<define-lang.org:bank:/account/deposit> {
-    this dimension point must have position</account/balance>.
+    this dimension point must have the position</account/balance>.
 
     define the position<run> {
         it may only be destroyed by this action.

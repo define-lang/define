@@ -156,8 +156,8 @@ change its state in order for the action to check its conditions.
 
 ```
 define the potential action<define-lang.org:bank:/account/transfer_to> {
-    this dimension point must have position</account/balance>.
-    this dimension point must have action</account/withdraw>.
+    this dimension point must have the position</account/balance>.
+    this dimension point must have the action</account/withdraw>.
 
     define the position<run>.
     define the position<to> {

@@ -21,9 +21,9 @@ define the potential position<mv:example.com:example:/left>.
 define the potential position<mv:example.com:example:/right>.
 
 define the potential action<mv:example.com:example:/move_left> {
-    this dimension point must have position<mv:example.com:example:/my_ball>.
-    this dimension point must have position<mv:example.com:example:/left>.
-    this dimension point must have position<mv:example.com:example:/run_triggers>.
+    this dimension point must have the position<mv:example.com:example:/my_ball>.
+    this dimension point must have the position<mv:example.com:example:/left>.
+    this dimension point must have the position<mv:example.com:example:/run_triggers>.
 
 
     it happens when {
@@ -34,9 +34,9 @@ define the potential action<mv:example.com:example:/move_left> {
 }
 
 define the potential action<mv:example.com:example:/move_right> {
-    this dimension point must have position<mv:example.com:example:/my_ball>.
-    this dimension point must have position<mv:example.com:example:/right>.
-    this dimension point must have position<mv:example.com:example:/run_triggers>.
+    this dimension point must have the position<mv:example.com:example:/my_ball>.
+    this dimension point must have the position<mv:example.com:example:/right>.
+    this dimension point must have the position<mv:example.com:example:/run_triggers>.
 
     it happens when {
         the position<mv:example.com:example:/run_triggers> has a dimension point.

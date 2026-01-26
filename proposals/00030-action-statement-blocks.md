@@ -7,13 +7,13 @@
 
 ## Problems
 
-Once you trigger an action, what happens? What statemets are allowed in an
+Once you trigger an action, what happens? What statements are allowed in an
 Action Statements Block?
 
 ## Solution
 
 Action Statement Blocks may define positions. To be clear, this means they
-define concrete positions with local names, not potential position.
+define concrete positions with local names, not potential positions.
 
 Action Statement Blocks may create, move, and destroy dimension points.
 
@@ -24,7 +24,7 @@ Action Statement Blocks may contain `wait until` statements.
 Conceptually, when executing an Action Statements Block, all the code is
 considered to execute instantaneously in sequence, up until it hits a
 `wait until` statement, at which point it waits for that condition to be true
-and then continus executing statements instantaneously in sequence. (This
+and then continues executing statements instantaneously in sequence. (This
 matters conceptually for paradox detection and how the compiler implements
 concurrency.)
 
@@ -32,8 +32,8 @@ concurrency.)
 
 ```
 define the potential action<mv:example.com:bank:/account/transfer_to> {
-    this dimension point must have position</account/balance>.
-    this dimension point must have action</account/withdraw>.
+    this dimension point must have the position</account/balance>.
+    this dimension point must have the action</account/withdraw>.
 
     define the position<run>.
     define the position<to> {
@@ -56,7 +56,7 @@ define the potential action<mv:example.com:bank:/account/transfer_to> {
         AND
         the position<amount> has a dimension point.
     } and it does {
-        define the position<orginal_balance> {
+        define the position<original_balance> {
             it may only contain dimension points where {
                 it has a value that is a decimal.
             }

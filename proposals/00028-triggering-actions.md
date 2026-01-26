@@ -49,7 +49,7 @@ assigned.
 
 ```
 define the potential action<mv:example.com:bank:/account/deposit> {
-    this dimension point must have position</account/balance>.
+    this dimension point must have the position</account/balance>.
 
     define the position<run>.
     define the position<amount> {

@@ -18,13 +18,13 @@ this program:
 
 ```
 define the potential position<mv:example.com:example/walls> {
-    this dimension point must have position</paint_color>.
+    this dimension point must have the position</paint_color>.
 }
 
 define the potential position<mv:example.com:example:/room> {
-    this dimension point must have position</floor>.
-    this dimension point must have position</walls>.
-    this dimension point must have position</ceiling>.
+    this dimension point must have the position</floor>.
+    this dimension point must have the position</walls>.
+    this dimension point must have the position</ceiling>.
 }
 
 define the position<house> {
@@ -64,7 +64,7 @@ Consider this action and it being defined on this dimension point:
 
 ```
 define the potential action<mv:example.com:example:/ensure_floor> {
-    this dimension point must have position</floor>.
+    this dimension point must have the position</floor>.
 
     it happens when {
         NOT the position</floor> has a dimension point.
@@ -194,7 +194,7 @@ define the potential position<mv:example.com:example:/trash_can>.
 define the potential position<mv:example.com:example:/backyard>.
 define the potential position<mv:example.com:example:/toy>.
 define the potential position<mv:example.com:example:/bedroom> {
-    this dimension point must have position</toy>.
+    this dimension point must have the position</toy>.
 }
 define the potential position<mv:example.com:example:/house> {
     it may only contain dimension points where {
@@ -205,7 +205,7 @@ define the potential position<mv:example.com:example:/house> {
 }
 
 define the potential action<mv:example.com:example:/enter_house> {
-    this dimension point must have position</house>.
+    this dimension point must have the position</house>.
 
     define the position<door>.
 
@@ -233,7 +233,7 @@ define the potential action<mv:example.com:example:/make_bed> {
 }
 
 define the potential action<mv:example.com:example:/get_angry> {
-    this dimension point must have action</make_bed>.
+    this dimension point must have the action</make_bed>.
 
     define the position<cooled_down>.
     define the position<got_angry>.
@@ -250,8 +250,8 @@ define the potential action<mv:example.com:example:/get_angry> {
 }
 
 define the potential action<mv:example.com:example:/clean_kitchen> {
-    this dimension point must have action</enter_house>.
-    this dimension point must have position</trash_can>.
+    this dimension point must have the action</enter_house>.
+    this dimension point must have the position</trash_can>.
 
     define the position<remember_to_clean>.
     define the position<trash>.
