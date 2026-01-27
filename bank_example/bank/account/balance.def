@@ -3,7 +3,7 @@ define the potential position<define-lang.org:bank:/account/balance> {
         it has a value that is a decimal.
         it has the constraint</non_negative>.
     }
-    when it is assigned {
+    after it is assigned {
         create a dimension point in this position.
         set the value in this position to 0.
     }

@@ -94,7 +94,7 @@ define the potential position<mv:example.com:example:/main> {
     it may only contain dimension points where {
         it has the action</start>.
     }
-    when it is assigned {
+    after it is assigned {
         create a dimension point in this position.
         create a dimension point in action</start>::position<run>.
     }

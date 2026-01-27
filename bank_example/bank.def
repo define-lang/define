@@ -2,7 +2,7 @@ define the potential position<define-lang.org:bank:/bank> {
     it may only contain dimension points where {
         it has the action</do_transfers>.
     }
-    when it is assigned {
+    after it is assigned {
         create a dimension point in action</do_transfers>::position<run>.
     }
 }

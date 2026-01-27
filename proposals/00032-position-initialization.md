@@ -31,7 +31,7 @@ Inside of a `define the potential position` block, the following syntax may be
 written:
 
 ```
-when it is assigned {
+after it is assigned {
     # Position Assignment Block
 }
 ```
@@ -89,7 +89,7 @@ define the potential position<mv:example.com:playground:/ball> {
     it may only contain dimension points where {
         it has the position</color>.
     }
-    when it is assigned {
+    after it is assigned {
         create a dimension point in this position.
     }
 }
@@ -106,7 +106,7 @@ define the potential position<mv:example.com:game:/health> {
     it may only contain dimension points where {
         it has a value that is a integer. # Imaginary syntax.
     }
-    when it is assigned {
+    after it is assigned {
         create a dimension point in this position.
         set the value in this position to 100. # Imaginary syntax
     }
@@ -115,7 +115,7 @@ define the potential position<mv:example.com:game:/health> {
 define the potential position<mv:example.com:game:/character> {
     this dimension point must have the position</health>.
 
-    when it is assigned {
+    after it is assigned {
         create a dimension point in this position.
         # At this point, position</health> has already been assigned to this dimension
         # point (due to the dependency), and its initialization has already completed.
@@ -164,7 +164,7 @@ define the potential position<mv:example.com:system:/status> {
     this dimension point must have the position</ready_flag>.
     this dimension point must have the action</on_ready>.
 
-    when it is assigned {
+    after it is assigned {
         create a dimension point in this position.
         # This creates a dimension point that will trigger the </on_ready> action.
         # However, the action fires ASYNCHRONOUSLY, so it will not complete before
@@ -211,7 +211,7 @@ define the potential position<mv:example.com:db:/database> {
     this dimension point must have the position</connection_string>.
     this dimension point must have the action</connect>.
 
-    when it is assigned {
+    after it is assigned {
         # Set up the connection string.
         create a dimension point in position</connection_string>.
         set the value in position</connection_string> to "localhost:5432". # Imaginary syntax
