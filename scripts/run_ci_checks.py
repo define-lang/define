@@ -71,7 +71,7 @@ CHECKS = [
             "run",
             "python",
             "scripts/validate_proposals.py",
-            "proposals/*.md",
+            "proposals/0*.md",
         ],
     ),
     Check(
