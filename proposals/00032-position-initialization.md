@@ -257,6 +257,16 @@ in the Assignment Block or you can manually create dimension points outside the
 block. Possibly the compiler (or linter) should recommend that you choose the
 assignment block if it notices you always doing manual init.
 
+### Why On Assignment Instead of On Creation?
+
+Why did I choose to make this happen when this position is assigned to a
+dimension point, instead of when a dimension point is created in this position?
+
+In most situations, those are the same thing, because assignment happens during
+dimension point creation, on constrained positions. However, quality assignment
+can also happen outside of that context, and that quality still needs to be in
+the same state as if it had been assigned during creation.
+
 ## Forward Compatibility
 
 Forcing synchronicity for initialization is a decision that we can't take back
