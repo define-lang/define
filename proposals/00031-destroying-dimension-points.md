@@ -111,7 +111,8 @@ the compiler will forbid it.
 
 At the end of an Action Statements Block, any dimension points still existing in
 positions that are only defined locally within that Action Statements Block are
-automatically destroyed in reverse order from when they were created.
+automatically destroyed in reverse order of their position definition
+statements.
 
 In essence, the compiler inserts destruction statements at the end of an Action
 Statements Block to implement this. Currently, the language allows the compiler
@@ -166,9 +167,9 @@ that are still contained in positions defined in the Action Definition Block, in
 reverse order of when the positions were defined. (Reverse the order in which
 the position definitions are written in the Action Definition Block.) Destroying
 these dimension points may not trigger the action that we are mid removing (but
-may trigger another action). Once we start removing an action from a dimension
-point (and thus have to destroy the dimension points it defines) it may no
-longer trigger or check its conditions.
+may trigger another action or `wait until` block). Once we start removing an
+action from a dimension point (and thus have to destroy the dimension points it
+defines) it may no longer trigger or check its conditions.
 
 Destruction completes as though it were a written series of unassignment and
 destruction statements in code to perform all necessary unassignments and all
@@ -360,13 +361,13 @@ define the potential action<mv:example.com:example:/run_program> {
 
 The cascade is specified in the only order that guarantees safe destruction.
 
-In terms of the order of destroying action-defined points and the order of
-destroying locally-defined dimension points, at this time I believe it doesn't
-matter what order we choose, as long as we choose a deterministic order so that
-static analysis can know exactly what is going to happen in the program, in what
-sequence. Reverse order of creation seems like the most future-proof choice in
-case we make dimension points able to depend on each other in some way where
-this would matter.
+We destroy action-defined positions and local dimension points in reverse order
+of their definitions because we need some deterministic ordering (so that we can
+statically analyze programs and know exactly what happens) and because that is
+the easiest sequence for the compiler to check (position definition order is
+completely static). It also might help if we ever introduce a future syntax that
+allows positions to refer to each other in their definitions (it would give us
+some hope that that syntax continues to work correctly during destruction).
 
 ### Alternative Solutions
 
@@ -380,20 +381,21 @@ We also could require explicit destruction statements for all created local
 dimension points, but why? Why keep something around that you can't reference
 anymore anywhere in the program?
 
-In terms of ordering, we could have chosen reverse position definition order for
-local and action-defined positions. I'm not yet convinced it matters what order
-we choose. It may turn out to be simpler to implement reverse definition order
-in the compiler, in which case I may change my mind.
+Originally I chose to auto-delete dimension points in reverse order of their
+creation instead of reverse order of their position definitions, but that gets a
+bit confusing when you move dimension points around (especially if you moved a
+dimension point from an action-defined position into a local position, where you
+have no idea when the action-defined position was created).
 
 ## Forward Compatibility
 
 Any time we set an order for anything, we create a forward compatibility risk,
 as programmers then rely on that being the order. The ordering described in this
-proposal should safe. For the cascade, I believe I have specified it to occur in
-the only possible logical order that is safe and prevents impossible situations
-(like trying to refer to positions that don't exist while tearing down a
-dimension point). For positions in actions and local positions, I believe I have
-chosen the most future-proof destruction order, though I'm less confident.
+proposal should safe, but there's a slight chance we would have to change the
+ordering of destruction for local positions. For the cascade, I believe I have
+specified it to occur in the only possible logical order that is safe and
+prevents impossible situations (like trying to refer to positions that don't
+exist while tearing down a dimension point).
 
 Otherwise, the syntax is unambiguous. The "end of action" behavior is also
 unambiguous because we can tell where actions end in the syntax.
