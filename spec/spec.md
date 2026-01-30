@@ -62,6 +62,17 @@ to the spec, future versions of Define may fix that bug even if it causes
 existing programs to fail to compile (that is, even if it breaks backward
 compatibility).
 
+## Filesystem vs Non-Filesystem Contexts
+
+When Define tools are parsing a file that contains source code, in a filesystem,
+that is considered a "filesystem context."
+
+When Define tools are parsing source code via some other mechanism, such as Unix
+`stdin`, some form of Read/Eval/Print Loop (aka a "REPL"), a text box on a
+website, etc. that is considered a "non-filesystem context."
+
+These terms are defined here so that they can be used elsewhere in this spec.
+
 ## Parsing Define Source Code
 
 Proposals:
@@ -71,6 +82,9 @@ Proposals:
 Define conforms to
 [Unicode Technical Standard #55 (Unicode Source Code Handling)](https://www.unicode.org/reports/tr55/).
 When Define is less restrictive than UTS #55, that is a bug.
+
+Note that all rules laid out in this section apply in both filesystem contexts
+and non-filesystem contexts.
 
 ### Encoding
 
@@ -191,7 +205,3 @@ name_content = local_name | global_name
 ```
 
 Global names have more pieces and require more explanation.
-
-#### Local Names
-
-TODO: fill in, and note that this changes with name configurations.
