@@ -119,6 +119,14 @@ Exceptions:
 - When syntax specifies a space, the parser requires exactly one space
   (`U+0020`) in that position.
 
+## Lexical Elements
+
+```ebnf
+lowercase_ascii = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
+    | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
+lowercase_ascii_with_underscore = lowercase_ascii | "_" ;
+```
+
 ## Comments
 
 Proposals:
