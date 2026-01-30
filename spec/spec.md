@@ -127,6 +127,19 @@ lowercase_ascii = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k
 lowercase_ascii_with_underscore = lowercase_ascii | "_" ;
 ```
 
+## Idiomatic Define
+
+There is a style and structure that Define programs should have when written
+natively in Define (as opposed to being translations of other programming
+languages). When relevant, we explicitly refer to this style and structure as
+"Idiomatic Define" in this spec.
+
+The compiler will, by default, enforce the rules and restrictions of Idiomatic
+Define. However, the compiler may provide the programmer the ability to specify
+configurations that override the rules and restrictions of Idiomatic Define.
+
+All EBNF in this spec is written assuming we are parsing Idiomatic Define.
+
 ## Comments
 
 Proposals:
@@ -142,7 +155,9 @@ comment      = "#", comment_text ;
 comment_text = { ? any character allowed per Define parsing rules, excluding U+000A ? } ;
 ```
 
-## Types of Names
+## Naming
+
+### Types of Names
 
 Proposals:
 
@@ -159,6 +174,24 @@ The valid name types are currently:
 - `action`
 
 ```ebnf
-name       = name_type, "<", name_content, ">" ;
+typed_name = name_type, "<", name_content, ">" ;
 name_type  = "position" | "action" ;
 ```
+
+### Local and Global Names
+
+Define has two types of names: local names and global names.
+
+In Idiomatic Define, local names only contain `lowercase_with_ascii`. However,
+configuration may override this, changing the parser's restrictions.
+
+```ebnf
+local_name = lowercase_ascii_with_underscore
+name_content = local_name | global_name
+```
+
+Global names have more pieces and require more explanation.
+
+#### Local Names
+
+TODO: fill in, and note that this changes with name configurations.
