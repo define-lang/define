@@ -118,3 +118,24 @@ Exceptions:
 
 - When syntax specifies a space, the parser requires exactly one space
   (`U+0020`) in that position.
+
+## Types of Names
+
+Proposals:
+
+- [DLP 1: Types of Names](../proposals/00001-types-of-names.md)
+
+Define reserves all words and symbols for its own use in syntax.
+
+Names defined by the programmer are only allowed when prefixed by a name type
+and surrounded by angle brackets (`<` and `>`).
+
+The valid name types are currently:
+
+- `position`
+- `action`
+
+```ebnf
+name       = name_type, "<", name_content, ">" ;
+name_type  = "position" | "action" ;
+```
