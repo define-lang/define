@@ -1,0 +1,30 @@
+define the potential action<define-lang.org:fibonacci:/generate> {
+    define the position<run> {
+        it may not be destroyed.
+    }
+
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        define the position<sequence> {
+            it may only contain dimension points where {
+                it has the position</sequence/current>.
+                it has the position</sequence/previous>.
+                it has the action</sequence/next>.
+            }
+        }
+        create a dimension point in position<sequence>.
+
+        # Generate 500 Fibonacci numbers using bounded loop
+        # Position constraints (non_negative) serve as implicit invariants
+        # Z3 proves: non_negative preserved by current + previous (O(1) proof)
+        repeat 500 times {
+            create a dimension point in position<sequence>::action</sequence/next>::position<run>.
+            wait until {
+                NOT position<sequence>::action</sequence/next>::position<run> has a dimension point.
+            }
+        }
+
+        # Result: sequence computes F(500) and F(499)
+    }
+}

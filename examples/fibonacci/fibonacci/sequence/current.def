@@ -1,0 +1,10 @@
+define the potential position<define-lang.org:fibonacci:/sequence/current> {
+    it may only contain dimension points where {
+        it has a value that is an integer.
+        it has the constraint</non_negative>.
+    }
+    after it is assigned {
+        create a dimension point in this position.
+        set the value in this position to 1.
+    }
+}

@@ -1,9 +1,0 @@
-AbstractUniverse:
-    Source is a ViewPoint.
-    Source creates a String named helloWorld:
-        value: "Hello, world!"
-
-PhysicalUniverse:
-    Machine is a Computer.
-    Machine knows Source's helloWorld.
-    Machine makes Machine's terminal Output Source's helloWorld.

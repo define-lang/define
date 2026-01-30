@@ -1,0 +1,30 @@
+define the potential action<define-lang.org:fibonacci:/sequence/next> {
+    this dimension point must have the position</sequence/current>.
+    this dimension point must have the position</sequence/previous>.
+
+    define the position<run> {
+        it may only be destroyed by this action.
+    }
+
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        # Store the current value temporarily
+        define the position<temp> {
+            it may only contain dimension points where {
+                it has a value that is an integer.
+                it has the constraint</non_negative>.
+            }
+        }
+        create a dimension point in position<temp>.
+        set the value in position<temp> to position</sequence/current>.
+
+        # new current = current + previous (the next Fibonacci number)
+        set the value in position</sequence/current> to position</sequence/current> plus position</sequence/previous>.
+
+        # previous becomes the old current
+        set the value in position</sequence/previous> to position<temp>.
+
+        destroy the dimension point in position<run>.
+    }
+}
