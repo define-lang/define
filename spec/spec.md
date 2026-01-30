@@ -61,3 +61,60 @@ In the case that there is a bug in the compiler and it does not behave according
 to the spec, future versions of Define may fix that bug even if it causes
 existing programs to fail to compile (that is, even if it breaks backward
 compatibility).
+
+## Parsing Define Source Code
+
+Proposals:
+
+- [DLP 35: Parsing Define Files](../proposals/00035-parsing-define-files.md)
+
+Define conforms to
+[Unicode Technical Standard #55 (Unicode Source Code Handling)](https://www.unicode.org/reports/tr55/).
+When Define is less restrictive than UTS #55, that is a bug.
+
+### Encoding
+
+- Define source code is written in UTF-8.
+- Define uses Unicode 17.0.0.
+- Byte-order marks are forbidden.
+- Invalid Unicode sequences are forbidden.
+
+### Newlines
+
+- The only valid line terminator is `U+000A` (line feed).
+- A source file must end with a newline.
+- There may not be a space (`U+0020`) immediately before a newline.
+- Unless otherwise specified, a newline must immediately follow a statement
+  terminator, `{`, or `}`.
+
+### Invisible Characters
+
+The only invisible characters allowed in Define source code files are:
+
+- Space (`U+0020`)
+- Line feed (`U+000A`)
+- Characters necessary for correctly rendering visible Unicode text, provided
+  their use conforms to UTS #55 (especially for BiDi handling).
+
+An invisible character is necessary for rendering visible text if and only if it
+is part of an extended grapheme cluster (per
+[UAX #29](https://www.unicode.org/reports/tr29/) Section 3.1.1, Grapheme Cluster
+Boundary Rules) that contains at least one character with a visible glyph.
+
+### Allowed Syntax Characters
+
+Syntax with semantics may use only these Unicode codepoints:
+
+- `U+0020` through `U+0040`
+- `U+005B` through `U+007E`
+
+Exceptions:
+
+- Names have their own rules.
+- Comments allow all characters except those restricted elsewhere; UTS #55
+  applies to comments.
+
+### Spaces in Syntax
+
+- When syntax specifies a space, the parser requires exactly one space
+  (`U+0020`) in that position.
