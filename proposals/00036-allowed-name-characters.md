@@ -74,7 +74,8 @@ options.
 ### Default Allowed Characters and Name Format
 
 In Idiomatic Define, the "name" portion of a local name or fully-qualified
-universe name may only contain lowercase ASCII letters, `_`, and `/`.
+universe name may only contain lowercase ASCII letters, ASCII digits, `_`, and
+`/`.
 
 All names in Idiomatic Define are written using `snake_case`, with all lowercase
 characters and underscores between words. So the name "this is a B train"
