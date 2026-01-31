@@ -299,7 +299,7 @@ universe name," or "FQUN."
 fqun =
     ( multiverse, ":", authority, ":", universe, ":"
     | authority, ":", universe, ":"
-    | universe, ":"
+    | "standard:"
     | "" ) ;
 global_name = fqun, global_name_path ;
 ```
@@ -369,3 +369,69 @@ Reserved names are reserved case-insensitively; thus `standard`, `Standard`, and
 
 Define tools must refuse to download, create, or interact with universes that
 have reserved names, except as specified by this specification.
+
+#### Authority
+
+Proposals:
+
+- [DLP 3: Authorities](../proposals/00003-authorities.md)
+
+Wherever a universe is specified as part of a global name, an authority must be
+specified, unless the universe is `standard`.
+
+Authority names have two parts: a domain and a path. The path is optional. The
+authority consists of the domain followed by an optional path.
+
+```ebnf
+authority = authority_domain [ authority_path ] ;
+```
+
+##### Domain
+
+The domain is the portion of an authority before the first `/`. It must be a
+valid lowercase domain name (though it does not have to contain a `.`). This
+means it allows only lowercase ASCII letters, digits, `.`, and `-`. It may not
+start or end with `-` or `.`.
+
+The domain portion of an authority must be at least two characters long.
+
+```ebnf
+authority_domain_boundary_char = lowercase_ascii | digit ;
+authority_domain_char = authority_domain_boundary_char | "-" | "." ;
+authority_domain =
+    authority_domain_boundary_char,
+    { authority_domain_char },
+    authority_domain_boundary_char ;
+```
+
+##### Path
+
+The path is the portion after the first `/`. It is composed of one or more
+segments separated by `/`. It may contain lowercase ASCII letters, digits, `_`,
+`-`, and `.`.
+
+```ebnf
+authority_path_char = lowercase_ascii | digit | "_" | "-" | "." ;
+authority_path_segment = authority_path_char, { authority_path_char } ;
+authority_path = "/", authority_path_segment, { "/", authority_path_segment } ;
+```
+
+##### Standard Authority
+
+When Define tooling needs to represent the `standard` universe internally, it
+considers the authority to be named `define`.
+
+##### Reserved Authority Names
+
+All names reserved for universes are also reserved for authority names.
+
+We additionally reserve `example.com` for use in documentation examples only.
+
+In the `mv` and `local` multiverses, all authorities where the domain does not
+contain a `.` are reserved.
+
+Similar to universes, reserved authority names are reserved case-insensitively.
+
+Define tools must refuse to download, create, or interact with universes where
+the authority component of the FQUN contains a reserved name, except as
+specified by this specification.

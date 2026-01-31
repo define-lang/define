@@ -71,10 +71,15 @@ Define only allows lowercase ASCII letters, digits, `_`, `-`, `/`, and `.` in
 authority names.
 
 Authorities may not end with a `/` or `.` (just to ensure we always have one
-canonical form).
+canonical form). They also may not start with `-`.
 
 Before the first `/`, the only characters allowed are characters that would be
-valid in a domain name: lowercase ASCII letters, digits, and `-`.
+valid in a domain name: lowercase ASCII letters, digits, `.`, and `-`. Also,
+that segment of the authority may not end with `-`.
+
+### Minimum Length
+
+Authority names must be at least two characters long.
 
 ### Reserved Authority Names
 
