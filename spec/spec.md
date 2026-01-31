@@ -143,9 +143,11 @@ There are a few EBNF productions that are frequently re-used in this spec, so
 they are defined here.
 
 ```ebnf
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 lowercase_ascii = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
     | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
-lowercase_ascii_with_underscore = lowercase_ascii | "_" ;
+uppercase_ascii = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L"
+    | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
 ```
 
 ## Idiomatic Define
@@ -251,6 +253,9 @@ in source code to NFC without prompting the user.
 The following characters must always be escaped with `\` to appear in
 `name_content`: `\`, `<`, `>`.
 
+If configuration allows any character that must be escaped to appear, then `\`
+is automatically also a valid character in that part of the name syntax.
+
 ### Local vs Global Name Syntax
 
 There are two types of names defined by the programmer that can be in
@@ -263,12 +268,15 @@ name_content = local_name | global_name
 ### Local Name Syntax
 
 In Idiomatic Define, local names only contain lowercase ASCII letters and `_`.
-However, configuration may override this, changing the parser's restrictions.
+They also may not start with a digit. However, configuration may override this,
+changing the parser's restrictions.
 
 If configuration allows `/` in local names, it must be escaped.
 
 ```ebnf
-local_name = lowercase_ascii_with_underscore | { ? allowed name characters ? }
+local_start_char = lowercase_ascii | "_" ;
+local_continue_char = lowercase_ascii | digit | "_" ;
+local_name = ( local_start_char, { local_continue_char } ) | { ? allowed name characters ? };
 ```
 
 ### Global Name Syntax
@@ -283,9 +291,6 @@ Global names have four components:
 2. Authority
 3. Universe
 4. Path
-
-Each component is separated by `:`. If configuration allows any of the four
-components to contain a `:`, it must be escaped with `\`.
 
 The first three components combine to form what is called a "fully-qualified
 universe name," or "FQUN."
@@ -302,11 +307,16 @@ global_name = fqun, global_name_path ;
 #### Path
 
 The "path" component of a global name may contain the exact same characters as a
-local name, plus `/`. A path must start with `/` and must contain at least one
-valid local name character after the starting `/`.
+local name, plus `/`. A path must start with `/`. Every `/` in the path must be
+followed by at least one other valid character.
+
+In Idiomatic Define, the first character after any `/` in a path may not be a
+digit.
+
+Unlike local names, `/` in a path does not need to be escaped.
+
+If configuration allows the path to contain a `:`, it must be escaped with `\`.
 
 ```ebnf
 global_name_path = "/", local_name, { "/", local_name } ;
 ```
-
-Unlike local names, `/` in a path does not need to be escaped.
