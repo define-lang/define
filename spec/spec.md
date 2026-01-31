@@ -352,6 +352,7 @@ The following names are also reserved, to avoid confusion:
 ```
 authority
 fqun
+local
 multiverse
 mv
 name
