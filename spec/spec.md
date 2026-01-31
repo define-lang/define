@@ -155,8 +155,6 @@ The compiler will, by default, enforce the rules and restrictions of Idiomatic
 Define. However, the compiler may provide the programmer the ability to specify
 configurations that override the rules and restrictions of Idiomatic Define.
 
-All EBNF in this spec is written assuming we are parsing Idiomatic Define.
-
 ## Comments
 
 Proposals:
