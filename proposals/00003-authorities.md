@@ -67,12 +67,14 @@ leave for another proposal.
 
 ### Allowed Characters
 
-By default, Define only allows lowercase ASCII letters, digits, `_`, `-`, `/`,
-and `.` in authority names. Other characters may be allowed by configuration,
-but `:` is never allowed.
+Define only allows lowercase ASCII letters, digits, `_`, `-`, `/`, and `.` in
+authority names.
 
 Authorities may not end with a `/` or `.` (just to ensure we always have one
 canonical form).
+
+Before the first `/`, the only characters allowed are characters that would be
+valid in a domain name: lowercase ASCII letters, digits, and `-`.
 
 ### Reserved Authority Names
 
@@ -90,6 +92,9 @@ The following authority names are reserved for use by Define itself:
 The standard library does not need to specify an authority. It may specify its
 universe simply as `standard` with no authority, so standard library names look
 like: `quality<standard:/integer>`.
+
+When Define tooling needs to represent the `standard` universe internally, they
+may represent it as `define:standard`.
 
 ## A Real Program
 
@@ -123,6 +128,20 @@ registry, unlike a domain name.
 
 In terms of why we need authorities, they are the only solution that I'm aware
 of that solves all of the problems mentioned above in the Problems section.
+
+### Why Ban Unicode?
+
+We ban Unicode characters in authorities to prevent typosquatting. In the
+future, we may create a more nuanced restriction that allows Unicode in the path
+component (like, the part that would be after the domain name, in a URL) of an
+authority, though we would need protections against typosquatting if we did
+that.
+
+You might ask, "But what about International Domain Names?" Those have not
+really gained traction except in a few places, and they have a lot of
+typosquatting issues. For security and simplicity, I don't intend for Define to
+support them as authorities (you have to use the ugly Punycode translation,
+sorry).
 
 ### Why Not Like Go?
 

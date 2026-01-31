@@ -147,6 +147,10 @@ if you wanted a universe to represent something like C, the language, you'd want
 to name it `c_lang` or something like that. It's just too easy for concepts to
 conflict when you allow single-character universe names.
 
+Note that we also explicitly ban all Unicode characters outside of ASCII.
+Unicode creates a typosquatting nightmare. If we ever did allow Unicode, we
+would have to be very careful about how we do it.
+
 I considered other syntaxes for universes. Here they are and why we didn't go
 with them.
 
