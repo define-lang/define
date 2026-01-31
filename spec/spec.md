@@ -270,3 +270,31 @@ If configuration allows `/` in local names, it must be escaped.
 ```ebnf
 local_name = lowercase_ascii_with_underscore | { ? allowed name characters ? }
 ```
+
+### Global Name Syntax
+
+Proposals:
+
+- [DLP 5: Global Names, Local Names, and Scopes](../proposals/00005-global-names-local-names-and-scopes.md)
+
+Global names have four components:
+
+1. Multiverse
+2. Authority
+3. Universe
+4. Path
+
+Each component is separated by `:`. If configuration allows any of the four
+components to contain a `:`, it must be escaped with `\`.
+
+The first three components combine to form what is called a "fully-qualified
+universe name," or "FQUN."
+
+```ebnf
+fqun =
+    ( multiverse, ":", authority, ":", universe, ":"
+    | authority, ":", universe, ":"
+    | universe, ":"
+    | "" ) ;
+global_name = fqun, global_name_path ;
+```
