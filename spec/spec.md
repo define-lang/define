@@ -250,3 +250,12 @@ in source code to NFC without prompting the user.
 
 The following characters must always be escaped with `\` to appear in
 `name_content`: `\`, `<`, `>`.
+
+### Local vs Global Name Syntax
+
+There are two types of names defined by the programmer that can be in
+`name_content`: "local names" and "global names."
+
+```ebnf
+name_content = local_name | global_name
+```
