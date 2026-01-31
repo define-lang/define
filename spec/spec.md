@@ -298,3 +298,15 @@ fqun =
     | "" ) ;
 global_name = fqun, global_name_path ;
 ```
+
+#### Path
+
+The "path" component of a global name may contain the exact same characters as a
+local name, plus `/`. A path must start with `/` and must contain at least one
+valid local name character after the starting `/`.
+
+```ebnf
+global_name_path = "/", local_name, { "/", local_name } ;
+```
+
+Unlike local names, `/` in a path does not need to be escaped.
