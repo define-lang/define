@@ -51,10 +51,8 @@ program was named `my_program` we could refer to the quality `/core/clock` as
 
 ### Name Restrictions
 
-Universe names should be restricted to ASCII letters, digits, and `_`. In
-particular, the `:` character must not be allowed in universe names. We also
-reserve the characters `/` and `@` for potential future use, and thus universe
-names may not contain those characters.
+Universe names must be restricted to ASCII letters, digits, and `_`. A universe
+name may not start or end with `_`.
 
 It may become necessary to allow other characters in universe names in order to
 represent programs in other languages, in which case Define may provide a
@@ -131,6 +129,11 @@ define the quality<my_program:/math/adder> {
 
 We use `:` because it will almost never be in any name in Define, and will
 rarely be in a file or directory name on any computer.
+
+We ban `_` at the start and end of universe names because it allows for too much
+confusion between package names. Plus, there's a chance that something on a
+computer will treat `_` at the start of names specially, since so many systems
+use that as a convention to mean "private" or "hidden."
 
 I considered other syntaxes for universes. Here they are and why we didn't go
 with them.
