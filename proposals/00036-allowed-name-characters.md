@@ -75,8 +75,9 @@ options.
 
 In Idiomatic Define, the "name" portion of a local name or fully-qualified
 universe name may only contain lowercase ASCII letters, ASCII digits, `_`, and
-`/`. Local names in Idiomatic Define may not start with a digit, and global
-names may not have a digit as the first character to appear after the last `/`.
+`/`. Local names in Idiomatic Define may not start with a digit. Global names in
+Idiomatic Define may not have a digit as the first character to appear after any
+`/`.
 
 All names in Idiomatic Define are written using `snake_case`, with all lowercase
 characters and underscores between words. So the name "this is a B train"
@@ -185,8 +186,8 @@ option).
 
 Idiomatic Define forbids starting names with digits because many other
 programming languages cannot have identifiers that start with digits. Thus,
-starting a name with a digit would prevent Define from translating into many
-other languages.
+starting a name (or a path segment, in global names) with a digit would prevent
+Define from translating into many other languages.
 
 ### Name Configurations
 
