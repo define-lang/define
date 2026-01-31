@@ -320,3 +320,31 @@ If configuration allows the path to contain a `:`, it must be escaped with `\`.
 ```ebnf
 global_name_path = "/", local_name, { "/", local_name } ;
 ```
+
+#### Universe
+
+Universe names may only contain ASCII letters, digits, and `_`. Configuration
+may not allow any other characters in universe names.
+
+In a codebase written in Idiomatic Define, the universe name of that codebase
+(as defined later in this spec) may not contain uppercase ASCII letters.
+
+```ebnf
+universe_char = uppercase_ascii | lowercase_ascii | digit | "_" ;
+universe      = universe_char, { universe_char } ;
+```
+
+##### Reserved Universe Names
+
+The following universe names are reserved:
+
+- `standard`: reserved for the Define Standard Library.
+- `example`: reserved for use in documentation examples. (Define tooling may
+  have a mode that allows this name to be used when validating that
+  documentation examples have the correct syntax.)
+
+Reserved names are reserved case-insensitively; thus `standard`, `Standard`, and
+`sTanDarD` are all reserved.
+
+Define tools must refuse to download, create, or interact with universes that
+have reserved names, except as specified by this specification.
