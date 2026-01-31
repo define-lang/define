@@ -48,6 +48,10 @@ has at least a general understanding of the concepts described there.
 At a high level, the language's design is guided also by our
 [Principles](principles.md) and [Requirements](requirements.md).
 
+Whenever possible, this spec defines concepts before referencing them. As such,
+later sections build on or modify earlier sections. If there is a conflict, the
+section that appears later in this spec "wins."
+
 ## A Note About Undefined Behavior
 
 Define is intended to be a very strict language. Any syntax or semantics not
