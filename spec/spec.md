@@ -351,6 +351,7 @@ The following names are also reserved, to avoid confusion:
 
 ```
 authority
+define
 fqun
 local
 multiverse
