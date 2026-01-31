@@ -347,6 +347,21 @@ The following universe names are reserved:
   have a mode that allows this name to be used when validating that
   documentation examples have the correct syntax.)
 
+The following names are also reserved, to avoid confusion:
+
+```
+authority
+fqun
+multiverse
+mv
+name
+type
+universe
+```
+
+Finally, a list of small common English words listed in [small_common_words.txt]
+are reserved.
+
 Reserved names are reserved case-insensitively; thus `standard`, `Standard`, and
 `sTanDarD` are all reserved.
 
