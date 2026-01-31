@@ -326,12 +326,16 @@ global_name_path = "/", local_name, { "/", local_name } ;
 Universe names may only contain ASCII letters, digits, and `_`. Configuration
 may not allow any other characters in universe names.
 
+Universe names must contain at least two characters, and may not start or end
+with `_`.
+
 In a codebase written in Idiomatic Define, the universe name of that codebase
 (as defined later in this spec) may not contain uppercase ASCII letters.
 
 ```ebnf
-universe_char = uppercase_ascii | lowercase_ascii | digit | "_" ;
-universe      = universe_char, { universe_char } ;
+universe_boundary_char = uppercase_ascii | lowercase_ascii | digit ;
+universe_char          = universe_boundary_char | "_" ;
+universe               = universe_boundary_char, { universe_char }, universe_boundary_char ;
 ```
 
 ##### Reserved Universe Names
