@@ -141,6 +141,12 @@ confusion between package names. Plus, there's a chance that something on a
 computer will treat `_` at the start of names specially, since so many systems
 use that as a convention to mean "private" or "hidden."
 
+We require at least two characters because a single character can't convey
+sufficient information to describe what a universe is in almost any case. Even
+if you wanted a universe to represent something like C, the language, you'd want
+to name it `c_lang` or something like that. It's just too easy for concepts to
+conflict when you allow single-character universe names.
+
 I considered other syntaxes for universes. Here they are and why we didn't go
 with them.
 
