@@ -217,7 +217,7 @@ allowed in this section of a name, provided they obey the following restriction
 rules."
 
 ```ebnf
-{? allowed name characters ?}
+{ ? allowed name characters ? }
 ```
 
 #### Banned Unicode Codepoints
@@ -258,4 +258,15 @@ There are two types of names defined by the programmer that can be in
 
 ```ebnf
 name_content = local_name | global_name
+```
+
+### Local Name Syntax
+
+In Idiomatic Define, local names only contain lowercase ASCII letters and `_`.
+However, configuration may override this, changing the parser's restrictions.
+
+If configuration allows `/` in local names, it must be escaped.
+
+```ebnf
+local_name = lowercase_ascii_with_underscore | { ? allowed name characters ? }
 ```
