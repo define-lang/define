@@ -248,8 +248,8 @@ in source code to NFC without prompting the user.
 
 #### Escapes
 
-The following characters must always be escaped `\` to appear in `name_content`:
-`\`, `<`, `>`.
+The following characters must always be escaped with `\` to appear in
+`name_content`: `\`, `<`, `>`.
 
 ### Local vs Global Name Syntax
 
