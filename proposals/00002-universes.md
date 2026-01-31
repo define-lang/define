@@ -89,7 +89,7 @@ The language must reserve a universe name for the standard library: `standard`.
 It should also reserve all small, common English words, as well as any word that
 sounds like a universe that might be part of Define itself or that are commonly
 used in examples of Define in documentation. (For example, all top-level Define
-concepts, such as the word "universe," "multiverse," "type," "name," "fqdn",
+concepts, such as the word "universe," "multiverse," "type," "name," "fqun",
 etc. should be reserved, as well as things that sound like they would be part of
 the language in other languages: `std`, `stdlib`, etc.)
 
