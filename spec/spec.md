@@ -135,6 +135,9 @@ Exceptions:
 
 ## Lexical Elements
 
+There are a few EBNF productions that are frequently re-used in this spec, so
+they are defined here.
+
 ```ebnf
 lowercase_ascii = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
     | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
@@ -192,16 +195,56 @@ typed_name = name_type, "<", name_content, ">" ;
 name_type  = "position" | "action" ;
 ```
 
-### Local and Global Names
+Define Language Proposals sometimes sometimes use the term "name" to mean
+`typed_name`, but also sometimes to mean `name_content`. The EBNF in this spec
+clarifies the actual intent when there is ambiguity.
 
-Define has two types of names: local names and global names.
+### Restricted Characters in `name_content`
 
-In Idiomatic Define, local names only contain `lowercase_with_ascii`. However,
-configuration may override this, changing the parser's restrictions.
+Proposals:
+
+- [DLP 36: Allowed Name Characters](../proposals/00036-allowed-name-characters.md)
+
+As described below in various sections, Define allows configuration to exist
+that changes what characters are allowed in names. However, regardless of what
+the configuration says, there are certain rules that always override the
+configuration.
+
+This EBNF production is intended to indicate "the characters configured to be
+allowed in this section of a name, provided they obey the following restriction
+rules."
 
 ```ebnf
-local_name = lowercase_ascii_with_underscore
-name_content = local_name | global_name
+{? allowed name characters ?}
 ```
 
-Global names have more pieces and require more explanation.
+#### Banned Unicode Codepoints
+
+The following Unicode codepoints are banned in names and may never be allowed by
+configuration:
+
+- `U+0000` through `U+001F` (control characters)
+- `U+007F` through `U+009F` (extended control characters)
+- `U+00A0` (non-breaking space)
+
+If configuration allows characters that violate
+[UAX #31](https://www.unicode.org/reports/tr31/) `ID_Start` or `ID_Continue`, an
+additional configuration value must be specified indicating the user
+acknowledges unsafe characters are allowed.
+
+Allowing these characters is considered an error in the configuration file and
+Define tooling must refuse to parse files if configuration violates these rules.
+
+#### Normalization
+
+If configuration allows characters requiring normalization per
+[UAX #15](https://unicode.org/reports/tr15/), the parser normalizes names to
+Normalization Form C (NFC). Thus, Define considers two `name_content` values to
+be identical if they have the same Normalization Form C. Tools that
+automatically modify Define source code files may rewrite `name_content` bytes
+in source code to NFC without prompting the user.
+
+#### Escapes
+
+The following characters must always be escaped `\` to appear in `name_content`:
+`\`, `<`, `>`.
