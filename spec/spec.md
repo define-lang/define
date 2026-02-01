@@ -544,6 +544,9 @@ Any directory that contains the path `.define/project/config.defcl` is a project
 root. The existence of that file creates a project root regardless of its
 contents.
 
+Note that this spec section thus defines a new configuration directory called
+`project`. At this time, `config.defcl` is its only contents.
+
 Any given universe has a single directory that is its project root.
 
 ### Tools Must Be Invoked from the Root
