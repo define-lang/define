@@ -713,11 +713,16 @@ that not all blocks create local scopes.
 
 ### Parent Scopes
 
-The "direct parent scope" of any code in Define is the scope in which the code
-is written.
+The "current scope" of any code in Define is the scope in which the code is
+written.
 
-When this spec refers to a "transitive parent scope," it means the direct parent
-scope, the parent's parent, and so on, up to and including the global scope.
+When this spec refers to a "transitive parent scope," it means the current
+scope, the current scope's current scope, and so on, up to and including the
+global scope.
+
+"Transitive child scopes" would have the opposite meaning, starting from the
+current scope and walking down the scope chain, including all scopes defined
+within the current scope.
 
 ### No Name Conflicts
 
@@ -753,3 +758,21 @@ local name format. Chained names must not be used where local names are valid.
 
 Definitions inside a local scope must use local names. Defining a global name
 inside a local scope is an error.
+
+### Global Name Short Forms
+
+Proposals:
+
+- [DLP 27: Shortening Common Names](../proposals/00027-shortening-common-names.md)
+
+A "short global name" is a global name where the FQUN is omitted (thus only the
+path is used).
+
+When a global name definition creates a local scope, references to other global
+names may appear in that scope and its transitive child scopes. The following
+rules apply to those references:
+
+- If the referenced global name has the same FQUN as the enclosing definition,
+  the reference must use the short form. Using the full FQUN is an error.
+- If the referenced global name has a different FQUN, the reference must include
+  the full FQUN. Using the short form is an error.
