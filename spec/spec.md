@@ -508,7 +508,9 @@ the extension `.defcl` and are written in the
 [Define Configuration Language](dcl/spec.md).
 
 Define tooling favors using configuration in configuration directories over
-using command line flags whenever reasonable.
+using command line flags whenever reasonable. Define tooling also strongly
+attempts to avoid ever defining or using environment variables for
+configuration.
 
 ### Third-Party Configurations
 
