@@ -641,7 +641,7 @@ command-line flag or configuration:
 
 - Fail with an error indicating the name is undefined.
 - Detect a project root in the current working directory and try to resolve the
-  global name in a filesystem context.
+  global name in a filesystem context. This is the compiler's default behavior.
 
 Any path-based restrictions above apply only when needing to resolve global
 names in a filesystem context.
