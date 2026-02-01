@@ -148,6 +148,7 @@ lowercase_ascii = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k
     | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
 uppercase_ascii = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L"
     | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
+newline = "\n"
 ```
 
 ## Idiomatic Define
@@ -645,3 +646,19 @@ command-line flag or configuration:
 
 Any path-based restrictions above apply only when needing to resolve global
 names in a filesystem context.
+
+## Statements
+
+Proposals:
+
+- [DLP 16: Statement Terminators](../proposals/00016-statement-terminators.md)
+
+In Define, a statement is either:
+
+- Code that ends in `.` followed by a newline.
+- Code that has `{` followed by a newline, though `{` is not part of the
+  statement.
+
+```ebnf
+terminator = ".", newline
+```
