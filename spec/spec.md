@@ -451,9 +451,12 @@ When a multiverse name is specified, an authority and universe must also be
 specified.
 
 Multiverse names may only contain lowercase ASCII characters, digits, and `_`.
+They must be at least two characters long and may not start or end with `_`.
 
-```ebnf
-multiverse = lowercase_ascii | digit | "_" ;
+````ebnf
+multiverse_boundary_char = lowercase_ascii | digit ;
+multiverse_char = multiverse_boundary_char | "_" ;
+multiverse = multiverse_boundary_char, { multiverse_char }, multiverse_boundary_char ;
 ```
 
 ##### Reserved Multiverse Names
@@ -482,3 +485,4 @@ for public consumption. Define tools may accept this multiverse.
 tools will refuse to download any package from the `local` multiverse, expecting
 code in that multiverse to only be on the local machine. However, Define tools
 may create and interact with such code locally.
+````
