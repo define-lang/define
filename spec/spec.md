@@ -686,3 +686,70 @@ block_close = "}", newline ;
 
 In a non-filesystem context, all whitespace restrictions (including newline
 requirements) on blocks are relaxed.
+
+## Scopes
+
+Proposals:
+
+- [DLP 5: Global Names, Local Names, and Scopes](../proposals/00005-global-names-local-names-and-scopes.md)
+- [DLP 15: Local Name Scope Syntax](../proposals/00015-local-name-scope-syntax.md)
+
+Define has two types of scopes: a single scope called the "global scope," and
+many scopes called "local scopes."
+
+### Global Scope
+
+Code written outside of any block is in the global scope. Restrictions on the
+global scope:
+
+- The global scope may define only global names.
+- Global names may be defined only in the global scope.
+
+### Local Scopes
+
+Any block that can directly contain a definition is a local scope. For the sake
+of clarity, this spec will specify whenever syntax creates a local scope. Note
+that not all blocks create local scopes.
+
+### Parent Scopes
+
+The "direct parent scope" of any code in Define is the scope in which the code
+is written.
+
+When this spec refers to a "transitive parent scope," it means the direct parent
+scope, the parent's parent, and so on, up to and including the global scope.
+
+### No Name Conflicts
+
+A `typed_name` defined in any scope may not be identical to any other
+`typed_name` defined in its transitive parent scopes.
+
+### Referring to Names Within Scopes
+
+A reference to a local name is valid only if the name is defined in a transitive
+parent scope.
+
+A reference to a local name that is not defined in a transitive parent scope is
+an error.
+
+### Referring to Inner Definitions
+
+Names can be chained with `::` to refer to inner definitions. Each subsequent
+name in the chain must be a name either defined directly inside the previous
+name or assigned to a dimension point via syntax described later in this spec.
+The full name thus created is called a "chained name."
+
+```ebnf
+chained_name = typed_name, { "::", typed_name } ;
+```
+
+### Local Naming is Enforced
+
+When a local name reference is valid in the current scope (including any
+transitive parent scope), it must be written as just a single `typed_name` in
+local name format. Chained names must not be used where local names are valid.
+
+### No Inner Global Definitions
+
+Definitions inside a local scope must use local names. Defining a global name
+inside a local scope is an error.
