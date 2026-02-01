@@ -776,3 +776,32 @@ rules apply to those references:
   the reference must use the short form. Using the full FQUN is an error.
 - If the referenced global name has a different FQUN, the reference must include
   the full FQUN. Using the short form is an error.
+
+## Defining Qualities
+
+Proposals:
+
+- [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
+- [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
+
+Potential positions and potential actions are referred to as "qualities."
+Qualities can be assigned to dimension points using syntax and semantics
+described later in this spec.
+
+The syntax for defining qualities is: `define the potential` followed by a space
+and a typed name.
+
+Quality definitions may be followed by a block, in which case that block creates
+a local scope, or they may simply end with a terminator.
+
+Quality definitions that end with a terminator are considered to be identical to
+quality definitions that have an empty block following them. Explicitly writing
+a quality definition with an empty block is forbidden---the statement terminator
+syntax must be used to express empty definitions.
+
+```ebnf
+quality_definition = "define the potential", " ", typed_name ;
+quality_definition_terminated = quality_definition, terminator ;
+```
+
+The contents of the blocks are defined in later sections.
