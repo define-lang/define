@@ -102,8 +102,8 @@ and non-filesystem contexts.
 - The only valid line terminator is `U+000A` (line feed).
 - A source file must end with a newline.
 - There may not be a space (`U+0020`) immediately before a newline.
-- Unless otherwise specified, a newline must immediately follow a statement
-  terminator, `{`, or `}`.
+- Unless otherwise specified, a newline or one or more spaces followed by a
+  comment must immediately follow a statement terminator, `{`, or `}`.
 
 ### Invisible Characters
 
@@ -454,7 +454,7 @@ specified.
 Multiverse names may only contain lowercase ASCII characters, digits, and `_`.
 They must be at least two characters long and may not start or end with `_`.
 
-````ebnf
+```ebnf
 multiverse_boundary_char = lowercase_ascii | digit ;
 multiverse_char = multiverse_boundary_char | "_" ;
 multiverse = multiverse_boundary_char, { multiverse_char }, multiverse_boundary_char ;
@@ -486,6 +486,7 @@ for public consumption. Define tools may accept this multiverse.
 tools will refuse to download any package from the `local` multiverse, expecting
 code in that multiverse to only be on the local machine. However, Define tools
 may create and interact with such code locally.
+
 ````
 
 ## Configuration Directory
@@ -655,12 +656,12 @@ Proposals:
 
 In Define, a statement is either:
 
-- Code that ends in `.` followed by a newline.
-- Code that has `{` followed by a newline, though `{` is not part of the
-  statement.
+- Code that ends in `.` followed by a newline or a comment.
+- Code that has `{` followed by a newline or a comment, though `{` is not part
+  of the statement.
 
 ```ebnf
-terminator = ".", newline
+terminator = ".", ( newline | " ", { " " }, comment, newline )
 ```
 
 ## Blocks
@@ -805,3 +806,4 @@ quality_definition_terminated = quality_definition, terminator ;
 ```
 
 The contents of the blocks are defined in later sections.
+````
