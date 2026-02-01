@@ -528,3 +528,67 @@ may delete that universe's configuration files from the project root. If such
 configuration exists, the tool must clearly inform the developer that removing
 the library will also remove the configuration. Developers may choose to retain
 the configuration when informed it will be deleted.
+
+## Project Roots
+
+Proposals:
+
+- [DLP 6: Project Roots](../proposals/00006-project-roots.md)
+
+All Define codebases that exist on a filesystem have a "project root," which is
+the directory that is the super-directory of all the code in the project. This
+directory is the directory represented by the first `/` in the path component of
+a global name.
+
+Any directory that contains the path `.define/project/config.defcl` is a project
+root. The existence of that file creates a project root regardless of its
+contents.
+
+Any given universe has a single directory that is its project root.
+
+### Tools Must Be Invoked from the Root
+
+When the compiler or any Define language tool is invoked in a filesystem
+context, the current directory must be a project root. Otherwise, the tool must
+refuse to execute and return an error.
+
+Tool implementers may provide a command-line flag that discovers a project root
+in a directory above the current directory. In that case, the tool discovers
+that directory and changes its current working directory to that directory.
+
+The compiler's current working directory must remain the project root for the
+lifetime of the compiler (with exceptions as specified elsewhere in this spec).
+
+### Sub-Projects
+
+Define assumes that all code it sees in any subdirectory of a project root is
+part of the same project unless the project configuration says otherwise. If
+there are project roots in a directory structure below the current root, the
+current root's configuration must indicate the existence of those "sub-roots."
+The parent configuration must list each sub-root by path relative to this
+project root, and must explicitly provide the fully-qualified universe name
+expected in that sub-root.
+
+When the compiler reads the configuration in a sub-root, the file
+`.define/project/config.defcl` in that sub-root must declare the same
+fully-qualified universe name that the parent configuration specified for that
+sub-root.
+
+Sub-roots are only compiled when the code indicates that compiling them is
+necessary, not simply because they are listed in the configuration. When a
+compiler or Define tool compiles a sub-root, it creates a new context, switches
+its current working directory to that sub-root, runs a complete compilation on
+that sub-root as its own universe, then returns to compiling the parent root.
+
+### Duplicate Universes are Forbidden
+
+No two sub-roots that are actually compiled during a compilation may contain the
+same fully-qualified universe name.
+
+### Non-Filesystem Contexts
+
+When code is compiled via a non-filesystem context, the project root only
+becomes relevant when the compiler discovers it needs information about the
+project root. The compiler does not look for or require a project root until it
+needs one. The compiler may accept a command-line flag to indicate a project
+root that should be used during non-filesystem compilation.
