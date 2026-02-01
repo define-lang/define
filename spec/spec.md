@@ -640,8 +640,8 @@ referenced. Otherwise, the compiler has two options that can be controlled by a
 command-line flag or configuration:
 
 - Fail with an error indicating the name is undefined.
-- Detect a project root and try to resolve the global name in a filesystem
-  context.
+- Detect a project root in the current working directory and try to resolve the
+  global name in a filesystem context.
 
 Any path-based restrictions above apply only when needing to resolve global
 names in a filesystem context.
