@@ -1,8 +1,8 @@
 import textwrap
 
-from compiler import ast
-from compiler.parser import Parser
-from compiler.transformer import DefineTransformer
+from compiler.prototype import ast
+from compiler.prototype.parser import Parser
+from compiler.prototype.transformer import DefineTransformer
 
 # Shared parser instance to avoid rebuilding the Lark parser for each test
 _parser = Parser()

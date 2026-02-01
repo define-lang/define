@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from compiler import ast
+from compiler.prototype import ast
 
 # Type aliases for commonly used dictionary types
 # Maps type name to its declaration

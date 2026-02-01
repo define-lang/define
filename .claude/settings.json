@@ -22,7 +22,9 @@
         "Bash(uv --help:*)",
         "Bash(source .venv/bin/activate)",
         "Bash(pytest:*)",
-        "Bash(uv run pytest:*)"
+        "Bash(uv run pyright:*)",
+        "Bash(uv run pytest:*)",
+        "Bash(uv run ruff:*)"
       ]
     }
   }

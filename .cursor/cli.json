@@ -16,7 +16,9 @@
       "Shell(uv --help)",
       "Shell(source .venv/bin/activate)",
       "Shell(pytest)",
-      "Shell(uv run pytest)"
+      "Shell(uv run pyright)",
+      "Shell(uv run pytest)",
+      "Shell(uv run ruff)"
     ],
     "deny": [
       "Shell(pip)",

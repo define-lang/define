@@ -1,6 +1,6 @@
 import pytest
 
-from compiler import ast
+from compiler.prototype import ast
 
 # Program.get_abstract_universe tests
 

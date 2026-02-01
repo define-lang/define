@@ -4,7 +4,7 @@ import lark
 import pytest
 from lark.exceptions import UnexpectedCharacters, UnexpectedToken
 
-from compiler.parser import Parser
+from compiler.prototype.parser import Parser
 
 # Shared parser instance to avoid rebuilding the Lark parser for each test
 _parser = Parser()
