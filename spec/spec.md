@@ -412,8 +412,8 @@ segments separated by `/`. It may contain lowercase ASCII letters, digits, `_`,
 
 ```ebnf
 authority_path_char = lowercase_ascii | digit | "_" | "-" | "." | "~" ;
-authority_path_segment_char = lowercase_ascii | digit | "_" | "-" | "~" ;
-authority_path_segment = authority_path_segment_char, { authority_path_char } ;
+authority_path_segment_start = lowercase_ascii | digit | "_" | "-" | "~" ;
+authority_path_segment = authority_path_segment_start, { authority_path_char } ;
 authority_path = "/", authority_path_segment, { "/", authority_path_segment } ;
 ```
 
