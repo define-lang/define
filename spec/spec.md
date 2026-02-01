@@ -662,3 +662,27 @@ In Define, a statement is either:
 ```ebnf
 terminator = ".", newline
 ```
+
+## Blocks
+
+- [DLP 15: Local Name Scope Syntax](../proposals/00015-local-name-scope-syntax.md)
+
+A block is any code enclosed by `{` and `}`. Blocks are always preceded by
+statements without a terminating `.`.
+
+The opening `{` must be on the same line as the statement that creates the
+block, with exactly one space immediately before `{`.
+
+The closing `}` must be on a line that contains only whitespace and `}`. The
+leading whitespace before `}` must be identical to the leading whitespace before
+the statement that opened the scope.
+
+```ebnf
+block_open = " ", "{", newline ;
+block_close = "}", newline ;
+```
+
+### Non-Filesystem Contexts
+
+In a non-filesystem context, all whitespace restrictions (including newline
+requirements) on blocks are relaxed.
