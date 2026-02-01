@@ -78,8 +78,9 @@ The domain portion of an authority must be at least two characters long.
 
 The path is everything after the first `/`. If present, it starts with `/` and
 is made of one or more segments separated by `/`. Each segment may only contain
-lowercase ASCII letters, digits, `_`, `-`, and `.`. There cannot be empty
-segments, so `//` and a trailing `/` are forbidden.
+lowercase ASCII letters, digits, `_`, `-`, `.`, and `~`. A segment may not start
+with `.`, but it may contain `.` elsewhere. There cannot be empty segments, so
+`//` and a trailing `/` are forbidden.
 
 ### Reserved Authority Names
 

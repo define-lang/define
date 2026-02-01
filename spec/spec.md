@@ -408,11 +408,12 @@ authority_domain =
 
 The path is the portion after the first `/`. It is composed of one or more
 segments separated by `/`. It may contain lowercase ASCII letters, digits, `_`,
-`-`, and `.`.
+`-`, `.`, and `~`. A path segment may not start with `.`.
 
 ```ebnf
-authority_path_char = lowercase_ascii | digit | "_" | "-" | "." ;
-authority_path_segment = authority_path_char, { authority_path_char } ;
+authority_path_char = lowercase_ascii | digit | "_" | "-" | "." | "~" ;
+authority_path_segment_char = lowercase_ascii | digit | "_" | "-" | "~" ;
+authority_path_segment = authority_path_segment_char, { authority_path_char } ;
 authority_path = "/", authority_path_segment, { "/", authority_path_segment } ;
 ```
 
