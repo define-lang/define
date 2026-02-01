@@ -65,21 +65,21 @@ that own a domain) or simple URLs without a scheme, fragment, or query string
 package). However, specifying that and how security works is complex enough to
 leave for another proposal.
 
-### Allowed Characters
+### Format
 
-Define only allows lowercase ASCII letters, digits, `_`, `-`, `/`, and `.` in
-authority names.
+An authority has two parts: a domain, and an optional path.
 
-Authorities may not end with a `/` or `.` (just to ensure we always have one
-canonical form). They also may not start with `-`.
+The domain is everything before the first `/`. It must be a valid lowercase
+domain name (though it does not have to contain a `.`). That means it can only
+contain lowercase ASCII letters, digits, `.`, and `-`, and it may not start or
+end with `-` or `.`.
 
-Before the first `/`, the only characters allowed are characters that would be
-valid in a domain name: lowercase ASCII letters, digits, `.`, and `-`. Also,
-that segment of the authority may not end with `-`.
+The domain portion of an authority must be at least two characters long.
 
-### Minimum Length
-
-Authority names must be at least two characters long.
+The path is everything after the first `/`. If present, it starts with `/` and
+is made of one or more segments separated by `/`. Each segment may only contain
+lowercase ASCII letters, digits, `_`, `-`, and `.`. There cannot be empty
+segments, so `//` and a trailing `/` are forbidden.
 
 ### Reserved Authority Names
 
