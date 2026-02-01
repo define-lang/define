@@ -1,6 +1,8 @@
-# Cursor Rules for Define Project
+# Rules for Define Project
 
-We are working together to make a programming language based on epistemology.
+We are working together to make a new type of programming language that has
+never existed before.
+
 See [spec/spec.md] for the language specification.
 
 ## Python Execution
@@ -9,15 +11,16 @@ See [spec/spec.md] for the language specification.
 - Use `uv run` to execute Python code.
 - Use `uv sync` to install dependencies.
 
-## Code Formatting
+## Formatting
 
 - Formatting is done with `uv run ruff format`
 - Format all code after making a change.
+- Format all .md files with `prettier --write`
 
 ## Linting
 
 - Linting must be done with both `uv run pyright` and `uv run ruff check`.
-- Always run both linters after making a change:
+- Always run both linters after making a to Python files:
   - `uv run pyright` for type checking
   - `uv run ruff check` for code quality checks
 - Fix all linting errors that are reported.
@@ -30,6 +33,12 @@ See [spec/spec.md] for the language specification.
 - Never do dynamic imports. (Never write an import statement inside of a
   function.)
 - Never do conditional imports.
+
+## Exceptions
+
+- Do not swallow exceptions. Prefer to let exceptions bubble up to the user.
+- Only catch the specific exceptions that the code throws. Never
+  `catch Exception`.
 
 ## Comments
 
