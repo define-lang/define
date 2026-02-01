@@ -176,7 +176,7 @@ comment      = "#", comment_text ;
 comment_text = { ? any character allowed per Define parsing rules, excluding U+000A ? } ;
 ```
 
-## Naming
+## Name Format
 
 ### Types of Names
 
@@ -486,3 +486,45 @@ tools will refuse to download any package from the `local` multiverse, expecting
 code in that multiverse to only be on the local machine. However, Define tools
 may create and interact with such code locally.
 ````
+
+## Configuration Directory
+
+Proposals:
+
+- [DLP 10: Configuration Directory](../proposals/00010-configuration-directory.md)
+
+All configuration that affects Define tooling goes into a `.define`
+subdirectory. The direct contents of `.define` must only be subdirectories,
+never files. These subdirectories are referred to as "configuration
+directories," and may themselves contain both subdirectories and files.
+
+Configuration directory names may contain only lowercase ASCII characters and
+the underscore character. Define reserves all configuration directory names for
+its own use. Third-party libraries and tools may not create any new
+configuration directory name.
+
+Files that contain configuration values inside configuration directories have
+the extension `.defcl` and are written in the
+[Define Configuration Language](dcl/spec.md).
+
+Define tooling favors using configuration in configuration directories over
+using command line flags whenever reasonable.
+
+### Third-Party Configurations
+
+`x` is the configuration directory for all third-party configuration.
+
+The `x` directory contains a subdirectory structure that matches the multiverse,
+authority, and universe of the tool that wishes to create a configuration file.
+For example, the universe `mv:example.com:math_utils` places any configuration
+it needs into `.define/x/mv/example.com/math_utils/`.
+
+Third-party configurations may contain anything. If they contain configuration
+values, they are strongly encouraged to write them in the Define Configuration
+Language.
+
+When Define tooling removes a universe from being a dependency of a codebase, it
+may delete that universe's configuration files from the project root. If such
+configuration exists, the tool must clearly inform the developer that removing
+the library will also remove the configuration. Developers may choose to retain
+the configuration when informed it will be deleted.
