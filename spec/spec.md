@@ -597,3 +597,51 @@ becomes relevant when the compiler discovers it needs information about the
 project root. The compiler does not look for or require a project root until it
 needs one. The compiler may accept a command-line flag to indicate a project
 root that should be used during non-filesystem compilation.
+
+## Resolving Global Names
+
+Proposals:
+
+- [DLP 7: Global Names Match Filesystem Layouts](../proposals/00007-global-names-match-filesystem-layouts.md)
+- [DLP 8: Files Are Loaded By Reference](../proposals/00008-files-are-loaded-by-reference.md)
+
+When the compiler requires the definition of a global name, it must discover
+that definition. We call this "resolving" a global name.
+
+Resolution of global names occurs only after after lexing, parsing, and AST
+transformation of the current file is complete.
+
+### Loading Source Code Files
+
+Define loads source code files only when it must resolve a global name.
+
+In a filesystem context, the path component of a global name must map directly
+to a path on the disk, relative to the project root. However, the source code
+file name ends in `.def` (which the global name does not contain).
+
+### Names Must Match Paths
+
+When reading a source code file, any global name(s) defined in that file must
+match the file's path relative to the project root.
+
+One file may contain multiple definitions of different types as long as they
+share the exact same filesystem path.
+
+### Sub-Root Conflict Detection
+
+The compiler must indicate an error if it discovers that a file is within a
+sub-root that was compiled as part of this compilation, but was loaded as though
+it belonged to a different root.
+
+### Non-Filesystem Contexts
+
+In non-filesystem contexts, global names must be defined before being
+referenced. Otherwise, the compiler has two options that can be controlled by a
+command-line flag or configuration:
+
+- Fail with an error indicating the name is undefined.
+- Detect a project root and try to resolve the global name in a filesystem
+  context.
+
+Any path-based restrictions above apply only when needing to resolve global
+names in a filesystem context.
