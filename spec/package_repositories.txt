@@ -2,12 +2,14 @@ bioconductor
 clojars
 cpan
 cran
+crates
 cratesio
 ctan
 denoland
 dub
 elm_packages
 gnu_elpa
+gradle
 gradle_plugin_portal
 goproxy
 hackage
@@ -16,6 +18,7 @@ hex
 julia_general
 jsr
 luarocks
+maven
 maven_central
 melpa
 nimble
