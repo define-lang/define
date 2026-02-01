@@ -367,8 +367,8 @@ are reserved.
 Reserved names are reserved case-insensitively; thus `standard`, `Standard`, and
 `sTanDarD` are all reserved.
 
-Define tools must refuse to download, create, or interact with universes that
-have reserved names, except as specified by this specification.
+Define tools must refuse to download, create, publish, or interact with
+universes that have reserved names, except as specified by this specification.
 
 #### Authority
 
@@ -433,6 +433,52 @@ contain a `.` are reserved.
 
 Similar to universes, reserved authority names are reserved case-insensitively.
 
-Define tools must refuse to download, create, or interact with universes where
-the authority component of the FQUN contains a reserved name, except as
-specified by this specification.
+Define tools must refuse to download, create, publish, or interact with
+universes where the authority component of the FQUN contains a reserved name,
+except as specified by this specification.
+
+#### Multiverse
+
+Proposals:
+
+- [DLP 4: Multiverses](../proposals/00004-multiverses.md)
+
+When a multiverse is not specified in a fully-qualified universe name, it
+defaults to `local`. The name `local` may not be explicitly written in a
+fully-qualified universe name; it may only be implicitly inferred.
+
+When a multiverse name is specified, an authority and universe must also be
+specified.
+
+Multiverse names may only contain lowercase ASCII characters, digits, and `_`.
+
+```ebnf
+multiverse = lowercase_ascii | digit | "_" ;
+```
+
+##### Reserved Multiverse Names
+
+All names reserved for universes are also reserved for multiverse names.
+
+In addition, the following multiverse names are reserved:
+
+- `mv`
+- Package repository names from other languages: see [package_repositories.txt]
+- Programming language names: see [programming_languages.txt]
+
+Reserved multiverse names are reserved case-insensitively.
+
+Define tools must refuse to download, create, publish, or interact with
+universes where the multiverse component of the FQUN contains a reserved name,
+except as specified by this specification.
+
+##### Special Multiverse Names
+
+`mv` represents the standard multiverse where shared Define code is published
+for public consumption. Define tools may accept this multiverse.
+
+`local` represents code that exists only on a single machine. Code in the
+`local` multiverse may never be published to any package repository. Define
+tools will refuse to download any package from the `local` multiverse, expecting
+code in that multiverse to only be on the local machine. However, Define tools
+may create and interact with such code locally.
