@@ -59,5 +59,6 @@ See [spec/spec.md] for the language specification.
 
 - Avoid adding debug messages to assert calls.
 - Do not write docstrings in tests.
+- Do not add `-> None` return type annotations to test methods.
 - When using `unittest.mock`, always use `patch.object` with `autospec=True`
   instead of `patch`.
