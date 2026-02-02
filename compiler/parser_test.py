@@ -55,6 +55,21 @@ class TestComments:
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
         assert _get_tokens_by_type(tree, "COMMENT") == []
 
+    def test_valid_syntax_in_comment_is_ignored(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "# define the potential position<standard:/ignored>.\n"
+            "define the potential position<standard:/actual>.\n"
+        )
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["actual"]
+
+    def test_control_character_in_comment(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+            p.parse(
+                "# comment with\x01control char\n"
+                "define the potential position<standard:/path>.\n"
+            )
+        assert exc_info.value.char == "\x01"
+
     def test_comment_with_trailing_whitespace(self, p: parser.Parser) -> None:
         with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("# comment with trailing space \n")
@@ -91,6 +106,16 @@ class TestFileEncoding:
     def test_crlf_line_endings(self, p: parser.Parser) -> None:
         with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<standard:/path>.\r\n")
+        assert exc_info.value.char == "\r"
+
+    def test_crlf_line_endings_in_comments(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+            p.parse("# a comment\r\n")
+        assert exc_info.value.char == "\r"
+
+    def test_carriage_return_in_comment(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+            p.parse("# comment with\rcarriage return\n")
         assert exc_info.value.char == "\r"
 
 
@@ -199,6 +224,10 @@ class TestAuthorityDomainFormat:
             "define the potential position<my-host.example.com:my_lib:/path>.\n"
         )
         assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["my-host.example.com"]
+
+    def test_authority_domain_without_dot(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential position<localhost:my_lib:/path>.\n")
+        assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["localhost"]
 
     def test_uppercase_in_authority_domain(self, p: parser.Parser) -> None:
         with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
