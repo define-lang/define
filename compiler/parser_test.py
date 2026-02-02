@@ -80,6 +80,11 @@ class TestComments:
             p.parse("define the potential position<standard:/path>. # comment \n")
         assert exc_info.value.char == " "
 
+    def test_comment_only_file_without_newline(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+            p.parse("# a comment")
+        assert str(exc_info.value.token) == ""
+
 
 class TestStatementTerminators:
     def test_missing_terminator(self, p: parser.Parser) -> None:
