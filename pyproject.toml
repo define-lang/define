@@ -42,6 +42,8 @@ extend-select = [
 "**/*_test.py" = [
     "S101", # Allow assert statements.
     "D100", # Don't require docstrings on test modules.
+    "D101", # Don't require docstrings on test classes.
+    "D102", # Don't require docstrings on test methods.
     "D103", # Don't require docstrings on test functions.
 ]
 
@@ -50,6 +52,9 @@ convention = "pep257"
 
 [tool.pytest.ini_options]
 junit_logging = "all"
+
+[tool.pyright]
+exclude = ["experimental", ".venv"]
 
 [dependency-groups]
 dev = [
