@@ -352,6 +352,26 @@ class TestAuthorityPathFormat:
 
 
 class TestIncompleteStatements:
+    def test_empty_file(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+            p.parse("")
+        assert str(exc_info.value.token) == ""
+
+    def test_file_all_spaces(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+            p.parse("   ")
+        assert exc_info.value.char == " "
+
+    def test_file_spaces_and_newlines_only(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+            p.parse(" \n  \n ")
+        assert exc_info.value.char == " "
+
+    def test_file_all_newlines(self, p: parser.Parser) -> None:
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+            p.parse("\n\n\n")
+        assert str(exc_info.value.token) == ""
+
     def test_multiple_spaces_between_keywords(self, p: parser.Parser) -> None:
         with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define  the potential position<standard:/path>.\n")
