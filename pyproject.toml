@@ -52,6 +52,7 @@ convention = "pep257"
 
 [tool.pytest.ini_options]
 junit_logging = "all"
+norecursedirs = ["experimental"]
 
 [tool.pyright]
 exclude = ["experimental", ".venv"]

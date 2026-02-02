@@ -1,0 +1,39 @@
+%import common.LF -> NEWLINE
+%import common.DIGIT
+%import common.LCASE_LETTER
+%import common.UCASE_LETTER
+
+# Terminals
+PATH_SEGMENT: (LCASE_LETTER | "_") (LCASE_LETTER | DIGIT | "_")*
+MULTIVERSE_NAME.2: /[a-z0-9](?:[a-z0-9_]*[a-z0-9])(?=:[^:]*:[^:]*:\/)/
+AUTHORITY_DOMAIN.1: /[a-z0-9](?:[a-z0-9.-]*[a-z0-9])(?=[^:]*:[^:]*:\/)/
+AUTHORITY_PATH_SEGMENT: (LCASE_LETTER | DIGIT | "_" | "-" | "~") (LCASE_LETTER | DIGIT | "_" | "-" | "." | "~")*
+UNIVERSE_NAME: /[A-Za-z0-9](?:[A-Za-z0-9_]*[A-Za-z0-9])(?=:(?![^:]*:)[^:]*\/)/
+
+# General
+
+# Allow only visible characters in comments.
+# TODO: Disallow invisible Unicode characters per spec.
+COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
+%ignore COMMENT
+
+terminator: "." NEWLINE
+typed_name: "position" "<" global_name ">"
+
+# Global Names
+
+?authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
+authority: AUTHORITY_DOMAIN authority_path?
+
+?fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
+     | authority ":" UNIVERSE_NAME ":"
+     | UNIVERSE_NAME ":"
+
+global_name_path: ("/" PATH_SEGMENT)+
+global_name: fqun global_name_path
+
+quality_definition: "define the potential " typed_name terminator
+
+# Root
+
+start: NEWLINE* quality_definition NEWLINE*
