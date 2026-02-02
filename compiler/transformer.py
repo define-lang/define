@@ -25,6 +25,10 @@ class DefineTransformer(lark.Transformer):
         """Transform an action definition."""
         return ast.ActionDefinition(items[0])
 
+    def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:
+        """Unwrap the definition wrapper rule."""
+        return items[0]
+
     def global_name(self, items: list[ast.Fqun | list[str]]) -> ast.GlobalName:
         """Transform a global name with FQUN and path."""
         fqun = cast("ast.Fqun", items[0])

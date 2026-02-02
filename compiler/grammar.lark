@@ -5,10 +5,10 @@
 
 # Terminals
 PATH_SEGMENT: (LCASE_LETTER | "_") (LCASE_LETTER | DIGIT | "_")*
-MULTIVERSE_NAME.2: /[a-z0-9](?:[a-z0-9_]*[a-z0-9])(?=:[^:]*:[^:]*:\/)/
-AUTHORITY_DOMAIN.1: /[a-z0-9](?:[a-z0-9.-]*[a-z0-9])(?=[^:]*:[^:]*:\/)/
+MULTIVERSE_NAME.2: /[a-z0-9](?:[a-z0-9_]*[a-z0-9])(?=:[^:>]*:[^:>]*:\/)/
+AUTHORITY_DOMAIN.1: /[a-z0-9](?:[a-z0-9.-]*[a-z0-9])(?=[^:>]*:[^:>]*:\/)/
 AUTHORITY_PATH_SEGMENT: (LCASE_LETTER | DIGIT | "_" | "-" | "~") (LCASE_LETTER | DIGIT | "_" | "-" | "." | "~")*
-UNIVERSE_NAME: /[A-Za-z0-9](?:[A-Za-z0-9_]*[A-Za-z0-9])(?=:(?![^:]*:)[^:]*\/)/
+UNIVERSE_NAME: /[A-Za-z0-9](?:[A-Za-z0-9_]*[A-Za-z0-9])(?=:(?![^:>]*:)[^:>]*\/)/
 
 # General
 
@@ -34,6 +34,8 @@ global_name: fqun global_name_path
 position_definition: "define the potential position" "<" global_name ">" terminator
 action_definition: "define the potential action" "<" global_name ">" terminator
 
+definition: position_definition | action_definition
+
 # Root
 
-start: NEWLINE* (position_definition | action_definition) NEWLINE*
+start: NEWLINE* definition (NEWLINE* definition)* NEWLINE*

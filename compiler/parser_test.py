@@ -131,6 +131,64 @@ class TestActionDefinition:
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
 
 
+class TestMultipleDefinitions:
+    def test_multiple_position_definitions(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<example.com:my_lib:/first>.\n"
+            "define the potential position<example.com:my_lib:/second>.\n"
+        )
+        assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == [
+            "example.com",
+            "example.com",
+        ]
+        assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib", "my_lib"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+    def test_multiple_action_definitions(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential action<my_mv:example.com:my_lib:/first>.\n"
+            "define the potential action<my_mv:example.com:my_lib:/second>.\n"
+        )
+        assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv", "my_mv"]
+        assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == [
+            "example.com",
+            "example.com",
+        ]
+        assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib", "my_lib"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+    def test_mixed_position_and_action_definitions(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<example.com:my_lib:/pos>.\n"
+            "define the potential action<my_mv:example.com:my_lib:/act>.\n"
+        )
+        assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv"]
+        assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == [
+            "example.com",
+            "example.com",
+        ]
+        assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib", "my_lib"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["pos", "act"]
+
+    def test_definitions_separated_by_blank_lines(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<standard:/first>.\n"
+            "\n"
+            "define the potential position<example.com:my_lib:/second>.\n"
+        )
+        assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["standard", "my_lib"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+    def test_definitions_separated_by_comments(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<my_mv:example.com:my_lib:/first>.\n"
+            "# a comment between definitions\n"
+            "define the potential position<my_mv:example.com:my_lib:/second>.\n"
+        )
+        assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv", "my_mv"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+
 class TestGlobalNameStructure:
     def test_full_fqun(self, p: parser.Parser) -> None:
         tree = p.parse(
