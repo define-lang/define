@@ -15,6 +15,7 @@
       "Shell(uv lock)",
       "Shell(uv --help)",
       "Shell(source .venv/bin/activate)",
+      "Shell(prettier)",
       "Shell(pytest)",
       "Shell(uv run pyright)",
       "Shell(uv run pytest)",

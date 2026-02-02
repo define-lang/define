@@ -21,6 +21,7 @@
         "Bash(uv lock:*)",
         "Bash(uv --help:*)",
         "Bash(source .venv/bin/activate)",
+        "Bash(prettier:*)",
         "Bash(pytest:*)",
         "Bash(uv run pyright:*)",
         "Bash(uv run pytest:*)",
