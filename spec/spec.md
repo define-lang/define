@@ -168,12 +168,13 @@ Proposals:
 
 - [DLP 11: Comments](../proposals/00011-comments.md)
 
-Define supports single-line comments. A `#` character starts a comment;
-everything from that `#` to the end of the line is ignored by the parser. A `#`
-inside a string literal does not start a comment.
+Define supports single-line comments. A comment may be preceded by any number of
+spaces. A `#` character starts a comment; everything from that `#` to the end of
+the line is ignored by the parser. A `#` inside a string literal does not start
+a comment.
 
 ```ebnf
-comment      = "#", comment_text ;
+comment      = { " " }, "#", comment_text ;
 comment_text = { ? any character allowed per Define parsing rules, excluding U+000A ? } ;
 ```
 
