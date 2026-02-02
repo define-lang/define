@@ -5,10 +5,12 @@ import pytest
 
 from compiler import parser
 
+_parser = parser.Parser()
+
 
 @pytest.fixture
 def p() -> parser.Parser:
-    return parser.Parser()
+    return _parser
 
 
 def _get_tokens_by_type(tree: lark.Tree[lark.Token], token_type: str) -> list[str]:
