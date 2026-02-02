@@ -488,8 +488,6 @@ tools will refuse to download any package from the `local` multiverse, expecting
 code in that multiverse to only be on the local machine. However, Define tools
 may create and interact with such code locally.
 
-````
-
 ## Configuration Directory
 
 Proposals:
@@ -807,4 +805,3 @@ quality_definition_terminated = quality_definition, terminator ;
 ```
 
 The contents of the blocks are defined in later sections.
-````
