@@ -12,12 +12,12 @@ def _parse_and_transform(source: str) -> ast.Program:
     return transformer.transform(tree)
 
 
-def test_quality_definition_transforms_to_program():
+def test_position_definition_transforms_to_program():
     program = _parse_and_transform("define the potential position<standard:/path>.\n")
     assert isinstance(program, ast.Program)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
-    assert isinstance(definition, ast.QualityDefinition)
+    assert isinstance(definition, ast.PositionDefinition)
     assert definition.name.fqun.universe == "standard"
     assert definition.name.path == ["path"]
 

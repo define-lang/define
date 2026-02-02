@@ -11,17 +11,15 @@ from compiler import ast
 class DefineTransformer(lark.Transformer):
     """Transforms the parse tree from Parser into AST nodes."""
 
-    def start(self, items: list[ast.QualityDefinition]) -> ast.Program:
+    def start(self, items: list[ast.PositionDefinition]) -> ast.Program:
         """Transform the root rule into a Program."""
         return ast.Program(items)
 
-    def quality_definition(self, items: list[ast.GlobalName]) -> ast.QualityDefinition:
-        """Transform a quality definition."""
-        return ast.QualityDefinition(items[0])
-
-    def typed_name(self, items: list[ast.GlobalName]) -> ast.GlobalName:
-        """Transform a typed name into a global name."""
-        return items[0]
+    def position_definition(
+        self, items: list[ast.GlobalName]
+    ) -> ast.PositionDefinition:
+        """Transform a position definition."""
+        return ast.PositionDefinition(items[0])
 
     def global_name(self, items: list[ast.Fqun | list[str]]) -> ast.GlobalName:
         """Transform a global name with FQUN and path."""
@@ -68,5 +66,5 @@ class DefineTransformer(lark.Transformer):
         return items
 
     def NEWLINE(self, _token: lark.Token) -> _DiscardType:  # noqa: N802
-        """Discard newline tokens."""
+        """Drop newline tokens from the parse tree."""
         return Discard

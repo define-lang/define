@@ -18,7 +18,6 @@ COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 %ignore COMMENT
 
 terminator: "." NEWLINE
-typed_name: "position" "<" global_name ">"
 
 # Global Names
 
@@ -32,8 +31,8 @@ fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
 global_name_path: ("/" PATH_SEGMENT)+
 global_name: fqun global_name_path
 
-quality_definition: "define the potential " typed_name terminator
+position_definition: "define the potential position" "<" global_name ">" terminator
 
 # Root
 
-start: NEWLINE* quality_definition NEWLINE*
+start: NEWLINE* position_definition NEWLINE*
