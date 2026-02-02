@@ -25,9 +25,9 @@ typed_name: "position" "<" global_name ">"
 ?authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
 authority: AUTHORITY_DOMAIN authority_path?
 
-?fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
-     | authority ":" UNIVERSE_NAME ":"
-     | UNIVERSE_NAME ":"
+fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
+    | authority ":" UNIVERSE_NAME ":"
+    | UNIVERSE_NAME ":"
 
 global_name_path: ("/" PATH_SEGMENT)+
 global_name: fqun global_name_path
