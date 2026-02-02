@@ -14,14 +14,24 @@ class ASTNode:
 class Program(ASTNode):
     """Represents the entire program."""
 
-    definitions: list[PositionDefinition]
+    definitions: list[QualityDefinition]
 
 
 @dataclass
-class PositionDefinition(ASTNode):
-    """Represents a position definition."""
+class QualityDefinition(ASTNode):
+    """Base class for quality definitions (positions and actions)."""
 
     name: GlobalName
+
+
+@dataclass
+class PositionDefinition(QualityDefinition):
+    """Represents a position definition."""
+
+
+@dataclass
+class ActionDefinition(QualityDefinition):
+    """Represents an action definition."""
 
 
 @dataclass

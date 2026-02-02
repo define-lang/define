@@ -32,7 +32,8 @@ global_name_path: ("/" PATH_SEGMENT)+
 global_name: fqun global_name_path
 
 position_definition: "define the potential position" "<" global_name ">" terminator
+action_definition: "define the potential action" "<" global_name ">" terminator
 
 # Root
 
-start: NEWLINE* position_definition NEWLINE*
+start: NEWLINE* (position_definition | action_definition) NEWLINE*

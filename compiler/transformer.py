@@ -11,7 +11,7 @@ from compiler import ast
 class DefineTransformer(lark.Transformer):
     """Transforms the parse tree from Parser into AST nodes."""
 
-    def start(self, items: list[ast.PositionDefinition]) -> ast.Program:
+    def start(self, items: list[ast.QualityDefinition]) -> ast.Program:
         """Transform the root rule into a Program."""
         return ast.Program(items)
 
@@ -20,6 +20,10 @@ class DefineTransformer(lark.Transformer):
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
         return ast.PositionDefinition(items[0])
+
+    def action_definition(self, items: list[ast.GlobalName]) -> ast.ActionDefinition:
+        """Transform an action definition."""
+        return ast.ActionDefinition(items[0])
 
     def global_name(self, items: list[ast.Fqun | list[str]]) -> ast.GlobalName:
         """Transform a global name with FQUN and path."""

@@ -124,6 +124,13 @@ class TestFileEncoding:
         assert exc_info.value.char == "\r"
 
 
+class TestActionDefinition:
+    def test_action_definition_parses(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential action<standard:/path>.\n")
+        assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["standard"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
 class TestGlobalNameStructure:
     def test_full_fqun(self, p: parser.Parser) -> None:
         tree = p.parse(

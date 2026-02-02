@@ -22,6 +22,16 @@ def test_position_definition_transforms_to_program():
     assert definition.name.path == ["path"]
 
 
+def test_action_definition_transforms_to_program():
+    program = _parse_and_transform("define the potential action<standard:/path>.\n")
+    assert isinstance(program, ast.Program)
+    assert len(program.definitions) == 1
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    assert definition.name.fqun.universe == "standard"
+    assert definition.name.path == ["path"]
+
+
 def test_global_name_full_fqun():
     program = _parse_and_transform(
         "define the potential position<my_mv:example.com/org/repo:my_lib:/some/path>.\n"
