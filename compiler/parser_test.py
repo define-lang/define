@@ -113,179 +113,223 @@ class TestValidParses:
 
 class TestInvalidCharacterFormat:
     def test_uppercase_in_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<MyMv:example.com:my_lib:/path>.\n")
+        assert exc_info.value.char == "M"
 
     def test_uppercase_in_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<Example.Com:my_lib:/path>.\n")
+        assert exc_info.value.char == "E"
 
     def test_authority_domain_starting_with_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<-example.com:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token(
+            "AUTHORITY_PATH_SEGMENT", "-example.com"
+        )
 
     def test_authority_domain_ending_with_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com-:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "-")
 
     def test_authority_domain_starting_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<.example.com:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("DOT", ".")
 
     def test_authority_domain_ending_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com.:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("DOT", ".")
 
     def test_universe_starting_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com:_mylib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "_mylib")
 
     def test_universe_ending_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com:mylib_:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "mylib_")
 
     def test_multiverse_starting_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<_mymv:example.com:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "_mymv")
 
     def test_multiverse_ending_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<mymv_:example.com:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "mymv_")
 
     def test_single_char_universe(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com:x:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "x")
 
     def test_single_char_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<x:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "x")
 
     def test_single_char_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<x:example.com:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "x")
 
     def test_path_segment_starting_with_digit(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/2bad>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "2bad")
 
     def test_non_ascii_in_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse(
                 "define the potential position<m\u00fcv:example.com:my_lib:/path>.\n"
             )
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "m")
 
     def test_non_ascii_in_universe(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com:m\u00fclib:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "m")
 
     def test_non_ascii_in_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<ex\u00e4mple.com:my_lib:/path>.\n")
+        assert exc_info.value.char == "\u00e4"
 
     def test_invalid_chars_in_path_uppercase(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<standard:/BadName>.\n")
+        assert exc_info.value.char == "B"
 
     def test_invalid_chars_in_path_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/bad-name>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "-name")
 
     def test_invalid_chars_in_path_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/bad.name>.\n")
+        assert exc_info.value.token == lark.Token("DOT", ".")
 
     def test_invalid_chars_in_path_tilde(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/bad~name>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "~name")
 
     def test_invalid_chars_in_path_special(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<standard:/bad!name>.\n")
+        assert exc_info.value.char == "!"
 
     def test_invalid_chars_in_authority_path_uppercase(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<example.com/Bad:my_lib:/path>.\n")
+        assert exc_info.value.char == "B"
 
     def test_invalid_chars_in_authority_path_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<example.com/ba<d:my_lib:/path>.\n")
+        assert exc_info.value.token == lark.Token("LESSTHAN", "<")
 
     def test_authority_path_segment_starting_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse(
                 "define the potential position<example.com/.hidden:my_lib:/path>.\n"
             )
+        assert exc_info.value.token == lark.Token("DOT", ".")
 
 
 class TestInvalidStructuralSyntax:
     def test_missing_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/path>\n")
+        assert exc_info.value.token == lark.Token("NEWLINE", "\n")
 
     def test_missing_newline_after_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/path>.")
+        assert exc_info.value.token == lark.Token("$END", "")
 
     def test_trailing_space_before_newline(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<standard:/path>. \n")
+        assert exc_info.value.char == " "
 
     def test_bom_at_start(self, p: parser.Parser) -> None:
         with pytest.raises(parser.ByteOrderMarkError):
             p.parse("\ufeffdefine the potential position<standard:/path>.\n")
 
     def test_crlf_line_endings(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<standard:/path>.\r\n")
+        assert exc_info.value.char == "\r"
 
     def test_multiple_spaces_between_keywords(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define  the potential position<standard:/path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "define")
 
     def test_empty_path_segment(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/a//b>.\n")
+        assert exc_info.value.token == lark.Token("SLASH", "/")
 
     def test_path_not_starting_with_slash(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:path>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "standard")
 
     def test_missing_close_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<standard:/path.\n")
+        assert exc_info.value.token == lark.Token("DOT", ".")
 
     def test_missing_open_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential positionstandard:/path>.\n")
+        assert exc_info.value.token == lark.Token("UNIVERSE_NAME", "standard")
 
     def test_empty_name_content(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<>.\n")
+        assert exc_info.value.token == lark.Token("MORETHAN", ">")
 
     def test_local_name_not_valid_in_definitions(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential position<my_name>.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "my_name")
 
     def test_comment_with_trailing_whitespace(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("# comment with trailing space \n")
+        assert exc_info.value.char == " "
 
     def test_same_line_comment_with_trailing_whitespace(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("define the potential position<standard:/path>. # comment \n")
+        assert exc_info.value.char == " "
 
     def test_define_the_potential_no_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "define")
 
     def test_define_the_potential_with_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the potential.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "define")
 
     def test_define_the_no_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "define")
 
     def test_define_the_with_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken):
+        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the.\n")
+        assert exc_info.value.token == lark.Token("AUTHORITY_PATH_SEGMENT", "define")
