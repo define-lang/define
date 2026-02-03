@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
-from compiler import ast  # noqa: TC001
+from compiler import ast
 
 _SPEC_DIR = Path(__file__).resolve().parent.parent / "spec"
 
@@ -100,6 +100,30 @@ class ReservedMultiverseNameDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved multiverse name is used."""
 
 
+@dataclass
+class PathMismatchDiagnostic(Diagnostic):
+    """Diagnostic for when a definition's path doesn't match the file path."""
+
+    expected_path: str
+    actual_path: str
+
+
+@dataclass
+class UniverseWithoutAuthorityDiagnostic(Diagnostic):
+    """Diagnostic for when a universe other than 'standard' is used without an authority."""
+
+    universe_name: str
+
+
+@dataclass
+class DuplicateDefinitionDiagnostic(Diagnostic):
+    """Diagnostic for when the same type is defined twice with the same path."""
+
+    definition_type: str
+    path: str
+    first_definition_line: int
+
+
 class Validator:
     """Validates semantic rules for a Define program AST."""
 
@@ -114,9 +138,21 @@ class Validator:
         """Source code split into lines, for use with Diagnostic.format()."""
         return self._source.splitlines()
 
-    def validate(self) -> list[Diagnostic]:
-        """Validate all semantic rules and return collected diagnostics."""
+    def validate(self, file_path: str | None = None) -> list[Diagnostic]:
+        """Validate all semantic rules and return collected diagnostics.
+
+        Args:
+            file_path: Optional path to the source file, relative to project root,
+                without the .def extension. When provided, the validator operates
+                in filesystem context and validates that definition paths match
+                the file path. When None, the validator operates in non-filesystem
+                context and skips path matching validation.
+        """
         self._diagnostics = []
+        self._file_path = file_path
+        self._seen_definitions: dict[
+            tuple[type, tuple[str, ...]], ast.QualityDefinition
+        ] = {}
         for definition in self._program.definitions:
             self._validate_definition(definition)
         return self._diagnostics
@@ -124,6 +160,8 @@ class Validator:
     def _validate_definition(self, definition: ast.QualityDefinition) -> None:
         """Validate a quality definition."""
         self._validate_global_name(definition.name)
+        self._validate_path_matches_file(definition)
+        self._validate_not_duplicate(definition)
 
     def _validate_global_name(self, name: ast.GlobalName) -> None:
         """Validate a global name and its FQUN."""
@@ -134,7 +172,19 @@ class Validator:
         if fqun.multiverse is not None:
             self._validate_multiverse_name(fqun.multiverse)
 
-        if fqun.authority is not None:
+        if fqun.authority is None:
+            if fqun.universe.name.lower() != "standard":
+                self._diagnostics.append(
+                    UniverseWithoutAuthorityDiagnostic(
+                        position=fqun.universe.position,
+                        message=(
+                            f"universe '{fqun.universe.name}' requires an authority; "
+                            f"only 'standard' may be used without an authority"
+                        ),
+                        universe_name=fqun.universe.name,
+                    )
+                )
+        else:
             self._validate_authority(fqun.authority, fqun.multiverse)
 
         self._validate_universe_name(fqun.universe)
@@ -190,3 +240,52 @@ class Validator:
                     reserved_name=universe.name,
                 )
             )
+
+    def _validate_path_matches_file(self, definition: ast.QualityDefinition) -> None:
+        """Validate that the definition's path matches the file path."""
+        if self._file_path is None:
+            return
+
+        definition_path = "/" + "/".join(definition.name.path)
+        expected_path = "/" + self._file_path
+
+        if definition_path != expected_path:
+            self._diagnostics.append(
+                PathMismatchDiagnostic(
+                    position=definition.name.position,
+                    message=(
+                        f"definition path '{definition_path}' does not match "
+                        f"file path '{expected_path}'"
+                    ),
+                    expected_path=expected_path,
+                    actual_path=definition_path,
+                )
+            )
+
+    def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
+        """Validate that this definition is not a duplicate of a previous one."""
+        key = (type(definition), tuple(definition.name.path))
+        if key in self._seen_definitions:
+            first_def = self._seen_definitions[key]
+            match definition:
+                case ast.PositionDefinition():
+                    def_type = "position"
+                case ast.ActionDefinition():
+                    def_type = "action"
+                case _:
+                    raise TypeError(f"Unknown definition type: {type(definition)}")
+            path_str = "/" + "/".join(definition.name.path)
+            self._diagnostics.append(
+                DuplicateDefinitionDiagnostic(
+                    position=definition.position,
+                    message=(
+                        f"duplicate {def_type} definition for path '{path_str}'; "
+                        f"first defined on line {first_def.position.line}"
+                    ),
+                    definition_type=def_type,
+                    path=path_str,
+                    first_definition_line=first_def.position.line,
+                )
+            )
+        else:
+            self._seen_definitions[key] = definition

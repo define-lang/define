@@ -7,10 +7,12 @@ _parser = parser.Parser()
 _transformer = DefineTransformer()
 
 
-def _parse_transform_validate(source: str) -> list[validator.Diagnostic]:
+def _parse_transform_validate(
+    source: str, file_path: str | None = None
+) -> list[validator.Diagnostic]:
     tree = _parser.parse(source)
     program = _transformer.transform(tree)
-    return validator.Validator(program, source).validate()
+    return validator.Validator(program, source).validate(file_path=file_path)
 
 
 def _check_diagnostic_format(
@@ -144,3 +146,113 @@ class TestDiagnosticCollection:
         diagnostics = _parse_transform_validate(source)
         assert diagnostics[0].position.line == 1
         assert diagnostics[1].position.line == 2
+
+
+class TestPathMismatch:
+    def test_path_matches_file_no_error(self):
+        source = "define the potential position<my.domain.com:my_lib:/foo/bar>.\n"
+        diagnostics = _parse_transform_validate(source, file_path="foo/bar")
+        assert len(diagnostics) == 0
+
+    def test_path_mismatch_error(self):
+        source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
+        diagnostics = _parse_transform_validate(source, file_path="foo/bar")
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.PathMismatchDiagnostic)
+        assert diagnostics[0].expected_path == "/foo/bar"
+        assert diagnostics[0].actual_path == "/wrong/path"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+    def test_no_file_path_skips_validation(self):
+        source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
+        diagnostics = _parse_transform_validate(source, file_path=None)
+        assert len(diagnostics) == 0
+
+    def test_nested_path_matches(self):
+        source = "define the potential position<my.domain.com:my_lib:/a/b/c>.\n"
+        diagnostics = _parse_transform_validate(source, file_path="a/b/c")
+        assert len(diagnostics) == 0
+
+
+class TestUniverseWithoutAuthority:
+    def test_standard_without_authority_ok(self):
+        source = "define the potential position<standard:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
+
+    def test_non_standard_without_authority_error(self):
+        source = "define the potential position<my_universe:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.UniverseWithoutAuthorityDiagnostic)
+        assert diagnostics[0].universe_name == "my_universe"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+    def test_with_authority_ok(self):
+        source = "define the potential position<my.domain.com:my_universe:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 0
+
+    def test_case_insensitive_standard(self):
+        source = "define the potential position<STANDARD:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
+
+
+class TestDuplicateDefinitions:
+    def test_no_duplicates_ok(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/first>.\n"
+            "define the potential position<my.domain.com:my_lib:/second>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 0
+
+    def test_duplicate_position_error(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.DuplicateDefinitionDiagnostic)
+        assert diagnostics[0].definition_type == "position"
+        assert diagnostics[0].path == "/same"
+        assert diagnostics[0].first_definition_line == 1
+        _check_diagnostic_format(diagnostics[0], source, 2, 1)
+
+    def test_duplicate_action_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/same>.\n"
+            "define the potential action<my.domain.com:my_lib:/same>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.DuplicateDefinitionDiagnostic)
+        assert diagnostics[0].definition_type == "action"
+        assert diagnostics[0].path == "/same"
+        assert diagnostics[0].first_definition_line == 1
+        _check_diagnostic_format(diagnostics[0], source, 2, 1)
+
+    def test_same_path_different_types_ok(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+            "define the potential action<my.domain.com:my_lib:/same>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 0
+
+    def test_three_duplicates_two_errors(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], validator.DuplicateDefinitionDiagnostic)
+        assert isinstance(diagnostics[1], validator.DuplicateDefinitionDiagnostic)
+        assert diagnostics[0].first_definition_line == 1
+        assert diagnostics[1].first_definition_line == 1
