@@ -96,8 +96,9 @@ compatibility." We enable this in two ways:
    that allow us to change our mind about nearly all of it in the future.
 2. Define provides a system that enables deterministic automated refactoring of
    any program, in a form that you can ship with your library and which will be
-   automatically applied to a codebase that upgrades to using a new version of
-   your library.
+   automatically applied to a codebase when it upgrades to using a new version
+   of your library (with some security controls to help prevent malicious
+   refactorings).
 
 Enabling this requires another property, though, which is very powerful in its
 own right.
@@ -131,8 +132,8 @@ program that a programmer actually cares about can be validated _at compile
 time_.
 
 When we make this guarantee, it turns out that we also guarantee perfect,
-required expression of intent. (Even the solution for the situations we can't
-perfectly analyze require an expression of intent so the compiler can keep
+required expression of intent. (Even when we can't do perfect static analysis,
+we still require a perfect expression of intent so the compiler can keep
 running, as you will see as you dive into the language.)
 
 In other languages, even _trying_ to guarantee this would require extremely
@@ -151,8 +152,7 @@ to figure some of this out, but other optimizations are severely limited because
 the compiler can't figure out what you intended.
 
 If we guarantee near-perfect static analysis and perfect expression of intent,
-then _theoretically_ the compiler can reach the maximum possible level
-optimization.
+then _theoretically_ the compiler can perform the maximum possible optimization.
 
 Now, in reality, this requires us as the compiler designers to be pretty clever,
 and so this will improve over time. Plus, there are real trade-offs to be made
@@ -192,9 +192,9 @@ programming languages traditionally deal with this:
 
 1. **Explicit**: Requiring the programmer to explicitly free memory that is no
    longer needed.
-2. **Automatic Reference Counting (ARC)**: Making the compiler count the number
-   of references to data in the program and free the memory automatically when
-   that data is no longer needed.
+2. **Automatic Reference Counting (ARC)**: Making the program count the number
+   of references to data in the program at runtime and free the memory
+   automatically when that data is no longer needed.
 3. **Garbage Collection**: Count references to an object at runtime and then
    regularly clean up objects that have no references.
 
@@ -274,14 +274,58 @@ classes are to say:
 - This can only be accessed by code in the same package (internal)
 
 I cannot count the number of times I have wanted to say something like, "here is
-a list of classes in my codebase that are allowed to use this function" or "only
-these other codebases can depend on my library."
+a list of classes in my codebase that are allowed to call this function" or
+"only these other codebases can depend on my library."
 
 Define goes even further than that, and allows you to express fully granular
 access controls that are enforced at compile time, allowing you to express
 exactly how different parts of the program are allowed to interact. You can even
 express how specific, named codebases outside of your own codebase are allowed
 to interact with any part of your codebase.
+
+### Freedom to Choose Functional, Object-Oriented, or Whatever
+
+As a language, Define can express the concepts of functional programming,
+object-oriented programming, and probably other paradigms as well. Unlike other
+languages, it has no preference for which paradigm you choose. It even enables
+seamless interaction between object-oriented code and functional code.
+
+### Compiling Down to Other Languages
+
+Define can represent all the compiler guarantees that most other languages
+provide today. As a result, it can actually represent the programming _idioms_
+of other languages, and through deterministic static analysis, we can detect
+when those idioms exist in Define code.
+
+Thus, not only can Define compile down to other programming languages, in many
+cases it can actually compile down to _idiomatic code_ in the language (code
+written the way you would natively want to write it in that language). Also, if
+desired, you can use Define's optimizations to write out optimized versions or
+versions with dead code removed, as you wish.
+
+### Incremental Rewrites
+
+One of the greatest challenges of adopting a new programming language is that
+you have to rewrite your codebase all at once, in a "big bang" that can take
+months or years of effort. It's very hard to justify this when you're getting
+some marginal benefit for moving to a new language.
+
+Define, on the other hand, attempts to enable incremental rewrites from Define
+into other languages. Since you can compile Define down to idiomatic code in
+another language, you can have some parts of a codebase be generated by Define
+while others are still in the previous programming language.
+
+### Universal Translation Layer
+
+Theoretically, if we have incremental rewrites and the ability to compile down
+to multiple programming languages, Define can act as a sort of "universal
+translation layer" between programs. In fact, it would even be possible to
+analyze patterns in existing languages, convert those patterns into Define with
+some level of automation, and then compile Define back down to a different
+programming language. Because other languages don't guarantee perfect static
+analysis, there will always be some situations that require manual human
+intervention, but most concepts that exist in other languages should be
+translatable easily into Define.
 
 ## Summary
 
