@@ -46,7 +46,7 @@ class TestReservedUniverseNames:
         _check_diagnostic_format(diagnostics[0], source, 1, 31)
         assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
         assert diagnostics[1].reserved_name == "example"
-        _check_diagnostic_format(diagnostics[1], source, 1, 31)
+        _check_diagnostic_format(diagnostics[1], source, 1, 43)
 
     def test_common_word_is_reserved(self):
         source = "define the potential position<example.com:about:/path>.\n"
@@ -57,7 +57,7 @@ class TestReservedUniverseNames:
         _check_diagnostic_format(diagnostics[0], source, 1, 31)
         assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
         assert diagnostics[1].reserved_name == "about"
-        _check_diagnostic_format(diagnostics[1], source, 1, 31)
+        _check_diagnostic_format(diagnostics[1], source, 1, 43)
 
     def test_case_insensitive_check(self):
         source = "define the potential position<example.com:STANDARD:/path>.\n"
@@ -68,7 +68,7 @@ class TestReservedUniverseNames:
         _check_diagnostic_format(diagnostics[0], source, 1, 31)
         assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
         assert diagnostics[1].reserved_name == "STANDARD"
-        _check_diagnostic_format(diagnostics[1], source, 1, 31)
+        _check_diagnostic_format(diagnostics[1], source, 1, 43)
 
     def test_non_reserved_universe_name(self):
         source = "define the potential position<example.com:my_library:/path>.\n"

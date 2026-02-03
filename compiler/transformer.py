@@ -59,33 +59,51 @@ class DefineTransformer(lark.Transformer):
         )
 
     @v_args(meta=True)
-    def fqun(self, meta: lark.tree.Meta, items: list[str | ast.Authority]) -> ast.Fqun:
+    def fqun(
+        self,
+        meta: lark.tree.Meta,
+        items: list[ast.Multiverse | ast.Authority | ast.Universe],
+    ) -> ast.Fqun:
         """Transform a fully-qualified universe name."""
         position = ast.SourcePosition.from_meta(meta)
         match len(items):
             case 3:
                 return ast.Fqun(
-                    multiverse=cast("str", items[0]),
+                    multiverse=cast("ast.Multiverse", items[0]),
                     authority=cast("ast.Authority", items[1]),
-                    universe=cast("str", items[2]),
+                    universe=cast("ast.Universe", items[2]),
                     position=position,
                 )
             case 2:
                 return ast.Fqun(
                     multiverse=None,
                     authority=cast("ast.Authority", items[0]),
-                    universe=cast("str", items[1]),
+                    universe=cast("ast.Universe", items[1]),
                     position=position,
                 )
             case 1:
                 return ast.Fqun(
                     multiverse=None,
                     authority=None,
-                    universe=cast("str", items[0]),
+                    universe=cast("ast.Universe", items[0]),
                     position=position,
                 )
             case _:
                 raise ValueError(f"Unexpected fqun items: {items}")
+
+    def MULTIVERSE_NAME(self, token: lark.Token) -> ast.Multiverse:  # noqa: N802
+        """Transform a multiverse name token into an AST node."""
+        return ast.Multiverse(
+            name=str(token),
+            position=ast.SourcePosition.from_token(token),
+        )
+
+    def UNIVERSE_NAME(self, token: lark.Token) -> ast.Universe:  # noqa: N802
+        """Transform a universe name token into an AST node."""
+        return ast.Universe(
+            name=str(token),
+            position=ast.SourcePosition.from_token(token),
+        )
 
     @v_args(meta=True)
     def authority(

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Self
 
-from lark import tree  # noqa: TC002
+import lark  # noqa: TC002
 
 
 @dataclass
@@ -18,13 +18,30 @@ class SourcePosition:
     end_column: int
 
     @classmethod
-    def from_meta(cls, meta: tree.Meta) -> Self:
+    def from_meta(cls, meta: lark.tree.Meta) -> Self:
         """Create a SourcePosition from a Lark Meta object."""
         return cls(
             line=meta.line,
             column=meta.column,
             end_line=meta.end_line,
             end_column=meta.end_column,
+        )
+
+    @classmethod
+    def from_token(cls, token: lark.Token) -> Self:
+        """Create a SourcePosition from a Lark Token."""
+        if (
+            token.line is None
+            or token.column is None
+            or token.end_line is None
+            or token.end_column is None
+        ):
+            raise ValueError(f"Token {token} is missing position information")
+        return cls(
+            line=token.line,
+            column=token.column,
+            end_line=token.end_line,
+            end_column=token.end_column,
         )
 
 
@@ -60,6 +77,20 @@ class ActionDefinition(QualityDefinition):
 
 
 @dataclass
+class Multiverse(ASTNode):
+    """Represents a multiverse name."""
+
+    name: str
+
+
+@dataclass
+class Universe(ASTNode):
+    """Represents a universe name."""
+
+    name: str
+
+
+@dataclass
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
@@ -71,9 +102,9 @@ class Authority(ASTNode):
 class Fqun(ASTNode):
     """Represents a fully-qualified universe name."""
 
-    multiverse: str | None
+    multiverse: Multiverse | None
     authority: Authority | None
-    universe: str
+    universe: Universe
 
 
 @dataclass

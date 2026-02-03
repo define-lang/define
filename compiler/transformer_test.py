@@ -22,7 +22,9 @@ def test_position_definition_transforms_to_program():
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.position.line == 1
     assert definition.position.column == 1
-    assert definition.name.fqun.universe == "standard"
+    assert definition.name.fqun.universe.name == "standard"
+    assert definition.name.fqun.universe.position.line == 1
+    assert definition.name.fqun.universe.position.column == 31
     assert definition.name.path == ["path"]
     assert definition.name.position.line == 1
     assert definition.name.position.column == 31
@@ -35,7 +37,7 @@ def test_action_definition_transforms_to_program():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.position.line == 1
-    assert definition.name.fqun.universe == "standard"
+    assert definition.name.fqun.universe.name == "standard"
     assert definition.name.path == ["path"]
 
 
@@ -44,8 +46,13 @@ def test_global_name_full_fqun():
         "define the potential position<my_mv:example.com/org/repo:my_lib:/some/path>.\n"
     )
     name = program.definitions[0].name
-    assert name.fqun.multiverse == "my_mv"
-    assert name.fqun.universe == "my_lib"
+    assert name.fqun.multiverse is not None
+    assert name.fqun.multiverse.name == "my_mv"
+    assert name.fqun.multiverse.position.line == 1
+    assert name.fqun.multiverse.position.column == 31
+    assert name.fqun.universe.name == "my_lib"
+    assert name.fqun.universe.position.line == 1
+    assert name.fqun.universe.position.column == 58
     assert name.path == ["some", "path"]
     assert name.fqun.authority is not None
     assert name.fqun.authority.domain == "example.com"
@@ -60,7 +67,9 @@ def test_global_name_authority_universe():
     )
     name = program.definitions[0].name
     assert name.fqun.multiverse is None
-    assert name.fqun.universe == "my_lib"
+    assert name.fqun.universe.name == "my_lib"
+    assert name.fqun.universe.position.line == 1
+    assert name.fqun.universe.position.column == 43
     assert name.path == ["some", "path"]
     assert name.fqun.authority is not None
     assert name.fqun.authority.domain == "example.com"
@@ -75,7 +84,9 @@ def test_global_name_universe_only():
     name = program.definitions[0].name
     assert name.fqun.multiverse is None
     assert name.fqun.authority is None
-    assert name.fqun.universe == "standard"
+    assert name.fqun.universe.name == "standard"
+    assert name.fqun.universe.position.line == 1
+    assert name.fqun.universe.position.column == 31
     assert name.fqun.position.line == 1
     assert name.fqun.position.column == 31
     assert name.path == ["some", "path"]

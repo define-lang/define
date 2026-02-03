@@ -132,28 +132,26 @@ class Validator:
     def _validate_fqun(self, fqun: ast.Fqun) -> None:
         """Validate a fully-qualified universe name."""
         if fqun.multiverse is not None:
-            self._validate_multiverse_name(fqun.multiverse, fqun.position)
+            self._validate_multiverse_name(fqun.multiverse)
 
         if fqun.authority is not None:
             self._validate_authority(fqun.authority, fqun.multiverse)
 
-        self._validate_universe_name(fqun.universe, fqun.position)
+        self._validate_universe_name(fqun.universe)
 
-    def _validate_multiverse_name(
-        self, name: str, position: ast.SourcePosition
-    ) -> None:
+    def _validate_multiverse_name(self, multiverse: ast.Multiverse) -> None:
         """Validate a multiverse name against reserved names."""
-        if name.lower() in _RESERVED_MULTIVERSE_NAMES:
+        if multiverse.name.lower() in _RESERVED_MULTIVERSE_NAMES:
             self._diagnostics.append(
                 ReservedMultiverseNameDiagnostic(
-                    position=position,
-                    message=f"'{name}' is a reserved multiverse name",
-                    reserved_name=name,
+                    position=multiverse.position,
+                    message=f"'{multiverse.name}' is a reserved multiverse name",
+                    reserved_name=multiverse.name,
                 )
             )
 
     def _validate_authority(
-        self, authority: ast.Authority, multiverse: str | None
+        self, authority: ast.Authority, multiverse: ast.Multiverse | None
     ) -> None:
         """Validate an authority name."""
         domain = authority.domain.lower()
@@ -168,7 +166,7 @@ class Validator:
             )
             return
 
-        effective_multiverse = multiverse if multiverse else "local"
+        effective_multiverse = multiverse.name if multiverse else "local"
         if effective_multiverse in ("mv", "local") and "." not in domain:
             self._diagnostics.append(
                 ReservedAuthorityNameDiagnostic(
@@ -182,13 +180,13 @@ class Validator:
                 )
             )
 
-    def _validate_universe_name(self, name: str, position: ast.SourcePosition) -> None:
+    def _validate_universe_name(self, universe: ast.Universe) -> None:
         """Validate a universe name against reserved names."""
-        if name.lower() in _RESERVED_UNIVERSE_NAMES:
+        if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
             self._diagnostics.append(
                 ReservedUniverseNameDiagnostic(
-                    position=position,
-                    message=f"'{name}' is a reserved universe name",
-                    reserved_name=name,
+                    position=universe.position,
+                    message=f"'{universe.name}' is a reserved universe name",
+                    reserved_name=universe.name,
                 )
             )
