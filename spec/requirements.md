@@ -10,9 +10,9 @@ programming languages.
 It must be impossible for a program to access an undefined variable. The
 compiler must catch it.
 
-This means there is no concept of "null" in define, there is only "a variable
-that has not been set," which the compiler will forbid any interaction with
-other than setting the variable.
+This means there is no concept of "null" in Define, there is only "a position
+that is empty," which the compiler will forbid any interaction with other than
+filling the position or checking if it is empty.
 
 ## Knowledge Does Not Have Side Effects
 
