@@ -1,0 +1,146 @@
+"""Tests for the Define language validator."""
+
+from compiler import parser, validator
+from compiler.transformer import DefineTransformer
+
+_parser = parser.Parser()
+_transformer = DefineTransformer()
+
+
+def _parse_transform_validate(source: str) -> list[validator.Diagnostic]:
+    tree = _parser.parse(source)
+    program = _transformer.transform(tree)
+    return validator.Validator(program, source).validate()
+
+
+def _check_diagnostic_format(
+    diagnostic: validator.Diagnostic,
+    source: str,
+    expected_line: int,
+    expected_column: int,
+) -> None:
+    source_lines = source.splitlines()
+    formatted = diagnostic.format(source_lines)
+    assert f"line {expected_line}, column {expected_column}" in formatted
+    assert source_lines[expected_line - 1] in formatted
+    lines = formatted.split("\n")
+    caret_line = next(line for line in lines if "^" in line)
+    assert caret_line.index("^") == expected_column + 1
+
+
+class TestReservedUniverseNames:
+    def test_standard_is_reserved(self):
+        source = "define the potential position<standard:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
+        assert diagnostics[0].reserved_name == "standard"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+    def test_example_is_reserved(self):
+        source = "define the potential position<example.com:example:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
+        assert diagnostics[0].reserved_name == "example.com"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
+        assert diagnostics[1].reserved_name == "example"
+        _check_diagnostic_format(diagnostics[1], source, 1, 31)
+
+    def test_common_word_is_reserved(self):
+        source = "define the potential position<example.com:about:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
+        assert diagnostics[0].reserved_name == "example.com"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
+        assert diagnostics[1].reserved_name == "about"
+        _check_diagnostic_format(diagnostics[1], source, 1, 31)
+
+    def test_case_insensitive_check(self):
+        source = "define the potential position<example.com:STANDARD:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
+        assert diagnostics[0].reserved_name == "example.com"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
+        assert diagnostics[1].reserved_name == "STANDARD"
+        _check_diagnostic_format(diagnostics[1], source, 1, 31)
+
+    def test_non_reserved_universe_name(self):
+        source = "define the potential position<example.com:my_library:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
+        assert diagnostics[0].reserved_name == "example.com"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+
+class TestReservedAuthorityNames:
+    def test_example_com_is_reserved(self):
+        source = "define the potential position<example.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
+        assert diagnostics[0].reserved_name == "example.com"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+    def test_authority_without_dot_in_local_multiverse(self):
+        source = "define the potential position<localhost:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
+        assert "localhost" in diagnostics[0].reserved_name
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+    def test_authority_with_dot_in_local_multiverse_ok(self):
+        source = "define the potential position<my.domain.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 0
+
+
+class TestReservedMultiverseNames:
+    def test_mv_is_allowed(self):
+        source = "define the potential position<mv:example.org:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 0
+
+    def test_programming_language_is_reserved(self):
+        source = "define the potential position<python:example.org:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedMultiverseNameDiagnostic)
+        assert diagnostics[0].reserved_name == "python"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+    def test_package_repository_is_reserved(self):
+        source = "define the potential position<npm:example.org:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.ReservedMultiverseNameDiagnostic)
+        assert diagnostics[0].reserved_name == "npm"
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+
+
+class TestDiagnosticCollection:
+    def test_multiple_diagnostics_collected(self):
+        source = (
+            "define the potential position<standard:/first>.\n"
+            "define the potential position<standard:/second>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 2
+        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        _check_diagnostic_format(diagnostics[1], source, 2, 31)
+
+    def test_diagnostics_in_source_order(self):
+        source = (
+            "define the potential position<standard:/first>.\n"
+            "define the potential position<standard:/second>.\n"
+        )
+        diagnostics = _parse_transform_validate(source)
+        assert diagnostics[0].position.line == 1
+        assert diagnostics[1].position.line == 2

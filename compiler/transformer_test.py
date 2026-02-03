@@ -15,11 +15,17 @@ def _parse_and_transform(source: str) -> ast.Program:
 def test_position_definition_transforms_to_program():
     program = _parse_and_transform("define the potential position<standard:/path>.\n")
     assert isinstance(program, ast.Program)
+    assert program.position.line == 1
+    assert program.position.column == 1
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
+    assert definition.position.line == 1
+    assert definition.position.column == 1
     assert definition.name.fqun.universe == "standard"
     assert definition.name.path == ["path"]
+    assert definition.name.position.line == 1
+    assert definition.name.position.column == 31
 
 
 def test_action_definition_transforms_to_program():
@@ -28,6 +34,7 @@ def test_action_definition_transforms_to_program():
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
+    assert definition.position.line == 1
     assert definition.name.fqun.universe == "standard"
     assert definition.name.path == ["path"]
 
@@ -43,6 +50,8 @@ def test_global_name_full_fqun():
     assert name.fqun.authority is not None
     assert name.fqun.authority.domain == "example.com"
     assert name.fqun.authority.path == ["org", "repo"]
+    assert name.fqun.authority.position.line == 1
+    assert name.fqun.authority.position.column == 37
 
 
 def test_global_name_authority_universe():
@@ -56,6 +65,7 @@ def test_global_name_authority_universe():
     assert name.fqun.authority is not None
     assert name.fqun.authority.domain == "example.com"
     assert name.fqun.authority.path == []
+    assert name.fqun.authority.position.line == 1
 
 
 def test_global_name_universe_only():
@@ -66,6 +76,8 @@ def test_global_name_universe_only():
     assert name.fqun.multiverse is None
     assert name.fqun.authority is None
     assert name.fqun.universe == "standard"
+    assert name.fqun.position.line == 1
+    assert name.fqun.position.column == 31
     assert name.path == ["some", "path"]
 
 
@@ -79,3 +91,5 @@ def test_multiple_definitions_position_and_action():
     assert isinstance(program.definitions[1], ast.ActionDefinition)
     assert program.definitions[0].name.path == ["pos"]
     assert program.definitions[1].name.path == ["act"]
+    assert program.definitions[0].position.line == 1
+    assert program.definitions[1].position.line == 2

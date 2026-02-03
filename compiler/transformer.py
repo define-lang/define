@@ -3,7 +3,7 @@
 from typing import cast
 
 import lark
-from lark.visitors import Discard, _DiscardType
+from lark.visitors import Discard, _DiscardType, v_args
 
 from compiler import ast
 
@@ -11,59 +11,94 @@ from compiler import ast
 class DefineTransformer(lark.Transformer):
     """Transforms the parse tree from Parser into AST nodes."""
 
-    def start(self, items: list[ast.QualityDefinition]) -> ast.Program:
+    @v_args(meta=True)
+    def start(
+        self, meta: lark.tree.Meta, items: list[ast.QualityDefinition]
+    ) -> ast.Program:
         """Transform the root rule into a Program."""
-        return ast.Program(items)
+        return ast.Program(
+            definitions=items,
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
+    @v_args(meta=True)
     def position_definition(
-        self, items: list[ast.GlobalName]
+        self, meta: lark.tree.Meta, items: list[ast.GlobalName]
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
-        return ast.PositionDefinition(items[0])
+        return ast.PositionDefinition(
+            name=items[0],
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
-    def action_definition(self, items: list[ast.GlobalName]) -> ast.ActionDefinition:
+    @v_args(meta=True)
+    def action_definition(
+        self, meta: lark.tree.Meta, items: list[ast.GlobalName]
+    ) -> ast.ActionDefinition:
         """Transform an action definition."""
-        return ast.ActionDefinition(items[0])
+        return ast.ActionDefinition(
+            name=items[0],
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
     def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:
         """Unwrap the definition wrapper rule."""
         return items[0]
 
-    def global_name(self, items: list[ast.Fqun | list[str]]) -> ast.GlobalName:
+    @v_args(meta=True)
+    def global_name(
+        self, meta: lark.tree.Meta, items: list[ast.Fqun | list[str]]
+    ) -> ast.GlobalName:
         """Transform a global name with FQUN and path."""
         fqun = cast("ast.Fqun", items[0])
         path = cast("list[str]", items[1])
-        return ast.GlobalName(fqun=fqun, path=path)
+        return ast.GlobalName(
+            fqun=fqun,
+            path=path,
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
-    def fqun(self, items: list[str | ast.Authority]) -> ast.Fqun:
+    @v_args(meta=True)
+    def fqun(self, meta: lark.tree.Meta, items: list[str | ast.Authority]) -> ast.Fqun:
         """Transform a fully-qualified universe name."""
+        position = ast.SourcePosition.from_meta(meta)
         match len(items):
             case 3:
                 return ast.Fqun(
                     multiverse=cast("str", items[0]),
                     authority=cast("ast.Authority", items[1]),
                     universe=cast("str", items[2]),
+                    position=position,
                 )
             case 2:
                 return ast.Fqun(
                     multiverse=None,
                     authority=cast("ast.Authority", items[0]),
                     universe=cast("str", items[1]),
+                    position=position,
                 )
             case 1:
                 return ast.Fqun(
                     multiverse=None,
                     authority=None,
                     universe=cast("str", items[0]),
+                    position=position,
                 )
             case _:
                 raise ValueError(f"Unexpected fqun items: {items}")
 
-    def authority(self, items: list[str | list[str]]) -> ast.Authority:
+    @v_args(meta=True)
+    def authority(
+        self, meta: lark.tree.Meta, items: list[str | list[str]]
+    ) -> ast.Authority:
         """Transform an authority (domain with optional path)."""
         domain = cast("str", items[0])
         path = cast("list[str]", items[1]) if len(items) == 2 else []
-        return ast.Authority(domain=domain, path=path)
+        return ast.Authority(
+            domain=domain,
+            path=path,
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
     def authority_path(self, items: list[str]) -> list[str]:
         """Transform authority path segments."""

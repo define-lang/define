@@ -3,11 +3,36 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Self
+
+from lark import tree  # noqa: TC002
+
+
+@dataclass
+class SourcePosition:
+    """Represents a position in source code."""
+
+    line: int
+    column: int
+    end_line: int
+    end_column: int
+
+    @classmethod
+    def from_meta(cls, meta: tree.Meta) -> Self:
+        """Create a SourcePosition from a Lark Meta object."""
+        return cls(
+            line=meta.line,
+            column=meta.column,
+            end_line=meta.end_line,
+            end_column=meta.end_column,
+        )
 
 
 @dataclass
 class ASTNode:
     """Base class for all AST nodes."""
+
+    position: SourcePosition
 
 
 @dataclass
