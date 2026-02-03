@@ -124,6 +124,13 @@ class DuplicateDefinitionDiagnostic(Diagnostic):
     first_definition_line: int
 
 
+@dataclass
+class UniverseNameUppercaseDiagnostic(Diagnostic):
+    """Diagnostic for when a universe name contains uppercase ASCII letters."""
+
+    universe_name: str
+
+
 class Validator:
     """Validates semantic rules for a Define program AST."""
 
@@ -231,13 +238,25 @@ class Validator:
             )
 
     def _validate_universe_name(self, universe: ast.Universe) -> None:
-        """Validate a universe name against reserved names."""
+        """Validate a universe name against reserved names and uppercase letters."""
         if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
             self._diagnostics.append(
                 ReservedUniverseNameDiagnostic(
                     position=universe.position,
                     message=f"'{universe.name}' is a reserved universe name",
                     reserved_name=universe.name,
+                )
+            )
+
+        if any(c.isupper() for c in universe.name):
+            self._diagnostics.append(
+                UniverseNameUppercaseDiagnostic(
+                    position=universe.position,
+                    message=(
+                        f"universe name '{universe.name}' contains uppercase letters; "
+                        f"Idiomatic Define requires lowercase universe names"
+                    ),
+                    universe_name=universe.name,
                 )
             )
 

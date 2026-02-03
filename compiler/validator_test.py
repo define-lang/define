@@ -64,13 +64,15 @@ class TestReservedUniverseNames:
     def test_case_insensitive_check(self):
         source = "define the potential position<example.com:STANDARD:/path>.\n"
         diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 2
+        assert len(diagnostics) == 3
         assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
         assert diagnostics[0].reserved_name == "example.com"
         _check_diagnostic_format(diagnostics[0], source, 1, 31)
         assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
         assert diagnostics[1].reserved_name == "STANDARD"
         _check_diagnostic_format(diagnostics[1], source, 1, 43)
+        assert isinstance(diagnostics[2], validator.UniverseNameUppercaseDiagnostic)
+        assert diagnostics[2].universe_name == "STANDARD"
 
     def test_non_reserved_universe_name(self):
         source = "define the potential position<example.com:my_library:/path>.\n"
@@ -197,8 +199,10 @@ class TestUniverseWithoutAuthority:
     def test_case_insensitive_standard(self):
         source = "define the potential position<STANDARD:/path>.\n"
         diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
+        assert len(diagnostics) == 2
         assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
+        assert isinstance(diagnostics[1], validator.UniverseNameUppercaseDiagnostic)
+        assert diagnostics[1].universe_name == "STANDARD"
 
 
 class TestDuplicateDefinitions:
@@ -256,3 +260,26 @@ class TestDuplicateDefinitions:
         assert isinstance(diagnostics[1], validator.DuplicateDefinitionDiagnostic)
         assert diagnostics[0].first_definition_line == 1
         assert diagnostics[1].first_definition_line == 1
+
+
+class TestUniverseNameUppercase:
+    def test_lowercase_universe_name_ok(self):
+        source = "define the potential position<my.domain.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 0
+
+    def test_uppercase_in_universe_name_error(self):
+        source = "define the potential position<my.domain.com:MyLib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.UniverseNameUppercaseDiagnostic)
+        assert diagnostics[0].universe_name == "MyLib"
+        _check_diagnostic_format(diagnostics[0], source, 1, 45)
+
+    def test_mixed_case_universe_name_error(self):
+        source = "define the potential position<my.domain.com:myLib:/path>.\n"
+        diagnostics = _parse_transform_validate(source)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.UniverseNameUppercaseDiagnostic)
+        assert diagnostics[0].universe_name == "myLib"
+        _check_diagnostic_format(diagnostics[0], source, 1, 45)
