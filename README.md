@@ -7,6 +7,10 @@ The language is currently in early prototyping stages.
 
 ## Key Docs
 
+- **[Why Define](docs/why-define.md)**: Read this first. Why would we even want
+  a new programming language, especially when we are on the threshold of having
+  AI write so much more of our code?
+
 ### Language Design
 
 - [The Conceptual Basis of Define](spec/concepts.md): The highest-level concepts
@@ -26,9 +30,9 @@ The language is currently in early prototyping stages.
 
 ### Philosophy
 
-[The Phillsophy of Define](philosophy.md): A document originally written in 2016
-by mkanat that explains the motivations and thoughts that were originally behind
-the language.
+[The Phillsophy of Define](docs/philosophy.md): A document originally written in
+2016 by @mkanat that explains the motivations and thoughts that were originally
+behind the language.
 
 ### Writing Define
 
