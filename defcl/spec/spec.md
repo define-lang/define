@@ -388,7 +388,7 @@ message may only contain message fields.
 
 The following field types are not allowed in DCL:
 
-- `bool` (DCL instead provides a standard enum `Dcl::Boolean` which has the
+- `bool` (DCL instead provides a standard enum `Defcl::Boolean` which has the
   values `UNSPECIFIED`, `TRUE`, and `FALSE`, though schemas are encouraged to
   define their own enums with more appropriate names)
 - `bytes`
@@ -541,7 +541,7 @@ message Dependency {
 edition = "2024";
 
 message Settings {
-    Dcl::Boolean debug_mode = 1;
+    Defcl::Boolean debug_mode = 1;
     int32 log_level = 2;
     float timeout_seconds = 3;
 }

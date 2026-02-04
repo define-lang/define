@@ -80,7 +80,7 @@ DCL does not allow `bool` fields in schemas.
 Instead, any "boolean-like" setting must be represented as an enum with an
 explicit `UNSPECIFIED` value.
 
-For convenience and consistency, DCL provides a standard enum `Dcl::Boolean`
+For convenience and consistency, DCL provides a standard enum `Defcl::Boolean`
 with these values:
 
 - `UNSPECIFIED`
@@ -103,7 +103,7 @@ Schema:
 edition = "2024";
 
 message Settings {
-    Dcl::Boolean use_color = 1;
+    Defcl::Boolean use_color = 1;
 }
 
 message Project {
@@ -132,7 +132,7 @@ This solves both problems above:
 - It creates forward compatibilty for config files by eliminating the "bool to
   enum" migration entirely.
 - Because of how textproto parsing works, if you need to move from
-  `Dcl::Boolean` to another enum type, it's still possible as long as you need
+  `Defcl::Boolean` to another enum type, it's still possible as long as you need
   `TRUE`, `FALSE`, and `UNSPECIFIED` as values in your enum.
 - It makes "unset" explicit via `UNSPECIFIED`.
 
@@ -154,7 +154,7 @@ tokens, so tools can refactor deterministically.
 ## Refactoring Existing Systems
 
 If any existing schemas _had_ used bool, we could simply change the type in the
-schema to `Dcl::Boolean`. However, we would have to then go fix all the code
+schema to `Defcl::Boolean`. However, we would have to then go fix all the code
 that consumed the config. Since the compiler is not yet self-hosting, the thing
 that consumes the config does not guarantee perfect refactorability and likely
 would require manual adjustments.
