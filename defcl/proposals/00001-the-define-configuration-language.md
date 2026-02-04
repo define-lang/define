@@ -7,9 +7,9 @@
 
 ## Problems
 
-As described in [DLP 10](../00010-configuration-directory.md), Define uses a
-standard configuration layout and language to control build parameters instead
-of relying on command-line flags.
+As described in [DLP 10](../../proposals/00010-configuration-directory.md),
+Define uses a standard configuration layout and language to control build
+parameters instead of relying on command-line flags.
 
 That means we need to define the format for a configuration language. Attempting
 to use any pre-existing configuration format ran into various difficulties. For
@@ -123,7 +123,7 @@ DCL is used for all configuration files in the `.define` directory, with the
 file extension `.defcl`.
 
 The syntax and parsing rules for DCL are specified in the
-[Define Configuration Language Specification](spec/dcl/spec.md).
+[Define Configuration Language Specification](../spec/spec.md).
 
 ## A Real Program
 

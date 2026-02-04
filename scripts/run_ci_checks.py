@@ -72,6 +72,7 @@ CHECKS = [
             "python",
             "scripts/validate_proposals.py",
             "proposals/0*.md",
+            "defcl/proposals/0*.md",
         ],
     ),
     Check(

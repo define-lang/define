@@ -79,7 +79,7 @@ def validate_title(
 
     proposal_number = filename_result.proposal_number
 
-    is_dcl_proposal = "dcl" in filepath.parts
+    is_dcl_proposal = "defcl" in filepath.parts
     expected_prefix = (
         DCL_PROPOSAL_TITLE_PREFIX if is_dcl_proposal else PROPOSAL_TITLE_PREFIX
     )

@@ -507,7 +507,7 @@ configuration directory name.
 
 Files that contain configuration values inside configuration directories have
 the extension `.defcl` and are written in the
-[Define Configuration Language](dcl/spec.md).
+[Define Configuration Language](../defcl/spec/spec.md).
 
 Define tooling favors using configuration in configuration directories over
 using command line flags whenever reasonable. Define tooling also strongly

@@ -30,7 +30,7 @@ repos:
         entry: uv run python scripts/validate_proposals.py
         language: system
         types: [markdown]
-        files: ^proposals/(.*/)?\d{5}-.*\.md$
+        files: ^(proposals|defcl/proposals)/(.*/)?\d{5}-.*\.md$
 
       - id: check-cursor-permissions
         name: check cursor permissions
