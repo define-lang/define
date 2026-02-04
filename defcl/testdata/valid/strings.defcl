@@ -14,6 +14,7 @@ config: {
     with_question: "\?"
     octal_escape: "\101"
     hex_escape: "\x41"
-    unicode_short: "\u0041"
-    unicode_long: "\U00041"
+    unicode_bmp: "\u0041"
+    unicode_smp: "\U00000041"
+    unicode_spb: "\U00100000"
 }

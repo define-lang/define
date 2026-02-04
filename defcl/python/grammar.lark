@@ -10,8 +10,8 @@ NEWLINE: "\n"
 WHITESPACE: (" " | NEWLINE)+
 %ignore WHITESPACE
 
-// Comments - shell style
-COMMENT: /#[^\x00-\x09\x0b-\x1f\x7f]*/
+// Comments - shell style (excludes all control characters including newline)
+COMMENT: /#[^\x00-\x1f\x7f]*/
 %ignore COMMENT
 
 // Field names - strict DCL rules
