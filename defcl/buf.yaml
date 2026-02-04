@@ -1,0 +1,12 @@
+version: v2
+modules:
+  - path: schema
+lint:
+  use:
+    - STANDARD
+    - COMMENTS
+  except:
+    - ENUM_VALUE_PREFIX
+    - PACKAGE_VERSION_SUFFIX
+    - PACKAGE_DIRECTORY_MATCH
+  enum_zero_value_suffix: UNSPECIFIED

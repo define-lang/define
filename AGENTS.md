@@ -16,6 +16,7 @@ See [spec/spec.md] for the language specification.
 - Formatting is done with `uv run ruff format`
 - Format all code after making a change.
 - Format all .md files with `prettier --write`
+- Format all .proto files with `npx @bufbuild/buf format -w`
 
 ## Linting
 
@@ -23,6 +24,8 @@ See [spec/spec.md] for the language specification.
 - Always run both linters after making a to Python files:
   - `uv run pyright` for type checking
   - `uv run ruff check` for code quality checks
+- Run `npx @bufbuild/buf lint defcl/schema` after making changes to .proto files
+  in `defcl/schema`.
 - Fix all linting errors that are reported.
 
 ## Imports

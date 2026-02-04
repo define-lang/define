@@ -1,11 +1,17 @@
-edition = "2024";
+// TODO(https://github.com/bufbuild/buf/issues/4193): Upgrade to edition 2024 when buf supports it
+edition = "2023";
 
 package defcl.schema.core;
 
+// Defcl is a namespace for DCL built-in types.
 message Defcl {
+  // Boolean is the standard three-valued boolean type for DCL (replaces proto bool).
   enum Boolean {
+    // Value not set.
     UNSPECIFIED = 0;
+    // Logical true.
     TRUE = 1;
+    // Logical false.
     FALSE = 2;
   }
 }

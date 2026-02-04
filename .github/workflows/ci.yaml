@@ -27,6 +27,22 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync
 
+      - uses: bufbuild/buf-action@v1
+        with:
+          input: defcl/schema
+          push: false
+          lint: true
+          format: false
+          breaking: false
+
+      - uses: bufbuild/buf-action@v1
+        with:
+          input: defcl
+          push: false
+          lint: false
+          format: true
+          breaking: false
+
       - name: Run checks in parallel and report results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
