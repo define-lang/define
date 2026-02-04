@@ -1,0 +1,10 @@
+# This is a comment at the start
+project: {
+    # Comment inside message
+    universe_name: "example"
+}
+# Comment between top-level messages
+settings: {
+    log_level: 3
+}
+# Comment at the end

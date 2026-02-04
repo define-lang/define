@@ -1,0 +1,3 @@
+config: {
+    config__value: "example"
+}

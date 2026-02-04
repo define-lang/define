@@ -1,0 +1,7 @@
+config: {
+    status: ACTIVE
+    mode: STATUS_ACTIVE
+    version: V1
+    level: LEVEL_2
+    state: UNSPECIFIED
+}

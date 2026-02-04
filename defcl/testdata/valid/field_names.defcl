@@ -1,0 +1,8 @@
+config: {
+    universe_name: "example"
+    project_id: "proj1"
+    retry_count: 3
+    field2name: "value"
+    max_retries: 5
+    api_v2_endpoint: "http://example.com"
+}

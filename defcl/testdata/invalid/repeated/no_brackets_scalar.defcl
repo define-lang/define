@@ -1,0 +1,4 @@
+config: {
+    tags: "tag1"
+    tags: "tag2"
+}

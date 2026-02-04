@@ -1,0 +1,6 @@
+config: {
+    pi: 3.14
+    negative_float: -2.0
+    small: 0.5
+    precise: 123.456789
+}

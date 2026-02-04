@@ -1,0 +1,6 @@
+project: {
+    universe_name: "example"
+}
+settings: {
+    log_level: 3
+}

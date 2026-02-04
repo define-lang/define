@@ -1,0 +1,6 @@
+config: {
+    positive: 10
+    negative: -5
+    zero: 0
+    large: 999999
+}

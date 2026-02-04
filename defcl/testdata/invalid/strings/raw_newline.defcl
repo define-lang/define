@@ -1,0 +1,4 @@
+config: {
+    value: "hello
+world"
+}

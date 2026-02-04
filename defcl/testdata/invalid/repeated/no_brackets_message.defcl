@@ -1,0 +1,4 @@
+project: {
+    dependencies: { universe: "lib1" }
+    dependencies: { universe: "lib2" }
+}
