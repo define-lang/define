@@ -10,3 +10,5 @@ lint:
     - PACKAGE_VERSION_SUFFIX
     - PACKAGE_DIRECTORY_MATCH
   enum_zero_value_suffix: UNSPECIFIED
+plugins:
+  - plugin: buf/buf-plugin-defcl

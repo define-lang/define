@@ -39,16 +39,23 @@ repos:
         files: ^\.claude/settings\.json$|^\.cursor/cli\.json$
         pass_filenames: false
 
+      - id: buf-plugin-build
+        name: build buf plugin
+        entry: bash -c 'cd defcl/buf && go build -o buf-plugin-defcl .'
+        language: system
+        files: ^defcl/buf/.*\.go$|^defcl/.*\.proto$
+        pass_filenames: false
+
       - id: buf-lint
         name: buf lint
-        entry: npx @bufbuild/buf lint defcl/schema
+        entry: bash -c 'cd defcl && npx @bufbuild/buf lint'
         language: system
         types: [proto]
         pass_filenames: false
 
       - id: buf-format-check
         name: buf format check
-        entry: npx @bufbuild/buf format defcl --diff --exit-code
+        entry: bash -c 'cd defcl && npx @bufbuild/buf format --diff --exit-code'
         language: system
         types: [proto]
         pass_filenames: false

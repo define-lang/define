@@ -1,0 +1,9 @@
+edition = "2023";
+
+package test;
+
+import "google/protobuf/duration.proto";
+
+message Config {
+  google.protobuf.Duration timeout = 1;
+}

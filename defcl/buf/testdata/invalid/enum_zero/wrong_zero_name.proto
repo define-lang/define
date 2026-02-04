@@ -1,0 +1,12 @@
+edition = "2023";
+
+package test;
+
+message Config {
+  enum Status {
+    UNKNOWN = 0;
+    ACTIVE = 1;
+  }
+
+  Status status = 1;
+}

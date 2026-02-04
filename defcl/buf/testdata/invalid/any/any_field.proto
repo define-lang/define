@@ -1,0 +1,9 @@
+edition = "2023";
+
+package test;
+
+import "google/protobuf/any.proto";
+
+message Config {
+  google.protobuf.Any payload = 1;
+}

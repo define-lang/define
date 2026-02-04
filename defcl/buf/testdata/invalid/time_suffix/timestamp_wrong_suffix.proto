@@ -1,0 +1,9 @@
+edition = "2023";
+
+package test;
+
+import "google/protobuf/timestamp.proto";
+
+message Config {
+  google.protobuf.Timestamp created = 1;
+}
