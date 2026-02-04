@@ -26,73 +26,87 @@ var spec = &check.Spec{
 		fieldNameUnderscoreRule,
 		timeFieldSuffixRule,
 	},
+	Categories: []*check.CategorySpec{
+		{
+			ID:      "DEFCL",
+			Purpose: "All DCL-specific lint rules.",
+		},
+	},
 }
 
 // Rule specifications
 
 // TODO(https://github.com/bufbuild/buf/issues/4193): Upgrade to edition 2024 when buf supports it
 var editionRule = &check.RuleSpec{
-	ID:      "DEFCL_EDITION",
-	Default: true,
-	Purpose: "Checks that all files use the right edition.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkEdition),
+	ID:          "DEFCL_EDITION",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that all files use the right edition.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkEdition),
 }
 
 var noBoolRule = &check.RuleSpec{
-	ID:      "DEFCL_NO_BOOL",
-	Default: true,
-	Purpose: "Checks that no fields use the bool type.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkNoBool),
+	ID:          "DEFCL_NO_BOOL",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that no fields use the bool type.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkNoBool),
 }
 
 var noBytesRule = &check.RuleSpec{
-	ID:      "DEFCL_NO_BYTES",
-	Default: true,
-	Purpose: "Checks that no fields use the bytes type.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkNoBytes),
+	ID:          "DEFCL_NO_BYTES",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that no fields use the bytes type.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkNoBytes),
 }
 
 var noAnyRule = &check.RuleSpec{
-	ID:      "DEFCL_NO_ANY",
-	Default: true,
-	Purpose: "Checks that no fields use google.protobuf.Any.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkNoAny),
+	ID:          "DEFCL_NO_ANY",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that no fields use google.protobuf.Any.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkNoAny),
 }
 
 var enumInMessageRule = &check.RuleSpec{
-	ID:      "DEFCL_ENUM_IN_MESSAGE",
-	Default: true,
-	Purpose: "Checks that enums are defined inside messages.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkEnumInMessage),
+	ID:          "DEFCL_ENUM_IN_MESSAGE",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that enums are defined inside messages.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkEnumInMessage),
 }
 
 var enumZeroUnspecifiedRule = &check.RuleSpec{
-	ID:      "DEFCL_ENUM_ZERO_UNSPECIFIED",
-	Default: true,
-	Purpose: "Checks that enum zero values are exactly UNSPECIFIED.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkEnumZeroUnspecified),
+	ID:          "DEFCL_ENUM_ZERO_UNSPECIFIED",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that enum zero values are exactly UNSPECIFIED.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkEnumZeroUnspecified),
 }
 
 var fieldNameUnderscoreRule = &check.RuleSpec{
-	ID:      "DEFCL_FIELD_NAME_UNDERSCORE",
-	Default: true,
-	Purpose: "Checks that underscores in field names are followed by letters and fields don't end with underscores.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkFieldNameUnderscore),
+	ID:          "DEFCL_FIELD_NAME_UNDERSCORE",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that underscores in field names are followed by letters and fields don't end with underscores.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkFieldNameUnderscore),
 }
 
 var timeFieldSuffixRule = &check.RuleSpec{
-	ID:      "DEFCL_TIME_FIELD_SUFFIX",
-	Default: true,
-	Purpose: "Checks that time-related fields have correct suffixes.",
-	Type:    check.RuleTypeLint,
-	Handler: check.RuleHandlerFunc(checkTimeFieldSuffix),
+	ID:          "DEFCL_TIME_FIELD_SUFFIX",
+	CategoryIDs: []string{"DEFCL"},
+	Default:     true,
+	Purpose:     "Checks that time-related fields have correct suffixes.",
+	Type:        check.RuleTypeLint,
+	Handler:     check.RuleHandlerFunc(checkTimeFieldSuffix),
 }
 
 // checkEdition verifies that files use edition 2023.

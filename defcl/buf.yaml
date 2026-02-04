@@ -5,6 +5,7 @@ lint:
   use:
     - STANDARD
     - COMMENTS
+    - DEFCL
   except:
     - ENUM_VALUE_PREFIX
     - PACKAGE_VERSION_SUFFIX

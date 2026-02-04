@@ -3,7 +3,6 @@ package main
 import (
 	"testing"
 
-	"buf.build/go/bufplugin/check"
 	"buf.build/go/bufplugin/check/checktest"
 )
 
@@ -23,7 +22,7 @@ func TestEdition_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_EDITION"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{editionRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -37,7 +36,7 @@ func TestEdition_Invalid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_EDITION"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{editionRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_EDITION",
@@ -58,7 +57,7 @@ func TestNoBool_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_NO_BOOL"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{noBoolRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -72,7 +71,7 @@ func TestNoBool_Invalid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_NO_BOOL"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{noBoolRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_NO_BOOL",
@@ -93,7 +92,7 @@ func TestNoBytes_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_NO_BYTES"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{noBytesRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -107,7 +106,7 @@ func TestNoBytes_Invalid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_NO_BYTES"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{noBytesRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_NO_BYTES",
@@ -128,7 +127,7 @@ func TestNoAny_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_NO_ANY"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{noAnyRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -142,7 +141,7 @@ func TestNoAny_Invalid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_NO_ANY"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{noAnyRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_NO_ANY",
@@ -163,7 +162,7 @@ func TestEnumInMessage_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_ENUM_IN_MESSAGE"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{enumInMessageRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -177,7 +176,7 @@ func TestEnumInMessage_Invalid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_ENUM_IN_MESSAGE"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{enumInMessageRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_ENUM_IN_MESSAGE",
@@ -198,7 +197,7 @@ func TestEnumZeroUnspecified_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_ENUM_ZERO_UNSPECIFIED"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{enumZeroUnspecifiedRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -212,7 +211,7 @@ func TestEnumZeroUnspecified_InvalidWrongName(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_ENUM_ZERO_UNSPECIFIED"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{enumZeroUnspecifiedRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_ENUM_ZERO_UNSPECIFIED",
@@ -231,7 +230,7 @@ func TestEnumZeroUnspecified_InvalidPrefixed(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_ENUM_ZERO_UNSPECIFIED"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{enumZeroUnspecifiedRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_ENUM_ZERO_UNSPECIFIED",
@@ -252,7 +251,7 @@ func TestFieldNameUnderscore_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_FIELD_NAME_UNDERSCORE"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{fieldNameUnderscoreRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -266,7 +265,7 @@ func TestFieldNameUnderscore_InvalidUnderscoreDigit(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_FIELD_NAME_UNDERSCORE"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{fieldNameUnderscoreRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_FIELD_NAME_UNDERSCORE",
@@ -285,7 +284,7 @@ func TestFieldNameUnderscore_InvalidTrailing(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_FIELD_NAME_UNDERSCORE"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{fieldNameUnderscoreRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_FIELD_NAME_UNDERSCORE",
@@ -304,7 +303,7 @@ func TestFieldNameUnderscore_InvalidDouble(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_FIELD_NAME_UNDERSCORE"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{fieldNameUnderscoreRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_FIELD_NAME_UNDERSCORE",
@@ -325,7 +324,7 @@ func TestTimeFieldSuffix_Valid(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_TIME_FIELD_SUFFIX"},
 		},
-		Spec:                &check.Spec{Rules: []*check.RuleSpec{timeFieldSuffixRule}},
+		Spec:                spec,
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
@@ -339,7 +338,7 @@ func TestTimeFieldSuffix_InvalidDuration(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_TIME_FIELD_SUFFIX"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{timeFieldSuffixRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_TIME_FIELD_SUFFIX",
@@ -358,7 +357,7 @@ func TestTimeFieldSuffix_InvalidTimestamp(t *testing.T) {
 			},
 			RuleIDs: []string{"DEFCL_TIME_FIELD_SUFFIX"},
 		},
-		Spec: &check.Spec{Rules: []*check.RuleSpec{timeFieldSuffixRule}},
+		Spec: spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				RuleID:       "DEFCL_TIME_FIELD_SUFFIX",
