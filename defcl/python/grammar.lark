@@ -1,0 +1,46 @@
+// Import common terminals
+%import common.DIGIT
+%import common.LCASE_LETTER
+%import common.UCASE_LETTER
+
+// Newline - only LF (ASCII #10), no CR allowed
+NEWLINE: "\n"
+
+// Whitespace - only space and LF newline allowed (no tabs, no CR)
+WHITESPACE: (" " | NEWLINE)+
+%ignore WHITESPACE
+
+// Comments - shell style
+COMMENT: /#[^\x00-\x09\x0b-\x1f\x7f]*/
+%ignore COMMENT
+
+// Field names - strict DCL rules
+FIELD_NAME: LCASE_LETTER (LCASE_LETTER | DIGIT | "_" LCASE_LETTER)*
+
+// String literals - double-quoted only with escapes
+STRING: "\"" (_STRING_CHAR | _ESCAPE)* "\""
+_STRING_CHAR: /[^\"\\\n\x00]/
+_ESCAPE: "\\" /[abfnrtv?\\'"]/
+       | "\\" /[0-7]{1,3}/
+       | "\\x" /[0-9A-Fa-f]{1,2}/
+       | "\\u" /[0-9A-Fa-f]{4}/
+       | "\\U000" /[0-9A-Fa-f]{5}/
+       | "\\U0010" /[0-9A-Fa-f]{4}/
+
+// Numeric literals
+INTEGER: ["-"] _DEC_LIT
+FLOAT: ["-"] _DEC_LIT "." DIGIT+
+_DEC_LIT: "0" | /[1-9]/ DIGIT*
+
+// Enum values
+ENUM_VALUE: UCASE_LETTER (UCASE_LETTER | DIGIT | "_")*
+
+// Grammar rules
+start: top_level_message+
+top_level_message: FIELD_NAME ":" message_value
+
+field: FIELD_NAME ":" value
+value: STRING | INTEGER | FLOAT | ENUM_VALUE | message_value | repeated_value
+
+message_value: "{" field* "}"
+repeated_value: "[" [value ("," value)*] "]"
