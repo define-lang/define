@@ -1,0 +1,11 @@
+edition = "2024";
+
+package defcl.core;
+
+message Defcl {
+  enum Boolean {
+    UNSPECIFIED = 0;
+    TRUE = 1;
+    FALSE = 2;
+  }
+}
