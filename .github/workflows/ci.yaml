@@ -27,6 +27,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync
 
+      # We need separate checks because we only enforce linting on the
+      # schema directory, but also care about formatting any test data
+      # we check into the repo.
       - uses: bufbuild/buf-action@v1
         with:
           input: defcl/schema
