@@ -27,24 +27,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync
 
-      # We need separate checks because we only enforce linting on the
-      # schema directory, but also care about formatting any test data
-      # we check into the repo.
       - uses: bufbuild/buf-action@v1
         with:
-          input: defcl/schema
-          push: false
-          lint: true
-          format: false
-          breaking: false
-
-      - uses: bufbuild/buf-action@v1
-        with:
-          input: defcl
-          push: false
-          lint: false
-          format: true
-          breaking: false
+          setup_only: true
 
       - name: Run checks in parallel and report results
         env:

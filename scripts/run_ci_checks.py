@@ -85,6 +85,14 @@ CHECKS = [
             "--check",
         ],
     ),
+    Check(
+        name="Buf Lint",
+        command=["buf", "lint", "defcl/schema"],
+    ),
+    Check(
+        name="Buf Format",
+        command=["buf", "format", "--diff", "--exit-code", "defcl"],
+    ),
 ]
 
 
