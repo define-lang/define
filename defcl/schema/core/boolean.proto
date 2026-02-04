@@ -1,6 +1,6 @@
 edition = "2024";
 
-package defcl.core;
+package defcl.schema.core;
 
 message Defcl {
   enum Boolean {
