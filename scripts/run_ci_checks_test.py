@@ -91,3 +91,15 @@ def test_run_checks_with_reporting_failure():
             sha="abc123",
         )
         assert result == run_ci_checks.REPORTING_ERROR_EXIT_CODE
+
+
+def test_run_check_with_working_directory():
+    check = run_ci_checks.Check(
+        name="Working Directory Test",
+        command=["pwd"],
+        report_to_github=False,
+        working_directory="defcl",
+    )
+    result = run_ci_checks.run_check(check)
+    assert result.exit_code == run_ci_checks.SUCCESS_EXIT_CODE
+    assert result.output.strip().endswith("/defcl")

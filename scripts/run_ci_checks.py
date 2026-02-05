@@ -30,6 +30,7 @@ class Check:
     name: str
     command: list[str]
     report_to_github: bool = True
+    working_directory: str | None = None
 
 
 @dataclass
@@ -87,11 +88,13 @@ CHECKS = [
     ),
     Check(
         name="Buf Lint",
-        command=["buf", "lint", "defcl/schema"],
+        command=["buf", "lint", "schema"],
+        working_directory="defcl",
     ),
     Check(
         name="Buf Format",
-        command=["buf", "format", "--diff", "--exit-code", "defcl"],
+        command=["buf", "format", "--diff", "--exit-code", "."],
+        working_directory="defcl",
     ),
 ]
 
@@ -112,6 +115,7 @@ def run_check(check: Check, timeout: float = CHECK_TIMEOUT_SECONDS) -> CheckResu
             capture_output=True,
             text=True,
             timeout=timeout,
+            cwd=check.working_directory,
         )
         return CheckResult(
             check=check,
