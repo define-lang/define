@@ -7,7 +7,7 @@ schema requirements.
 
 | Rule ID                       | Description                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------ |
-| `DEFCL_EDITION`               | Files must use edition 2023                                                    |
+| `DEFCL_EDITION`               | Files must use the required edition                                            |
 | `DEFCL_NO_BOOL`               | Fields cannot use the `bool` type                                              |
 | `DEFCL_NO_BYTES`              | Fields cannot use the `bytes` type                                             |
 | `DEFCL_NO_ANY`                | Fields cannot use `google.protobuf.Any`                                        |
