@@ -1,4 +1,4 @@
-"""Parser for Define Configuration Language (DCL) files."""
+"""Syntax validation for Define Configuration Language (DCL) files."""
 
 import os
 from functools import cached_property
@@ -7,7 +7,7 @@ from pathlib import Path
 import lark
 from lark import exceptions
 
-_GRAMMAR_PATH = Path(__file__).parent / "grammar.lark"
+_GRAMMAR_PATH = Path(__file__).parent.parent / "grammar.lark"
 
 
 class DCLSyntaxError(Exception):
