@@ -1,0 +1,27 @@
+edition = "2023";
+
+package defcl.testdata.valid.schemas;
+
+message StringsFile {
+  Config config = 1;
+  message Config {
+    string basic = 1;
+    string with_spaces = 2;
+    string with_newline = 3;
+    string with_tab = 4;
+    string with_backslash = 5;
+    string with_quote = 6;
+    string with_apostrophe = 7;
+    string with_bell = 8;
+    string with_backspace = 9;
+    string with_formfeed = 10;
+    string with_return = 11;
+    string with_vtab = 12;
+    string with_question = 13;
+    string octal_escape = 14;
+    string hex_escape = 15;
+    string unicode_bmp = 16;
+    string unicode_smp = 17;
+    string unicode_spb = 18;
+  }
+}

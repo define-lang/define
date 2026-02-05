@@ -1,0 +1,13 @@
+edition = "2023";
+
+package defcl.testdata.valid.schemas;
+
+message RepeatedMessagesFile {
+  Project project = 1;
+  message Project {
+    repeated Dependency dependencies = 1;
+  }
+  message Dependency {
+    string universe = 1;
+  }
+}

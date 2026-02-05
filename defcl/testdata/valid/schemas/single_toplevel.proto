@@ -1,0 +1,10 @@
+edition = "2023";
+
+package defcl.testdata.valid.schemas;
+
+message SingleToplevelFile {
+  Project project = 1;
+  message Project {
+    string universe_name = 1;
+  }
+}

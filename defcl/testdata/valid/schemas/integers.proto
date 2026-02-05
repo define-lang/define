@@ -1,0 +1,13 @@
+edition = "2023";
+
+package defcl.testdata.valid.schemas;
+
+message IntegersFile {
+  Config config = 1;
+  message Config {
+    int32 positive = 1;
+    int32 negative = 2;
+    int32 zero = 3;
+    int32 large = 4;
+  }
+}

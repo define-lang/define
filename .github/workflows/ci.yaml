@@ -41,6 +41,9 @@ jobs:
       - name: Run buf plugin tests
         run: cd defcl/buf && go test -v ./...
 
+      - name: Generate protobuf code
+        run: cd defcl && buf generate --output schema schema/ && buf generate --output testdata/valid/schemas testdata/valid/schemas/
+
       - name: Run checks in parallel and report results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
