@@ -1,6 +1,6 @@
 # Root package
 
-load("@bazel_skylib//rules:native_binary.bzl", "native_test")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
 
 gazelle_binary(
@@ -14,6 +14,27 @@ gazelle_binary(
 gazelle(
     name = "gazelle",
     gazelle = ":gazelle_bin",
+)
+
+# --- Lock file management ---
+
+native_binary(
+    name = "update_lock",
+    src = "//scripts:update_lock",
+    out = "update_lock_bin",
+    data = [
+        "pyproject.toml",
+        "uv.lock",
+        "//compiler:pyproject.toml",
+        "//defcl:pyproject.toml",
+        "//scripts:pyproject.toml",
+        "@multitool//tools/uv",
+    ],
+    args = ["$(location @multitool//tools/uv)"],
+    tags = [
+        "local",
+        "requires-network",
+    ],
 )
 
 # --- Lock file freshness ---

@@ -10,6 +10,13 @@ native_binary(
     visibility = ["//:__pkg__"],
 )
 
+native_binary(
+    name = "update_lock",
+    src = "update_lock.sh",
+    out = "update_lock_runner",
+    visibility = ["//:__pkg__"],
+)
+
 py_library(
     name = "run_ci_checks_lib",
     srcs = ["run_ci_checks.py"],
