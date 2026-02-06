@@ -1,0 +1,22 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+
+exports_files(["grammar.lark"])
+
+py_library(
+    name = "init",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl:__subpackages__"],
+    deps = ["//defcl:init"],
+)
+
+py_library(
+    name = "parser",
+    srcs = ["parser.py"],
+    data = ["grammar.lark"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":init",
+        "//defcl/python/validator:syntax",
+        "@pypi//protobuf",
+    ],
+)

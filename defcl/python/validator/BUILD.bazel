@@ -1,0 +1,31 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "init",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl:__subpackages__"],
+    deps = ["//defcl/python:init"],
+)
+
+py_library(
+    name = "syntax",
+    srcs = ["syntax.py"],
+    data = ["//defcl/python:grammar.lark"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":init",
+        "@pypi//lark",
+    ],
+)
+
+py_test(
+    name = "syntax_test",
+    srcs = ["syntax_test.py"],
+    data = ["//defcl/testdata"],
+    pytest_main = True,
+    deps = [
+        ":syntax",
+        "@pypi//lark",
+        "@pypi//pytest",
+    ],
+)
