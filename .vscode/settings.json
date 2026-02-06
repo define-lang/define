@@ -8,5 +8,6 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "ruff.lint.enable": true
+  "ruff.lint.enable": true,
+  "bazel.executable": "bazelisk"
 }
