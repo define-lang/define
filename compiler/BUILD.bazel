@@ -1,45 +1,22 @@
-load("@aspect_rules_py//py:defs.bzl", "py_pytest_main")
-load("@bazel_skylib//rules:native_binary.bzl", "native_test")
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
-load("@rules_python//python/uv:lock.bzl", "lock")
+load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 
-# --- Dependency locks ---
-
-lock(
-    name = "requirements",
-    srcs = ["pyproject.toml"],
-    out = "requirements.txt",
-)
-
-native_test(
-    name = "requirements_test",
-    src = "requirements.update",
-)
-
-# --- Pytest entry point ---
-
-py_pytest_main(
-    name = "__test__",
-    deps = ["@compiler_test_pip//pytest"],
-)
+exports_files(["pyproject.toml"])
 
 # --- Libraries ---
 
 py_library(
     name = "init",
     srcs = ["__init__.py"],
-    imports = [".."],
     visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "ast",
     srcs = ["ast.py"],
-    imports = [".."],
     visibility = ["//visibility:public"],
     deps = [
         ":init",
-        "@compiler_pip//lark",
+        "@pypi//lark",
     ],
 )
 
@@ -47,22 +24,20 @@ py_library(
     name = "parser",
     srcs = ["parser.py"],
     data = ["grammar.lark"],
-    imports = [".."],
     visibility = ["//visibility:public"],
     deps = [
         ":init",
-        "@compiler_pip//lark",
+        "@pypi//lark",
     ],
 )
 
 py_library(
     name = "transformer",
     srcs = ["transformer.py"],
-    imports = [".."],
     visibility = ["//visibility:public"],
     deps = [
         ":ast",
-        "@compiler_pip//lark",
+        "@pypi//lark",
     ],
 )
 
@@ -70,7 +45,6 @@ py_library(
     name = "validator",
     srcs = ["validator.py"],
     data = ["//spec:reserved_words"],
-    imports = [".."],
     visibility = ["//visibility:public"],
     deps = [":ast"],
 )
@@ -79,46 +53,34 @@ py_library(
 
 py_test(
     name = "parser_test",
-    srcs = [
-        "parser_test.py",
-        ":__test__",
-    ],
-    imports = [".."],
-    main = "__test__.py",
+    srcs = ["parser_test.py"],
+    pytest_main = True,
     deps = [
-        ":__test__",
         ":parser",
-        "@compiler_pip//lark",
+        "@pypi//lark",
+        "@pypi//pytest",
     ],
 )
 
 py_test(
     name = "transformer_test",
-    srcs = [
-        "transformer_test.py",
-        ":__test__",
-    ],
-    imports = [".."],
-    main = "__test__.py",
+    srcs = ["transformer_test.py"],
+    pytest_main = True,
     deps = [
-        ":__test__",
         ":parser",
         ":transformer",
+        "@pypi//pytest",
     ],
 )
 
 py_test(
     name = "validator_test",
-    srcs = [
-        "validator_test.py",
-        ":__test__",
-    ],
-    imports = [".."],
-    main = "__test__.py",
+    srcs = ["validator_test.py"],
+    pytest_main = True,
     deps = [
-        ":__test__",
         ":parser",
         ":transformer",
         ":validator",
+        "@pypi//pytest",
     ],
 )

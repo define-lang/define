@@ -69,8 +69,10 @@ exclude = [
 
 [dependency-groups]
 dev = [
+    "build",
     "pre-commit",
     "pyright[nodejs]",
     "pytest>=6",
     "ruff",
+    "setuptools",
 ]

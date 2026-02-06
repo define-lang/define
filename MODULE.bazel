@@ -13,6 +13,7 @@ bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "33.5")
 bazel_dep(name = "aspect_rules_py", version = "1.8.4")
 bazel_dep(name = "rules_buf", version = "0.5.2")
+bazel_dep(name = "rules_multitool", version = "1.11.1")
 
 # --- Python toolchain ---
 
@@ -21,30 +22,17 @@ python.toolchain(
     python_version = "3.12",
 )
 
-# --- Python pip dependencies ---
+# --- Python pip dependencies (via aspect_rules_py uv) ---
 
-pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-pip.parse(
-    hub_name = "compiler_pip",
-    python_version = "3.12",
-    requirements_lock = "//compiler:requirements.txt",
+pypi = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
+pypi.declare_hub(hub_name = "pypi")
+pypi.declare_venv(hub_name = "pypi", venv_name = "default")
+pypi.lockfile(
+    hub_name = "pypi",
+    venv_name = "default",
+    src = "//:uv.lock",
 )
-pip.parse(
-    hub_name = "defcl_pip",
-    python_version = "3.12",
-    requirements_lock = "//defcl:requirements.txt",
-)
-pip.parse(
-    hub_name = "compiler_test_pip",
-    python_version = "3.12",
-    requirements_lock = "//compiler:requirements_test.txt",
-)
-pip.parse(
-    hub_name = "scripts_pip",
-    python_version = "3.12",
-    requirements_lock = "//scripts:requirements.txt",
-)
-use_repo(pip, "compiler_pip", "compiler_test_pip", "defcl_pip", "scripts_pip")
+use_repo(pypi, "pypi")
 
 # --- Go SDK ---
 
@@ -63,17 +51,14 @@ go_deps.gazelle_override(
 )
 use_repo(go_deps, "build_buf_go_bufplugin", "org_golang_google_protobuf")
 
-# --- uv toolchain (dev only, for lock file generation) ---
-
-uv = use_extension(
-    "@rules_python//python/uv:uv.bzl",
-    "uv",
-    dev_dependency = True,
-)
-uv.configure()
-
 # --- Buf toolchain ---
 
 buf = use_extension("@rules_buf//buf:extensions.bzl", "buf")
 buf.toolchains(version = "v1.65.0")
 use_repo(buf, "rules_buf_toolchains")
+
+# --- Multitool (uv binary) ---
+
+multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitool")
+multitool.hub(lockfile = "//scripts:multitool.lock.json")
+use_repo(multitool, "multitool")

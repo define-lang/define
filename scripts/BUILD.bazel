@@ -1,57 +1,52 @@
-load("@bazel_skylib//rules:native_binary.bzl", "native_test")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
-load("@rules_python//python/uv:lock.bzl", "lock")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 
-lock(
-    name = "requirements",
-    srcs = ["pyproject.toml"],
-    out = "requirements.txt",
-)
+exports_files(["pyproject.toml"])
 
-native_test(
-    name = "requirements_test",
-    src = "requirements.update",
+native_binary(
+    name = "uv_lock_test",
+    src = "uv_lock_test.sh",
+    out = "uv_lock_test_runner",
+    visibility = ["//:__pkg__"],
 )
 
 py_library(
     name = "run_ci_checks_lib",
     srcs = ["run_ci_checks.py"],
     imports = ["."],
-    deps = ["@scripts_pip//requests"],
+    deps = ["@pypi//requests"],
 )
 
 py_binary(
     name = "run_ci_checks",
     srcs = ["run_ci_checks.py"],
     imports = ["."],
-    deps = ["@scripts_pip//requests"],
+    deps = ["@pypi//requests"],
 )
 
 py_test(
     name = "run_ci_checks_test",
     srcs = ["run_ci_checks_test.py"],
-    imports = ["."],
+    pytest_main = True,
     deps = [
         ":run_ci_checks_lib",
-        "@scripts_pip//requests",
+        "@pypi//pytest",
+        "@pypi//requests",
     ],
 )
 
 py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
-    imports = ["."],
-    deps = ["@scripts_pip//pyyaml"],
+    deps = ["@pypi//pyyaml"],
 )
 
 py_binary(
     name = "validate_proposals",
     srcs = ["validate_proposals.py"],
-    imports = ["."],
 )
 
 py_binary(
     name = "sync_cursor_permissions",
     srcs = ["sync_cursor_permissions.py"],
-    imports = ["."],
 )
