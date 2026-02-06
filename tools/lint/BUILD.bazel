@@ -1,17 +1,3 @@
-# Lint aspect definitions for the project.
+# Lint definitions for the project.
 
-load("@aspect_rules_py//py:defs.bzl", "py_binary")
-load("//tools/lint:pyright_test.bzl", "pyright_test_suite")
-
-py_binary(
-    name = "pyright_tool",
-    srcs = ["pyright_wrapper.py"],
-    main = "pyright_wrapper.py",
-    deps = [
-        "@pypi//nodejs_wheel_binaries",
-        "@pypi//pyright",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-pyright_test_suite(name = "pyright_tests")
+exports_files(["pyright_test_runner.py"])

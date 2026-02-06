@@ -23,6 +23,7 @@ py_test(
     srcs = ["syntax_test.py"],
     data = ["//defcl/testdata"],
     pytest_main = True,
+    visibility = ["//defcl/python:__pkg__"],
     deps = [
         ":syntax",
         "@pypi//lark",

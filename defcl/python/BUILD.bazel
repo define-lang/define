@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["grammar.lark"])
 
@@ -18,5 +19,21 @@ py_library(
         ":init",
         "//defcl/python/validator:syntax",
         "@pypi//protobuf",
+    ],
+)
+
+# --- Type-checking ---
+
+# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
+# package or its sub-packages, you must also add it to the deps list below.
+pyright_test(
+    name = "pyright_test",
+    pyproject = "//defcl:pyproject.toml",
+    deps = [
+        ":init",
+        ":parser",
+        "//defcl/python/validator:init",
+        "//defcl/python/validator:syntax",
+        "//defcl/python/validator:syntax_test",
     ],
 )

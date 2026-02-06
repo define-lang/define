@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
+load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["pyproject.toml"])
 
@@ -82,5 +83,24 @@ py_test(
         ":transformer",
         ":validator",
         "@pypi//pytest",
+    ],
+)
+
+# --- Type-checking ---
+
+# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
+# package or any of its sub-packages, you must also add it to the deps list below.
+pyright_test(
+    name = "pyright_test",
+    pyproject = "//compiler:pyproject.toml",
+    deps = [
+        ":ast",
+        ":init",
+        ":parser",
+        ":parser_test",
+        ":transformer",
+        ":transformer_test",
+        ":validator",
+        ":validator_test",
     ],
 )
