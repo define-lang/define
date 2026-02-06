@@ -8,7 +8,7 @@ from pathlib import Path
 
 from compiler import ast
 
-_SPEC_DIR = Path(__file__).resolve().parent.parent / "spec"
+_SPEC_DIR = Path(__file__).parent.parent / "spec"
 
 
 def _load_reserved_words(filename: str) -> frozenset[str]:

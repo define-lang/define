@@ -9,7 +9,7 @@ class ByteOrderMarkError(Exception):
     """Raised when a byte-order mark is present in input."""
 
 
-_GRAMMAR_PATH = Path(__file__).resolve().parent / "grammar.lark"
+_GRAMMAR_PATH = Path(__file__).parent / "grammar.lark"
 
 
 class Parser:
