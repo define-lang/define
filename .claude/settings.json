@@ -8,11 +8,20 @@
         "Bash(uv run pip:*)"
       ],
       "allow": [
+        "WebSearch",
+        "WebFetch(domain:registry.bazel.build)",
+        "WebFetch(domain:buf.build)",
+        "WebFetch(domain:rules-python.readthedocs.io)",
+        "WebFetch(domain:bazel.build)",
+        "WebFetch(domain:releases.bazel.build)",
+        "WebFetch(domain:blog.aspect.build)",
+        "WebFetch(domain:docs.astral.sh)",
+        "WebFetch(domain:blog.bazel.build)",
         "Bash(echo:*)",
         "Bash(ls:*)",
-        "Bash(grep :*)",
-        "Bash(rg :*)",
-        "Bash(wc :*)",
+        "Bash(grep:*)",
+        "Bash(rg:*)",
+        "Bash(wc:*)",
         "Bash(git status:*)",
         "Bash(git log:*)",
         "Bash(uv add:*)",
@@ -25,7 +34,8 @@
         "Bash(pytest:*)",
         "Bash(uv run pyright:*)",
         "Bash(uv run pytest:*)",
-        "Bash(uv run ruff:*)"
+        "Bash(uv run ruff:*)",
+        "Bash(bazelisk:*)"
       ]
     }
   }

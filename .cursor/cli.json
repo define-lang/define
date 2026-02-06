@@ -2,11 +2,20 @@
   "_comment": "This file is auto-generated from .claude/settings.json. Do not edit manually.",
   "permissions": {
     "allow": [
+      "WebSearch",
+      "WebFetch(domain:registry.bazel.build)",
+      "WebFetch(domain:buf.build)",
+      "WebFetch(domain:rules-python.readthedocs.io)",
+      "WebFetch(domain:bazel.build)",
+      "WebFetch(domain:releases.bazel.build)",
+      "WebFetch(domain:blog.aspect.build)",
+      "WebFetch(domain:docs.astral.sh)",
+      "WebFetch(domain:blog.bazel.build)",
       "Shell(echo)",
       "Shell(ls)",
-      "Shell(grep )",
-      "Shell(rg )",
-      "Shell(wc )",
+      "Shell(grep)",
+      "Shell(rg)",
+      "Shell(wc)",
       "Shell(git status)",
       "Shell(git log)",
       "Shell(uv add)",
@@ -19,7 +28,8 @@
       "Shell(pytest)",
       "Shell(uv run pyright)",
       "Shell(uv run pytest)",
-      "Shell(uv run ruff)"
+      "Shell(uv run ruff)",
+      "Shell(bazelisk)"
     ],
     "deny": [
       "Shell(pip)",
