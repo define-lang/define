@@ -20,6 +20,9 @@ common --incompatible_resolve_select_keys_eagerly
 # Set default uv venv for aspect_rules_py package resolution
 build --@pypi//venv=default
 
+# Use prebuilt protoc binary instead of compiling from C++ source.
+build --@protobuf//bazel/toolchains:prefer_prebuilt_protoc
+
 # Ruff linting via aspect_rules_lint
 build --aspects=//tools/lint:linters.bzl%ruff
 build --output_groups=+rules_lint_human
