@@ -1,3 +1,7 @@
+# Bazel
+bazel-*
+.bazelrc.user
+
 experimental/
 
 # Byte-compiled / optimized / DLL files

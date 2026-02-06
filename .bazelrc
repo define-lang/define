@@ -1,0 +1,5 @@
+# Show full command lines on failure
+build --verbose_failures
+
+# Only show output from failing tests
+test --test_output=errors

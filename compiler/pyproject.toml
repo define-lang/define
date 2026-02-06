@@ -1,0 +1,18 @@
+[project]
+name = "define-compiler"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "lark",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=6",
+]
+
+[tool.pyright]
+exclude = ["bazel-*"]
+
+[tool.ruff]
+extend = "../pyproject.toml"

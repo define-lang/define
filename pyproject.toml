@@ -8,6 +8,9 @@ dependencies = [
     "lark",
 ]
 
+[tool.uv.workspace]
+members = ["compiler", "defcl"]
+
 [tool.ruff.lint]
 extend-select = [
   "W",  # pycodestyle warnings
@@ -52,10 +55,17 @@ convention = "pep257"
 
 [tool.pytest.ini_options]
 junit_logging = "all"
-norecursedirs = ["experimental"]
+norecursedirs = [
+    "bazel-*",
+    "experimental"
+]
 
 [tool.pyright]
-exclude = ["experimental", ".venv"]
+exclude = [
+    "experimental",
+    ".venv",
+    "bazel-*",
+]
 
 [dependency-groups]
 dev = [
