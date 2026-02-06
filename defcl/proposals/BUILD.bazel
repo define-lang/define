@@ -1,0 +1,14 @@
+load("@bazel_skylib//rules:native_binary.bzl", "native_test")
+
+filegroup(
+    name = "proposals",
+    srcs = glob(["0*.md"]),
+)
+
+native_test(
+    name = "validate_proposals_test",
+    src = "//tools:validate_proposals",
+    out = "validate_proposals_test_runner",
+    args = ["$(locations :proposals)"],
+    data = [":proposals"],
+)
