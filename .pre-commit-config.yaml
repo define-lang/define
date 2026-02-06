@@ -27,14 +27,14 @@ repos:
 
       - id: validate-proposals
         name: validate proposals
-        entry: uv run python scripts/validate_proposals.py
+        entry: uv run python tools/validate_proposals.py
         language: system
         types: [markdown]
         files: ^(proposals|defcl/proposals)/(.*/)?\d{5}-.*\.md$
 
       - id: check-cursor-permissions
         name: check cursor permissions
-        entry: uv run python scripts/sync_cursor_permissions.py --check
+        entry: uv run python tools/sync_cursor_permissions.py --check
         language: system
         files: ^\.claude/settings\.json$|^\.cursor/cli\.json$
         pass_filenames: false

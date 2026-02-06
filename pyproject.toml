@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["compiler", "defcl", "scripts"]
+members = ["compiler", "defcl", "tools"]
 
 [tool.ruff.lint]
 extend-select = [

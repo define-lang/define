@@ -20,14 +20,14 @@ gazelle(
 
 native_binary(
     name = "update_lock",
-    src = "//scripts:update_lock",
+    src = "//tools:update_lock",
     out = "update_lock_bin",
     data = [
         "pyproject.toml",
         "uv.lock",
         "//compiler:pyproject.toml",
         "//defcl:pyproject.toml",
-        "//scripts:pyproject.toml",
+        "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
     args = ["$(location @multitool//tools/uv)"],
@@ -41,14 +41,14 @@ native_binary(
 
 native_test(
     name = "uv_lock_test",
-    src = "//scripts:uv_lock_test",
+    src = "//tools:uv_lock_test",
     out = "uv_lock_test_bin",
     data = [
         "pyproject.toml",
         "uv.lock",
         "//compiler:pyproject.toml",
         "//defcl:pyproject.toml",
-        "//scripts:pyproject.toml",
+        "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
     args = ["$(location @multitool//tools/uv)"],

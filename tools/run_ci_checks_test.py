@@ -5,7 +5,7 @@ import tempfile
 from unittest.mock import patch
 
 import requests
-from scripts import run_ci_checks
+from tools import run_ci_checks
 
 
 def _make_check(name: str, command: list[str]) -> run_ci_checks.Check:

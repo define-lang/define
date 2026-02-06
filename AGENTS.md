@@ -84,7 +84,7 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 - All Python dependencies are managed via `aspect_rules_py`'s uv extension with
   a single `pypi` hub backed by the root `uv.lock`.
 - Dependencies are declared in per-package `pyproject.toml` files
-  (`compiler/pyproject.toml`, `defcl/pyproject.toml`, `scripts/pyproject.toml`).
+  (`compiler/pyproject.toml`, `defcl/pyproject.toml`, `tools/pyproject.toml`).
 - To regenerate `uv.lock` after changing any `pyproject.toml`: `uv lock`
 - Reference dependencies in BUILD files as `@pypi//package_name`.
 
@@ -96,5 +96,5 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 ### uv Workspace
 
 - The root `pyproject.toml` declares a uv workspace with members `compiler`,
-  `defcl`, and `scripts`.
+  `defcl`, and `tools`.
 - `uv sync` still works for local development outside Bazel.

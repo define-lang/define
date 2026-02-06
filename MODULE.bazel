@@ -60,5 +60,5 @@ use_repo(buf, "rules_buf_toolchains")
 # --- Multitool (uv binary) ---
 
 multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitool")
-multitool.hub(lockfile = "//scripts:multitool.lock.json")
+multitool.hub(lockfile = "//tools:multitool.lock.json")
 use_repo(multitool, "multitool")

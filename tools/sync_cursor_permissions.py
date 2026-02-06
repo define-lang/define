@@ -89,7 +89,7 @@ def check_permissions(base_dir: Path) -> None:
 
     if not cursor_path.exists():
         print(f"Error: {cursor_path} does not exist")
-        print("Run: uv run scripts/sync_cursor_permissions.py")
+        print("Run: uv run tools/sync_cursor_permissions.py")
         sys.exit(1)
 
     with cursor_path.open() as f:
@@ -109,7 +109,7 @@ def check_permissions(base_dir: Path) -> None:
         )
         print()
         print("".join(diff))
-        print("To fix, run: uv run scripts/sync_cursor_permissions.py")
+        print("To fix, run: uv run tools/sync_cursor_permissions.py")
         sys.exit(1)
 
 

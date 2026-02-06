@@ -7,7 +7,7 @@ members = [
     "define",
     "define-compiler",
     "define-defcl",
-    "define-scripts",
+    "define-tools",
 ]
 
 [[package]]
@@ -182,9 +182,9 @@ requires-dist = [
 dev = [{ name = "pytest", specifier = ">=6" }]
 
 [[package]]
-name = "define-scripts"
+name = "define-tools"
 version = "0.0.1"
-source = { virtual = "scripts" }
+source = { virtual = "tools" }
 dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
