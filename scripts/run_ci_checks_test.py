@@ -1,9 +1,11 @@
 """Tests for run_ci_checks.py."""
 
+import os
+import tempfile
 from unittest.mock import patch
 
 import requests
-import run_ci_checks
+from scripts import run_ci_checks
 
 
 def _make_check(name: str, command: list[str]) -> run_ci_checks.Check:
@@ -63,16 +65,27 @@ def test_run_checks_with_failures():
 
 
 def test_run_check_expands_glob_patterns():
-    check = _make_check("Glob Expansion Test", ["ls", "proposals/0000*.md"])
-    result = run_ci_checks.run_check(check)
-    assert result.exit_code == 0
-    output_lines = result.output.strip().split("\n")
-    assert len(output_lines) > 1
-    assert all(
-        line.startswith("proposals/0000") and line.endswith(".md")
-        for line in output_lines
-    )
-    assert "proposals/00001-types-of-names.md" in output_lines
+    with tempfile.TemporaryDirectory() as tmpdir:
+        subdir = os.path.join(tmpdir, "data")
+        os.makedirs(subdir)
+        for name in ["00001-first.md", "00002-second.md", "other.txt"]:
+            open(os.path.join(subdir, name), "w").close()
+
+        orig_cwd = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            check = _make_check("Glob Expansion Test", ["ls", "data/0000*.md"])
+            result = run_ci_checks.run_check(check)
+            assert result.exit_code == 0
+            output_lines = result.output.strip().split("\n")
+            assert len(output_lines) == 2
+            assert all(
+                line.startswith("data/0000") and line.endswith(".md")
+                for line in output_lines
+            )
+            assert "data/00001-first.md" in output_lines
+        finally:
+            os.chdir(orig_cwd)
 
 
 def test_run_checks_with_reporting_failure():
@@ -94,12 +107,21 @@ def test_run_checks_with_reporting_failure():
 
 
 def test_run_check_with_working_directory():
-    check = run_ci_checks.Check(
-        name="Working Directory Test",
-        command=["pwd"],
-        report_to_github=False,
-        working_directory="defcl",
-    )
-    result = run_ci_checks.run_check(check)
-    assert result.exit_code == run_ci_checks.SUCCESS_EXIT_CODE
-    assert result.output.strip().endswith("/defcl")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        subdir = os.path.join(tmpdir, "mysubdir")
+        os.makedirs(subdir)
+
+        orig_cwd = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            check = run_ci_checks.Check(
+                name="Working Directory Test",
+                command=["pwd"],
+                report_to_github=False,
+                working_directory="mysubdir",
+            )
+            result = run_ci_checks.run_check(check)
+            assert result.exit_code == run_ci_checks.SUCCESS_EXIT_CODE
+            assert result.output.strip().endswith("/mysubdir")
+        finally:
+            os.chdir(orig_cwd)
