@@ -1,0 +1,9 @@
+filegroup(
+    name = "reserved_words",
+    srcs = [
+        "package_repositories.txt",
+        "programming_languages.txt",
+        "small_common_words.txt",
+    ],
+    visibility = ["//compiler:__pkg__"],
+)
