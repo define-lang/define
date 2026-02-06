@@ -38,6 +38,9 @@ extend-select = [
   "RUF",  # Ruff-specific rules
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["compiler", "defcl", "tools"]
+
 [tool.ruff.lint.extend-per-file-ignores]
 "**/*.py" = [
     "S603", # Allow subprocess calls without a shell.
@@ -48,6 +51,9 @@ extend-select = [
     "D101", # Don't require docstrings on test classes.
     "D102", # Don't require docstrings on test methods.
     "D103", # Don't require docstrings on test functions.
+]
+"compiler/ast.py" = [
+    "A005", # Module intentionally named ast for AST definitions.
 ]
 
 [tool.ruff.lint.pydocstyle]

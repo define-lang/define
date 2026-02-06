@@ -11,10 +11,16 @@ common --incompatible_default_to_explicit_init_py
 common --incompatible_enforce_starlark_utf8=error
 common --incompatible_no_implicit_file_export
 common --incompatible_python_disallow_native_rules
-common --incompatible_stop_exporting_build_file_path
+# Uncomment when rules_diff (aspect_rules_lint transitive dep) supports it.
+#common --incompatible_stop_exporting_build_file_path
 # Uncomment when with_cfg supports it.
 #common --incompatible_stop_exporting_language_modules
 common --incompatible_resolve_select_keys_eagerly
 
 # Set default uv venv for aspect_rules_py package resolution
 build --@pypi//venv=default
+
+# Ruff linting via aspect_rules_lint
+build --aspects=//tools/lint:linters.bzl%ruff
+build --output_groups=+rules_lint_human
+build --@aspect_rules_lint//lint:fail_on_violation

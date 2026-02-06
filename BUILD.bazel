@@ -3,6 +3,8 @@
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
 
+exports_files(["pyproject.toml"])
+
 gazelle_binary(
     name = "gazelle_bin",
     languages = [
