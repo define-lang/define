@@ -76,6 +76,8 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 - Test all targets: `bazelisk test //...`
 - Do not use `bazelisk --strict` until the ruleset ecosystem fully supports
   Bazel 9's incompatible flags.
+- Keep build targets atomic — each target should contain only the minimum
+  necessary sources and dependencies.
 
 ### Python Dependencies
 
@@ -88,6 +90,11 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
   - `bazelisk run //defcl:requirements.update`
 - Two separate pip hubs (`compiler_pip`, `defcl_pip`) enforce clean dependency
   boundaries between packages.
+
+### Keeping Dependencies Up to Date
+
+- Periodically check that the `bazel_dep` entries and the buf toolchain version
+  in `MODULE.bazel` are on the latest stable versions.
 
 ### uv Workspace
 
