@@ -8,6 +8,7 @@ import re
 import sys
 import urllib.request
 from pathlib import Path
+from typing import Any, cast
 
 import yaml
 
@@ -46,7 +47,7 @@ def main() -> int:
         print(f"Failed to fetch {LINGUIST_URL}: {e}", file=sys.stderr)
         return 1
 
-    languages = yaml.safe_load(content)
+    languages = cast("dict[str, dict[str, Any]]", yaml.safe_load(content))
     tokens: set[str] = set()
     for lang_name, props in languages.items():
         if props.get("type") != "programming":

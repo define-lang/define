@@ -24,3 +24,7 @@ build --@pypi//venv=default
 build --aspects=//tools/lint:linters.bzl%ruff
 build --output_groups=+rules_lint_human
 build --@aspect_rules_lint//lint:fail_on_violation
+
+# Type-checking via pyright aspect
+build:pyright --aspects=//tools/lint:pyright.bzl%pyright_aspect
+build:pyright --output_groups=+pyright
