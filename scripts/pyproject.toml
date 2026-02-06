@@ -1,0 +1,19 @@
+[project]
+name = "define-scripts"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml",
+    "requests",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=6",
+]
+
+[tool.pyright]
+exclude = ["bazel-*"]
+
+[tool.ruff]
+extend = "../pyproject.toml"

@@ -1,0 +1,51 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("@rules_python//python/uv:lock.bzl", "lock")
+
+lock(
+    name = "requirements",
+    srcs = ["pyproject.toml"],
+    out = "requirements.txt",
+)
+
+py_library(
+    name = "run_ci_checks_lib",
+    srcs = ["run_ci_checks.py"],
+    imports = ["."],
+    deps = ["@scripts_pip//requests"],
+)
+
+py_binary(
+    name = "run_ci_checks",
+    srcs = ["run_ci_checks.py"],
+    imports = ["."],
+    deps = ["@scripts_pip//requests"],
+)
+
+py_test(
+    name = "run_ci_checks_test",
+    srcs = ["run_ci_checks_test.py"],
+    imports = ["."],
+    deps = [
+        ":run_ci_checks_lib",
+        "@scripts_pip//requests",
+    ],
+)
+
+py_binary(
+    name = "generate_programming_languages",
+    srcs = ["generate_programming_languages.py"],
+    imports = ["."],
+    deps = ["@scripts_pip//pyyaml"],
+)
+
+py_binary(
+    name = "validate_proposals",
+    srcs = ["validate_proposals.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "sync_cursor_permissions",
+    srcs = ["sync_cursor_permissions.py"],
+    imports = ["."],
+)

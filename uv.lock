@@ -7,6 +7,7 @@ members = [
     "define",
     "define-compiler",
     "define-defcl",
+    "define-scripts",
 ]
 
 [[package]]
@@ -106,7 +107,6 @@ dev = [
     { name = "pre-commit" },
     { name = "pyright", extra = ["nodejs"] },
     { name = "pytest" },
-    { name = "requests" },
     { name = "ruff" },
 ]
 
@@ -118,7 +118,6 @@ dev = [
     { name = "pre-commit" },
     { name = "pyright", extras = ["nodejs"] },
     { name = "pytest", specifier = ">=6" },
-    { name = "requests" },
     { name = "ruff" },
 ]
 
@@ -159,6 +158,29 @@ dev = [
 requires-dist = [
     { name = "lark" },
     { name = "protobuf" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=6" }]
+
+[[package]]
+name = "define-scripts"
+version = "0.0.1"
+source = { virtual = "scripts" }
+dependencies = [
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pyyaml" },
+    { name = "requests" },
 ]
 
 [package.metadata.requires-dev]

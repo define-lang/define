@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["compiler", "defcl"]
+members = ["compiler", "defcl", "scripts"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -72,6 +72,5 @@ dev = [
     "pre-commit",
     "pyright[nodejs]",
     "pytest>=6",
-    "requests",
     "ruff",
 ]
