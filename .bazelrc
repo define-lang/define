@@ -3,3 +3,14 @@ build --verbose_failures
 
 # Only show output from failing tests
 test --test_output=errors
+
+# Opt into future Bazel defaults (green-field project)
+common --incompatible_check_testonly_for_output_files
+common --incompatible_config_setting_private_default_visibility
+common --incompatible_default_to_explicit_init_py
+common --incompatible_enforce_starlark_utf8=error
+common --incompatible_no_implicit_file_export
+common --incompatible_python_disallow_native_rules
+common --incompatible_stop_exporting_build_file_path
+common --incompatible_stop_exporting_language_modules
+common --incompatible_resolve_select_keys_eagerly

@@ -1,1 +1,28 @@
-# Go buf plugin package — targets added in Phase 2.
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+# gazelle:exclude testdata
+
+go_library(
+    name = "buf_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/define-lang/define/defcl/buf",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@build_buf_go_bufplugin//check",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+    ],
+)
+
+go_binary(
+    name = "buf",
+    embed = [":buf_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "buf_test",
+    srcs = ["main_test.go"],
+    data = glob(["testdata/**/*"]),
+    embed = [":buf_lib"],
+    deps = ["@build_buf_go_bufplugin//check/checktest"],
+)
