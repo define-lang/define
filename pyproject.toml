@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "lark",
-    "protobuf",
 ]
 
 [tool.ruff.lint]
@@ -56,11 +55,10 @@ junit_logging = "all"
 norecursedirs = ["experimental"]
 
 [tool.pyright]
-exclude = ["experimental", ".venv", "defcl/testdata"]
+exclude = ["experimental", ".venv"]
 
 [dependency-groups]
 dev = [
-    "mypy-protobuf",
     "pre-commit",
     "pyright[nodejs]",
     "pytest>=6",

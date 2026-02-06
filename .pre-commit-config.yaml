@@ -19,13 +19,6 @@ repos:
         language: system
         types: [python]
 
-      - id: buf-generate-python
-        name: generate protobuf code
-        entry: bash -c 'cd defcl && npx @bufbuild/buf generate --output schema schema/ && npx @bufbuild/buf generate --output testdata/valid/schemas testdata/valid/schemas/'
-        language: system
-        files: ^defcl/.*\.proto$|^defcl/python/.*\.py$
-        pass_filenames: false
-
       - id: pyright
         name: pyright
         entry: uv run pyright
