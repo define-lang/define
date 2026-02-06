@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:native_binary.bzl", "native_test")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load("@rules_python//python/uv:lock.bzl", "lock")
 
@@ -5,6 +6,11 @@ lock(
     name = "requirements",
     srcs = ["pyproject.toml"],
     out = "requirements.txt",
+)
+
+native_test(
+    name = "requirements_test",
+    src = "requirements.update",
 )
 
 py_library(
