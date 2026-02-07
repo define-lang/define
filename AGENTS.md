@@ -76,6 +76,8 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 - Test all targets: `bazelisk test //...`
 - Keep build targets atomic — each target should contain only the minimum
   necessary sources and dependencies.
+- **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
+  always set `size = "small"`.
 
 ### Python Dependencies
 

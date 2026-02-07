@@ -55,6 +55,7 @@ py_library(
 
 py_test(
     name = "parser_test",
+    size = "small",
     srcs = ["parser_test.py"],
     pytest_main = True,
     deps = [
@@ -66,6 +67,7 @@ py_test(
 
 py_test(
     name = "transformer_test",
+    size = "small",
     srcs = ["transformer_test.py"],
     pytest_main = True,
     deps = [
@@ -77,6 +79,7 @@ py_test(
 
 py_test(
     name = "validator_test",
+    size = "small",
     srcs = ["validator_test.py"],
     pytest_main = True,
     deps = [

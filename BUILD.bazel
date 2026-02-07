@@ -47,6 +47,7 @@ native_binary(
 
 native_test(
     name = "uv_lock_test",
+    size = "small",
     src = "//tools:uv_lock_test",
     out = "uv_lock_test_bin",
     args = ["$(location @multitool//tools/uv)"],

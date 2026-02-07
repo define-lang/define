@@ -1,5 +1,5 @@
 load("@aspect_rules_lint//format:defs.bzl", "format_test")
-load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_test")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
@@ -17,31 +17,6 @@ native_binary(
     src = "update_lock.sh",
     out = "update_lock_runner",
     visibility = ["//:__pkg__"],
-)
-
-py_library(
-    name = "run_ci_checks_lib",
-    srcs = ["run_ci_checks.py"],
-    imports = ["."],
-    deps = ["@pypi//requests"],
-)
-
-py_binary(
-    name = "run_ci_checks",
-    srcs = ["run_ci_checks.py"],
-    imports = ["."],
-    deps = ["@pypi//requests"],
-)
-
-py_test(
-    name = "run_ci_checks_test",
-    srcs = ["run_ci_checks_test.py"],
-    pytest_main = True,
-    deps = [
-        ":run_ci_checks_lib",
-        "@pypi//pytest",
-        "@pypi//requests",
-    ],
 )
 
 py_binary(
@@ -66,6 +41,7 @@ py_binary(
 
 py_test(
     name = "sync_cursor_permissions_test",
+    size = "small",
     srcs = ["sync_cursor_permissions.py"],
     args = ["--check"],
     data = [
@@ -92,8 +68,6 @@ pyright_test(
     pyproject = "//tools:pyproject.toml",
     deps = [
         ":generate_programming_languages",
-        ":run_ci_checks",
-        ":run_ci_checks_test",
         ":sync_cursor_permissions",
         ":sync_cursor_permissions_test",
         ":validate_proposals",

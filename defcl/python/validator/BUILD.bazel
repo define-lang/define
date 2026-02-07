@@ -27,6 +27,7 @@ format_test(
 
 py_test(
     name = "syntax_test",
+    size = "small",
     srcs = ["syntax_test.py"],
     data = ["//defcl/testdata"],
     pytest_main = True,
