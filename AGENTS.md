@@ -17,6 +17,7 @@ See [spec/spec.md] for the language specification.
 - Format all code after making a change.
 - Format all .md files with `prettier --write`
 - Format all .proto files with `npx @bufbuild/buf format -w`
+- Format all Bazel files (BUILD.bazel, .bzl, MODULE.bazel) with `buildifier`
 
 ## Linting
 

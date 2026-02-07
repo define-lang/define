@@ -27,11 +27,14 @@ python.toolchain(
 
 pypi = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
 pypi.declare_hub(hub_name = "pypi")
-pypi.declare_venv(hub_name = "pypi", venv_name = "default")
-pypi.lockfile(
+pypi.declare_venv(
     hub_name = "pypi",
     venv_name = "default",
+)
+pypi.lockfile(
     src = "//:uv.lock",
+    hub_name = "pypi",
+    venv_name = "default",
 )
 use_repo(pypi, "pypi")
 

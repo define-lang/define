@@ -28,6 +28,7 @@ native_binary(
     name = "update_lock",
     src = "//tools:update_lock",
     out = "update_lock_bin",
+    args = ["$(location @multitool//tools/uv)"],
     data = [
         "pyproject.toml",
         "uv.lock",
@@ -36,7 +37,6 @@ native_binary(
         "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
-    args = ["$(location @multitool//tools/uv)"],
     tags = [
         "local",
         "requires-network",
@@ -49,6 +49,7 @@ native_test(
     name = "uv_lock_test",
     src = "//tools:uv_lock_test",
     out = "uv_lock_test_bin",
+    args = ["$(location @multitool//tools/uv)"],
     data = [
         "pyproject.toml",
         "uv.lock",
@@ -57,7 +58,6 @@ native_test(
         "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
-    args = ["$(location @multitool//tools/uv)"],
     tags = [
         "local",
         "requires-network",

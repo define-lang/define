@@ -35,6 +35,9 @@ jobs:
         with:
           go-version: "1.22"
 
+      - name: Install buildifier
+        run: go install github.com/bazelbuild/buildtools/buildifier@latest
+
       - name: Build buf plugin
         run: cd defcl/buf && go build -o buf-plugin-defcl .
 

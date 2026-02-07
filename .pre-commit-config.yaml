@@ -7,6 +7,12 @@ repos:
         language: system
         types_or: [markdown, yaml]
 
+      - id: buildifier
+        name: buildifier format check
+        entry: buildifier -mode=diff
+        language: system
+        types: [bazel]
+
       - id: ruff-check
         name: ruff check
         entry: uv run ruff check --fix

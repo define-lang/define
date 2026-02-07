@@ -67,12 +67,12 @@ py_binary(
 py_test(
     name = "sync_cursor_permissions_test",
     srcs = ["sync_cursor_permissions.py"],
-    main = "sync_cursor_permissions.py",
     args = ["--check"],
     data = [
         "//:.claude/settings.json",
         "//:.cursor/cli.json",
     ],
+    main = "sync_cursor_permissions.py",
 )
 
 # --- Format checking ---

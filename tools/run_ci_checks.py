@@ -57,6 +57,10 @@ CHECKS = [
         command=["ruff", "format", "--check", "--diff"],
     ),
     Check(
+        name="Buildifier",
+        command=["buildifier", "-mode=diff", "-r", "."],
+    ),
+    Check(
         name="Pyright",
         command=["uv", "run", "pyright"],
     ),
