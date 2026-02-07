@@ -43,7 +43,8 @@ repos:
 
       - id: pyright
         name: pyright
-        entry: uv run pyright
+        entry: tools/pyright-precommit.sh
+        exclude: compiler/prototype
         language: system
         types: [python]
 

@@ -28,5 +28,6 @@ def pyright_test(name, pyproject, deps = [], srcs = [], data = [], **kwargs):
             "@pypi//nodejs_wheel_binaries",
             "@pypi//pyright",
         ],
+        tags = ["pyright"],
         **kwargs
     )
