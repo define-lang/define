@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 
 py_library(
@@ -16,6 +17,12 @@ py_library(
         ":init",
         "@pypi//lark",
     ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )
 
 py_test(

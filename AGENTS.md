@@ -96,6 +96,20 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
   also add it to the `deps` of the `pyright_test` in the same BUILD file (or the
   parent package's `pyright_test` for sub-packages under `defcl/python`).
 
+### Format Checking
+
+- Every BUILD file that contains Python targets must also have a `format_test`
+  target that checks formatting of all Python sources in that package.
+- **When creating a new BUILD file with Python targets**, add:
+  ```starlark
+  load("@aspect_rules_lint//format:defs.bzl", "format_test")
+  format_test(
+      name = "format_test",
+      srcs = glob(["*.py"]),
+      python = "@aspect_rules_lint//format:ruff",
+  )
+  ```
+
 ### Keeping Dependencies Up to Date
 
 - Periodically check that the `bazel_dep` entries and the buf toolchain version

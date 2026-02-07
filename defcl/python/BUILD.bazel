@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
@@ -20,6 +21,14 @@ py_library(
         "//defcl/python/validator:syntax",
         "@pypi//protobuf",
     ],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )
 
 # --- Type-checking ---

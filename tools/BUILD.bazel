@@ -1,6 +1,7 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
-load("//tools/lint:pyright.bzl", "pyright_test")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["pyproject.toml"])
 
@@ -72,6 +73,14 @@ py_test(
         "//:.claude/settings.json",
         "//:.cursor/cli.json",
     ],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )
 
 # --- Type-checking ---

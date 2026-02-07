@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 
 exports_files(["pyproject.toml"])
@@ -6,4 +7,10 @@ py_library(
     name = "init",
     srcs = ["__init__.py"],
     visibility = ["//visibility:public"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )
