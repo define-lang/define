@@ -47,28 +47,28 @@ repos:
         language: system
         types: [python]
 
-      - id: validate-proposals
-        name: validate proposals
-        entry: uv run python tools/validate_proposals.py
+      - id: bazel-checks
+        name: bazel-based checks
+        entry:
+          bazelisk test //proposals:validate_proposals_test
+          //defcl/proposals:validate_proposals_test
+          //tools:sync_cursor_permissions_test
         language: system
-        types: [markdown]
-        files: ^(proposals|defcl/proposals)/(.*/)?\d{5}-.*\.md$
-
-      - id: check-cursor-permissions
-        name: check cursor permissions
-        entry: uv run python tools/sync_cursor_permissions.py --check
-        language: system
-        files: ^\.claude/settings\.json$|^\.cursor/cli\.json$
+        types_or: [markdown, json]
         pass_filenames: false
 
       - id: buf-plugin-build
         name: build buf plugin
-        entry: bash -c 'cd defcl/buf && go build -o buf-plugin-defcl .'
+        entry: bazelisk build //defcl/buf
         language: system
-        files: ^defcl/buf/.*\.go$|^defcl/.*\.proto$
+        files: (^defcl/buf.*)|^defcl/.*\.proto$
         pass_filenames: false
   - repo: https://github.com/bufbuild/buf
     rev: v1.65.0
     hooks:
       - id: buf-lint
+        files: ^defcl/.*\.proto$
+        args: ["--config=defcl/buf.yaml"]
       - id: buf-format
+        args: ["--config=defcl/buf.yaml"]
+        files: ^defcl/.*\.proto$
