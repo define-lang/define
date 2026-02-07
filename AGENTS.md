@@ -88,7 +88,7 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 - To regenerate `uv.lock` after changing any `pyproject.toml`: `uv lock`
 - Reference dependencies in BUILD files as `@pypi//package_name`.
 
-### Pyright Type-Checking
+### Basedpyright Type-Checking
 
 - Each source directory (`compiler`, `defcl/python`, `tools`) has a
   `pyright_test` target that type-checks all Python sources in that directory.

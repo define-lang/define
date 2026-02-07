@@ -66,18 +66,30 @@ norecursedirs = [
     "experimental"
 ]
 
-[tool.pyright]
+[tool.basedpyright]
 exclude = [
     "experimental",
     ".venv",
     "bazel-*",
+    "**/*.pytest_main.py",
 ]
+# These rules trigger on incomplete third-party type stubs (lark, json, yaml).
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+reportAny = false
+reportExplicitAny = false
+# Standard Python patterns that basedpyright flags.
+reportImplicitStringConcatenation = false
+reportUnusedCallResult = false
+reportUnnecessaryIsInstance = false
 
 [dependency-groups]
 dev = [
+    "basedpyright",
     "build",
     "pre-commit",
-    "pyright[nodejs]",
     "pytest>=6",
     "ruff",
     "setuptools",

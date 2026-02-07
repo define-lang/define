@@ -1,9 +1,9 @@
-"""Pyright type-checking test macro."""
+"""Basedpyright type-checking test macro."""
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
 
 def pyright_test(name, pyproject, deps = [], srcs = [], data = [], **kwargs):
-    """Type-check Python sources in this package with pyright.
+    """Type-check Python sources in this package with basedpyright.
 
     Args:
         name: Test target name.
@@ -25,8 +25,7 @@ def pyright_test(name, pyproject, deps = [], srcs = [], data = [], **kwargs):
             "//:pyproject.toml",
         ],
         deps = deps + [
-            "@pypi//nodejs_wheel_binaries",
-            "@pypi//pyright",
+            "@pypi//basedpyright",
         ],
         tags = ["pyright"],
         **kwargs

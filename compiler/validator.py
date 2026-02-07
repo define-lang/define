@@ -14,11 +14,11 @@ _SPEC_DIR = Path(__file__).parent.parent / "spec"
 def _load_reserved_words(filename: str) -> frozenset[str]:
     """Load reserved words from a spec file."""
     path = _SPEC_DIR / filename
-    words = set()
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if line:
-            words.add(line.lower())
+    words: set[str] = set()
+    for raw_line in path.read_text().splitlines():
+        stripped = raw_line.strip()
+        if stripped:
+            words.add(stripped.lower())
     return frozenset(words)
 
 
@@ -134,11 +134,17 @@ class UniverseNameUppercaseDiagnostic(Diagnostic):
 class Validator:
     """Validates semantic rules for a Define program AST."""
 
+    _program: ast.Program
+    _source: str
+
     def __init__(self, program: ast.Program, source: str) -> None:
         """Initialize validator with a program AST and source code."""
         self._program = program
         self._source = source
         self._diagnostics: list[Diagnostic] = []
+        self._seen_definitions: dict[
+            tuple[type, tuple[str, ...]], ast.QualityDefinition
+        ] = {}
 
     @cached_property
     def source_lines(self) -> list[str]:
@@ -156,18 +162,17 @@ class Validator:
                 context and skips path matching validation.
         """
         self._diagnostics = []
-        self._file_path = file_path
-        self._seen_definitions: dict[
-            tuple[type, tuple[str, ...]], ast.QualityDefinition
-        ] = {}
+        self._seen_definitions = {}
         for definition in self._program.definitions:
-            self._validate_definition(definition)
+            self._validate_definition(definition, file_path)
         return self._diagnostics
 
-    def _validate_definition(self, definition: ast.QualityDefinition) -> None:
+    def _validate_definition(
+        self, definition: ast.QualityDefinition, file_path: str | None
+    ) -> None:
         """Validate a quality definition."""
         self._validate_global_name(definition.name)
-        self._validate_path_matches_file(definition)
+        self._validate_path_matches_file(definition, file_path)
         self._validate_not_duplicate(definition)
 
     def _validate_global_name(self, name: ast.GlobalName) -> None:
@@ -260,13 +265,15 @@ class Validator:
                 )
             )
 
-    def _validate_path_matches_file(self, definition: ast.QualityDefinition) -> None:
+    def _validate_path_matches_file(
+        self, definition: ast.QualityDefinition, file_path: str | None
+    ) -> None:
         """Validate that the definition's path matches the file path."""
-        if self._file_path is None:
+        if file_path is None:
             return
 
         definition_path = "/" + "/".join(definition.name.path)
-        expected_path = "/" + self._file_path
+        expected_path = "/" + file_path
 
         if definition_path != expected_path:
             self._diagnostics.append(

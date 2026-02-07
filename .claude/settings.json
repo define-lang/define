@@ -32,7 +32,7 @@
         "Bash(source .venv/bin/activate)",
         "Bash(prettier:*)",
         "Bash(pytest:*)",
-        "Bash(uv run pyright:*)",
+        "Bash(uv run basedpyright:*)",
         "Bash(uv run pytest:*)",
         "Bash(uv run ruff:*)",
         "Bash(bazelisk:*)"

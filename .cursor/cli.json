@@ -26,7 +26,7 @@
       "Shell(source .venv/bin/activate)",
       "Shell(prettier)",
       "Shell(pytest)",
-      "Shell(uv run pyright)",
+      "Shell(uv run basedpyright)",
       "Shell(uv run pytest)",
       "Shell(uv run ruff)",
       "Shell(bazelisk)"

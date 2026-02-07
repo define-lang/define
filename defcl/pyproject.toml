@@ -12,7 +12,7 @@ dev = [
     "pytest>=6",
 ]
 
-[tool.pyright]
+[tool.basedpyright]
 exclude = ["bazel-*"]
 
 [tool.ruff]

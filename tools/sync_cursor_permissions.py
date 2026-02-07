@@ -6,6 +6,7 @@ import difflib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 
 def translate_permission(permission: str) -> str:
@@ -34,7 +35,7 @@ def translate_permission(permission: str) -> str:
     return permission
 
 
-def load_claude_settings(base_dir: Path) -> dict:
+def load_claude_settings(base_dir: Path) -> dict[str, Any]:
     """Load Claude settings file."""
     settings_path = base_dir / ".claude" / "settings.json"
 
@@ -42,7 +43,7 @@ def load_claude_settings(base_dir: Path) -> dict:
         return json.load(f)
 
 
-def generate_cursor_config(base_dir: Path) -> dict:
+def generate_cursor_config(base_dir: Path) -> dict[str, Any]:
     """Generate Cursor config from Claude settings.
 
     Returns the config dict that should be written to .cursor/cli.json.

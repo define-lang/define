@@ -15,6 +15,8 @@ _GRAMMAR_PATH = Path(__file__).parent / "grammar.lark"
 class Parser:
     """Parser for Define language source code."""
 
+    _lark: Lark
+
     def __init__(self) -> None:
         """Initialize the parser with the Define grammar."""
         self._lark = Lark.open(

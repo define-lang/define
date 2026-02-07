@@ -3,12 +3,12 @@
 from typing import cast
 
 import lark
-from lark.visitors import Discard, _DiscardType, v_args
+from lark.visitors import Discard, v_args
 
 from compiler import ast
 
 
-class DefineTransformer(lark.Transformer):
+class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
     """Transforms the parse tree from Parser into AST nodes."""
 
     @v_args(meta=True)
@@ -126,6 +126,6 @@ class DefineTransformer(lark.Transformer):
         """Transform global name path segments."""
         return items
 
-    def NEWLINE(self, _token: lark.Token) -> _DiscardType:  # noqa: N802
+    def NEWLINE(self, _token: lark.Token) -> object:  # noqa: N802
         """Drop newline tokens from the parse tree."""
         return Discard

@@ -6,8 +6,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-REQUIRED_HEADERS = [
-    ("Problems", "Problem"),  # Allow both "Problems" and "Problem"
+REQUIRED_HEADERS: list[tuple[str, ...] | str] = [
+    ("Problems", "Problem"),
     "Solution",
     "A Real Program",
     "Why This is the Right Solution",
@@ -15,7 +15,7 @@ REQUIRED_HEADERS = [
     "Refactoring Existing Systems",
 ]
 
-REQUIRED_METADATA = [
+REQUIRED_METADATA: list[str] = [
     "Author",
     "Status",
     "Date Proposed",
@@ -111,7 +111,7 @@ def validate_metadata(content: str) -> ValidationResult:
 
     # Format: title (line 0), empty line (line 1), metadata section starts (line 2+)
     # Skip title and empty line, then collect metadata lines until first ## header
-    metadata_lines = []
+    metadata_lines: list[str] = []
     for line in lines[2:]:
         stripped = line.strip()
 
@@ -146,8 +146,8 @@ def validate_headers(content: str) -> ValidationResult:
     """Validate that exactly the required headers are present."""
     lines = content.split("\n")
 
-    valid_headers = set()
-    required_header_specs = []
+    valid_headers: set[str] = set()
+    required_header_specs: list[tuple[str, ...]] = []
     for required in REQUIRED_HEADERS:
         if isinstance(required, tuple):
             valid_headers.update(required)
@@ -156,15 +156,15 @@ def validate_headers(content: str) -> ValidationResult:
             valid_headers.add(required)
             required_header_specs.append((required,))
 
-    found_headers = []
+    found_headers: list[str] = []
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("## "):
             header_text = stripped.removeprefix("## ").strip()
             found_headers.append(header_text)
 
-    found_header_set = set(found_headers)
-    invalid_headers = found_header_set - valid_headers
+    found_header_set: set[str] = set(found_headers)
+    invalid_headers: set[str] = found_header_set - valid_headers
     if invalid_headers:
         invalid_list = ", ".join(f"'{h}'" for h in sorted(invalid_headers))
         return ValidationResult(
@@ -194,16 +194,16 @@ def validate_proposal_file(filepath: Path) -> list[str]:
 
     Returns list of error messages (empty if valid).
     """
-    errors = []
+    errors: list[str] = []
     filename = filepath.name
 
     if filename.startswith("00000-"):
         return errors
 
     filename_result = validate_filename(filename)
-    if not filename_result.is_valid:
+    if not filename_result.is_valid and filename_result.error_message is not None:
         errors.append(filename_result.error_message)
-        return errors  # Can't continue validation if filename is wrong
+        return errors  # Can't continue validation if filename is wrong.
 
     try:
         content = filepath.read_text(encoding="utf-8")
@@ -211,17 +211,13 @@ def validate_proposal_file(filepath: Path) -> list[str]:
         errors.append(f"Error reading file: {e}")
         return errors
 
-    title_result = validate_title(content, filename_result, filepath)
-    if not title_result.is_valid:
-        errors.append(title_result.error_message)
-
-    metadata_result = validate_metadata(content)
-    if not metadata_result.is_valid:
-        errors.append(metadata_result.error_message)
-
-    headers_result = validate_headers(content)
-    if not headers_result.is_valid:
-        errors.append(headers_result.error_message)
+    for result in [
+        validate_title(content, filename_result, filepath),
+        validate_metadata(content),
+        validate_headers(content),
+    ]:
+        if not result.is_valid and result.error_message is not None:
+            errors.append(result.error_message)
 
     return errors
 
@@ -232,7 +228,7 @@ def main() -> int:
         print("Usage: validate_proposals.py <file1> [file2 ...]", file=sys.stderr)
         return 1
 
-    all_errors = []
+    all_errors: list[str] = []
     proposal_files = [Path(f) for f in sys.argv[1:]]
 
     for filepath in proposal_files:

@@ -14,6 +14,9 @@ class DCLSyntaxError(Exception):
     """Base class for DCL syntax errors."""
 
     label: str = "Syntax Error"
+    context: str
+    line: int
+    column: int
 
     def __init__(self, context: str, line: int, column: int) -> None:
         """Initialize the syntax error with location and context information."""
@@ -26,6 +29,8 @@ class DCLSyntaxError(Exception):
 class DCLTokenError(DCLSyntaxError):
     """Base class for DCL syntax errors caused by unexpected tokens."""
 
+    token: lark.Token
+
     def __init__(self, context: str, line: int, column: int, token: lark.Token) -> None:
         """Initialize with the unexpected token."""
         super().__init__(context, line, column)
@@ -34,6 +39,8 @@ class DCLTokenError(DCLSyntaxError):
 
 class DCLCharError(DCLSyntaxError):
     """Base class for DCL syntax errors caused by unexpected characters."""
+
+    char: str
 
     def __init__(self, context: str, line: int, column: int, char: str) -> None:
         """Initialize with the unexpected character."""
@@ -44,97 +51,97 @@ class DCLCharError(DCLSyntaxError):
 class BooleanNotSupportedError(DCLTokenError):
     """Raised when true/false boolean literals are used."""
 
-    label = "Boolean literals not supported - use enums instead"
+    label: str = "Boolean literals not supported - use enums instead"
 
 
 class InvalidEnumCaseError(DCLTokenError):
     """Raised when enum values are not ALL_CAPS."""
 
-    label = "Enum values must be ALL_CAPS"
+    label: str = "Enum values must be ALL_CAPS"
 
 
 class InvalidFieldNameTokenError(DCLTokenError):
     """Raised when field names don't follow naming rules (token error)."""
 
-    label = "Invalid field name"
+    label: str = "Invalid field name"
 
 
 class InvalidFieldNameError(DCLCharError):
     """Raised when field names don't follow naming rules (character error)."""
 
-    label = "Invalid field name"
+    label: str = "Invalid field name"
 
 
 class SingleQuotesNotAllowedError(DCLCharError):
     """Raised when single quotes are used instead of double quotes."""
 
-    label = "Use double quotes for strings"
+    label: str = "Use double quotes for strings"
 
 
 class UnterminatedStringError(DCLCharError):
     """Raised when a string contains an unescaped newline."""
 
-    label = "Unterminated string - use \\n for newlines"
+    label: str = "Unterminated string - use \\n for newlines"
 
 
 class InvalidNumberFormatError(DCLTokenError):
     """Raised when numbers use unsupported formats (token error)."""
 
-    label = "Invalid number format"
+    label: str = "Invalid number format"
 
 
 class InvalidNumberFormatCharError(DCLCharError):
     """Raised when numbers use unsupported formats (character error)."""
 
-    label = "Invalid number format"
+    label: str = "Invalid number format"
 
 
 class MissingColonError(DCLTokenError):
     """Raised when colon is missing between field name and value."""
 
-    label = "Missing colon after field name"
+    label: str = "Missing colon after field name"
 
 
 class InvalidSeparatorError(DCLTokenError):
     """Raised when invalid separators like comma are used (token error)."""
 
-    label = "Invalid separator"
+    label: str = "Invalid separator"
 
 
 class InvalidSeparatorCharError(DCLCharError):
     """Raised when invalid separators like semicolon are used (character error)."""
 
-    label = "Invalid separator"
+    label: str = "Invalid separator"
 
 
 class TabNotAllowedError(DCLCharError):
     """Raised when tab characters are used."""
 
-    label = "Tabs not allowed - use spaces"
+    label: str = "Tabs not allowed - use spaces"
 
 
 class CarriageReturnNotAllowedError(DCLCharError):
     """Raised when carriage return characters are used."""
 
-    label = "Carriage returns not allowed - use LF only"
+    label: str = "Carriage returns not allowed - use LF only"
 
 
 class AngleBracketsNotAllowedError(DCLCharError):
     """Raised when angle brackets are used instead of curly braces."""
 
-    label = "Use curly braces {} for messages"
+    label: str = "Use curly braces {} for messages"
 
 
 class ScalarAtToplevelError(DCLTokenError):
     """Raised when a scalar value appears at the top level."""
 
-    label = "Top-level values must be messages"
+    label: str = "Top-level values must be messages"
 
 
 class ByteOrderMarkError(DCLCharError):
     """Raised when a byte order mark is present."""
 
-    label = "Byte order mark not allowed"
+    label: str = "Byte order mark not allowed"
 
 
 _TOKEN_ERROR_EXAMPLES: dict[type[DCLTokenError], list[str]] = {
