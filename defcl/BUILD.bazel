@@ -4,7 +4,7 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 exports_files(["pyproject.toml"])
 
 py_library(
-    name = "init",
+    name = "defcl",
     srcs = ["__init__.py"],
     visibility = ["//visibility:public"],
 )

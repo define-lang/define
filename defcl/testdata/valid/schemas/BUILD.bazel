@@ -23,10 +23,10 @@ py_proto_library(
 )
 
 py_library(
-    name = "init",
+    name = "schemas_py",
     srcs = ["__init__.py"],
     visibility = ["//defcl:__subpackages__"],
-    deps = ["//defcl/testdata/valid:init"],
+    deps = ["//defcl/testdata/valid"],
 )
 
 go_proto_library(

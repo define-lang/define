@@ -10,8 +10,8 @@ filegroup(
 )
 
 py_library(
-    name = "init",
+    name = "testdata",
     srcs = ["__init__.py"],
     visibility = ["//defcl:__subpackages__"],
-    deps = ["//defcl:init"],
+    deps = ["//defcl"],
 )

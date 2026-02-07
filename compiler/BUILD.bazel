@@ -7,7 +7,7 @@ exports_files(["pyproject.toml"])
 # --- Libraries ---
 
 py_library(
-    name = "init",
+    name = "compiler",
     srcs = ["__init__.py"],
     visibility = ["//visibility:public"],
 )
@@ -17,7 +17,7 @@ py_library(
     srcs = ["ast.py"],
     visibility = ["//visibility:public"],
     deps = [
-        ":init",
+        ":compiler",
         "@pypi//lark",
     ],
 )
@@ -28,7 +28,7 @@ py_library(
     data = ["grammar.lark"],
     visibility = ["//visibility:public"],
     deps = [
-        ":init",
+        ":compiler",
         "@pypi//lark",
     ],
 )
@@ -107,7 +107,7 @@ pyright_test(
     pyproject = "//compiler:pyproject.toml",
     deps = [
         ":ast",
-        ":init",
+        ":compiler",
         ":parser",
         ":parser_test",
         ":transformer",

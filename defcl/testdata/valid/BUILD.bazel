@@ -2,10 +2,10 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 
 py_library(
-    name = "init",
+    name = "valid",
     srcs = ["__init__.py"],
     visibility = ["//defcl:__subpackages__"],
-    deps = ["//defcl/testdata:init"],
+    deps = ["//defcl/testdata"],
 )
 
 filegroup(

@@ -6,10 +6,10 @@ load("//tools/lint:pyright.bzl", "pyright_test")
 exports_files(["grammar.lark"])
 
 py_library(
-    name = "init",
+    name = "python",
     srcs = ["__init__.py"],
     visibility = ["//defcl:__subpackages__"],
-    deps = ["//defcl:init"],
+    deps = ["//defcl"],
 )
 
 py_library(
@@ -18,7 +18,7 @@ py_library(
     data = ["grammar.lark"],
     visibility = ["//visibility:public"],
     deps = [
-        ":init",
+        ":python",
         "//defcl/python/validator:syntax",
         "@pypi//protobuf",
     ],
@@ -32,7 +32,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":parser",
-        "//defcl/testdata/valid/schemas:init",
+        "//defcl/testdata/valid/schemas:schemas_py",
         "//defcl/testdata/valid/schemas:schemas_py_pb2",
         "@pypi//pytest",
     ],
@@ -54,10 +54,10 @@ pyright_test(
     name = "pyright_test",
     pyproject = "//defcl:pyproject.toml",
     deps = [
-        ":init",
         ":parser",
         ":parser_test",
-        "//defcl/python/validator:init",
+        ":python",
+        "//defcl/python/validator",
         "//defcl/python/validator:syntax",
         "//defcl/python/validator:syntax_test",
     ],

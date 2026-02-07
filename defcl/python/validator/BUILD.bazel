@@ -3,10 +3,10 @@ load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 
 py_library(
-    name = "init",
+    name = "validator",
     srcs = ["__init__.py"],
     visibility = ["//defcl:__subpackages__"],
-    deps = ["//defcl/python:init"],
+    deps = ["//defcl/python"],
 )
 
 py_library(
@@ -15,7 +15,7 @@ py_library(
     data = ["//defcl/python:grammar.lark"],
     visibility = ["//visibility:public"],
     deps = [
-        ":init",
+        ":validator",
         "@pypi//lark",
     ],
 )

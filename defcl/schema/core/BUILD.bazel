@@ -11,10 +11,10 @@ proto_library(
 )
 
 py_library(
-    name = "init",
+    name = "core_py",
     srcs = ["__init__.py"],
     visibility = ["//defcl:__subpackages__"],
-    deps = ["//defcl/schema:init"],
+    deps = ["//defcl/schema"],
 )
 
 go_proto_library(
