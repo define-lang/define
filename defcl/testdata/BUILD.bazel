@@ -1,5 +1,17 @@
+# gazelle:python_extension disabled
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+
 filegroup(
-    name = "testdata",
-    srcs = glob(["**/*"]),
+    name = "testdata_files",
+    srcs = glob(["**/*"]) + [
+        "//defcl/testdata/valid:valid_files",
+    ],
     visibility = ["//defcl:__subpackages__"],
+)
+
+py_library(
+    name = "init",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl:__subpackages__"],
+    deps = ["//defcl:init"],
 )

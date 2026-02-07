@@ -1,7 +1,32 @@
+# gazelle:python_extension disabled
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@rules_go//go:def.bzl", "go_library")
+load("@rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
 proto_library(
     name = "boolean",
     srcs = ["boolean.proto"],
+    visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "init",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl:__subpackages__"],
+    deps = ["//defcl/schema:init"],
+)
+
+go_proto_library(
+    name = "boolean_go_proto",
+    importpath = "defcl/schema/core",
+    proto = ":boolean",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "core",
+    embed = [":boolean_go_proto"],
+    importpath = "defcl/schema/core",
     visibility = ["//visibility:public"],
 )

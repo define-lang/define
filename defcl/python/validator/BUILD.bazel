@@ -1,3 +1,4 @@
+# gazelle:python_extension disabled
 load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 
@@ -29,7 +30,7 @@ py_test(
     name = "syntax_test",
     size = "small",
     srcs = ["syntax_test.py"],
-    data = ["//defcl/testdata"],
+    data = ["//defcl/testdata:testdata_files"],
     pytest_main = True,
     visibility = ["//defcl/python:__pkg__"],
     deps = [

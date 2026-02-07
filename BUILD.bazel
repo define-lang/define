@@ -9,11 +9,23 @@ exports_files([
     ".cursor/cli.json",
 ])
 
+# gazelle:exclude .venv
+# gazelle:resolve py google.protobuf @pypi//protobuf
+# gazelle:resolve py google.protobuf.message @pypi//protobuf
+# gazelle:resolve py google.protobuf.text_format @pypi//protobuf
+# gazelle:resolve py lark @pypi//lark
+# gazelle:resolve py lark.exceptions @pypi//lark
+# gazelle:resolve py pytest @pypi//pytest
+# gazelle:map_kind py_library py_library @aspect_rules_py//py:defs.bzl
+# gazelle:map_kind py_binary py_binary @aspect_rules_py//py:defs.bzl
+# gazelle:map_kind py_test py_test @aspect_rules_py//py:defs.bzl
+
 gazelle_binary(
     name = "gazelle_bin",
     languages = [
         "@gazelle//language/proto",
         "@gazelle//language/go",
+        "@rules_python_gazelle_plugin//python",
     ],
 )
 
