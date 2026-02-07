@@ -9,7 +9,7 @@ repos:
 
       - id: buildifier
         name: buildifier format check
-        entry: buildifier -mode=diff
+        entry: npx @bazel/buildifier -mode=diff
         language: system
         types: [bazel]
 
