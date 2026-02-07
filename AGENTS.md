@@ -70,6 +70,28 @@ See [spec/spec.md] for the language specification.
 
 The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 
+### BUILD File Management
+
+BUILD files are maintained entirely by hand — do not use gazelle or any other
+BUILD file generator.
+
+- **One rule per source file.** Each `.py`, `.go`, or `.proto` file gets exactly
+  one build rule (`py_library`, `py_test`, `py_binary`, `go_library`, etc.).
+- **Naming convention:** The target name matches the source file's basename
+  without extension:
+  - `parser.py` → `name = "parser"`
+  - `parser_test.py` → `name = "parser_test"`
+  - `__init__.py` → name the target after the package directory (e.g.,
+    `compiler/__init__.py` → `name = "compiler"`)
+  - `go_library` for a single `.go` file is named `<dir>_lib` when a `go_binary`
+    in the same package embeds it, or just `<dir>` otherwise. `go_test` is named
+    `<dir>_test`. `go_binary` is named after the directory.
+- **Keep targets atomic:** each target lists only its own source file in `srcs`
+  and only its direct dependencies in `deps`.
+- **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
+  package-private targets; use `//pkg:__subpackages__` when needed by sibling
+  packages; use `//visibility:public` only for true public APIs.
+
 ### Building and Testing
 
 - Build all targets: `bazelisk build //...`
@@ -117,7 +139,7 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 - Periodically run `uv run pre-commit autoupdate`.
 - Periodically force-upgrade all Python dependencies with `uv sync --upgrade`
 - Check the dependency versions in `tools/multitool.lock.json` and upgrade them
-  to the latest versions.
+  to the latest versions using multitool.
 
 ### uv Workspace
 

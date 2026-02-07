@@ -1,7 +1,5 @@
 load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
-# gazelle:exclude testdata
-
 go_library(
     name = "buf_lib",
     srcs = ["main.go"],

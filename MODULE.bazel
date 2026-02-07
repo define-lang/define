@@ -61,7 +61,7 @@ buf = use_extension("@rules_buf//buf:extensions.bzl", "buf")
 buf.toolchains(version = "v1.65.0")
 use_repo(buf, "rules_buf_toolchains")
 
-# --- Multitool (gazelle, ruff, uv binaries) ---
+# --- Multitool (ruff, uv binaries) ---
 
 multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitool")
 multitool.hub(lockfile = "//tools:multitool.lock.json")

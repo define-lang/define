@@ -1,4 +1,3 @@
-# gazelle:python_extension disabled
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@rules_go//go:def.bzl", "go_library")
 load("@rules_go//proto:def.bzl", "go_proto_library")

@@ -1,4 +1,3 @@
-# gazelle:python_extension disabled
 load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
