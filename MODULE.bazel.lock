@@ -653,7 +653,7 @@
             "repoRuleId": "@@rules_buf+//buf/internal:toolchain.bzl%buf_download_releases",
             "attributes": {
               "version": "v1.65.0",
-              "sha256": ""
+              "sha256": "a2e9ab2975422b46c8619723f98650c47281f945ae9a1b1b83a9f72fdfd0e2ca"
             }
           }
         }
