@@ -1,7 +1,7 @@
 # Root package
 
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
-load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
+load("@gazelle//:def.bzl", "gazelle")
 
 exports_files([
     "pyproject.toml",
@@ -20,18 +20,9 @@ exports_files([
 # gazelle:map_kind py_binary py_binary @aspect_rules_py//py:defs.bzl
 # gazelle:map_kind py_test py_test @aspect_rules_py//py:defs.bzl
 
-gazelle_binary(
-    name = "gazelle_bin",
-    languages = [
-        "@gazelle//language/proto",
-        "@gazelle//language/go",
-        "@rules_python_gazelle_plugin//python",
-    ],
-)
-
 gazelle(
     name = "gazelle",
-    gazelle = ":gazelle_bin",
+    gazelle = "@multitool//tools/gazelle",
 )
 
 # --- Lock file management ---

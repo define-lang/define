@@ -116,6 +116,8 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
   latest stable version.
 - Periodically run `uv run pre-commit autoupdate`.
 - Periodically force-upgrade all Python dependencies with `uv sync --upgrade`
+- Check the dependency versions in `tools/multitool.lock.json` and upgrade them
+  to the latest versions.
 
 ### uv Workspace
 

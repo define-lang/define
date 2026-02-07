@@ -15,7 +15,6 @@ bazel_dep(name = "aspect_rules_py", version = "1.8.4")
 bazel_dep(name = "rules_buf", version = "0.5.2")
 bazel_dep(name = "rules_multitool", version = "1.11.1")
 bazel_dep(name = "aspect_rules_lint", version = "2.0.0")
-bazel_dep(name = "rules_python_gazelle_plugin", version = "1.8.2")
 
 # --- Python toolchain ---
 
@@ -62,7 +61,7 @@ buf = use_extension("@rules_buf//buf:extensions.bzl", "buf")
 buf.toolchains(version = "v1.65.0")
 use_repo(buf, "rules_buf_toolchains")
 
-# --- Multitool (uv binary) ---
+# --- Multitool (gazelle, ruff, uv binaries) ---
 
 multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitool")
 multitool.hub(lockfile = "//tools:multitool.lock.json")
