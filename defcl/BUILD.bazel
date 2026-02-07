@@ -6,7 +6,7 @@ exports_files(["pyproject.toml"])
 py_library(
     name = "defcl",
     srcs = ["__init__.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//defcl:__subpackages__"],
 )
 
 format_test(

@@ -5,12 +5,12 @@ filegroup(
     srcs = glob(["**/*"]) + [
         "//defcl/testdata/valid:valid_files",
     ],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/python:__subpackages__"],
 )
 
 py_library(
     name = "testdata",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/testdata:__subpackages__"],
     deps = ["//defcl"],
 )

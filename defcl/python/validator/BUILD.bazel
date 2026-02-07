@@ -4,7 +4,7 @@ load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 py_library(
     name = "validator",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = ["//defcl/python"],
 )
 
@@ -12,7 +12,7 @@ py_library(
     name = "syntax",
     srcs = ["syntax.py"],
     data = ["//defcl/python:grammar.lark"],
-    visibility = ["//visibility:public"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = [
         ":validator",
         "@pypi//lark",

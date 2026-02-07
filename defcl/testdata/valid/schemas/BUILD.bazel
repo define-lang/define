@@ -1,43 +1,54 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_go//go:def.bzl", "go_library")
-load("@rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
 proto_library(
-    name = "schemas_proto",
-    srcs = [
-        "integers.proto",
-        "repeated_messages.proto",
-        "single_toplevel.proto",
-        "strings.proto",
-    ],
-    visibility = ["//visibility:public"],
+    name = "integers_proto",
+    srcs = ["integers.proto"],
+)
+
+proto_library(
+    name = "repeated_messages_proto",
+    srcs = ["repeated_messages.proto"],
+)
+
+proto_library(
+    name = "single_toplevel_proto",
+    srcs = ["single_toplevel.proto"],
+)
+
+proto_library(
+    name = "strings_proto",
+    srcs = ["strings.proto"],
 )
 
 py_proto_library(
-    name = "schemas_py_pb2",
-    visibility = ["//defcl:__subpackages__"],
-    deps = [":schemas_proto"],
+    name = "integers_py_pb2",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":integers_proto"],
+)
+
+py_proto_library(
+    name = "repeated_messages_py_pb2",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":repeated_messages_proto"],
+)
+
+py_proto_library(
+    name = "single_toplevel_py_pb2",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":single_toplevel_proto"],
+)
+
+py_proto_library(
+    name = "strings_py_pb2",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":strings_proto"],
 )
 
 py_library(
     name = "schemas_py",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/python:__pkg__"],
     deps = ["//defcl/testdata/valid"],
-)
-
-go_proto_library(
-    name = "schemas_go_proto",
-    importpath = "defcl/testdata/valid/schemas",
-    proto = ":schemas_proto",
-    visibility = ["//visibility:public"],
-)
-
-go_library(
-    name = "schemas",
-    embed = [":schemas_go_proto"],
-    importpath = "defcl/testdata/valid/schemas",
-    visibility = ["//visibility:public"],
 )

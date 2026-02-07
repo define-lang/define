@@ -7,7 +7,7 @@ exports_files(["grammar.lark"])
 py_library(
     name = "python",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/python:__subpackages__"],
     deps = ["//defcl"],
 )
 
@@ -15,7 +15,6 @@ py_library(
     name = "parser",
     srcs = ["parser.py"],
     data = ["grammar.lark"],
-    visibility = ["//visibility:public"],
     deps = [
         ":python",
         "//defcl/python/validator:syntax",
@@ -31,8 +30,11 @@ py_test(
     pytest_main = True,
     deps = [
         ":parser",
+        "//defcl/testdata/valid/schemas:integers_py_pb2",
+        "//defcl/testdata/valid/schemas:repeated_messages_py_pb2",
         "//defcl/testdata/valid/schemas:schemas_py",
-        "//defcl/testdata/valid/schemas:schemas_py_pb2",
+        "//defcl/testdata/valid/schemas:single_toplevel_py_pb2",
+        "//defcl/testdata/valid/schemas:strings_py_pb2",
         "@pypi//pytest",
     ],
 )

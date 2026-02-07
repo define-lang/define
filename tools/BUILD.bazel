@@ -1,6 +1,6 @@
 load("@aspect_rules_lint//format:defs.bzl", "format_test")
-load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_test")
-load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["pyproject.toml"])
@@ -39,16 +39,16 @@ py_binary(
     srcs = ["sync_cursor_permissions.py"],
 )
 
-py_test(
+native_test(
     name = "sync_cursor_permissions_test",
     size = "small",
-    srcs = ["sync_cursor_permissions.py"],
+    src = ":sync_cursor_permissions",
+    out = "sync_cursor_permissions_test_runner",
     args = ["--check"],
     data = [
         "//:.claude/settings.json",
         "//:.cursor/cli.json",
     ],
-    main = "sync_cursor_permissions.py",
 )
 
 # --- Format checking ---
@@ -69,7 +69,6 @@ pyright_test(
     deps = [
         ":generate_programming_languages",
         ":sync_cursor_permissions",
-        ":sync_cursor_permissions_test",
         ":validate_proposals",
     ],
 )

@@ -3,12 +3,12 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 py_library(
     name = "valid",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/testdata/valid:__subpackages__"],
     deps = ["//defcl/testdata"],
 )
 
 filegroup(
     name = "valid_files",
     srcs = glob(["*.defcl"]),
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/testdata:__pkg__"],
 )

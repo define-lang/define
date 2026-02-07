@@ -6,13 +6,11 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 proto_library(
     name = "boolean",
     srcs = ["boolean.proto"],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "core_py",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
     deps = ["//defcl/schema"],
 )
 
@@ -20,12 +18,10 @@ go_proto_library(
     name = "boolean_go_proto",
     importpath = "defcl/schema/core",
     proto = ":boolean",
-    visibility = ["//visibility:public"],
 )
 
 go_library(
     name = "core",
     embed = [":boolean_go_proto"],
     importpath = "defcl/schema/core",
-    visibility = ["//visibility:public"],
 )

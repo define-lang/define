@@ -3,5 +3,5 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 py_library(
     name = "schema",
     srcs = ["__init__.py"],
-    visibility = ["//defcl:__subpackages__"],
+    visibility = ["//defcl/schema:__subpackages__"],
 )
