@@ -22,10 +22,8 @@ See [spec/spec.md] for the language specification.
 
 ## Linting
 
-- Linting must be done with both `uv run pyright` and `uv run ruff check`.
-- Always run both linters after making a to Python files:
-  - `uv run pyright` for type checking
-  - `uv run ruff check` for code quality checks
+- Linting runs when you run bazelisk build or test. Always lint files after
+  editing them.
 - Run `npx @bufbuild/buf lint defcl/schema` after making changes to .proto files
   in `defcl/schema`.
 - Fix all linting errors that are reported.
@@ -76,8 +74,6 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 
 - Build all targets: `bazelisk build //...`
 - Test all targets: `bazelisk test //...`
-- Do not use `bazelisk --strict` until the ruleset ecosystem fully supports
-  Bazel 9's incompatible flags.
 - Keep build targets atomic — each target should contain only the minimum
   necessary sources and dependencies.
 
@@ -114,8 +110,10 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 
 ### Keeping Dependencies Up to Date
 
-- Periodically check that the `bazel_dep` entries and the buf toolchain version
-  in `MODULE.bazel` are on the latest stable versions.
+- Periodically check that all versions listed in `MODULE.bazel` are on the
+  latest stable version.
+- Periodically run `uv run pre-commit autoupdate`.
+- Periodically force-upgrade all Python dependencies with `uv sync --upgrade`
 
 ### uv Workspace
 

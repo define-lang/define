@@ -68,8 +68,7 @@ repos:
     rev: v1.65.0
     hooks:
       - id: buf-lint
-        files: ^defcl/.*\.proto$
+        files: ^defcl/schema/.*\.proto$
         args: ["--config=defcl/buf.yaml"]
       - id: buf-format
-        args: ["--config=defcl/buf.yaml"]
-        files: ^defcl/.*\.proto$
+        files: ^.*\.proto$
