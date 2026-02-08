@@ -29,6 +29,17 @@ class DclSyntaxError(Exception):
         self.column = column
         self.path_name = path_name
 
+    @override
+    def __str__(self) -> str:
+        if self.path_name is not None:
+            header = f'File "{self.path_name}", line {self.line}, column {self.column}'
+        else:
+            header = f"line {self.line}, column {self.column}"
+        context = self.context.rstrip("\n")
+        if context:
+            return f"{header}\n{context}\n{self.label}"
+        return f"{header}\n{self.label}"
+
 
 class DclTokenError(DclSyntaxError):
     """Base class for DCL syntax errors caused by unexpected tokens."""
@@ -173,7 +184,6 @@ class MissingTrailingNewlineError(DclSyntaxError):
 
     @override
     def __str__(self) -> str:
-        """Display the exception error message."""
         if self.path_name is not None:
-            return f"{os.fspath(self.path_name)}: {self.label}"
+            return f'File "{self.path_name}"\n{self.label}'
         return self.label

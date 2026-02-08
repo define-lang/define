@@ -448,3 +448,50 @@ class TestInvalidWhitespace:
         assert exc_info.value.char == "\t"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 1
+
+
+class TestErrorMessages:
+    def test_token_error_with_path(self):
+        path = _INVALID_SYNTAX_PATH / "booleans" / "false_literal.defcl"
+        with pytest.raises(exceptions.BooleanNotSupportedError) as exc_info:
+            _parser.parse_file(path)
+        assert str(exc_info.value) == (
+            f'File "{path}", line 2, column 14\n'
+            "    enabled: false\n"
+            "             ^\n"
+            "Boolean literals not supported - use enums instead"
+        )
+
+    def test_char_error_with_path(self):
+        path = _INVALID_SYNTAX_PATH / "whitespace" / "tab_char.defcl"
+        with pytest.raises(exceptions.TabNotAllowedError) as exc_info:
+            _parser.parse_file(path)
+        assert str(exc_info.value) == (
+            f'File "{path}", line 2, column 1\n'
+            '\tvalue: "test"\n'
+            "^\n"
+            "Tabs not allowed - use spaces"
+        )
+
+    def test_error_without_path(self):
+        with pytest.raises(exceptions.BooleanNotSupportedError) as exc_info:
+            _parser.parse("config: {\n    enabled: false\n}\n")
+        assert str(exc_info.value) == (
+            "line 2, column 14\n"
+            "    enabled: false\n"
+            "             ^\n"
+            "Boolean literals not supported - use enums instead"
+        )
+
+    def test_missing_trailing_newline_with_path(self):
+        path = _INVALID_SYNTAX_PATH / "file_format" / "no_trailing_newline.defcl"
+        with pytest.raises(exceptions.MissingTrailingNewlineError) as exc_info:
+            _parser.parse_file(path)
+        assert str(exc_info.value) == (
+            f'File "{path}"\nFile does not end with a newline'
+        )
+
+    def test_missing_trailing_newline_without_path(self):
+        with pytest.raises(exceptions.MissingTrailingNewlineError) as exc_info:
+            _parser.parse('project: {\n    name: "test"\n}')
+        assert str(exc_info.value) == "File does not end with a newline"
