@@ -9,6 +9,7 @@ exports_files(["pyproject.toml"])
 py_library(
     name = "compiler",
     srcs = ["__init__.py"],
+    deps = ["//define"],
 )
 
 py_library(
@@ -42,7 +43,7 @@ py_library(
 py_library(
     name = "validator",
     srcs = ["validator.py"],
-    data = ["//spec:reserved_words"],
+    data = ["//define/spec:reserved_words"],
     deps = [":ast"],
 )
 
@@ -99,7 +100,7 @@ format_test(
 # package or any of its sub-packages, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
-    pyproject = "//compiler:pyproject.toml",
+    pyproject = "//define/compiler:pyproject.toml",
     deps = [
         ":ast",
         ":compiler",

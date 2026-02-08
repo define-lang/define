@@ -44,14 +44,14 @@ repos:
       - id: basedpyright
         name: basedpyright
         entry: tools/pyright-precommit.sh
-        exclude: compiler/prototype
+        exclude: define/compiler/prototype
         language: system
         types: [python]
 
       - id: bazel-checks
         name: bazel-based checks
         entry:
-          bazelisk test //proposals:validate_proposals_test
+          bazelisk test //define/proposals:validate_proposals_test
           //defcl/proposals:validate_proposals_test
           //tools:sync_cursor_permissions_test
         language: system

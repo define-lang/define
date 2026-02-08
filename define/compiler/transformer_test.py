@@ -1,7 +1,7 @@
 """Tests for the Define AST transformer."""
 
-from compiler import ast, parser
-from compiler.transformer import DefineTransformer
+from define.compiler import ast, parser
+from define.compiler.transformer import DefineTransformer
 
 _parser = parser.Parser()
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate proposal files in the proposals/ directory."""
+"""Validate proposal files in the define/proposals/ directory."""
 
 import re
 import sys

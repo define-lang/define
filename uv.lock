@@ -154,7 +154,7 @@ dev = [
 [[package]]
 name = "define-compiler"
 version = "0.0.1"
-source = { virtual = "compiler" }
+source = { virtual = "define/compiler" }
 dependencies = [
     { name = "lark" },
 ]

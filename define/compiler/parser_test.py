@@ -3,7 +3,7 @@
 import lark
 import pytest
 
-from compiler import parser
+from define.compiler import parser
 
 _parser = parser.Parser()
 

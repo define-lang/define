@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
-from compiler import ast
+from define.compiler import ast
 
 _SPEC_DIR = Path(__file__).parent.parent / "spec"
 

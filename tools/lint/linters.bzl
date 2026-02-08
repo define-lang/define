@@ -6,7 +6,7 @@ ruff = lint_ruff_aspect(
     binary = Label("@multitool//tools/ruff"),
     configs = [
         Label("//:pyproject.toml"),
-        Label("//compiler:pyproject.toml"),
+        Label("//define/compiler:pyproject.toml"),
         Label("//defcl:pyproject.toml"),
         Label("//tools:pyproject.toml"),
     ],

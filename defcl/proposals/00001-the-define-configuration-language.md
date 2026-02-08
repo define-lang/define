@@ -7,9 +7,10 @@
 
 ## Problems
 
-As described in [DLP 10](../../proposals/00010-configuration-directory.md),
-Define uses a standard configuration layout and language to control build
-parameters instead of relying on command-line flags.
+As described in
+[DLP 10](../../define/proposals/00010-configuration-directory.md), Define uses a
+standard configuration layout and language to control build parameters instead
+of relying on command-line flags.
 
 That means we need to define the format for a configuration language. Attempting
 to use any pre-existing configuration format ran into various difficulties. For
@@ -17,9 +18,9 @@ example, TOML allows
 
 ### 1: Too Many Ways to Do the Same Thing
 
-As per the [principles of Define](../../spec/principles.md), we want there to be
-One Right Way to do things. Most modern configuration formats allow you to
-choose multiple different ways to accomplish the same thing.
+As per the [principles of Define](../../define/spec/principles.md), we want
+there to be One Right Way to do things. Most modern configuration formats allow
+you to choose multiple different ways to accomplish the same thing.
 
 For example, TOML allows nested structures to be written in three different
 ways:

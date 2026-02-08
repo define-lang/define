@@ -5,5 +5,5 @@ filegroup(
         "programming_languages.txt",
         "small_common_words.txt",
     ],
-    visibility = ["//compiler:__pkg__"],
+    visibility = ["//define/compiler:__pkg__"],
 )

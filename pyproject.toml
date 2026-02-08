@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["compiler", "defcl", "tools"]
+members = ["define/compiler", "defcl", "tools"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -39,7 +39,7 @@ extend-select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["compiler", "defcl", "tools"]
+known-first-party = ["define", "defcl", "tools"]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "**/*.py" = [
@@ -52,7 +52,7 @@ known-first-party = ["compiler", "defcl", "tools"]
     "D102", # Don't require docstrings on test methods.
     "D103", # Don't require docstrings on test functions.
 ]
-"compiler/ast.py" = [
+"define/compiler/ast.py" = [
     "A005", # Module intentionally named ast for AST definitions.
 ]
 

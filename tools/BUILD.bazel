@@ -30,7 +30,7 @@ py_binary(
     srcs = ["validate_proposals.py"],
     visibility = [
         "//defcl/proposals:__pkg__",
-        "//proposals:__pkg__",
+        "//define/proposals:__pkg__",
     ],
 )
 

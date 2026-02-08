@@ -5,7 +5,7 @@ from pathlib import Path
 
 import lark
 
-from compiler.prototype import indenter
+from define.compiler.prototype import indenter
 
 
 class Parser:

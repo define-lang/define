@@ -1,7 +1,7 @@
 """Tests for the Define language validator."""
 
-from compiler import parser, validator
-from compiler.transformer import DefineTransformer
+from define.compiler import parser, validator
+from define.compiler.transformer import DefineTransformer
 
 _parser = parser.Parser()
 _transformer = DefineTransformer()

@@ -3,7 +3,7 @@
 We are working together to make a new type of programming language that has
 never existed before.
 
-See [spec/spec.md] for the language specification.
+See [define/spec/spec.md] for the language specification.
 
 ## Python Execution
 
@@ -31,7 +31,8 @@ See [spec/spec.md] for the language specification.
 ## Imports
 
 - Prefer importing modules instead of classes:. Example:
-  `from compiler import ast` and then reference `ast.ASTNode` in the code.
+  `from define.compiler import ast` and then reference `ast.ASTNode` in the
+  code.
 - Never import or use `typing.TYPE_CHECKING`.
 - Never do dynamic imports. (Never write an import statement inside of a
   function.)
@@ -88,7 +89,7 @@ BUILD file generator.
   - `parser.py` → `name = "parser"`
   - `parser_test.py` → `name = "parser_test"`
   - `__init__.py` → name the target after the package directory (e.g.,
-    `compiler/__init__.py` → `name = "compiler"`)
+    `define/compiler/__init__.py` → `name = "compiler"`)
   - `go_library` for a single `.go` file is named `<dir>_lib` when a `go_binary`
     in the same package embeds it, or just `<dir>` otherwise. `go_test` is named
     `<dir>_test`. `go_binary` is named after the directory.
@@ -112,7 +113,8 @@ BUILD file generator.
 - All Python dependencies are managed via `aspect_rules_py`'s uv extension with
   a single `pypi` hub backed by the root `uv.lock`.
 - Dependencies are declared in per-package `pyproject.toml` files
-  (`compiler/pyproject.toml`, `defcl/pyproject.toml`, `tools/pyproject.toml`).
+  (`define/compiler/pyproject.toml`, `defcl/pyproject.toml`,
+  `tools/pyproject.toml`).
 - To regenerate `uv.lock` after changing any `pyproject.toml`: `uv lock`
 - Reference dependencies in BUILD files as `@pypi//package_name`.
 

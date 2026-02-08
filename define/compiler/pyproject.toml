@@ -15,4 +15,4 @@ dev = [
 exclude = ["bazel-*"]
 
 [tool.ruff]
-extend = "../pyproject.toml"
+extend = "../../pyproject.toml"

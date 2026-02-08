@@ -5,7 +5,7 @@ from typing import cast
 import lark
 from lark.visitors import Discard, v_args
 
-from compiler import ast
+from define.compiler import ast
 
 
 class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):

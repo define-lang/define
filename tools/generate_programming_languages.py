@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate spec/programming_languages.txt from GitHub Linguist languages.yml.
+"""Generate define/spec/programming_languages.txt from GitHub Linguist languages.yml.
 
 Requires: PyYAML (pip install pyyaml)
 """
@@ -14,7 +14,10 @@ import yaml
 
 LINGUIST_URL = "https://raw.githubusercontent.com/github/linguist/master/lib/linguist/languages.yml"
 OUTPUT_PATH = (
-    Path(__file__).resolve().parent.parent / "spec" / "programming_languages.txt"
+    Path(__file__).resolve().parent.parent
+    / "define"
+    / "spec"
+    / "programming_languages.txt"
 )
 
 _INVALID_CHARS = re.compile(r"[^a-z0-9]+")
