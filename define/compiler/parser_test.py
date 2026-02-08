@@ -105,8 +105,9 @@ class TestStatementTerminators:
 
 class TestFileEncoding:
     def test_bom_at_start(self, p: parser.Parser) -> None:
-        with pytest.raises(parser.ByteOrderMarkError):
+        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse("\ufeffdefine the potential position<standard:/path>.\n")
+        assert exc_info.value.char == "\ufeff"
 
     def test_crlf_line_endings(self, p: parser.Parser) -> None:
         with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
