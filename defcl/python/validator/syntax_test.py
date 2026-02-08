@@ -3,6 +3,7 @@ from pathlib import Path
 import lark
 import pytest
 
+from defcl.python import exceptions
 from defcl.python.validator import syntax
 
 _TESTDATA_PATH = Path(__file__).parent.parent.parent / "testdata"
@@ -143,7 +144,7 @@ class TestValidFiles:
 
 class TestInvalidBooleans:
     def test_false_literal(self):
-        with pytest.raises(syntax.BooleanNotSupportedError) as exc_info:
+        with pytest.raises(exceptions.BooleanNotSupportedError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "booleans" / "false_literal.defcl"
             )
@@ -153,7 +154,7 @@ class TestInvalidBooleans:
         assert exc_info.value.column == 14
 
     def test_true_literal(self):
-        with pytest.raises(syntax.BooleanNotSupportedError) as exc_info:
+        with pytest.raises(exceptions.BooleanNotSupportedError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "booleans" / "true_literal.defcl")
         assert exc_info.value.token.type == "FIELD_NAME"
         assert exc_info.value.token.value == "true"
@@ -163,7 +164,7 @@ class TestInvalidBooleans:
 
 class TestInvalidEnums:
     def test_lowercase_enum(self):
-        with pytest.raises(syntax.InvalidEnumCaseError) as exc_info:
+        with pytest.raises(exceptions.InvalidEnumCaseError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "enums" / "lowercase_enum.defcl")
         assert exc_info.value.token.type == "FIELD_NAME"
         assert exc_info.value.token.value == "active"
@@ -171,7 +172,7 @@ class TestInvalidEnums:
         assert exc_info.value.column == 13
 
     def test_mixed_case_enum(self):
-        with pytest.raises(syntax.InvalidEnumCaseError) as exc_info:
+        with pytest.raises(exceptions.InvalidEnumCaseError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "enums" / "mixed_case_enum.defcl")
         assert exc_info.value.token.type == "RBRACE"
         assert exc_info.value.line == 3
@@ -180,7 +181,7 @@ class TestInvalidEnums:
 
 class TestInvalidFieldNames:
     def test_double_underscore(self):
-        with pytest.raises(syntax.InvalidFieldNameError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "field_names" / "double_underscore.defcl"
             )
@@ -189,14 +190,14 @@ class TestInvalidFieldNames:
         assert exc_info.value.column == 11
 
     def test_hyphen(self):
-        with pytest.raises(syntax.InvalidFieldNameError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "field_names" / "hyphen.defcl")
         assert exc_info.value.char == "-"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 13
 
     def test_leading_digit(self):
-        with pytest.raises(syntax.InvalidFieldNameTokenError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameTokenError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "field_names" / "leading_digit.defcl"
             )
@@ -205,7 +206,7 @@ class TestInvalidFieldNames:
         assert exc_info.value.column == 5
 
     def test_leading_underscore(self):
-        with pytest.raises(syntax.InvalidFieldNameError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "field_names" / "leading_underscore.defcl"
             )
@@ -214,14 +215,14 @@ class TestInvalidFieldNames:
         assert exc_info.value.column == 5
 
     def test_period(self):
-        with pytest.raises(syntax.InvalidFieldNameError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "field_names" / "period.defcl")
         assert exc_info.value.char == "."
         assert exc_info.value.line == 2
         assert exc_info.value.column == 13
 
     def test_trailing_underscore(self):
-        with pytest.raises(syntax.InvalidFieldNameError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "field_names" / "trailing_underscore.defcl"
             )
@@ -230,7 +231,7 @@ class TestInvalidFieldNames:
         assert exc_info.value.column == 18
 
     def test_underscore_digit(self):
-        with pytest.raises(syntax.InvalidFieldNameError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "field_names" / "underscore_digit.defcl"
             )
@@ -239,7 +240,7 @@ class TestInvalidFieldNames:
         assert exc_info.value.column == 11
 
     def test_uppercase(self):
-        with pytest.raises(syntax.InvalidFieldNameTokenError) as exc_info:
+        with pytest.raises(exceptions.InvalidFieldNameTokenError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "field_names" / "uppercase.defcl")
         assert exc_info.value.token.type == "ENUM_VALUE"
         assert exc_info.value.line == 2
@@ -248,14 +249,14 @@ class TestInvalidFieldNames:
 
 class TestInvalidFileFormat:
     def test_bom(self):
-        with pytest.raises(syntax.ByteOrderMarkError) as exc_info:
+        with pytest.raises(exceptions.ByteOrderMarkError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "file_format" / "bom.defcl")
         assert exc_info.value.char == "\ufeff"
         assert exc_info.value.line == 1
         assert exc_info.value.column == 1
 
     def test_no_trailing_newline(self):
-        with pytest.raises(syntax.MissingTrailingNewlineError):
+        with pytest.raises(exceptions.MissingTrailingNewlineError):
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "file_format" / "no_trailing_newline.defcl"
             )
@@ -263,7 +264,7 @@ class TestInvalidFileFormat:
 
 class TestInvalidMessages:
     def test_angle_brackets(self):
-        with pytest.raises(syntax.AngleBracketsNotAllowedError) as exc_info:
+        with pytest.raises(exceptions.AngleBracketsNotAllowedError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "messages" / "angle_brackets.defcl"
             )
@@ -274,7 +275,7 @@ class TestInvalidMessages:
 
 class TestInvalidNumbers:
     def test_hex(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "hex.defcl")
         assert exc_info.value.token.type == "ENUM_VALUE"
         assert exc_info.value.token.value == "A"
@@ -282,7 +283,7 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 15
 
     def test_octal(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "octal.defcl")
         assert exc_info.value.token.type == "INTEGER"
         assert exc_info.value.token.value == "777"
@@ -290,7 +291,7 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 13
 
     def test_scientific_int(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "numbers" / "scientific_int.defcl"
             )
@@ -299,7 +300,7 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 1
 
     def test_scientific_float(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "numbers" / "scientific_float.defcl"
             )
@@ -309,7 +310,7 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 16
 
     def test_leading_zeros(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "leading_zeros.defcl")
         assert exc_info.value.token.type == "INTEGER"
         assert exc_info.value.token.value == "0"
@@ -317,7 +318,7 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 13
 
     def test_leading_decimal(self):
-        with pytest.raises(syntax.InvalidNumberFormatCharError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatCharError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "numbers" / "leading_decimal.defcl"
             )
@@ -326,7 +327,7 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 12
 
     def test_trailing_decimal(self):
-        with pytest.raises(syntax.InvalidNumberFormatCharError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatCharError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "numbers" / "trailing_decimal.defcl"
             )
@@ -335,14 +336,14 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 14
 
     def test_plus_sign(self):
-        with pytest.raises(syntax.InvalidNumberFormatCharError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatCharError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "plus_sign.defcl")
         assert exc_info.value.char == "+"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 12
 
     def test_space_after_sign(self):
-        with pytest.raises(syntax.InvalidNumberFormatCharError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatCharError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "numbers" / "space_after_sign.defcl"
             )
@@ -351,14 +352,14 @@ class TestInvalidNumbers:
         assert exc_info.value.column == 12
 
     def test_type_suffix_f(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "type_suffix_f.defcl")
         assert exc_info.value.token.type == "RBRACE"
         assert exc_info.value.line == 3
         assert exc_info.value.column == 1
 
     def test_type_suffix_upper_f(self):
-        with pytest.raises(syntax.InvalidNumberFormatError) as exc_info:
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "numbers" / "type_suffix_upper_f.defcl"
             )
@@ -370,7 +371,7 @@ class TestInvalidNumbers:
 
 class TestInvalidSeparators:
     def test_comma_separator(self):
-        with pytest.raises(syntax.InvalidSeparatorError) as exc_info:
+        with pytest.raises(exceptions.InvalidSeparatorError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "separators" / "comma_separator.defcl"
             )
@@ -379,7 +380,7 @@ class TestInvalidSeparators:
         assert exc_info.value.column == 9
 
     def test_missing_colon(self):
-        with pytest.raises(syntax.MissingColonError) as exc_info:
+        with pytest.raises(exceptions.MissingColonError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "separators" / "missing_colon.defcl"
             )
@@ -388,7 +389,7 @@ class TestInvalidSeparators:
         assert exc_info.value.column == 11
 
     def test_semicolon(self):
-        with pytest.raises(syntax.InvalidSeparatorCharError) as exc_info:
+        with pytest.raises(exceptions.InvalidSeparatorCharError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "separators" / "semicolon.defcl")
         assert exc_info.value.char == ";"
         assert exc_info.value.line == 2
@@ -397,14 +398,14 @@ class TestInvalidSeparators:
 
 class TestInvalidStrings:
     def test_raw_newline(self):
-        with pytest.raises(syntax.UnterminatedStringError) as exc_info:
+        with pytest.raises(exceptions.UnterminatedStringError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "strings" / "raw_newline.defcl")
         assert exc_info.value.char == '"'
         assert exc_info.value.line == 2
         assert exc_info.value.column == 12
 
     def test_single_quotes(self):
-        with pytest.raises(syntax.SingleQuotesNotAllowedError) as exc_info:
+        with pytest.raises(exceptions.SingleQuotesNotAllowedError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "strings" / "single_quotes.defcl")
         assert exc_info.value.char == "'"
         assert exc_info.value.line == 2
@@ -413,7 +414,7 @@ class TestInvalidStrings:
 
 class TestInvalidToplevel:
     def test_missing_toplevel_colon(self):
-        with pytest.raises(syntax.MissingColonError) as exc_info:
+        with pytest.raises(exceptions.MissingColonError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "toplevel" / "missing_toplevel_colon.defcl"
             )
@@ -422,7 +423,7 @@ class TestInvalidToplevel:
         assert exc_info.value.column == 9
 
     def test_scalar_toplevel(self):
-        with pytest.raises(syntax.ScalarAtToplevelError) as exc_info:
+        with pytest.raises(exceptions.ScalarAtToplevelError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "toplevel" / "scalar_toplevel.defcl"
             )
@@ -433,7 +434,7 @@ class TestInvalidToplevel:
 
 class TestInvalidWhitespace:
     def test_carriage_return(self):
-        with pytest.raises(syntax.CarriageReturnNotAllowedError) as exc_info:
+        with pytest.raises(exceptions.CarriageReturnNotAllowedError) as exc_info:
             _parser.parse_file(
                 _INVALID_SYNTAX_PATH / "whitespace" / "carriage_return.defcl"
             )
@@ -442,7 +443,7 @@ class TestInvalidWhitespace:
         assert exc_info.value.column == 10
 
     def test_tab_char(self):
-        with pytest.raises(syntax.TabNotAllowedError) as exc_info:
+        with pytest.raises(exceptions.TabNotAllowedError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "whitespace" / "tab_char.defcl")
         assert exc_info.value.char == "\t"
         assert exc_info.value.line == 2

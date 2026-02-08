@@ -15,6 +15,7 @@ py_library(
     visibility = ["//defcl/python:__pkg__"],
     deps = [
         ":validator",
+        "//defcl/python:exceptions",
         "@pypi//lark",
     ],
 )
@@ -34,6 +35,7 @@ py_test(
     visibility = ["//defcl/python:__pkg__"],
     deps = [
         ":syntax",
+        "//defcl/python:exceptions",
         "@pypi//lark",
         "@pypi//pytest",
     ],
