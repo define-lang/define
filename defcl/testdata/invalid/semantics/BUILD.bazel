@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 
 py_library(
@@ -11,4 +12,10 @@ filegroup(
     name = "semantics_files",
     srcs = glob(["**/*.defcl"]),
     visibility = ["//defcl/testdata/invalid:__pkg__"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )

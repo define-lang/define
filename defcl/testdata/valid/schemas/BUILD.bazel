@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
@@ -7,9 +8,21 @@ proto_library(
     srcs = ["integers.proto"],
 )
 
+py_proto_library(
+    name = "integers_proto_py",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":integers_proto"],
+)
+
 proto_library(
     name = "nested_messages_proto",
     srcs = ["nested_messages.proto"],
+)
+
+py_proto_library(
+    name = "nested_messages_proto_py",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":nested_messages_proto"],
 )
 
 proto_library(
@@ -17,9 +30,28 @@ proto_library(
     srcs = ["repeated_messages.proto"],
 )
 
+py_proto_library(
+    name = "repeated_messages_proto_py",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":repeated_messages_proto"],
+)
+
+py_library(
+    name = "schemas_py",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl/python:__pkg__"],
+    deps = ["//defcl/testdata/valid"],
+)
+
 proto_library(
     name = "single_toplevel_proto",
     srcs = ["single_toplevel.proto"],
+)
+
+py_proto_library(
+    name = "single_toplevel_proto_py",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":single_toplevel_proto"],
 )
 
 proto_library(
@@ -28,38 +60,13 @@ proto_library(
 )
 
 py_proto_library(
-    name = "integers_py_pb2",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":integers_proto"],
-)
-
-py_proto_library(
-    name = "nested_messages_py_pb2",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":nested_messages_proto"],
-)
-
-py_proto_library(
-    name = "repeated_messages_py_pb2",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":repeated_messages_proto"],
-)
-
-py_proto_library(
-    name = "single_toplevel_py_pb2",
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [":single_toplevel_proto"],
-)
-
-py_proto_library(
-    name = "strings_py_pb2",
+    name = "strings_proto_py",
     visibility = ["//defcl/python:__pkg__"],
     deps = [":strings_proto"],
 )
 
-py_library(
-    name = "schemas_py",
-    srcs = ["__init__.py"],
-    visibility = ["//defcl/python:__pkg__"],
-    deps = ["//defcl/testdata/valid"],
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )

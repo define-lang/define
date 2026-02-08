@@ -5,13 +5,6 @@ load("//tools/lint:pyright.bzl", "pyright_test")
 exports_files(["grammar.lark"])
 
 py_library(
-    name = "python",
-    srcs = ["__init__.py"],
-    visibility = ["//defcl/python:__subpackages__"],
-    deps = ["//defcl"],
-)
-
-py_library(
     name = "exceptions",
     srcs = ["exceptions.py"],
     visibility = ["//defcl/python:__subpackages__"],
@@ -38,14 +31,21 @@ py_test(
     pytest_main = True,
     deps = [
         ":parser",
-        "//defcl/testdata/valid/schemas:integers_py_pb2",
-        "//defcl/testdata/valid/schemas:nested_messages_py_pb2",
-        "//defcl/testdata/valid/schemas:repeated_messages_py_pb2",
+        "//defcl/testdata/valid/schemas:integers_proto_py",
+        "//defcl/testdata/valid/schemas:nested_messages_proto_py",
+        "//defcl/testdata/valid/schemas:repeated_messages_proto_py",
         "//defcl/testdata/valid/schemas:schemas_py",
-        "//defcl/testdata/valid/schemas:single_toplevel_py_pb2",
-        "//defcl/testdata/valid/schemas:strings_py_pb2",
+        "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
+        "//defcl/testdata/valid/schemas:strings_proto_py",
         "@pypi//pytest",
     ],
+)
+
+py_library(
+    name = "python",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl/python:__subpackages__"],
+    deps = ["//defcl"],
 )
 
 # --- Format checking ---

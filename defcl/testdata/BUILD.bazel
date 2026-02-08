@@ -1,4 +1,12 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+
+py_library(
+    name = "testdata",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl/testdata:__subpackages__"],
+    deps = ["//defcl"],
+)
 
 filegroup(
     name = "testdata_files",
@@ -9,9 +17,8 @@ filegroup(
     visibility = ["//defcl/python:__subpackages__"],
 )
 
-py_library(
-    name = "testdata",
-    srcs = ["__init__.py"],
-    visibility = ["//defcl/testdata:__subpackages__"],
-    deps = ["//defcl"],
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )

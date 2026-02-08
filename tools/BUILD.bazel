@@ -5,33 +5,10 @@ load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["pyproject.toml"])
 
-native_binary(
-    name = "uv_lock_test",
-    src = "uv_lock_test.sh",
-    out = "uv_lock_test_runner",
-    visibility = ["//:__pkg__"],
-)
-
-native_binary(
-    name = "update_lock",
-    src = "update_lock.sh",
-    out = "update_lock_runner",
-    visibility = ["//:__pkg__"],
-)
-
 py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
     deps = ["@pypi//pyyaml"],
-)
-
-py_binary(
-    name = "validate_proposals",
-    srcs = ["validate_proposals.py"],
-    visibility = [
-        "//defcl/proposals:__pkg__",
-        "//define/proposals:__pkg__",
-    ],
 )
 
 py_binary(
@@ -48,6 +25,29 @@ native_test(
     data = [
         "//:.claude/settings.json",
         "//:.cursor/cli.json",
+    ],
+)
+
+native_binary(
+    name = "update_lock",
+    src = "update_lock.sh",
+    out = "update_lock_runner",
+    visibility = ["//:__pkg__"],
+)
+
+native_binary(
+    name = "uv_lock_test",
+    src = "uv_lock_test.sh",
+    out = "uv_lock_test_runner",
+    visibility = ["//:__pkg__"],
+)
+
+py_binary(
+    name = "validate_proposals",
+    srcs = ["validate_proposals.py"],
+    visibility = [
+        "//defcl/proposals:__pkg__",
+        "//define/proposals:__pkg__",
     ],
 )
 

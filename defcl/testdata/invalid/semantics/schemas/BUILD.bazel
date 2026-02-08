@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
@@ -7,9 +8,21 @@ proto_library(
     srcs = ["integer_enum.proto"],
 )
 
+py_proto_library(
+    name = "integer_enum_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":integer_enum_proto"],
+)
+
 proto_library(
     name = "nested_integer_enum_proto",
     srcs = ["nested_integer_enum.proto"],
+)
+
+py_proto_library(
+    name = "nested_integer_enum_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":nested_integer_enum_proto"],
 )
 
 proto_library(
@@ -17,19 +30,32 @@ proto_library(
     srcs = ["nested_no_brackets_message.proto"],
 )
 
+py_proto_library(
+    name = "nested_no_brackets_message_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":nested_no_brackets_message_proto"],
+)
+
 proto_library(
     name = "nested_no_brackets_scalar_proto",
     srcs = ["nested_no_brackets_scalar.proto"],
 )
 
-proto_library(
-    name = "repeated_integer_enum_proto",
-    srcs = ["repeated_integer_enum.proto"],
+py_proto_library(
+    name = "nested_no_brackets_scalar_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":nested_no_brackets_scalar_proto"],
 )
 
 proto_library(
     name = "no_brackets_message_proto",
     srcs = ["no_brackets_message.proto"],
+)
+
+py_proto_library(
+    name = "no_brackets_message_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":no_brackets_message_proto"],
 )
 
 proto_library(
@@ -38,45 +64,20 @@ proto_library(
 )
 
 py_proto_library(
-    name = "integer_enum_py_pb2",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":integer_enum_proto"],
-)
-
-py_proto_library(
-    name = "nested_integer_enum_py_pb2",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":nested_integer_enum_proto"],
-)
-
-py_proto_library(
-    name = "nested_no_brackets_message_py_pb2",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":nested_no_brackets_message_proto"],
-)
-
-py_proto_library(
-    name = "nested_no_brackets_scalar_py_pb2",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":nested_no_brackets_scalar_proto"],
-)
-
-py_proto_library(
-    name = "repeated_integer_enum_py_pb2",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":repeated_integer_enum_proto"],
-)
-
-py_proto_library(
-    name = "no_brackets_message_py_pb2",
-    visibility = ["//defcl/python/validator:__pkg__"],
-    deps = [":no_brackets_message_proto"],
-)
-
-py_proto_library(
-    name = "no_brackets_scalar_py_pb2",
+    name = "no_brackets_scalar_proto_py",
     visibility = ["//defcl/python/validator:__pkg__"],
     deps = [":no_brackets_scalar_proto"],
+)
+
+proto_library(
+    name = "repeated_integer_enum_proto",
+    srcs = ["repeated_integer_enum.proto"],
+)
+
+py_proto_library(
+    name = "repeated_integer_enum_proto_py",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":repeated_integer_enum_proto"],
 )
 
 py_library(
@@ -84,4 +85,10 @@ py_library(
     srcs = ["__init__.py"],
     visibility = ["//defcl/python/validator:__pkg__"],
     deps = ["//defcl/testdata/invalid/semantics"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )

@@ -13,35 +13,6 @@ py_library(
     ],
 )
 
-py_library(
-    name = "syntax",
-    srcs = ["syntax.py"],
-    data = ["//defcl/python:grammar.lark"],
-    visibility = ["//defcl/python:__pkg__"],
-    deps = [
-        ":validator",
-        "//defcl/python:exceptions",
-        "@pypi//lark",
-    ],
-)
-
-py_library(
-    name = "validator",
-    srcs = ["__init__.py"],
-    visibility = ["//defcl/python:__pkg__"],
-    deps = ["//defcl/python"],
-)
-
-# --- Format checking ---
-
-format_test(
-    name = "format_test",
-    srcs = glob(["*.py"]),
-    python = "@aspect_rules_lint//format:ruff",
-)
-
-# --- Tests ---
-
 py_test(
     name = "semantics_test",
     size = "small",
@@ -53,15 +24,27 @@ py_test(
         ":semantics",
         ":syntax",
         "//defcl/python:exceptions",
-        "//defcl/testdata/invalid/semantics/schemas:integer_enum_py_pb2",
-        "//defcl/testdata/invalid/semantics/schemas:nested_integer_enum_py_pb2",
-        "//defcl/testdata/invalid/semantics/schemas:nested_no_brackets_message_py_pb2",
-        "//defcl/testdata/invalid/semantics/schemas:nested_no_brackets_scalar_py_pb2",
-        "//defcl/testdata/invalid/semantics/schemas:no_brackets_message_py_pb2",
-        "//defcl/testdata/invalid/semantics/schemas:no_brackets_scalar_py_pb2",
-        "//defcl/testdata/invalid/semantics/schemas:repeated_integer_enum_py_pb2",
+        "//defcl/testdata/invalid/semantics/schemas:integer_enum_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:nested_integer_enum_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:nested_no_brackets_message_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:nested_no_brackets_scalar_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:no_brackets_message_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:no_brackets_scalar_proto_py",
+        "//defcl/testdata/invalid/semantics/schemas:repeated_integer_enum_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:schemas_py",
         "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "syntax",
+    srcs = ["syntax.py"],
+    data = ["//defcl/python:grammar.lark"],
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [
+        ":validator",
+        "//defcl/python:exceptions",
+        "@pypi//lark",
     ],
 )
 
@@ -78,4 +61,19 @@ py_test(
         "@pypi//lark",
         "@pypi//pytest",
     ],
+)
+
+py_library(
+    name = "validator",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl/python:__pkg__"],
+    deps = ["//defcl/python"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
 )

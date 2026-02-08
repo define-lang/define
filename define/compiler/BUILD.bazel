@@ -7,18 +7,18 @@ exports_files(["pyproject.toml"])
 # --- Libraries ---
 
 py_library(
-    name = "compiler",
-    srcs = ["__init__.py"],
-    deps = ["//define"],
-)
-
-py_library(
     name = "ast",
     srcs = ["ast.py"],
     deps = [
         ":compiler",
         "@pypi//lark",
     ],
+)
+
+py_library(
+    name = "compiler",
+    srcs = ["__init__.py"],
+    deps = ["//define"],
 )
 
 py_library(
