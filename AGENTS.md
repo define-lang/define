@@ -98,6 +98,11 @@ BUILD file generator.
 - **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
   package-private targets; use `//pkg:__subpackages__` when needed by sibling
   packages; use `//visibility:public` only for true public APIs.
+- **Target order:** Keep normal rule targets (e.g. `py_library`, `py_test`,
+  `py_binary`, `go_library`, etc.) in alphabetical order by target name within
+  their section. Special rules like `format_test`, `pyright_test`, and similar
+  may be grouped in separate sections and need not be alphabetized with the
+  normal rules.
 
 ### Building and Testing
 
