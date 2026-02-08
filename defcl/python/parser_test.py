@@ -3,6 +3,7 @@ from pathlib import Path
 from defcl.python import parser
 from defcl.testdata.valid.schemas import (
     integers_pb2,
+    nested_messages_pb2,
     repeated_messages_pb2,
     single_toplevel_pb2,
     strings_pb2,
@@ -35,6 +36,16 @@ class TestParseValidFiles:
         )
         assert result.config.basic == "hello"
         assert result.config.with_newline == "line1\nline2"
+
+    def test_nested_messages(self):
+        result = parser.parse_file(
+            _TESTDATA_PATH / "nested_messages.defcl",
+            nested_messages_pb2.NestedMessagesFile,
+        )
+        assert result.project.name == "my_project"
+        assert result.project.database.host == "localhost"
+        assert result.project.database.port == 5432
+        assert result.project.database.pool.max_connections == 10
 
     def test_repeated_messages(self):
         result = parser.parse_file(

@@ -8,6 +8,26 @@ proto_library(
 )
 
 proto_library(
+    name = "nested_integer_enum_proto",
+    srcs = ["nested_integer_enum.proto"],
+)
+
+proto_library(
+    name = "nested_no_brackets_message_proto",
+    srcs = ["nested_no_brackets_message.proto"],
+)
+
+proto_library(
+    name = "nested_no_brackets_scalar_proto",
+    srcs = ["nested_no_brackets_scalar.proto"],
+)
+
+proto_library(
+    name = "repeated_integer_enum_proto",
+    srcs = ["repeated_integer_enum.proto"],
+)
+
+proto_library(
     name = "no_brackets_message_proto",
     srcs = ["no_brackets_message.proto"],
 )
@@ -21,6 +41,30 @@ py_proto_library(
     name = "integer_enum_py_pb2",
     visibility = ["//defcl/python/validator:__pkg__"],
     deps = [":integer_enum_proto"],
+)
+
+py_proto_library(
+    name = "nested_integer_enum_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":nested_integer_enum_proto"],
+)
+
+py_proto_library(
+    name = "nested_no_brackets_message_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":nested_no_brackets_message_proto"],
+)
+
+py_proto_library(
+    name = "nested_no_brackets_scalar_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":nested_no_brackets_scalar_proto"],
+)
+
+py_proto_library(
+    name = "repeated_integer_enum_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":repeated_integer_enum_proto"],
 )
 
 py_proto_library(

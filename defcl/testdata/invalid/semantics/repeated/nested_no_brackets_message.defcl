@@ -1,0 +1,5 @@
+project: {
+    config: {
+        dependencies: { universe: "lib1" }
+    }
+}

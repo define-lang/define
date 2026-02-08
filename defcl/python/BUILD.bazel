@@ -39,6 +39,7 @@ py_test(
     deps = [
         ":parser",
         "//defcl/testdata/valid/schemas:integers_py_pb2",
+        "//defcl/testdata/valid/schemas:nested_messages_py_pb2",
         "//defcl/testdata/valid/schemas:repeated_messages_py_pb2",
         "//defcl/testdata/valid/schemas:schemas_py",
         "//defcl/testdata/valid/schemas:single_toplevel_py_pb2",

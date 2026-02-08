@@ -99,6 +99,18 @@ class TestValidFiles:
         assert _get_tokens_by_type(tree, "FLOAT") == ["1.5", "2.5"]
         assert _get_tokens_by_type(tree, "ENUM_VALUE") == ["ACTIVE", "INACTIVE"]
 
+    def test_nested_messages(self):
+        tree = _parser.parse_file(_TESTDATA_PATH / "valid" / "nested_messages.defcl")
+        assert _get_tokens_by_type(tree, "FIELD_NAME") == [
+            "project",
+            "name",
+            "database",
+            "host",
+            "port",
+            "pool",
+            "max_connections",
+        ]
+
     def test_repeated_messages(self):
         tree = _parser.parse_file(_TESTDATA_PATH / "valid" / "repeated_messages.defcl")
         assert _get_tokens_by_type(tree, "FIELD_NAME") == [
@@ -271,6 +283,15 @@ class TestInvalidMessages:
         assert exc_info.value.char == "<"
         assert exc_info.value.line == 1
         assert exc_info.value.column == 10
+
+    def test_nested_angle_brackets(self):
+        with pytest.raises(exceptions.AngleBracketsNotAllowedError) as exc_info:
+            _parser.parse_file(
+                _INVALID_SYNTAX_PATH / "messages" / "nested_angle_brackets.defcl"
+            )
+        assert exc_info.value.char == "<"
+        assert exc_info.value.line == 2
+        assert exc_info.value.column == 13
 
 
 class TestInvalidNumbers:

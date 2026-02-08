@@ -1,0 +1,19 @@
+edition = "2023";
+
+package defcl.testdata.valid.schemas;
+
+message NestedMessagesFile {
+  Project project = 1;
+  message Project {
+    string name = 1;
+    Database database = 2;
+  }
+  message Database {
+    string host = 1;
+    int32 port = 2;
+    Pool pool = 3;
+  }
+  message Pool {
+    int32 max_connections = 1;
+  }
+}

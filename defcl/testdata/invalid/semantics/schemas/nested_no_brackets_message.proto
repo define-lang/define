@@ -1,0 +1,16 @@
+edition = "2023";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message NestedNoBracketsMessageFile {
+  Project project = 1;
+  message Project {
+    Config config = 1;
+  }
+  message Config {
+    repeated Dependency dependencies = 1;
+  }
+  message Dependency {
+    string universe = 1;
+  }
+}

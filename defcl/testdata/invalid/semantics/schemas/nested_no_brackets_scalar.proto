@@ -1,0 +1,13 @@
+edition = "2023";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message NestedNoBracketsScalarFile {
+  Project project = 1;
+  message Project {
+    Config config = 1;
+  }
+  message Config {
+    repeated string tags = 1;
+  }
+}

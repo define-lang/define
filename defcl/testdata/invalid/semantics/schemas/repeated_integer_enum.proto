@@ -1,0 +1,17 @@
+edition = "2023";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message RepeatedIntegerEnumFile {
+  Project project = 1;
+  message Project {
+    repeated Item items = 1;
+  }
+  message Item {
+    Status status = 1;
+  }
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACTIVE = 1;
+  }
+}

@@ -8,6 +8,11 @@ proto_library(
 )
 
 proto_library(
+    name = "nested_messages_proto",
+    srcs = ["nested_messages.proto"],
+)
+
+proto_library(
     name = "repeated_messages_proto",
     srcs = ["repeated_messages.proto"],
 )
@@ -26,6 +31,12 @@ py_proto_library(
     name = "integers_py_pb2",
     visibility = ["//defcl/python:__pkg__"],
     deps = [":integers_proto"],
+)
+
+py_proto_library(
+    name = "nested_messages_py_pb2",
+    visibility = ["//defcl/python:__pkg__"],
+    deps = [":nested_messages_proto"],
 )
 
 py_proto_library(
