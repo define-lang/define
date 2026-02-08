@@ -99,10 +99,12 @@ BUILD file generator.
   package-private targets; use `//pkg:__subpackages__` when needed by sibling
   packages; use `//visibility:public` only for true public APIs.
 - **Target order:** Keep normal rule targets (e.g. `py_library`, `py_test`,
-  `py_binary`, `go_library`, etc.) in alphabetical order by target name within
-  their section. Special rules like `format_test`, `pyright_test`, and similar
-  may be grouped in separate sections and need not be alphabetized with the
-  normal rules.
+  `py_binary`, `go_library`, etc.) in alphabetical order by target name. This
+  includes test targets that test specific files (like `parser_test` for
+  `parser.py`) — these should be alphabetized together with their corresponding
+  source targets so you can see them side-by-side. Only special meta-test
+  targets like `format_test` and `pyright_test` should be grouped in separate
+  sections and need not be alphabetized with the normal rules.
 
 ### Building and Testing
 
