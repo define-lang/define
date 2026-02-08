@@ -1,5 +1,7 @@
 """Tests for the Define language parser."""
 
+from pathlib import Path
+
 import lark
 import pytest
 
@@ -467,3 +469,20 @@ class TestIncompleteStatements:
         with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
             p.parse("define the.\n")
         assert str(exc_info.value.token) == "define"
+
+
+class TestParseFile:
+    def test_parse_file(self, p: parser.Parser, tmp_path: Path):
+        source = "define the potential position<standard:/path>.\n"
+        file = tmp_path / "path.def"
+        file.write_text(source, encoding="utf-8")
+        tree, returned_source = p.parse_file(file)
+        assert returned_source == source
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_parse_file_preserves_crlf(self, p: parser.Parser, tmp_path: Path):
+        source = "define the potential position<standard:/path>.\r\n"
+        file = tmp_path / "path.def"
+        file.write_bytes(source.encode("utf-8"))
+        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+            p.parse_file(file)

@@ -1,5 +1,6 @@
 """Parser for Define language statements."""
 
+import os
 from pathlib import Path
 
 from lark import Lark, Token, Tree
@@ -23,3 +24,9 @@ class Parser:
     def parse(self, source: str) -> Tree[Token]:
         """Parse Define source code and return a parse tree."""
         return self._lark.parse(source)
+
+    def parse_file(self, path: os.PathLike[str]) -> tuple[Tree[Token], str]:
+        """Parse a Define source file and return the parse tree and source text."""
+        with open(path, encoding="utf-8", newline="") as f:
+            source = f.read()
+        return self.parse(source), source

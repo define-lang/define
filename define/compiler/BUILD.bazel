@@ -1,5 +1,5 @@
 load("@aspect_rules_lint//format:defs.bzl", "format_test")
-load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["pyproject.toml"])
@@ -31,23 +31,38 @@ py_library(
 )
 
 py_library(
-    name = "config_loader",
-    srcs = ["config_loader.py"],
+    name = "driver",
+    srcs = ["driver.py"],
+    visibility = ["//visibility:public"],
     deps = [
+        ":parser",
+        ":transformer",
+        ":validator",
         "//defcl/python:parser",
         "//define/config/project:config_proto_py",
     ],
 )
 
 py_test(
-    name = "config_loader_test",
+    name = "driver_test",
     size = "small",
-    srcs = ["config_loader_test.py"],
+    srcs = ["driver_test.py"],
     pytest_main = True,
     deps = [
-        ":config_loader",
-        "//defcl/python:exceptions",
+        ":driver",
+        ":validator",
+        "@pypi//lark",
         "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "main",
+    srcs = ["main.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":driver",
+        "@pypi//lark",
     ],
 )
 
@@ -133,8 +148,9 @@ pyright_test(
         ":ast",
         ":ast_test",
         ":compiler",
-        ":config_loader",
-        ":config_loader_test",
+        ":driver",
+        ":driver_test",
+        ":main",
         ":parser",
         ":parser_test",
         ":transformer",
