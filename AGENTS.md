@@ -64,6 +64,7 @@ See [define/spec/spec.md] for the language specification.
 
 - When renaming or moving files, always use `git mv` so that git records the
   change as a rename.
+- Don't use git -C on the current directory.
 
 ## Tests
 
@@ -93,7 +94,9 @@ BUILD file generator.
   - `go_library` for a single `.go` file is named `<dir>_lib` when a `go_binary`
     in the same package embeds it, or just `<dir>` otherwise. `go_test` is named
     `<dir>_test`. `go_binary` is named after the directory.
-  - `py_proto_library` rules are named `{proto_name}_py` (do not add `_pb2`).
+  - `proto_library` rules are named `{proto_name}_proto`.
+  - `py_proto_library` rules are named `{proto_library_name}_py` (do not add
+    `_pb2`).
 - **Keep targets atomic:** each target lists only its own source file in `srcs`
   and only its direct dependencies in `deps`.
 - **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
@@ -103,9 +106,11 @@ BUILD file generator.
   `py_binary`, `go_library`, etc.) in alphabetical order by target name. This
   includes test targets that test specific files (like `parser_test` for
   `parser.py`) — these should be alphabetized together with their corresponding
-  source targets so you can see them side-by-side. Only special meta-test
-  targets like `format_test` and `pyright_test` should be grouped in separate
-  sections and need not be alphabetized with the normal rules.
+  source targets so you can see them side-by-side. Language-specific proto
+  targets (e.g. `py_proto_library`) go immediately after their `proto_library`,
+  not in a separate section. Only special meta-test targets like `format_test`
+  and `pyright_test` should be grouped in separate sections and need not be
+  alphabetized with the normal rules.
 
 ### Building and Testing
 
