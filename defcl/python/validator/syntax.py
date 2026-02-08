@@ -11,7 +11,7 @@ from lark import exceptions
 _GRAMMAR_PATH = Path(__file__).parent.parent / "grammar.lark"
 
 
-class DCLSyntaxError(Exception):
+class DclSyntaxError(Exception):
     """Base class for DCL syntax errors."""
 
     label: str = "Syntax Error"
@@ -35,7 +35,7 @@ class DCLSyntaxError(Exception):
         self.path_name = path_name
 
 
-class DCLTokenError(DCLSyntaxError):
+class DclTokenError(DclSyntaxError):
     """Base class for DCL syntax errors caused by unexpected tokens."""
 
     token: lark.Token
@@ -53,7 +53,7 @@ class DCLTokenError(DCLSyntaxError):
         self.token = token
 
 
-class DCLCharError(DCLSyntaxError):
+class DclCharError(DclSyntaxError):
     """Base class for DCL syntax errors caused by unexpected characters."""
 
     char: str
@@ -71,103 +71,103 @@ class DCLCharError(DCLSyntaxError):
         self.char = char
 
 
-class BooleanNotSupportedError(DCLTokenError):
+class BooleanNotSupportedError(DclTokenError):
     """Raised when true/false boolean literals are used."""
 
     label: str = "Boolean literals not supported - use enums instead"
 
 
-class InvalidEnumCaseError(DCLTokenError):
+class InvalidEnumCaseError(DclTokenError):
     """Raised when enum values are not ALL_CAPS."""
 
     label: str = "Enum values must be ALL_CAPS"
 
 
-class InvalidFieldNameTokenError(DCLTokenError):
+class InvalidFieldNameTokenError(DclTokenError):
     """Raised when field names don't follow naming rules (token error)."""
 
     label: str = "Invalid field name"
 
 
-class InvalidFieldNameError(DCLCharError):
+class InvalidFieldNameError(DclCharError):
     """Raised when field names don't follow naming rules (character error)."""
 
     label: str = "Invalid field name"
 
 
-class SingleQuotesNotAllowedError(DCLCharError):
+class SingleQuotesNotAllowedError(DclCharError):
     """Raised when single quotes are used instead of double quotes."""
 
     label: str = "Use double quotes for strings"
 
 
-class UnterminatedStringError(DCLCharError):
+class UnterminatedStringError(DclCharError):
     """Raised when a string contains an unescaped newline."""
 
     label: str = "Unterminated string - use \\n for newlines"
 
 
-class InvalidNumberFormatError(DCLTokenError):
+class InvalidNumberFormatError(DclTokenError):
     """Raised when numbers use unsupported formats (token error)."""
 
     label: str = "Invalid number format"
 
 
-class InvalidNumberFormatCharError(DCLCharError):
+class InvalidNumberFormatCharError(DclCharError):
     """Raised when numbers use unsupported formats (character error)."""
 
     label: str = "Invalid number format"
 
 
-class MissingColonError(DCLTokenError):
+class MissingColonError(DclTokenError):
     """Raised when colon is missing between field name and value."""
 
     label: str = "Missing colon after field name"
 
 
-class InvalidSeparatorError(DCLTokenError):
+class InvalidSeparatorError(DclTokenError):
     """Raised when invalid separators like comma are used (token error)."""
 
     label: str = "Invalid separator"
 
 
-class InvalidSeparatorCharError(DCLCharError):
+class InvalidSeparatorCharError(DclCharError):
     """Raised when invalid separators like semicolon are used (character error)."""
 
     label: str = "Invalid separator"
 
 
-class TabNotAllowedError(DCLCharError):
+class TabNotAllowedError(DclCharError):
     """Raised when tab characters are used."""
 
     label: str = "Tabs not allowed - use spaces"
 
 
-class CarriageReturnNotAllowedError(DCLCharError):
+class CarriageReturnNotAllowedError(DclCharError):
     """Raised when carriage return characters are used."""
 
     label: str = "Carriage returns not allowed - use LF only"
 
 
-class AngleBracketsNotAllowedError(DCLCharError):
+class AngleBracketsNotAllowedError(DclCharError):
     """Raised when angle brackets are used instead of curly braces."""
 
     label: str = "Use curly braces {} for messages"
 
 
-class ScalarAtToplevelError(DCLTokenError):
+class ScalarAtToplevelError(DclTokenError):
     """Raised when a scalar value appears at the top level."""
 
     label: str = "Top-level values must be messages"
 
 
-class ByteOrderMarkError(DCLCharError):
+class ByteOrderMarkError(DclCharError):
     """Raised when a byte order mark is present."""
 
     label: str = "Byte order mark not allowed"
 
 
-class MissingTrailingNewlineError(DCLSyntaxError):
+class MissingTrailingNewlineError(DclSyntaxError):
     """Raised when a file does not end with a newline."""
 
     label: str = "File does not end with a newline"
@@ -184,7 +184,7 @@ class MissingTrailingNewlineError(DCLSyntaxError):
         return self.label
 
 
-_TOKEN_ERROR_EXAMPLES: dict[type[DCLTokenError], list[str]] = {
+_TOKEN_ERROR_EXAMPLES: dict[type[DclTokenError], list[str]] = {
     MissingColonError: [
         'a: {\n    b "x"\n}',
         "a {\n    b: 1\n}",
@@ -218,7 +218,7 @@ _TOKEN_ERROR_EXAMPLES: dict[type[DCLTokenError], list[str]] = {
     ],
 }
 
-_CHAR_ERROR_EXAMPLES: dict[type[DCLCharError], list[str]] = {
+_CHAR_ERROR_EXAMPLES: dict[type[DclCharError], list[str]] = {
     InvalidFieldNameError: [
         "a: {\n    _b: 1\n}",
         "a: {\n    a__b: 1\n}",
@@ -256,7 +256,7 @@ _CHAR_ERROR_EXAMPLES: dict[type[DCLCharError], list[str]] = {
     ],
 }
 
-_CHAR_ERRORS: dict[str, type[DCLCharError]] = {
+_CHAR_ERRORS: dict[str, type[DclCharError]] = {
     "'": SingleQuotesNotAllowedError,
     "\t": TabNotAllowedError,
     "\r": CarriageReturnNotAllowedError,
@@ -268,12 +268,12 @@ _CHAR_ERRORS: dict[str, type[DCLCharError]] = {
     "_": InvalidFieldNameError,
 }
 
-_VALUE_POSITION_CHAR_ERRORS: dict[str, type[DCLCharError]] = {
+_VALUE_POSITION_CHAR_ERRORS: dict[str, type[DclCharError]] = {
     "-": InvalidNumberFormatCharError,
     ".": InvalidNumberFormatCharError,
 }
 
-_FIELD_POSITION_CHAR_ERRORS: dict[str, type[DCLCharError]] = {
+_FIELD_POSITION_CHAR_ERRORS: dict[str, type[DclCharError]] = {
     "-": InvalidFieldNameError,
     ".": InvalidFieldNameError,
 }
@@ -288,7 +288,7 @@ class Parser:
 
     def _classify_char_error(
         self, e: exceptions.UnexpectedCharacters
-    ) -> type[DCLCharError] | None:
+    ) -> type[DclCharError] | None:
         """Classify a character error using direct lookup and example matching."""
         char_class = _CHAR_ERRORS.get(e.char)
         if char_class is not None:
@@ -312,7 +312,7 @@ class Parser:
 
     def _classify_token_error(
         self, e: exceptions.UnexpectedToken
-    ) -> type[DCLTokenError] | None:
+    ) -> type[DclTokenError] | None:
         """Classify a token error using pattern matching and example matching."""
         if e.token.type == "RBRACE" and e.token_history:
             prev = e.token_history[-1]

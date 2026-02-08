@@ -15,7 +15,7 @@ def parse[M: message.Message](text: str, message_type: type[M]) -> M:
         message_type: The protobuf message class to parse into.
 
     Raises:
-        DCLSyntaxError: If the text fails DCL syntax validation.
+        DclSyntaxError: If the text fails DCL syntax validation.
         text_format.ParseError: If the text fails protobuf parsing.
     """
     validator = syntax.Parser()
