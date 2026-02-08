@@ -11,6 +11,7 @@
       "WebFetch(domain:blog.aspect.build)",
       "WebFetch(domain:docs.astral.sh)",
       "WebFetch(domain:blog.bazel.build)",
+      "Shell(uv run python -c)",
       "Shell(echo)",
       "Shell(ls)",
       "Shell(grep)",
@@ -36,7 +37,12 @@
       "Shell(pip3)",
       "Shell(pipx)",
       "Shell(python -m pip)",
-      "Shell(uv run pip)"
+      "Shell(uv run pip)",
+      "Shell(uv run pip3)",
+      "Shell(uv run pipx)",
+      "Shell(uv run python -m pip)",
+      "Shell(uv run python -m pip3)",
+      "Shell(uv run python -m pipx)"
     ]
   }
 }
