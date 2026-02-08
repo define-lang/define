@@ -254,6 +254,12 @@ class TestInvalidFileFormat:
         assert exc_info.value.line == 1
         assert exc_info.value.column == 1
 
+    def test_no_trailing_newline(self):
+        with pytest.raises(syntax.MissingTrailingNewlineError):
+            _parser.parse_file(
+                _INVALID_SYNTAX_PATH / "file_format" / "no_trailing_newline.defcl"
+            )
+
 
 class TestInvalidMessages:
     def test_angle_brackets(self):

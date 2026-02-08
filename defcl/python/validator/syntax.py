@@ -3,6 +3,7 @@
 import os
 from functools import cached_property
 from pathlib import Path
+from typing import override
 
 import lark
 from lark import exceptions
@@ -17,13 +18,21 @@ class DCLSyntaxError(Exception):
     context: str
     line: int
     column: int
+    path_name: str | os.PathLike[str] | None
 
-    def __init__(self, context: str, line: int, column: int) -> None:
+    def __init__(
+        self,
+        context: str,
+        line: int,
+        column: int,
+        path_name: str | os.PathLike[str] | None = None,
+    ):
         """Initialize the syntax error with location and context information."""
         super().__init__(context, line, column)
         self.context = context
         self.line = line
         self.column = column
+        self.path_name = path_name
 
 
 class DCLTokenError(DCLSyntaxError):
@@ -31,9 +40,16 @@ class DCLTokenError(DCLSyntaxError):
 
     token: lark.Token
 
-    def __init__(self, context: str, line: int, column: int, token: lark.Token) -> None:
+    def __init__(
+        self,
+        context: str,
+        line: int,
+        column: int,
+        token: lark.Token,
+        path_name: str | os.PathLike[str] | None = None,
+    ):
         """Initialize with the unexpected token."""
-        super().__init__(context, line, column)
+        super().__init__(context, line, column, path_name)
         self.token = token
 
 
@@ -42,9 +58,16 @@ class DCLCharError(DCLSyntaxError):
 
     char: str
 
-    def __init__(self, context: str, line: int, column: int, char: str) -> None:
+    def __init__(
+        self,
+        context: str,
+        line: int,
+        column: int,
+        char: str,
+        path_name: str | os.PathLike[str] | None = None,
+    ):
         """Initialize with the unexpected character."""
-        super().__init__(context, line, column)
+        super().__init__(context, line, column, path_name)
         self.char = char
 
 
@@ -142,6 +165,23 @@ class ByteOrderMarkError(DCLCharError):
     """Raised when a byte order mark is present."""
 
     label: str = "Byte order mark not allowed"
+
+
+class MissingTrailingNewlineError(DCLSyntaxError):
+    """Raised when a file does not end with a newline."""
+
+    label: str = "File does not end with a newline"
+
+    def __init__(self, path_name: str | os.PathLike[str] | None = None):
+        """Initialize with optional file name for error display."""
+        super().__init__("", 0, 0, path_name)
+
+    @override
+    def __str__(self) -> str:
+        """Display the exception error message."""
+        if self.path_name is not None:
+            return f"{os.fspath(self.path_name)}: {self.label}"
+        return self.label
 
 
 _TOKEN_ERROR_EXAMPLES: dict[type[DCLTokenError], list[str]] = {
@@ -287,22 +327,34 @@ class Parser:
             use_accepts=True,
         )
 
-    def parse(self, text: str) -> lark.Tree[lark.Token]:
-        """Parse DCL text and return the parse tree."""
+    def parse(
+        self, text: str, path_name: str | os.PathLike[str] | None = None
+    ) -> lark.Tree[lark.Token]:
+        """Parse DCL text and return the parse tree.
+
+        path_name is only used for error messages.
+        """
         try:
-            return self._parser.parse(text)
+            tree = self._parser.parse(text)
+            if text and text[-1] != "\n":
+                raise MissingTrailingNewlineError(path_name)
         except exceptions.UnexpectedCharacters as e:
             exc_class = self._classify_char_error(e)
             if exc_class is not None:
-                raise exc_class(e.get_context(text), e.line, e.column, e.char) from e
+                raise exc_class(
+                    e.get_context(text), e.line, e.column, e.char, path_name
+                ) from e
             raise
         except exceptions.UnexpectedToken as e:
             exc_class = self._classify_token_error(e)
             if exc_class is not None:
-                raise exc_class(e.get_context(text), e.line, e.column, e.token) from e
+                raise exc_class(
+                    e.get_context(text), e.line, e.column, e.token, path_name
+                ) from e
             raise
+        return tree
 
     def parse_file(self, path: str | os.PathLike[str]) -> lark.Tree[lark.Token]:
         """Parse a DCL file and return the parse tree."""
         with open(path, encoding="utf-8", newline="") as f:
-            return self.parse(f.read())
+            return self.parse(f.read(), path_name=path)
