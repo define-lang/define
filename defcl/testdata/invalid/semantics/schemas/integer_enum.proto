@@ -1,0 +1,14 @@
+edition = "2023";
+
+package defcl.testdata.invalid.semantics.schemas;
+
+message IntegerEnumFile {
+  Config config = 1;
+  message Config {
+    Status status = 1;
+  }
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACTIVE = 1;
+  }
+}

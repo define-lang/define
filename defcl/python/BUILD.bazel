@@ -24,6 +24,7 @@ py_library(
     data = ["grammar.lark"],
     deps = [
         ":python",
+        "//defcl/python/validator:semantics",
         "//defcl/python/validator:syntax",
         "@pypi//protobuf",
     ],
@@ -67,6 +68,8 @@ pyright_test(
         ":parser_test",
         ":python",
         "//defcl/python/validator",
+        "//defcl/python/validator:semantics",
+        "//defcl/python/validator:semantics_test",
         "//defcl/python/validator:syntax",
         "//defcl/python/validator:syntax_test",
     ],

@@ -3,6 +3,7 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 filegroup(
     name = "testdata_files",
     srcs = glob(["**/*"]) + [
+        "//defcl/testdata/invalid:invalid_files",
         "//defcl/testdata/valid:valid_files",
     ],
     visibility = ["//defcl/python:__subpackages__"],

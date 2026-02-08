@@ -1,0 +1,43 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "integer_enum_proto",
+    srcs = ["integer_enum.proto"],
+)
+
+proto_library(
+    name = "no_brackets_message_proto",
+    srcs = ["no_brackets_message.proto"],
+)
+
+proto_library(
+    name = "no_brackets_scalar_proto",
+    srcs = ["no_brackets_scalar.proto"],
+)
+
+py_proto_library(
+    name = "integer_enum_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":integer_enum_proto"],
+)
+
+py_proto_library(
+    name = "no_brackets_message_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":no_brackets_message_proto"],
+)
+
+py_proto_library(
+    name = "no_brackets_scalar_py_pb2",
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = [":no_brackets_scalar_proto"],
+)
+
+py_library(
+    name = "schemas_py",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl/python/validator:__pkg__"],
+    deps = ["//defcl/testdata/invalid/semantics"],
+)

@@ -72,3 +72,10 @@ repos:
         args: ["--config=defcl/buf.yaml"]
       - id: buf-format
         files: ^.*\.proto$
+        args:
+          [
+            "--exclude-path=bazel-bin",
+            "--exclude-path=bazel-define",
+            "--exclude-path=bazel-out",
+            "--exclude-path=bazel-testlogs",
+          ]

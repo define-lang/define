@@ -173,6 +173,44 @@ class ByteOrderMarkError(DclCharError):
     label: str = "Byte order mark not allowed"
 
 
+class IntegerEnumError(DclSyntaxError):
+    """Raised when an integer value is used for an enum field."""
+
+    field_name: str
+    label: str
+
+    def __init__(
+        self,
+        line: int,
+        column: int,
+        field_name: str,
+        path_name: str | os.PathLike[str] | None = None,
+    ):
+        """Initialize with the field name that has an integer enum value."""
+        super().__init__("", line, column, path_name)
+        self.field_name = field_name
+        self.label = f"{field_name}: Integer enum values are not allowed"
+
+
+class RepeatedFieldWithoutBracketsError(DclSyntaxError):
+    """Raised when a repeated field value does not use bracket syntax."""
+
+    field_name: str
+    label: str
+
+    def __init__(
+        self,
+        line: int,
+        column: int,
+        field_name: str,
+        path_name: str | os.PathLike[str] | None = None,
+    ):
+        """Initialize with the field name missing bracket syntax."""
+        super().__init__("", line, column, path_name)
+        self.field_name = field_name
+        self.label = f"{field_name}: Repeated fields must use bracket [] syntax"
+
+
 class MissingTrailingNewlineError(DclSyntaxError):
     """Raised when a file does not end with a newline."""
 
