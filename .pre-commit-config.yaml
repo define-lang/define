@@ -18,7 +18,7 @@ repos:
       - id: destroyed-symlinks
       - id: mixed-line-ending
         args: ["--fix=lf"]
-        exclude: "defcl/testdata/invalid/parser/whitespace/carriage_return.defcl"
+        exclude: "defcl/testdata/invalid/syntax/whitespace/carriage_return.defcl"
       - id: name-tests-test
       - id: trailing-whitespace
   - repo: local

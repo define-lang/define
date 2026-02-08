@@ -6,7 +6,7 @@ import pytest
 from defcl.python.validator import syntax
 
 _TESTDATA_PATH = Path(__file__).parent.parent.parent / "testdata"
-_INVALID_SYNTAX_PATH = _TESTDATA_PATH / "invalid" / "parser"
+_INVALID_SYNTAX_PATH = _TESTDATA_PATH / "invalid" / "syntax"
 _parser = syntax.Parser()
 
 
