@@ -93,6 +93,7 @@ BUILD file generator.
   - `go_library` for a single `.go` file is named `<dir>_lib` when a `go_binary`
     in the same package embeds it, or just `<dir>` otherwise. `go_test` is named
     `<dir>_test`. `go_binary` is named after the directory.
+  - `py_proto_library` rules are named `{proto_name}_py` (do not add `_pb2`).
 - **Keep targets atomic:** each target lists only its own source file in `srcs`
   and only its direct dependencies in `deps`.
 - **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
