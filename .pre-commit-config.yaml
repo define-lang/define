@@ -62,13 +62,13 @@ repos:
         name: build buf plugin
         entry: bazelisk build //defcl/buf
         language: system
-        files: (^defcl/buf.*)|^defcl/.*\.proto$
+        files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
         pass_filenames: false
   - repo: https://github.com/bufbuild/buf
     rev: v1.65.0
     hooks:
       - id: buf-lint
-        files: (^defcl/buf.*)|^defcl/.*\.proto$
+        files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
         args: ["--config=defcl/buf.yaml"]
       - id: buf-format
         files: ^.*\.proto$

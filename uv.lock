@@ -156,7 +156,9 @@ name = "define-compiler"
 version = "0.0.1"
 source = { virtual = "define/compiler" }
 dependencies = [
+    { name = "define-defcl" },
     { name = "lark" },
+    { name = "protobuf" },
 ]
 
 [package.dev-dependencies]
@@ -165,7 +167,11 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "lark" }]
+requires-dist = [
+    { name = "define-defcl", editable = "defcl" },
+    { name = "lark" },
+    { name = "protobuf" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=6" }]
@@ -173,7 +179,7 @@ dev = [{ name = "pytest", specifier = ">=6" }]
 [[package]]
 name = "define-defcl"
 version = "0.0.1"
-source = { virtual = "defcl" }
+source = { editable = "defcl" }
 dependencies = [
     { name = "lark" },
     { name = "protobuf" },

@@ -3,8 +3,13 @@ name = "define-compiler"
 version = "0.0.1"
 requires-python = ">=3.12"
 dependencies = [
+    "define-defcl",
     "lark",
+    "protobuf",
 ]
+
+[tool.uv.sources]
+define-defcl = { workspace = true }
 
 [dependency-groups]
 dev = [

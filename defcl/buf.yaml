@@ -1,6 +1,7 @@
 version: v2
 modules:
   - path: defcl/schema
+  - path: define/config
 lint:
   use:
     - STANDARD

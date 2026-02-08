@@ -1,0 +1,30 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "config_proto",
+    srcs = ["config.proto"],
+)
+
+py_proto_library(
+    name = "config_proto_py",
+    visibility = ["//define/compiler:__pkg__"],
+    deps = [":config_proto"],
+)
+
+py_library(
+    name = "project",
+    srcs = ["__init__.py"],
+    visibility = ["//define/config:__pkg__"],
+    deps = ["//define/config"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@aspect_rules_lint//format:ruff",
+)

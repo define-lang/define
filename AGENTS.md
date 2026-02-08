@@ -24,8 +24,8 @@ See [define/spec/spec.md] for the language specification.
 
 - Linting runs when you run bazelisk build or test. Always lint files after
   editing them.
-- Run `npx @bufbuild/buf lint defcl/schema` after making changes to .proto files
-  in `defcl/schema`.
+- Run `npx @bufbuild/buf lint --config defcl/buf.yaml` after making changes to
+  .proto files in `defcl/schema` or `define/config`.
 - Fix all linting errors that are reported.
 
 ## Imports

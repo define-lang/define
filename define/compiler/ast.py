@@ -106,6 +106,23 @@ class Fqun(ASTNode):
     authority: Authority | None
     universe: Universe
 
+    @property
+    def canonical(self) -> str:
+        """Return the canonical FQUN string."""
+        if self.authority is None:
+            return self.universe.name
+
+        authority_str = self.authority.domain
+        if self.authority.path:
+            authority_str += "/" + "/".join(self.authority.path)
+
+        parts: list[str] = []
+        if self.multiverse is not None:
+            parts.append(self.multiverse.name)
+        parts.append(authority_str)
+        parts.append(self.universe.name)
+        return ":".join(parts)
+
 
 @dataclass
 class GlobalName(ASTNode):

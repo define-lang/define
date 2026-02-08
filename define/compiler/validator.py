@@ -131,6 +131,14 @@ class UniverseNameUppercaseDiagnostic(Diagnostic):
     universe_name: str
 
 
+@dataclass
+class FqunMismatchDiagnostic(Diagnostic):
+    """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
+
+    expected: str
+    actual: str
+
+
 class Validator:
     """Validates semantic rules for a Define program AST."""
 
@@ -151,7 +159,11 @@ class Validator:
         """Source code split into lines, for use with Diagnostic.format()."""
         return self._source.splitlines()
 
-    def validate(self, file_path: str | None = None) -> list[Diagnostic]:
+    def validate(
+        self,
+        file_path: str | None = None,
+        expected_universe_name: str | None = None,
+    ) -> list[Diagnostic]:
         """Validate all semantic rules and return collected diagnostics.
 
         Args:
@@ -160,19 +172,26 @@ class Validator:
                 in filesystem context and validates that definition paths match
                 the file path. When None, the validator operates in non-filesystem
                 context and skips path matching validation.
+            expected_universe_name: Optional FQUN string from the project config.
+                When provided, validates that each definition's FQUN matches this
+                value. When None, skips FQUN matching validation.
         """
         self._diagnostics = []
         self._seen_definitions = {}
         for definition in self._program.definitions:
-            self._validate_definition(definition, file_path)
+            self._validate_definition(definition, file_path, expected_universe_name)
         return self._diagnostics
 
     def _validate_definition(
-        self, definition: ast.QualityDefinition, file_path: str | None
+        self,
+        definition: ast.QualityDefinition,
+        file_path: str | None,
+        expected_universe_name: str | None,
     ) -> None:
         """Validate a quality definition."""
         self._validate_global_name(definition.name)
         self._validate_path_matches_file(definition, file_path)
+        self._validate_fqun_matches_expected(definition, expected_universe_name)
         self._validate_not_duplicate(definition)
 
     def _validate_global_name(self, name: ast.GlobalName) -> None:
@@ -315,3 +334,26 @@ class Validator:
             )
         else:
             self._seen_definitions[key] = definition
+
+    def _validate_fqun_matches_expected(
+        self,
+        definition: ast.QualityDefinition,
+        expected_universe_name: str | None,
+    ) -> None:
+        """Validate that the definition's FQUN matches the expected project FQUN."""
+        if expected_universe_name is None:
+            return
+
+        actual = definition.name.fqun.canonical
+        if actual != expected_universe_name:
+            self._diagnostics.append(
+                FqunMismatchDiagnostic(
+                    position=definition.name.fqun.position,
+                    message=(
+                        f"Fully-qualified universe name '{actual}' does not match project "
+                        f"universe name '{expected_universe_name}'"
+                    ),
+                    expected=expected_universe_name,
+                    actual=actual,
+                )
+            )

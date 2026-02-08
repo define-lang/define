@@ -8,11 +8,15 @@ _transformer = DefineTransformer()
 
 
 def _parse_transform_validate(
-    source: str, file_path: str | None = None
+    source: str,
+    file_path: str | None = None,
+    expected_universe_name: str | None = None,
 ) -> list[validator.Diagnostic]:
     tree = _parser.parse(source)
     program = _transformer.transform(tree)
-    return validator.Validator(program, source).validate(file_path=file_path)
+    return validator.Validator(program, source).validate(
+        file_path=file_path, expected_universe_name=expected_universe_name
+    )
 
 
 def _check_diagnostic_format(
@@ -283,3 +287,82 @@ class TestUniverseNameUppercase:
         assert isinstance(diagnostics[0], validator.UniverseNameUppercaseDiagnostic)
         assert diagnostics[0].universe_name == "myLib"
         _check_diagnostic_format(diagnostics[0], source, 1, 45)
+
+
+class TestFqunMismatch:
+    def test_matching_authority_universe(self):
+        source = "define the potential position<my.domain.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="my.domain.com:my_lib"
+        )
+        assert len(diagnostics) == 0
+
+    def test_mismatched_universe(self):
+        source = "define the potential position<my.domain.com:wrong_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="my.domain.com:my_lib"
+        )
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.FqunMismatchDiagnostic)
+        assert diagnostics[0].expected == "my.domain.com:my_lib"
+        assert diagnostics[0].actual == "my.domain.com:wrong_lib"
+
+    def test_mismatched_authority(self):
+        source = "define the potential position<other.org:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="my.domain.com:my_lib"
+        )
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.FqunMismatchDiagnostic)
+        assert diagnostics[0].expected == "my.domain.com:my_lib"
+        assert diagnostics[0].actual == "other.org:my_lib"
+
+    def test_mismatched_multiverse(self):
+        source = "define the potential position<npm:my.domain.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="mv:my.domain.com:my_lib"
+        )
+        npm_diagnostics = [
+            d for d in diagnostics if isinstance(d, validator.FqunMismatchDiagnostic)
+        ]
+        assert len(npm_diagnostics) == 1
+        assert npm_diagnostics[0].expected == "mv:my.domain.com:my_lib"
+        assert npm_diagnostics[0].actual == "npm:my.domain.com:my_lib"
+
+    def test_none_skips_check(self):
+        source = "define the potential position<my.domain.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(source, expected_universe_name=None)
+        assert len(diagnostics) == 0
+
+    def test_standard_universe_matching(self):
+        source = "define the potential position<standard:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="standard"
+        )
+        fqun_diagnostics = [
+            d for d in diagnostics if isinstance(d, validator.FqunMismatchDiagnostic)
+        ]
+        assert len(fqun_diagnostics) == 0
+
+    def test_authority_with_path(self):
+        source = "define the potential position<my.domain.com/org:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="my.domain.com/org:my_lib"
+        )
+        assert len(diagnostics) == 0
+
+    def test_authority_with_path_mismatch(self):
+        source = "define the potential position<my.domain.com/org:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="my.domain.com:my_lib"
+        )
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], validator.FqunMismatchDiagnostic)
+        assert diagnostics[0].actual == "my.domain.com/org:my_lib"
+
+    def test_multiverse_matching(self):
+        source = "define the potential position<mv:my.domain.com:my_lib:/path>.\n"
+        diagnostics = _parse_transform_validate(
+            source, expected_universe_name="mv:my.domain.com:my_lib"
+        )
+        assert len(diagnostics) == 0

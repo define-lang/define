@@ -2,9 +2,10 @@ load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 
 py_library(
-    name = "define",
+    name = "config",
     srcs = ["__init__.py"],
-    visibility = ["//define:__subpackages__"],
+    visibility = ["//define/config:__subpackages__"],
+    deps = ["//define"],
 )
 
 format_test(

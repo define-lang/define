@@ -1,0 +1,15 @@
+edition = "2023";
+
+package define.config.project;
+
+// Top-level wrapper for .define/project/config.defcl files.
+message ProjectConfigFile {
+  // The project configuration.
+  Project project = 1;
+}
+
+// Configuration for a Define project.
+message Project {
+  // The fully-qualified universe name (FQUN) for this project.
+  string universe_name = 1;
+}

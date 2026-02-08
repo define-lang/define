@@ -21,7 +21,7 @@ terminator: "." NEWLINE
 
 # Global Names
 
-?authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
+authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
 authority: AUTHORITY_DOMAIN authority_path?
 
 fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
