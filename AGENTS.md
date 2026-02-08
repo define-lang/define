@@ -57,6 +57,12 @@ See [spec/spec.md] for the language specification.
 
 - Prefer positive booleans. For example: `enable_feature=False` rather than
   `disable_feature=True`.
+- Do not add `-> None` to `__init__` methods.
+
+## Git
+
+- When renaming or moving files, always use `git mv` so that git records the
+  change as a rename.
 
 ## Tests
 

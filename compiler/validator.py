@@ -137,7 +137,7 @@ class Validator:
     _program: ast.Program
     _source: str
 
-    def __init__(self, program: ast.Program, source: str) -> None:
+    def __init__(self, program: ast.Program, source: str):
         """Initialize validator with a program AST and source code."""
         self._program = program
         self._source = source

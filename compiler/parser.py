@@ -17,7 +17,7 @@ class Parser:
 
     _lark: Lark
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the parser with the Define grammar."""
         self._lark = Lark.open(
             str(_GRAMMAR_PATH),
