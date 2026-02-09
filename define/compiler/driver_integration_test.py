@@ -20,7 +20,7 @@ from pathlib import Path
 import lark
 import pytest
 
-from define.compiler import driver, validator
+from define.compiler import diagnostics, driver
 
 TESTDATA_ROOT = Path("testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -31,15 +31,15 @@ INVALID_SYNTAX_FILES = sorted((FILES_ROOT / "invalid" / "syntax").rglob("*.def")
 
 # Substrings that indicate validation diagnostics (path/context) -> expected diagnostic type or None
 EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
-    "universe_uppercase": validator.UniverseNameUppercaseDiagnostic,
-    "path_mismatch": validator.PathMismatchDiagnostic,
-    "fqun_mismatch": validator.FqunMismatchDiagnostic,
-    "duplicate_definitions": validator.DuplicateDefinitionDiagnostic,
-    "reserved_names/": validator.ReservedNameDiagnostic,
-    "fqun_validation/universe_without_authority": validator.UniverseWithoutAuthorityDiagnostic,
-    "fqun_validation/universe_uppercase": validator.UniverseNameUppercaseDiagnostic,
-    "paths/path_leading_underscore": validator.PathMismatchDiagnostic,
-    "terminators/missing_space_before_terminator": validator.FqunMismatchDiagnostic,
+    "universe_uppercase": diagnostics.UniverseNameUppercaseDiagnostic,
+    "path_mismatch": diagnostics.PathMismatchDiagnostic,
+    "fqun_mismatch": diagnostics.FqunMismatchDiagnostic,
+    "duplicate_definitions": diagnostics.DuplicateDefinitionDiagnostic,
+    "reserved_names/": diagnostics.ReservedNameDiagnostic,
+    "fqun_validation/universe_without_authority": diagnostics.UniverseWithoutAuthorityDiagnostic,
+    "fqun_validation/universe_uppercase": diagnostics.UniverseNameUppercaseDiagnostic,
+    "paths/path_leading_underscore": diagnostics.PathMismatchDiagnostic,
+    "terminators/missing_space_before_terminator": diagnostics.FqunMismatchDiagnostic,
 }
 
 

@@ -1,6 +1,6 @@
 """Tests for the Define language validator."""
 
-from define.compiler import parser, validator
+from define.compiler import diagnostics, parser, validator
 from define.compiler.transformer import DefineTransformer
 
 _parser = parser.Parser()
@@ -11,7 +11,7 @@ def _parse_transform_validate(
     source: str,
     file_path: str | None = None,
     expected_universe_name: str | None = None,
-) -> list[validator.Diagnostic]:
+) -> list[diagnostics.Diagnostic]:
     tree = _parser.parse(source)
     program = _transformer.transform(tree)
     return validator.Validator(program, source).validate(
@@ -20,7 +20,7 @@ def _parse_transform_validate(
 
 
 def _check_diagnostic_format(
-    diagnostic: validator.Diagnostic,
+    diagnostic: diagnostics.Diagnostic,
     source: str,
     expected_line: int,
     expected_column: int,
@@ -37,100 +37,100 @@ def _check_diagnostic_format(
 class TestReservedUniverseNames:
     def test_standard_is_reserved(self):
         source = "define the potential position<standard:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
-        assert diagnostics[0].reserved_name == "standard"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+        assert diags[0].reserved_name == "standard"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_example_is_reserved(self):
         source = "define the potential position<example.com:example:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 2
-        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
-        assert diagnostics[0].reserved_name == "example.com"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
-        assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
-        assert diagnostics[1].reserved_name == "example"
-        _check_diagnostic_format(diagnostics[1], source, 1, 43)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert diags[0].reserved_name == "example.com"
+        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+        assert diags[1].reserved_name == "example"
+        _check_diagnostic_format(diags[1], source, 1, 43)
 
     def test_common_word_is_reserved(self):
         source = "define the potential position<example.com:about:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 2
-        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
-        assert diagnostics[0].reserved_name == "example.com"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
-        assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
-        assert diagnostics[1].reserved_name == "about"
-        _check_diagnostic_format(diagnostics[1], source, 1, 43)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert diags[0].reserved_name == "example.com"
+        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+        assert diags[1].reserved_name == "about"
+        _check_diagnostic_format(diags[1], source, 1, 43)
 
     def test_case_insensitive_check(self):
         source = "define the potential position<example.com:STANDARD:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 3
-        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
-        assert diagnostics[0].reserved_name == "example.com"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
-        assert isinstance(diagnostics[1], validator.ReservedUniverseNameDiagnostic)
-        assert diagnostics[1].reserved_name == "STANDARD"
-        _check_diagnostic_format(diagnostics[1], source, 1, 43)
-        assert isinstance(diagnostics[2], validator.UniverseNameUppercaseDiagnostic)
-        assert diagnostics[2].universe_name == "STANDARD"
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 3
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert diags[0].reserved_name == "example.com"
+        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+        assert diags[1].reserved_name == "STANDARD"
+        _check_diagnostic_format(diags[1], source, 1, 43)
+        assert isinstance(diags[2], diagnostics.UniverseNameUppercaseDiagnostic)
+        assert diags[2].universe_name == "STANDARD"
 
     def test_non_reserved_universe_name(self):
         source = "define the potential position<example.com:my_library:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
-        assert diagnostics[0].reserved_name == "example.com"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert diags[0].reserved_name == "example.com"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
 
 class TestReservedAuthorityNames:
     def test_example_com_is_reserved(self):
         source = "define the potential position<example.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
-        assert diagnostics[0].reserved_name == "example.com"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert diags[0].reserved_name == "example.com"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_authority_without_dot_in_local_multiverse(self):
         source = "define the potential position<localhost:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedAuthorityNameDiagnostic)
-        assert "localhost" in diagnostics[0].reserved_name
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert "localhost" in diags[0].reserved_name
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_authority_with_dot_in_local_multiverse_ok(self):
         source = "define the potential position<my.domain.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
 
 
 class TestReservedMultiverseNames:
     def test_mv_is_allowed(self):
         source = "define the potential position<mv:example.org:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
 
     def test_programming_language_is_reserved(self):
         source = "define the potential position<python:example.org:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedMultiverseNameDiagnostic)
-        assert diagnostics[0].reserved_name == "python"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert diags[0].reserved_name == "python"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_package_repository_is_reserved(self):
         source = "define the potential position<npm:example.org:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedMultiverseNameDiagnostic)
-        assert diagnostics[0].reserved_name == "npm"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert diags[0].reserved_name == "npm"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
 
 class TestDiagnosticCollection:
@@ -139,74 +139,74 @@ class TestDiagnosticCollection:
             "define the potential position<standard:/first>.\n"
             "define the potential position<standard:/second>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 2
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
-        _check_diagnostic_format(diagnostics[1], source, 2, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        _check_diagnostic_format(diags[0], source, 1, 31)
+        _check_diagnostic_format(diags[1], source, 2, 31)
 
     def test_diagnostics_in_source_order(self):
         source = (
             "define the potential position<standard:/first>.\n"
             "define the potential position<standard:/second>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert diagnostics[0].position.line == 1
-        assert diagnostics[1].position.line == 2
+        diags = _parse_transform_validate(source)
+        assert diags[0].position.line == 1
+        assert diags[1].position.line == 2
 
 
 class TestPathMismatch:
     def test_path_matches_file_no_error(self):
         source = "define the potential position<my.domain.com:my_lib:/foo/bar>.\n"
-        diagnostics = _parse_transform_validate(source, file_path="foo/bar")
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source, file_path="foo/bar")
+        assert len(diags) == 0
 
     def test_path_mismatch_error(self):
         source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
-        diagnostics = _parse_transform_validate(source, file_path="foo/bar")
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.PathMismatchDiagnostic)
-        assert diagnostics[0].expected_path == "/foo/bar"
-        assert diagnostics[0].actual_path == "/wrong/path"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source, file_path="foo/bar")
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+        assert diags[0].expected_path == "/foo/bar"
+        assert diags[0].actual_path == "/wrong/path"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_no_file_path_skips_validation(self):
         source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
-        diagnostics = _parse_transform_validate(source, file_path=None)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source, file_path=None)
+        assert len(diags) == 0
 
     def test_nested_path_matches(self):
         source = "define the potential position<my.domain.com:my_lib:/a/b/c>.\n"
-        diagnostics = _parse_transform_validate(source, file_path="a/b/c")
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source, file_path="a/b/c")
+        assert len(diags) == 0
 
 
 class TestUniverseWithoutAuthority:
     def test_standard_without_authority_ok(self):
         source = "define the potential position<standard:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
 
     def test_non_standard_without_authority_error(self):
         source = "define the potential position<my_universe:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.UniverseWithoutAuthorityDiagnostic)
-        assert diagnostics[0].universe_name == "my_universe"
-        _check_diagnostic_format(diagnostics[0], source, 1, 31)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
+        assert diags[0].universe_name == "my_universe"
+        _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_with_authority_ok(self):
         source = "define the potential position<my.domain.com:my_universe:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
 
     def test_case_insensitive_standard(self):
         source = "define the potential position<STANDARD:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 2
-        assert isinstance(diagnostics[0], validator.ReservedUniverseNameDiagnostic)
-        assert isinstance(diagnostics[1], validator.UniverseNameUppercaseDiagnostic)
-        assert diagnostics[1].universe_name == "STANDARD"
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+        assert isinstance(diags[1], diagnostics.UniverseNameUppercaseDiagnostic)
+        assert diags[1].universe_name == "STANDARD"
 
 
 class TestDuplicateDefinitions:
@@ -215,42 +215,42 @@ class TestDuplicateDefinitions:
             "define the potential position<my.domain.com:my_lib:/first>.\n"
             "define the potential position<my.domain.com:my_lib:/second>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
 
     def test_duplicate_position_error(self):
         source = (
             "define the potential position<my.domain.com:my_lib:/same>.\n"
             "define the potential position<my.domain.com:my_lib:/same>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.DuplicateDefinitionDiagnostic)
-        assert diagnostics[0].definition_type == "position"
-        assert diagnostics[0].path == "/same"
-        assert diagnostics[0].first_definition_line == 1
-        _check_diagnostic_format(diagnostics[0], source, 2, 1)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+        assert diags[0].definition_type == "position"
+        assert diags[0].path == "/same"
+        assert diags[0].first_definition_line == 1
+        _check_diagnostic_format(diags[0], source, 2, 1)
 
     def test_duplicate_action_error(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/same>.\n"
             "define the potential action<my.domain.com:my_lib:/same>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.DuplicateDefinitionDiagnostic)
-        assert diagnostics[0].definition_type == "action"
-        assert diagnostics[0].path == "/same"
-        assert diagnostics[0].first_definition_line == 1
-        _check_diagnostic_format(diagnostics[0], source, 2, 1)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+        assert diags[0].definition_type == "action"
+        assert diags[0].path == "/same"
+        assert diags[0].first_definition_line == 1
+        _check_diagnostic_format(diags[0], source, 2, 1)
 
     def test_same_path_different_types_ok(self):
         source = (
             "define the potential position<my.domain.com:my_lib:/same>.\n"
             "define the potential action<my.domain.com:my_lib:/same>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
 
     def test_three_duplicates_two_errors(self):
         source = (
@@ -258,111 +258,109 @@ class TestDuplicateDefinitions:
             "define the potential position<my.domain.com:my_lib:/same>.\n"
             "define the potential position<my.domain.com:my_lib:/same>.\n"
         )
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 2
-        assert isinstance(diagnostics[0], validator.DuplicateDefinitionDiagnostic)
-        assert isinstance(diagnostics[1], validator.DuplicateDefinitionDiagnostic)
-        assert diagnostics[0].first_definition_line == 1
-        assert diagnostics[1].first_definition_line == 1
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+        assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)
+        assert diags[0].first_definition_line == 1
+        assert diags[1].first_definition_line == 1
 
 
 class TestUniverseNameUppercase:
     def test_lowercase_universe_name_ok(self):
         source = "define the potential position<my.domain.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
 
     def test_uppercase_in_universe_name_error(self):
         source = "define the potential position<my.domain.com:MyLib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.UniverseNameUppercaseDiagnostic)
-        assert diagnostics[0].universe_name == "MyLib"
-        _check_diagnostic_format(diagnostics[0], source, 1, 45)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.UniverseNameUppercaseDiagnostic)
+        assert diags[0].universe_name == "MyLib"
+        _check_diagnostic_format(diags[0], source, 1, 45)
 
     def test_mixed_case_universe_name_error(self):
         source = "define the potential position<my.domain.com:myLib:/path>.\n"
-        diagnostics = _parse_transform_validate(source)
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.UniverseNameUppercaseDiagnostic)
-        assert diagnostics[0].universe_name == "myLib"
-        _check_diagnostic_format(diagnostics[0], source, 1, 45)
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.UniverseNameUppercaseDiagnostic)
+        assert diags[0].universe_name == "myLib"
+        _check_diagnostic_format(diags[0], source, 1, 45)
 
 
 class TestFqunMismatch:
     def test_matching_authority_universe(self):
         source = "define the potential position<my.domain.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="my.domain.com:my_lib"
         )
-        assert len(diagnostics) == 0
+        assert len(diags) == 0
 
     def test_mismatched_universe(self):
         source = "define the potential position<my.domain.com:wrong_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="my.domain.com:my_lib"
         )
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.FqunMismatchDiagnostic)
-        assert diagnostics[0].expected == "my.domain.com:my_lib"
-        assert diagnostics[0].actual == "my.domain.com:wrong_lib"
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+        assert diags[0].expected == "my.domain.com:my_lib"
+        assert diags[0].actual == "my.domain.com:wrong_lib"
 
     def test_mismatched_authority(self):
         source = "define the potential position<other.org:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="my.domain.com:my_lib"
         )
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.FqunMismatchDiagnostic)
-        assert diagnostics[0].expected == "my.domain.com:my_lib"
-        assert diagnostics[0].actual == "other.org:my_lib"
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+        assert diags[0].expected == "my.domain.com:my_lib"
+        assert diags[0].actual == "other.org:my_lib"
 
     def test_mismatched_multiverse(self):
         source = "define the potential position<npm:my.domain.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="mv:my.domain.com:my_lib"
         )
-        npm_diagnostics = [
-            d for d in diagnostics if isinstance(d, validator.FqunMismatchDiagnostic)
+        npm_diags = [
+            d for d in diags if isinstance(d, diagnostics.FqunMismatchDiagnostic)
         ]
-        assert len(npm_diagnostics) == 1
-        assert npm_diagnostics[0].expected == "mv:my.domain.com:my_lib"
-        assert npm_diagnostics[0].actual == "npm:my.domain.com:my_lib"
+        assert len(npm_diags) == 1
+        assert npm_diags[0].expected == "mv:my.domain.com:my_lib"
+        assert npm_diags[0].actual == "npm:my.domain.com:my_lib"
 
     def test_none_skips_check(self):
         source = "define the potential position<my.domain.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(source, expected_universe_name=None)
-        assert len(diagnostics) == 0
+        diags = _parse_transform_validate(source, expected_universe_name=None)
+        assert len(diags) == 0
 
     def test_standard_universe_matching(self):
         source = "define the potential position<standard:/path>.\n"
-        diagnostics = _parse_transform_validate(
-            source, expected_universe_name="standard"
-        )
-        fqun_diagnostics = [
-            d for d in diagnostics if isinstance(d, validator.FqunMismatchDiagnostic)
+        diags = _parse_transform_validate(source, expected_universe_name="standard")
+        fqun_diags = [
+            d for d in diags if isinstance(d, diagnostics.FqunMismatchDiagnostic)
         ]
-        assert len(fqun_diagnostics) == 0
+        assert len(fqun_diags) == 0
 
     def test_authority_with_path(self):
         source = "define the potential position<my.domain.com/org:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="my.domain.com/org:my_lib"
         )
-        assert len(diagnostics) == 0
+        assert len(diags) == 0
 
     def test_authority_with_path_mismatch(self):
         source = "define the potential position<my.domain.com/org:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="my.domain.com:my_lib"
         )
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.FqunMismatchDiagnostic)
-        assert diagnostics[0].actual == "my.domain.com/org:my_lib"
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+        assert diags[0].actual == "my.domain.com/org:my_lib"
 
     def test_multiverse_matching(self):
         source = "define the potential position<mv:my.domain.com:my_lib:/path>.\n"
-        diagnostics = _parse_transform_validate(
+        diags = _parse_transform_validate(
             source, expected_universe_name="mv:my.domain.com:my_lib"
         )
-        assert len(diagnostics) == 0
+        assert len(diags) == 0

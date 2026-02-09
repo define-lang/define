@@ -6,7 +6,7 @@ from pathlib import Path
 import lark
 import pytest
 
-from define.compiler import driver, validator
+from define.compiler import diagnostics, driver
 
 
 def _setup_project(tmp_path: Path, universe_name: str) -> None:
@@ -51,8 +51,8 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diagnostics, returned_source = d.validate_file(Path("hello.def"))
-        assert diagnostics == []
+        diags, returned_source = d.validate_file(Path("hello.def"))
+        assert diags == []
         assert returned_source == source
 
     def test_returns_diagnostics_for_path_mismatch(
@@ -67,9 +67,9 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diagnostics, _ = d.validate_file(Path("wrong.def"))
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], validator.PathMismatchDiagnostic)
+        diags, _ = d.validate_file(Path("wrong.def"))
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
 
     def test_returns_diagnostics_for_fqun_mismatch(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -83,8 +83,8 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diagnostics, _ = d.validate_file(Path("hello.def"))
-        assert any(isinstance(d, validator.FqunMismatchDiagnostic) for d in diagnostics)
+        diags, _ = d.validate_file(Path("hello.def"))
+        assert any(isinstance(d, diagnostics.FqunMismatchDiagnostic) for d in diags)
 
     def test_syntax_error_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _setup_project(tmp_path, "test.example.com:my_lib")
@@ -105,5 +105,5 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diagnostics, _ = d.validate_file(Path("sub/dir/leaf.def"))
-        assert diagnostics == []
+        diags, _ = d.validate_file(Path("sub/dir/leaf.def"))
+        assert diags == []

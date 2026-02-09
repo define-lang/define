@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
-from define.compiler import ast
+from define.compiler import ast, diagnostics
 
 _SPEC_DIR = Path(__file__).parent.parent / "spec"
 
@@ -53,92 +52,6 @@ _RESERVED_MULTIVERSE_NAMES = (
 )
 
 
-@dataclass
-class Diagnostic:
-    """Base class for all validation diagnostics."""
-
-    position: ast.SourcePosition
-    message: str
-
-    def format(self, source_lines: list[str]) -> str:
-        """Format the diagnostic with source context and caret pointer."""
-        line_idx = self.position.line - 1
-        source_line = (
-            source_lines[line_idx] if 0 <= line_idx < len(source_lines) else ""
-        )
-
-        column = self.position.column
-        caret_line = " " * (column - 1) + "^"
-
-        return (
-            f"line {self.position.line}, column {self.position.column}: "
-            f"{self.message}\n"
-            f"  {source_line}\n"
-            f"  {caret_line}"
-        )
-
-
-@dataclass
-class ReservedNameDiagnostic(Diagnostic):
-    """Base class for reserved name diagnostics."""
-
-    reserved_name: str
-
-
-@dataclass
-class ReservedUniverseNameDiagnostic(ReservedNameDiagnostic):
-    """Diagnostic for when a reserved universe name is used."""
-
-
-@dataclass
-class ReservedAuthorityNameDiagnostic(ReservedNameDiagnostic):
-    """Diagnostic for when a reserved authority name is used."""
-
-
-@dataclass
-class ReservedMultiverseNameDiagnostic(ReservedNameDiagnostic):
-    """Diagnostic for when a reserved multiverse name is used."""
-
-
-@dataclass
-class PathMismatchDiagnostic(Diagnostic):
-    """Diagnostic for when a definition's path doesn't match the file path."""
-
-    expected_path: str
-    actual_path: str
-
-
-@dataclass
-class UniverseWithoutAuthorityDiagnostic(Diagnostic):
-    """Diagnostic for when a universe other than 'standard' is used without an authority."""
-
-    universe_name: str
-
-
-@dataclass
-class DuplicateDefinitionDiagnostic(Diagnostic):
-    """Diagnostic for when the same type is defined twice with the same path."""
-
-    definition_type: str
-    path: str
-    first_definition_line: int
-
-
-@dataclass
-class UniverseNameUppercaseDiagnostic(Diagnostic):
-    """Diagnostic for when a universe name contains uppercase ASCII letters."""
-
-    universe_name: str
-
-
-@dataclass
-class FqunMismatchDiagnostic(Diagnostic):
-    """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
-
-    expected: str
-    actual: str
-
-
 class Validator:
     """Validates semantic rules for a Define program AST."""
 
@@ -149,21 +62,21 @@ class Validator:
         """Initialize validator with a program AST and source code."""
         self._program = program
         self._source = source
-        self._diagnostics: list[Diagnostic] = []
+        self._diagnostics: list[diagnostics.Diagnostic] = []
         self._seen_definitions: dict[
             tuple[type, tuple[str, ...]], ast.QualityDefinition
         ] = {}
 
     @cached_property
     def source_lines(self) -> list[str]:
-        """Source code split into lines, for use with Diagnostic.format()."""
+        """Source code split into lines, for use with diagnostics.Diagnostic.format()."""
         return self._source.splitlines()
 
     def validate(
         self,
         file_path: str | None = None,
         expected_universe_name: str | None = None,
-    ) -> list[Diagnostic]:
+    ) -> list[diagnostics.Diagnostic]:
         """Validate all semantic rules and return collected diagnostics.
 
         Args:
@@ -206,7 +119,7 @@ class Validator:
         if fqun.authority is None:
             if fqun.universe.name.lower() != "standard":
                 self._diagnostics.append(
-                    UniverseWithoutAuthorityDiagnostic(
+                    diagnostics.UniverseWithoutAuthorityDiagnostic(
                         position=fqun.universe.position,
                         message=(
                             f"universe '{fqun.universe.name}' requires an authority; "
@@ -224,7 +137,7 @@ class Validator:
         """Validate a multiverse name against reserved names."""
         if multiverse.name.lower() in _RESERVED_MULTIVERSE_NAMES:
             self._diagnostics.append(
-                ReservedMultiverseNameDiagnostic(
+                diagnostics.ReservedMultiverseNameDiagnostic(
                     position=multiverse.position,
                     message=f"'{multiverse.name}' is a reserved multiverse name",
                     reserved_name=multiverse.name,
@@ -239,7 +152,7 @@ class Validator:
 
         if domain in _RESERVED_AUTHORITY_DOMAINS:
             self._diagnostics.append(
-                ReservedAuthorityNameDiagnostic(
+                diagnostics.ReservedAuthorityNameDiagnostic(
                     position=authority.position,
                     message=f"'{authority.domain}' is a reserved authority domain",
                     reserved_name=authority.domain,
@@ -250,7 +163,7 @@ class Validator:
         effective_multiverse = multiverse.name if multiverse else "local"
         if effective_multiverse in ("mv", "local") and "." not in domain:
             self._diagnostics.append(
-                ReservedAuthorityNameDiagnostic(
+                diagnostics.ReservedAuthorityNameDiagnostic(
                     position=authority.position,
                     message=(
                         f"'{authority.domain}' is reserved: "
@@ -265,7 +178,7 @@ class Validator:
         """Validate a universe name against reserved names and uppercase letters."""
         if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
             self._diagnostics.append(
-                ReservedUniverseNameDiagnostic(
+                diagnostics.ReservedUniverseNameDiagnostic(
                     position=universe.position,
                     message=f"'{universe.name}' is a reserved universe name",
                     reserved_name=universe.name,
@@ -274,7 +187,7 @@ class Validator:
 
         if any(c.isupper() for c in universe.name):
             self._diagnostics.append(
-                UniverseNameUppercaseDiagnostic(
+                diagnostics.UniverseNameUppercaseDiagnostic(
                     position=universe.position,
                     message=(
                         f"universe name '{universe.name}' contains uppercase letters; "
@@ -296,7 +209,7 @@ class Validator:
 
         if definition_path != expected_path:
             self._diagnostics.append(
-                PathMismatchDiagnostic(
+                diagnostics.PathMismatchDiagnostic(
                     position=definition.name.position,
                     message=(
                         f"definition path '{definition_path}' does not match "
@@ -321,7 +234,7 @@ class Validator:
                     raise TypeError(f"Unknown definition type: {type(definition)}")
             path_str = "/" + "/".join(definition.name.path)
             self._diagnostics.append(
-                DuplicateDefinitionDiagnostic(
+                diagnostics.DuplicateDefinitionDiagnostic(
                     position=definition.position,
                     message=(
                         f"duplicate {def_type} definition for path '{path_str}'; "
@@ -347,7 +260,7 @@ class Validator:
         actual = definition.name.fqun.canonical
         if actual != expected_universe_name:
             self._diagnostics.append(
-                FqunMismatchDiagnostic(
+                diagnostics.FqunMismatchDiagnostic(
                     position=definition.name.fqun.position,
                     message=(
                         f"Fully-qualified universe name '{actual}' does not match project "

@@ -29,10 +29,17 @@ py_library(
 )
 
 py_library(
+    name = "diagnostics",
+    srcs = ["diagnostics.py"],
+    deps = [":ast"],
+)
+
+py_library(
     name = "driver",
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":diagnostics",
         ":parser",
         ":transformer",
         ":validator",
@@ -48,8 +55,8 @@ py_test(
     data = ["//define/testdata:testdata_files"],
     pytest_main = True,
     deps = [
+        ":diagnostics",
         ":driver",
-        ":validator",
         "@pypi//lark",
         "@pypi//pytest",
     ],
@@ -61,8 +68,8 @@ py_test(
     srcs = ["driver_test.py"],
     pytest_main = True,
     deps = [
+        ":diagnostics",
         ":driver",
-        ":validator",
         "@pypi//lark",
         "@pypi//pytest",
     ],
@@ -125,7 +132,10 @@ py_library(
     name = "validator",
     srcs = ["validator.py"],
     data = ["//define/spec:reserved_words"],
-    deps = [":ast"],
+    deps = [
+        ":ast",
+        ":diagnostics",
+    ],
 )
 
 py_test(
@@ -134,6 +144,7 @@ py_test(
     srcs = ["validator_test.py"],
     pytest_main = True,
     deps = [
+        ":diagnostics",
         ":parser",
         ":transformer",
         ":validator",
@@ -159,6 +170,7 @@ pyright_test(
         ":ast",
         ":ast_test",
         ":compiler",
+        ":diagnostics",
         ":driver",
         ":driver_integration_test",
         ":driver_test",

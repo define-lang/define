@@ -5,7 +5,7 @@ from functools import cached_property
 from pathlib import Path
 
 from defcl.python import parser as defcl_parser
-from define.compiler import parser, transformer, validator
+from define.compiler import diagnostics, parser, transformer, validator
 from define.config.project import config_pb2
 
 _DOCS_ROOT = "https://github.com/mkanat/define/define/docs"
@@ -28,7 +28,7 @@ class Driver:
 
     def validate_file(
         self, path: os.PathLike[str]
-    ) -> tuple[list[validator.Diagnostic], str]:
+    ) -> tuple[list[diagnostics.Diagnostic], str]:
         """Compile a single Define source file and return diagnostics and source text."""
         if not _CONFIG_PATH.exists():
             raise FileNotFoundError(
