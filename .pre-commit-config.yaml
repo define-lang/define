@@ -18,9 +18,10 @@ repos:
       - id: destroyed-symlinks
       - id: mixed-line-ending
         args: ["--fix=lf"]
-        exclude: "defcl/testdata/invalid/syntax/whitespace/carriage_return.defcl"
+        exclude: ".*carriage_return.*"
       - id: name-tests-test
       - id: trailing-whitespace
+        exclude: ".*trailing_space.*"
   - repo: local
     hooks:
       - id: prettier

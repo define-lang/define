@@ -1,0 +1,11 @@
+filegroup(
+    name = "testdata_files",
+    srcs = glob(
+        ["**/*"],
+        exclude = [
+            "**/*.pyc",
+            "**/__pycache__/**",
+        ],
+    ),
+    visibility = ["//define/compiler:__pkg__"],
+)
