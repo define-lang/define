@@ -138,6 +138,13 @@ class TestFileEncoding:
         assert exc_info.value.char == "\r"
         assert exc_info.value.column == 15
 
+    def test_surrogate_character(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
+            p.parse("define the potential position<standard:/path>.\n\udcff\n")
+        assert exc_info.value.char == "\udcff"
+        assert exc_info.value.line == 2
+        assert exc_info.value.column == 1
+
 
 class TestActionDefinition:
     def test_action_definition_parses(self, p: parser.Parser) -> None:

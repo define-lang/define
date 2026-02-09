@@ -129,6 +129,12 @@ class InvalidCharacterError(DefineCharError):
     label: str = "Invalid character"
 
 
+class InvalidEncodingError(DefineCharError):
+    """Raised when a file contains bytes that are not valid UTF-8."""
+
+    label: str = "Invalid UTF-8 encoding"
+
+
 # --- Token error subclasses ---
 
 

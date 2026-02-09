@@ -98,12 +98,7 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
         )
     else:
         # These files should fail during parsing
-        with pytest.raises(
-            (
-                parser_exceptions.DefineSyntaxError,
-                UnicodeDecodeError,
-            )
-        ):
+        with pytest.raises(parser_exceptions.DefineSyntaxError):
             _ = d.validate_file(relative_path)
 
 

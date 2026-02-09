@@ -108,6 +108,9 @@ class Parser:
         if ord(e.char) < 0x20 or ord(e.char) == 0x7F:
             return parser_exceptions.ControlCharacterError
 
+        if "\ud800" <= e.char <= "\udfff":
+            return parser_exceptions.InvalidEncodingError
+
         if ord(e.char) > 0x7F:
             return parser_exceptions.InvalidCharacterError
 
@@ -174,8 +177,31 @@ class Parser:
                 ) from e
             raise
 
+    @staticmethod
+    def _get_invalid_unicode_context(
+        raw: bytes, e: UnicodeDecodeError
+    ) -> tuple[str, int, int, str]:
+        """Extract context information from a UnicodeDecodeError."""
+        before = raw[: e.start]
+        line = before.count(b"\n") + 1
+        last_newline = before.rfind(b"\n")
+        column = e.start - last_newline
+        context = raw[last_newline + 1 : e.start + 20]
+        context_str = context.decode("utf-8", errors="replace")
+        bad_byte = f"\\x{raw[e.start]:02x}"
+        return context_str, line, column, bad_byte
+
     def parse_file(self, path: os.PathLike[str]) -> tuple[Tree[Token], str]:
         """Parse a Define source file and return the parse tree and source text."""
-        with open(path, encoding="utf-8", newline="") as f:
-            source = f.read()
+        try:
+            with open(path, encoding="utf-8", newline="") as f:
+                source = f.read()
+        except UnicodeDecodeError as e:
+            raw = Path(path).read_bytes()
+            context_str, line, column, bad_byte = self._get_invalid_unicode_context(
+                raw, e
+            )
+            raise parser_exceptions.InvalidEncodingError(
+                context_str, line, column, bad_byte, path
+            ) from e
         return self.parse(source, file_path=path), source
