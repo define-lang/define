@@ -1,3 +1,4 @@
+# pyright: reportUnusedCallResult=false
 """Tests for the Define language parser."""
 
 from pathlib import Path
@@ -16,11 +17,11 @@ def p() -> parser.Parser:
 
 
 def _get_tokens_by_type(tree: lark.Tree[lark.Token], token_type: str) -> list[str]:
-    tokens = []
+    tokens: list[str] = []
     for child in tree.children:
         if isinstance(child, lark.Tree):
             tokens.extend(_get_tokens_by_type(child, token_type))
-        elif isinstance(child, lark.Token) and child.type == token_type:
+        elif child.type == token_type:
             tokens.append(str(child))
     return tokens
 
@@ -60,7 +61,7 @@ class TestComments:
     def test_valid_syntax_in_comment_is_ignored(self, p: parser.Parser) -> None:
         tree = p.parse(
             "# define the potential position<standard:/ignored>.\n"
-            "define the potential position<standard:/actual>.\n"
+            + "define the potential position<standard:/actual>.\n"
         )
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["actual"]
 
@@ -68,7 +69,7 @@ class TestComments:
         with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
             p.parse(
                 "# comment with\x01control char\n"
-                "define the potential position<standard:/path>.\n"
+                + "define the potential position<standard:/path>.\n"
             )
         assert exc_info.value.char == "\x01"
 
@@ -138,7 +139,7 @@ class TestMultipleDefinitions:
     def test_multiple_position_definitions(self, p: parser.Parser) -> None:
         tree = p.parse(
             "define the potential position<example.com:my_lib:/first>.\n"
-            "define the potential position<example.com:my_lib:/second>.\n"
+            + "define the potential position<example.com:my_lib:/second>.\n"
         )
         assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == [
             "example.com",
@@ -150,7 +151,7 @@ class TestMultipleDefinitions:
     def test_multiple_action_definitions(self, p: parser.Parser) -> None:
         tree = p.parse(
             "define the potential action<my_mv:example.com:my_lib:/first>.\n"
-            "define the potential action<my_mv:example.com:my_lib:/second>.\n"
+            + "define the potential action<my_mv:example.com:my_lib:/second>.\n"
         )
         assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv", "my_mv"]
         assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == [
@@ -163,7 +164,7 @@ class TestMultipleDefinitions:
     def test_mixed_position_and_action_definitions(self, p: parser.Parser) -> None:
         tree = p.parse(
             "define the potential position<example.com:my_lib:/pos>.\n"
-            "define the potential action<my_mv:example.com:my_lib:/act>.\n"
+            + "define the potential action<my_mv:example.com:my_lib:/act>.\n"
         )
         assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv"]
         assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == [
@@ -176,8 +177,8 @@ class TestMultipleDefinitions:
     def test_definitions_separated_by_blank_lines(self, p: parser.Parser) -> None:
         tree = p.parse(
             "define the potential position<standard:/first>.\n"
-            "\n"
-            "define the potential position<example.com:my_lib:/second>.\n"
+            + "\n"
+            + "define the potential position<example.com:my_lib:/second>.\n"
         )
         assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["standard", "my_lib"]
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
@@ -185,8 +186,8 @@ class TestMultipleDefinitions:
     def test_definitions_separated_by_comments(self, p: parser.Parser) -> None:
         tree = p.parse(
             "define the potential position<my_mv:example.com:my_lib:/first>.\n"
-            "# a comment between definitions\n"
-            "define the potential position<my_mv:example.com:my_lib:/second>.\n"
+            + "# a comment between definitions\n"
+            + "define the potential position<my_mv:example.com:my_lib:/second>.\n"
         )
         assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv", "my_mv"]
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
@@ -485,4 +486,4 @@ class TestParseFile:
         file = tmp_path / "path.def"
         file.write_bytes(source.encode("utf-8"))
         with pytest.raises(lark.exceptions.UnexpectedCharacters):
-            p.parse_file(file)
+            _ = p.parse_file(file)

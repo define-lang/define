@@ -27,9 +27,7 @@ def parse[M: message.Message](
     tree = validator.parse(text, path_name=path_name)
     semantics.validate(tree, message_type, path_name=path_name)
 
-    msg = message_type()
-    text_format.Parse(text, msg)
-    return msg
+    return text_format.Parse(text, message_type())
 
 
 def parse_file[M: message.Message](

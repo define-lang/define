@@ -33,9 +33,9 @@ class Driver:
         if not _CONFIG_PATH.exists():
             raise FileNotFoundError(
                 f"Not a Define project root: {_CONFIG_PATH} not found.\n"
-                f"The Define compiler must be run from a project root directory.\n"
-                f"A project root is any directory containing {_CONFIG_PATH}.\n"
-                f"For more information, see {_DOCS_ROOT}/project-root.md"
+                + "The Define compiler must be run from a project root directory.\n"
+                + f"A project root is any directory containing {_CONFIG_PATH}.\n"
+                + f"For more information, see {_DOCS_ROOT}/project-root.md"
             )
         tree, source = self._parser.parse_file(path)
         program = transformer.DefineTransformer().transform(tree)

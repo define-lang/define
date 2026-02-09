@@ -144,7 +144,7 @@ class Parser:
         if e.token.type == "RBRACE" and e.token_history:
             prev = e.token_history[-1]
             if prev.type == "FIELD_NAME":
-                val = prev.value
+                val = str(prev)
                 if val in ("f", "d", "l") or (val[0] == "e" and val[1:].isdigit()):
                     return dcl_exceptions.InvalidNumberFormatError
 

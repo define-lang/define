@@ -27,6 +27,12 @@ See [define/spec/spec.md] for the language specification.
 - Run `npx @bufbuild/buf lint --config defcl/buf.yaml` after making changes to
   .proto files in `defcl/schema` or `define/config`.
 - Fix all linting errors that are reported.
+- **Never disable pyright rules globally** in `pyproject.toml`. All basedpyright
+  rules must remain enabled. When a pyright check fails:
+  - Fix the type error in source code (add type annotations, use `cast()`,
+    etc.).
+  - Always verify fixes against the **Bazel** `pyright_test` targets, not just
+    local `basedpyright` — the Bazel sandbox resolves dependencies differently.
 
 ## Imports
 

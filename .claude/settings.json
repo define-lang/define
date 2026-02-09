@@ -42,7 +42,6 @@
         "Bash(npx @bufbuild/buf format:*)",
         "Bash(npx @bufbuild/buf lint:*)",
         "Bash(npx @bazel/buildifier:*)",
-        "Bash(uv run basedpyright:*)",
         "Bash(uv run pytest:*)",
         "Bash(uv run ruff:*)",
         "Bash(bazelisk:*)"

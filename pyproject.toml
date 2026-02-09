@@ -68,23 +68,14 @@ norecursedirs = [
 ]
 
 [tool.basedpyright]
+# Do not disable any rules here. Fix type errors in source code instead.
+stubPath = "typestubs"
 exclude = [
     "experimental",
     ".venv",
     "bazel-*",
     "**/*.pytest_main.py",
 ]
-# These rules trigger on incomplete third-party type stubs (lark, json, yaml).
-reportUnknownMemberType = false
-reportUnknownArgumentType = false
-reportUnknownVariableType = false
-reportUnknownParameterType = false
-reportAny = false
-reportExplicitAny = false
-# Standard Python patterns that basedpyright flags.
-reportImplicitStringConcatenation = false
-reportUnusedCallResult = false
-reportUnnecessaryIsInstance = false
 
 [dependency-groups]
 dev = [
@@ -94,4 +85,6 @@ dev = [
     "pytest>=6",
     "ruff",
     "setuptools",
+    "types-protobuf",
+    "types-pyyaml",
 ]

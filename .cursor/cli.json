@@ -31,7 +31,6 @@
       "Shell(npx @bufbuild/buf format)",
       "Shell(npx @bufbuild/buf lint)",
       "Shell(npx @bazel/buildifier)",
-      "Shell(uv run basedpyright)",
       "Shell(uv run pytest)",
       "Shell(uv run ruff)",
       "Shell(bazelisk)"

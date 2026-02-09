@@ -1,3 +1,4 @@
+# pyright: reportUnusedCallResult=false
 import pytest
 
 from define.compiler.prototype import ast

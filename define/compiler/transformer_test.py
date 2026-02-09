@@ -95,7 +95,7 @@ def test_global_name_universe_only():
 def test_multiple_definitions_position_and_action():
     program = _parse_and_transform(
         "define the potential position<standard:/pos>.\n"
-        "define the potential action<standard:/act>.\n"
+        + "define the potential action<standard:/act>.\n"
     )
     assert len(program.definitions) == 2
     assert isinstance(program.definitions[0], ast.PositionDefinition)

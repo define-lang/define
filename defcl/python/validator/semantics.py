@@ -28,7 +28,12 @@ def validate(
     for top_level in tree.children:
         top_level = cast("lark.Tree[lark.Token]", top_level)
         name_token = cast("lark.Token", top_level.children[0])
-        field_desc = msg_desc.fields_by_name[name_token.value]
+        field_desc = msg_desc.fields_by_name.get(str(name_token))
+        if field_desc is None or field_desc.message_type is None:
+            raise ValueError(
+                f"unexpected unknown field {str(name_token)!r} in"
+                + f" {msg_desc.full_name} (should have been caught by proto parser)"
+            )
         msg_tree = cast("lark.Tree[lark.Token]", top_level.children[1])
         _check_message(msg_tree, field_desc.message_type, path_name)
 
@@ -42,7 +47,7 @@ def _check_message(
     for field_tree in msg_tree.children:
         field_tree = cast("lark.Tree[lark.Token]", field_tree)
         name_token = cast("lark.Token", field_tree.children[0])
-        field_desc = msg_desc.fields_by_name[name_token.value]
+        field_desc = msg_desc.fields_by_name[str(name_token)]
         value_tree = cast("lark.Tree[lark.Token]", field_tree.children[1])
         _check_field(name_token, field_desc, value_tree, path_name)
 
@@ -61,7 +66,7 @@ def _check_field(
             raise exceptions.RepeatedFieldWithoutBracketsError(
                 name_token.line or 0,
                 name_token.column or 0,
-                name_token.value,
+                str(name_token),
                 path_name,
             )
         for item_value in child.children:
@@ -88,8 +93,14 @@ def _check_value(
             raise exceptions.IntegerEnumError(
                 name_token.line or 0,
                 name_token.column or 0,
-                name_token.value,
+                str(name_token),
                 path_name,
             )
-    elif isinstance(child, lark.Tree) and child.data == "message_value":
+    elif child.data == "message_value":
+        if field_desc.message_type is None:
+            raise ValueError(
+                f"unexpected unknown field {str(name_token)!r} has message value"
+                + " but no message type in descriptor"
+                + " (should have been caught by proto parser)"
+            )
         _check_message(child, field_desc.message_type, path_name)

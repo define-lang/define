@@ -1,3 +1,4 @@
+# pyright: reportUnusedCallResult=false
 """Tests for the compilation driver."""
 
 from pathlib import Path

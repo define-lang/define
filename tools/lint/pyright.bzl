@@ -77,9 +77,12 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
         data = pyproject_data + [
             "//:pyproject.toml",
             ":" + name + "_pyi",
+            "//typestubs:typestubs",
         ],
         deps = deps + [
             "@pypi//basedpyright",
+            "@pypi//types_protobuf",
+            "@pypi//types_pyyaml",
         ],
         tags = ["pyright"],
         **kwargs

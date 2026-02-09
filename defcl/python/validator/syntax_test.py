@@ -1,3 +1,4 @@
+# pyright: reportUnusedCallResult=false
 from pathlib import Path
 
 import lark
@@ -12,11 +13,11 @@ _parser = syntax.Parser()
 
 
 def _get_tokens_by_type(tree: lark.Tree[lark.Token], token_type: str) -> list[str]:
-    tokens = []
+    tokens: list[str] = []
     for child in tree.children:
         if isinstance(child, lark.Tree):
             tokens.extend(_get_tokens_by_type(child, token_type))
-        elif isinstance(child, lark.Token) and child.type == token_type:
+        elif child.type == token_type:
             tokens.append(str(child))
     return tokens
 
@@ -161,7 +162,7 @@ class TestInvalidBooleans:
                 _INVALID_SYNTAX_PATH / "booleans" / "false_literal.defcl"
             )
         assert exc_info.value.token.type == "FIELD_NAME"
-        assert exc_info.value.token.value == "false"
+        assert str(exc_info.value.token) == "false"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 14
 
@@ -169,7 +170,7 @@ class TestInvalidBooleans:
         with pytest.raises(exceptions.BooleanNotSupportedError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "booleans" / "true_literal.defcl")
         assert exc_info.value.token.type == "FIELD_NAME"
-        assert exc_info.value.token.value == "true"
+        assert str(exc_info.value.token) == "true"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 14
 
@@ -179,7 +180,7 @@ class TestInvalidEnums:
         with pytest.raises(exceptions.InvalidEnumCaseError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "enums" / "lowercase_enum.defcl")
         assert exc_info.value.token.type == "FIELD_NAME"
-        assert exc_info.value.token.value == "active"
+        assert str(exc_info.value.token) == "active"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 13
 
@@ -299,7 +300,7 @@ class TestInvalidNumbers:
         with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "hex.defcl")
         assert exc_info.value.token.type == "ENUM_VALUE"
-        assert exc_info.value.token.value == "A"
+        assert str(exc_info.value.token) == "A"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 15
 
@@ -307,7 +308,7 @@ class TestInvalidNumbers:
         with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "octal.defcl")
         assert exc_info.value.token.type == "INTEGER"
-        assert exc_info.value.token.value == "777"
+        assert str(exc_info.value.token) == "777"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 13
 
@@ -326,7 +327,7 @@ class TestInvalidNumbers:
                 _INVALID_SYNTAX_PATH / "numbers" / "scientific_float.defcl"
             )
         assert exc_info.value.token.type == "INTEGER"
-        assert exc_info.value.token.value == "-2"
+        assert str(exc_info.value.token) == "-2"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 16
 
@@ -334,7 +335,7 @@ class TestInvalidNumbers:
         with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
             _parser.parse_file(_INVALID_SYNTAX_PATH / "numbers" / "leading_zeros.defcl")
         assert exc_info.value.token.type == "INTEGER"
-        assert exc_info.value.token.value == "0"
+        assert str(exc_info.value.token) == "0"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 13
 
@@ -385,7 +386,7 @@ class TestInvalidNumbers:
                 _INVALID_SYNTAX_PATH / "numbers" / "type_suffix_upper_f.defcl"
             )
         assert exc_info.value.token.type == "ENUM_VALUE"
-        assert exc_info.value.token.value == "F"
+        assert str(exc_info.value.token) == "F"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 14
 

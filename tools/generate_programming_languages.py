@@ -4,11 +4,12 @@
 Requires: PyYAML (pip install pyyaml)
 """
 
+import http.client  # noqa: TC003
 import re
 import sys
 import urllib.request
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import yaml
 
@@ -44,24 +45,27 @@ def variants_for_name(name: str) -> set[str]:
 def main() -> int:
     """Download Linguist YAML, parse it, and write programming_languages.txt."""
     try:
-        with urllib.request.urlopen(LINGUIST_URL, timeout=30) as resp:  # noqa: S310
-            content = resp.read().decode("utf-8")
+        with cast(
+            "http.client.HTTPResponse",
+            urllib.request.urlopen(LINGUIST_URL, timeout=30),  # noqa: S310
+        ) as resp:
+            content: str = resp.read().decode("utf-8")
     except OSError as e:
         print(f"Failed to fetch {LINGUIST_URL}: {e}", file=sys.stderr)
         return 1
 
-    languages = cast("dict[str, dict[str, Any]]", yaml.safe_load(content))
+    languages = cast("dict[str, dict[str, object]]", yaml.safe_load(content))
     tokens: set[str] = set()
     for lang_name, props in languages.items():
         if props.get("type") != "programming":
             continue
         tokens.update(variants_for_name(lang_name))
-        for alias in props.get("aliases", []):
+        for alias in cast("list[str]", props.get("aliases", [])):
             tokens.update(variants_for_name(alias))
 
     sorted_tokens = sorted(tokens)
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text("\n".join(sorted_tokens) + "\n", encoding="utf-8")
+    _ = OUTPUT_PATH.write_text("\n".join(sorted_tokens) + "\n", encoding="utf-8")
     return 0
 
 

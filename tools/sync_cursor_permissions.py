@@ -6,7 +6,7 @@ import difflib
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import cast
 
 
 def translate_permission(permission: str) -> str:
@@ -35,22 +35,22 @@ def translate_permission(permission: str) -> str:
     return permission
 
 
-def load_claude_settings(base_dir: Path) -> dict[str, Any]:
+def load_claude_settings(base_dir: Path) -> dict[str, object]:
     """Load Claude settings file."""
     settings_path = base_dir / ".claude" / "settings.json"
 
     with settings_path.open() as f:
-        return json.load(f)
+        return cast("dict[str, object]", json.load(f))
 
 
-def generate_cursor_config(base_dir: Path) -> dict[str, Any]:
+def generate_cursor_config(base_dir: Path) -> dict[str, object]:
     """Generate Cursor config from Claude settings.
 
     Returns the config dict that should be written to .cursor/cli.json.
     """
     claude_settings = load_claude_settings(base_dir)
 
-    permissions = claude_settings.get("permissions", {})
+    permissions = cast("dict[str, list[str]]", claude_settings.get("permissions", {}))
 
     cursor_permissions = {
         "allow": [translate_permission(p) for p in permissions.get("allow", [])],
@@ -77,7 +77,7 @@ def sync_permissions(base_dir: Path) -> None:
     cursor_path = cursor_dir / "cli.json"
     with cursor_path.open("w") as f:
         json.dump(cursor_config, f, indent=2)
-        f.write("\n")
+        _ = f.write("\n")
 
     print(f"Synced permissions to {cursor_path}")
 
@@ -94,7 +94,7 @@ def check_permissions(base_dir: Path) -> None:
         sys.exit(1)
 
     with cursor_path.open() as f:
-        actual_config = json.load(f)
+        actual_config = cast("dict[str, object]", json.load(f))
 
     if actual_config != expected_config:
         print(
@@ -119,7 +119,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Sync or check Cursor permissions from Claude settings"
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--check",
         action="store_true",
         help="Check that .cursor/cli.json matches expected config without modifying it",
@@ -128,7 +128,8 @@ def main() -> None:
 
     base_dir = Path(__file__).parent.parent
 
-    if args.check:
+    check = cast("bool", args.check)
+    if check:
         check_permissions(base_dir)
     else:
         sync_permissions(base_dir)
