@@ -18,6 +18,8 @@
       "Shell(grep)",
       "Shell(rg)",
       "Shell(wc)",
+      "Shell(printf)",
+      "Shell(xxd)",
       "Shell(git status)",
       "Shell(git log)",
       "Shell(uv add)",

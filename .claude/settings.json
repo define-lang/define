@@ -29,6 +29,8 @@
         "Bash(grep:*)",
         "Bash(rg:*)",
         "Bash(wc:*)",
+        "Bash(printf:*)",
+        "Bash(xxd:*)",
         "Bash(git status:*)",
         "Bash(git log:*)",
         "Bash(uv add:*)",
