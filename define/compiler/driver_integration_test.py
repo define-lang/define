@@ -1,0 +1,158 @@
+# Dear Agent: It is okay for this test file to have this docstring.
+"""
+Integration tests for the driver.
+
+This is a generalized integration test that attempts to catch all the
+errors that the compiler could throw. However, it is less specific
+in its assertions (and thus harder to debug) than the more specific unit
+tests. As such, when adding a new language feature, always add a more-specific
+unit test for it in the parser or the validator (or whevever most appropriate).
+
+This test works by walking through all the files in testdata/ and generating
+a test for each one of them. Simply adding a file to testdata will cause a new
+test to be generated here. For tests that produce validator diagnostics (instead
+of parser exceptions) you will have to update the EXPECTED_DIAGNOSTIC_BY_SUBSTRING
+table.
+"""
+
+from pathlib import Path
+
+import lark
+import pytest
+
+from define.compiler import driver, validator
+
+TESTDATA_ROOT = Path("testdata")
+FILES_ROOT = TESTDATA_ROOT / "files"
+PROJECTS_ROOT = TESTDATA_ROOT / "projects"
+
+VALID_FILES = sorted((FILES_ROOT / "valid").glob("*.def"))
+INVALID_SYNTAX_FILES = sorted((FILES_ROOT / "invalid" / "syntax").rglob("*.def"))
+
+# Substrings that indicate validation diagnostics (path/context) -> expected diagnostic type or None
+EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
+    "universe_uppercase": validator.UniverseNameUppercaseDiagnostic,
+    "path_mismatch": validator.PathMismatchDiagnostic,
+    "fqun_mismatch": validator.FqunMismatchDiagnostic,
+    "duplicate_definitions": validator.DuplicateDefinitionDiagnostic,
+    "reserved_names/": validator.ReservedNameDiagnostic,
+    "fqun_validation/universe_without_authority": validator.UniverseWithoutAuthorityDiagnostic,
+    "fqun_validation/universe_uppercase": validator.UniverseNameUppercaseDiagnostic,
+    "paths/path_leading_underscore": validator.PathMismatchDiagnostic,
+    "terminators/missing_space_before_terminator": validator.FqunMismatchDiagnostic,
+}
+
+
+def discover_projects(base_dir: Path) -> list[Path]:
+    """Discover all Define project directories."""
+    projects: list[Path] = []
+    for config_file in base_dir.rglob("config.defcl"):
+        if ".define/project" in str(config_file):
+            project_dir = config_file.parent.parent.parent
+            projects.append(project_dir)
+    return sorted(projects)
+
+
+VALID_PROJECTS = discover_projects(PROJECTS_ROOT / "valid")
+INVALID_PROJECTS = discover_projects(PROJECTS_ROOT / "invalid")
+
+
+@pytest.mark.parametrize("def_file", VALID_FILES, ids=[f.name for f in VALID_FILES])
+def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that valid files in files/valid/ parse successfully."""
+    monkeypatch.chdir(FILES_ROOT)
+
+    diagnostics, _ = driver.Driver().validate_file(def_file)
+    assert not diagnostics, f"Expected no diagnostics, got: {diagnostics}"
+
+
+@pytest.mark.parametrize(
+    "def_file",
+    INVALID_SYNTAX_FILES,
+    ids=[
+        f.relative_to(FILES_ROOT / "invalid" / "syntax").as_posix()
+        for f in INVALID_SYNTAX_FILES
+    ],
+)
+def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that invalid syntax files either raise parsing exceptions or produce validation diagnostics."""
+    monkeypatch.chdir(FILES_ROOT)
+
+    relative_path = def_file.relative_to(FILES_ROOT)
+    file_name = str(def_file.relative_to(FILES_ROOT / "invalid" / "syntax"))
+
+    d = driver.Driver()
+
+    expected_diagnostic = next(
+        (
+            EXPECTED_DIAGNOSTIC_BY_SUBSTRING[substring]
+            for substring in EXPECTED_DIAGNOSTIC_BY_SUBSTRING
+            if substring in file_name
+        ),
+        None,
+    )
+
+    if expected_diagnostic:
+        diagnostics, _ = d.validate_file(relative_path)
+        assert any(isinstance(diag, expected_diagnostic) for diag in diagnostics), (
+            f"Expected {expected_diagnostic.__name__} for {file_name}"
+        )
+    else:
+        # These files should fail during parsing
+        with pytest.raises((lark.exceptions.LarkError, UnicodeDecodeError)):
+            _ = d.validate_file(relative_path)
+
+
+@pytest.mark.parametrize(
+    "project_dir", VALID_PROJECTS, ids=[p.name for p in VALID_PROJECTS]
+)
+def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that valid projects produce no diagnostics."""
+    monkeypatch.chdir(project_dir)
+
+    d = driver.Driver()
+
+    def_files = sorted(project_dir.rglob("*.def"))
+    assert def_files, f"No .def files found in {project_dir}"
+
+    for def_file in def_files:
+        diagnostics, _ = d.validate_file(def_file)
+        assert not diagnostics, (
+            f"Expected no diagnostics for {def_file}, got: {diagnostics}"
+        )
+
+
+@pytest.mark.parametrize(
+    "project_dir",
+    INVALID_PROJECTS,
+    ids=[p.relative_to(PROJECTS_ROOT / "invalid").as_posix() for p in INVALID_PROJECTS],
+)
+def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that invalid projects produce expected diagnostics."""
+    monkeypatch.chdir(project_dir)
+
+    d = driver.Driver()
+
+    def_files = sorted(project_dir.rglob("*.def"))
+    assert def_files, f"No .def files found in {project_dir}"
+
+    for def_file in def_files:
+        diagnostics, _ = d.validate_file(def_file)
+
+        project_str = str(project_dir)
+        expected_type = next(
+            (
+                EXPECTED_DIAGNOSTIC_BY_SUBSTRING[substring]
+                for substring in EXPECTED_DIAGNOSTIC_BY_SUBSTRING
+                if substring in project_str
+            ),
+            None,
+        )
+        if expected_type is None:
+            pytest.fail(
+                f"Expected diagnostic for {def_file} not specified. Got: {diagnostics!r}"
+            )
+
+        assert any(isinstance(diag, expected_type) for diag in diagnostics), (
+            f"Expected {expected_type.__name__} for {def_file}"
+        )

@@ -4,7 +4,7 @@ from typing import Generic, TypeVar, Union
 from lark.lexer import Token
 
 _Leaf_T = TypeVar("_Leaf_T")
-Branch = Union[_Leaf_T, "Tree[_Leaf_T]"]
+Branch = Union[_Leaf_T, "Tree[_Leaf_T]", None]
 ParseTree = Tree[Token]
 
 class Meta:

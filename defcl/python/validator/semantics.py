@@ -96,7 +96,7 @@ def _check_value(
                 str(name_token),
                 path_name,
             )
-    elif child.data == "message_value":
+    elif isinstance(child, lark.Tree) and child.data == "message_value":
         if field_desc.message_type is None:
             raise ValueError(
                 f"unexpected unknown field {str(name_token)!r} has message value"
