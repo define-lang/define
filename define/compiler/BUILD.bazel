@@ -2,8 +2,6 @@ load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
-exports_files(["pyproject.toml"])
-
 py_library(
     name = "ast",
     srcs = ["ast.py"],
@@ -143,7 +141,6 @@ format_test(
 # package or any of its sub-packages, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
-    pyproject = "//define/compiler:pyproject.toml",
     deps = [
         ":ast",
         ":ast_test",

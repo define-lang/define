@@ -5,8 +5,6 @@ requires-python = ">=3.12"
 [manifest]
 members = [
     "define",
-    "define-compiler",
-    "define-defcl",
     "define-tools",
 ]
 
@@ -126,6 +124,7 @@ version = "0.0.1"
 source = { virtual = "." }
 dependencies = [
     { name = "lark" },
+    { name = "protobuf" },
 ]
 
 [package.dev-dependencies]
@@ -139,7 +138,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "lark" }]
+requires-dist = [
+    { name = "lark" },
+    { name = "protobuf" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -150,54 +152,6 @@ dev = [
     { name = "ruff" },
     { name = "setuptools" },
 ]
-
-[[package]]
-name = "define-compiler"
-version = "0.0.1"
-source = { virtual = "define/compiler" }
-dependencies = [
-    { name = "define-defcl" },
-    { name = "lark" },
-    { name = "protobuf" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "define-defcl", editable = "defcl" },
-    { name = "lark" },
-    { name = "protobuf" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=6" }]
-
-[[package]]
-name = "define-defcl"
-version = "0.0.1"
-source = { editable = "defcl" }
-dependencies = [
-    { name = "lark" },
-    { name = "protobuf" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "lark" },
-    { name = "protobuf" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=6" }]
 
 [[package]]
 name = "define-tools"

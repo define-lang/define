@@ -18,8 +18,6 @@ native_binary(
     data = [
         "pyproject.toml",
         "uv.lock",
-        "//defcl:pyproject.toml",
-        "//define/compiler:pyproject.toml",
         "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
@@ -40,8 +38,6 @@ native_test(
     data = [
         "pyproject.toml",
         "uv.lock",
-        "//defcl:pyproject.toml",
-        "//define/compiler:pyproject.toml",
         "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],

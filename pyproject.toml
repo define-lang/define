@@ -6,10 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "lark",
+    "protobuf",
 ]
 
 [tool.uv.workspace]
-members = ["define/compiler", "defcl", "tools"]
+members = ["tools"]
 
 [tool.ruff.lint]
 extend-select = [
