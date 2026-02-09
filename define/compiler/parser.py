@@ -3,9 +3,79 @@
 import os
 from pathlib import Path
 
-from lark import Lark, Token, Tree
+from lark import Lark, Token, Tree, exceptions
+
+from define.compiler import parser_exceptions
 
 _GRAMMAR_PATH = Path(__file__).parent / "grammar.lark"
+
+_TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]] = {
+    parser_exceptions.MissingTerminatorError: [
+        "define the potential position<standard:/path>\n",
+    ],
+    parser_exceptions.MissingNewlineError: [
+        "define the potential position<standard:/path>.",
+    ],
+    parser_exceptions.MissingOpenAngleBracketError: [
+        "define the potential positionstandard:/path>.\n",
+    ],
+    parser_exceptions.MissingCloseAngleBracketError: [
+        "define the potential position<standard:/path.\n",
+    ],
+    parser_exceptions.EmptyNameError: [
+        "define the potential position<>.\n",
+    ],
+    parser_exceptions.InvalidPathError: [
+        "define the potential position<standard:path>.\n",
+        "define the potential position<standard:/a//b>.\n",
+        "define the potential position<standard:/bad-name>.\n",
+        "define the potential position<standard:/bad~name>.\n",
+        "define the potential position<standard:/2bad>.\n",
+        "define the potential position<example.com/.hidden:my_lib:/path>.\n",
+        "define the potential position<example.com/ba<d:my_lib:/path>.\n",
+    ],
+    parser_exceptions.InvalidIdentifierError: [
+        "define the potential position<_mymv:example.com:my_lib:/path>.\n",
+        "define the potential position<mymv_:example.com:my_lib:/path>.\n",
+        "define the potential position<x:example.com:my_lib:/path>.\n",
+        "define the potential position<m\u00fcv:example.com:my_lib:/path>.\n",
+        "define the potential position<-example.com:my_lib:/path>.\n",
+        "define the potential position<example.com-:my_lib:/path>.\n",
+        "define the potential position<.example.com:my_lib:/path>.\n",
+        "define the potential position<example.com.:my_lib:/path>.\n",
+        "define the potential position<x:my_lib:/path>.\n",
+        "define the potential position<example.com:_mylib:/path>.\n",
+        "define the potential position<example.com:mylib_:/path>.\n",
+        "define the potential position<example.com:x:/path>.\n",
+        "define the potential position<example.com:m\u00fclib:/path>.\n",
+        "define the potential position<my_name>.\n",
+    ],
+    parser_exceptions.EmptyFileError: [
+        "",
+        "\n\n\n",
+        "# a comment",
+    ],
+    parser_exceptions.IncompleteStatementError: [
+        "define the potential\n",
+        "define the potential.\n",
+        "define the\n",
+        "define the.\n",
+    ],
+    parser_exceptions.UnexpectedWhitespaceError: [
+        "define  the potential position<standard:/path>.\n",
+    ],
+}
+
+_CHAR_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineCharError], list[str]] = {
+    parser_exceptions.InvalidCharacterError: [
+        "define the potential position<standard:/bad!name>.\n",
+    ],
+}
+
+_CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
+    "\ufeff": parser_exceptions.ByteOrderMarkError,
+    "\r": parser_exceptions.CarriageReturnError,
+}
 
 
 class Parser:
@@ -21,12 +91,91 @@ class Parser:
             propagate_positions=True,
         )
 
-    def parse(self, source: str) -> Tree[Token]:
-        """Parse Define source code and return a parse tree."""
-        return self._lark.parse(source)
+    def _classify_char_error(
+        self, e: exceptions.UnexpectedCharacters
+    ) -> type[parser_exceptions.DefineCharError] | None:
+        """Classify a character error into a specific exception type."""
+        char_class = _CHAR_ERRORS.get(e.char)
+        if char_class is not None:
+            return char_class
+
+        if e.char.isupper():
+            return parser_exceptions.UppercaseNotAllowedError
+
+        if e.char == " ":
+            return parser_exceptions.TrailingWhitespaceError
+
+        if ord(e.char) < 0x20 or ord(e.char) == 0x7F:
+            return parser_exceptions.ControlCharacterError
+
+        if ord(e.char) > 0x7F:
+            return parser_exceptions.InvalidCharacterError
+
+        return e.match_examples(
+            self._lark.parse,
+            _CHAR_ERROR_EXAMPLES,
+            use_accepts=True,
+        )
+
+    def _classify_token_error(
+        self, e: exceptions.UnexpectedToken, source: str
+    ) -> type[parser_exceptions.DefineTokenError] | None:
+        """Classify a token error into a specific exception type."""
+        # Consecutive spaces are never valid in the grammar, but
+        # match_examples can't distinguish them from incomplete statements.
+        error_line = source.split("\n")[e.line - 1]
+        if "  " in error_line:
+            return parser_exceptions.UnexpectedWhitespaceError
+
+        # A DOT after a PATH_SEGMENT is ambiguous to match_examples: both
+        # "<standard:/bad.name>.\n" (invalid path) and "<standard:/path.\n"
+        # (missing close bracket) produce the same parser state. We
+        # disambiguate by checking whether the dot is the statement
+        # terminator (last character on the line). If not, it must be an
+        # invalid character inside the path.
+        if e.token.type == "DOT" and e.token_history:
+            prev = e.token_history[-1]
+            if prev.type == "PATH_SEGMENT":
+                error_line = source.split("\n")[e.line - 1]
+                if e.column < len(error_line):
+                    return parser_exceptions.InvalidPathError
+
+        return e.match_examples(
+            self._lark.parse,
+            _TOKEN_ERROR_EXAMPLES,
+            use_accepts=True,
+        )
+
+    def parse(
+        self, source: str, file_path: str | os.PathLike[str] | None = None
+    ) -> Tree[Token]:
+        """Parse Define source code and return a parse tree.
+
+        file_path is only used for error messages.
+        """
+        try:
+            return self._lark.parse(source)
+        except exceptions.UnexpectedCharacters as e:
+            exc_class = self._classify_char_error(e)
+            if exc_class is not None:
+                raise exc_class(
+                    e.get_context(source), e.line, e.column, e.char, file_path
+                ) from e
+            raise
+        except exceptions.UnexpectedToken as e:
+            exc_class = self._classify_token_error(e, source)
+            if exc_class is not None:
+                raise exc_class(
+                    e.get_context(source),
+                    e.line,
+                    e.column,
+                    e.token,
+                    file_path,
+                ) from e
+            raise
 
     def parse_file(self, path: os.PathLike[str]) -> tuple[Tree[Token], str]:
         """Parse a Define source file and return the parse tree and source text."""
         with open(path, encoding="utf-8", newline="") as f:
             source = f.read()
-        return self.parse(source), source
+        return self.parse(source, file_path=path), source

@@ -57,7 +57,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":driver",
-        "@pypi//lark",
+        ":parser_exceptions",
         "@pypi//pytest",
     ],
 )
@@ -70,7 +70,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":driver",
-        "@pypi//lark",
+        ":parser_exceptions",
         "@pypi//pytest",
     ],
 )
@@ -81,6 +81,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":driver",
+        ":parser_exceptions",
         "@pypi//lark",
     ],
 )
@@ -91,6 +92,15 @@ py_library(
     data = ["grammar.lark"],
     deps = [
         ":compiler",
+        ":parser_exceptions",
+        "@pypi//lark",
+    ],
+)
+
+py_library(
+    name = "parser_exceptions",
+    srcs = ["parser_exceptions.py"],
+    deps = [
         "@pypi//lark",
     ],
 )
@@ -102,6 +112,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":parser",
+        ":parser_exceptions",
         "@pypi//lark",
         "@pypi//pytest",
     ],
@@ -176,6 +187,7 @@ pyright_test(
         ":driver_test",
         ":main",
         ":parser",
+        ":parser_exceptions",
         ":parser_test",
         ":transformer",
         ":transformer_test",

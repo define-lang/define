@@ -3,10 +3,9 @@
 
 from pathlib import Path
 
-import lark
 import pytest
 
-from define.compiler import diagnostics, driver
+from define.compiler import diagnostics, driver, parser_exceptions
 
 
 def _setup_project(tmp_path: Path, universe_name: str) -> None:
@@ -92,7 +91,7 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        with pytest.raises(lark.exceptions.UnexpectedInput):
+        with pytest.raises(parser_exceptions.DefineSyntaxError):
             d.validate_file(Path("bad.def"))
 
     def test_nested_file_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

@@ -6,7 +6,7 @@ from pathlib import Path
 import lark
 import pytest
 
-from define.compiler import parser
+from define.compiler import parser, parser_exceptions
 
 _parser = parser.Parser()
 
@@ -66,66 +66,77 @@ class TestComments:
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["actual"]
 
     def test_control_character_in_comment(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
             p.parse(
                 "# comment with\x01control char\n"
                 + "define the potential position<standard:/path>.\n"
             )
         assert exc_info.value.char == "\x01"
+        assert exc_info.value.column == 15
 
     def test_comment_with_trailing_whitespace(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
             p.parse("# comment with trailing space \n")
         assert exc_info.value.char == " "
+        assert exc_info.value.column == 30
 
     def test_same_line_comment_with_trailing_whitespace(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
             p.parse("define the potential position<standard:/path>. # comment \n")
         assert exc_info.value.char == " "
+        assert exc_info.value.column == 57
 
     def test_comment_only_file_without_newline(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.EmptyFileError) as exc_info:
             p.parse("# a comment")
         assert str(exc_info.value.token) == ""
+        assert exc_info.value.column == 1
 
 
 class TestStatementTerminators:
     def test_missing_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
             p.parse("define the potential position<standard:/path>\n")
         assert str(exc_info.value.token) == "\n"
+        assert exc_info.value.column == 46
 
     def test_missing_newline_after_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.MissingNewlineError) as exc_info:
             p.parse("define the potential position<standard:/path>.")
         assert str(exc_info.value.token) == ""
+        assert exc_info.value.column == 46
 
     def test_trailing_space_before_newline(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
             p.parse("define the potential position<standard:/path>. \n")
         assert exc_info.value.char == " "
+        assert exc_info.value.column == 47
 
 
 class TestFileEncoding:
     def test_bom_at_start(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
             p.parse("\ufeffdefine the potential position<standard:/path>.\n")
         assert exc_info.value.char == "\ufeff"
+        assert exc_info.value.column == 1
 
     def test_crlf_line_endings(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
             p.parse("define the potential position<standard:/path>.\r\n")
         assert exc_info.value.char == "\r"
+        assert exc_info.value.column == 47
 
     def test_crlf_line_endings_in_comments(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
             p.parse("# a comment\r\n")
         assert exc_info.value.char == "\r"
+        assert exc_info.value.column == 12
 
     def test_carriage_return_in_comment(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
             p.parse("# comment with\rcarriage return\n")
         assert exc_info.value.char == "\r"
+        assert exc_info.value.column == 15
 
 
 class TestActionDefinition:
@@ -233,63 +244,74 @@ class TestGlobalNameStructure:
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["a", "b", "c", "d"]
 
     def test_missing_close_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.MissingCloseAngleBracketError) as exc_info:
             p.parse("define the potential position<standard:/path.\n")
         assert str(exc_info.value.token) == "."
+        assert exc_info.value.column == 45
 
     def test_missing_open_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.MissingOpenAngleBracketError) as exc_info:
             p.parse("define the potential positionstandard:/path>.\n")
         assert str(exc_info.value.token) == "standard"
+        assert exc_info.value.column == 30
 
     def test_empty_name_content(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.EmptyNameError) as exc_info:
             p.parse("define the potential position<>.\n")
         assert str(exc_info.value.token) == ">"
+        assert exc_info.value.column == 31
 
     def test_path_not_starting_with_slash(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<standard:path>.\n")
         assert str(exc_info.value.token) == "standard"
+        assert exc_info.value.column == 31
 
     def test_empty_path_segment(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<standard:/a//b>.\n")
         assert str(exc_info.value.token) == "/"
+        assert exc_info.value.column == 43
 
     def test_local_name_not_valid_in_definitions(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<my_name>.\n")
         assert str(exc_info.value.token) == "my_name"
+        assert exc_info.value.column == 31
 
 
 class TestMultiverseNameFormat:
     def test_uppercase_in_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.UppercaseNotAllowedError) as exc_info:
             p.parse("define the potential position<MyMv:example.com:my_lib:/path>.\n")
         assert exc_info.value.char == "M"
+        assert exc_info.value.column == 31
 
     def test_multiverse_starting_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<_mymv:example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "_mymv"
+        assert exc_info.value.column == 31
 
     def test_multiverse_ending_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<mymv_:example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "mymv_"
+        assert exc_info.value.column == 31
 
     def test_single_char_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<x:example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "x"
+        assert exc_info.value.column == 31
 
     def test_non_ascii_in_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse(
                 "define the potential position<m\u00fcv:example.com:my_lib:/path>.\n"
             )
         assert str(exc_info.value.token) == "m"
+        assert exc_info.value.column == 31
 
 
 class TestAuthorityDomainFormat:
@@ -304,39 +326,46 @@ class TestAuthorityDomainFormat:
         assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["localhost"]
 
     def test_uppercase_in_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.UppercaseNotAllowedError) as exc_info:
             p.parse("define the potential position<Example.Com:my_lib:/path>.\n")
         assert exc_info.value.char == "E"
+        assert exc_info.value.column == 31
 
     def test_authority_domain_starting_with_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<-example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "-example.com"
+        assert exc_info.value.column == 31
 
     def test_authority_domain_ending_with_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<example.com-:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "-"
+        assert exc_info.value.column == 42
 
     def test_authority_domain_starting_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<.example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "."
+        assert exc_info.value.column == 31
 
     def test_authority_domain_ending_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<example.com.:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "."
+        assert exc_info.value.column == 42
 
     def test_single_char_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<x:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "x"
+        assert exc_info.value.column == 31
 
     def test_non_ascii_in_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
             p.parse("define the potential position<ex\u00e4mple.com:my_lib:/path>.\n")
         assert exc_info.value.char == "\u00e4"
+        assert exc_info.value.column == 33
 
 
 class TestUniverseNameFormat:
@@ -345,24 +374,28 @@ class TestUniverseNameFormat:
         assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["MyLib"]
 
     def test_universe_starting_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<example.com:_mylib:/path>.\n")
         assert str(exc_info.value.token) == "_mylib"
+        assert exc_info.value.column == 43
 
     def test_universe_ending_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<example.com:mylib_:/path>.\n")
         assert str(exc_info.value.token) == "mylib_"
+        assert exc_info.value.column == 43
 
     def test_single_char_universe(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<example.com:x:/path>.\n")
         assert str(exc_info.value.token) == "x"
+        assert exc_info.value.column == 43
 
     def test_non_ascii_in_universe(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
             p.parse("define the potential position<example.com:m\u00fclib:/path>.\n")
         assert str(exc_info.value.token) == "m"
+        assert exc_info.value.column == 43
 
 
 class TestPathSegmentFormat:
@@ -376,100 +409,132 @@ class TestPathSegmentFormat:
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["item2"]
 
     def test_path_segment_starting_with_digit(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<standard:/2bad>.\n")
         assert str(exc_info.value.token) == "2bad"
+        assert exc_info.value.column == 41
 
     def test_invalid_chars_in_path_uppercase(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.UppercaseNotAllowedError) as exc_info:
             p.parse("define the potential position<standard:/BadName>.\n")
         assert exc_info.value.char == "B"
+        assert exc_info.value.column == 41
 
     def test_invalid_chars_in_path_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<standard:/bad-name>.\n")
         assert str(exc_info.value.token) == "-name"
+        assert exc_info.value.column == 44
 
     def test_invalid_chars_in_path_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<standard:/bad.name>.\n")
         assert str(exc_info.value.token) == "."
+        assert exc_info.value.column == 44
 
     def test_invalid_chars_in_path_tilde(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<standard:/bad~name>.\n")
         assert str(exc_info.value.token) == "~name"
+        assert exc_info.value.column == 44
 
     def test_invalid_chars_in_path_special(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
             p.parse("define the potential position<standard:/bad!name>.\n")
         assert exc_info.value.char == "!"
+        assert exc_info.value.column == 44
 
 
 class TestAuthorityPathFormat:
     def test_invalid_chars_in_authority_path_uppercase(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.UppercaseNotAllowedError) as exc_info:
             p.parse("define the potential position<example.com/Bad:my_lib:/path>.\n")
         assert exc_info.value.char == "B"
+        assert exc_info.value.column == 43
 
     def test_invalid_chars_in_authority_path_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse("define the potential position<example.com/ba<d:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "<"
+        assert exc_info.value.column == 45
 
     def test_authority_path_segment_starting_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
             p.parse(
                 "define the potential position<example.com/.hidden:my_lib:/path>.\n"
             )
         assert str(exc_info.value.token) == "."
+        assert exc_info.value.column == 43
 
 
 class TestIncompleteStatements:
     def test_empty_file(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.EmptyFileError) as exc_info:
             p.parse("")
         assert str(exc_info.value.token) == ""
+        assert exc_info.value.column == 1
 
     def test_file_all_spaces(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
             p.parse("   ")
         assert exc_info.value.char == " "
+        assert exc_info.value.column == 1
 
     def test_file_spaces_and_newlines_only(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedCharacters) as exc_info:
+        with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
             p.parse(" \n  \n ")
         assert exc_info.value.char == " "
+        assert exc_info.value.column == 1
 
     def test_file_all_newlines(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.EmptyFileError) as exc_info:
             p.parse("\n\n\n")
         assert str(exc_info.value.token) == ""
+        assert exc_info.value.column == 1
 
-    def test_multiple_spaces_between_keywords(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+    def test_extra_space_after_define(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
             p.parse("define  the potential position<standard:/path>.\n")
-        assert str(exc_info.value.token) == "define"
+        assert exc_info.value.column == 1
+
+    def test_extra_space_after_the(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
+            p.parse("define the  potential position<standard:/path>.\n")
+        assert exc_info.value.column == 1
+
+    def test_extra_space_after_potential(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
+            p.parse("define the potential  position<standard:/path>.\n")
+        assert exc_info.value.column == 1
+
+    def test_extra_space_after_potential_action(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
+            p.parse("define the potential  action<standard:/path>.\n")
+        assert exc_info.value.column == 1
 
     def test_define_the_potential_no_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
             p.parse("define the potential\n")
         assert str(exc_info.value.token) == "define"
+        assert exc_info.value.column == 1
 
     def test_define_the_potential_with_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
             p.parse("define the potential.\n")
         assert str(exc_info.value.token) == "define"
+        assert exc_info.value.column == 1
 
     def test_define_the_no_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
             p.parse("define the\n")
         assert str(exc_info.value.token) == "define"
+        assert exc_info.value.column == 1
 
     def test_define_the_with_terminator(self, p: parser.Parser) -> None:
-        with pytest.raises(lark.exceptions.UnexpectedToken) as exc_info:
+        with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
             p.parse("define the.\n")
         assert str(exc_info.value.token) == "define"
+        assert exc_info.value.column == 1
 
 
 class TestParseFile:
@@ -485,5 +550,58 @@ class TestParseFile:
         source = "define the potential position<standard:/path>.\r\n"
         file = tmp_path / "path.def"
         file.write_bytes(source.encode("utf-8"))
-        with pytest.raises(lark.exceptions.UnexpectedCharacters):
+        with pytest.raises(parser_exceptions.CarriageReturnError):
             _ = p.parse_file(file)
+
+    def test_parse_file_includes_path_in_error(self, p: parser.Parser, tmp_path: Path):
+        source = "define the potential position<standard:/path>.\r\n"
+        file = tmp_path / "path.def"
+        file.write_bytes(source.encode("utf-8"))
+        with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+            _ = p.parse_file(file)
+        assert str(file) in str(exc_info.value)
+
+
+class TestErrorMessages:
+    def test_error_message_without_path(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
+            p.parse("\ufeffdefine the potential position<standard:/path>.\n")
+        assert str(exc_info.value) == (
+            "line 1, column 1\n"
+            "\\ufeffdefine the potential position<standard:\n"
+            "^\n"
+            "Byte order mark not allowed: \\ufeff"
+        )
+
+    def test_error_message_with_path(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
+            p.parse(
+                "\ufeffdefine the potential position<standard:/path>.\n",
+                file_path="test.def",
+            )
+        assert str(exc_info.value) == (
+            'File "test.def", line 1, column 1\n'
+            "\\ufeffdefine the potential position<standard:\n"
+            "^\n"
+            "Byte order mark not allowed: \\ufeff"
+        )
+
+    def test_char_error_message(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+            p.parse("define the potential position<standard:/path>.\r\n")
+        assert str(exc_info.value) == (
+            "line 1, column 47\n"
+            " the potential position<standard:/path>.\\r\n"
+            "                                        ^\n"
+            "Carriage returns not allowed - use LF only: \\r"
+        )
+
+    def test_token_error_message(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
+            p.parse("define the potential position<standard:/path>\n")
+        assert str(exc_info.value) == (
+            "line 1, column 46\n"
+            "e the potential position<standard:/path>\n"
+            "                                        ^\n"
+            "Missing period at end of statement"
+        )

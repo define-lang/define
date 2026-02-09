@@ -5,7 +5,7 @@ from pathlib import Path
 
 import lark
 
-from define.compiler import driver
+from define.compiler import driver, parser_exceptions
 
 
 def main() -> int:
@@ -17,6 +17,9 @@ def main() -> int:
     d = driver.Driver()
     try:
         diagnostics, source = d.validate_file(Path(sys.argv[1]))
+    except parser_exceptions.DefineSyntaxError as e:
+        print(str(e), file=sys.stderr)
+        return 1
     except lark.exceptions.UnexpectedInput as e:
         print(str(e), file=sys.stderr)
         return 1

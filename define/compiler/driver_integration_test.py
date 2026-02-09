@@ -17,10 +17,9 @@ table.
 
 from pathlib import Path
 
-import lark
 import pytest
 
-from define.compiler import diagnostics, driver
+from define.compiler import diagnostics, driver, parser_exceptions
 
 TESTDATA_ROOT = Path("testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -99,7 +98,12 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
         )
     else:
         # These files should fail during parsing
-        with pytest.raises((lark.exceptions.LarkError, UnicodeDecodeError)):
+        with pytest.raises(
+            (
+                parser_exceptions.DefineSyntaxError,
+                UnicodeDecodeError,
+            )
+        ):
             _ = d.validate_file(relative_path)
 
 
