@@ -41,10 +41,12 @@ py_library(
     deps = [
         ":diagnostics",
         ":parser",
+        ":parser_exceptions",
         ":transformer",
         ":validator",
         "//defcl/python:parser",
         "//define/config/project:config_proto_py",
+        "@pypi//lark",
     ],
 )
 
@@ -58,6 +60,18 @@ py_test(
         ":diagnostics",
         ":driver",
         ":parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "driver_run_test",
+    size = "small",
+    srcs = ["driver_run_test.py"],
+    data = ["//define/testdata:testdata_files"],
+    pytest_main = True,
+    deps = [
+        ":driver",
         "@pypi//pytest",
     ],
 )
@@ -79,11 +93,7 @@ py_binary(
     name = "main",
     srcs = ["main.py"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":driver",
-        ":parser_exceptions",
-        "@pypi//lark",
-    ],
+    deps = [":driver"],
 )
 
 py_library(
@@ -184,6 +194,7 @@ pyright_test(
         ":diagnostics",
         ":driver",
         ":driver_integration_test",
+        ":driver_run_test",
         ":driver_test",
         ":main",
         ":parser",

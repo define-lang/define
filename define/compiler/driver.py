@@ -1,15 +1,33 @@
 """Compilation driver for the Define compiler."""
 
+import enum
 import os
+import sys
 from functools import cached_property
 from pathlib import Path
+from typing import TextIO
+
+import lark
 
 from defcl.python import parser as defcl_parser
-from define.compiler import diagnostics, parser, transformer, validator
+from define.compiler import (
+    diagnostics,
+    parser,
+    parser_exceptions,
+    transformer,
+    validator,
+)
 from define.config.project import config_pb2
 
 _DOCS_ROOT = "https://github.com/mkanat/define/define/docs"
 _CONFIG_PATH = Path(".define/project/config.defcl")
+
+
+class ExitCode(enum.IntEnum):
+    """Exit codes returned by Driver.run()."""
+
+    SUCCESS = 0
+    ERROR = 1
 
 
 class Driver:
@@ -45,3 +63,38 @@ class Driver:
             expected_universe_name=self.project_config.project.universe_name or "",
         )
         return diagnostics, source
+
+    def run(
+        self,
+        path: os.PathLike[str],
+        error_stream: TextIO | None = None,
+    ) -> ExitCode:
+        """Validate a Define source file and write any errors to the given stream.
+
+        Args:
+            path: Path to the .def file to validate.
+            error_stream: Where to write error messages (syntax errors, diagnostics).
+                Defaults to sys.stderr.
+
+        Returns:
+            ExitCode.SUCCESS if validation passed with no errors.
+            ExitCode.ERROR if a syntax error occurred or validation diagnostics were reported.
+        """
+        if error_stream is None:
+            error_stream = sys.stderr
+        try:
+            diagnostics_result, source = self.validate_file(path)
+        except parser_exceptions.DefineSyntaxError as e:
+            print(str(e), file=error_stream)
+            return ExitCode.ERROR
+        except lark.exceptions.UnexpectedInput as e:
+            print(str(e), file=error_stream)
+            return ExitCode.ERROR
+
+        if diagnostics_result:
+            source_lines = source.splitlines()
+            for diagnostic in diagnostics_result:
+                print(diagnostic.format(source_lines), file=error_stream)
+            return ExitCode.ERROR
+
+        return ExitCode.SUCCESS
