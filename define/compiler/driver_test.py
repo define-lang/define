@@ -23,12 +23,12 @@ def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
 
 
 class TestValidateFileNoProjectRoot:
-    def test_raises_file_not_found(
+    def test_raises_project_root_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.chdir(tmp_path)
         d = driver.Driver()
-        with pytest.raises(FileNotFoundError, match="Not a Define project root"):
+        with pytest.raises(driver.NotProjectRootError):
             d.validate_file(Path("foo.def"))
 
     def test_error_includes_docs_link(
@@ -36,7 +36,7 @@ class TestValidateFileNoProjectRoot:
     ):
         monkeypatch.chdir(tmp_path)
         d = driver.Driver()
-        with pytest.raises(FileNotFoundError, match=r"project-root\.md"):
+        with pytest.raises(driver.NotProjectRootError, match=r"project-root\.md"):
             d.validate_file(Path("foo.def"))
 
 
@@ -106,3 +106,122 @@ class TestValidateFile:
         d = driver.Driver()
         diags, _ = d.validate_file(Path("sub/dir/leaf.def"))
         assert diags == []
+
+
+class TestPathResolution:
+    def test_absolute_path_is_relativized(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "test.example.com:my_lib")
+        _write_source(
+            tmp_path,
+            "hello.def",
+            "define the potential position<test.example.com:my_lib:/hello>.\n",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        d = driver.Driver()
+        diags, _ = d.validate_file(tmp_path / "hello.def")
+        assert diags == []
+
+    def test_absolute_path_outside_project_root_is_rejected(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        project = tmp_path / "project"
+        project.mkdir()
+        _setup_project(project, "test.example.com:my_lib")
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        source_file = outside / "hello.def"
+        source_file.write_text(
+            "define the potential position<test.example.com:my_lib:/hello>.\n"
+        )
+        monkeypatch.chdir(project)
+
+        d = driver.Driver()
+        with pytest.raises(driver.AbsolutePathError) as exc_info:
+            d.validate_file(source_file)
+        assert exc_info.value.input_path == source_file
+        assert exc_info.value.project_root == project
+
+    def test_relative_path_with_dotdot_is_resolved(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "test.example.com:my_lib")
+        (tmp_path / "sub").mkdir()
+        _write_source(
+            tmp_path,
+            "hello.def",
+            "define the potential position<test.example.com:my_lib:/hello>.\n",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        d = driver.Driver()
+        diags, _ = d.validate_file(Path("sub/../hello.def"))
+        assert diags == []
+
+    def test_symlink_to_outside_without_dotdot_is_allowed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        project = tmp_path / "project"
+        project.mkdir()
+        _setup_project(project, "test.example.com:my_lib")
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        _write_source(
+            outside,
+            "hello.def",
+            "define the potential position<test.example.com:my_lib:/link/hello>.\n",
+        )
+        (project / "link").symlink_to(outside)
+        monkeypatch.chdir(project)
+
+        d = driver.Driver()
+        diags, _ = d.validate_file(Path("link/hello.def"))
+        assert diags == []
+
+    def test_symlink_with_dotdot_escaping_root_is_rejected(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        project = tmp_path / "project"
+        project.mkdir()
+        _setup_project(project, "test.example.com:my_lib")
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (project / "link").symlink_to(outside)
+        monkeypatch.chdir(project)
+
+        d = driver.Driver()
+        with pytest.raises(driver.RelativePathError) as exc_info:
+            d.validate_file(Path("link/../hello.def"))
+        assert exc_info.value.input_path == Path("link/../hello.def")
+        assert exc_info.value.project_root == project.resolve()
+
+    def test_symlink_with_dotdot_staying_in_root_is_allowed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "test.example.com:my_lib")
+        (tmp_path / "real" / "sub").mkdir(parents=True)
+        _write_source(
+            tmp_path,
+            "real/hello.def",
+            "define the potential position<test.example.com:my_lib:/real/hello>.\n",
+        )
+        (tmp_path / "link").symlink_to(tmp_path / "real" / "sub")
+        monkeypatch.chdir(tmp_path)
+
+        d = driver.Driver()
+        diags, _ = d.validate_file(Path("link/../hello.def"))
+        assert diags == []
+
+    def test_path_escaping_project_root_is_rejected(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "test.example.com:my_lib")
+        monkeypatch.chdir(tmp_path)
+
+        d = driver.Driver()
+        with pytest.raises(driver.RelativePathError) as exc_info:
+            d.validate_file(Path("../hello.def"))
+        assert exc_info.value.input_path == Path("../hello.def")
+        assert exc_info.value.project_root == tmp_path.resolve()
