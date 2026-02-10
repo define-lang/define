@@ -120,8 +120,8 @@ BUILD file generator.
 
 ### Building and Testing
 
-- Build all targets: `bazelisk build //...`
-- Test all targets: `bazelisk test //...`
+- Build all targets: `bazelisk build --noshow_progress //...`
+- Test all targets: `bazelisk test --noshow_progress //...`
 - Keep build targets atomic — each target should contain only the minimum
   necessary sources and dependencies.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
