@@ -22,6 +22,7 @@
       "Shell(xxd)",
       "Shell(git status)",
       "Shell(git log)",
+      "Shell(gh api repos/*/releases *)",
       "Shell(uv add)",
       "Shell(uv sync)",
       "Shell(uv help)",

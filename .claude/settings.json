@@ -33,6 +33,7 @@
         "Bash(xxd:*)",
         "Bash(git status:*)",
         "Bash(git log:*)",
+        "Bash(gh api repos/*/releases *)",
         "Bash(uv add:*)",
         "Bash(uv sync:*)",
         "Bash(uv help:*)",
