@@ -21,6 +21,8 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
     ],
     parser_exceptions.MissingCloseAngleBracketError: [
         "define the potential position<standard:/path.\n",
+        "define the potential position<mymv:example.com:my_lib:/path.\n",
+        "define the potential position<mymv:example.com:my_lib:/a/path.\n",
     ],
     parser_exceptions.EmptyNameError: [
         "define the potential position<>.\n",
@@ -33,6 +35,9 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         "define the potential position<standard:/2bad>.\n",
         "define the potential position<example.com/.hidden:my_lib:/path>.\n",
         "define the potential position<example.com/ba<d:my_lib:/path>.\n",
+        "define the potential position<mymv:example.com:my_lib:/bad-name>.\n",
+        "define the potential position<mymv:example.com:my_lib:/a/bad-name>.\n",
+        "define the potential position<mymv:example.com/.hidden:my_lib:/path>.\n",
     ],
     parser_exceptions.InvalidIdentifierError: [
         "define the potential position<_mymv:example.com:my_lib:/path>.\n",
@@ -49,6 +54,14 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         "define the potential position<example.com:x:/path>.\n",
         "define the potential position<example.com:m\u00fclib:/path>.\n",
         "define the potential position<my_name>.\n",
+        "define the potential position<mymv:.example.com:my_lib:/path>.\n",
+        "define the potential position<mymv:-example.com:my_lib:/path>.\n",
+        "define the potential position<mymv:a:my_lib:/path>.\n",
+        "define the potential position<mymv:example.com.:my_lib:/path>.\n",
+        "define the potential position<mymv:example.com-:my_lib:/path>.\n",
+        "define the potential position<mymv:example.com:_my_lib:/path>.\n",
+        "define the potential position<mymv:example.com:x:/path>.\n",
+        "define the potential position<mymv:example.com:my_lib_:/path>.\n",
     ],
     parser_exceptions.EmptyFileError: [
         "",
@@ -69,6 +82,8 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
 _CHAR_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineCharError], list[str]] = {
     parser_exceptions.InvalidCharacterError: [
         "define the potential position<standard:/bad!name>.\n",
+        "define the potential position<mymv:example.com:my_lib:/bad!name>.\n",
+        "define the potential position<mymv:example.com:my_lib:/a/bad!name>.\n",
     ],
 }
 

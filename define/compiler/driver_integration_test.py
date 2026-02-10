@@ -21,7 +21,7 @@ import pytest
 
 from define.compiler import diagnostics, driver, parser_exceptions
 
-TESTDATA_ROOT = Path("testdata")
+TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
 PROJECTS_ROOT = TESTDATA_ROOT / "projects"
 
@@ -56,7 +56,18 @@ VALID_PROJECTS = discover_projects(PROJECTS_ROOT / "valid")
 INVALID_PROJECTS = discover_projects(PROJECTS_ROOT / "invalid")
 
 
-@pytest.mark.parametrize("def_file", VALID_FILES, ids=[f.name for f in VALID_FILES])
+def test_lists_not_empty():
+    assert VALID_PROJECTS
+    assert INVALID_PROJECTS
+    assert VALID_FILES
+    assert INVALID_SYNTAX_FILES
+
+
+@pytest.mark.parametrize(
+    "def_file",
+    [f.relative_to(FILES_ROOT) for f in VALID_FILES],
+    ids=[f.name for f in VALID_FILES],
+)
 def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
@@ -67,7 +78,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.parametrize(
     "def_file",
-    INVALID_SYNTAX_FILES,
+    [f.relative_to(FILES_ROOT) for f in INVALID_SYNTAX_FILES],
     ids=[
         f.relative_to(FILES_ROOT / "invalid" / "syntax").as_posix()
         for f in INVALID_SYNTAX_FILES
@@ -76,10 +87,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that invalid syntax files either raise parsing exceptions or produce validation diagnostics."""
     monkeypatch.chdir(FILES_ROOT)
-
-    relative_path = def_file.relative_to(FILES_ROOT)
-    file_name = str(def_file.relative_to(FILES_ROOT / "invalid" / "syntax"))
-
+    file_name = str(def_file)
     d = driver.Driver()
 
     expected_diagnostic = next(
@@ -92,14 +100,14 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
     )
 
     if expected_diagnostic:
-        diagnostics, _ = d.validate_file(relative_path)
+        diagnostics, _ = d.validate_file(def_file)
         assert any(isinstance(diag, expected_diagnostic) for diag in diagnostics), (
             f"Expected {expected_diagnostic.__name__} for {file_name}"
         )
     else:
         # These files should fail during parsing
         with pytest.raises(parser_exceptions.DefineSyntaxError):
-            _ = d.validate_file(relative_path)
+            _ = d.validate_file(def_file)
 
 
 @pytest.mark.parametrize(
@@ -111,7 +119,7 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
     d = driver.Driver()
 
-    def_files = sorted(project_dir.rglob("*.def"))
+    def_files = sorted(Path(".").rglob("*.def"))
     assert def_files, f"No .def files found in {project_dir}"
 
     for def_file in def_files:
@@ -132,7 +140,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     d = driver.Driver()
 
-    def_files = sorted(project_dir.rglob("*.def"))
+    def_files = sorted(Path(".").rglob("*.def"))
     assert def_files, f"No .def files found in {project_dir}"
 
     for def_file in def_files:
