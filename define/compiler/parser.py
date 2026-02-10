@@ -1,9 +1,9 @@
 """Parser for Define language statements."""
 
 import os
-import re
 from pathlib import Path
 
+import regex
 from lark import Lark, Token, Tree, exceptions
 
 from define.compiler import parser_exceptions
@@ -101,7 +101,7 @@ _IDENTIFIER_TERMINALS = frozenset(
 # Matches the structure of a 4-part FQUN (multiverse:authority:universe:/path)
 # from the error position. Based on the MULTIVERSE_NAME terminal lookahead
 # in grammar.lark.
-_MULTIVERSE_CONTEXT = re.compile(r"[^:>]*:[^:>]*:[^:>]*:/")
+_MULTIVERSE_CONTEXT = regex.compile(r"[^:>]*:[^:>]*:[^:>]*:/")
 
 
 class Parser:
@@ -115,6 +115,7 @@ class Parser:
             str(_GRAMMAR_PATH),
             parser="lalr",
             propagate_positions=True,
+            regex=True,
         )
 
     def _classify_char_error(

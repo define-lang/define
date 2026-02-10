@@ -45,6 +45,7 @@ py_library(
         ":validator",
         "//defcl/python:exceptions",
         "@pypi//lark",
+        "@pypi//regex",
     ],
 )
 

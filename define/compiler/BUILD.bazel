@@ -104,6 +104,7 @@ py_library(
         ":compiler",
         ":parser_exceptions",
         "@pypi//lark",
+        "@pypi//regex",
     ],
 )
 

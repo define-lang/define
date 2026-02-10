@@ -111,7 +111,9 @@ class Parser:
 
     @cached_property
     def _parser(self) -> lark.Lark:
-        return lark.Lark(_GRAMMAR_PATH.read_text(), parser="lalr", start="start")
+        return lark.Lark(
+            _GRAMMAR_PATH.read_text(), parser="lalr", start="start", regex=True
+        )
 
     def _classify_char_error(
         self, e: exceptions.UnexpectedCharacters
