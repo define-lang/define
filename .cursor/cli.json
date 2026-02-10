@@ -2,6 +2,7 @@
   "_comment": "This file is auto-generated from .claude/settings.json. Do not edit manually.",
   "permissions": {
     "allow": [
+      "Read(~/.cache/bazel/**)",
       "WebSearch",
       "WebFetch(domain:registry.bazel.build)",
       "WebFetch(domain:buf.build)",
