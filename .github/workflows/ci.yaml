@@ -40,12 +40,5 @@ jobs:
 
       - uses: bufbuild/buf-action@v1
         with:
-          setup_only: true
-
-      # The Bazel build already produced the plugin at bazel-bin/defcl/buf/buf_/buf
-      # which is referenced by buf.yaml
-      - name: Buf Lint
-        run: buf lint
-
-      - name: Buf Format
-        run: buf format --diff --exit-code
+          breaking: false
+          push: false
