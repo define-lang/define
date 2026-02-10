@@ -2,6 +2,8 @@ edition = "2023";
 
 package define.config.project;
 
+import "buf/validate/validate.proto";
+
 // Top-level wrapper for .define/project/config.defcl files.
 message ProjectConfigFile {
   // The project configuration.
@@ -11,5 +13,8 @@ message ProjectConfigFile {
 // Configuration for a Define project.
 message Project {
   // The fully-qualified universe name (FQUN) for this project.
-  string universe_name = 1;
+  string universe_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 }

@@ -29,6 +29,34 @@ py_library(
 )
 
 py_library(
+    name = "config",
+    srcs = ["config.py"],
+    deps = [
+        ":exceptions",
+        "//defcl/python:parser",
+        "//define/config/project:config_proto_py",
+        "@pypi//protovalidate",
+    ],
+)
+
+py_test(
+    name = "config_test",
+    size = "small",
+    srcs = ["config_test.py"],
+    pytest_main = True,
+    deps = [
+        ":config",
+        ":exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "exceptions",
+    srcs = ["exceptions.py"],
+)
+
+py_library(
     name = "diagnostics",
     srcs = ["diagnostics.py"],
     deps = [":ast"],
@@ -39,12 +67,13 @@ py_library(
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":config",
         ":diagnostics",
+        ":exceptions",
         ":parser",
         ":parser_exceptions",
         ":transformer",
         ":validator",
-        "//defcl/python:parser",
         "//define/config/project:config_proto_py",
         "@pypi//lark",
     ],
@@ -84,6 +113,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":driver",
+        ":exceptions",
         ":parser_exceptions",
         "@pypi//pytest",
     ],
@@ -192,11 +222,14 @@ pyright_test(
         ":ast",
         ":ast_test",
         ":compiler",
+        ":config",
+        ":config_test",
         ":diagnostics",
         ":driver",
         ":driver_integration_test",
         ":driver_run_test",
         ":driver_test",
+        ":exceptions",
         ":main",
         ":parser",
         ":parser_exceptions",

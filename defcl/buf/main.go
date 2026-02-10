@@ -113,6 +113,9 @@ var timeFieldSuffixRule = &check.RuleSpec{
 // TODO(https://github.com/bufbuild/buf/issues/4193): Upgrade to edition 2024 when buf supports it
 func checkEdition(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		syntax := fd.Syntax()
 		if syntax != protoreflect.Editions {
@@ -128,6 +131,9 @@ func checkEdition(_ context.Context, responseWriter check.ResponseWriter, reques
 // checkNoBool verifies that no fields use the bool type.
 func checkNoBool(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		checkMessagesForBool(fd.Messages(), responseWriter)
 	}
@@ -155,6 +161,9 @@ func checkMessagesForBool(messages protoreflect.MessageDescriptors, responseWrit
 // checkNoBytes verifies that no fields use the bytes type.
 func checkNoBytes(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		checkMessagesForBytes(fd.Messages(), responseWriter)
 	}
@@ -182,6 +191,9 @@ func checkMessagesForBytes(messages protoreflect.MessageDescriptors, responseWri
 // checkNoAny verifies that no fields use google.protobuf.Any.
 func checkNoAny(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		checkMessagesForAny(fd.Messages(), responseWriter)
 	}
@@ -212,6 +224,9 @@ func checkMessagesForAny(messages protoreflect.MessageDescriptors, responseWrite
 // checkEnumInMessage verifies that enums are defined inside messages.
 func checkEnumInMessage(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		enums := fd.Enums()
 		for i := 0; i < enums.Len(); i++ {
@@ -228,6 +243,9 @@ func checkEnumInMessage(_ context.Context, responseWriter check.ResponseWriter, 
 // checkEnumZeroUnspecified verifies that enum zero values are exactly UNSPECIFIED.
 func checkEnumZeroUnspecified(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		checkFileEnumsZeroValue(fd, responseWriter)
 	}
@@ -271,6 +289,9 @@ func checkEnumsZeroValue(enums protoreflect.EnumDescriptors, responseWriter chec
 // - Fields cannot end with underscores
 func checkFieldNameUnderscore(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		checkMessagesFieldNames(fd.Messages(), responseWriter)
 	}
@@ -327,6 +348,9 @@ var timeTypeSuffixes = map[protoreflect.FullName]string{
 // checkTimeFieldSuffix verifies that time-related fields have correct suffixes.
 func checkTimeFieldSuffix(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
+		if file.IsImport() {
+			continue
+		}
 		fd := file.ProtoreflectFileDescriptor()
 		checkMessagesTimeFields(fd.Messages(), responseWriter)
 	}

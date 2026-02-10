@@ -20,6 +20,26 @@ PROJECTS_ROOT = TESTDATA_ROOT / "projects"
 
 
 class TestRun:
+    def test_invalid_config_returns_error_and_prints_to_stream(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "config.defcl").write_text("project: {}\n")
+        _ = (tmp_path / "test.def").write_text(
+            "define the potential position<x.com:lib:/test>.\n"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        error_stream = io.StringIO()
+        result = driver.Driver().run(Path("test.def"), error_stream=error_stream)
+        assert result == driver.ExitCode.ERROR
+        assert error_stream.getvalue() == (
+            'File ".define/project/config.defcl"\n'
+            "Invalid configuration:\n"
+            "  - project.universe_name: value is required\n"
+        )
+
     def test_valid_file_returns_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         error_stream = io.StringIO()

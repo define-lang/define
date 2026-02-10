@@ -70,7 +70,7 @@ repos:
     hooks:
       - id: buf-lint
         files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
-        args: ["--config=defcl/buf.yaml"]
+        args: []
       - id: buf-format
         files: ^.*\.proto$
         args:

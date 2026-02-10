@@ -1,4 +1,6 @@
 version: v2
+deps:
+  - buf.build/bufbuild/protovalidate
 modules:
   - path: defcl/schema
   - path: define/config

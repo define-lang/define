@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics, driver, parser_exceptions
+from define.compiler import diagnostics, driver, exceptions, parser_exceptions
 
 
 def _setup_project(tmp_path: Path, universe_name: str) -> None:
@@ -28,7 +28,7 @@ class TestValidateFileNoProjectRoot:
     ):
         monkeypatch.chdir(tmp_path)
         d = driver.Driver()
-        with pytest.raises(driver.NotProjectRootError):
+        with pytest.raises(exceptions.NotProjectRootError):
             d.validate_file(Path("foo.def"))
 
     def test_error_includes_docs_link(
@@ -36,7 +36,7 @@ class TestValidateFileNoProjectRoot:
     ):
         monkeypatch.chdir(tmp_path)
         d = driver.Driver()
-        with pytest.raises(driver.NotProjectRootError, match=r"project-root\.md"):
+        with pytest.raises(exceptions.NotProjectRootError, match=r"project-root\.md"):
             d.validate_file(Path("foo.def"))
 
 
@@ -139,7 +139,7 @@ class TestPathResolution:
         monkeypatch.chdir(project)
 
         d = driver.Driver()
-        with pytest.raises(driver.AbsolutePathError) as exc_info:
+        with pytest.raises(exceptions.AbsolutePathError) as exc_info:
             d.validate_file(source_file)
         assert exc_info.value.input_path == source_file
         assert exc_info.value.project_root == project
@@ -192,7 +192,7 @@ class TestPathResolution:
         monkeypatch.chdir(project)
 
         d = driver.Driver()
-        with pytest.raises(driver.RelativePathError) as exc_info:
+        with pytest.raises(exceptions.RelativePathError) as exc_info:
             d.validate_file(Path("link/../hello.def"))
         assert exc_info.value.input_path == Path("link/../hello.def")
         assert exc_info.value.project_root == project.resolve()
@@ -221,7 +221,7 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        with pytest.raises(driver.RelativePathError) as exc_info:
+        with pytest.raises(exceptions.RelativePathError) as exc_info:
             d.validate_file(Path("../hello.def"))
         assert exc_info.value.input_path == Path("../hello.def")
         assert exc_info.value.project_root == tmp_path.resolve()
