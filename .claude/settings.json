@@ -13,7 +13,7 @@
         "Bash(uv run python -m pipx *)"
       ],
       "allow": [
-	"Read(~/.cache/bazel/**)",
+        "Read(~/.cache/bazel/**)",
         "WebSearch",
         "WebFetch(domain:registry.bazel.build)",
         "WebFetch(domain:buf.build)",
