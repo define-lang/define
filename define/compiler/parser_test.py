@@ -281,19 +281,19 @@ class TestGlobalNameStructure:
         assert exc_info.value.column == 31
 
     def test_path_not_starting_with_slash(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<standard:path>.\n")
         assert str(exc_info.value.token) == "standard"
         assert exc_info.value.column == 31
 
     def test_empty_path_segment(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<standard:/a//b>.\n")
         assert str(exc_info.value.token) == "/"
         assert exc_info.value.column == 43
 
     def test_local_name_not_valid_in_definitions(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<my_name>.\n")
         assert str(exc_info.value.token) == "my_name"
         assert exc_info.value.column == 31
@@ -307,25 +307,25 @@ class TestMultiverseNameFormat:
         assert exc_info.value.column == 31
 
     def test_multiverse_starting_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidMultiverseError) as exc_info:
             p.parse("define the potential position<_mymv:example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "_mymv"
         assert exc_info.value.column == 31
 
     def test_multiverse_ending_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidMultiverseError) as exc_info:
             p.parse("define the potential position<mymv_:example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "mymv_"
         assert exc_info.value.column == 31
 
     def test_single_char_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidMultiverseError) as exc_info:
             p.parse("define the potential position<x:example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "x"
         assert exc_info.value.column == 31
 
     def test_non_ascii_in_multiverse(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidMultiverseError) as exc_info:
             p.parse(
                 "define the potential position<m\u00fcv:example.com:my_lib:/path>.\n"
             )
@@ -351,31 +351,31 @@ class TestAuthorityDomainFormat:
         assert exc_info.value.column == 31
 
     def test_authority_domain_starting_with_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<-example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "-example.com"
         assert exc_info.value.column == 31
 
     def test_authority_domain_ending_with_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<example.com-:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "-"
         assert exc_info.value.column == 42
 
     def test_authority_domain_starting_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<.example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "."
         assert exc_info.value.column == 31
 
     def test_authority_domain_ending_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<example.com.:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "."
         assert exc_info.value.column == 42
 
     def test_single_char_authority_domain(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<x:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "x"
         assert exc_info.value.column == 31
@@ -383,7 +383,7 @@ class TestAuthorityDomainFormat:
     def test_authority_domain_starting_with_dot_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<mymv:.example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "."
         assert exc_info.value.column == 36
@@ -391,7 +391,7 @@ class TestAuthorityDomainFormat:
     def test_authority_domain_ending_with_dot_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<mymv:example.com.:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "."
         assert exc_info.value.column == 47
@@ -399,7 +399,7 @@ class TestAuthorityDomainFormat:
     def test_authority_domain_starting_with_hyphen_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<mymv:-example.com:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "-example.com"
         assert exc_info.value.column == 36
@@ -407,13 +407,13 @@ class TestAuthorityDomainFormat:
     def test_authority_domain_ending_with_hyphen_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<mymv:example.com-:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "-"
         assert exc_info.value.column == 47
 
     def test_single_char_authority_domain_in_full_fqun(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityDomainError) as exc_info:
             p.parse("define the potential position<mymv:a:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "a"
         assert exc_info.value.column == 36
@@ -431,25 +431,25 @@ class TestUniverseNameFormat:
         assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["MyLib"]
 
     def test_universe_starting_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<example.com:_mylib:/path>.\n")
         assert str(exc_info.value.token) == "_mylib"
         assert exc_info.value.column == 43
 
     def test_universe_ending_with_underscore(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<example.com:mylib_:/path>.\n")
         assert str(exc_info.value.token) == "mylib_"
         assert exc_info.value.column == 43
 
     def test_single_char_universe(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<example.com:x:/path>.\n")
         assert str(exc_info.value.token) == "x"
         assert exc_info.value.column == 43
 
     def test_non_ascii_in_universe(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<example.com:m\u00fclib:/path>.\n")
         assert str(exc_info.value.token) == "m"
         assert exc_info.value.column == 43
@@ -457,7 +457,7 @@ class TestUniverseNameFormat:
     def test_universe_starting_with_underscore_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<mymv:example.com:_my_lib:/path>.\n")
         assert str(exc_info.value.token) == "_my_lib"
         assert exc_info.value.column == 48
@@ -465,13 +465,13 @@ class TestUniverseNameFormat:
     def test_universe_ending_with_underscore_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<mymv:example.com:my_lib_:/path>.\n")
         assert str(exc_info.value.token) == "my_lib_"
         assert exc_info.value.column == 48
 
     def test_single_char_universe_in_full_fqun(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidIdentifierError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidUniverseError) as exc_info:
             p.parse("define the potential position<mymv:example.com:x:/path>.\n")
         assert str(exc_info.value.token) == "x"
         assert exc_info.value.column == 48
@@ -488,7 +488,7 @@ class TestPathSegmentFormat:
         assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["item2"]
 
     def test_path_segment_starting_with_digit(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<standard:/2bad>.\n")
         assert str(exc_info.value.token) == "2bad"
         assert exc_info.value.column == 41
@@ -500,19 +500,19 @@ class TestPathSegmentFormat:
         assert exc_info.value.column == 41
 
     def test_invalid_chars_in_path_hyphen(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<standard:/bad-name>.\n")
         assert str(exc_info.value.token) == "-name"
         assert exc_info.value.column == 44
 
     def test_invalid_chars_in_path_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<standard:/bad.name>.\n")
         assert str(exc_info.value.token) == "."
         assert exc_info.value.column == 44
 
     def test_invalid_chars_in_path_tilde(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<standard:/bad~name>.\n")
         assert str(exc_info.value.token) == "~name"
         assert exc_info.value.column == 44
@@ -526,13 +526,13 @@ class TestPathSegmentFormat:
     def test_invalid_chars_in_path_hyphen_in_three_part_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse("define the potential position<example.com:my_lib:/bad-name>.\n")
         assert str(exc_info.value.token) == "-name"
         assert exc_info.value.column == 54
 
     def test_invalid_chars_in_path_hyphen_in_full_fqun(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidGlobalNamePathError) as exc_info:
             p.parse(
                 "define the potential position<mymv:example.com:my_lib:/bad-name>.\n"
             )
@@ -564,13 +564,13 @@ class TestAuthorityPathFormat:
         assert exc_info.value.column == 43
 
     def test_invalid_chars_in_authority_path_angle(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityPathError) as exc_info:
             p.parse("define the potential position<example.com/ba<d:my_lib:/path>.\n")
         assert str(exc_info.value.token) == "<"
         assert exc_info.value.column == 45
 
     def test_authority_path_segment_starting_with_dot(self, p: parser.Parser) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityPathError) as exc_info:
             p.parse(
                 "define the potential position<example.com/.hidden:my_lib:/path>.\n"
             )
@@ -580,7 +580,7 @@ class TestAuthorityPathFormat:
     def test_authority_path_segment_starting_with_dot_in_full_fqun(
         self, p: parser.Parser
     ) -> None:
-        with pytest.raises(parser_exceptions.InvalidPathError) as exc_info:
+        with pytest.raises(parser_exceptions.InvalidAuthorityPathError) as exc_info:
             p.parse(
                 "define the potential position<mymv:example.com/.hidden:my_lib:/path>.\n"
             )

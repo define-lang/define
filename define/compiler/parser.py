@@ -1,6 +1,7 @@
 """Parser for Define language statements."""
 
 import os
+import re
 from pathlib import Path
 
 from lark import Lark, Token, Tree, exceptions
@@ -27,41 +28,41 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
     parser_exceptions.EmptyNameError: [
         "define the potential position<>.\n",
     ],
-    parser_exceptions.InvalidPathError: [
+    parser_exceptions.InvalidAuthorityPathError: [
+        "define the potential position<example.com/.hidden:my_lib:/path>.\n",
+        "define the potential position<example.com/ba<d:my_lib:/path>.\n",
+        "define the potential position<mymv:example.com/.hidden:my_lib:/path>.\n",
+    ],
+    parser_exceptions.InvalidGlobalNamePathError: [
         "define the potential position<standard:path>.\n",
         "define the potential position<standard:/a//b>.\n",
         "define the potential position<standard:/bad-name>.\n",
         "define the potential position<standard:/bad~name>.\n",
         "define the potential position<standard:/2bad>.\n",
-        "define the potential position<example.com/.hidden:my_lib:/path>.\n",
-        "define the potential position<example.com/ba<d:my_lib:/path>.\n",
         "define the potential position<mymv:example.com:my_lib:/bad-name>.\n",
         "define the potential position<mymv:example.com:my_lib:/a/bad-name>.\n",
-        "define the potential position<mymv:example.com/.hidden:my_lib:/path>.\n",
+        "define the potential position<my_name>.\n",
     ],
-    parser_exceptions.InvalidIdentifierError: [
-        "define the potential position<_mymv:example.com:my_lib:/path>.\n",
-        "define the potential position<mymv_:example.com:my_lib:/path>.\n",
-        "define the potential position<x:example.com:my_lib:/path>.\n",
-        "define the potential position<m\u00fcv:example.com:my_lib:/path>.\n",
+    parser_exceptions.InvalidAuthorityDomainError: [
         "define the potential position<-example.com:my_lib:/path>.\n",
-        "define the potential position<example.com-:my_lib:/path>.\n",
         "define the potential position<.example.com:my_lib:/path>.\n",
+        "define the potential position<example.com-:my_lib:/path>.\n",
         "define the potential position<example.com.:my_lib:/path>.\n",
         "define the potential position<x:my_lib:/path>.\n",
-        "define the potential position<example.com:_mylib:/path>.\n",
-        "define the potential position<example.com:mylib_:/path>.\n",
-        "define the potential position<example.com:x:/path>.\n",
-        "define the potential position<example.com:m\u00fclib:/path>.\n",
-        "define the potential position<my_name>.\n",
         "define the potential position<mymv:.example.com:my_lib:/path>.\n",
         "define the potential position<mymv:-example.com:my_lib:/path>.\n",
         "define the potential position<mymv:a:my_lib:/path>.\n",
         "define the potential position<mymv:example.com.:my_lib:/path>.\n",
         "define the potential position<mymv:example.com-:my_lib:/path>.\n",
+    ],
+    parser_exceptions.InvalidUniverseError: [
+        "define the potential position<example.com:_mylib:/path>.\n",
+        "define the potential position<example.com:mylib_:/path>.\n",
+        "define the potential position<example.com:x:/path>.\n",
+        "define the potential position<example.com:m\u00fclib:/path>.\n",
         "define the potential position<mymv:example.com:_my_lib:/path>.\n",
-        "define the potential position<mymv:example.com:x:/path>.\n",
         "define the potential position<mymv:example.com:my_lib_:/path>.\n",
+        "define the potential position<mymv:example.com:x:/path>.\n",
     ],
     parser_exceptions.EmptyFileError: [
         "",
@@ -91,6 +92,16 @@ _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
     "\r": parser_exceptions.CarriageReturnError,
 }
+
+
+_IDENTIFIER_TERMINALS = frozenset(
+    {"MULTIVERSE_NAME", "AUTHORITY_DOMAIN", "UNIVERSE_NAME"}
+)
+
+# Matches the structure of a 4-part FQUN (multiverse:authority:universe:/path)
+# from the error position. Based on the MULTIVERSE_NAME terminal lookahead
+# in grammar.lark.
+_MULTIVERSE_CONTEXT = re.compile(r"[^:>]*:[^:>]*:[^:>]*:/")
 
 
 class Parser:
@@ -153,10 +164,17 @@ class Parser:
         # invalid character inside the path.
         if e.token.type == "DOT" and e.token_history:
             prev = e.token_history[-1]
-            if prev.type == "PATH_SEGMENT":
-                error_line = source.split("\n")[e.line - 1]
-                if e.column < len(error_line):
-                    return parser_exceptions.InvalidPathError
+            if prev.type == "PATH_SEGMENT" and e.column < len(error_line):
+                return parser_exceptions.InvalidGlobalNamePathError
+
+        # match_examples can't distinguish multiverse name errors from
+        # authority domain errors because single-char names share LALR
+        # states across both forms. Detect the 4-part FQUN structure
+        # from the error position using the MULTIVERSE_NAME lookahead.
+        if _IDENTIFIER_TERMINALS.issubset(e.expected) and _MULTIVERSE_CONTEXT.match(
+            error_line[e.column - 1 :]
+        ):
+            return parser_exceptions.InvalidMultiverseError
 
         return e.match_examples(
             self._lark.parse,

@@ -168,16 +168,34 @@ class EmptyNameError(DefineTokenError):
     label: str = "Name cannot be empty"
 
 
-class InvalidPathError(DefineTokenError):
-    """Raised when a path is invalid."""
+class InvalidAuthorityDomainError(DefineTokenError):
+    """Raised when an authority domain is invalid."""
 
-    label: str = "Invalid path"
+    label: str = "Invalid authority domain"
 
 
-class InvalidIdentifierError(DefineTokenError):
-    """Raised when an identifier is invalid."""
+class InvalidAuthorityPathError(DefineTokenError):
+    """Raised when an authority path is invalid."""
 
-    label: str = "Invalid identifier"
+    label: str = "Invalid authority path"
+
+
+class InvalidGlobalNamePathError(DefineTokenError):
+    """Raised when a global name path is invalid."""
+
+    label: str = "Invalid global name path"
+
+
+class InvalidMultiverseError(DefineTokenError):
+    """Raised when a multiverse name is invalid."""
+
+    label: str = "Invalid multiverse name"
+
+
+class InvalidUniverseError(DefineTokenError):
+    """Raised when a universe name is invalid."""
+
+    label: str = "Invalid universe name"
 
 
 class EmptyFileError(DefineTokenError):
