@@ -20,6 +20,8 @@
       "Shell(wc)",
       "Shell(printf)",
       "Shell(xxd)",
+      "Shell(go get)",
+      "Shell(go mod tidy)",
       "Shell(git status)",
       "Shell(git log)",
       "Shell(gh api repos/*/releases *)",

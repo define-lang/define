@@ -31,6 +31,8 @@
         "Bash(wc:*)",
         "Bash(printf:*)",
         "Bash(xxd:*)",
+        "Bash(go get:*)",
+        "Bash(go mod tidy:*)",
         "Bash(git status:*)",
         "Bash(git log:*)",
         "Bash(gh api repos/*/releases *)",
