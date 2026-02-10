@@ -25,11 +25,11 @@ jobs:
 
       # Run all tests (Python, Go, format, pyright, proposals, etc.)
       - name: Test
-        run: bazelisk test //...
+        run: bazelisk test --noshow_progress //...
 
       # Build any other target that didn't get built during testing.
       - name: Additional Build
-        run: bazelisk build //...
+        run: bazelisk build --noshow_progress //...
 
       # --- Non-Bazel checks ---
       - name: Prettier
