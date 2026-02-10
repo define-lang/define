@@ -167,6 +167,11 @@ BUILD file generator.
 - Periodically force-upgrade all Python dependencies with `uv sync --upgrade`
 - Check the dependency versions in `tools/multitool.lock.json` and upgrade them
   to the latest versions using multitool.
+- Check the versions of actions we use in our GitHub Actions configuration and
+  upgrade them to the latest major versions (and fix any backwards incompatible
+  changes the new versions introduced).
+- Periodically check the go dependencies in any go.mod file to ensure we are
+  using the latest versions.
 
 ### uv Workspace
 
