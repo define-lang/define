@@ -855,7 +855,7 @@ which is an exception to the rule that `}` must always be on its own line. The
 Action Statements Block creates a new local scope.
 
 ```
+trigger_and_action = trigger_conditions_block, " ", action_statements_block ;
 trigger_conditions_block = "it happens when", block_open, trigger_conditions, newline, "}" ;
 action_statements_block = "and it does", block_open, action_statements_contents, block_close ;
-trigger_and_action = trigger_conditions_block, " ", action_statements_block ;
 ```
