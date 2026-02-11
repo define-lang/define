@@ -3,7 +3,7 @@
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 
 exports_files([
-    ".rules",
+    ".codex/rules/default.rules",
     "pyproject.toml",
     ".claude/settings.json",
     ".cursor/cli.json",

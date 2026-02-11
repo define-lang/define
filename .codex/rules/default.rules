@@ -1,0 +1,181 @@
+# This file is auto-generated from .claude/settings.json. Do not edit manually.
+
+prefix_rule(
+    pattern = ["uv", "run", "python", "-c"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "python3", "-c"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["echo"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["ls"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["grep"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["rg"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["wc"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["printf"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["xxd"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["go", "get"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["go", "mod", "tidy"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["git", "status"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["git", "log"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["gh", "api", "repos/*/releases"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "add"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "sync"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "help"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "lock"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "--help"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["source", ".venv/bin/activate"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["prettier"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["npx", "@bufbuild/buf", "format"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["npx", "@bufbuild/buf", "lint"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["npx", "@bazel/buildifier"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "ruff"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["bazelisk"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["pip"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["pip3"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["pipx"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["python", "-m", "pip"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "pip"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "pip3"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "pipx"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "python", "-m", "pip"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "python", "-m", "pip3"],
+    decision = "deny",
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "python", "-m", "pipx"],
+    decision = "deny",
+)

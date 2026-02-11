@@ -4,6 +4,7 @@
 import argparse
 import difflib
 import json
+import shlex
 import sys
 from pathlib import Path
 from typing import cast
@@ -74,36 +75,71 @@ def generate_cursor_config(permissions: dict[str, list[str]]) -> dict[str, objec
 
 
 def quote_codex_rule(value: str) -> str:
-    """Quote a rule value for Codex .rules format."""
+    """Quote a string value for Codex .rules Starlark format."""
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
+
+
+def render_codex_pattern(pattern_parts: list[str]) -> str:
+    """Render a Codex pattern list in Starlark syntax."""
+    quoted_parts = [quote_codex_rule(part) for part in pattern_parts]
+    return f"[{', '.join(quoted_parts)}]"
+
+
+def command_to_pattern_parts(command: str) -> list[str]:
+    """Convert a bash permission command into Codex pattern parts."""
+    try:
+        parts = shlex.split(command)
+    except ValueError:
+        parts = command.split()
+    return [part for part in parts if part != "*"]
+
+
+def append_prefix_rule(
+    lines: list[str], pattern_parts: list[str], decision: str
+) -> None:
+    """Append a single Codex prefix_rule block."""
+    lines.extend(
+        [
+            "prefix_rule(",
+            f"    pattern = {render_codex_pattern(pattern_parts)},",
+            f"    decision = {quote_codex_rule(decision)},",
+            ")",
+            "",
+        ]
+    )
 
 
 def generate_codex_rules(permissions: dict[str, list[str]]) -> str:
     """Generate Codex rules file from Claude settings permissions."""
     lines = [
         "# This file is auto-generated from .claude/settings.json. Do not edit manually.",
+        "",
     ]
 
     for permission in permissions.get("allow", []):
         command = extract_bash_command(permission)
         if command is not None:
-            lines.append(f"allow {quote_codex_rule(command)}")
+            pattern_parts = command_to_pattern_parts(command)
+            if pattern_parts:
+                append_prefix_rule(lines, pattern_parts, "allow")
 
     for permission in permissions.get("deny", []):
         command = extract_bash_command(permission)
         if command is not None:
-            lines.append(f"deny {quote_codex_rule(command)}")
+            pattern_parts = command_to_pattern_parts(command)
+            if pattern_parts:
+                append_prefix_rule(lines, pattern_parts, "deny")
 
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def sync_permissions(base_dir: Path) -> None:
     """Fully overwrite agent permissions from Claude settings.
 
-    This function completely replaces .cursor/cli.json and .rules with
-    permissions translated from .claude/settings.json, which is the source
-    of truth.
+    This function completely replaces .cursor/cli.json and
+    .codex/rules/default.rules with permissions translated from
+    .claude/settings.json, which is the source of truth.
     """
     permissions = load_permissions(base_dir)
     cursor_config = generate_cursor_config(permissions)
@@ -117,7 +153,9 @@ def sync_permissions(base_dir: Path) -> None:
         json.dump(cursor_config, f, indent=2)
         _ = f.write("\n")
 
-    codex_path = base_dir / ".rules"
+    codex_rules_dir = base_dir / ".codex" / "rules"
+    codex_rules_dir.mkdir(parents=True, exist_ok=True)
+    codex_path = codex_rules_dir / "default.rules"
     with codex_path.open("w") as f:
         _ = f.write(codex_rules)
 
@@ -151,7 +189,7 @@ def check_permissions(base_dir: Path) -> None:
     expected_codex_rules = generate_codex_rules(permissions)
 
     cursor_path = base_dir / ".cursor" / "cli.json"
-    codex_path = base_dir / ".rules"
+    codex_path = base_dir / ".codex" / "rules" / "default.rules"
     has_errors = False
 
     if not cursor_path.exists():
@@ -183,8 +221,8 @@ def check_permissions(base_dir: Path) -> None:
         report_text_diff(
             actual_codex_rules,
             expected_codex_rules,
-            ".rules (actual)",
-            ".rules (expected)",
+            ".codex/rules/default.rules (actual)",
+            ".codex/rules/default.rules (expected)",
         )
         has_errors = True
 
@@ -201,7 +239,7 @@ def main() -> None:
     _ = parser.add_argument(
         "--check",
         action="store_true",
-        help="Check that .cursor/cli.json and .rules match expected config without modifying them",
+        help="Check that .cursor/cli.json and .codex/rules/default.rules match expected config without modifying them",
     )
     args = parser.parse_args()
 
