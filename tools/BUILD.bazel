@@ -12,19 +12,20 @@ py_binary(
 )
 
 py_binary(
-    name = "sync_cursor_permissions",
-    srcs = ["sync_cursor_permissions.py"],
+    name = "sync_agent_permissions",
+    srcs = ["sync_agent_permissions.py"],
 )
 
 native_test(
-    name = "sync_cursor_permissions_test",
+    name = "sync_agent_permissions_test",
     size = "small",
-    src = ":sync_cursor_permissions",
-    out = "sync_cursor_permissions_test_runner",
+    src = ":sync_agent_permissions",
+    out = "sync_agent_permissions_test_runner",
     args = ["--check"],
     data = [
         "//:.claude/settings.json",
         "//:.cursor/cli.json",
+        "//:.rules",
     ],
 )
 
@@ -68,7 +69,7 @@ pyright_test(
     pyproject = "//tools:pyproject.toml",
     deps = [
         ":generate_programming_languages",
-        ":sync_cursor_permissions",
+        ":sync_agent_permissions",
         ":validate_proposals",
     ],
 )

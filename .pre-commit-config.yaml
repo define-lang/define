@@ -54,7 +54,7 @@ repos:
         entry:
           bazelisk test //define/proposals:validate_proposals_test
           //defcl/proposals:validate_proposals_test
-          //tools:sync_cursor_permissions_test
+          //tools:sync_agent_permissions_test
         language: system
         types_or: [markdown, json]
         pass_filenames: false
