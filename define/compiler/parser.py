@@ -18,6 +18,62 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         "define the potential position<example.com:my_lib:/a/path> {\n",
         "define the potential position<mymv:example.com:my_lib:/path> {\n",
         "define the potential position<mymv:example.com:my_lib:/a/path> {\n",
+        "define the potential action<standard:/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n",
+        "define the potential action<standard:/a/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n",
+        "define the potential action<example.com:my_lib:/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n",
+        "define the potential action<example.com:my_lib:/a/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n",
+        "define the potential action<mymv:example.com:my_lib:/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n",
+        "define the potential action<mymv:example.com:my_lib:/a/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n",
+    ],
+    parser_exceptions.EmptyBlockTerminatorError: [
+        "define the potential action<standard:/path> {\n}\n",
+        "define the potential action<standard:/a/path> {\n}\n",
+        "define the potential action<example.com:my_lib:/path> {\n}\n",
+        "define the potential action<example.com:my_lib:/a/path> {\n}\n",
+        "define the potential action<mymv:example.com:my_lib:/path> {\n}\n",
+        "define the potential action<mymv:example.com:my_lib:/a/path> {\n}\n",
+        "define the potential action<standard:/path> {\n"
+        + "define the position<x>.\n"
+        + "}\n",
+        "define the potential action<standard:/a/path> {\n"
+        + "define the position<x>.\n"
+        + "}\n",
+    ],
+    parser_exceptions.MissingActionStatementsBlockError: [
+        "define the potential action<standard:/path> {\n"
+        + "it happens when {\n"
+        + "}\n",
+        "define the potential action<standard:/a/path> {\n"
+        + "it happens when {\n"
+        + "}\n",
+    ],
+    parser_exceptions.MissingNewlineAfterBlockCloseError: [
+        "define the potential action<standard:/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}}\n",
+        "define the potential action<standard:/a/path> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}}\n",
     ],
     parser_exceptions.MissingNewlineAfterBlockOpenError: [
         "define the potential position<standard:/path> {}\n",
@@ -26,6 +82,12 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         "define the potential position<example.com:my_lib:/a/path> {}\n",
         "define the potential position<mymv:example.com:my_lib:/path> {}\n",
         "define the potential position<mymv:example.com:my_lib:/a/path> {}\n",
+        "define the potential action<standard:/path> {}\n",
+        "define the potential action<standard:/a/path> {}\n",
+        "define the potential action<example.com:my_lib:/path> {}\n",
+        "define the potential action<example.com:my_lib:/a/path> {}\n",
+        "define the potential action<mymv:example.com:my_lib:/path> {}\n",
+        "define the potential action<mymv:example.com:my_lib:/a/path> {}\n",
     ],
     parser_exceptions.MissingTerminatorError: [
         "define the potential position<standard:/path>\n",
@@ -40,9 +102,27 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         "define the potential position<standard:/path.\n",
         "define the potential position<mymv:example.com:my_lib:/path.\n",
         "define the potential position<mymv:example.com:my_lib:/a/path.\n",
+        "define the potential action<standard:/act> {\n"
+        + "define the position<my-pos>.\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n"
+        + "}\n",
+        "define the potential action<standard:/act> {\n"
+        + "define the position<my/pos>.\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n"
+        + "}\n",
     ],
     parser_exceptions.EmptyNameError: [
         "define the potential position<>.\n",
+        "define the potential action<standard:/act> {\n"
+        + "define the position<>.\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n"
+        + "}\n",
     ],
     parser_exceptions.InvalidAuthorityPathError: [
         "define the potential position<example.com/.hidden:my_lib:/path>.\n",
@@ -136,7 +216,7 @@ class Parser:
         )
 
     def _classify_char_error(
-        self, e: exceptions.UnexpectedCharacters
+        self, e: exceptions.UnexpectedCharacters, source: str
     ) -> type[parser_exceptions.DefineCharError] | None:
         """Classify a character error into a specific exception type."""
         char_class = _CHAR_ERRORS.get(e.char)
@@ -147,6 +227,9 @@ class Parser:
             return parser_exceptions.UppercaseNotAllowedError
 
         if e.char == " ":
+            error_line = source.split("\n")[e.line - 1]
+            if "  " in error_line.lstrip():
+                return None
             return parser_exceptions.TrailingWhitespaceError
 
         if ord(e.char) < 0x20 or ord(e.char) == 0x7F:
@@ -168,10 +251,11 @@ class Parser:
         self, e: exceptions.UnexpectedToken, source: str
     ) -> type[parser_exceptions.DefineTokenError] | None:
         """Classify a token error into a specific exception type."""
-        # Consecutive spaces are never valid in the grammar, but
+        # Consecutive spaces within a statement are never valid, but
         # match_examples can't distinguish them from incomplete statements.
+        # Leading whitespace (indentation) is valid inside blocks, so strip it.
         error_line = source.split("\n")[e.line - 1]
-        if "  " in error_line:
+        if "  " in error_line.lstrip():
             return parser_exceptions.UnexpectedWhitespaceError
 
         # A DOT after a PATH_SEGMENT is ambiguous to match_examples: both
@@ -194,6 +278,29 @@ class Parser:
         ):
             return parser_exceptions.InvalidMultiverseError
 
+        if e.expected == {"LOCAL_NAME"} and str(e.token)[:1].isdigit():
+            return parser_exceptions.InvalidLocalNameError
+
+        # An invalid character after a LOCAL_NAME token where '>' is expected
+        # means the local name contains invalid characters.
+        if (
+            e.expected == {"MORETHAN"}
+            and e.token_history
+            and e.token_history[-1].type == "LOCAL_NAME"
+        ):
+            return parser_exceptions.InvalidLocalNameError
+
+        # A "define" token where only NEWLINE or RBRACE is expected means
+        # something appeared after the trigger/action blocks. If the line
+        # contains a local position definition, give a specific error;
+        # otherwise fall through to match_examples (missing close brace).
+        if (
+            str(e.token) == "define"
+            and e.expected == {"NEWLINE", "RBRACE"}
+            and "define the position<" in error_line
+        ):
+            return parser_exceptions.LocalPositionAfterTriggerError
+
         return e.match_examples(
             self._lark.parse,
             _TOKEN_ERROR_EXAMPLES,
@@ -210,10 +317,15 @@ class Parser:
         try:
             return self._lark.parse(source)
         except exceptions.UnexpectedCharacters as e:
-            exc_class = self._classify_char_error(e)
+            exc_class = self._classify_char_error(e, source)
             if exc_class is not None:
                 raise exc_class(
                     e.get_context(source), e.line, e.column, e.char, file_path
+                ) from e
+            error_line = source.split("\n")[e.line - 1]
+            if e.char == " " and "  " in error_line.lstrip():
+                raise parser_exceptions.UnexpectedWhitespaceError(
+                    e.get_context(source), e.line, e.column, Token("", ""), file_path
                 ) from e
             raise
         except exceptions.UnexpectedToken as e:

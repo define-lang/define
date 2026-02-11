@@ -150,6 +150,30 @@ class MissingNewlineAfterBlockOpenError(DefineTokenError):
     label: str = "Missing newline after '{'"
 
 
+class EmptyBlockTerminatorError(DefineTokenError):
+    """Raised when a definition uses an empty block instead of '.'."""
+
+    label: str = "Empty blocks are not allowed - use '.' to end the statement"
+
+
+class LocalPositionAfterTriggerError(DefineTokenError):
+    """Raised when a local position definition appears after the trigger block."""
+
+    label: str = "Local position definitions in a 'define the potential action' block must come before 'it happens when'"
+
+
+class MissingActionStatementsBlockError(DefineTokenError):
+    """Raised when 'and it does' is missing after the trigger conditions block."""
+
+    label: str = "Missing 'and it does' block in this action definition"
+
+
+class MissingNewlineAfterBlockCloseError(DefineTokenError):
+    """Raised when a newline is missing after a closing brace."""
+
+    label: str = "Missing newline after '}'"
+
+
 class MissingTerminatorError(DefineTokenError):
     """Raised when a period or block is missing at the end of a definition."""
 
@@ -196,6 +220,12 @@ class InvalidGlobalNamePathError(DefineTokenError):
     """Raised when a global name path is invalid."""
 
     label: str = "Invalid global name path"
+
+
+class InvalidLocalNameError(DefineTokenError):
+    """Raised when a local name is invalid."""
+
+    label: str = "Invalid local name"
 
 
 class InvalidMultiverseError(DefineTokenError):

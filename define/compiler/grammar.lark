@@ -12,6 +12,11 @@ UNIVERSE_NAME: /[A-Za-z0-9](?:[A-Za-z0-9_]*[A-Za-z0-9])(?=:(?![^:>]*:)[^:>]*\/)/
 
 # General
 
+# Ignore leading whitespace (indentation) on lines inside blocks.
+# The lookbehind ensures we only match after a newline, and the
+# lookahead ensures we don't consume trailing whitespace on blank lines.
+%ignore /(?<=\n) +(?=\S)/
+
 # Allow only visible characters in comments.
 # TODO: Disallow invisible Unicode characters per spec.
 COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
@@ -36,7 +41,17 @@ global_name_path: ("/" PATH_SEGMENT)+
 global_name: fqun global_name_path
 
 position_definition: "define the potential position" "<" global_name ">" definition_end
-action_definition: "define the potential action" "<" global_name ">" definition_end
+action_definition: "define the potential action" "<" global_name ">" (terminator | action_definition_block)
+
+# Local Names
+LOCAL_NAME: (LCASE_LETTER | "_") (LCASE_LETTER | DIGIT | "_")*
+
+# Action Definition Block
+local_position_definition: "define the position" "<" LOCAL_NAME ">" terminator
+trigger_conditions_block: "it happens when" " {" NEWLINE NEWLINE* "}"
+action_statements_block: " and it does" " {" NEWLINE NEWLINE* "}" NEWLINE
+trigger_and_action: trigger_conditions_block action_statements_block
+action_definition_block: " {" NEWLINE (NEWLINE | local_position_definition)* trigger_and_action NEWLINE* "}" NEWLINE
 
 definition: position_definition | action_definition
 
