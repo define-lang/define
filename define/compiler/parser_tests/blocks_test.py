@@ -1,0 +1,93 @@
+# pyright: reportUnusedCallResult=false
+"""Block parsing tests.
+
+Follow parser test authoring rules in parser_tests/AGENTS.md.
+"""
+
+import pytest
+
+from define.compiler import parser, parser_exceptions
+from define.compiler.parser_tests.test_helpers import get_tokens_by_type
+
+
+def test_empty_block_on_position(p: parser.Parser) -> None:
+    tree = p.parse("define the potential position<standard:/path> {\n}\n")
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_empty_block_on_action(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.EmptyBlockTerminatorError) as exc_info:
+        p.parse("define the potential action<standard:/path> {\n}\n")
+    assert str(exc_info.value.token) == "}"
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 1
+
+
+def test_block_with_blank_lines(p: parser.Parser) -> None:
+    tree = p.parse("define the potential position<standard:/path> {\n\n\n}\n")
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_block_with_comment_inside(p: parser.Parser) -> None:
+    tree = p.parse("define the potential position<standard:/path> {\n# comment\n}\n")
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_block_with_comment_after_open(p: parser.Parser) -> None:
+    tree = p.parse("define the potential position<standard:/path> { # comment\n}\n")
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_block_with_comment_after_close(p: parser.Parser) -> None:
+    tree = p.parse("define the potential position<standard:/path> {\n} # comment\n")
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_block_with_full_fqun(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential position<my_mv:example.com:my_lib:/some/path> {\n}\n"
+    )
+    assert get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv"]
+    assert get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["example.com"]
+    assert get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["some", "path"]
+
+
+def test_multiple_definitions_with_blocks(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential position<standard:/first> {\n}\n"
+        + "define the potential position<standard:/second> {\n}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+
+def test_mixed_block_and_terminator(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential position<standard:/first>.\n"
+        + "define the potential position<standard:/second> {\n}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+
+def test_missing_block_close(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingBlockCloseError) as exc_info:
+        p.parse("define the potential position<standard:/path> {\n")
+    assert exc_info.value.label == "Missing '}' to close block"
+
+
+def test_missing_newline_after_block_open(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterBlockOpenError) as exc_info:
+        p.parse("define the potential position<standard:/path> {}\n")
+    assert exc_info.value.label == "Missing newline after '{'"
+
+
+def test_no_space_before_brace(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
+        p.parse("define the potential position<standard:/path>{\n")
+    assert exc_info.value.char == "{"
+
+
+def test_missing_terminator_still_works(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
+        p.parse("define the potential position<standard:/path>\n")
+    assert exc_info.value.label == "Missing '.' or '{' after definition"

@@ -1,0 +1,56 @@
+# pyright: reportUnusedCallResult=false
+"""Parser error message tests.
+
+Follow parser test authoring rules in parser_tests/AGENTS.md.
+"""
+
+import pytest
+
+from define.compiler import parser, parser_exceptions
+
+
+def test_error_message_without_path(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
+        p.parse("\ufeffdefine the potential position<standard:/path>.\n")
+    assert str(exc_info.value) == (
+        "line 1, column 1\n"
+        "\\ufeffdefine the potential position<standard:\n"
+        "^\n"
+        "Byte order mark not allowed: \\ufeff"
+    )
+
+
+def test_error_message_with_path(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
+        p.parse(
+            "\ufeffdefine the potential position<standard:/path>.\n",
+            file_path="test.def",
+        )
+    assert str(exc_info.value) == (
+        'File "test.def", line 1, column 1\n'
+        "\\ufeffdefine the potential position<standard:\n"
+        "^\n"
+        "Byte order mark not allowed: \\ufeff"
+    )
+
+
+def test_char_error_message(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+        p.parse("define the potential position<standard:/path>.\r\n")
+    assert str(exc_info.value) == (
+        "line 1, column 47\n"
+        " the potential position<standard:/path>.\\r\n"
+        "                                        ^\n"
+        "Carriage returns not allowed - use LF only: \\r"
+    )
+
+
+def test_token_error_message(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
+        p.parse("define the potential position<standard:/path>\n")
+    assert str(exc_info.value) == (
+        "line 1, column 46\n"
+        "e the potential position<standard:/path>\n"
+        "                                        ^\n"
+        "Missing '.' or '{' after definition"
+    )

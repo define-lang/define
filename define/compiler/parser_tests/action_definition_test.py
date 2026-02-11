@@ -1,0 +1,276 @@
+# pyright: reportUnusedCallResult=false
+"""Action definition parser tests.
+
+Follow parser test authoring rules in parser_tests/AGENTS.md.
+"""
+
+import pytest
+
+from define.compiler import parser, parser_exceptions
+from define.compiler.parser_tests.test_helpers import get_tokens_by_type
+
+
+def test_action_definition_parses(p: parser.Parser) -> None:
+    tree = p.parse("define the potential action<standard:/path>.\n")
+    assert get_tokens_by_type(tree, "UNIVERSE_NAME") == ["standard"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_action_with_empty_inner_blocks(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
+
+
+def test_action_with_local_position_definition(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<my_pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my_pos"]
+
+
+def test_action_with_multiple_local_position_definitions(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<first_pos>.\n"
+        + "    define the position<second_pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["first_pos", "second_pos"]
+
+
+def test_action_block_with_comments_and_blank_lines(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<my_pos>.\n"
+        + "\n"
+        + "    # a comment\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my_pos"]
+
+
+def test_action_block_with_full_fqun(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/some/path> {\n"
+        + "    define the position<my_pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["mv"]
+    assert get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["define-lang.org"]
+    assert get_tokens_by_type(tree, "UNIVERSE_NAME") == ["parser"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my_pos"]
+
+
+def test_action_block_comment_after_trigger_open(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when { # comment\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
+
+
+def test_action_block_comment_after_action_close(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    } # comment\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
+
+
+def test_action_block_no_indentation(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "it happens when {\n"
+        + "} and it does {\n"
+        + "}\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
+
+
+def test_action_block_blank_lines_in_trigger_block(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "\n"
+        + "\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
+
+
+def test_action_block_blank_lines_in_action_block(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "\n"
+        + "\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
+
+
+def test_two_action_definitions_in_same_file(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/first> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+        + "define the potential action<mv:define-lang.org:parser:/second> {\n"
+        + "    define the position<my_pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my_pos"]
+
+
+def test_action_block_missing_trigger_block(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.EmptyBlockTerminatorError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    define the position<my_pos>.\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "}"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 1
+
+
+def test_action_block_missing_action_statements_block(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingActionStatementsBlockError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "\n"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 6
+
+
+def test_action_block_missing_outer_close(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingBlockCloseError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+        )
+    assert str(exc_info.value.token) == ""
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 6
+
+
+def test_action_block_extra_space_before_brace(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path>  {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 61
+
+
+def test_action_block_no_newline_after_open_brace(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterBlockOpenError) as exc_info:
+        p.parse("define the potential action<mv:define-lang.org:parser:/path> {}\n")
+    assert str(exc_info.value.token) == "}"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 63
+
+
+def test_action_block_missing_newline_after_inner_close(p: parser.Parser) -> None:
+    with pytest.raises(
+        parser_exceptions.MissingNewlineAfterBlockCloseError
+    ) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }}\n"
+        )
+    assert str(exc_info.value.token) == "}"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 6
+
+
+def test_trigger_and_action_on_wrong_line(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingActionStatementsBlockError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    }\n"
+            + "    and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "\n"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 6
+
+
+def test_local_position_after_trigger_and_action(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.LocalPositionAfterTriggerError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "    define the position<late_pos>.\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "define"
+    assert exc_info.value.line == 5
+    assert exc_info.value.column == 5
+
+
+def test_missing_close_brace_followed_by_global_definition(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingBlockCloseError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "define the potential position<mv:define-lang.org:parser:/my_action>.\n"
+        )
+    assert str(exc_info.value.token) == "define"
+    assert exc_info.value.line == 5
+    assert exc_info.value.column == 1
