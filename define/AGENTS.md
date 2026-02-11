@@ -21,6 +21,24 @@ tests of a programming language called "Define."
 - If you read a proposal and it conflicts with the spec in a way you can't
   resolve, bring that to my attention.
 
+## Compiler Codebase Structure
+
+```mermaid
+flowchart LR
+    Grammar["grammar.lark"] --> Parser["parser.py"]
+    ParseErrors["parser_exceptions.py"] --> Parser
+    Parser --> Transformer["transformer.py"]
+    AST["ast.py"] --> Transformer
+    Transformer --> Validator["validator.py"]
+    Validator --> Driver["driver.py"]
+
+    Config["config.py"] --> Driver
+    Diagnostics["diagnostics.py"] --> Driver
+    Exceptions["exceptions.py"] --> Driver
+
+    Driver --> Main["main.py"]
+```
+
 ## Grammar
 
 - The grammar for the language is in `compiler/grammar.lark`.
