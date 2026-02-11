@@ -11,6 +11,22 @@ from define.compiler import parser_exceptions
 _GRAMMAR_PATH = Path(__file__).parent / "grammar.lark"
 
 _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]] = {
+    parser_exceptions.MissingBlockCloseError: [
+        "define the potential position<standard:/path> {\n",
+        "define the potential position<standard:/a/path> {\n",
+        "define the potential position<example.com:my_lib:/path> {\n",
+        "define the potential position<example.com:my_lib:/a/path> {\n",
+        "define the potential position<mymv:example.com:my_lib:/path> {\n",
+        "define the potential position<mymv:example.com:my_lib:/a/path> {\n",
+    ],
+    parser_exceptions.MissingNewlineAfterBlockOpenError: [
+        "define the potential position<standard:/path> {}\n",
+        "define the potential position<standard:/a/path> {}\n",
+        "define the potential position<example.com:my_lib:/path> {}\n",
+        "define the potential position<example.com:my_lib:/a/path> {}\n",
+        "define the potential position<mymv:example.com:my_lib:/path> {}\n",
+        "define the potential position<mymv:example.com:my_lib:/a/path> {}\n",
+    ],
     parser_exceptions.MissingTerminatorError: [
         "define the potential position<standard:/path>\n",
     ],
@@ -85,6 +101,7 @@ _CHAR_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineCharError], list[str]] =
         "define the potential position<standard:/bad!name>.\n",
         "define the potential position<mymv:example.com:my_lib:/bad!name>.\n",
         "define the potential position<mymv:example.com:my_lib:/a/bad!name>.\n",
+        "define the potential position<standard:/path>{\n",
     ],
 }
 

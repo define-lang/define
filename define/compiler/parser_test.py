@@ -683,6 +683,79 @@ class TestParseFile:
         assert str(file) in str(exc_info.value)
 
 
+class TestBlocks:
+    def test_empty_block_on_position(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential position<standard:/path> {\n}\n")
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_empty_block_on_action(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential action<standard:/path> {\n}\n")
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_block_with_blank_lines(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential position<standard:/path> {\n\n\n}\n")
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_block_with_comment_inside(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<standard:/path> {\n# comment\n}\n"
+        )
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_block_with_comment_after_open(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential position<standard:/path> { # comment\n}\n")
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_block_with_comment_after_close(self, p: parser.Parser) -> None:
+        tree = p.parse("define the potential position<standard:/path> {\n} # comment\n")
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+    def test_block_with_full_fqun(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<my_mv:example.com:my_lib:/some/path> {\n}\n"
+        )
+        assert _get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv"]
+        assert _get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["example.com"]
+        assert _get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib"]
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["some", "path"]
+
+    def test_multiple_definitions_with_blocks(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<standard:/first> {\n}\n"
+            + "define the potential position<standard:/second> {\n}\n"
+        )
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+    def test_mixed_block_and_terminator(self, p: parser.Parser) -> None:
+        tree = p.parse(
+            "define the potential position<standard:/first>.\n"
+            + "define the potential position<standard:/second> {\n}\n"
+        )
+        assert _get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+
+    def test_missing_block_close(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.MissingBlockCloseError) as exc_info:
+            p.parse("define the potential position<standard:/path> {\n")
+        assert exc_info.value.label == "Missing '}' to close block"
+
+    def test_missing_newline_after_block_open(self, p: parser.Parser) -> None:
+        with pytest.raises(
+            parser_exceptions.MissingNewlineAfterBlockOpenError
+        ) as exc_info:
+            p.parse("define the potential position<standard:/path> {}\n")
+        assert exc_info.value.label == "Missing newline after '{'"
+
+    def test_no_space_before_brace(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
+            p.parse("define the potential position<standard:/path>{\n")
+        assert exc_info.value.char == "{"
+
+    def test_missing_terminator_still_works(self, p: parser.Parser) -> None:
+        with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
+            p.parse("define the potential position<standard:/path>\n")
+        assert exc_info.value.label == "Missing '.' or '{' after definition"
+
+
 class TestErrorMessages:
     def test_error_message_without_path(self, p: parser.Parser) -> None:
         with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
@@ -724,5 +797,5 @@ class TestErrorMessages:
             "line 1, column 46\n"
             "e the potential position<standard:/path>\n"
             "                                        ^\n"
-            "Missing period at end of statement"
+            "Missing '.' or '{' after definition"
         )

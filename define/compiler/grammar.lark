@@ -18,6 +18,10 @@ COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 %ignore COMMENT
 
 terminator: "." NEWLINE
+block: " {" NEWLINE NEWLINE* "}" NEWLINE
+// TODO: Enforce that leading whitespace before "}" matches the opening
+// statement's leading whitespace, per spec.
+?definition_end: terminator | block
 
 # Global Names
 
@@ -31,8 +35,8 @@ fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
 global_name_path: ("/" PATH_SEGMENT)+
 global_name: fqun global_name_path
 
-position_definition: "define the potential position" "<" global_name ">" terminator
-action_definition: "define the potential action" "<" global_name ">" terminator
+position_definition: "define the potential position" "<" global_name ">" definition_end
+action_definition: "define the potential action" "<" global_name ">" definition_end
 
 definition: position_definition | action_definition
 

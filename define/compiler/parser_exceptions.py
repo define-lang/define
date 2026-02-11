@@ -138,10 +138,22 @@ class InvalidEncodingError(DefineCharError):
 # --- Token error subclasses ---
 
 
-class MissingTerminatorError(DefineTokenError):
-    """Raised when a period is missing at the end of a statement."""
+class MissingBlockCloseError(DefineTokenError):
+    """Raised when a closing brace is missing."""
 
-    label: str = "Missing period at end of statement"
+    label: str = "Missing '}' to close block"
+
+
+class MissingNewlineAfterBlockOpenError(DefineTokenError):
+    """Raised when a newline is missing after an opening brace."""
+
+    label: str = "Missing newline after '{'"
+
+
+class MissingTerminatorError(DefineTokenError):
+    """Raised when a period or block is missing at the end of a definition."""
+
+    label: str = "Missing '.' or '{' after definition"
 
 
 class MissingNewlineError(DefineTokenError):
