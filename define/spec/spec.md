@@ -778,6 +778,21 @@ rules apply to those references:
 - If the referenced global name has a different FQUN, the reference must include
   the full FQUN. Using the short form is an error.
 
+## Defining Local Positions
+
+Proposals:
+
+- [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
+
+Within a local scope, a position may be defined by `define the position`
+followed by a local name in angle brackets. It may be followed by a statement
+terminator or a block. This block does not create a local scope.
+
+```ebnf
+local_position_name = "position", "<", local_name, ">"
+local_position_definition = "define the", " ", local_position_name, ( terminator | local_position_definition_block ) ;
+```
+
 ## Defining Qualities
 
 Proposals:
@@ -824,8 +839,9 @@ Action Statements Block, which are mandatory.
 The Action Definition Block creates a new local scope.
 
 ```ebnf
-action_definition = "action", " ", "<", name_content, ">", ( terminator | action_definition_block ) ;
-action_definition_block = block_open, { local_definition }, trigger_and_action, block_close ;
+action_name = "action", "<", global_name, ">" ;
+action_definition = "define the potential", " ", action_name, ( terminator | action_definition_block ) ;
+action_definition_block = block_open, { local_position_definition }, trigger_and_action, block_close ;
 ```
 
 ### Inner Blocks
