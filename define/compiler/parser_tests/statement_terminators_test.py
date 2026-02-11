@@ -7,6 +7,12 @@ Follow parser test authoring rules in parser_tests/AGENTS.md.
 import pytest
 
 from define.compiler import parser, parser_exceptions
+from define.compiler.parser_tests.test_helpers import get_tokens_by_type
+
+
+def test_valid_terminator(p: parser.Parser) -> None:
+    tree = p.parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
 
 
 def test_missing_terminator(p: parser.Parser) -> None:

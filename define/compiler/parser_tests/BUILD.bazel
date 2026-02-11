@@ -37,6 +37,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":conftest",
+        ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
         "@pypi//pytest",
@@ -97,6 +98,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":conftest",
+        ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
         "@pypi//pytest",
@@ -210,6 +212,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":conftest",
+        ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
         "@pypi//pytest",

@@ -7,6 +7,7 @@ Follow parser test authoring rules in parser_tests/AGENTS.md.
 import pytest
 
 from define.compiler import parser, parser_exceptions
+from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_bom_at_start(p: parser.Parser) -> None:
@@ -43,3 +44,19 @@ def test_surrogate_character(p: parser.Parser) -> None:
     assert exc_info.value.char == "\udcff"
     assert exc_info.value.line == 2
     assert exc_info.value.column == 1
+
+
+def test_comment_with_zero_width_joiner_in_grapheme_cluster(p: parser.Parser) -> None:
+    tree = p.parse(
+        "# devanagari ligature with ZWJ: \u0915\u094d\u200d\u0937\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+
+
+def test_comment_with_valid_bidi_isolates(p: parser.Parser) -> None:
+    tree = p.parse(
+        "# isolate-wrapped rtl text: \u2067\u05e9\u05dc\u05d5\u05dd\u2069\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]

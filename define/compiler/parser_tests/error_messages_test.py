@@ -54,3 +54,21 @@ def test_token_error_message(p: parser.Parser) -> None:
         "                                        ^\n"
         "Missing '.' or '{' after definition"
     )
+
+
+def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<local_name.\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value) == (
+        "line 2, column 35\n"
+        "    define the position<local_name.\n"
+        "                                  ^\n"
+        "Invalid local name"
+    )
