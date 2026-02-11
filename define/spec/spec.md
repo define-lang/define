@@ -680,7 +680,7 @@ the statement that opened the scope.
 
 ```ebnf
 block_open = " ", "{", newline ;
-block_close = "}", newline ;
+block_close = newline, "}", newline ;
 ```
 
 ### Non-Filesystem Contexts
@@ -801,8 +801,45 @@ a quality definition with an empty block is forbidden---the statement terminator
 syntax must be used to express empty definitions.
 
 ```ebnf
-quality_definition = "define the potential", " ", typed_name ;
-quality_definition_terminated = quality_definition, terminator ;
+quality_definition = "define the potential", " ", ( action_definition | position_definition )
 ```
 
-The contents of the blocks are defined in later sections.
+The forms of the definitions are defined in later sections.
+
+## Defining Potential Actions
+
+Proposals:
+
+- [DLP 21: Defining Machines](../proposals/00021-defining-machines.md)
+- [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
+- [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
+
+A potential action is defined by a quality definition statement with the type
+`action`, followed by a terminator or an Action Definition Block.
+
+An Action Definition Block may contain any number of local definitions (which
+are optional) followed by two other blocks: the Trigger Conditions Block and the
+Action Statements Block, which are mandatory.
+
+The Action Definition Block creates a new local scope.
+
+```ebnf
+action_definition = "action", " ", "<", name_content, ">", ( terminator | action_definition_block ) ;
+action_definition_block = block_open, { local_definition }, trigger_and_action, block_close ;
+```
+
+### Inner Blocks
+
+The Trigger Conditions Block starts with `it happens when` and then opens a
+block. The Trigger Conditions Block does not create a new local scope.
+
+The Action Statements Block starts with `and it does` and then opens a block.
+This statement starts on the same line as the closing `}` of the previous block,
+which is an exception to the rule that `}` must always be on its own line. The
+Action Statements Block creates a new local scope.
+
+```
+trigger_conditions_block = "it happens when", block_open, trigger_conditions, newline, "}" ;
+action_statements_block = "and it does", block_open, action_statements_contents, block_close ;
+trigger_and_action = trigger_conditions_block, " ", action_statements_block ;
+```

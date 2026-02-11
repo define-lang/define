@@ -69,16 +69,6 @@ statement `and it does {` starts a new local name scope.
 The Trigger Conditions Block does not at this time create a new local name
 scope, as we don't anticipate defining new names in that scope.
 
-### Name Is Optional
-
-In actions, unlike most definitions, the `<name>` is optional. So you can also
-write:
-
-`define the action {`
-
-However, there is no way to refer to that action in any other part of the
-program.
-
 ## A Real Program
 
 We have to imagine a bunch of syntax that isn't yet defined, but a real program
