@@ -33,11 +33,82 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
 
     @v_args(meta=True)
     def action_definition(
-        self, meta: lark.tree.Meta, items: list[ast.GlobalName]
+        self,
+        meta: lark.tree.Meta,
+        items: list[ast.GlobalName | ast.ActionDefinitionBlock],
     ) -> ast.ActionDefinition:
         """Transform an action definition."""
+        name = cast("ast.GlobalName", items[0])
+        definition_block = (
+            cast("ast.ActionDefinitionBlock", items[1]) if len(items) > 1 else None
+        )
         return ast.ActionDefinition(
-            name=items[0],
+            name=name,
+            definition_block=definition_block,
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    def terminator(self, _items: list[object]) -> object:
+        """Remove terminator trees from the parse tree."""
+        return Discard
+
+    def block(self, _items: list[object]) -> object:
+        """Remove empty block trees from the parse tree."""
+        return Discard
+
+    def LOCAL_NAME(self, token: lark.Token) -> ast.LocalName:  # noqa: N802
+        """Transform a local name token into an AST node."""
+        return ast.LocalName(
+            name=token,
+            position=ast.SourcePosition.from_token(token),
+        )
+
+    @v_args(meta=True)
+    def local_position_definition(
+        self, meta: lark.tree.Meta, items: list[ast.LocalName]
+    ) -> ast.LocalPositionDefinition:
+        """Transform a local position definition."""
+        return ast.LocalPositionDefinition(
+            local_name=items[0],
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @v_args(meta=True)
+    def trigger_conditions_block(
+        self, meta: lark.tree.Meta, _items: list[object]
+    ) -> ast.TriggerConditionsBlock:
+        """Transform a trigger conditions block."""
+        return ast.TriggerConditionsBlock(
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @v_args(meta=True)
+    def action_statements_block(
+        self, meta: lark.tree.Meta, _items: list[object]
+    ) -> ast.ActionStatementsBlock:
+        """Transform an action statements block."""
+        return ast.ActionStatementsBlock(
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @v_args(meta=True)
+    def action_definition_block(
+        self,
+        meta: lark.tree.Meta,
+        items: list[
+            ast.LocalPositionDefinition
+            | ast.TriggerConditionsBlock
+            | ast.ActionStatementsBlock
+        ],
+    ) -> ast.ActionDefinitionBlock:
+        """Transform an action definition block."""
+        action_statements = cast("ast.ActionStatementsBlock", items[-1])
+        trigger_conditions = cast("ast.TriggerConditionsBlock", items[-2])
+        local_definitions = cast("list[ast.LocalPositionDefinition]", list(items[:-2]))
+        return ast.ActionDefinitionBlock(
+            local_definitions=local_definitions,
+            trigger_conditions=trigger_conditions,
+            action_statements=action_statements,
             position=ast.SourcePosition.from_meta(meta),
         )
 
@@ -94,14 +165,14 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
     def MULTIVERSE_NAME(self, token: lark.Token) -> ast.Multiverse:  # noqa: N802
         """Transform a multiverse name token into an AST node."""
         return ast.Multiverse(
-            name=str(token),
+            name=token,
             position=ast.SourcePosition.from_token(token),
         )
 
     def UNIVERSE_NAME(self, token: lark.Token) -> ast.Universe:  # noqa: N802
         """Transform a universe name token into an AST node."""
         return ast.Universe(
-            name=str(token),
+            name=token,
             position=ast.SourcePosition.from_token(token),
         )
 

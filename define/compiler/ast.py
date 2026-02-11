@@ -72,8 +72,43 @@ class PositionDefinition(QualityDefinition):
 
 
 @dataclass
+class LocalName(ASTNode):
+    """Represents a local name."""
+
+    name: str
+
+
+@dataclass
+class LocalPositionDefinition(ASTNode):
+    """Represents a local position definition within an action block."""
+
+    local_name: LocalName
+
+
+@dataclass
+class TriggerConditionsBlock(ASTNode):
+    """Represents a trigger conditions block."""
+
+
+@dataclass
+class ActionStatementsBlock(ASTNode):
+    """Represents an action statements block."""
+
+
+@dataclass
+class ActionDefinitionBlock(ASTNode):
+    """Represents an action definition block."""
+
+    local_definitions: list[LocalPositionDefinition]
+    trigger_conditions: TriggerConditionsBlock
+    action_statements: ActionStatementsBlock
+
+
+@dataclass
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
+
+    definition_block: ActionDefinitionBlock | None = None
 
 
 @dataclass
