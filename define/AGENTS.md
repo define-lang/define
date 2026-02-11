@@ -47,7 +47,8 @@ flowchart LR
 ## Parser
 
 - The parser is in `compiler/parser.py`. Before changing the functionality of
-  the parser, update `compiler/parser_test.py` first.
+  the parser, update the tests in `compiler/parser_tests` first, or write a new
+  test in the same style if you are adding totally new functionality.
 - The parser test does not depend on any files on the disk. It does not use
   `testdata/`. It does not use parameterized tests.
 
