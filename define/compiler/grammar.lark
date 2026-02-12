@@ -6,6 +6,8 @@ MULTIVERSE_NAME.2: /[^:<>\/{}\s]+(?=:[^:>]*:[^:>]*:\/)/
 AUTHORITY_DOMAIN.1: /[^:<>\/{}\s]+(?=[^:>]*:[^:>]*:\/)/
 AUTHORITY_PATH_SEGMENT: /[^:<>\/{}\s]+/
 UNIVERSE_NAME: /[^:<>\/{}\s]+(?=:(?![^:>]*:)[^:>]*\/)/
+DEFINE_THE_POSITION: "define the position"
+LOCAL_NAME: /[^:<>{}\s]+/
 
 # General
 
@@ -20,12 +22,14 @@ COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 %ignore COMMENT
 
 terminator: "." NEWLINE
-block: " {" NEWLINE NEWLINE* "}" NEWLINE
-// TODO: Enforce that leading whitespace before "}" matches the opening
-// statement's leading whitespace, per spec.
-?definition_end: terminator | block
+# TODO: Enforce that leading whitespace before "}" matches the opening
+# statement's leading whitespace, per spec.
+_block_open: " {" NEWLINE
+_block_close: "}" NEWLINE
 
-# Global Names
+# Global Name Syntax
+
+name_type: "position" | "action"
 
 authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
 authority: AUTHORITY_DOMAIN authority_path?
@@ -36,25 +40,37 @@ fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
 
 global_name_path: ("/" PATH_SEGMENT)+
 global_name: fqun global_name_path
+global_name_reference: fqun? global_name_path
+typed_global_name_reference: name_type "<" global_name_reference ">"
 
-# Global Definitions
+# Position Constraint Block Syntax
 
-position_definition: "define the potential position" "<" global_name ">" definition_end
+_position_constraint_intro: "it may only contain dimension points where"
+position_requirement_statement: "it has the" " " typed_global_name_reference terminator
+_position_constraint_requirement_tail: (NEWLINE* position_requirement_statement)*
+_position_constraint_requirements: NEWLINE* position_requirement_statement _position_constraint_requirement_tail NEWLINE*
+position_constraint_block: _position_constraint_intro _block_open _position_constraint_requirements _block_close
+
+# Local Position Definition Syntax
+
+local_position_definition_block: _block_open NEWLINE* position_constraint_block NEWLINE* _block_close
+position_definition_end: terminator | local_position_definition_block
+
+# Potential Position Definition Syntax
+
+position_definition: "define the potential position" "<" global_name ">" position_definition_end
+
+# Action Definition Syntax
+
 action_definition: "define the potential action" "<" global_name ">" (terminator | action_definition_block)
 
-# Local Names
-
-LOCAL_NAME: /[^:<>{}\s]+/
-
-# Action Definition Block
-
-local_position_definition: "define the position" "<" LOCAL_NAME ">" terminator
-trigger_conditions_block: "it happens when" " {" NEWLINE NEWLINE* "}"
-action_statements_block: " and it does" " {" NEWLINE (NEWLINE | local_position_definition)* "}" NEWLINE
+local_position_definition: DEFINE_THE_POSITION "<" LOCAL_NAME ">" position_definition_end
+trigger_conditions_block: "it happens when" _block_open NEWLINE* "}"
+action_statements_block: " and it does" _block_open (NEWLINE | local_position_definition)* _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
-action_definition_block: " {" NEWLINE (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* "}" NEWLINE
+action_definition_block: _block_open (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* _block_close
 
-# Root
+# Root Syntax
 
 definition: position_definition | action_definition
 start: NEWLINE* definition (NEWLINE* definition)* NEWLINE*

@@ -39,6 +39,23 @@ def test_action_with_local_position_definition(p: parser.Parser) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my_pos"]
 
 
+def test_action_with_constrained_local_position_definition(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<my_pos> {\n"
+        + "        it may only contain dimension points where {\n"
+        + "            it has the action</do_work>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my_pos"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action", "do_work"]
+
+
 def test_action_with_multiple_local_position_definitions(p: parser.Parser) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -50,6 +67,24 @@ def test_action_with_multiple_local_position_definitions(p: parser.Parser) -> No
         + "}\n"
     )
     assert get_tokens_by_type(tree, "LOCAL_NAME") == ["first_pos", "second_pos"]
+
+
+def test_action_with_mixed_local_position_definition_forms(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<first_pos>.\n"
+        + "    define the position<second_pos> {\n"
+        + "        it may only contain dimension points where {\n"
+        + "            it has the position</child>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["first_pos", "second_pos"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action", "child"]
 
 
 def test_action_block_with_comments_and_blank_lines(p: parser.Parser) -> None:
@@ -214,6 +249,40 @@ def test_action_block_missing_trigger_block(p: parser.Parser) -> None:
     assert exc_info.value.column == 1
 
 
+def test_global_position_definition_not_allowed_in_action_definition_block(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.GlobalPositionInLocalScopeError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "define"
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 5
+
+
+def test_global_position_definition_not_allowed_in_action_statements_block(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.GlobalPositionInLocalScopeError) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "define"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 9
+
+
 def test_action_block_missing_action_statements_block(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.MissingActionStatementsBlockError) as exc_info:
         p.parse(
@@ -301,7 +370,7 @@ def test_local_position_after_trigger_and_action(p: parser.Parser) -> None:
             + "    define the position<late_pos>.\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "define"
+    assert str(exc_info.value.token) == "define the position"
     assert exc_info.value.line == 5
     assert exc_info.value.column == 5
 
@@ -315,6 +384,6 @@ def test_missing_close_brace_followed_by_global_definition(p: parser.Parser) -> 
             + "    }\n"
             + "define the potential position<mv:define-lang.org:parser:/my_action>.\n"
         )
-    assert str(exc_info.value.token) == "define"
+    assert str(exc_info.value.token) == "define the potential position"
     assert exc_info.value.line == 5
     assert exc_info.value.column == 1

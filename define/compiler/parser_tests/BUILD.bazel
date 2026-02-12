@@ -204,6 +204,20 @@ py_test(
 )
 
 py_test(
+    name = "position_definition_test",
+    size = "small",
+    srcs = ["position_definition_test.py"],
+    pytest_main = True,
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "statement_terminators_test",
     size = "small",
     srcs = ["statement_terminators_test.py"],
@@ -222,6 +236,20 @@ py_library(
     srcs = ["test_helpers.py"],
     deps = [
         "@pypi//lark",
+    ],
+)
+
+py_test(
+    name = "typed_name_references_test",
+    size = "small",
+    srcs = ["typed_name_references_test.py"],
+    pytest_main = True,
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -267,8 +295,10 @@ pyright_test(
         ":parse_file_test",
         ":parser_tests",
         ":path_segment_format_test",
+        ":position_definition_test",
         ":statement_terminators_test",
         ":test_helpers",
+        ":typed_name_references_test",
         ":universe_name_format_test",
     ],
 )

@@ -11,8 +11,11 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_empty_block_on_position(p: parser.Parser) -> None:
-    tree = p.parse("define the potential position<standard:/path> {\n}\n")
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    with pytest.raises(parser_exceptions.EmptyBlockTerminatorError) as exc_info:
+        p.parse("define the potential position<standard:/path> {\n}\n")
+    assert str(exc_info.value.token) == "}"
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 1
 
 
 def test_empty_block_on_action(p: parser.Parser) -> None:
@@ -24,49 +27,102 @@ def test_empty_block_on_action(p: parser.Parser) -> None:
 
 
 def test_block_with_blank_lines(p: parser.Parser) -> None:
-    tree = p.parse("define the potential position<standard:/path> {\n\n\n}\n")
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    tree = p.parse(
+        "define the potential position<standard:/path> {\n"
+        + "\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position</child>.\n"
+        + "}\n"
+        + "\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
 
 
 def test_block_with_comment_inside(p: parser.Parser) -> None:
-    tree = p.parse("define the potential position<standard:/path> {\n# comment\n}\n")
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    tree = p.parse(
+        "define the potential position<standard:/path> {\n"
+        + "# comment\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position</child>.\n"
+        + "}\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
 
 
 def test_block_with_comment_after_open(p: parser.Parser) -> None:
-    tree = p.parse("define the potential position<standard:/path> { # comment\n}\n")
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    tree = p.parse(
+        "define the potential position<standard:/path> { # comment\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position</child>.\n"
+        + "}\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
 
 
 def test_block_with_comment_after_close(p: parser.Parser) -> None:
-    tree = p.parse("define the potential position<standard:/path> {\n} # comment\n")
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    tree = p.parse(
+        "define the potential position<standard:/path> {\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position</child>.\n"
+        + "}\n"
+        + "} # comment\n"
+    )
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
 
 
 def test_block_with_full_fqun(p: parser.Parser) -> None:
     tree = p.parse(
-        "define the potential position<my_mv:example.com:my_lib:/some/path> {\n}\n"
+        "define the potential position<my_mv:example.com:my_lib:/some/path> {\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the action</some/action>.\n"
+        + "}\n"
+        + "}\n"
     )
     assert get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv"]
     assert get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["example.com"]
     assert get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib"]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["some", "path"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == [
+        "some",
+        "path",
+        "some",
+        "action",
+    ]
 
 
 def test_multiple_definitions_with_blocks(p: parser.Parser) -> None:
     tree = p.parse(
-        "define the potential position<standard:/first> {\n}\n"
-        + "define the potential position<standard:/second> {\n}\n"
+        "define the potential position<standard:/first> {\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position</first_child>.\n"
+        + "}\n"
+        + "}\n"
+        + "define the potential position<standard:/second> {\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position</second_child>.\n"
+        + "}\n"
+        + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == [
+        "first",
+        "first_child",
+        "second",
+        "second_child",
+    ]
 
 
 def test_mixed_block_and_terminator(p: parser.Parser) -> None:
     tree = p.parse(
         "define the potential position<standard:/first>.\n"
-        + "define the potential position<standard:/second> {\n}\n"
+        + "define the potential position<standard:/second> {\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the action</do_work>.\n"
+        + "}\n"
+        + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second"]
+    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second", "do_work"]
 
 
 def test_missing_block_close(p: parser.Parser) -> None:

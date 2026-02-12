@@ -70,6 +70,10 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
             position=ast.SourcePosition.from_token(token),
         )
 
+    def DEFINE_THE_POSITION(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the local-position definition keyword token."""
+        return Discard
+
     @v_args(meta=True)
     def local_position_definition(
         self, meta: lark.tree.Meta, items: list[ast.LocalName]

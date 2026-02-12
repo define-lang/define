@@ -43,6 +43,16 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         + "}\n",
     ],
     parser_exceptions.EmptyBlockTerminatorError: [
+        "define the potential position<standard:/path> {\n}\n",
+        "define the potential position<standard:/a/path> {\n}\n",
+        "define the potential position<standard:/path> {\n"
+        + "it may only contain dimension points where {\n"
+        + "}\n"
+        + "}\n",
+        "define the potential position<standard:/a/path> {\n"
+        + "it may only contain dimension points where {\n"
+        + "}\n"
+        + "}\n",
         "define the potential action<standard:/path> {\n}\n",
         "define the potential action<standard:/a/path> {\n}\n",
         "define the potential action<example.com:my_lib:/path> {\n}\n",
@@ -118,6 +128,11 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         "define the potential position<standard:path>.\n",
         "define the potential position<standard:/a//b>.\n",
         "define the potential position<my_name>.\n",
+        "define the potential position<standard:/path> {\n"
+        + "it may only contain dimension points where {\n"
+        + "it has the position<child>.\n"
+        + "}\n"
+        + "}\n",
     ],
     parser_exceptions.EmptyFileError: [
         "",
@@ -190,8 +205,7 @@ class Parser:
             return char_class
 
         if e.char == " ":
-            error_line = source.split("\n")[e.line - 1]
-            if error_line[e.column :].strip():
+            if not self._is_space_followed_only_by_whitespace(source, e.line, e.column):
                 return None
             return parser_exceptions.TrailingWhitespaceError
 
@@ -206,8 +220,8 @@ class Parser:
         e: exceptions.UnexpectedToken,
         source: str,
         file_path: str | os.PathLike[str] | None,
-    ) -> parser_exceptions.DefineCharError | None:
-        r"""Check if an unexpected token starts with an always-invalid character.
+    ) -> parser_exceptions.DefineSyntaxError | None:
+        r"""Extract a syntax error directly from an unexpected token, if possible.
 
         Name terminals accept any non-structural characters, so invalid
         characters can be absorbed into tokens in syntax positions — e.g.
@@ -215,9 +229,28 @@ class Parser:
         keyword. Only the first character matters because invalid characters
         mid-token parse successfully and are caught by the validator.
         """
+        # The contextual lexer can surface spaces as UnexpectedToken instead of
+        # UnexpectedCharacters depending on parser state. Handle both paths in
+        # one place so whitespace diagnostics stay stable.
+        if str(e.token) == " ":
+            if not self._is_space_followed_only_by_whitespace(source, e.line, e.column):
+                return parser_exceptions.UnexpectedWhitespaceError(
+                    e.get_context(source),
+                    e.line,
+                    e.column,
+                    e.token,
+                    file_path,
+                )
+            return parser_exceptions.TrailingWhitespaceError(
+                e.get_context(source), e.line, e.column, " ", file_path
+            )
+
         token_str = str(e.token)
         if not token_str:
             return None
+        # When invalid bytes/characters are absorbed into broad name terminals,
+        # the parse error points at the whole token; classify by first codepoint
+        # here so users still get the precise character-level syntax error.
         char_class = _classify_invalid_char(token_str[0])
         if char_class is not None:
             return char_class(
@@ -225,11 +258,20 @@ class Parser:
             )
         return None
 
+    @staticmethod
+    def _is_space_followed_only_by_whitespace(
+        source: str, line: int, column: int
+    ) -> bool:
+        """Return whether the space is followed only by whitespace on its line."""
+        error_line = source.split("\n")[line - 1]
+        return not error_line[column:].strip()
+
     def _classify_token_error(
         self, e: exceptions.UnexpectedToken, source: str
     ) -> type[parser_exceptions.DefineTokenError] | None:
         """Classify a token error into a specific exception type."""
         error_line = source.split("\n")[e.line - 1]
+
         if "  " in error_line.lstrip():
             return parser_exceptions.UnexpectedWhitespaceError
 
@@ -238,11 +280,18 @@ class Parser:
         # contains a local position definition, give a specific error;
         # otherwise fall through to match_examples (missing close brace).
         if (
-            str(e.token) == "define"
+            str(e.token).startswith("define")
             and e.expected == {"NEWLINE", "RBRACE"}
             and "define the position<" in error_line
         ):
             return parser_exceptions.LocalPositionAfterTriggerError
+
+        if (
+            str(e.token).startswith("define")
+            and "define the potential position<" in error_line
+            and "DEFINE_THE_POSITION" in e.expected
+        ):
+            return parser_exceptions.GlobalPositionInLocalScopeError
 
         if "MORETHAN" in e.expected:
             return parser_exceptions.MissingCloseAngleBracketError
@@ -274,9 +323,9 @@ class Parser:
                 ) from e
             raise
         except exceptions.UnexpectedToken as e:
-            char_error = self._extract_char_error_from_token(e, source, file_path)
-            if char_error is not None:
-                raise char_error from e
+            token_error = self._extract_char_error_from_token(e, source, file_path)
+            if token_error is not None:
+                raise token_error from e
             exc_class = self._classify_token_error(e, source)
             if exc_class is not None:
                 raise exc_class(

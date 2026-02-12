@@ -156,6 +156,12 @@ class LocalPositionAfterTriggerError(DefineTokenError):
     label: str = "Local position definitions in a 'define the potential action' block must come before 'it happens when'"
 
 
+class GlobalPositionInLocalScopeError(DefineTokenError):
+    """Raised when a global position definition appears in a local scope."""
+
+    label: str = "Global position definitions are not allowed in local scopes; use 'define the position<...>'"
+
+
 class MissingActionStatementsBlockError(DefineTokenError):
     """Raised when 'and it does' is missing after the trigger conditions block."""
 
