@@ -1,0 +1,7 @@
+define the potential action<mv:define-lang.org:test_files:/valid/action_with_outer_and_inner_positions> {
+    define the position<outer_pos>.
+    it happens when {
+    } and it does {
+        define the position<inner_pos>.
+    }
+}
