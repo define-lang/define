@@ -861,3 +861,31 @@ trigger_and_action = trigger_conditions_block, " ", action_statements_block ;
 trigger_conditions_block = "it happens when", block_open, trigger_conditions, newline, "}" ;
 action_statements_block = "and it does", block_open, action_statements_contents, block_close ;
 ```
+
+### Action Statement Blocks
+
+Proposals:
+
+- [DLP 30: Action Statement Blocks](../proposals/00030-action-statement-blocks.md)
+
+An Action Statements Block may contain zero or more action statements.
+
+Action statements are:
+
+- local position definitions
+- create dimension point statements
+- move dimension point statements
+- destroy dimension point statements
+- quality assignment statements
+- `wait until` statements
+
+```ebnf
+action_statements_contents = { action_statement } ;
+action_statement =
+    local_position_definition
+    | create_dimension_point_statement
+    | move_dimension_point_statement
+    | destroy_dimension_point_statement
+    | quality_assignment_statement
+    | wait_until_statement ;
+```
