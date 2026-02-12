@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate define/spec/programming_languages.txt from GitHub Linguist languages.yml.
+"""Generate define/reserved_words/programming_languages.txt from GitHub Linguist languages.yml.
 
 Requires: PyYAML (pip install pyyaml)
 """
@@ -17,7 +17,7 @@ LINGUIST_URL = "https://raw.githubusercontent.com/github/linguist/master/lib/lin
 OUTPUT_PATH = (
     Path(__file__).resolve().parent.parent
     / "define"
-    / "spec"
+    / "reserved_words"
     / "programming_languages.txt"
 )
 

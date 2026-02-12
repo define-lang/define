@@ -364,8 +364,8 @@ type
 universe
 ```
 
-Finally, a list of small common English words listed in [small_common_words.txt]
-are reserved.
+Finally, a list of small common English words listed in
+[small_common_words.txt](../reserved_words/small_common_words.txt) are reserved.
 
 Reserved names are reserved case-insensitively; thus `standard`, `Standard`, and
 `sTanDarD` are all reserved.
@@ -469,8 +469,10 @@ All names reserved for universes are also reserved for multiverse names.
 In addition, the following multiverse names are reserved:
 
 - `mv`
-- Package repository names from other languages: see [package_repositories.txt]
-- Programming language names: see [programming_languages.txt]
+- Package repository names from other languages: see
+  [package_repositories.txt](../reserved_words/package_repositories.txt)
+- Programming language names: see
+  [programming_languages.txt](../reserved_words/programming_languages.txt)
 
 Reserved multiverse names are reserved case-insensitively.
 

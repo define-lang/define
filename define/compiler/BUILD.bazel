@@ -194,7 +194,7 @@ py_test(
 py_library(
     name = "validator",
     srcs = ["validator.py"],
-    data = ["//define/spec:reserved_words"],
+    data = ["//define/reserved_words"],
     deps = [
         ":ast",
         ":diagnostics",

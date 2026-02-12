@@ -7,13 +7,13 @@ from pathlib import Path
 
 from define.compiler import ast, diagnostics, name_validators
 
-_SPEC_DIR = Path(__file__).parent.parent / "spec"
+_RESERVED_WORDS_DIR = Path(__file__).parent.parent / "reserved_words"
 
 
 # TODO: Move all name validation into name_validators.
 def _load_reserved_words(filename: str) -> frozenset[str]:
-    """Load reserved words from a spec file."""
-    path = _SPEC_DIR / filename
+    """Load reserved words from a reserved words file."""
+    path = _RESERVED_WORDS_DIR / filename
     words: set[str] = set()
     for raw_line in path.read_text().splitlines():
         stripped = raw_line.strip()
