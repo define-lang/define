@@ -79,6 +79,14 @@ class DuplicateDefinitionDiagnostic(Diagnostic):
 
 
 @dataclass
+class LocalNameConflictDiagnostic(Diagnostic):
+    """Diagnostic for when a local name conflicts with another local definition."""
+
+    local_name: str
+    first_definition_line: int
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

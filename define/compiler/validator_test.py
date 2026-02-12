@@ -1,4 +1,8 @@
-"""Tests for the Define language validator."""
+"""Tests for the Define language validator.
+
+Keep test assertions simple: assert on the exact diagnostics list you get
+(len, isinstance, fields) rather than filtering by type.
+"""
 
 from define.compiler import diagnostics, parser, validator
 from define.compiler.transformer import DefineTransformer
@@ -285,6 +289,108 @@ class TestFqunMismatch:
         diags = _parse_transform_validate(
             source, expected_universe_name="mv:my.domain.com:my_lib"
         )
+        assert len(diags) == 0
+
+
+class TestLocalNameConflicts:
+    def test_different_names_no_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "define the position<beta>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
+
+    def test_duplicate_name_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert diags[0].local_name == "alpha"
+        assert diags[0].first_definition_line == 2
+        _check_diagnostic_format(diags[0], source, 3, 21)
+
+    def test_three_locals_two_same_one_diagnostic(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "define the position<beta>.\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert diags[0].local_name == "alpha"
+        assert diags[0].first_definition_line == 2
+
+    def test_three_same_name_two_diagnostics(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "define the position<alpha>.\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
+        assert diags[0].first_definition_line == 2
+        assert diags[1].first_definition_line == 2
+
+    def test_terminated_action_no_error(self):
+        source = "define the potential action<my.domain.com:my_lib:/act>.\n"
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
+
+    def test_single_local_no_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
+
+    def test_separate_actions_same_local_name_no_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+            "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
         assert len(diags) == 0
 
 

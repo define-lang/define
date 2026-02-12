@@ -69,6 +69,7 @@ class Validator:
                 self._diagnostics.extend(
                     name_validators.validate_local_name_format(local_def)
                 )
+            self._validate_local_names(definition.definition_block)
 
     def _validate_path_matches_file(
         self, definition: ast.QualityDefinition, file_path: str | None
@@ -114,6 +115,29 @@ class Validator:
             )
         else:
             self._seen_definitions[key] = definition
+
+    def _validate_local_names(
+        self, definition_block: ast.ActionDefinitionBlock
+    ) -> None:
+        """Validate that local definitions have no name conflicts."""
+        seen: dict[str, ast.LocalPositionDefinition] = {}
+        for local_def in definition_block.local_definitions:
+            name = local_def.local_name.name
+            if name in seen:
+                first_def = seen[name]
+                self._diagnostics.append(
+                    diagnostics.LocalNameConflictDiagnostic(
+                        position=local_def.local_name.position,
+                        message=(
+                            f"duplicate local definition '{name}'; "
+                            f"first defined on line {first_def.local_name.position.line}"
+                        ),
+                        local_name=name,
+                        first_definition_line=first_def.local_name.position.line,
+                    )
+                )
+            else:
+                seen[name] = local_def
 
     def _validate_fqun_matches_expected(
         self,
