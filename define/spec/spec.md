@@ -301,12 +301,13 @@ The first three components combine to form what is called a "fully-qualified
 universe name," or "FQUN."
 
 ```ebnf
+typed_global_name = name_type, "<", global_name ">" ;
+global_name = fqun, global_name_path ;
 fqun =
     ( multiverse, ":", authority, ":", universe, ":"
     | authority, ":", universe, ":"
     | "standard:"
     | "" ) ;
-global_name = fqun, global_name_path ;
 ```
 
 #### Path
@@ -821,7 +822,7 @@ A Local Position Requirement Statement starts with `it has the` followed by a
 typed name and a statement terminator.
 
 ```ebnf
-position_requirement_statement = "it has the", " ", typed_name, terminator ;
+position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
 ```
 
 ## Defining Qualities
