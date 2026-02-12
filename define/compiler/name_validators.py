@@ -299,6 +299,53 @@ def validate_universe_name_reserved(
 
 
 # ---------------------------------------------------------------------------
+# FQUN validation
+# ---------------------------------------------------------------------------
+
+
+def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
+    """Validate a fully-qualified universe name."""
+    result: list[diagnostics.Diagnostic] = []
+    if fqun.multiverse is not None:
+        result.extend(validate_multiverse_name_format(fqun.multiverse))
+        result.extend(validate_multiverse_name_reserved(fqun.multiverse))
+
+    if fqun.authority is None:
+        if fqun.universe.name.lower() != "standard":
+            result.append(
+                diagnostics.UniverseWithoutAuthorityDiagnostic(
+                    position=fqun.universe.position,
+                    message=(
+                        f"universe '{fqun.universe.name}' requires an authority; "
+                        f"only 'standard' may be used without an authority"
+                    ),
+                    universe_name=fqun.universe.name,
+                )
+            )
+    else:
+        result.extend(validate_authority_domain_format(fqun.authority))
+        result.extend(validate_authority_path_format(fqun.authority))
+        result.extend(validate_authority_reserved(fqun.authority, fqun.multiverse))
+
+    result.extend(validate_universe_name_format(fqun.universe))
+    result.extend(validate_universe_name_reserved(fqun.universe))
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Global name validation
+# ---------------------------------------------------------------------------
+
+
+def validate_global_name(name: ast.GlobalName) -> list[diagnostics.Diagnostic]:
+    """Validate a global name and its FQUN."""
+    result: list[diagnostics.Diagnostic] = []
+    result.extend(validate_fqun(name.fqun))
+    result.extend(validate_global_name_path(name.path))
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Global name path validation
 # ---------------------------------------------------------------------------
 

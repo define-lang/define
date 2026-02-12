@@ -70,50 +70,7 @@ class Validator:
 
     def _validate_global_name(self, name: ast.GlobalName) -> None:
         """Validate a global name and its FQUN."""
-        self._validate_fqun(name.fqun)
-        self._diagnostics.extend(name_validators.validate_global_name_path(name.path))
-
-    def _validate_fqun(self, fqun: ast.Fqun) -> None:
-        """Validate a fully-qualified universe name."""
-        if fqun.multiverse is not None:
-            self._diagnostics.extend(
-                name_validators.validate_multiverse_name_format(fqun.multiverse)
-            )
-            self._diagnostics.extend(
-                name_validators.validate_multiverse_name_reserved(fqun.multiverse)
-            )
-
-        if fqun.authority is None:
-            if fqun.universe.name.lower() != "standard":
-                self._diagnostics.append(
-                    diagnostics.UniverseWithoutAuthorityDiagnostic(
-                        position=fqun.universe.position,
-                        message=(
-                            f"universe '{fqun.universe.name}' requires an authority; "
-                            f"only 'standard' may be used without an authority"
-                        ),
-                        universe_name=fqun.universe.name,
-                    )
-                )
-        else:
-            self._diagnostics.extend(
-                name_validators.validate_authority_domain_format(fqun.authority)
-            )
-            self._diagnostics.extend(
-                name_validators.validate_authority_path_format(fqun.authority)
-            )
-            self._diagnostics.extend(
-                name_validators.validate_authority_reserved(
-                    fqun.authority, fqun.multiverse
-                )
-            )
-
-        self._diagnostics.extend(
-            name_validators.validate_universe_name_format(fqun.universe)
-        )
-        self._diagnostics.extend(
-            name_validators.validate_universe_name_reserved(fqun.universe)
-        )
+        self._diagnostics.extend(name_validators.validate_global_name(name))
 
     def _validate_path_matches_file(
         self, definition: ast.QualityDefinition, file_path: str | None

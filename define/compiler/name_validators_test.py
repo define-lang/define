@@ -58,6 +58,30 @@ def _local_def(name: str) -> ast.LocalPositionDefinition:
     )
 
 
+def _fqun(
+    universe: str,
+    authority: ast.Authority | None = None,
+    multiverse: ast.Multiverse | None = None,
+) -> ast.Fqun:
+    return ast.Fqun(
+        multiverse=multiverse,
+        authority=authority,
+        universe=_universe(universe),
+        position=_POS,
+    )
+
+
+def _global_name(
+    fqun: ast.Fqun,
+    path_segments: list[str],
+) -> ast.GlobalName:
+    return ast.GlobalName(
+        fqun=fqun,
+        path=_global_path_name(path_segments),
+        position=_POS,
+    )
+
+
 class TestMultiverseNameFormat:
     def test_valid(self):
         result = name_validators.validate_multiverse_name_format(_multiverse("my_mv"))
@@ -447,3 +471,109 @@ class TestLocalNameFormat:
         assert result[0].local_name == "my/pos"
         assert result[0].position.line == 1
         assert result[0].position.column == 12
+
+
+class TestValidateFqun:
+    def test_valid_with_authority(self):
+        fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
+        result = name_validators.validate_fqun(fqun)
+        assert not result
+
+    def test_standard_without_authority(self):
+        fqun = _fqun("standard")
+        result = name_validators.validate_fqun(fqun)
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
+
+    def test_universe_without_authority_not_standard(self):
+        fqun = _fqun("my_lib")
+        result = name_validators.validate_fqun(fqun)
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
+        assert result[0].universe_name == "my_lib"
+
+    def test_invalid_multiverse_and_reserved_universe(self):
+        fqun = _fqun(
+            "standard",
+            authority=_authority("example.com"),
+            multiverse=_multiverse("_"),
+        )
+        result = name_validators.validate_fqun(fqun)
+        mv_diags = [
+            d
+            for d in result
+            if isinstance(d, diagnostics.InvalidMultiverseNameDiagnostic)
+        ]
+        assert len(mv_diags) >= 1
+
+    def test_reserved_authority(self):
+        fqun = _fqun("my_lib", authority=_authority("example.com"))
+        result = name_validators.validate_fqun(fqun)
+        reserved = [
+            d
+            for d in result
+            if isinstance(d, diagnostics.ReservedAuthorityNameDiagnostic)
+        ]
+        assert len(reserved) == 1
+
+    def test_collects_all_diagnostics(self):
+        fqun = _fqun(
+            "standard",
+            authority=_authority("example.com"),
+            multiverse=_multiverse("python"),
+        )
+        result = name_validators.validate_fqun(fqun)
+        reserved_mv = [
+            d
+            for d in result
+            if isinstance(d, diagnostics.ReservedMultiverseNameDiagnostic)
+        ]
+        reserved_auth = [
+            d
+            for d in result
+            if isinstance(d, diagnostics.ReservedAuthorityNameDiagnostic)
+        ]
+        assert len(reserved_mv) == 1
+        assert len(reserved_auth) == 1
+
+
+class TestValidateGlobalName:
+    def test_valid(self):
+        fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
+        name = _global_name(fqun, ["some", "path"])
+        result = name_validators.validate_global_name(name)
+        assert not result
+
+    def test_fqun_errors_collected(self):
+        fqun = _fqun("my_lib")
+        name = _global_name(fqun, ["valid_path"])
+        result = name_validators.validate_global_name(name)
+        assert any(
+            isinstance(d, diagnostics.UniverseWithoutAuthorityDiagnostic)
+            for d in result
+        )
+
+    def test_path_errors_collected(self):
+        fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
+        name = _global_name(fqun, ["Bad"])
+        result = name_validators.validate_global_name(name)
+        assert any(
+            isinstance(d, diagnostics.InvalidGlobalNamePathDiagnostic) for d in result
+        )
+
+    def test_fqun_and_path_errors_combined(self):
+        fqun = _fqun("my_lib")
+        name = _global_name(fqun, ["Bad"])
+        result = name_validators.validate_global_name(name)
+        fqun_errors = [
+            d
+            for d in result
+            if isinstance(d, diagnostics.UniverseWithoutAuthorityDiagnostic)
+        ]
+        path_errors = [
+            d
+            for d in result
+            if isinstance(d, diagnostics.InvalidGlobalNamePathDiagnostic)
+        ]
+        assert len(fqun_errors) == 1
+        assert len(path_errors) == 1
