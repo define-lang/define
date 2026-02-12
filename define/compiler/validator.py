@@ -55,7 +55,7 @@ class Validator:
         expected_universe_name: str | None,
     ) -> None:
         """Validate a quality definition."""
-        self._validate_global_name(definition.name)
+        self._diagnostics.extend(name_validators.validate_global_name(definition.name))
         self._validate_path_matches_file(definition, file_path)
         self._validate_fqun_matches_expected(definition, expected_universe_name)
         self._validate_not_duplicate(definition)
@@ -67,10 +67,6 @@ class Validator:
                 self._diagnostics.extend(
                     name_validators.validate_local_name_format(local_def)
                 )
-
-    def _validate_global_name(self, name: ast.GlobalName) -> None:
-        """Validate a global name and its FQUN."""
-        self._diagnostics.extend(name_validators.validate_global_name(name))
 
     def _validate_path_matches_file(
         self, definition: ast.QualityDefinition, file_path: str | None
