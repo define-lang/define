@@ -3,8 +3,53 @@
 from __future__ import annotations
 
 import string
+from pathlib import Path
 
 from define.compiler import ast, diagnostics
+
+_RESERVED_WORDS_DIR = Path(__file__).parent.parent / "reserved_words"
+
+
+def _load_reserved_words(filename: str) -> frozenset[str]:
+    """Load reserved words from a reserved words file."""
+    path = _RESERVED_WORDS_DIR / filename
+    words: set[str] = set()
+    for raw_line in path.read_text().splitlines():
+        stripped = raw_line.strip()
+        if stripped:
+            words.add(stripped.lower())
+    return frozenset(words)
+
+
+_SMALL_COMMON_WORDS = _load_reserved_words("small_common_words.txt")
+_PACKAGE_REPOSITORIES = _load_reserved_words("package_repositories.txt")
+_PROGRAMMING_LANGUAGES = _load_reserved_words("programming_languages.txt")
+
+_RESERVED_UNIVERSE_NAMES_EXPLICIT: frozenset[str] = frozenset(
+    {
+        "standard",
+        "example",
+        "authority",
+        "define",
+        "fqun",
+        "local",
+        "multiverse",
+        "mv",
+        "name",
+        "type",
+        "universe",
+    }
+)
+
+_RESERVED_UNIVERSE_NAMES = _RESERVED_UNIVERSE_NAMES_EXPLICIT | _SMALL_COMMON_WORDS
+
+_RESERVED_AUTHORITY_DOMAINS = _RESERVED_UNIVERSE_NAMES | frozenset({"example.com"})
+
+_RESERVED_MULTIVERSE_NAMES = (
+    (_RESERVED_UNIVERSE_NAMES - frozenset({"mv"}))
+    | _PACKAGE_REPOSITORIES
+    | _PROGRAMMING_LANGUAGES
+)
 
 _LOWERCASE_ALNUM = frozenset(string.ascii_lowercase + string.digits)
 
@@ -14,7 +59,8 @@ _MULTIVERSE_CONTINUE_CHARS = _MULTIVERSE_BOUNDARY_CHARS | frozenset("_")
 _AUTHORITY_DOMAIN_BOUNDARY_CHARS = _LOWERCASE_ALNUM
 _AUTHORITY_DOMAIN_CONTINUE_CHARS = _AUTHORITY_DOMAIN_BOUNDARY_CHARS | frozenset(".-")
 
-_UNIVERSE_BOUNDARY_CHARS = frozenset(string.ascii_letters + string.digits)
+# TODO: Add a config option to allow uppercase characters in universe names.
+_UNIVERSE_BOUNDARY_CHARS = _LOWERCASE_ALNUM
 _UNIVERSE_CONTINUE_CHARS = _UNIVERSE_BOUNDARY_CHARS | frozenset("_")
 
 _PATH_SEGMENT_START_CHARS = frozenset(string.ascii_lowercase + "_")
@@ -25,6 +71,11 @@ _LOCAL_NAME_CONTINUE_CHARS = _PATH_SEGMENT_CONTINUE_CHARS
 
 _AUTHORITY_PATH_START_CHARS = _LOWERCASE_ALNUM | frozenset("_-~")
 _AUTHORITY_PATH_CONTINUE_CHARS = _AUTHORITY_PATH_START_CHARS | frozenset(".")
+
+
+# ---------------------------------------------------------------------------
+# Multiverse validation
+# ---------------------------------------------------------------------------
 
 
 def validate_multiverse_name_format(
@@ -62,6 +113,26 @@ def validate_multiverse_name_format(
             )
             return result
     return result
+
+
+def validate_multiverse_name_reserved(
+    multiverse: ast.Multiverse,
+) -> list[diagnostics.ReservedMultiverseNameDiagnostic]:
+    """Validate a multiverse name against reserved names."""
+    if multiverse.name.lower() in _RESERVED_MULTIVERSE_NAMES:
+        return [
+            diagnostics.ReservedMultiverseNameDiagnostic(
+                position=multiverse.position,
+                message=f"'{multiverse.name}' is a reserved multiverse name",
+                reserved_name=multiverse.name,
+            )
+        ]
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Authority validation
+# ---------------------------------------------------------------------------
 
 
 def validate_authority_domain_format(
@@ -138,6 +209,43 @@ def validate_authority_path_format(
     return result
 
 
+def validate_authority_reserved(
+    authority: ast.Authority, multiverse: ast.Multiverse | None
+) -> list[diagnostics.ReservedAuthorityNameDiagnostic]:
+    """Validate an authority name against reserved names."""
+    domain = authority.domain.lower()
+
+    if domain in _RESERVED_AUTHORITY_DOMAINS:
+        return [
+            diagnostics.ReservedAuthorityNameDiagnostic(
+                position=authority.position,
+                message=f"'{authority.domain}' is a reserved authority domain",
+                reserved_name=authority.domain,
+            )
+        ]
+
+    effective_multiverse = multiverse.name if multiverse else "local"
+    if effective_multiverse in ("mv", "local") and "." not in domain:
+        return [
+            diagnostics.ReservedAuthorityNameDiagnostic(
+                position=authority.position,
+                message=(
+                    f"'{authority.domain}' is reserved: "
+                    f"authority domains without '.' are reserved "
+                    f"in the '{effective_multiverse}' multiverse"
+                ),
+                reserved_name=authority.domain,
+            )
+        ]
+
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Universe validation
+# ---------------------------------------------------------------------------
+
+
 def validate_universe_name_format(
     universe: ast.Universe,
 ) -> list[diagnostics.InvalidUniverseNameFormatDiagnostic]:
@@ -175,6 +283,26 @@ def validate_universe_name_format(
     return result
 
 
+def validate_universe_name_reserved(
+    universe: ast.Universe,
+) -> list[diagnostics.ReservedUniverseNameDiagnostic]:
+    """Validate a universe name against reserved names."""
+    if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
+        return [
+            diagnostics.ReservedUniverseNameDiagnostic(
+                position=universe.position,
+                message=f"'{universe.name}' is a reserved universe name",
+                reserved_name=universe.name,
+            )
+        ]
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Global name path validation
+# ---------------------------------------------------------------------------
+
+
 def validate_global_name_path_segment(
     segment: ast.GlobalPathNameSegment,
 ) -> diagnostics.InvalidGlobalNamePathDiagnostic | None:
@@ -208,6 +336,11 @@ def validate_global_name_path(
         if diagnostic is not None:
             result.append(diagnostic)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Local name validation
+# ---------------------------------------------------------------------------
 
 
 def validate_local_name_format(

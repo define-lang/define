@@ -34,102 +34,48 @@ def _check_diagnostic_format(
     assert caret_line.index("^") == expected_column + 1
 
 
-class TestReservedUniverseNames:
-    def test_standard_is_reserved(self):
+class TestReservedNamePositions:
+    def test_reserved_universe_name_position(self):
         source = "define the potential position<standard:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
-        assert diags[0].reserved_name == "standard"
         _check_diagnostic_format(diags[0], source, 1, 31)
 
-    def test_example_is_reserved(self):
+    def test_reserved_universe_name_with_authority_position(self):
         source = "define the potential position<example.com:example:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
-        assert diags[0].reserved_name == "example.com"
-        _check_diagnostic_format(diags[0], source, 1, 31)
         assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
-        assert diags[1].reserved_name == "example"
         _check_diagnostic_format(diags[1], source, 1, 43)
 
-    def test_common_word_is_reserved(self):
-        source = "define the potential position<example.com:about:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 2
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
-        assert diags[0].reserved_name == "example.com"
-        _check_diagnostic_format(diags[0], source, 1, 31)
-        assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
-        assert diags[1].reserved_name == "about"
-        _check_diagnostic_format(diags[1], source, 1, 43)
-
-    def test_case_insensitive_check(self):
-        source = "define the potential position<example.com:STANDARD:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 3
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
-        assert diags[0].reserved_name == "example.com"
-        _check_diagnostic_format(diags[0], source, 1, 31)
-        assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
-        assert diags[1].reserved_name == "STANDARD"
-        _check_diagnostic_format(diags[1], source, 1, 43)
-        assert isinstance(diags[2], diagnostics.UniverseNameUppercaseDiagnostic)
-        assert diags[2].universe_name == "STANDARD"
-
-    def test_non_reserved_universe_name(self):
-        source = "define the potential position<example.com:my_library:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
-        assert diags[0].reserved_name == "example.com"
-        _check_diagnostic_format(diags[0], source, 1, 31)
-
-
-class TestReservedAuthorityNames:
-    def test_example_com_is_reserved(self):
+    def test_reserved_authority_position(self):
         source = "define the potential position<example.com:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
-        assert diags[0].reserved_name == "example.com"
         _check_diagnostic_format(diags[0], source, 1, 31)
 
-    def test_authority_without_dot_in_local_multiverse(self):
+    def test_reserved_authority_with_multiverse_position(self):
+        source = "define the potential position<mv:example.com:my_lib:/path>.\n"
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        _check_diagnostic_format(diags[0], source, 1, 34)
+
+    def test_dotless_authority_position(self):
         source = "define the potential position<localhost:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
-        assert "localhost" in diags[0].reserved_name
         _check_diagnostic_format(diags[0], source, 1, 31)
 
-    def test_authority_with_dot_in_local_multiverse_ok(self):
-        source = "define the potential position<my.domain.com:my_lib:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 0
-
-
-class TestReservedMultiverseNames:
-    def test_mv_is_allowed(self):
-        source = "define the potential position<mv:example.org:my_lib:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 0
-
-    def test_programming_language_is_reserved(self):
+    def test_reserved_multiverse_position(self):
         source = "define the potential position<python:example.org:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
-        assert diags[0].reserved_name == "python"
-        _check_diagnostic_format(diags[0], source, 1, 31)
-
-    def test_package_repository_is_reserved(self):
-        source = "define the potential position<npm:example.org:my_lib:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
-        assert diags[0].reserved_name == "npm"
         _check_diagnostic_format(diags[0], source, 1, 31)
 
 
@@ -204,9 +150,8 @@ class TestUniverseWithoutAuthority:
         source = "define the potential position<STANDARD:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 2
-        assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
-        assert isinstance(diags[1], diagnostics.UniverseNameUppercaseDiagnostic)
-        assert diags[1].universe_name == "STANDARD"
+        assert isinstance(diags[0], diagnostics.InvalidUniverseNameFormatDiagnostic)
+        assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
 
 
 class TestDuplicateDefinitions:
@@ -264,29 +209,6 @@ class TestDuplicateDefinitions:
         assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)
         assert diags[0].first_definition_line == 1
         assert diags[1].first_definition_line == 1
-
-
-class TestUniverseNameUppercase:
-    def test_lowercase_universe_name_ok(self):
-        source = "define the potential position<my.domain.com:my_lib:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 0
-
-    def test_uppercase_in_universe_name_error(self):
-        source = "define the potential position<my.domain.com:MyLib:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.UniverseNameUppercaseDiagnostic)
-        assert diags[0].universe_name == "MyLib"
-        _check_diagnostic_format(diags[0], source, 1, 45)
-
-    def test_mixed_case_universe_name_error(self):
-        source = "define the potential position<my.domain.com:myLib:/path>.\n"
-        diags = _parse_transform_validate(source)
-        assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.UniverseNameUppercaseDiagnostic)
-        assert diags[0].universe_name == "myLib"
-        _check_diagnostic_format(diags[0], source, 1, 45)
 
 
 class TestFqunMismatch:

@@ -79,13 +79,6 @@ class DuplicateDefinitionDiagnostic(Diagnostic):
 
 
 @dataclass
-class UniverseNameUppercaseDiagnostic(Diagnostic):
-    """Diagnostic for when a universe name contains uppercase ASCII letters."""
-
-    universe_name: str
-
-
-@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

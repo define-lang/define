@@ -129,6 +129,7 @@ py_binary(
 py_library(
     name = "name_validators",
     srcs = ["name_validators.py"],
+    data = ["//define/reserved_words"],
     deps = [
         ":ast",
         ":diagnostics",
@@ -194,7 +195,6 @@ py_test(
 py_library(
     name = "validator",
     srcs = ["validator.py"],
-    data = ["//define/reserved_words"],
     deps = [
         ":ast",
         ":diagnostics",

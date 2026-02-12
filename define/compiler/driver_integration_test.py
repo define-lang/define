@@ -30,13 +30,12 @@ INVALID_SYNTAX_FILES = sorted((FILES_ROOT / "invalid" / "syntax").rglob("*.def")
 
 # Substrings that indicate validation diagnostics (path/context) -> expected diagnostic type or None
 EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
-    "universe_uppercase": diagnostics.UniverseNameUppercaseDiagnostic,
+    "universe_uppercase": diagnostics.InvalidUniverseNameFormatDiagnostic,
     "path_mismatch": diagnostics.PathMismatchDiagnostic,
     "fqun_mismatch": diagnostics.FqunMismatchDiagnostic,
     "duplicate_definitions": diagnostics.DuplicateDefinitionDiagnostic,
     "reserved_names/": diagnostics.ReservedNameDiagnostic,
     "fqun_validation/universe_without_authority": diagnostics.UniverseWithoutAuthorityDiagnostic,
-    "fqun_validation/universe_uppercase": diagnostics.UniverseNameUppercaseDiagnostic,
     "paths/path_leading_underscore": diagnostics.PathMismatchDiagnostic,
     "terminators/missing_space_before_terminator": diagnostics.FqunMismatchDiagnostic,
     # TODO: Refactor these into separate directories so we only have to check the directory name.

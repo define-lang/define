@@ -3,54 +3,8 @@
 from __future__ import annotations
 
 from functools import cached_property
-from pathlib import Path
 
 from define.compiler import ast, diagnostics, name_validators
-
-_RESERVED_WORDS_DIR = Path(__file__).parent.parent / "reserved_words"
-
-
-# TODO: Move all name validation into name_validators.
-def _load_reserved_words(filename: str) -> frozenset[str]:
-    """Load reserved words from a reserved words file."""
-    path = _RESERVED_WORDS_DIR / filename
-    words: set[str] = set()
-    for raw_line in path.read_text().splitlines():
-        stripped = raw_line.strip()
-        if stripped:
-            words.add(stripped.lower())
-    return frozenset(words)
-
-
-_SMALL_COMMON_WORDS = _load_reserved_words("small_common_words.txt")
-_PACKAGE_REPOSITORIES = _load_reserved_words("package_repositories.txt")
-_PROGRAMMING_LANGUAGES = _load_reserved_words("programming_languages.txt")
-
-_RESERVED_UNIVERSE_NAMES_EXPLICIT: frozenset[str] = frozenset(
-    {
-        "standard",
-        "example",
-        "authority",
-        "define",
-        "fqun",
-        "local",
-        "multiverse",
-        "mv",
-        "name",
-        "type",
-        "universe",
-    }
-)
-
-_RESERVED_UNIVERSE_NAMES = _RESERVED_UNIVERSE_NAMES_EXPLICIT | _SMALL_COMMON_WORDS
-
-_RESERVED_AUTHORITY_DOMAINS = _RESERVED_UNIVERSE_NAMES | frozenset({"example.com"})
-
-_RESERVED_MULTIVERSE_NAMES = (
-    (_RESERVED_UNIVERSE_NAMES - frozenset({"mv"}))
-    | _PACKAGE_REPOSITORIES
-    | _PROGRAMMING_LANGUAGES
-)
 
 
 class Validator:
@@ -64,7 +18,7 @@ class Validator:
         self._program = program
         self._source = source
         self._diagnostics: list[diagnostics.Diagnostic] = []
-        self._seen_definitions: dict[tuple[type, Path], ast.QualityDefinition] = {}
+        self._seen_definitions: dict[tuple[type, str], ast.QualityDefinition] = {}
 
     @cached_property
     def source_lines(self) -> list[str]:
@@ -125,7 +79,9 @@ class Validator:
             self._diagnostics.extend(
                 name_validators.validate_multiverse_name_format(fqun.multiverse)
             )
-            self._validate_multiverse_name(fqun.multiverse)
+            self._diagnostics.extend(
+                name_validators.validate_multiverse_name_reserved(fqun.multiverse)
+            )
 
         if fqun.authority is None:
             if fqun.universe.name.lower() != "standard":
@@ -146,76 +102,18 @@ class Validator:
             self._diagnostics.extend(
                 name_validators.validate_authority_path_format(fqun.authority)
             )
-            self._validate_authority(fqun.authority, fqun.multiverse)
+            self._diagnostics.extend(
+                name_validators.validate_authority_reserved(
+                    fqun.authority, fqun.multiverse
+                )
+            )
 
         self._diagnostics.extend(
             name_validators.validate_universe_name_format(fqun.universe)
         )
-        self._validate_universe_name(fqun.universe)
-
-    def _validate_multiverse_name(self, multiverse: ast.Multiverse) -> None:
-        """Validate a multiverse name against reserved names."""
-        if multiverse.name.lower() in _RESERVED_MULTIVERSE_NAMES:
-            self._diagnostics.append(
-                diagnostics.ReservedMultiverseNameDiagnostic(
-                    position=multiverse.position,
-                    message=f"'{multiverse.name}' is a reserved multiverse name",
-                    reserved_name=multiverse.name,
-                )
-            )
-
-    def _validate_authority(
-        self, authority: ast.Authority, multiverse: ast.Multiverse | None
-    ) -> None:
-        """Validate an authority name."""
-        domain = authority.domain.lower()
-
-        if domain in _RESERVED_AUTHORITY_DOMAINS:
-            self._diagnostics.append(
-                diagnostics.ReservedAuthorityNameDiagnostic(
-                    position=authority.position,
-                    message=f"'{authority.domain}' is a reserved authority domain",
-                    reserved_name=authority.domain,
-                )
-            )
-            return
-
-        effective_multiverse = multiverse.name if multiverse else "local"
-        if effective_multiverse in ("mv", "local") and "." not in domain:
-            self._diagnostics.append(
-                diagnostics.ReservedAuthorityNameDiagnostic(
-                    position=authority.position,
-                    message=(
-                        f"'{authority.domain}' is reserved: "
-                        f"authority domains without '.' are reserved "
-                        f"in the '{effective_multiverse}' multiverse"
-                    ),
-                    reserved_name=authority.domain,
-                )
-            )
-
-    def _validate_universe_name(self, universe: ast.Universe) -> None:
-        """Validate a universe name against reserved names and uppercase letters."""
-        if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
-            self._diagnostics.append(
-                diagnostics.ReservedUniverseNameDiagnostic(
-                    position=universe.position,
-                    message=f"'{universe.name}' is a reserved universe name",
-                    reserved_name=universe.name,
-                )
-            )
-
-        if any(c.isupper() for c in universe.name):
-            self._diagnostics.append(
-                diagnostics.UniverseNameUppercaseDiagnostic(
-                    position=universe.position,
-                    message=(
-                        f"universe name '{universe.name}' contains uppercase letters; "
-                        f"Idiomatic Define requires lowercase universe names"
-                    ),
-                    universe_name=universe.name,
-                )
-            )
+        self._diagnostics.extend(
+            name_validators.validate_universe_name_reserved(fqun.universe)
+        )
 
     def _validate_path_matches_file(
         self, definition: ast.QualityDefinition, file_path: str | None
@@ -242,7 +140,7 @@ class Validator:
 
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
-        key = (type(definition), definition.name.path.relative_path)
+        key = (type(definition), definition.name.path.path_string)
         if key in self._seen_definitions:
             first_def = self._seen_definitions[key]
             match definition:

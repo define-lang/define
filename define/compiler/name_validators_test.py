@@ -235,6 +235,14 @@ class TestUniverseNameFormat:
         assert isinstance(result[1], diagnostics.InvalidUniverseNameFormatDiagnostic)
         assert result[1].position.column == 10
 
+    def test_uppercase(self):
+        result = name_validators.validate_universe_name_format(_universe("MyLib"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.InvalidUniverseNameFormatDiagnostic)
+        assert result[0].universe_name == "MyLib"
+        assert result[0].position.line == 1
+        assert result[0].position.column == 10
+
 
 class TestGlobalNamePathSegment:
     def test_valid(self):
@@ -292,6 +300,115 @@ class TestGlobalNamePath:
         assert isinstance(result[1], diagnostics.InvalidGlobalNamePathDiagnostic)
         assert result[1].segment == "2bad"
         assert result[1].position.column == 25
+
+
+class TestMultiverseNameReserved:
+    def test_reserved_programming_language(self):
+        result = name_validators.validate_multiverse_name_reserved(
+            _multiverse("python")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert result[0].reserved_name == "python"
+
+    def test_reserved_package_repository(self):
+        result = name_validators.validate_multiverse_name_reserved(_multiverse("npm"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert result[0].reserved_name == "npm"
+
+    def test_reserved_common_word(self):
+        result = name_validators.validate_multiverse_name_reserved(_multiverse("about"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
+        assert result[0].reserved_name == "about"
+
+    def test_mv_is_allowed(self):
+        result = name_validators.validate_multiverse_name_reserved(_multiverse("mv"))
+        assert not result
+
+    def test_non_reserved(self):
+        result = name_validators.validate_multiverse_name_reserved(
+            _multiverse("my_custom_mv")
+        )
+        assert not result
+
+    def test_case_insensitive(self):
+        result = name_validators.validate_multiverse_name_reserved(
+            _multiverse("Python")
+        )
+        assert len(result) == 1
+        assert result[0].reserved_name == "Python"
+
+
+class TestAuthorityReserved:
+    def test_reserved_domain(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("example.com"), None
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert result[0].reserved_name == "example.com"
+
+    def test_reserved_common_word_domain(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("standard"), None
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert result[0].reserved_name == "standard"
+
+    def test_dotless_domain_in_local_multiverse(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("localhost"), None
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedAuthorityNameDiagnostic)
+
+    def test_dotless_domain_in_mv_multiverse(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("myhost"), _multiverse("mv")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedAuthorityNameDiagnostic)
+
+    def test_dotless_domain_in_custom_multiverse(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("myhost"), _multiverse("custom")
+        )
+        assert not result
+
+    def test_dotted_domain_ok(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("my.domain.com"), None
+        )
+        assert not result
+
+    def test_case_insensitive(self):
+        result = name_validators.validate_authority_reserved(
+            _authority("Example.Com"), None
+        )
+        assert len(result) == 1
+        assert result[0].reserved_name == "Example.Com"
+
+
+class TestUniverseNameReserved:
+    def test_reserved_name(self):
+        result = name_validators.validate_universe_name_reserved(_universe("standard"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
+        assert result[0].reserved_name == "standard"
+
+    def test_reserved_common_word(self):
+        result = name_validators.validate_universe_name_reserved(_universe("about"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
+
+    def test_non_reserved_lowercase(self):
+        result = name_validators.validate_universe_name_reserved(
+            _universe("my_library")
+        )
+        assert not result
 
 
 class TestLocalNameFormat:
