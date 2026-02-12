@@ -122,6 +122,8 @@ BUILD file generator.
 
 - Build all targets: `bazelisk build --noshow_progress //...`
 - Test all targets: `bazelisk test --noshow_progress //...`
+- Always run the full test suite (`bazelisk test --noshow_progress //...`) when
+  done working, to make sure nothing is broken.
 - Keep build targets atomic — each target should contain only the minimum
   necessary sources and dependencies.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
