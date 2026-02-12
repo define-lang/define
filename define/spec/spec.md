@@ -30,6 +30,8 @@ This comment may not be modified by AI agents.
 
 # The Define Language Specification
 
+Version: 0 (subject to breaking changes at any time)
+
 ## Introduction
 
 This specification defines the syntax and semantics needed to compile Define
