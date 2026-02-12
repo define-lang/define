@@ -140,6 +140,50 @@ def test_action_block_blank_lines_in_action_block(p: parser.Parser) -> None:
     assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["my_action"]
 
 
+def test_action_block_with_local_position_definition_in_action_statements(
+    p: parser.Parser,
+) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        define the position<inner_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["inner_pos"]
+
+
+def test_action_block_with_multiple_local_position_definitions_in_action_statements(
+    p: parser.Parser,
+) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        define the position<first_inner>.\n"
+        + "        define the position<second_inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["first_inner", "second_inner"]
+
+
+def test_action_block_with_local_position_definitions_inside_and_outside_action_statements(
+    p: parser.Parser,
+) -> None:
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<outer_pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        define the position<inner_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["outer_pos", "inner_pos"]
+
+
 def test_two_action_definitions_in_same_file(p: parser.Parser) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/first> {\n"

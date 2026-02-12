@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import ChainMap
 from functools import cached_property
 
 from define.compiler import ast, diagnostics, name_validators
@@ -65,10 +66,6 @@ class Validator:
             isinstance(definition, ast.ActionDefinition)
             and definition.definition_block is not None
         ):
-            for local_def in definition.definition_block.local_definitions:
-                self._diagnostics.extend(
-                    name_validators.validate_local_name_format(local_def)
-                )
             self._validate_local_names(definition.definition_block)
 
     def _validate_path_matches_file(
@@ -119,25 +116,40 @@ class Validator:
     def _validate_local_names(
         self, definition_block: ast.ActionDefinitionBlock
     ) -> None:
-        """Validate that local definitions have no name conflicts."""
-        seen: dict[str, ast.LocalPositionDefinition] = {}
+        """Validate that local definitions have no name conflicts in local scopes."""
+        outer_scope: ChainMap[str, ast.LocalPositionDefinition] = ChainMap({})
         for local_def in definition_block.local_definitions:
-            name = local_def.local_name.name
-            if name in seen:
-                first_def = seen[name]
-                self._diagnostics.append(
-                    diagnostics.LocalNameConflictDiagnostic(
-                        position=local_def.local_name.position,
-                        message=(
-                            f"duplicate local definition '{name}'; "
-                            f"first defined on line {first_def.local_name.position.line}"
-                        ),
-                        local_name=name,
-                        first_definition_line=first_def.local_name.position.line,
-                    )
+            self._validate_local_name_format_and_conflicts(local_def, outer_scope)
+
+        action_statements_scope = outer_scope.new_child({})
+        for local_def in definition_block.action_statements.statements:
+            self._validate_local_name_format_and_conflicts(
+                local_def, action_statements_scope
+            )
+
+    def _validate_local_name_format_and_conflicts(
+        self,
+        local_def: ast.LocalPositionDefinition,
+        scope: ChainMap[str, ast.LocalPositionDefinition],
+    ) -> None:
+        """Validate local name formatting and scope conflicts for one definition."""
+        self._diagnostics.extend(name_validators.validate_local_name_format(local_def))
+        name = local_def.local_name.name
+        if name in scope:
+            first_def = scope[name]
+            self._diagnostics.append(
+                diagnostics.LocalNameConflictDiagnostic(
+                    position=local_def.local_name.position,
+                    message=(
+                        f"duplicate local definition '{name}'; "
+                        f"first defined on line {first_def.local_name.position.line}"
+                    ),
+                    local_name=name,
+                    first_definition_line=first_def.local_name.position.line,
                 )
-            else:
-                seen[name] = local_def
+            )
+            return
+        scope.maps[0][name] = local_def
 
     def _validate_fqun_matches_expected(
         self,

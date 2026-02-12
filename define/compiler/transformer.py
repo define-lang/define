@@ -91,10 +91,11 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
 
     @v_args(meta=True)
     def action_statements_block(
-        self, meta: lark.tree.Meta, _items: list[object]
+        self, meta: lark.tree.Meta, items: list[ast.ActionStatement]
     ) -> ast.ActionStatementsBlock:
         """Transform an action statements block."""
         return ast.ActionStatementsBlock(
+            statements=items,
             position=ast.SourcePosition.from_meta(meta),
         )
 

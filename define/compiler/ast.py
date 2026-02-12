@@ -97,6 +97,9 @@ class LocalPositionDefinition(ASTNode):
     local_name: LocalName
 
 
+type ActionStatement = LocalPositionDefinition
+
+
 @dataclass
 class GlobalPathNameSegment(ASTNode):
     """Represents a single segment of a global name path."""
@@ -129,6 +132,8 @@ class TriggerConditionsBlock(ASTNode):
 @dataclass
 class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
+
+    statements: list[ActionStatement]
 
 
 @dataclass

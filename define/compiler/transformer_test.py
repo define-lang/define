@@ -131,7 +131,7 @@ def test_action_definition_block_transforms():
     assert definition.definition_block is not None
     assert definition.definition_block.local_definitions == []
     assert definition.definition_block.trigger_conditions is not None
-    assert definition.definition_block.action_statements is not None
+    assert definition.definition_block.action_statements.statements == []
 
 
 def test_action_definition_block_with_local_definition():
@@ -187,6 +187,7 @@ def test_action_definition_block_source_positions():
     assert block.position.line == 1
     assert block.trigger_conditions.position.line == 2
     assert block.action_statements.position.line == 3
+    assert block.action_statements.statements == []
 
 
 def test_action_definition_block_local_definition_source_position():
@@ -205,3 +206,46 @@ def test_action_definition_block_local_definition_source_position():
     local_def = block.local_definitions[0]
     assert local_def.position.line == 2
     assert local_def.position.column == 5
+
+
+def test_action_definition_block_with_action_statement_local_definition():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        define the position<inner_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.action_statements.statements) == 1
+    local_def = block.action_statements.statements[0]
+    assert local_def.local_name.name == "inner_pos"
+    assert local_def.position.line == 4
+    assert local_def.position.column == 9
+
+
+def test_action_definition_block_with_multiple_action_statement_local_definitions():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        define the position<first_inner>.\n"
+        + "        define the position<second_inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.action_statements.statements) == 2
+    first_local_def = block.action_statements.statements[0]
+    second_local_def = block.action_statements.statements[1]
+    assert first_local_def.local_name.name == "first_inner"
+    assert second_local_def.local_name.name == "second_inner"
+    assert first_local_def.position.line == 4
+    assert second_local_def.position.line == 5

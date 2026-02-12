@@ -393,6 +393,74 @@ class TestLocalNameConflicts:
         diags = _parse_transform_validate(source)
         assert len(diags) == 0
 
+    def test_action_statements_local_name_no_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "define the position<alpha>.\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 0
+
+    def test_action_statements_duplicate_name_error(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "define the position<alpha>.\n"
+            "define the position<alpha>.\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert diags[0].local_name == "alpha"
+        assert diags[0].first_definition_line == 4
+        _check_diagnostic_format(diags[0], source, 5, 21)
+
+    def test_action_statements_name_conflicts_with_parent_scope(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "define the position<alpha>.\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert diags[0].local_name == "alpha"
+        assert diags[0].first_definition_line == 2
+        _check_diagnostic_format(diags[0], source, 5, 21)
+
+    def test_action_statements_two_duplicates_point_to_parent_scope_definition(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<alpha>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "define the position<alpha>.\n"
+            "define the position<alpha>.\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
+        assert diags[0].local_name == "alpha"
+        assert diags[1].local_name == "alpha"
+        assert diags[0].first_definition_line == 2
+        assert diags[1].first_definition_line == 2
+        _check_diagnostic_format(diags[0], source, 5, 21)
+        _check_diagnostic_format(diags[1], source, 6, 21)
+
 
 # Tests just the positions of name formatting errors to make sure they are
 # integrated correctly into the validator. name_validators_test checks the
