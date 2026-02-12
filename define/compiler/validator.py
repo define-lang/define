@@ -18,7 +18,9 @@ class Validator:
         self._program = program
         self._source = source
         self._diagnostics: list[diagnostics.Diagnostic] = []
-        self._seen_definitions: dict[tuple[type, str], ast.QualityDefinition] = {}
+        self._seen_definitions: dict[
+            tuple[ast.TypeName, str], ast.QualityDefinition
+        ] = {}
 
     @cached_property
     def source_lines(self) -> list[str]:
@@ -93,16 +95,10 @@ class Validator:
 
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
-        key = (type(definition), definition.name.path.path_string)
+        key = (definition.type_name, definition.name.path.path_string)
         if key in self._seen_definitions:
             first_def = self._seen_definitions[key]
-            match definition:
-                case ast.PositionDefinition():
-                    def_type = "position"
-                case ast.ActionDefinition():
-                    def_type = "action"
-                case _:
-                    raise TypeError(f"Unknown definition type: {type(definition)}")
+            def_type = definition.type_name.value
             path_str = definition.name.path.path_string
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(

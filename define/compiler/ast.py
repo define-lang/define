@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import enum
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
 
 import lark  # noqa: TC002
+
+
+class TypeName(enum.StrEnum):
+    POSITION = "position"
+    ACTION = "action"
 
 
 @dataclass
@@ -65,11 +71,14 @@ class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
     name: GlobalName
+    type_name: TypeName
 
 
 @dataclass
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
+
+    type_name: TypeName = TypeName.POSITION
 
 
 @dataclass
@@ -133,6 +142,7 @@ class ActionDefinitionBlock(ASTNode):
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
+    type_name: TypeName = TypeName.ACTION
     definition_block: ActionDefinitionBlock | None = None
 
 
