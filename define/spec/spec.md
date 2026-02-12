@@ -863,7 +863,8 @@ Proposals:
 - [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
 
 Potential positions have the same syntax as local positions, except they are
-defined with `define the potential` and they have a global name instead of a local name.
+defined with `define the potential` and they have a global name instead of a
+local name.
 
 ```ebnf
 global_position_name = "position", "<", global_name, ">" ;
