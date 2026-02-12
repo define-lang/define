@@ -64,9 +64,7 @@ class Validator:
         self._program = program
         self._source = source
         self._diagnostics: list[diagnostics.Diagnostic] = []
-        self._seen_definitions: dict[
-            tuple[type, tuple[str, ...]], ast.QualityDefinition
-        ] = {}
+        self._seen_definitions: dict[tuple[type, Path], ast.QualityDefinition] = {}
 
     @cached_property
     def source_lines(self) -> list[str]:
@@ -119,7 +117,7 @@ class Validator:
     def _validate_global_name(self, name: ast.GlobalName) -> None:
         """Validate a global name and its FQUN."""
         self._validate_fqun(name.fqun)
-        self._diagnostics.extend(name_validators.validate_global_name_path(name))
+        self._diagnostics.extend(name_validators.validate_global_name_path(name.path))
 
     def _validate_fqun(self, fqun: ast.Fqun) -> None:
         """Validate a fully-qualified universe name."""
@@ -226,7 +224,7 @@ class Validator:
         if file_path is None:
             return
 
-        definition_path = "/" + "/".join(definition.name.path)
+        definition_path = definition.name.path.path_string
         expected_path = "/" + file_path
 
         if definition_path != expected_path:
@@ -244,7 +242,7 @@ class Validator:
 
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
-        key = (type(definition), tuple(definition.name.path))
+        key = (type(definition), definition.name.path.relative_path)
         if key in self._seen_definitions:
             first_def = self._seen_definitions[key]
             match definition:
@@ -254,7 +252,7 @@ class Validator:
                     def_type = "action"
                 case _:
                     raise TypeError(f"Unknown definition type: {type(definition)}")
-            path_str = "/" + "/".join(definition.name.path)
+            path_str = definition.name.path.path_string
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
                     position=definition.position,

@@ -56,6 +56,13 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Remove empty block trees from the parse tree."""
         return Discard
 
+    def PATH_SEGMENT(self, token: lark.Token) -> ast.GlobalPathNameSegment:  # noqa: N802
+        """Transform a path segment token into an AST node."""
+        return ast.GlobalPathNameSegment(
+            name=token,
+            position=ast.SourcePosition.from_token(token),
+        )
+
     def LOCAL_NAME(self, token: lark.Token) -> ast.LocalName:  # noqa: N802
         """Transform a local name token into an AST node."""
         return ast.LocalName(
@@ -118,11 +125,11 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
 
     @v_args(meta=True)
     def global_name(
-        self, meta: lark.tree.Meta, items: list[ast.Fqun | list[str]]
+        self, meta: lark.tree.Meta, items: list[ast.Fqun | ast.GlobalPathName]
     ) -> ast.GlobalName:
         """Transform a global name with FQUN and path."""
         fqun = cast("ast.Fqun", items[0])
-        path = cast("list[str]", items[1])
+        path = cast("ast.GlobalPathName", items[1])
         return ast.GlobalName(
             fqun=fqun,
             path=path,
@@ -193,9 +200,15 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Transform authority path segments."""
         return items
 
-    def global_name_path(self, items: list[str]) -> list[str]:
+    @v_args(meta=True)
+    def global_name_path(
+        self, meta: lark.tree.Meta, items: list[ast.GlobalPathNameSegment]
+    ) -> ast.GlobalPathName:
         """Transform global name path segments."""
-        return items
+        return ast.GlobalPathName(
+            segments=items,
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
     def NEWLINE(self, _token: lark.Token) -> object:  # noqa: N802
         """Drop newline tokens from the parse tree."""

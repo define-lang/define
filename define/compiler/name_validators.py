@@ -175,37 +175,38 @@ def validate_universe_name_format(
     return result
 
 
+def validate_global_name_path_segment(
+    segment: ast.GlobalPathNameSegment,
+) -> diagnostics.InvalidGlobalNamePathDiagnostic | None:
+    """Validate a single path segment in a global name."""
+    for i, char in enumerate(segment.name):
+        allowed = _PATH_SEGMENT_START_CHARS if i == 0 else _PATH_SEGMENT_CONTINUE_CHARS
+        if char not in allowed:
+            pos = ast.SourcePosition(
+                line=segment.position.line,
+                column=segment.position.column + i,
+                end_line=segment.position.end_line,
+                end_column=segment.position.end_column,
+            )
+            return diagnostics.InvalidGlobalNamePathDiagnostic(
+                position=pos,
+                message=(
+                    f"invalid character '{char}' in path segment '{segment.name}'"
+                ),
+                segment=segment.name,
+            )
+    return None
+
+
 def validate_global_name_path(
-    name: ast.GlobalName,
+    path: ast.GlobalPathName,
 ) -> list[diagnostics.InvalidGlobalNamePathDiagnostic]:
     """Validate path segments in a global name."""
     result: list[diagnostics.InvalidGlobalNamePathDiagnostic] = []
-    col = name.fqun.position.end_column
-    line = name.fqun.position.end_line
-    for segment in name.path:
-        col += 1  # skip '/' separator in source text
-        for i, char in enumerate(segment):
-            allowed = (
-                _PATH_SEGMENT_START_CHARS if i == 0 else _PATH_SEGMENT_CONTINUE_CHARS
-            )
-            if char not in allowed:
-                pos = ast.SourcePosition(
-                    line=line,
-                    column=col + i,
-                    end_line=line,
-                    end_column=col + len(segment),
-                )
-                result.append(
-                    diagnostics.InvalidGlobalNamePathDiagnostic(
-                        position=pos,
-                        message=(
-                            f"invalid character '{char}' in path segment '{segment}'"
-                        ),
-                        segment=segment,
-                    )
-                )
-                break
-        col += len(segment)
+    for segment in path.segments:
+        diagnostic = validate_global_name_path_segment(segment)
+        if diagnostic is not None:
+            result.append(diagnostic)
     return result
 
 

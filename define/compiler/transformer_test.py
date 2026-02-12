@@ -1,5 +1,7 @@
 """Tests for the Define AST transformer."""
 
+from pathlib import Path
+
 from define.compiler import ast, parser
 from define.compiler.transformer import DefineTransformer
 
@@ -25,7 +27,10 @@ def test_position_definition_transforms_to_program():
     assert definition.name.fqun.universe.name == "standard"
     assert definition.name.fqun.universe.position.line == 1
     assert definition.name.fqun.universe.position.column == 31
-    assert definition.name.path == ["path"]
+    assert definition.name.path.relative_path == Path("path")
+    assert definition.name.path.segments[0].name == "path"
+    assert definition.name.path.segments[0].position.line == 1
+    assert definition.name.path.segments[0].position.column == 41
     assert definition.name.position.line == 1
     assert definition.name.position.column == 31
 
@@ -38,7 +43,7 @@ def test_action_definition_transforms_to_program():
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.position.line == 1
     assert definition.name.fqun.universe.name == "standard"
-    assert definition.name.path == ["path"]
+    assert definition.name.path.relative_path == Path("path")
 
 
 def test_global_name_full_fqun():
@@ -53,7 +58,7 @@ def test_global_name_full_fqun():
     assert name.fqun.universe.name == "my_lib"
     assert name.fqun.universe.position.line == 1
     assert name.fqun.universe.position.column == 58
-    assert name.path == ["some", "path"]
+    assert name.path.relative_path == Path("some/path")
     assert name.fqun.authority is not None
     assert name.fqun.authority.domain == "example.com"
     assert name.fqun.authority.path == ["org", "repo"]
@@ -70,7 +75,7 @@ def test_global_name_authority_universe():
     assert name.fqun.universe.name == "my_lib"
     assert name.fqun.universe.position.line == 1
     assert name.fqun.universe.position.column == 43
-    assert name.path == ["some", "path"]
+    assert name.path.relative_path == Path("some/path")
     assert name.fqun.authority is not None
     assert name.fqun.authority.domain == "example.com"
     assert name.fqun.authority.path == []
@@ -89,7 +94,7 @@ def test_global_name_universe_only():
     assert name.fqun.universe.position.column == 31
     assert name.fqun.position.line == 1
     assert name.fqun.position.column == 31
-    assert name.path == ["some", "path"]
+    assert name.path.relative_path == Path("some/path")
 
 
 def test_multiple_definitions_position_and_action():
@@ -100,8 +105,8 @@ def test_multiple_definitions_position_and_action():
     assert len(program.definitions) == 2
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.ActionDefinition)
-    assert program.definitions[0].name.path == ["pos"]
-    assert program.definitions[1].name.path == ["act"]
+    assert program.definitions[0].name.path.relative_path == Path("pos")
+    assert program.definitions[1].name.path.relative_path == Path("act")
     assert program.definitions[0].position.line == 1
     assert program.definitions[1].position.line == 2
 

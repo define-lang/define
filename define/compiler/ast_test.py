@@ -1,5 +1,7 @@
 """Tests for AST nodes."""
 
+from pathlib import Path
+
 from define.compiler import ast
 
 _POS = ast.SourcePosition(line=1, column=1, end_line=1, end_column=1)
@@ -67,3 +69,28 @@ class TestFqunCanonical:
             multiverse="mv",
         )
         assert fqun.canonical == "mv:my.domain.com/org:my_lib"
+
+
+def _make_global_path_name(segments: list[str]) -> ast.GlobalPathName:
+    return ast.GlobalPathName(
+        segments=[ast.GlobalPathNameSegment(name=s, position=_POS) for s in segments],
+        position=_POS,
+    )
+
+
+class TestGlobalPathName:
+    def test_relative_path_single_segment(self):
+        path = _make_global_path_name(["foo"])
+        assert path.relative_path == Path("foo")
+
+    def test_relative_path_multiple_segments(self):
+        path = _make_global_path_name(["foo", "bar", "baz"])
+        assert path.relative_path == Path("foo/bar/baz")
+
+    def test_path_string_single_segment(self):
+        path = _make_global_path_name(["foo"])
+        assert path.path_string == "/foo"
+
+    def test_path_string_multiple_segments(self):
+        path = _make_global_path_name(["foo", "bar"])
+        assert path.path_string == "/foo/bar"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Self
 
 import lark  # noqa: TC002
@@ -86,6 +87,30 @@ class LocalPositionDefinition(ASTNode):
 
 
 @dataclass
+class GlobalPathNameSegment(ASTNode):
+    """Represents a single segment of a global name path."""
+
+    name: str
+
+
+@dataclass
+class GlobalPathName(ASTNode):
+    """Represents the path portion of a global name."""
+
+    segments: list[GlobalPathNameSegment]
+
+    @property
+    def relative_path(self) -> Path:
+        """Return the path as a relative Path object."""
+        return Path(*[s.name for s in self.segments])
+
+    @property
+    def path_string(self) -> str:
+        """Return the full path as a '/' prefixed string (e.g. '/foo/bar')."""
+        return "/" + str(self.relative_path)
+
+
+@dataclass
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
@@ -164,4 +189,4 @@ class GlobalName(ASTNode):
     """Represents a fully-qualified global name."""
 
     fqun: Fqun
-    path: list[str]
+    path: GlobalPathName

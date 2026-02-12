@@ -18,15 +18,37 @@ def _universe(name: str) -> ast.Universe:
     return ast.Universe(name=name, position=_POS)
 
 
-# TODO: Add a GLobalNamePath AST node.
-def _global_name(path: list[str]) -> ast.GlobalName:
-    fqun = ast.Fqun(
-        multiverse=None,
-        authority=None,
-        universe=_universe("my_lib"),
-        position=_POS,
+def _path_segment(name: str) -> ast.GlobalPathNameSegment:
+    col = _POS.end_column + 1  # skip '/' separator
+    return ast.GlobalPathNameSegment(
+        name=name,
+        position=ast.SourcePosition(
+            line=_POS.line,
+            column=col,
+            end_line=_POS.end_line,
+            end_column=col + len(name),
+        ),
     )
-    return ast.GlobalName(fqun=fqun, path=path, position=_POS)
+
+
+def _global_path_name(segments: list[str]) -> ast.GlobalPathName:
+    col = _POS.end_column
+    path_segments: list[ast.GlobalPathNameSegment] = []
+    for seg in segments:
+        col += 1  # skip '/' separator
+        path_segments.append(
+            ast.GlobalPathNameSegment(
+                name=seg,
+                position=ast.SourcePosition(
+                    line=_POS.line,
+                    column=col,
+                    end_line=_POS.end_line,
+                    end_column=col + len(seg),
+                ),
+            )
+        )
+        col += len(seg)
+    return ast.GlobalPathName(segments=path_segments, position=_POS)
 
 
 def _local_def(name: str) -> ast.LocalPositionDefinition:
@@ -214,38 +236,54 @@ class TestUniverseNameFormat:
         assert result[1].position.column == 10
 
 
-class TestGlobalNamePath:
+class TestGlobalNamePathSegment:
     def test_valid(self):
-        result = name_validators.validate_global_name_path(_global_name(["valid_path"]))
-        assert not result
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("valid_path")
+        )
+        assert result is None
 
     def test_hyphen(self):
-        result = name_validators.validate_global_name_path(_global_name(["bad-name"]))
-        assert len(result) == 1
-        assert isinstance(result[0], diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result[0].segment == "bad-name"
-        assert result[0].position.line == 1
-        assert result[0].position.column == 24
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("bad-name")
+        )
+        assert result is not None
+        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result.segment == "bad-name"
+        assert result.position.line == 1
+        assert result.position.column == 24
 
     def test_digit_start(self):
-        result = name_validators.validate_global_name_path(_global_name(["2bad"]))
-        assert len(result) == 1
-        assert isinstance(result[0], diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result[0].segment == "2bad"
-        assert result[0].position.line == 1
-        assert result[0].position.column == 21
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("2bad")
+        )
+        assert result is not None
+        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result.segment == "2bad"
+        assert result.position.line == 1
+        assert result.position.column == 21
 
     def test_uppercase(self):
-        result = name_validators.validate_global_name_path(_global_name(["BadName"]))
-        assert len(result) == 1
-        assert isinstance(result[0], diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result[0].segment == "BadName"
-        assert result[0].position.line == 1
-        assert result[0].position.column == 21
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("BadName")
+        )
+        assert result is not None
+        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result.segment == "BadName"
+        assert result.position.line == 1
+        assert result.position.column == 21
+
+
+class TestGlobalNamePath:
+    def test_valid_multiple_segments(self):
+        result = name_validators.validate_global_name_path(
+            _global_path_name(["some", "valid_path"])
+        )
+        assert not result
 
     def test_multiple_invalid_segments(self):
         result = name_validators.validate_global_name_path(
-            _global_name(["Bad", "2bad"])
+            _global_path_name(["Bad", "2bad"])
         )
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.InvalidGlobalNamePathDiagnostic)
