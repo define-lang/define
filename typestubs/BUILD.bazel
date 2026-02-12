@@ -1,5 +1,14 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_test")
+
 filegroup(
     name = "typestubs",
     srcs = glob(["**/*.pyi"]),
     visibility = ["//visibility:public"],
+)
+
+format_test(
+    name = "format_test",
+    size = "small",
+    srcs = glob(["**/*.pyi"]),
+    python = "@aspect_rules_lint//format:ruff",
 )
