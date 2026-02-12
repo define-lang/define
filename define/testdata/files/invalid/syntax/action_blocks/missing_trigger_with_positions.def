@@ -1,0 +1,3 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/missing_trigger_with_positions> {
+    define the position<my_pos>.
+}

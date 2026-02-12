@@ -1,0 +1,5 @@
+define the potential action<mv:define-lang.org:test_files:/valid/action_no_indentation> {
+it happens when {
+} and it does {
+}
+}

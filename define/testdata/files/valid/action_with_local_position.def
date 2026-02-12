@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_files:/valid/action_with_local_position> {
+    define the position<my_pos>.
+    it happens when {
+    } and it does {
+    }
+}

@@ -1,0 +1,5 @@
+define the potential action<mv:define-lang.org:test_action_block:/test> {
+    it happens when {
+    } and it does {
+    }
+}

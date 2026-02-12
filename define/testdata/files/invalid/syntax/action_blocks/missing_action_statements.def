@@ -1,0 +1,4 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/missing_action_statements> {
+    it happens when {
+    }
+}

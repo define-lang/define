@@ -1,0 +1,7 @@
+define the potential action<mv:define-lang.org:test_files:/valid/action_with_blank_lines_in_blocks> {
+    it happens when {
+
+    } and it does {
+
+    }
+}

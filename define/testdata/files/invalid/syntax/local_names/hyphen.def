@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/hyphen> {
+    define the position<my-pos>.
+    it happens when {
+    } and it does {
+    }
+}

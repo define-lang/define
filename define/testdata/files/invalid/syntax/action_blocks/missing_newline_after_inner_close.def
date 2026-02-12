@@ -1,0 +1,4 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/missing_newline_after_inner_close> {
+    it happens when {
+    } and it does {
+    }}

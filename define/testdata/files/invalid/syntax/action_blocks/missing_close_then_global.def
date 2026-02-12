@@ -1,0 +1,5 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/missing_close_then_global> {
+    it happens when {
+    } and it does {
+    }
+define the potential position<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/missing_close_then_global>.

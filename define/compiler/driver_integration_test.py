@@ -43,6 +43,10 @@ EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
     "invalid_global_name_path/": diagnostics.InvalidGlobalNamePathDiagnostic,
     "invalid_multiverse_name/": diagnostics.InvalidMultiverseNameDiagnostic,
     "invalid_universe_name_format/": diagnostics.InvalidUniverseNameFormatDiagnostic,
+    "local_names/leading_digit": diagnostics.InvalidLocalNameFormatDiagnostic,
+    "local_names/uppercase": diagnostics.InvalidLocalNameFormatDiagnostic,
+    "local_names/hyphen": diagnostics.InvalidLocalNameFormatDiagnostic,
+    "local_names/special_characters": diagnostics.InvalidLocalNameFormatDiagnostic,
 }
 
 

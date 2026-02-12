@@ -1,0 +1,7 @@
+# Comment before the action definition
+define the potential action<mv:define-lang.org:test_files:/valid/action_with_comments_in_block> {
+    define the position<my_pos>.
+    it happens when { # comment after open brace
+    } and it does {
+    } # comment after close brace
+}

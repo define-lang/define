@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/trigger_and_action_wrong_line> {
+    it happens when {
+    }
+    and it does {
+    }
+}
