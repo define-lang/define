@@ -787,14 +787,41 @@ rules apply to those references:
 Proposals:
 
 - [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
+- [DLP 19: Guaranteeing Qualities in Positions](../proposals/00019-guaranteeing-qualities-in-positions.md)
 
 Within a local scope, a position may be defined by `define the position`
 followed by a local name in angle brackets. It may be followed by a statement
 terminator or a block. This block does not create a local scope.
 
 ```ebnf
-local_position_name = "position", "<", local_name, ">"
-local_position_definition = "define the", " ", local_position_name, ( terminator | local_position_definition_block ) ;
+local_position_name = "position", "<", local_name, ">" ;
+local_position_definition = "define the", " ", local_position_name, local_position_definition_end ;
+local_position_definition_end = terminator | local_position_definition_block ;
+local_position_definition_block = block_open, position_constraint_block, block_close ;
+```
+
+### Position Constraint Block
+
+A Position Constraint Block starts with
+`it may only contain dimension points where` and then opens a block. The block
+must contain one or more Position Requirement Statements.
+
+```ebnf
+position_constraint_block =
+    "it may only contain dimension points where",
+    block_open,
+    position_requirement_statement,
+    { position_requirement_statement },
+    block_close ;
+```
+
+### Position Requirement Statements
+
+A Local Position Requirement Statement starts with `it has the` followed by a
+typed name and a statement terminator.
+
+```ebnf
+position_requirement_statement = "it has the", " ", typed_name, terminator ;
 ```
 
 ## Defining Qualities
@@ -824,6 +851,23 @@ quality_definition = "define the potential", " ", ( action_definition | position
 ```
 
 The forms of the definitions are defined in later sections.
+
+## Defining Potential Positions
+
+Proposals:
+
+- [DLP 19: Guaranteeing Qualities in Positions](../proposals/00019-guaranteeing-qualities-in-positions.md)
+- [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
+- [DLP 23: Dimension Points Define Other Positions](../proposals/00023-dimension-points-define-other-positions.md)
+- [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
+
+Potential positions have the same syntax as local positions, except they are
+defined with `define the potential` and they have a global name instead of a local name.
+
+```ebnf
+global_position_name = "position", "<", global_name, ">" ;
+position_definition = "define the potential", " ", global_position_name, local_position_definition_end ;
+```
 
 ## Defining Potential Actions
 
