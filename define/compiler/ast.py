@@ -11,6 +11,8 @@ import lark  # noqa: TC002
 
 
 class TypeName(enum.StrEnum):
+    """The type of a quality definition."""
+
     POSITION = "position"
     ACTION = "action"
 
