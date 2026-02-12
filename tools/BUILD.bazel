@@ -1,6 +1,6 @@
-load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
+load("//tools/lint:format.bzl", "format_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
 exports_files(["pyproject.toml"])

@@ -1,4 +1,4 @@
-load("@aspect_rules_lint//format:defs.bzl", "format_test")
+load("//tools/lint:format.bzl", "format_test")
 
 filegroup(
     name = "typestubs",

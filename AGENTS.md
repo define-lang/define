@@ -151,7 +151,7 @@ BUILD file generator.
   target that checks formatting of all Python sources in that package.
 - **When creating a new BUILD file with Python targets**, add:
   ```starlark
-  load("@aspect_rules_lint//format:defs.bzl", "format_test")
+  load("//tools/lint:format.bzl", "format_test")
   format_test(
       name = "format_test",
       srcs = glob(["*.py"]),

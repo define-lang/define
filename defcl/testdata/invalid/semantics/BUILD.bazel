@@ -1,5 +1,5 @@
-load("@aspect_rules_lint//format:defs.bzl", "format_test")
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/lint:format.bzl", "format_test")
 
 py_library(
     name = "semantics",
