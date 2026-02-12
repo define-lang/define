@@ -1,14 +1,11 @@
 %import common.LF -> NEWLINE
-%import common.DIGIT
-%import common.LCASE_LETTER
-%import common.UCASE_LETTER
 
 # Terminals
-PATH_SEGMENT: (LCASE_LETTER | "_") (LCASE_LETTER | DIGIT | "_")*
-MULTIVERSE_NAME.2: /[a-z0-9](?:[a-z0-9_]*[a-z0-9])(?=:[^:>]*:[^:>]*:\/)/
-AUTHORITY_DOMAIN.1: /[a-z0-9](?:[a-z0-9.-]*[a-z0-9])(?=[^:>]*:[^:>]*:\/)/
-AUTHORITY_PATH_SEGMENT: (LCASE_LETTER | DIGIT | "_" | "-" | "~") (LCASE_LETTER | DIGIT | "_" | "-" | "." | "~")*
-UNIVERSE_NAME: /[A-Za-z0-9](?:[A-Za-z0-9_]*[A-Za-z0-9])(?=:(?![^:>]*:)[^:>]*\/)/
+PATH_SEGMENT: /[^:<>\/{}\s]+/
+MULTIVERSE_NAME.2: /[^:<>\/{}\s]+(?=:[^:>]*:[^:>]*:\/)/
+AUTHORITY_DOMAIN.1: /[^:<>\/{}\s]+(?=[^:>]*:[^:>]*:\/)/
+AUTHORITY_PATH_SEGMENT: /[^:<>\/{}\s]+/
+UNIVERSE_NAME: /[^:<>\/{}\s]+(?=:(?![^:>]*:)[^:>]*\/)/
 
 # General
 
@@ -47,7 +44,7 @@ action_definition: "define the potential action" "<" global_name ">" (terminator
 
 # Local Names
 
-LOCAL_NAME: (LCASE_LETTER | "_") (LCASE_LETTER | DIGIT | "_")*
+LOCAL_NAME: /[^:<>{}\s]+/
 
 # Action Definition Block
 

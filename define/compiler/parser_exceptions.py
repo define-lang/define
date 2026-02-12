@@ -117,12 +117,6 @@ class TrailingWhitespaceError(DefineCharError):
     label: str = "Trailing whitespace not allowed"
 
 
-class UppercaseNotAllowedError(DefineCharError):
-    """Raised when uppercase letters appear where not allowed."""
-
-    label: str = "Uppercase letters not allowed here"
-
-
 class InvalidCharacterError(DefineCharError):
     """Raised when an invalid character is encountered."""
 
@@ -204,12 +198,6 @@ class EmptyNameError(DefineTokenError):
     label: str = "Name cannot be empty"
 
 
-class InvalidAuthorityDomainError(DefineTokenError):
-    """Raised when an authority domain is invalid."""
-
-    label: str = "Invalid authority domain"
-
-
 class InvalidAuthorityPathError(DefineTokenError):
     """Raised when an authority path is invalid."""
 
@@ -220,24 +208,6 @@ class InvalidGlobalNamePathError(DefineTokenError):
     """Raised when a global name path is invalid."""
 
     label: str = "Invalid global name path"
-
-
-class InvalidLocalNameError(DefineTokenError):
-    """Raised when a local name is invalid."""
-
-    label: str = "Invalid local name"
-
-
-class InvalidMultiverseError(DefineTokenError):
-    """Raised when a multiverse name is invalid."""
-
-    label: str = "Invalid multiverse name"
-
-
-class InvalidUniverseError(DefineTokenError):
-    """Raised when a universe name is invalid."""
-
-    label: str = "Invalid universe name"
 
 
 class EmptyFileError(DefineTokenError):

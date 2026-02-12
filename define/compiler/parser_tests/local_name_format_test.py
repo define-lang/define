@@ -71,33 +71,27 @@ def test_local_name_single_underscore(p: parser.Parser) -> None:
 
 
 def test_local_name_starting_with_digit(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.InvalidLocalNameError) as exc_info:
-        p.parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<2bad>.\n"
-            + "    it happens when {\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert str(exc_info.value.token) == "2bad"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 25
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<2bad>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["2bad"]
 
 
 def test_local_name_uppercase(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.UppercaseNotAllowedError) as exc_info:
-        p.parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<MyPos>.\n"
-            + "    it happens when {\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.char == "M"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 25
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<MyPos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["MyPos"]
 
 
 def test_local_name_empty(p: parser.Parser) -> None:
@@ -116,30 +110,24 @@ def test_local_name_empty(p: parser.Parser) -> None:
 
 
 def test_local_name_with_hyphen(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.InvalidLocalNameError) as exc_info:
-        p.parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<my-pos>.\n"
-            + "    it happens when {\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert str(exc_info.value.token) == "-pos"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 27
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<my-pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my-pos"]
 
 
 def test_local_name_with_slash(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.InvalidLocalNameError) as exc_info:
-        p.parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<my/pos>.\n"
-            + "    it happens when {\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert str(exc_info.value.token) == "/"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 27
+    tree = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<my/pos>.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["my/pos"]

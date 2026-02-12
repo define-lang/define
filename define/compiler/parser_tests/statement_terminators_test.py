@@ -29,6 +29,12 @@ def test_missing_newline_after_terminator(p: parser.Parser) -> None:
     assert exc_info.value.column == 46
 
 
+def test_space_before_terminator(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
+        p.parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
+    assert exc_info.value.column == 65
+
+
 def test_trailing_space_before_newline(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         p.parse("define the potential position<standard:/path>. \n")

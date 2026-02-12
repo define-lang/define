@@ -22,9 +22,7 @@ class UnexpectedInput(LarkError):
     def match_examples(
         self,
         parse_fn: Callable[[str], Tree[Token]],
-        examples: (
-            Mapping[_T, Iterable[str]] | Iterable[tuple[_T, Iterable[str]]]
-        ),
+        examples: (Mapping[_T, Iterable[str]] | Iterable[tuple[_T, Iterable[str]]]),
         token_type_match_fallback: bool = False,
         use_accepts: bool = True,
     ) -> _T | None: ...

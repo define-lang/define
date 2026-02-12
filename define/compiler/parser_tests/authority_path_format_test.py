@@ -28,10 +28,8 @@ def test_authority_path_segments_are_valid_in_full_fqun(p: parser.Parser) -> Non
 
 
 def test_invalid_chars_in_authority_path_uppercase(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.UppercaseNotAllowedError) as exc_info:
-        p.parse("define the potential position<example.com/Bad:my_lib:/path>.\n")
-    assert exc_info.value.char == "B"
-    assert exc_info.value.column == 43
+    tree = p.parse("define the potential position<example.com/Bad:my_lib:/path>.\n")
+    assert get_tokens_by_type(tree, "AUTHORITY_PATH_SEGMENT") == ["Bad"]
 
 
 def test_invalid_chars_in_authority_path_angle(p: parser.Parser) -> None:
@@ -42,18 +40,14 @@ def test_invalid_chars_in_authority_path_angle(p: parser.Parser) -> None:
 
 
 def test_authority_path_segment_starting_with_dot(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.InvalidAuthorityPathError) as exc_info:
-        p.parse("define the potential position<example.com/.hidden:my_lib:/path>.\n")
-    assert str(exc_info.value.token) == "."
-    assert exc_info.value.column == 43
+    tree = p.parse("define the potential position<example.com/.hidden:my_lib:/path>.\n")
+    assert get_tokens_by_type(tree, "AUTHORITY_PATH_SEGMENT") == [".hidden"]
 
 
 def test_authority_path_segment_starting_with_dot_in_full_fqun(
     p: parser.Parser,
 ) -> None:
-    with pytest.raises(parser_exceptions.InvalidAuthorityPathError) as exc_info:
-        p.parse(
-            "define the potential position<mymv:example.com/.hidden:my_lib:/path>.\n"
-        )
-    assert str(exc_info.value.token) == "."
-    assert exc_info.value.column == 48
+    tree = p.parse(
+        "define the potential position<mymv:example.com/.hidden:my_lib:/path>.\n"
+    )
+    assert get_tokens_by_type(tree, "AUTHORITY_PATH_SEGMENT") == [".hidden"]

@@ -5,11 +5,12 @@ from __future__ import annotations
 from functools import cached_property
 from pathlib import Path
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast, diagnostics, name_validators
 
 _SPEC_DIR = Path(__file__).parent.parent / "spec"
 
 
+# TODO: Move all name validation into name_validators.
 def _load_reserved_words(filename: str) -> frozenset[str]:
     """Load reserved words from a spec file."""
     path = _SPEC_DIR / filename
@@ -106,14 +107,26 @@ class Validator:
         self._validate_path_matches_file(definition, file_path)
         self._validate_fqun_matches_expected(definition, expected_universe_name)
         self._validate_not_duplicate(definition)
+        if (
+            isinstance(definition, ast.ActionDefinition)
+            and definition.definition_block is not None
+        ):
+            for local_def in definition.definition_block.local_definitions:
+                self._diagnostics.extend(
+                    name_validators.validate_local_name_format(local_def)
+                )
 
     def _validate_global_name(self, name: ast.GlobalName) -> None:
         """Validate a global name and its FQUN."""
         self._validate_fqun(name.fqun)
+        self._diagnostics.extend(name_validators.validate_global_name_path(name))
 
     def _validate_fqun(self, fqun: ast.Fqun) -> None:
         """Validate a fully-qualified universe name."""
         if fqun.multiverse is not None:
+            self._diagnostics.extend(
+                name_validators.validate_multiverse_name_format(fqun.multiverse)
+            )
             self._validate_multiverse_name(fqun.multiverse)
 
         if fqun.authority is None:
@@ -129,8 +142,17 @@ class Validator:
                     )
                 )
         else:
+            self._diagnostics.extend(
+                name_validators.validate_authority_domain_format(fqun.authority)
+            )
+            self._diagnostics.extend(
+                name_validators.validate_authority_path_format(fqun.authority)
+            )
             self._validate_authority(fqun.authority, fqun.multiverse)
 
+        self._diagnostics.extend(
+            name_validators.validate_universe_name_format(fqun.universe)
+        )
         self._validate_universe_name(fqun.universe)
 
     def _validate_multiverse_name(self, multiverse: ast.Multiverse) -> None:

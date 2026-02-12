@@ -364,3 +364,87 @@ class TestFqunMismatch:
             source, expected_universe_name="mv:my.domain.com:my_lib"
         )
         assert len(diags) == 0
+
+
+# Tests just the positions of name formatting errors to make sure they are
+# integrated correctly into the validator. name_validators_test checks the
+# actual name-formatting logic.
+class TestNameFormatPositions:
+    def test_multiverse_name_position(self):
+        source = "define the potential position<_mv:my.domain.com:my_lib:/path>.\n"
+        diags = _parse_transform_validate(source)
+        mv_diags = [
+            d
+            for d in diags
+            if isinstance(d, diagnostics.InvalidMultiverseNameDiagnostic)
+        ]
+        assert len(mv_diags) == 1
+        assert mv_diags[0].position.line == 1
+        assert mv_diags[0].position.column == 31
+
+    def test_authority_domain_position(self):
+        source = "define the potential position<mv:-example.com:my_lib:/path>.\n"
+        diags = _parse_transform_validate(source)
+        ad_diags = [
+            d
+            for d in diags
+            if isinstance(d, diagnostics.InvalidAuthorityDomainDiagnostic)
+        ]
+        assert len(ad_diags) == 1
+        assert ad_diags[0].position.line == 1
+        assert ad_diags[0].position.column == 34
+
+    def test_authority_path_position(self):
+        source = "define the potential position<mv:example.com/.hidden:my_lib:/path>.\n"
+        diags = _parse_transform_validate(source)
+        ap_diags = [
+            d
+            for d in diags
+            if isinstance(d, diagnostics.InvalidAuthorityPathSegmentDiagnostic)
+        ]
+        assert len(ap_diags) == 1
+        assert ap_diags[0].position.line == 1
+        assert ap_diags[0].position.column == 46
+
+    def test_universe_name_position(self):
+        source = "define the potential position<mv:my.domain.com:_my_lib:/path>.\n"
+        diags = _parse_transform_validate(source)
+        un_diags = [
+            d
+            for d in diags
+            if isinstance(d, diagnostics.InvalidUniverseNameFormatDiagnostic)
+        ]
+        assert len(un_diags) == 1
+        assert un_diags[0].position.line == 1
+        assert un_diags[0].position.column == 48
+
+    def test_path_segment_position(self):
+        source = "define the potential position<my.domain.com:my_lib:/2bad>.\n"
+        diags = _parse_transform_validate(source)
+        ps_diags = [
+            d
+            for d in diags
+            if isinstance(d, diagnostics.InvalidGlobalNamePathDiagnostic)
+        ]
+        assert len(ps_diags) == 1
+        assert ps_diags[0].position.line == 1
+        assert ps_diags[0].position.column == 53
+
+    def test_local_name_position(self):
+        source = (
+            "define the potential action<mv:my.domain.com:my_lib:/act> {\n"
+            "define the position<my-pos>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        ln_diags = [
+            d
+            for d in diags
+            if isinstance(d, diagnostics.InvalidLocalNameFormatDiagnostic)
+        ]
+        assert len(ln_diags) == 1
+        assert ln_diags[0].position.line == 2
+        assert ln_diags[0].position.column == 23

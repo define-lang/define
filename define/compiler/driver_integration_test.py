@@ -39,6 +39,27 @@ EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
     "fqun_validation/universe_uppercase": diagnostics.UniverseNameUppercaseDiagnostic,
     "paths/path_leading_underscore": diagnostics.PathMismatchDiagnostic,
     "terminators/missing_space_before_terminator": diagnostics.FqunMismatchDiagnostic,
+    # TODO: Refactor these into separate directories so we only have to check the directory name.
+    "fqun_format/authority_leading_dot": diagnostics.InvalidAuthorityDomainDiagnostic,
+    "fqun_format/authority_leading_hyphen": diagnostics.InvalidAuthorityDomainDiagnostic,
+    "fqun_format/authority_path_leading_dot": diagnostics.InvalidAuthorityPathSegmentDiagnostic,
+    "fqun_format/authority_single_char": diagnostics.InvalidAuthorityDomainDiagnostic,
+    "fqun_format/authority_trailing_dot": diagnostics.InvalidAuthorityDomainDiagnostic,
+    "fqun_format/authority_trailing_hyphen": diagnostics.InvalidAuthorityDomainDiagnostic,
+    "fqun_format/authority_uppercase": diagnostics.InvalidAuthorityDomainDiagnostic,
+    "fqun_format/multiverse_leading_underscore": diagnostics.InvalidMultiverseNameDiagnostic,
+    "fqun_format/multiverse_single_char": diagnostics.InvalidMultiverseNameDiagnostic,
+    "fqun_format/multiverse_trailing_underscore": diagnostics.InvalidMultiverseNameDiagnostic,
+    "fqun_format/multiverse_uppercase": diagnostics.InvalidMultiverseNameDiagnostic,
+    "fqun_format/universe_leading_underscore": diagnostics.InvalidUniverseNameFormatDiagnostic,
+    "fqun_format/universe_single_char": diagnostics.InvalidUniverseNameFormatDiagnostic,
+    "fqun_format/universe_trailing_underscore": diagnostics.InvalidUniverseNameFormatDiagnostic,
+    "local_names/hyphen": diagnostics.InvalidGlobalNamePathDiagnostic,
+    "local_names/leading_digit": diagnostics.InvalidGlobalNamePathDiagnostic,
+    "local_names/special_characters": diagnostics.InvalidGlobalNamePathDiagnostic,
+    "local_names/uppercase_letter": diagnostics.InvalidGlobalNamePathDiagnostic,
+    "paths/path_leading_digit": diagnostics.InvalidGlobalNamePathDiagnostic,
+    "paths/path_uppercase": diagnostics.InvalidGlobalNamePathDiagnostic,
 }
 
 

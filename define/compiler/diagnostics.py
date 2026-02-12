@@ -91,3 +91,45 @@ class FqunMismatchDiagnostic(Diagnostic):
 
     expected: str
     actual: str
+
+
+@dataclass
+class InvalidAuthorityDomainDiagnostic(Diagnostic):
+    """Diagnostic for when an authority domain has invalid format."""
+
+    domain: str
+
+
+@dataclass
+class InvalidAuthorityPathSegmentDiagnostic(Diagnostic):
+    """Diagnostic for when an authority path segment has invalid format."""
+
+    segment: str
+
+
+@dataclass
+class InvalidGlobalNamePathDiagnostic(Diagnostic):
+    """Diagnostic for when a global name path segment has invalid format."""
+
+    segment: str
+
+
+@dataclass
+class InvalidLocalNameFormatDiagnostic(Diagnostic):
+    """Diagnostic for when a local name has invalid format."""
+
+    local_name: str
+
+
+@dataclass
+class InvalidMultiverseNameDiagnostic(Diagnostic):
+    """Diagnostic for when a multiverse name has invalid format."""
+
+    multiverse_name: str
+
+
+@dataclass
+class InvalidUniverseNameFormatDiagnostic(Diagnostic):
+    """Diagnostic for when a universe name has invalid format."""
+
+    universe_name: str

@@ -127,6 +127,28 @@ py_binary(
 )
 
 py_library(
+    name = "name_validators",
+    srcs = ["name_validators.py"],
+    deps = [
+        ":ast",
+        ":diagnostics",
+    ],
+)
+
+py_test(
+    name = "name_validators_test",
+    size = "small",
+    srcs = ["name_validators_test.py"],
+    pytest_main = True,
+    deps = [
+        ":ast",
+        ":diagnostics",
+        ":name_validators",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "parser",
     srcs = ["parser.py"],
     data = ["grammar.lark"],
@@ -176,6 +198,7 @@ py_library(
     deps = [
         ":ast",
         ":diagnostics",
+        ":name_validators",
     ],
 )
 
@@ -220,6 +243,8 @@ pyright_test(
         ":driver_test",
         ":exceptions",
         ":main",
+        ":name_validators",
+        ":name_validators_test",
         ":parser",
         ":parser_exceptions",
         ":transformer",
