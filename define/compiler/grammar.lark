@@ -1,13 +1,22 @@
 %import common.LF -> NEWLINE
 
-# Terminals
+# Name Terminals
 PATH_SEGMENT: /[^:<>\/{}\s]+/
 MULTIVERSE_NAME.2: /[^:<>\/{}\s]+(?=:[^:>]*:[^:>]*:\/)/
 AUTHORITY_DOMAIN.1: /[^:<>\/{}\s]+(?=[^:>]*:[^:>]*:\/)/
 AUTHORITY_PATH_SEGMENT: /[^:<>\/{}\s]+/
 UNIVERSE_NAME: /[^:<>\/{}\s]+(?=:(?![^:>]*:)[^:>]*\/)/
-DEFINE_THE_POSITION: "define the position"
 LOCAL_NAME: /[^:<>{}\s]+/
+
+# Syntax Terminals
+DEFINE_THE_POSITION: "define the position"
+DEFINE_THE_POTENTIAL_POSITION: "define the potential position"
+DEFINE_THE_POTENTIAL_ACTION: "define the potential action"
+NAME_TYPE: "position" | "action"
+IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE: "it may only contain dimension points where"
+IT_HAS_THE: "it has the"
+IT_HAPPENS_WHEN: "it happens when"
+AND_IT_DOES: " and it does"
 
 # General
 
@@ -29,8 +38,6 @@ _block_close: "}" NEWLINE
 
 # Global Name Syntax
 
-NAME_TYPE: "position" | "action"
-
 authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
 authority: AUTHORITY_DOMAIN authority_path?
 
@@ -45,11 +52,10 @@ typed_global_name_reference: NAME_TYPE "<" global_name_reference ">"
 
 # Position Constraint Block Syntax
 
-_position_constraint_intro: "it may only contain dimension points where"
-position_requirement_statement: "it has the" " " typed_global_name_reference terminator
+position_requirement_statement: IT_HAS_THE " " typed_global_name_reference terminator
 _position_constraint_requirement_tail: (NEWLINE* position_requirement_statement)*
 _position_constraint_requirements: NEWLINE* position_requirement_statement _position_constraint_requirement_tail NEWLINE*
-position_constraint_block: _position_constraint_intro _block_open _position_constraint_requirements _block_close
+position_constraint_block: IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE _block_open _position_constraint_requirements _block_close
 
 # Local Position Definition Syntax
 
@@ -58,15 +64,15 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 # Potential Position Definition Syntax
 
-position_definition: "define the potential position" "<" global_name ">" position_definition_terminator_or_block
+position_definition: DEFINE_THE_POTENTIAL_POSITION "<" global_name ">" position_definition_terminator_or_block
 
 # Action Definition Syntax
 
-action_definition: "define the potential action" "<" global_name ">" (terminator | action_definition_block)
+action_definition: DEFINE_THE_POTENTIAL_ACTION "<" global_name ">" (terminator | action_definition_block)
 
 local_position_definition: DEFINE_THE_POSITION "<" LOCAL_NAME ">" position_definition_terminator_or_block
-trigger_conditions_block: "it happens when" _block_open NEWLINE* "}"
-action_statements_block: " and it does" _block_open (NEWLINE | local_position_definition)* _block_close
+trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* "}"
+action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition)* _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
 action_definition_block: _block_open (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* _block_close
 

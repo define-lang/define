@@ -81,6 +81,30 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Discard the local-position definition keyword token."""
         return Discard
 
+    def DEFINE_THE_POTENTIAL_POSITION(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the potential-position definition keyword token."""
+        return Discard
+
+    def DEFINE_THE_POTENTIAL_ACTION(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the potential-action definition keyword token."""
+        return Discard
+
+    def IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the position-constraint intro keyword token."""
+        return Discard
+
+    def IT_HAS_THE(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the position-requirement keyword token."""
+        return Discard
+
+    def IT_HAPPENS_WHEN(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the trigger-conditions keyword token."""
+        return Discard
+
+    def AND_IT_DOES(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard the action-statements keyword token."""
+        return Discard
+
     @v_args(meta=True)
     def local_position_definition(
         self,
