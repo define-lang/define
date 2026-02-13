@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import typing
 from dataclasses import asdict, dataclass
 from typing import ClassVar
 
-from define.compiler import ast  # noqa: TC001
+if typing.TYPE_CHECKING:
+    from define.compiler import ast
 
 
 @dataclass

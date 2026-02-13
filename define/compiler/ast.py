@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import enum
+import typing
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
 
-import lark  # noqa: TC002
+if typing.TYPE_CHECKING:
+    import lark
 
 
 class TypeName(enum.StrEnum):

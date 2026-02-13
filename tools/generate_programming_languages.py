@@ -4,12 +4,15 @@
 Requires: PyYAML (pip install pyyaml)
 """
 
-import http.client  # noqa: TC003
 import re
 import sys
+import typing
 import urllib.request
 from pathlib import Path
 from typing import cast
+
+if typing.TYPE_CHECKING:
+    import http.client
 
 import yaml
 
