@@ -160,6 +160,10 @@ class Validator:
         if expected_universe_name is None:
             return
 
+        # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
+        if definition.name.fqun is None:
+            raise ValueError("GlobalNameDefinition must have a non-None fqun")
+
         actual = definition.name.fqun.canonical
         if actual != expected_universe_name:
             self._diagnostics.append(
