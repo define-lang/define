@@ -18,8 +18,10 @@ def _parse_transform_validate(
 ) -> list[diagnostics.Diagnostic]:
     tree = _parser.parse(source)
     program = _transformer.transform(tree)
-    return validator.Validator(program, source).validate(
-        file_path=file_path, expected_universe_name=expected_universe_name
+    return validator.Validator().validate(
+        program=program,
+        file_path=file_path,
+        expected_universe_name=expected_universe_name,
     )
 
 

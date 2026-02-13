@@ -50,9 +50,9 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, returned_source = d.validate_file(Path("hello.def"))
-        assert diags == []
-        assert returned_source == source
+        result = d.validate_file(Path("hello.def"))
+        assert result.diagnostics == []
+        assert result.source == source
 
     def test_returns_diagnostics_for_path_mismatch(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -66,9 +66,9 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(Path("wrong.def"))
-        assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+        result = d.validate_file(Path("wrong.def"))
+        assert len(result.diagnostics) == 1
+        assert isinstance(result.diagnostics[0], diagnostics.PathMismatchDiagnostic)
 
     def test_returns_diagnostics_for_fqun_mismatch(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -82,8 +82,11 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(Path("hello.def"))
-        assert any(isinstance(d, diagnostics.FqunMismatchDiagnostic) for d in diags)
+        result = d.validate_file(Path("hello.def"))
+        assert any(
+            isinstance(d, diagnostics.FqunMismatchDiagnostic)
+            for d in result.diagnostics
+        )
 
     def test_syntax_error_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _setup_project(tmp_path, "test.example.com:my_lib")
@@ -104,8 +107,8 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(Path("sub/dir/leaf.def"))
-        assert diags == []
+        result = d.validate_file(Path("sub/dir/leaf.def"))
+        assert result.diagnostics == []
 
 
 class TestPathResolution:
@@ -121,8 +124,8 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(tmp_path / "hello.def")
-        assert diags == []
+        result = d.validate_file(tmp_path / "hello.def")
+        assert result.diagnostics == []
 
     def test_absolute_path_outside_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -157,8 +160,8 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(Path("sub/../hello.def"))
-        assert diags == []
+        result = d.validate_file(Path("sub/../hello.def"))
+        assert result.diagnostics == []
 
     def test_symlink_to_outside_without_dotdot_is_allowed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -177,8 +180,8 @@ class TestPathResolution:
         monkeypatch.chdir(project)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(Path("link/hello.def"))
-        assert diags == []
+        result = d.validate_file(Path("link/hello.def"))
+        assert result.diagnostics == []
 
     def test_symlink_with_dotdot_escaping_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -211,8 +214,8 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        diags, _ = d.validate_file(Path("link/../hello.def"))
-        assert diags == []
+        result = d.validate_file(Path("link/../hello.def"))
+        assert result.diagnostics == []
 
     def test_path_escaping_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -87,8 +87,8 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
 
-    diagnostics, _ = driver.Driver().validate_file(def_file)
-    assert not diagnostics, f"Expected no diagnostics, got: {diagnostics}"
+    result = driver.Driver().validate_file(def_file)
+    assert not result.diagnostics, f"Expected no diagnostics, got: {result.diagnostics}"
 
 
 @pytest.mark.parametrize(
@@ -115,10 +115,10 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
     )
 
     if expected_diagnostic:
-        diagnostics, _ = d.validate_file(def_file)
-        assert any(isinstance(diag, expected_diagnostic) for diag in diagnostics), (
-            f"Expected {expected_diagnostic.__name__} for {file_name}"
-        )
+        result = d.validate_file(def_file)
+        assert any(
+            isinstance(diag, expected_diagnostic) for diag in result.diagnostics
+        ), f"Expected {expected_diagnostic.__name__} for {file_name}"
     else:
         # These files should fail during parsing
         with pytest.raises(parser_exceptions.DefineSyntaxError):
@@ -138,9 +138,9 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
     assert def_files, f"No .def files found in {project_dir}"
 
     for def_file in def_files:
-        diagnostics, _ = d.validate_file(def_file)
-        assert not diagnostics, (
-            f"Expected no diagnostics for {def_file}, got: {diagnostics}"
+        result = d.validate_file(def_file)
+        assert not result.diagnostics, (
+            f"Expected no diagnostics for {def_file}, got: {result.diagnostics}"
         )
 
 
@@ -159,7 +159,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
     assert def_files, f"No .def files found in {project_dir}"
 
     for def_file in def_files:
-        diagnostics, _ = d.validate_file(def_file)
+        result = d.validate_file(def_file)
 
         project_str = str(project_dir)
         expected_type = next(
@@ -172,9 +172,10 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
         )
         if expected_type is None:
             pytest.fail(
-                f"Expected diagnostic for {def_file} not specified. Got: {diagnostics!r}"
+                "Expected diagnostic for "
+                + f"{def_file} not specified. Got: {result.diagnostics!r}"
             )
 
-        assert any(isinstance(diag, expected_type) for diag in diagnostics), (
+        assert any(isinstance(diag, expected_type) for diag in result.diagnostics), (
             f"Expected {expected_type.__name__} for {def_file}"
         )

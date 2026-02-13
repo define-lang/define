@@ -11,11 +11,8 @@ import lark
 
 from define.compiler import (
     config,
-    diagnostics,
     exceptions,
-    parser,
     parser_exceptions,
-    transformer,
     validator,
 )
 from define.config.project import config_pb2
@@ -31,32 +28,19 @@ class ExitCode(enum.IntEnum):
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
-    _parser: parser.Parser
-
-    def __init__(self):
-        """Initialize the driver."""
-        self._parser = parser.Parser()
-
     @cached_property
     def project_config(self) -> config_pb2.ProjectConfigFile:
         """Load and return the project configuration."""
         return config.project_config()
 
-    def validate_file(
-        self, path: os.PathLike[str]
-    ) -> tuple[list[diagnostics.Diagnostic], str]:
+    def validate_file(self, path: os.PathLike[str]) -> validator.ValidationResult:
         """Compile a single Define source file and return diagnostics and source text."""
         config.assert_is_project_root()
         resolved_path = self._resolve_path(path)
-
-        tree, source = self._parser.parse_file(resolved_path)
-        program = transformer.DefineTransformer().transform(tree)
-        file_path = str(resolved_path.with_suffix(""))
-        diagnostics = validator.Validator(program, source).validate(
-            file_path=file_path,
+        return validator.Validator().parse_and_validate_file(
+            path=resolved_path,
             expected_universe_name=self.project_config.project.universe_name or "",
         )
-        return diagnostics, source
 
     @staticmethod
     def _resolve_path(path: os.PathLike[str]) -> Path:
@@ -105,7 +89,7 @@ class Driver:
         if error_stream is None:
             error_stream = sys.stderr
         try:
-            diagnostics_result, source = self.validate_file(path)
+            result = self.validate_file(path)
         except parser_exceptions.DefineSyntaxError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
@@ -116,9 +100,9 @@ class Driver:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 
-        if diagnostics_result:
-            source_lines = source.splitlines()
-            for diagnostic in diagnostics_result:
+        if result.diagnostics:
+            source_lines = result.source.splitlines()
+            for diagnostic in result.diagnostics:
                 print(diagnostic.format(source_lines), file=error_stream)
             return ExitCode.ERROR
 

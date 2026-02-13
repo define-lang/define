@@ -2,34 +2,58 @@
 
 from __future__ import annotations
 
+import os
 from collections import ChainMap
+from dataclasses import dataclass
 from functools import cached_property
 
-from define.compiler import ast, diagnostics, name_validators
+from define.compiler import ast, diagnostics, name_validators, parser, transformer
+
+
+@dataclass
+class ValidationResult:
+    """Validation output for one source file."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+    source: str
 
 
 class Validator:
     """Validates semantic rules for a Define program AST."""
 
-    _program: ast.Program
-    _source: str
-
-    def __init__(self, program: ast.Program, source: str):
-        """Initialize validator with a program AST and source code."""
-        self._program = program
-        self._source = source
+    def __init__(self):
+        """Initialize validator state."""
         self._diagnostics: list[diagnostics.Diagnostic] = []
         self._seen_definitions: dict[
             tuple[ast.TypeName, str], ast.QualityDefinition
         ] = {}
 
     @cached_property
-    def source_lines(self) -> list[str]:
-        """Source code split into lines, for use with diagnostics.Diagnostic.format()."""
-        return self._source.splitlines()
+    def _parser(self) -> parser.Parser:
+        """Parser instance, created only when file parsing is needed."""
+        return parser.Parser()
+
+    # This method is intentionally exercised primarily through Driver tests so
+    # the end-to-end filesystem/context behavior is verified in one place.
+    def parse_and_validate_file(
+        self,
+        path: os.PathLike[str],
+        expected_universe_name: str | None = None,
+    ) -> ValidationResult:
+        """Parse, transform, and validate one Define file."""
+        tree, source = self._parser.parse_file(path)
+        program = transformer.DefineTransformer().transform(tree)
+        file_path = os.fspath(path).removesuffix(".def")
+        result = self.validate(
+            program=program,
+            file_path=file_path,
+            expected_universe_name=expected_universe_name,
+        )
+        return ValidationResult(diagnostics=result, source=source)
 
     def validate(
         self,
+        program: ast.Program,
         file_path: str | None = None,
         expected_universe_name: str | None = None,
     ) -> list[diagnostics.Diagnostic]:
@@ -47,7 +71,7 @@ class Validator:
         """
         self._diagnostics = []
         self._seen_definitions = {}
-        for definition in self._program.definitions:
+        for definition in program.definitions:
             self._validate_definition(definition, file_path, expected_universe_name)
         return self._diagnostics
 
