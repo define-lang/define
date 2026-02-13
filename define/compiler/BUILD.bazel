@@ -119,6 +119,22 @@ py_test(
     ],
 )
 
+py_test(
+    name = "driver_fuzz_test",
+    size = "medium",
+    srcs = ["driver_fuzz_test.py"],
+    pytest_main = True,
+    tags = ["manual"],
+    deps = [
+        ":driver",
+        ":exceptions",
+        ":parser_exceptions",
+        "@pypi//hypothesis",
+        "@pypi//lark",
+        "@pypi//pytest",
+    ],
+)
+
 py_binary(
     name = "main",
     srcs = ["main.py"],
@@ -238,6 +254,7 @@ pyright_test(
         ":config_test",
         ":diagnostics",
         ":driver",
+        ":driver_fuzz_test",
         ":driver_integration_test",
         ":driver_run_test",
         ":driver_test",

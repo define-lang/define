@@ -72,6 +72,16 @@ semantics. It is `compiler/validator.py`. Its test is
   functionality, first update `compiler/driver_test.py`.
 - When changing functionality `Driver.run`, first update
   `compiler/driver_run_test.py`. Whe
+- The fuzz test (`compiler/driver_fuzz_test.py`) is tagged `manual` and does not
+  run with `bazelisk test //...`. Run it explicitly with
+  `bazelisk test //define/compiler:driver_fuzz_test` after changes to the
+  parser, transformer, validator, or error classification code.
+- Update the fuzz test any time the syntax or semantics of the language change,
+  so that the generated inputs remain representative of valid and near-valid
+  Define source.
+- When a fuzz test failure reveals a bug, add a targeted unit test for the
+  affected component (parser, transformer, or validator) that reproduces the
+  specific issue before fixing it.
 
 ## Implementation Sequence
 
