@@ -72,7 +72,7 @@ class Program(ASTNode):
 class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
-    name: GlobalName
+    name: GlobalNameDefinition
     type_name: TypeName
 
 
@@ -81,6 +81,7 @@ class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
     type_name: TypeName = TypeName.POSITION
+    constraints: PositionConstraintBlock | None = None
 
 
 @dataclass
@@ -95,9 +96,32 @@ class LocalPositionDefinition(ASTNode):
     """Represents a local position definition within an action block."""
 
     local_name: LocalName
+    constraints: PositionConstraintBlock | None = None
 
 
 type ActionStatement = LocalPositionDefinition
+
+
+@dataclass
+class TypedGlobalNameReference(ASTNode):
+    """Represents a typed global name reference."""
+
+    type_name: TypeName
+    global_name: GlobalNameReference
+
+
+@dataclass
+class PositionRequirementStatement(ASTNode):
+    """Represents a position requirement statement in a constraints block."""
+
+    typed_global_name: TypedGlobalNameReference
+
+
+@dataclass
+class PositionConstraintBlock(ASTNode):
+    """Represents a position constraint block."""
+
+    requirements: list[PositionRequirementStatement]
 
 
 @dataclass
@@ -203,7 +227,21 @@ class Fqun(ASTNode):
 
 @dataclass
 class GlobalName(ASTNode):
-    """Represents a fully-qualified global name."""
+    """Base class for global name-like nodes."""
 
-    fqun: Fqun
+    fqun: Fqun | None
     path: GlobalPathName
+
+
+@dataclass
+class GlobalNameDefinition(GlobalName):
+    """Represents a global name at a definition site."""
+
+    def __init__(self, position: SourcePosition, fqun: Fqun, path: GlobalPathName):
+        """Initialize a definition-site global name with a required FQUN."""
+        super().__init__(position=position, fqun=fqun, path=path)
+
+
+@dataclass
+class GlobalNameReference(GlobalName):
+    """Represents a global name at a reference site."""

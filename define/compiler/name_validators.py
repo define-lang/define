@@ -340,7 +340,8 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
 def validate_global_name(name: ast.GlobalName) -> list[diagnostics.Diagnostic]:
     """Validate a global name and its FQUN."""
     result: list[diagnostics.Diagnostic] = []
-    result.extend(validate_fqun(name.fqun))
+    if name.fqun is not None:
+        result.extend(validate_fqun(name.fqun))
     result.extend(validate_global_name_path(name.path))
     return result
 

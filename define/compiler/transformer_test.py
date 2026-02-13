@@ -14,6 +14,11 @@ def _parse_and_transform(source: str) -> ast.Program:
     return transformer.transform(tree)
 
 
+def _require_fqun(name: ast.GlobalName) -> ast.Fqun:
+    assert name.fqun is not None
+    return name.fqun
+
+
 def test_position_definition_transforms_to_program():
     program = _parse_and_transform("define the potential position<standard:/path>.\n")
     assert isinstance(program, ast.Program)
@@ -22,11 +27,12 @@ def test_position_definition_transforms_to_program():
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
+    fqun = _require_fqun(definition.name)
     assert definition.position.line == 1
     assert definition.position.column == 1
-    assert definition.name.fqun.universe.name == "standard"
-    assert definition.name.fqun.universe.position.line == 1
-    assert definition.name.fqun.universe.position.column == 31
+    assert fqun.universe.name == "standard"
+    assert fqun.universe.position.line == 1
+    assert fqun.universe.position.column == 31
     assert definition.name.path.relative_path == Path("path")
     assert definition.name.path.segments[0].name == "path"
     assert definition.name.path.segments[0].position.line == 1
@@ -41,8 +47,9 @@ def test_action_definition_transforms_to_program():
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
+    fqun = _require_fqun(definition.name)
     assert definition.position.line == 1
-    assert definition.name.fqun.universe.name == "standard"
+    assert fqun.universe.name == "standard"
     assert definition.name.path.relative_path == Path("path")
 
 
@@ -51,19 +58,20 @@ def test_global_name_full_fqun():
         "define the potential position<my_mv:example.com/org/repo:my_lib:/some/path>.\n"
     )
     name = program.definitions[0].name
-    assert name.fqun.multiverse is not None
-    assert name.fqun.multiverse.name == "my_mv"
-    assert name.fqun.multiverse.position.line == 1
-    assert name.fqun.multiverse.position.column == 31
-    assert name.fqun.universe.name == "my_lib"
-    assert name.fqun.universe.position.line == 1
-    assert name.fqun.universe.position.column == 58
+    fqun = _require_fqun(name)
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == "my_mv"
+    assert fqun.multiverse.position.line == 1
+    assert fqun.multiverse.position.column == 31
+    assert fqun.universe.name == "my_lib"
+    assert fqun.universe.position.line == 1
+    assert fqun.universe.position.column == 58
     assert name.path.relative_path == Path("some/path")
-    assert name.fqun.authority is not None
-    assert name.fqun.authority.domain == "example.com"
-    assert name.fqun.authority.path == ["org", "repo"]
-    assert name.fqun.authority.position.line == 1
-    assert name.fqun.authority.position.column == 37
+    assert fqun.authority is not None
+    assert fqun.authority.domain == "example.com"
+    assert fqun.authority.path == ["org", "repo"]
+    assert fqun.authority.position.line == 1
+    assert fqun.authority.position.column == 37
 
 
 def test_global_name_authority_universe():
@@ -71,15 +79,16 @@ def test_global_name_authority_universe():
         "define the potential position<example.com:my_lib:/some/path>.\n"
     )
     name = program.definitions[0].name
-    assert name.fqun.multiverse is None
-    assert name.fqun.universe.name == "my_lib"
-    assert name.fqun.universe.position.line == 1
-    assert name.fqun.universe.position.column == 43
+    fqun = _require_fqun(name)
+    assert fqun.multiverse is None
+    assert fqun.universe.name == "my_lib"
+    assert fqun.universe.position.line == 1
+    assert fqun.universe.position.column == 43
     assert name.path.relative_path == Path("some/path")
-    assert name.fqun.authority is not None
-    assert name.fqun.authority.domain == "example.com"
-    assert name.fqun.authority.path == []
-    assert name.fqun.authority.position.line == 1
+    assert fqun.authority is not None
+    assert fqun.authority.domain == "example.com"
+    assert fqun.authority.path == []
+    assert fqun.authority.position.line == 1
 
 
 def test_global_name_universe_only():
@@ -87,13 +96,14 @@ def test_global_name_universe_only():
         "define the potential position<standard:/some/path>.\n"
     )
     name = program.definitions[0].name
-    assert name.fqun.multiverse is None
-    assert name.fqun.authority is None
-    assert name.fqun.universe.name == "standard"
-    assert name.fqun.universe.position.line == 1
-    assert name.fqun.universe.position.column == 31
-    assert name.fqun.position.line == 1
-    assert name.fqun.position.column == 31
+    fqun = _require_fqun(name)
+    assert fqun.multiverse is None
+    assert fqun.authority is None
+    assert fqun.universe.name == "standard"
+    assert fqun.universe.position.line == 1
+    assert fqun.universe.position.column == 31
+    assert fqun.position.line == 1
+    assert fqun.position.column == 31
     assert name.path.relative_path == Path("some/path")
 
 
@@ -249,3 +259,60 @@ def test_action_definition_block_with_multiple_action_statement_local_definition
     assert second_local_def.local_name.name == "second_inner"
     assert first_local_def.position.line == 4
     assert second_local_def.position.line == 5
+
+
+def test_position_definition_with_constraints_block_transforms():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "        it has the action</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.constraints is not None
+    assert len(definition.constraints.requirements) == 2
+    first_requirement = definition.constraints.requirements[0]
+    second_requirement = definition.constraints.requirements[1]
+    assert first_requirement.typed_global_name.type_name == ast.TypeName.POSITION
+    assert second_requirement.typed_global_name.type_name == ast.TypeName.ACTION
+    assert first_requirement.typed_global_name.global_name.fqun is None
+    assert first_requirement.typed_global_name.global_name.path.relative_path == Path(
+        "child"
+    )
+    assert second_requirement.typed_global_name.global_name.path.relative_path == Path(
+        "other"
+    )
+    assert definition.constraints.position.line == 2
+    assert first_requirement.position.line == 3
+    assert second_requirement.position.line == 4
+
+
+def test_action_definition_block_with_constrained_local_definition():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<my_pos> {\n"
+        + "        it may only contain dimension points where {\n"
+        + "            it has the action</child>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    local_def = block.local_definitions[0]
+    assert local_def.constraints is not None
+    assert len(local_def.constraints.requirements) == 1
+    requirement = local_def.constraints.requirements[0]
+    assert requirement.typed_global_name.type_name == ast.TypeName.ACTION
+    assert requirement.typed_global_name.global_name.path.relative_path == Path("child")
+    assert local_def.position.line == 2
+    assert local_def.constraints.position.line == 3
+    assert requirement.position.line == 4

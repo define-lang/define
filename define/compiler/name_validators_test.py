@@ -74,8 +74,8 @@ def _fqun(
 def _global_name(
     fqun: ast.Fqun,
     path_segments: list[str],
-) -> ast.GlobalName:
-    return ast.GlobalName(
+) -> ast.GlobalNameDefinition:
+    return ast.GlobalNameDefinition(
         fqun=fqun,
         path=_global_path_name(path_segments),
         position=_POS,
@@ -577,3 +577,12 @@ class TestValidateGlobalName:
         ]
         assert len(fqun_errors) == 1
         assert len(path_errors) == 1
+
+    def test_reference_without_fqun_skips_fqun_validation(self):
+        name = ast.GlobalNameReference(
+            fqun=None,
+            path=_global_path_name(["valid_path"]),
+            position=_POS,
+        )
+        result = name_validators.validate_global_name(name)
+        assert not result

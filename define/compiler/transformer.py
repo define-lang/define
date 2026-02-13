@@ -23,11 +23,18 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
 
     @v_args(meta=True)
     def position_definition(
-        self, meta: lark.tree.Meta, items: list[ast.GlobalName]
+        self,
+        meta: lark.tree.Meta,
+        items: list[ast.GlobalNameDefinition | ast.PositionConstraintBlock],
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
+        name = cast("ast.GlobalNameDefinition", items[0])
+        constraints = (
+            cast("ast.PositionConstraintBlock", items[1]) if len(items) > 1 else None
+        )
         return ast.PositionDefinition(
-            name=items[0],
+            name=name,
+            constraints=constraints,
             position=ast.SourcePosition.from_meta(meta),
         )
 
@@ -35,10 +42,10 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
     def action_definition(
         self,
         meta: lark.tree.Meta,
-        items: list[ast.GlobalName | ast.ActionDefinitionBlock],
+        items: list[ast.GlobalNameDefinition | ast.ActionDefinitionBlock],
     ) -> ast.ActionDefinition:
         """Transform an action definition."""
-        name = cast("ast.GlobalName", items[0])
+        name = cast("ast.GlobalNameDefinition", items[0])
         definition_block = (
             cast("ast.ActionDefinitionBlock", items[1]) if len(items) > 1 else None
         )
@@ -76,11 +83,85 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
 
     @v_args(meta=True)
     def local_position_definition(
-        self, meta: lark.tree.Meta, items: list[ast.LocalName]
+        self,
+        meta: lark.tree.Meta,
+        items: list[ast.LocalName | ast.PositionConstraintBlock],
     ) -> ast.LocalPositionDefinition:
         """Transform a local position definition."""
+        local_name = cast("ast.LocalName", items[0])
+        constraints = (
+            cast("ast.PositionConstraintBlock", items[1]) if len(items) > 1 else None
+        )
         return ast.LocalPositionDefinition(
-            local_name=items[0],
+            local_name=local_name,
+            constraints=constraints,
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    def position_definition_terminator_or_block(
+        self, items: list[ast.PositionConstraintBlock]
+    ) -> ast.PositionConstraintBlock | object:
+        """Unwrap an optional position-definition ending block."""
+        if not items:
+            return Discard
+        return items[0]
+
+    def local_position_definition_block(
+        self, items: list[ast.PositionConstraintBlock]
+    ) -> ast.PositionConstraintBlock:
+        """Unwrap a local position definition block."""
+        return items[0]
+
+    @v_args(meta=True)
+    def position_constraint_block(
+        self, meta: lark.tree.Meta, items: list[ast.PositionRequirementStatement]
+    ) -> ast.PositionConstraintBlock:
+        """Transform a position constraint block."""
+        return ast.PositionConstraintBlock(
+            requirements=items,
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @v_args(meta=True)
+    def position_requirement_statement(
+        self, meta: lark.tree.Meta, items: list[ast.TypedGlobalNameReference]
+    ) -> ast.PositionRequirementStatement:
+        """Transform a position requirement statement."""
+        return ast.PositionRequirementStatement(
+            typed_global_name=items[0],
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    def NAME_TYPE(self, token: lark.Token) -> ast.TypeName:  # noqa: N802
+        """Transform a name-type token into a TypeName enum."""
+        return ast.TypeName(token)
+
+    def typed_global_name_reference(
+        self, items: list[ast.TypeName | ast.GlobalNameReference]
+    ) -> ast.TypedGlobalNameReference:
+        """Transform typed global name references."""
+        type_name = cast("ast.TypeName", items[0])
+        global_name = cast("ast.GlobalNameReference", items[1])
+        return ast.TypedGlobalNameReference(
+            type_name=type_name,
+            global_name=global_name,
+            position=global_name.position,
+        )
+
+    @v_args(meta=True)
+    def global_name_reference(
+        self, meta: lark.tree.Meta, items: list[ast.Fqun | ast.GlobalPathName]
+    ) -> ast.GlobalNameReference:
+        """Transform a global name reference."""
+        if len(items) == 2:
+            fqun = cast("ast.Fqun", items[0])
+            path = cast("ast.GlobalPathName", items[1])
+        else:
+            fqun = None
+            path = cast("ast.GlobalPathName", items[0])
+        return ast.GlobalNameReference(
+            fqun=fqun,
+            path=path,
             position=ast.SourcePosition.from_meta(meta),
         )
 
@@ -131,11 +212,11 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
     @v_args(meta=True)
     def global_name(
         self, meta: lark.tree.Meta, items: list[ast.Fqun | ast.GlobalPathName]
-    ) -> ast.GlobalName:
+    ) -> ast.GlobalNameDefinition:
         """Transform a global name with FQUN and path."""
         fqun = cast("ast.Fqun", items[0])
         path = cast("ast.GlobalPathName", items[1])
-        return ast.GlobalName(
+        return ast.GlobalNameDefinition(
             fqun=fqun,
             path=path,
             position=ast.SourcePosition.from_meta(meta),

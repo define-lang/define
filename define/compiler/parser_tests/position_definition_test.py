@@ -62,6 +62,27 @@ def test_position_constraint_block_requires_requirements(p: parser.Parser) -> No
     assert exc_info.value.column == 5
 
 
+def test_position_definition_rejects_multiple_constraint_blocks(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(
+        parser_exceptions.MultiplePositionConstraintBlocksError
+    ) as exc_info:
+        p.parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</first>.\n"
+            + "    }\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the action</second>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "it"
+    assert exc_info.value.line == 5
+    assert exc_info.value.column == 5
+
+
 def test_action_definition_block_with_mixed_local_position_forms(
     p: parser.Parser,
 ) -> None:

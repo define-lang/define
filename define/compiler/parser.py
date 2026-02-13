@@ -287,6 +287,13 @@ class Parser:
             return parser_exceptions.LocalPositionAfterTriggerError
 
         if (
+            str(e.token).startswith("it")
+            and {"NEWLINE", "RBRACE"}.issubset(e.expected)
+            and "it may only contain dimension points where" in error_line
+        ):
+            return parser_exceptions.MultiplePositionConstraintBlocksError
+
+        if (
             str(e.token).startswith("define")
             and "define the potential position<" in error_line
             and "DEFINE_THE_POSITION" in e.expected

@@ -228,6 +228,12 @@ class IncompleteStatementError(DefineTokenError):
     label: str = "Incomplete definition"
 
 
+class MultiplePositionConstraintBlocksError(DefineTokenError):
+    """Raised when a position definition contains more than one constraints block."""
+
+    label: str = "Multiple position constraint blocks are not allowed"
+
+
 class UnexpectedWhitespaceError(DefineTokenError):
     """Raised when there is unexpected whitespace."""
 
