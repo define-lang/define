@@ -162,6 +162,8 @@ _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\r": parser_exceptions.CarriageReturnError,
 }
 
+_NEWLINE_OR_RBRACE_EXPECTED = {"NEWLINE", "RBRACE"}
+
 
 def _classify_invalid_char(
     char: str,
@@ -275,29 +277,26 @@ class Parser:
         if "  " in error_line.lstrip():
             return parser_exceptions.UnexpectedWhitespaceError
 
-        # A "define" token where only NEWLINE or RBRACE is expected means
-        # something appeared after the trigger/action blocks. If the line
-        # contains a local position definition, give a specific error;
-        # otherwise fall through to match_examples (missing close brace).
+        # Local positions are only valid before "it happens when" in an action
+        # block. If we see one when only line-break-or-close is legal, report
+        # the specific ordering error instead of a generic missing close brace.
         if (
-            str(e.token).startswith("define")
-            and e.expected == {"NEWLINE", "RBRACE"}
-            and "define the position<" in error_line
+            e.token.type == "DEFINE_THE_POSITION"
+            and e.expected == _NEWLINE_OR_RBRACE_EXPECTED
         ):
             return parser_exceptions.LocalPositionAfterTriggerError
 
         if (
-            str(e.token).startswith("it")
-            and {"NEWLINE", "RBRACE"}.issubset(e.expected)
-            and "it may only contain dimension points where" in error_line
+            e.token.type == "IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE"
+            and _NEWLINE_OR_RBRACE_EXPECTED.issubset(e.expected)
         ):
             return parser_exceptions.MultiplePositionConstraintBlocksError
+        # The contextual lexer may tokenize this prefix as PATH_SEGMENT in this
+        # parser state; keep the same classification in that case.
+        if str(e.token) == "it" and _NEWLINE_OR_RBRACE_EXPECTED.issubset(e.expected):
+            return parser_exceptions.MultiplePositionConstraintBlocksError
 
-        if (
-            str(e.token).startswith("define")
-            and "define the potential position<" in error_line
-            and "DEFINE_THE_POSITION" in e.expected
-        ):
+        if "DEFINE_THE_POSITION" in e.expected and str(e.token) == "define":
             return parser_exceptions.GlobalPositionInLocalScopeError
 
         if "MORETHAN" in e.expected:
