@@ -1,1 +1,6 @@
-define the potential position<mv:define-lang.org:test_files:/invalid/syntax/local_names/test path>.
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/space> {
+    define the position<test path>.
+    it happens when {
+    } and it does {
+    }
+}
