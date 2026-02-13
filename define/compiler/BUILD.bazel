@@ -172,9 +172,20 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":compiler",
+        ":parser_error_classification",
         ":parser_exceptions",
         "@pypi//lark",
         "@pypi//regex",
+    ],
+)
+
+py_library(
+    name = "parser_error_classification",
+    srcs = ["parser_error_classification.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":parser_exceptions",
+        "@pypi//lark",
     ],
 )
 
@@ -263,6 +274,7 @@ pyright_test(
         ":name_validators",
         ":name_validators_test",
         ":parser",
+        ":parser_error_classification",
         ":parser_exceptions",
         ":transformer",
         ":transformer_test",

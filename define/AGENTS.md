@@ -27,6 +27,7 @@ tests of a programming language called "Define."
 flowchart LR
     Grammar["grammar.lark"] --> Parser["parser.py"]
     ParseErrors["parser_exceptions.py"] --> Parser
+    ParserErrorClassification["parser_error_classification.py"] --> Parser
     Parser --> Transformer["transformer.py"]
     AST["ast.py"] --> Transformer
     Transformer --> Validator["validator.py"]
