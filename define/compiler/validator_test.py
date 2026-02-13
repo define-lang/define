@@ -462,6 +462,59 @@ class TestLocalNameConflicts:
         _check_diagnostic_format(diags[1], source, 6, 21)
 
 
+class TestPositionConstraintReferences:
+    def test_position_constraint_reference_with_invalid_path(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/root> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position</Bad>.\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert diags[0].segment == "Bad"
+        _check_diagnostic_format(diags[0], source, 3, 22)
+
+    def test_same_fqun_constraint_reference_must_use_short_form(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/root> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position<my.domain.com:my_lib:/child>.\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(
+            diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        )
+        assert diags[0].fqun == "my.domain.com:my_lib"
+        _check_diagnostic_format(diags[0], source, 3, 21)
+
+    def test_same_fqun_constraint_reference_in_local_position_must_use_short_form(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/act> {\n"
+            "define the position<my_pos> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position<my.domain.com:my_lib:/child>.\n"
+            "}\n"
+            "}\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        assert isinstance(
+            diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        )
+        assert diags[0].fqun == "my.domain.com:my_lib"
+        _check_diagnostic_format(diags[0], source, 4, 21)
+
+
 # Tests just the positions of name formatting errors to make sure they are
 # integrated correctly into the validator. name_validators_test checks the
 # actual name-formatting logic.

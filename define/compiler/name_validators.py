@@ -337,11 +337,27 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
 # ---------------------------------------------------------------------------
 
 
-def validate_global_name(name: ast.GlobalName) -> list[diagnostics.Diagnostic]:
+def validate_global_name(
+    name: ast.GlobalName, must_use_short_form: ast.Fqun | None = None
+) -> list[diagnostics.Diagnostic]:
     """Validate a global name and its FQUN."""
     result: list[diagnostics.Diagnostic] = []
     if name.fqun is not None:
         result.extend(validate_fqun(name.fqun))
+        if (
+            must_use_short_form is not None
+            and name.fqun.canonical == must_use_short_form.canonical
+        ):
+            result.append(
+                diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+                    position=name.fqun.position,
+                    message=(
+                        "global reference in local scope must use short form "
+                        "for the enclosing FQUN"
+                    ),
+                    fqun=must_use_short_form.canonical,
+                )
+            )
     result.extend(validate_global_name_path(name.path))
     return result
 

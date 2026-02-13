@@ -586,3 +586,42 @@ class TestValidateGlobalName:
         )
         result = name_validators.validate_global_name(name)
         assert not result
+
+    def test_reference_same_fqun_must_use_short_form(self):
+        fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
+        name = ast.GlobalNameReference(
+            fqun=fqun,
+            path=_global_path_name(["valid_path"]),
+            position=_POS,
+        )
+        result = name_validators.validate_global_name(name, must_use_short_form=fqun)
+        assert len(result) == 1
+        assert isinstance(
+            result[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        )
+        assert result[0].fqun == "my.domain.com:my_lib"
+
+    def test_reference_with_different_fqun_allows_full_form(self):
+        name_fqun = _fqun("other_lib", authority=_authority("other.domain.com"))
+        enclosing_fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
+        name = ast.GlobalNameReference(
+            fqun=name_fqun,
+            path=_global_path_name(["valid_path"]),
+            position=_POS,
+        )
+        result = name_validators.validate_global_name(
+            name, must_use_short_form=enclosing_fqun
+        )
+        assert not result
+
+    def test_reference_short_form_allowed_when_required(self):
+        enclosing_fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
+        name = ast.GlobalNameReference(
+            fqun=None,
+            path=_global_path_name(["valid_path"]),
+            position=_POS,
+        )
+        result = name_validators.validate_global_name(
+            name, must_use_short_form=enclosing_fqun
+        )
+        assert not result

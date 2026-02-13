@@ -134,3 +134,10 @@ class InvalidUniverseNameFormatDiagnostic(Diagnostic):
     """Diagnostic for when a universe name has invalid format."""
 
     universe_name: str
+
+
+@dataclass
+class GlobalReferenceMustUseShortFormDiagnostic(Diagnostic):
+    """Diagnostic for when a same-FQUN global reference uses full form."""
+
+    fqun: str

@@ -67,6 +67,14 @@ class Validator:
             and definition.definition_block is not None
         ):
             self._validate_local_names(definition.definition_block)
+            self._validate_action_position_constraints(
+                definition.definition_block,
+                definition.name.fqun,
+            )
+        if isinstance(definition, ast.PositionDefinition) and definition.constraints:
+            self._validate_position_constraints(
+                definition.constraints, definition.name.fqun
+            )
 
     def _validate_path_matches_file(
         self, definition: ast.QualityDefinition, file_path: str | None
@@ -175,5 +183,37 @@ class Validator:
                     ),
                     expected=expected_universe_name,
                     actual=actual,
+                )
+            )
+
+    def _validate_action_position_constraints(
+        self,
+        definition_block: ast.ActionDefinitionBlock,
+        enclosing_fqun: ast.Fqun | None,
+    ) -> None:
+        """Validate constraints inside local position definitions in an action."""
+        for local_def in definition_block.local_definitions:
+            if local_def.constraints is not None:
+                self._validate_position_constraints(
+                    local_def.constraints, enclosing_fqun
+                )
+        for local_def in definition_block.action_statements.statements:
+            if local_def.constraints is not None:
+                self._validate_position_constraints(
+                    local_def.constraints, enclosing_fqun
+                )
+
+    def _validate_position_constraints(
+        self, constraints: ast.PositionConstraintBlock, enclosing_fqun: ast.Fqun | None
+    ) -> None:
+        """Validate names and short-form usage in position constraints."""
+        if enclosing_fqun is None:
+            raise ValueError("Global quality definitions must have a non-None fqun")
+
+        for requirement in constraints.requirements:
+            reference = requirement.typed_global_name.global_name
+            self._diagnostics.extend(
+                name_validators.validate_global_name(
+                    reference, must_use_short_form=enclosing_fqun
                 )
             )
