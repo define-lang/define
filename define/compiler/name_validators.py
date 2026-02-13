@@ -80,15 +80,14 @@ _AUTHORITY_PATH_CONTINUE_CHARS = _AUTHORITY_PATH_START_CHARS | frozenset(".")
 
 def validate_multiverse_name_format(
     multiverse: ast.Multiverse,
-) -> list[diagnostics.InvalidMultiverseNameDiagnostic]:
+) -> list[diagnostics.Diagnostic]:
     """Validate multiverse name character format."""
     name = multiverse.name
-    result: list[diagnostics.InvalidMultiverseNameDiagnostic] = []
+    result: list[diagnostics.Diagnostic] = []
     if len(name) < 2:
         result.append(
-            diagnostics.InvalidMultiverseNameDiagnostic(
+            diagnostics.MultiverseNameTooShortDiagnostic(
                 position=multiverse.position,
-                message=f"multiverse name '{name}' must be at least 2 characters",
                 multiverse_name=name,
             )
         )
@@ -105,10 +104,10 @@ def validate_multiverse_name_format(
                 end_column=multiverse.position.end_column,
             )
             result.append(
-                diagnostics.InvalidMultiverseNameDiagnostic(
+                diagnostics.MultiverseNameInvalidCharDiagnostic(
                     position=pos,
-                    message=f"invalid character '{char}' in multiverse name '{name}'",
                     multiverse_name=name,
+                    char=char,
                 )
             )
             return result
@@ -123,7 +122,6 @@ def validate_multiverse_name_reserved(
         return [
             diagnostics.ReservedMultiverseNameDiagnostic(
                 position=multiverse.position,
-                message=f"'{multiverse.name}' is a reserved multiverse name",
                 reserved_name=multiverse.name,
             )
         ]
@@ -137,15 +135,14 @@ def validate_multiverse_name_reserved(
 
 def validate_authority_domain_format(
     authority: ast.Authority,
-) -> list[diagnostics.InvalidAuthorityDomainDiagnostic]:
+) -> list[diagnostics.Diagnostic]:
     """Validate authority domain character format."""
     domain = authority.domain
-    result: list[diagnostics.InvalidAuthorityDomainDiagnostic] = []
+    result: list[diagnostics.Diagnostic] = []
     if len(domain) < 2:
         result.append(
-            diagnostics.InvalidAuthorityDomainDiagnostic(
+            diagnostics.AuthorityDomainTooShortDiagnostic(
                 position=authority.position,
-                message=f"authority domain '{domain}' must be at least 2 characters",
                 domain=domain,
             )
         )
@@ -162,10 +159,10 @@ def validate_authority_domain_format(
                 end_column=authority.position.end_column,
             )
             result.append(
-                diagnostics.InvalidAuthorityDomainDiagnostic(
+                diagnostics.AuthorityDomainInvalidCharDiagnostic(
                     position=pos,
-                    message=f"invalid character '{char}' in authority domain '{domain}'",
                     domain=domain,
+                    char=char,
                 )
             )
             return result
@@ -197,11 +194,8 @@ def validate_authority_path_format(
                 result.append(
                     diagnostics.InvalidAuthorityPathSegmentDiagnostic(
                         position=pos,
-                        message=(
-                            f"invalid character '{char}' "
-                            f"in authority path segment '{segment}'"
-                        ),
                         segment=segment,
+                        char=char,
                     )
                 )
                 break
@@ -211,15 +205,14 @@ def validate_authority_path_format(
 
 def validate_authority_reserved(
     authority: ast.Authority, multiverse: ast.Multiverse | None
-) -> list[diagnostics.ReservedAuthorityNameDiagnostic]:
+) -> list[diagnostics.ReservedNameDiagnostic]:
     """Validate an authority name against reserved names."""
     domain = authority.domain.lower()
 
     if domain in _RESERVED_AUTHORITY_DOMAINS:
         return [
-            diagnostics.ReservedAuthorityNameDiagnostic(
+            diagnostics.ReservedAuthorityDomainDiagnostic(
                 position=authority.position,
-                message=f"'{authority.domain}' is a reserved authority domain",
                 reserved_name=authority.domain,
             )
         ]
@@ -227,14 +220,10 @@ def validate_authority_reserved(
     effective_multiverse = multiverse.name if multiverse else "local"
     if effective_multiverse in ("mv", "local") and "." not in domain:
         return [
-            diagnostics.ReservedAuthorityNameDiagnostic(
+            diagnostics.DotlessAuthorityDomainDiagnostic(
                 position=authority.position,
-                message=(
-                    f"'{authority.domain}' is reserved: "
-                    f"authority domains without '.' are reserved "
-                    f"in the '{effective_multiverse}' multiverse"
-                ),
                 reserved_name=authority.domain,
+                multiverse_name=effective_multiverse,
             )
         ]
 
@@ -248,15 +237,14 @@ def validate_authority_reserved(
 
 def validate_universe_name_format(
     universe: ast.Universe,
-) -> list[diagnostics.InvalidUniverseNameFormatDiagnostic]:
+) -> list[diagnostics.Diagnostic]:
     """Validate universe name character format."""
     name = universe.name
-    result: list[diagnostics.InvalidUniverseNameFormatDiagnostic] = []
+    result: list[diagnostics.Diagnostic] = []
     if len(name) < 2:
         result.append(
-            diagnostics.InvalidUniverseNameFormatDiagnostic(
+            diagnostics.UniverseNameTooShortDiagnostic(
                 position=universe.position,
-                message=f"universe name '{name}' must be at least 2 characters",
                 universe_name=name,
             )
         )
@@ -273,10 +261,10 @@ def validate_universe_name_format(
                 end_column=universe.position.end_column,
             )
             result.append(
-                diagnostics.InvalidUniverseNameFormatDiagnostic(
+                diagnostics.UniverseNameInvalidCharDiagnostic(
                     position=pos,
-                    message=f"invalid character '{char}' in universe name '{name}'",
                     universe_name=name,
+                    char=char,
                 )
             )
             return result
@@ -291,7 +279,6 @@ def validate_universe_name_reserved(
         return [
             diagnostics.ReservedUniverseNameDiagnostic(
                 position=universe.position,
-                message=f"'{universe.name}' is a reserved universe name",
                 reserved_name=universe.name,
             )
         ]
@@ -315,10 +302,6 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
             result.append(
                 diagnostics.UniverseWithoutAuthorityDiagnostic(
                     position=fqun.universe.position,
-                    message=(
-                        f"universe '{fqun.universe.name}' requires an authority; "
-                        f"only 'standard' may be used without an authority"
-                    ),
                     universe_name=fqun.universe.name,
                 )
             )
@@ -351,10 +334,6 @@ def validate_global_name(
             result.append(
                 diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
                     position=name.fqun.position,
-                    message=(
-                        "global reference in local scope must use short form "
-                        "for the enclosing FQUN"
-                    ),
                     fqun=must_use_short_form.canonical,
                 )
             )
@@ -382,10 +361,8 @@ def validate_global_name_path_segment(
             )
             return diagnostics.InvalidGlobalNamePathDiagnostic(
                 position=pos,
-                message=(
-                    f"invalid character '{char}' in path segment '{segment.name}'"
-                ),
                 segment=segment.name,
+                char=char,
             )
     return None
 
@@ -425,8 +402,8 @@ def validate_local_name_format(
             return [
                 diagnostics.InvalidLocalNameFormatDiagnostic(
                     position=pos,
-                    message=f"invalid character '{char}' in local name '{name}'",
                     local_name=name,
+                    char=char,
                 )
             ]
     return []

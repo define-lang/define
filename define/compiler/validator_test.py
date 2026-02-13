@@ -50,7 +50,7 @@ class TestReservedNamePositions:
         source = "define the potential position<example.com:example:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 2
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
         _check_diagnostic_format(diags[1], source, 1, 43)
 
@@ -58,21 +58,21 @@ class TestReservedNamePositions:
         source = "define the potential position<example.com:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_reserved_authority_with_multiverse_position(self):
         source = "define the potential position<mv:example.com:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         _check_diagnostic_format(diags[0], source, 1, 34)
 
     def test_dotless_authority_position(self):
         source = "define the potential position<localhost:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.ReservedAuthorityNameDiagnostic)
+        assert isinstance(diags[0], diagnostics.DotlessAuthorityDomainDiagnostic)
         _check_diagnostic_format(diags[0], source, 1, 31)
 
     def test_reserved_multiverse_position(self):
@@ -154,7 +154,7 @@ class TestUniverseWithoutAuthority:
         source = "define the potential position<STANDARD:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 2
-        assert isinstance(diags[0], diagnostics.InvalidUniverseNameFormatDiagnostic)
+        assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
         assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
 
 
@@ -525,7 +525,7 @@ class TestNameFormatPositions:
         mv_diags = [
             d
             for d in diags
-            if isinstance(d, diagnostics.InvalidMultiverseNameDiagnostic)
+            if isinstance(d, diagnostics.MultiverseNameInvalidCharDiagnostic)
         ]
         assert len(mv_diags) == 1
         assert mv_diags[0].position.line == 1
@@ -537,7 +537,7 @@ class TestNameFormatPositions:
         ad_diags = [
             d
             for d in diags
-            if isinstance(d, diagnostics.InvalidAuthorityDomainDiagnostic)
+            if isinstance(d, diagnostics.AuthorityDomainInvalidCharDiagnostic)
         ]
         assert len(ad_diags) == 1
         assert ad_diags[0].position.line == 1
@@ -561,7 +561,7 @@ class TestNameFormatPositions:
         un_diags = [
             d
             for d in diags
-            if isinstance(d, diagnostics.InvalidUniverseNameFormatDiagnostic)
+            if isinstance(d, diagnostics.UniverseNameInvalidCharDiagnostic)
         ]
         assert len(un_diags) == 1
         assert un_diags[0].position.line == 1

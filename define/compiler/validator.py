@@ -90,10 +90,6 @@ class Validator:
             self._diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
                     position=definition.name.position,
-                    message=(
-                        f"definition path '{definition_path}' does not match "
-                        f"file path '{expected_path}'"
-                    ),
                     expected_path=expected_path,
                     actual_path=definition_path,
                 )
@@ -109,10 +105,6 @@ class Validator:
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
                     position=definition.position,
-                    message=(
-                        f"duplicate {def_type} definition for path '{path_str}'; "
-                        f"first defined on line {first_def.position.line}"
-                    ),
                     definition_type=def_type,
                     path=path_str,
                     first_definition_line=first_def.position.line,
@@ -148,10 +140,6 @@ class Validator:
             self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
                     position=local_def.local_name.position,
-                    message=(
-                        f"duplicate local definition '{name}'; "
-                        f"first defined on line {first_def.local_name.position.line}"
-                    ),
                     local_name=name,
                     first_definition_line=first_def.local_name.position.line,
                 )
@@ -177,10 +165,6 @@ class Validator:
             self._diagnostics.append(
                 diagnostics.FqunMismatchDiagnostic(
                     position=definition.name.fqun.position,
-                    message=(
-                        f"Fully-qualified universe name '{actual}' does not match project "
-                        f"universe name '{expected_universe_name}'"
-                    ),
                     expected=expected_universe_name,
                     actual=actual,
                 )
