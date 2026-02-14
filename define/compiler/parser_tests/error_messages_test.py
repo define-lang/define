@@ -16,7 +16,7 @@ def test_error_message_without_path(p: parser.Parser) -> None:
         "line 1, column 1\n"
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
-        "Byte order mark not allowed: \\ufeff"
+        "Unexpected byte order mark (\\ufeff)."
     )
 
 
@@ -30,7 +30,7 @@ def test_error_message_with_path(p: parser.Parser) -> None:
         'File "test.def", line 1, column 1\n'
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
-        "Byte order mark not allowed: \\ufeff"
+        "Unexpected byte order mark (\\ufeff)."
     )
 
 
@@ -41,7 +41,7 @@ def test_char_error_message(p: parser.Parser) -> None:
         "line 1, column 47\n"
         " the potential position<standard:/path>.\\r\n"
         "                                        ^\n"
-        "Carriage returns not allowed - use LF only: \\r"
+        "Carriage return character (\\r) is not allowed."
     )
 
 
@@ -52,7 +52,7 @@ def test_token_error_message(p: parser.Parser) -> None:
         "line 1, column 46\n"
         "e the potential position<standard:/path>\n"
         "                                        ^\n"
-        "Missing '.' or '{' after definition"
+        "Definition is missing a terminator ('.' or '{')."
     )
 
 
@@ -70,5 +70,5 @@ def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> No
         "line 2, column 36\n"
         "    define the position<local_name.\n"
         "                                   ^\n"
-        "Missing '>' after name"
+        "Expected '>' after the name."
     )

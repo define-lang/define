@@ -61,7 +61,7 @@ class TestRun:
             'File "invalid/syntax/keywords/misspelled_define.def", line 1, column 1\n'
             "defin the potential position<mv:define-l\n"
             "^\n"
-            "File contains no definitions\n"
+            "File has no definitions. Add at least one 'define the potential ...' line.\n"
         )
 
     def test_validation_diagnostics_returns_error_and_prints_to_stream(

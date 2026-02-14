@@ -1,7 +1,7 @@
 """Human-readable parser error messages for the Define language."""
 
 import os
-from typing import override
+from typing import ClassVar, override
 
 import lark
 
@@ -20,7 +20,7 @@ def _escape_invisible(text: str) -> str:
 class DefineSyntaxError(Exception):
     """Base class for Define syntax errors."""
 
-    label: str = "Syntax Error"
+    message_format: ClassVar[str] = "Syntax error."
     context: str
     line: int
     column: int
@@ -40,6 +40,15 @@ class DefineSyntaxError(Exception):
         self.column = column
         self.file_path = file_path
 
+    def _message_fields(self) -> dict[str, object]:
+        """Return fields available for message formatting."""
+        return dict(self.__dict__)
+
+    @property
+    def message(self) -> str:
+        """Render the error message from the format template."""
+        return self.message_format.format(**self._message_fields())
+
     @override
     def __str__(self) -> str:
         if self.file_path is not None:
@@ -48,8 +57,8 @@ class DefineSyntaxError(Exception):
             header = f"line {self.line}, column {self.column}"
         context = _escape_invisible(self.context.rstrip("\n"))
         if context:
-            return f"{header}\n{context}\n{self.label}"
-        return f"{header}\n{self.label}"
+            return f"{header}\n{context}\n{self.message}"
+        return f"{header}\n{self.message}"
 
 
 class DefineTokenError(DefineSyntaxError):
@@ -69,12 +78,29 @@ class DefineTokenError(DefineSyntaxError):
         super().__init__(context, line, column, file_path)
         self.token = token
 
+    @property
+    def token_description(self) -> str:
+        """Return a readable description of the unexpected token."""
+        text = str(self.token)
+        if self.token.type == "$END":
+            return "the end of the file"
+        if text == "\n":
+            return "a newline"
+        if text.strip() == "":
+            return "whitespace"
+        return f"'{_escape_invisible(text)}'"
+
+    @override
+    def _message_fields(self) -> dict[str, object]:
+        fields = super()._message_fields()
+        fields["token_description"] = self.token_description
+        return fields
+
 
 class DefineCharError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected characters."""
 
     char: str
-    label: str
 
     def __init__(
         self,
@@ -87,13 +113,21 @@ class DefineCharError(DefineSyntaxError):
         """Initialize with the unexpected character."""
         super().__init__(context, line, column, file_path)
         self.char = char
-        self.label = f"{self.label}: {_escape_invisible(char)}"
+
+    @property
+    def escaped_char(self) -> str:
+        """Return the character in a readable escaped form."""
+        return _escape_invisible(self.char)
+
+    @override
+    def _message_fields(self) -> dict[str, object]:
+        fields = super()._message_fields()
+        fields["escaped_char"] = self.escaped_char
+        return fields
 
 
 class DefineNameSyntaxError(DefineTokenError):
     """Base class for Define syntax errors from parsing name content."""
-
-    label: str = "Invalid name syntax"
 
 
 # --- Character error subclasses ---
@@ -102,37 +136,43 @@ class DefineNameSyntaxError(DefineTokenError):
 class ByteOrderMarkError(DefineCharError):
     """Raised when a byte order mark is present."""
 
-    label: str = "Byte order mark not allowed"
+    message_format: ClassVar[str] = "Unexpected byte order mark ({escaped_char})."
 
 
 class CarriageReturnError(DefineCharError):
     """Raised when carriage return characters are used."""
 
-    label: str = "Carriage returns not allowed - use LF only"
+    message_format: ClassVar[str] = (
+        "Carriage return character ({escaped_char}) is not allowed."
+    )
 
 
 class ControlCharacterError(DefineCharError):
     """Raised when control characters are used."""
 
-    label: str = "Control characters not allowed"
+    message_format: ClassVar[str] = "Control character ({escaped_char}) is not allowed."
 
 
 class TrailingWhitespaceError(DefineCharError):
     """Raised when trailing whitespace is found."""
 
-    label: str = "Trailing whitespace not allowed"
+    message_format: ClassVar[str] = (
+        "Trailing whitespace ({escaped_char}) is not allowed."
+    )
 
 
 class InvalidCharacterError(DefineCharError):
     """Raised when an invalid character is encountered."""
 
-    label: str = "Invalid character"
+    message_format: ClassVar[str] = (
+        "Character ({escaped_char}) is not valid at this location in Define syntax."
+    )
 
 
 class InvalidEncodingError(DefineCharError):
     """Raised when a file contains bytes that are not valid UTF-8."""
 
-    label: str = "Invalid UTF-8 encoding"
+    message_format: ClassVar[str] = "Invalid UTF-8 content ({escaped_char}) was found."
 
 
 # --- Token error subclasses ---
@@ -141,112 +181,136 @@ class InvalidEncodingError(DefineCharError):
 class MissingBlockCloseError(DefineTokenError):
     """Raised when a closing brace is missing."""
 
-    label: str = "Missing '}' to close block"
+    message_format: ClassVar[str] = "Missing '}}' to close block."
 
 
 class MissingNewlineAfterBlockOpenError(DefineTokenError):
     """Raised when a newline is missing after an opening brace."""
 
-    label: str = "Missing newline after '{'"
+    message_format: ClassVar[str] = "Expected a newline after '{{'."
 
 
 class EmptyBlockTerminatorError(DefineTokenError):
     """Raised when a definition uses an empty block instead of '.'."""
 
-    label: str = "Empty blocks are not allowed - use '.' to end the statement"
+    message_format: ClassVar[str] = (
+        "Empty blocks are not allowed for definitions. Use '.' to end the definition."
+    )
 
 
 class LocalPositionAfterTriggerError(DefineTokenError):
     """Raised when a local position definition appears after the trigger block."""
 
-    label: str = "Local position definitions in a 'define the potential action' block must come before 'it happens when'"
+    message_format: ClassVar[str] = (
+        "Local position definitions must appear before 'it happens when' "
+        "in an action block."
+    )
 
 
 class GlobalPositionInLocalScopeError(DefineTokenError):
     """Raised when a global position definition appears in a local scope."""
 
-    label: str = "Global position definitions are not allowed in local scopes; use 'define the position<...>'"
+    message_format: ClassVar[str] = (
+        "Global position definitions are not allowed in local scopes. "
+        "Use 'define the position<...>' for local positions."
+    )
 
 
 class MissingActionStatementsBlockError(DefineTokenError):
     """Raised when 'and it does' is missing after the trigger conditions block."""
 
-    label: str = "Missing 'and it does' block in this action definition"
+    message_format: ClassVar[str] = (
+        "Action definitions require an 'and it does' block after 'it happens when'."
+    )
 
 
 class MissingNewlineAfterBlockCloseError(DefineTokenError):
     """Raised when a newline is missing after a closing brace."""
 
-    label: str = "Missing newline after '}'"
+    message_format: ClassVar[str] = "Expected a newline after '}}'."
 
 
 class MissingTerminatorError(DefineTokenError):
     """Raised when a period or block is missing at the end of a definition."""
 
-    label: str = "Missing '.' or '{' after definition"
+    message_format: ClassVar[str] = "Definition is missing a terminator ('.' or '{{')."
 
 
 class MissingNewlineError(DefineTokenError):
     """Raised when a newline is missing after a period."""
 
-    label: str = "Missing newline after period"
+    message_format: ClassVar[str] = "Expected a newline after '.'."
 
 
 class MissingOpenAngleBracketError(DefineTokenError):
     """Raised when '<' is missing before a name."""
 
-    label: str = "Missing '<' before name"
+    message_format: ClassVar[str] = "Expected '<' before the name."
 
 
 class MissingCloseAngleBracketError(DefineTokenError):
     """Raised when '>' is missing after a name."""
 
-    label: str = "Missing '>' after name"
+    message_format: ClassVar[str] = "Expected '>' after the name."
 
 
 class EmptyNameError(DefineTokenError):
     """Raised when a name is empty."""
 
-    label: str = "Name cannot be empty"
+    message_format: ClassVar[str] = "Name cannot be empty."
 
 
 class EmptyFileError(DefineTokenError):
     """Raised when a file contains no definitions."""
 
-    label: str = "File contains no definitions"
+    message_format: ClassVar[str] = (
+        "File has no definitions. Add at least one 'define the potential ...' line."
+    )
 
 
 class IncompleteStatementError(DefineTokenError):
     """Raised when a definition is incomplete."""
 
-    label: str = "Incomplete definition"
+    message_format: ClassVar[str] = "This definition is incomplete."
 
 
 class MultiplePositionConstraintBlocksError(DefineTokenError):
     """Raised when a position definition contains more than one constraints block."""
 
-    label: str = "Multiple position constraint blocks are not allowed"
+    message_format: ClassVar[str] = (
+        "Only one 'it may only contain dimension points where' block "
+        "is allowed per position definition."
+    )
 
 
 class UnexpectedWhitespaceError(DefineTokenError):
     """Raised when there is unexpected whitespace."""
 
-    label: str = "Unexpected whitespace"
+    message_format: ClassVar[str] = "Unexpected whitespace near {token_description}."
 
 
 class InvalidGlobalNameSyntaxError(DefineNameSyntaxError):
     """Raised when a global name has invalid structural syntax."""
 
-    label: str = "Invalid global name syntax"
+    message_format: ClassVar[str] = (
+        "Global name syntax is invalid at {token_description}."
+    )
 
 
 class GlobalNameDefinitionRequiresFqunError(InvalidGlobalNameSyntaxError):
     """Raised when a global definition uses short-form '/path'."""
 
-    label: str = "Global name definitions require a fully-qualified universe name"
+    message_format: ClassVar[str] = (
+        "Global name definitions must use a fully qualified universe name. "
+        "Replace short-form paths with '<...:/path>'."
+    )
 
 
 class GlobalNameInvalidFqunFormatError(InvalidGlobalNameSyntaxError):
     """Raised when a fully-qualified universe name has invalid parts."""
 
-    label: str = "Invalid fully-qualified universe name format"
+    message_format: ClassVar[str] = (
+        "Fully qualified universe name format is invalid. "
+        "Use '<multiverse:authority:universe:/path>' or "
+        "'<authority:universe:/path>' or '<standard:/path>'."
+    )

@@ -127,13 +127,15 @@ def test_mixed_block_and_terminator(p: parser.Parser) -> None:
 def test_missing_block_close(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.MissingBlockCloseError) as exc_info:
         p.parse("define the potential position<standard:/path> {\n")
-    assert exc_info.value.label == "Missing '}' to close block"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 48
 
 
 def test_missing_newline_after_block_open(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.MissingNewlineAfterBlockOpenError) as exc_info:
         p.parse("define the potential position<standard:/path> {}\n")
-    assert exc_info.value.label == "Missing newline after '{'"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 48
 
 
 def test_no_space_before_brace(p: parser.Parser) -> None:
@@ -145,4 +147,18 @@ def test_no_space_before_brace(p: parser.Parser) -> None:
 def test_missing_terminator_still_works(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
         p.parse("define the potential position<standard:/path>\n")
-    assert exc_info.value.label == "Missing '.' or '{' after definition"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 46
+
+
+def test_missing_outer_block_close_with_inner_block_message(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingBlockCloseError) as exc_info:
+        p.parse(
+            "define the potential action<standard:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "}\n"
+        )
+    assert str(exc_info.value) == (
+        "line 4, column 2\n}\n ^\nMissing '}' to close block."
+    )
