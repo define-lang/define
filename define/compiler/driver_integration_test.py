@@ -44,6 +44,8 @@ EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
     "paths/trailing_slash": diagnostics.GlobalNamePathTrailingSlashDiagnostic,
     "paths/double_slash": diagnostics.GlobalNamePathEmptySegmentDiagnostic,
     "paths/empty_path": diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
+    "authority_path_empty_segment/": diagnostics.AuthorityPathEmptySegmentDiagnostic,
+    "short_form_required/": diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     "terminators/missing_space_before_terminator": diagnostics.FqunMismatchDiagnostic,
     "invalid_authority_domain/authority_single_char": diagnostics.AuthorityDomainTooShortDiagnostic,
     "invalid_authority_domain/": diagnostics.AuthorityDomainInvalidCharDiagnostic,
