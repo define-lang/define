@@ -80,6 +80,22 @@ py_library(
 )
 
 py_test(
+    name = "driver_fuzz_test",
+    size = "medium",
+    srcs = ["driver_fuzz_test.py"],
+    pytest_main = True,
+    tags = ["manual"],
+    deps = [
+        ":driver",
+        ":exceptions",
+        ":parser_exceptions",
+        "@pypi//hypothesis",
+        "@pypi//lark",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "driver_integration_test",
     size = "small",
     srcs = ["driver_integration_test.py"],
@@ -115,22 +131,6 @@ py_test(
         ":driver",
         ":exceptions",
         ":parser_exceptions",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "driver_fuzz_test",
-    size = "medium",
-    srcs = ["driver_fuzz_test.py"],
-    pytest_main = True,
-    tags = ["manual"],
-    deps = [
-        ":driver",
-        ":exceptions",
-        ":parser_exceptions",
-        "@pypi//hypothesis",
-        "@pypi//lark",
         "@pypi//pytest",
     ],
 )

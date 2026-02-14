@@ -82,10 +82,18 @@ def global_names(draw: st.DrawFn) -> str:
 @st.composite
 def position_definitions(draw: st.DrawFn) -> str:
     name = draw(global_names())
-    terminator = draw(st.sampled_from(["terminator", "block"]))
-    if terminator == "terminator":
+    definition_kind = draw(st.sampled_from(["position_simple", "position"]))
+    if definition_kind == "position_simple":
         return f"define the potential position<{name}>.\n"
-    return f"define the potential position<{name}> {{\n}}\n"
+    child_name = draw(global_names())
+    child_type = draw(st.sampled_from(["position", "action"]))
+    return (
+        f"define the potential position<{name}> {{\n"
+        f"it may only contain dimension points where {{\n"
+        f"it has the {child_type}<{child_name}>.\n"
+        f"}}\n"
+        f"}}\n"
+    )
 
 
 @st.composite
@@ -120,20 +128,108 @@ _VALID_NAME = f"{_PROJECT_FQUN}/test"
 
 @st.composite
 def valid_sources(draw: st.DrawFn) -> str:
-    kind = draw(st.sampled_from(["position", "action_simple", "action_block"]))
+    kind = draw(
+        st.sampled_from(
+            [
+                "position_simple",
+                "position",
+                "action_simple",
+                "action",
+                "action_outer_local",
+                "action_inner_local",
+                "action_multiple_locals",
+                "action_outer_and_inner_positions",
+                "action_no_indentation",
+                "action_with_blank_lines",
+                "comments",
+                "action_and_position_same_file",
+            ]
+        )
+    )
+    if kind == "position_simple":
+        return f"define the potential position<{_VALID_NAME}>.\n"
     if kind == "position":
-        terminator = draw(st.sampled_from(["terminator", "block"]))
-        if terminator == "terminator":
-            return f"define the potential position<{_VALID_NAME}>.\n"
-        return f"define the potential position<{_VALID_NAME}> {{\n}}\n"
+        return (
+            f"define the potential position<{_VALID_NAME}> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position</another_test>.\n"
+            f"}}\n"
+            f"}}\n"
+        )
     if kind == "action_simple":
         return f"define the potential action<{_VALID_NAME}>.\n"
+    if kind == "action":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "action_outer_local":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"define the position<x>.\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "action_inner_local":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"define the position<x>.\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "action_multiple_locals":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"define the position<x>.\n"
+            f"define the position<my_pos>.\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "action_outer_and_inner_positions":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"define the position<x>.\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"define the position<my_pos>.\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "action_no_indentation":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "action_with_blank_lines":
+        return (
+            f"define the potential action<{_VALID_NAME}> {{\n"
+            f"it happens when {{\n"
+            f"\n"
+            f"}} and it does {{\n"
+            f"\n"
+            f"}}\n"
+            f"}}\n"
+        )
+    if kind == "comments":
+        return (
+            "# comment\n"
+            + f"define the potential position<{_VALID_NAME}>. # inline comment\n"
+        )
     return (
-        f"define the potential action<{_VALID_NAME}> {{\n"
-        f"it happens when {{\n"
-        f"}} and it does {{\n"
-        f"}}\n"
-        f"}}\n"
+        f"define the potential position<{_VALID_NAME}>.\n"
+        + f"define the potential action<{_VALID_NAME}>.\n"
     )
 
 
@@ -143,8 +239,10 @@ def syntactic_sources(draw: st.DrawFn) -> str:
     num_defs = draw(st.integers(min_value=1, max_value=3))
     defs: list[str] = []
     for _ in range(num_defs):
-        kind = draw(st.sampled_from(["position", "action_simple", "action_block"]))
-        if kind == "position":
+        kind = draw(
+            st.sampled_from(["position_simple", "position", "action_simple", "action"])
+        )
+        if kind in ["position_simple", "position"]:
             defs.append(draw(position_definitions()))
         elif kind == "action_simple":
             defs.append(draw(action_definitions_simple()))
