@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 import typing
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
@@ -128,27 +128,15 @@ class PositionConstraintBlock(ASTNode):
 
 
 @dataclass
-class GlobalPathNameSegment(ASTNode):
-    """Represents a single segment of a global name path."""
-
-    name: str
-
-
-@dataclass
 class GlobalPathName(ASTNode):
     """Represents the path portion of a global name."""
 
-    segments: list[GlobalPathNameSegment]
+    name: str
 
     @property
     def relative_path(self) -> Path:
         """Return the path as a relative Path object."""
-        return Path(*[s.name for s in self.segments])
-
-    @property
-    def path_string(self) -> str:
-        """Return the full path as a '/' prefixed string (e.g. '/foo/bar')."""
-        return "/" + str(self.relative_path)
+        return Path(self.name[1:])
 
 
 @dataclass
@@ -198,8 +186,7 @@ class Universe(ASTNode):
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
-    domain: str
-    path: list[str] = field(default_factory=list)
+    name: str
 
 
 @dataclass
@@ -216,9 +203,7 @@ class Fqun(ASTNode):
         if self.authority is None:
             return self.universe.name
 
-        authority_str = self.authority.domain
-        if self.authority.path:
-            authority_str += "/" + "/".join(self.authority.path)
+        authority_str = self.authority.name
 
         parts: list[str] = []
         if self.multiverse is not None:

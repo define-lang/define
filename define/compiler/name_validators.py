@@ -133,11 +133,17 @@ def validate_multiverse_name_reserved(
 # ---------------------------------------------------------------------------
 
 
-def validate_authority_domain_format(
+def _split_authority_name(authority_name: str) -> tuple[str, str | None]:
+    slash_index = authority_name.find("/")
+    if slash_index < 0:
+        return authority_name, None
+    return authority_name[:slash_index], authority_name[slash_index + 1 :]
+
+
+def _validate_authority_domain_format(
     authority: ast.Authority,
+    domain: str,
 ) -> list[diagnostics.Diagnostic]:
-    """Validate authority domain character format."""
-    domain = authority.domain
     result: list[diagnostics.Diagnostic] = []
     if len(domain) < 2:
         result.append(
@@ -165,69 +171,101 @@ def validate_authority_domain_format(
                     char=char,
                 )
             )
+            # TODO: We should probably just return a diagnostic for every invalid character.
             return result
     return result
 
 
-def validate_authority_path_format(
+def _validate_authority_path_format(
     authority: ast.Authority,
-) -> list[diagnostics.InvalidAuthorityPathSegmentDiagnostic]:
-    """Validate authority path segment character format."""
-    result: list[diagnostics.InvalidAuthorityPathSegmentDiagnostic] = []
-    col = authority.position.column + len(authority.domain)
+    domain: str,
+    path: str,
+) -> list[diagnostics.Diagnostic]:
+    result: list[diagnostics.Diagnostic] = []
+
+    col = authority.position.column + len(domain)
     line = authority.position.line
-    for segment in authority.path:
+    for segment in path.split("/"):
         col += 1  # skip '/' separator in source text
-        for i, char in enumerate(segment):
-            allowed = (
-                _AUTHORITY_PATH_START_CHARS
-                if i == 0
-                else _AUTHORITY_PATH_CONTINUE_CHARS
-            )
-            if char not in allowed:
-                pos = ast.SourcePosition(
-                    line=line,
-                    column=col + i,
-                    end_line=line,
-                    end_column=col + len(segment),
-                )
-                result.append(
-                    diagnostics.InvalidAuthorityPathSegmentDiagnostic(
-                        position=pos,
-                        segment=segment,
-                        char=char,
-                    )
-                )
-                break
+        diagnostic = _validate_authority_path_segment(
+            authority.name, line, col, segment
+        )
+        if diagnostic is not None:
+            result.append(diagnostic)
         col += len(segment)
     return result
 
 
+def _validate_authority_path_segment(
+    authority_name: str, line: int, column: int, segment: str
+) -> diagnostics.Diagnostic | None:
+    if segment == "":
+        return diagnostics.AuthorityPathEmptySegmentDiagnostic(
+            position=ast.SourcePosition(
+                line=line,
+                column=column - 1,
+                end_line=line,
+                end_column=column,
+            ),
+            authority=authority_name,
+        )
+    for i, char in enumerate(segment):
+        allowed = (
+            _AUTHORITY_PATH_START_CHARS if i == 0 else _AUTHORITY_PATH_CONTINUE_CHARS
+        )
+        if char not in allowed:
+            return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
+                position=ast.SourcePosition(
+                    line=line,
+                    column=column + i,
+                    end_line=line,
+                    end_column=column + len(segment),
+                ),
+                segment=segment,
+                char=char,
+            )
+    return None
+
+
+# TODO: Combine this into a single validate_authority.
 def validate_authority_reserved(
     authority: ast.Authority, multiverse: ast.Multiverse | None
 ) -> list[diagnostics.ReservedNameDiagnostic]:
     """Validate an authority name against reserved names."""
-    domain = authority.domain.lower()
+    domain, _ = _split_authority_name(authority.name)
+    lowered_domain = domain.lower()
 
-    if domain in _RESERVED_AUTHORITY_DOMAINS:
+    if lowered_domain in _RESERVED_AUTHORITY_DOMAINS:
         return [
             diagnostics.ReservedAuthorityDomainDiagnostic(
                 position=authority.position,
-                reserved_name=authority.domain,
+                reserved_name=domain,
             )
         ]
 
     effective_multiverse = multiverse.name if multiverse else "local"
-    if effective_multiverse in ("mv", "local") and "." not in domain:
+    if effective_multiverse in ("mv", "local") and "." not in lowered_domain:
         return [
             diagnostics.DotlessAuthorityDomainDiagnostic(
                 position=authority.position,
-                reserved_name=authority.domain,
+                reserved_name=domain,
                 multiverse_name=effective_multiverse,
             )
         ]
 
     return []
+
+
+def validate_authority_format(
+    authority: ast.Authority,
+) -> list[diagnostics.Diagnostic]:
+    """Validate authority domain and path character/shape format."""
+    domain, path = _split_authority_name(authority.name)
+    result: list[diagnostics.Diagnostic] = []
+    result.extend(_validate_authority_domain_format(authority, domain))
+    if path is not None:
+        result.extend(_validate_authority_path_format(authority, domain, path))
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -306,8 +344,7 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
                 )
             )
     else:
-        result.extend(validate_authority_domain_format(fqun.authority))
-        result.extend(validate_authority_path_format(fqun.authority))
+        result.extend(validate_authority_format(fqun.authority))
         result.extend(validate_authority_reserved(fqun.authority, fqun.multiverse))
 
     result.extend(validate_universe_name_format(fqun.universe))
@@ -346,36 +383,70 @@ def validate_global_name(
 # ---------------------------------------------------------------------------
 
 
-def validate_global_name_path_segment(
-    segment: ast.GlobalPathNameSegment,
-) -> diagnostics.InvalidGlobalNamePathDiagnostic | None:
-    """Validate a single path segment in a global name."""
-    for i, char in enumerate(segment.name):
-        allowed = _PATH_SEGMENT_START_CHARS if i == 0 else _PATH_SEGMENT_CONTINUE_CHARS
-        if char not in allowed:
-            pos = ast.SourcePosition(
-                line=segment.position.line,
-                column=segment.position.column + i,
-                end_line=segment.position.end_line,
-                end_column=segment.position.end_column,
-            )
-            return diagnostics.InvalidGlobalNamePathDiagnostic(
-                position=pos,
-                segment=segment.name,
-                char=char,
-            )
-    return None
-
-
-def validate_global_name_path(
-    path: ast.GlobalPathName,
-) -> list[diagnostics.InvalidGlobalNamePathDiagnostic]:
+# TODO: Allow escaped / in paths.
+def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diagnostic]:
     """Validate path segments in a global name."""
-    result: list[diagnostics.InvalidGlobalNamePathDiagnostic] = []
-    for segment in path.segments:
-        diagnostic = validate_global_name_path_segment(segment)
-        if diagnostic is not None:
-            result.append(diagnostic)
+    result: list[diagnostics.Diagnostic] = []
+    path_name = path.name
+    if not path_name.startswith("/"):
+        result.append(
+            diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic(
+                position=path.position,
+                path=path_name,
+            )
+        )
+    if path_name.endswith("/"):
+        result.append(
+            diagnostics.GlobalNamePathTrailingSlashDiagnostic(
+                position=ast.SourcePosition(
+                    line=path.position.line,
+                    column=path.position.column + len(path_name) - 1,
+                    end_line=path.position.end_line,
+                    end_column=path.position.end_column,
+                ),
+                path=path_name,
+            )
+        )
+
+    segment_start = 1
+    while segment_start < len(path_name):
+        slash_index = path_name.find("/", segment_start)
+        segment_end = slash_index if slash_index >= 0 else len(path_name)
+        segment = path_name[segment_start:segment_end]
+        if segment == "":
+            result.append(
+                diagnostics.GlobalNamePathEmptySegmentDiagnostic(
+                    position=ast.SourcePosition(
+                        line=path.position.line,
+                        column=path.position.column + segment_start - 1,
+                        end_line=path.position.end_line,
+                        end_column=path.position.end_column,
+                    ),
+                    path=path_name,
+                )
+            )
+        for i, char in enumerate(segment):
+            allowed = (
+                _PATH_SEGMENT_START_CHARS if i == 0 else _PATH_SEGMENT_CONTINUE_CHARS
+            )
+            if char not in allowed:
+                result.append(
+                    diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+                        position=ast.SourcePosition(
+                            line=path.position.line,
+                            column=path.position.column + segment_start + i,
+                            end_line=path.position.end_line,
+                            end_column=path.position.end_column,
+                        ),
+                        segment=segment,
+                        char=char,
+                    )
+                )
+                # TODO: Report every invalid character.
+                break
+        if slash_index < 0:
+            break
+        segment_start = slash_index + 1
     return result
 
 

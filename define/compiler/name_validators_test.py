@@ -10,45 +10,16 @@ def _multiverse(name: str) -> ast.Multiverse:
     return ast.Multiverse(name=name, position=_POS)
 
 
-def _authority(domain: str, path: list[str] | None = None) -> ast.Authority:
-    return ast.Authority(domain=domain, path=path or [], position=_POS)
+def _authority(name: str) -> ast.Authority:
+    return ast.Authority(name=name, position=_POS)
 
 
 def _universe(name: str) -> ast.Universe:
     return ast.Universe(name=name, position=_POS)
 
 
-def _path_segment(name: str) -> ast.GlobalPathNameSegment:
-    col = _POS.end_column + 1  # skip '/' separator
-    return ast.GlobalPathNameSegment(
-        name=name,
-        position=ast.SourcePosition(
-            line=_POS.line,
-            column=col,
-            end_line=_POS.end_line,
-            end_column=col + len(name),
-        ),
-    )
-
-
-def _global_path_name(segments: list[str]) -> ast.GlobalPathName:
-    col = _POS.end_column
-    path_segments: list[ast.GlobalPathNameSegment] = []
-    for seg in segments:
-        col += 1  # skip '/' separator
-        path_segments.append(
-            ast.GlobalPathNameSegment(
-                name=seg,
-                position=ast.SourcePosition(
-                    line=_POS.line,
-                    column=col,
-                    end_line=_POS.end_line,
-                    end_column=col + len(seg),
-                ),
-            )
-        )
-        col += len(seg)
-    return ast.GlobalPathName(segments=path_segments, position=_POS)
+def _global_path_name(name: str) -> ast.GlobalPathName:
+    return ast.GlobalPathName(name=name, position=_POS)
 
 
 def _local_def(name: str) -> ast.LocalPositionDefinition:
@@ -73,11 +44,11 @@ def _fqun(
 
 def _global_name(
     fqun: ast.Fqun,
-    path_segments: list[str],
+    path_name: str,
 ) -> ast.GlobalNameDefinition:
     return ast.GlobalNameDefinition(
         fqun=fqun,
-        path=_global_path_name(path_segments),
+        path=_global_path_name(path_name),
         position=_POS,
     )
 
@@ -140,15 +111,11 @@ class TestMultiverseNameFormat:
 
 class TestAuthorityDomainFormat:
     def test_valid(self):
-        result = name_validators.validate_authority_domain_format(
-            _authority("my.domain.com")
-        )
+        result = name_validators.validate_authority_format(_authority("my.domain.com"))
         assert not result
 
     def test_leading_hyphen(self):
-        result = name_validators.validate_authority_domain_format(
-            _authority("-example.com")
-        )
+        result = name_validators.validate_authority_format(_authority("-example.com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "-example.com"
@@ -156,9 +123,7 @@ class TestAuthorityDomainFormat:
         assert result[0].position.column == 10
 
     def test_trailing_dot(self):
-        result = name_validators.validate_authority_domain_format(
-            _authority("example.com.")
-        )
+        result = name_validators.validate_authority_format(_authority("example.com."))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "example.com."
@@ -166,7 +131,7 @@ class TestAuthorityDomainFormat:
         assert result[0].position.column == 21
 
     def test_single_char(self):
-        result = name_validators.validate_authority_domain_format(_authority("a"))
+        result = name_validators.validate_authority_format(_authority("a"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainTooShortDiagnostic)
         assert result[0].domain == "a"
@@ -174,9 +139,7 @@ class TestAuthorityDomainFormat:
         assert result[0].position.column == 10
 
     def test_trailing_hyphen(self):
-        result = name_validators.validate_authority_domain_format(
-            _authority("example.com-")
-        )
+        result = name_validators.validate_authority_format(_authority("example.com-"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "example.com-"
@@ -184,9 +147,7 @@ class TestAuthorityDomainFormat:
         assert result[0].position.column == 21
 
     def test_leading_dot(self):
-        result = name_validators.validate_authority_domain_format(
-            _authority(".example.com")
-        )
+        result = name_validators.validate_authority_format(_authority(".example.com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == ".example.com"
@@ -194,7 +155,7 @@ class TestAuthorityDomainFormat:
         assert result[0].position.column == 10
 
     def test_single_char_invalid(self):
-        result = name_validators.validate_authority_domain_format(_authority("-"))
+        result = name_validators.validate_authority_format(_authority("-"))
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.AuthorityDomainTooShortDiagnostic)
         assert result[0].position.column == 10
@@ -202,9 +163,7 @@ class TestAuthorityDomainFormat:
         assert result[1].position.column == 10
 
     def test_uppercase(self):
-        result = name_validators.validate_authority_domain_format(
-            _authority("Example.Com")
-        )
+        result = name_validators.validate_authority_format(_authority("Example.Com"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[0].domain == "Example.Com"
@@ -212,7 +171,7 @@ class TestAuthorityDomainFormat:
         assert result[0].position.column == 10
 
     def test_non_ascii(self):
-        result = name_validators.validate_authority_domain_format(
+        result = name_validators.validate_authority_format(
             _authority("ex\u00e4mple.com")
         )
         assert len(result) == 1
@@ -224,14 +183,14 @@ class TestAuthorityDomainFormat:
 
 class TestAuthorityPathFormat:
     def test_valid(self):
-        result = name_validators.validate_authority_path_format(
-            _authority("example.com", ["org", "repo"])
+        result = name_validators.validate_authority_format(
+            _authority("example.com/org/repo")
         )
         assert not result
 
     def test_leading_dot(self):
-        result = name_validators.validate_authority_path_format(
-            _authority("example.com", [".hidden"])
+        result = name_validators.validate_authority_format(
+            _authority("example.com/.hidden")
         )
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
@@ -240,8 +199,8 @@ class TestAuthorityPathFormat:
         assert result[0].position.column == 22
 
     def test_uppercase(self):
-        result = name_validators.validate_authority_path_format(
-            _authority("example.com", ["Bad"])
+        result = name_validators.validate_authority_format(
+            _authority("example.com/Bad")
         )
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
@@ -250,8 +209,8 @@ class TestAuthorityPathFormat:
         assert result[0].position.column == 22
 
     def test_multiple_invalid_segments(self):
-        result = name_validators.validate_authority_path_format(
-            _authority("example.com", ["Bad", ".hidden"])
+        result = name_validators.validate_authority_format(
+            _authority("example.com/Bad/.hidden")
         )
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
@@ -260,6 +219,15 @@ class TestAuthorityPathFormat:
         assert isinstance(result[1], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
         assert result[1].segment == ".hidden"
         assert result[1].position.column == 26
+
+    def test_empty_segment(self):
+        result = name_validators.validate_authority_format(
+            _authority("example.com//repo")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.AuthorityPathEmptySegmentDiagnostic)
+        assert result[0].authority == "example.com//repo"
+        assert result[0].position.column == 21
 
 
 class TestUniverseNameFormat:
@@ -316,92 +284,101 @@ class TestUniverseNameFormat:
         assert result[0].position.column == 11
 
 
-class TestGlobalNamePathSegment:
-    def test_valid(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("valid_path")
-        )
-        assert result is None
-
-    def test_hyphen(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("bad-name")
-        )
-        assert result is not None
-        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result.segment == "bad-name"
-        assert result.position.line == 1
-        assert result.position.column == 24
-
-    def test_digit_start(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("2bad")
-        )
-        assert result is not None
-        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result.segment == "2bad"
-        assert result.position.line == 1
-        assert result.position.column == 21
-
-    def test_uppercase(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("BadName")
-        )
-        assert result is not None
-        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result.segment == "BadName"
-        assert result.position.line == 1
-        assert result.position.column == 21
-
-    def test_dot(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("bad.name")
-        )
-        assert result is not None
-        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result.segment == "bad.name"
-        assert result.position.line == 1
-        assert result.position.column == 24
-
-    def test_tilde(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("bad~name")
-        )
-        assert result is not None
-        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result.segment == "bad~name"
-        assert result.position.line == 1
-        assert result.position.column == 24
-
-    def test_bang(self):
-        result = name_validators.validate_global_name_path_segment(
-            _path_segment("bad!name")
-        )
-        assert result is not None
-        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
-        assert result.segment == "bad!name"
-        assert result.position.line == 1
-        assert result.position.column == 24
-
-
 class TestGlobalNamePath:
     def test_valid_multiple_segments(self):
         result = name_validators.validate_global_name_path(
-            _global_path_name(["some", "valid_path"])
+            _global_path_name("/some/valid_path")
         )
         assert not result
 
     def test_multiple_invalid_segments(self):
         result = name_validators.validate_global_name_path(
-            _global_path_name(["Bad", "2bad"])
+            _global_path_name("/Bad/2bad")
         )
         assert len(result) == 2
-        assert isinstance(result[0], diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert isinstance(
+            result[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+        )
         assert result[0].segment == "Bad"
-        assert result[0].position.column == 21
-        assert isinstance(result[1], diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result[0].position.column == 11
+        assert isinstance(
+            result[1], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+        )
         assert result[1].segment == "2bad"
-        assert result[1].position.column == 25
+        assert result[1].position.column == 15
+
+    def test_missing_leading_slash(self):
+        result = name_validators.validate_global_name_path(
+            _global_path_name("invalid/path")
+        )
+        assert len(result) == 1
+        assert isinstance(
+            result[0], diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic
+        )
+        assert result[0].path == "invalid/path"
+
+    def test_trailing_slash(self):
+        result = name_validators.validate_global_name_path(
+            _global_path_name("/invalid/path/")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+        assert result[0].path == "/invalid/path/"
+        assert result[0].position.column == 23
+
+    def test_empty_segment(self):
+        result = name_validators.validate_global_name_path(
+            _global_path_name("/invalid//path")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.GlobalNamePathEmptySegmentDiagnostic)
+        assert result[0].path == "/invalid//path"
+        assert result[0].position.column == 18
+
+    def test_segment_starting_with_dot(self):
+        result = name_validators.validate_global_name_path(
+            _global_path_name("/.hidden/path")
+        )
+        assert len(result) == 1
+        assert isinstance(
+            result[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+        )
+        assert result[0].segment == ".hidden"
+        assert result[0].position.column == 11
+
+    def test_all_diagnostic_types(self):
+        result = name_validators.validate_global_name_path(
+            _global_path_name("Bad//2bad/")
+        )
+        assert len(result) == 4
+        assert (
+            sum(
+                isinstance(d, diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic)
+                for d in result
+            )
+            == 1
+        )
+        assert (
+            sum(
+                isinstance(d, diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+                for d in result
+            )
+            == 1
+        )
+        assert (
+            sum(
+                isinstance(d, diagnostics.GlobalNamePathEmptySegmentDiagnostic)
+                for d in result
+            )
+            == 1
+        )
+        assert (
+            sum(
+                isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+                for d in result
+            )
+            == 1
+        )
 
 
 class TestMultiverseNameReserved:
@@ -638,13 +615,13 @@ class TestValidateFqun:
 class TestValidateGlobalName:
     def test_valid(self):
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        name = _global_name(fqun, ["some", "path"])
+        name = _global_name(fqun, "/some/path")
         result = name_validators.validate_global_name(name)
         assert not result
 
     def test_fqun_errors_collected(self):
         fqun = _fqun("my_lib")
-        name = _global_name(fqun, ["valid_path"])
+        name = _global_name(fqun, "/valid_path")
         result = name_validators.validate_global_name(name)
         assert any(
             isinstance(d, diagnostics.UniverseWithoutAuthorityDiagnostic)
@@ -653,15 +630,16 @@ class TestValidateGlobalName:
 
     def test_path_errors_collected(self):
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        name = _global_name(fqun, ["Bad"])
+        name = _global_name(fqun, "/Bad")
         result = name_validators.validate_global_name(name)
         assert any(
-            isinstance(d, diagnostics.InvalidGlobalNamePathDiagnostic) for d in result
+            isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+            for d in result
         )
 
     def test_fqun_and_path_errors_combined(self):
         fqun = _fqun("my_lib")
-        name = _global_name(fqun, ["Bad"])
+        name = _global_name(fqun, "/Bad")
         result = name_validators.validate_global_name(name)
         fqun_errors = [
             d
@@ -671,7 +649,7 @@ class TestValidateGlobalName:
         path_errors = [
             d
             for d in result
-            if isinstance(d, diagnostics.InvalidGlobalNamePathDiagnostic)
+            if isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
         ]
         assert len(fqun_errors) == 1
         assert len(path_errors) == 1
@@ -679,7 +657,7 @@ class TestValidateGlobalName:
     def test_reference_without_fqun_skips_fqun_validation(self):
         name = ast.GlobalNameReference(
             fqun=None,
-            path=_global_path_name(["valid_path"]),
+            path=_global_path_name("/valid_path"),
             position=_POS,
         )
         result = name_validators.validate_global_name(name)
@@ -689,7 +667,7 @@ class TestValidateGlobalName:
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
         name = ast.GlobalNameReference(
             fqun=fqun,
-            path=_global_path_name(["valid_path"]),
+            path=_global_path_name("/valid_path"),
             position=_POS,
         )
         result = name_validators.validate_global_name(name, must_use_short_form=fqun)
@@ -704,7 +682,7 @@ class TestValidateGlobalName:
         enclosing_fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
         name = ast.GlobalNameReference(
             fqun=name_fqun,
-            path=_global_path_name(["valid_path"]),
+            path=_global_path_name("/valid_path"),
             position=_POS,
         )
         result = name_validators.validate_global_name(
@@ -716,7 +694,7 @@ class TestValidateGlobalName:
         enclosing_fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
         name = ast.GlobalNameReference(
             fqun=None,
-            path=_global_path_name(["valid_path"]),
+            path=_global_path_name("/valid_path"),
             position=_POS,
         )
         result = name_validators.validate_global_name(

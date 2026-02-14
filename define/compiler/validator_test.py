@@ -475,7 +475,9 @@ class TestPositionConstraintReferences:
         )
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert isinstance(
+            diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+        )
         assert diags[0].segment == "Bad"
         _check_diagnostic_format(diags[0], source, 3, 22)
 
@@ -575,7 +577,7 @@ class TestNameFormatPositions:
         ps_diags = [
             d
             for d in diags
-            if isinstance(d, diagnostics.InvalidGlobalNamePathDiagnostic)
+            if isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
         ]
         assert len(ps_diags) == 1
         assert ps_diags[0].position.line == 1

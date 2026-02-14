@@ -37,7 +37,7 @@ def test_parse_global_name_definition_standard_form():
     name = name_parser.parse_global_name_definition(token)
     fqun = _require_fqun(name)
 
-    assert name.path.path_string == "/root/path"
+    assert name.path.name == "/root/path"
     assert fqun.universe.name == "standard"
     assert fqun.authority is None
     assert fqun.multiverse is None
@@ -45,7 +45,7 @@ def test_parse_global_name_definition_standard_form():
 
 def test_parse_global_name_definition_three_part_fqun():
     token = _make_name_content_token(
-        "mv:define-lang.org/core/lib:runtime:/do/work",
+        "mv:define-lang.org:runtime:/do/work",
         line=1,
         column=1,
     )
@@ -55,10 +55,9 @@ def test_parse_global_name_definition_three_part_fqun():
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
     assert fqun.authority is not None
-    assert fqun.authority.domain == "define-lang.org"
-    assert fqun.authority.path == ["core", "lib"]
+    assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "runtime"
-    assert name.path.path_string == "/do/work"
+    assert name.path.name == "/do/work"
 
 
 def test_parse_global_name_reference_short_form():
@@ -66,7 +65,7 @@ def test_parse_global_name_reference_short_form():
     name = name_parser.parse_global_name_reference(token)
 
     assert name.fqun is None
-    assert name.path.path_string == "/position/path"
+    assert name.path.name == "/position/path"
 
 
 def test_parse_global_name_reference_full_form():
@@ -81,9 +80,24 @@ def test_parse_global_name_reference_full_form():
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
     assert fqun.authority is not None
-    assert fqun.authority.domain == "acme.dev"
+    assert fqun.authority.name == "acme.dev"
     assert fqun.universe.name == "tooling"
-    assert name.path.path_string == "/action/run"
+    assert name.path.name == "/action/run"
+
+
+def test_parse_global_name_reference_full_form_authority_with_path():
+    token = _make_name_content_token(
+        "mv:acme.dev/team/repo:tooling:/action/run",
+        line=8,
+        column=4,
+    )
+    name = name_parser.parse_global_name_reference(token)
+    fqun = _require_fqun(name)
+
+    assert fqun.authority is not None
+    assert fqun.authority.name == "acme.dev/team/repo"
+    assert fqun.universe.name == "tooling"
+    assert name.path.name == "/action/run"
 
 
 def test_global_name_definition_requires_fqun():
@@ -96,32 +110,6 @@ def test_global_name_definition_requires_fqun():
     assert error.value.column == 30
 
 
-def test_global_name_reference_rejects_local_name_shape():
-    token = _make_name_content_token("child_name", line=4, column=20)
-    with pytest.raises(
-        parser_exceptions.GlobalNamePathMustStartWithSlashError
-    ) as error:
-        name_parser.parse_global_name_reference(token)
-    assert error.value.line == 4
-    assert error.value.column == 20
-
-
-def test_global_name_path_rejects_empty_segment():
-    token = _make_name_content_token("standard:/a//b", line=2, column=5)
-    with pytest.raises(parser_exceptions.GlobalNamePathEmptySegmentError) as error:
-        name_parser.parse_global_name_definition(token)
-    assert error.value.line == 2
-    assert error.value.column == 17
-
-
-def test_global_name_path_rejects_trailing_slash():
-    token = _make_name_content_token("standard:/a/b/", line=2, column=5)
-    with pytest.raises(parser_exceptions.GlobalNamePathTrailingSlashError) as error:
-        name_parser.parse_global_name_definition(token)
-    assert error.value.line == 2
-    assert error.value.column == 18
-
-
 def test_global_name_definition_rejects_too_many_fqun_parts():
     token = _make_name_content_token("a:b:c:d:/x", line=1, column=1)
     with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormatError) as error:
@@ -130,17 +118,7 @@ def test_global_name_definition_rejects_too_many_fqun_parts():
     assert error.value.column == 1
 
 
-def test_global_name_rejects_empty_authority_path_segment():
-    token = _make_name_content_token("example.com//repo:my_lib:/path", line=3, column=7)
-    with pytest.raises(
-        parser_exceptions.GlobalNameEmptyAuthorityPathSegmentError
-    ) as error:
-        name_parser.parse_global_name_definition(token)
-    assert error.value.line == 3
-    assert error.value.column == 7
-
-
-def test_positions_for_fqun_and_path_segments():
+def test_positions_for_fqun_and_path():
     token = _make_name_content_token(
         "mv:define-lang.org:runtime:/alpha/beta",
         line=9,
@@ -151,19 +129,5 @@ def test_positions_for_fqun_and_path_segments():
     assert token.column is not None
     assert isinstance(name, ast.GlobalNameDefinition)
     assert fqun.universe.position.column > token.column
-    assert name.path.segments[0].position.line == 9
-    assert name.path.segments[0].position.column > token.column
-
-
-def test_name_parser_error_message_format():
-    token = _make_name_content_token("standard:/a//b", line=2, column=5)
-    with pytest.raises(parser_exceptions.GlobalNamePathEmptySegmentError) as error:
-        name_parser.parse_global_name_definition(token)
-    expected = "\n".join(
-        [
-            "line 2, column 17",
-            "standard:/a//b",
-            "Global name path must not contain '//'",
-        ]
-    )
-    assert str(error.value) == expected
+    assert name.path.position.line == 9
+    assert name.path.position.column > token.column

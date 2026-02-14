@@ -119,19 +119,6 @@ _TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]]
         + "}\n"
         + "}\n",
     ],
-    parser_exceptions.InvalidAuthorityPathError: [
-        "define the potential position<example.com/ba<d:my_lib:/path>.\n",
-    ],
-    parser_exceptions.InvalidGlobalNamePathError: [
-        "define the potential position<standard:path>.\n",
-        "define the potential position<standard:/a//b>.\n",
-        "define the potential position<my_name>.\n",
-        "define the potential position<standard:/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "it has the position<child>.\n"
-        + "}\n"
-        + "}\n",
-    ],
     parser_exceptions.EmptyFileError: [
         "",
         "\n\n\n",

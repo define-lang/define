@@ -34,9 +34,9 @@ def test_position_definition_transforms_to_program():
     assert fqun.universe.position.line == 1
     assert fqun.universe.position.column == 31
     assert definition.name.path.relative_path == Path("path")
-    assert definition.name.path.segments[0].name == "path"
-    assert definition.name.path.segments[0].position.line == 1
-    assert definition.name.path.segments[0].position.column == 41
+    assert definition.name.path.name == "/path"
+    assert definition.name.path.position.line == 1
+    assert definition.name.path.position.column == 40
     assert definition.name.position.line == 1
     assert definition.name.position.column == 31
 
@@ -55,7 +55,7 @@ def test_action_definition_transforms_to_program():
 
 def test_global_name_full_fqun():
     program = _parse_and_transform(
-        "define the potential position<my_mv:example.com/org/repo:my_lib:/some/path>.\n"
+        "define the potential position<my_mv:example.com:my_lib:/some/path>.\n"
     )
     name = program.definitions[0].name
     fqun = _require_fqun(name)
@@ -65,11 +65,10 @@ def test_global_name_full_fqun():
     assert fqun.multiverse.position.column == 31
     assert fqun.universe.name == "my_lib"
     assert fqun.universe.position.line == 1
-    assert fqun.universe.position.column == 58
+    assert fqun.universe.position.column == 49
     assert name.path.relative_path == Path("some/path")
     assert fqun.authority is not None
-    assert fqun.authority.domain == "example.com"
-    assert fqun.authority.path == ["org", "repo"]
+    assert fqun.authority.name == "example.com"
     assert fqun.authority.position.line == 1
     assert fqun.authority.position.column == 37
 
@@ -86,9 +85,21 @@ def test_global_name_authority_universe():
     assert fqun.universe.position.column == 43
     assert name.path.relative_path == Path("some/path")
     assert fqun.authority is not None
-    assert fqun.authority.domain == "example.com"
-    assert fqun.authority.path == []
+    assert fqun.authority.name == "example.com"
     assert fqun.authority.position.line == 1
+
+
+def test_global_name_authority_with_path_universe():
+    program = _parse_and_transform(
+        "define the potential position<example.com/org/repo:my_lib:/some/path>.\n"
+    )
+    name = program.definitions[0].name
+    fqun = _require_fqun(name)
+    assert fqun.multiverse is None
+    assert fqun.universe.name == "my_lib"
+    assert name.path.relative_path == Path("some/path")
+    assert fqun.authority is not None
+    assert fqun.authority.name == "example.com/org/repo"
 
 
 def test_global_name_universe_only():

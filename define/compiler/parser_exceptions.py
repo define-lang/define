@@ -210,18 +210,6 @@ class EmptyNameError(DefineTokenError):
     label: str = "Name cannot be empty"
 
 
-class InvalidAuthorityPathError(DefineTokenError):
-    """Raised when an authority path is invalid."""
-
-    label: str = "Invalid authority path"
-
-
-class InvalidGlobalNamePathError(DefineTokenError):
-    """Raised when a global name path is invalid."""
-
-    label: str = "Invalid global name path"
-
-
 class EmptyFileError(DefineTokenError):
     """Raised when a file contains no definitions."""
 
@@ -252,12 +240,6 @@ class InvalidGlobalNameSyntaxError(DefineNameSyntaxError):
     label: str = "Invalid global name syntax"
 
 
-class InvalidLocalNameSyntaxError(DefineNameSyntaxError):
-    """Raised when a local name has invalid structural syntax."""
-
-    label: str = "Invalid local name syntax"
-
-
 class GlobalNameDefinitionRequiresFqunError(InvalidGlobalNameSyntaxError):
     """Raised when a global definition uses short-form '/path'."""
 
@@ -268,27 +250,3 @@ class GlobalNameInvalidFqunFormatError(InvalidGlobalNameSyntaxError):
     """Raised when a fully-qualified universe name has invalid parts."""
 
     label: str = "Invalid fully-qualified universe name format"
-
-
-class GlobalNameEmptyAuthorityPathSegmentError(InvalidGlobalNameSyntaxError):
-    """Raised when authority path has empty segments."""
-
-    label: str = "Authority path segments must not be empty"
-
-
-class GlobalNamePathMustStartWithSlashError(InvalidGlobalNamePathError):
-    """Raised when a global name path does not begin with '/'."""
-
-    label: str = "Global name path must start with '/'"
-
-
-class GlobalNamePathTrailingSlashError(InvalidGlobalNamePathError):
-    """Raised when a global name path ends with '/'."""
-
-    label: str = "Global name path must not end with '/'"
-
-
-class GlobalNamePathEmptySegmentError(InvalidGlobalNamePathError):
-    """Raised when a global name path contains an empty segment."""
-
-    label: str = "Global name path must not contain '//'"

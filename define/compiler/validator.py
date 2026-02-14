@@ -121,7 +121,7 @@ class Validator:
         if file_path is None:
             return
 
-        definition_path = definition.name.path.path_string
+        definition_path = definition.name.path.name
         expected_path = "/" + file_path
 
         if definition_path != expected_path:
@@ -135,11 +135,11 @@ class Validator:
 
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
-        key = (definition.type_name, definition.name.path.path_string)
+        key = (definition.type_name, definition.name.path.name)
         if key in self._seen_definitions:
             first_def = self._seen_definitions[key]
             def_type = definition.type_name.value
-            path_str = definition.name.path.path_string
+            path_str = definition.name.path.name
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
                     position=definition.position,

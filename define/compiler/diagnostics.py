@@ -173,7 +173,17 @@ class InvalidAuthorityPathSegmentDiagnostic(Diagnostic):
 
 
 @dataclass
-class InvalidGlobalNamePathDiagnostic(Diagnostic):
+class AuthorityPathEmptySegmentDiagnostic(Diagnostic):
+    """Diagnostic for when an authority path contains an empty segment."""
+
+    authority: str
+    message_format: ClassVar[str] = (
+        "authority path in '{authority}' must not contain '//'"
+    )
+
+
+@dataclass
+class InvalidGlobalNamePathCharacterDiagnostic(Diagnostic):
     """Diagnostic for when a global name path segment has invalid format."""
 
     segment: str
@@ -181,6 +191,30 @@ class InvalidGlobalNamePathDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "invalid character '{char}' in path segment '{segment}'"
     )
+
+
+@dataclass
+class GlobalNamePathMissingLeadingSlashDiagnostic(Diagnostic):
+    """Diagnostic for when a global path does not start with '/'."""
+
+    path: str
+    message_format: ClassVar[str] = "global name path '{path}' must start with '/'"
+
+
+@dataclass
+class GlobalNamePathTrailingSlashDiagnostic(Diagnostic):
+    """Diagnostic for when a global path ends with '/'."""
+
+    path: str
+    message_format: ClassVar[str] = "global name path '{path}' must not end with '/'"
+
+
+@dataclass
+class GlobalNamePathEmptySegmentDiagnostic(Diagnostic):
+    """Diagnostic for when a global path contains an empty segment."""
+
+    path: str
+    message_format: ClassVar[str] = "global name path '{path}' must not contain '//'"
 
 
 @dataclass
