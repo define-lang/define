@@ -32,7 +32,7 @@ class Validator:
     def __init__(self):
         """Initialize validator state."""
         self._diagnostics: list[diagnostics.Diagnostic] = []
-        self._seen_definitions: dict[
+        self._seen_global_definitions: dict[
             tuple[ast.TypeName, str], ast.QualityDefinition
         ] = {}
 
@@ -84,7 +84,7 @@ class Validator:
                 value. When None, skips FQUN matching validation.
         """
         self._diagnostics = []
-        self._seen_definitions = {}
+        self._seen_global_definitions = {}
         for definition in program.definitions:
             self._validate_definition(definition, file_path, expected_universe_name)
         return self._diagnostics
@@ -136,8 +136,8 @@ class Validator:
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
         key = (definition.type_name, definition.name.path.name)
-        if key in self._seen_definitions:
-            first_def = self._seen_definitions[key]
+        if key in self._seen_global_definitions:
+            first_def = self._seen_global_definitions[key]
             def_type = definition.type_name.value
             path_str = definition.name.path.name
             self._diagnostics.append(
@@ -149,7 +149,7 @@ class Validator:
                 )
             )
         else:
-            self._seen_definitions[key] = definition
+            self._seen_global_definitions[key] = definition
 
     def _validate_local_names(
         self, definition_block: ast.ActionDefinitionBlock
