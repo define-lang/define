@@ -5,7 +5,7 @@ from typing import cast
 import lark
 from lark.visitors import Discard, v_args
 
-from define.compiler import ast
+from define.compiler import ast, name_parser
 
 
 class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
@@ -63,19 +63,9 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Remove empty block trees from the parse tree."""
         return Discard
 
-    def PATH_SEGMENT(self, token: lark.Token) -> ast.GlobalPathNameSegment:  # noqa: N802
-        """Transform a path segment token into an AST node."""
-        return ast.GlobalPathNameSegment(
-            name=token,
-            position=ast.SourcePosition.from_token(token),
-        )
-
-    def LOCAL_NAME(self, token: lark.Token) -> ast.LocalName:  # noqa: N802
-        """Transform a local name token into an AST node."""
-        return ast.LocalName(
-            name=token,
-            position=ast.SourcePosition.from_token(token),
-        )
+    def NAME_CONTENT(self, token: lark.Token) -> lark.Token:  # noqa: N802
+        """Pass through raw name content tokens for context-specific parsing."""
+        return token
 
     def DEFINE_THE_POSITION(self, _token: lark.Token) -> object:  # noqa: N802
         """Discard the local-position definition keyword token."""
@@ -173,23 +163,6 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         )
 
     @v_args(meta=True)
-    def global_name_reference(
-        self, meta: lark.tree.Meta, items: list[ast.Fqun | ast.GlobalPathName]
-    ) -> ast.GlobalNameReference:
-        """Transform a global name reference."""
-        if len(items) == 2:
-            fqun = cast("ast.Fqun", items[0])
-            path = cast("ast.GlobalPathName", items[1])
-        else:
-            fqun = None
-            path = cast("ast.GlobalPathName", items[0])
-        return ast.GlobalNameReference(
-            fqun=fqun,
-            path=path,
-            position=ast.SourcePosition.from_meta(meta),
-        )
-
-    @v_args(meta=True)
     def trigger_conditions_block(
         self, meta: lark.tree.Meta, _items: list[object]
     ) -> ast.TriggerConditionsBlock:
@@ -233,92 +206,21 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Unwrap the definition wrapper rule."""
         return items[0]
 
-    @v_args(meta=True)
-    def global_name(
-        self, meta: lark.tree.Meta, items: list[ast.Fqun | ast.GlobalPathName]
+    def global_name_definition_content(
+        self, items: list[lark.Token]
     ) -> ast.GlobalNameDefinition:
-        """Transform a global name with FQUN and path."""
-        fqun = cast("ast.Fqun", items[0])
-        path = cast("ast.GlobalPathName", items[1])
-        return ast.GlobalNameDefinition(
-            fqun=fqun,
-            path=path,
-            position=ast.SourcePosition.from_meta(meta),
-        )
+        """Parse definition-site name content into a global definition node."""
+        return name_parser.parse_global_name_definition(items[0])
 
-    @v_args(meta=True)
-    def fqun(
-        self,
-        meta: lark.tree.Meta,
-        items: list[ast.Multiverse | ast.Authority | ast.Universe],
-    ) -> ast.Fqun:
-        """Transform a fully-qualified universe name."""
-        position = ast.SourcePosition.from_meta(meta)
-        match len(items):
-            case 3:
-                return ast.Fqun(
-                    multiverse=cast("ast.Multiverse", items[0]),
-                    authority=cast("ast.Authority", items[1]),
-                    universe=cast("ast.Universe", items[2]),
-                    position=position,
-                )
-            case 2:
-                return ast.Fqun(
-                    multiverse=None,
-                    authority=cast("ast.Authority", items[0]),
-                    universe=cast("ast.Universe", items[1]),
-                    position=position,
-                )
-            case 1:
-                return ast.Fqun(
-                    multiverse=None,
-                    authority=None,
-                    universe=cast("ast.Universe", items[0]),
-                    position=position,
-                )
-            case _:
-                raise ValueError(f"Unexpected fqun items: {items}")
+    def global_name_reference_content(
+        self, items: list[lark.Token]
+    ) -> ast.GlobalNameReference:
+        """Parse reference-site name content into a global reference node."""
+        return name_parser.parse_global_name_reference(items[0])
 
-    def MULTIVERSE_NAME(self, token: lark.Token) -> ast.Multiverse:  # noqa: N802
-        """Transform a multiverse name token into an AST node."""
-        return ast.Multiverse(
-            name=token,
-            position=ast.SourcePosition.from_token(token),
-        )
-
-    def UNIVERSE_NAME(self, token: lark.Token) -> ast.Universe:  # noqa: N802
-        """Transform a universe name token into an AST node."""
-        return ast.Universe(
-            name=token,
-            position=ast.SourcePosition.from_token(token),
-        )
-
-    @v_args(meta=True)
-    def authority(
-        self, meta: lark.tree.Meta, items: list[str | list[str]]
-    ) -> ast.Authority:
-        """Transform an authority (domain with optional path)."""
-        domain = cast("str", items[0])
-        path = cast("list[str]", items[1]) if len(items) == 2 else []
-        return ast.Authority(
-            domain=domain,
-            path=path,
-            position=ast.SourcePosition.from_meta(meta),
-        )
-
-    def authority_path(self, items: list[str]) -> list[str]:
-        """Transform authority path segments."""
-        return items
-
-    @v_args(meta=True)
-    def global_name_path(
-        self, meta: lark.tree.Meta, items: list[ast.GlobalPathNameSegment]
-    ) -> ast.GlobalPathName:
-        """Transform global name path segments."""
-        return ast.GlobalPathName(
-            segments=items,
-            position=ast.SourcePosition.from_meta(meta),
-        )
+    def local_name_content(self, items: list[lark.Token]) -> ast.LocalName:
+        """Parse local-name content into a local-name node."""
+        return name_parser.parse_local_name(items[0])
 
     def NEWLINE(self, _token: lark.Token) -> object:  # noqa: N802
         """Drop newline tokens from the parse tree."""

@@ -19,6 +19,7 @@ class TypeName(enum.StrEnum):
     ACTION = "action"
 
 
+# TODO: Should include file name.
 @dataclass
 class SourcePosition:
     """Represents a position in source code."""

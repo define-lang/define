@@ -90,6 +90,12 @@ class DefineCharError(DefineSyntaxError):
         self.label = f"{self.label}: {_escape_invisible(char)}"
 
 
+class DefineNameSyntaxError(DefineTokenError):
+    """Base class for Define syntax errors from parsing name content."""
+
+    label: str = "Invalid name syntax"
+
+
 # --- Character error subclasses ---
 
 
@@ -238,3 +244,51 @@ class UnexpectedWhitespaceError(DefineTokenError):
     """Raised when there is unexpected whitespace."""
 
     label: str = "Unexpected whitespace"
+
+
+class InvalidGlobalNameSyntaxError(DefineNameSyntaxError):
+    """Raised when a global name has invalid structural syntax."""
+
+    label: str = "Invalid global name syntax"
+
+
+class InvalidLocalNameSyntaxError(DefineNameSyntaxError):
+    """Raised when a local name has invalid structural syntax."""
+
+    label: str = "Invalid local name syntax"
+
+
+class GlobalNameDefinitionRequiresFqunError(InvalidGlobalNameSyntaxError):
+    """Raised when a global definition uses short-form '/path'."""
+
+    label: str = "Global name definitions require a fully-qualified universe name"
+
+
+class GlobalNameInvalidFqunFormatError(InvalidGlobalNameSyntaxError):
+    """Raised when a fully-qualified universe name has invalid parts."""
+
+    label: str = "Invalid fully-qualified universe name format"
+
+
+class GlobalNameEmptyAuthorityPathSegmentError(InvalidGlobalNameSyntaxError):
+    """Raised when authority path has empty segments."""
+
+    label: str = "Authority path segments must not be empty"
+
+
+class GlobalNamePathMustStartWithSlashError(InvalidGlobalNamePathError):
+    """Raised when a global name path does not begin with '/'."""
+
+    label: str = "Global name path must start with '/'"
+
+
+class GlobalNamePathTrailingSlashError(InvalidGlobalNamePathError):
+    """Raised when a global name path ends with '/'."""
+
+    label: str = "Global name path must not end with '/'"
+
+
+class GlobalNamePathEmptySegmentError(InvalidGlobalNamePathError):
+    """Raised when a global name path contains an empty segment."""
+
+    label: str = "Global name path must not contain '//'"

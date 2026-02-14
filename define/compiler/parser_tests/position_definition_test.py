@@ -12,10 +12,23 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 def test_position_definition_parses(p: parser.Parser) -> None:
     tree = p.parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
-    assert get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["mv"]
-    assert get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["define-lang.org"]
-    assert get_tokens_by_type(tree, "UNIVERSE_NAME") == ["parser"]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path"
+    ]
+
+
+def test_position_definition_missing_open_angle(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracketError) as exc_info:
+        p.parse("define the potential positionstandard:/path>.\n")
+    assert str(exc_info.value.token) == "standard:/path"
+    assert exc_info.value.column == 30
+
+
+def test_position_definition_empty_name_content(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.EmptyNameError) as exc_info:
+        p.parse("define the potential position<>.\n")
+    assert str(exc_info.value.token) == ">"
+    assert exc_info.value.column == 31
 
 
 def test_position_definition_with_constraint_block(p: parser.Parser) -> None:
@@ -26,7 +39,10 @@ def test_position_definition_with_constraint_block(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path",
+        "/child",
+    ]
 
 
 def test_position_definition_with_multiple_requirements(p: parser.Parser) -> None:
@@ -38,7 +54,11 @@ def test_position_definition_with_multiple_requirements(p: parser.Parser) -> Non
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "first", "second"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path",
+        "/first",
+        "/second",
+    ]
 
 
 def test_position_definition_block_requires_constraint_block(p: parser.Parser) -> None:
@@ -78,7 +98,7 @@ def test_position_definition_rejects_multiple_constraint_blocks(
             + "    }\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "it"
+    assert str(exc_info.value.token).startswith("it may only contain")
     assert exc_info.value.line == 5
     assert exc_info.value.column == 5
 
@@ -99,8 +119,12 @@ def test_action_definition_block_with_mixed_local_position_forms(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["empty_pos", "constrained_pos"]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["act", "child"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/act",
+        "empty_pos",
+        "constrained_pos",
+        "/child",
+    ]
 
 
 def test_action_definition_block_with_multiple_local_block_positions(
@@ -123,11 +147,12 @@ def test_action_definition_block_with_multiple_local_block_positions(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["first_pos", "second_pos"]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == [
-        "act",
-        "first_child",
-        "second_child",
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/act",
+        "first_pos",
+        "/first_child",
+        "second_pos",
+        "/second_child",
     ]
 
 
@@ -147,11 +172,12 @@ def test_action_statements_block_with_mixed_local_position_forms(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "LOCAL_NAME") == [
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/act",
         "empty_inner",
         "constrained_inner",
+        "/inner_action",
     ]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["act", "inner_action"]
 
 
 def test_action_statements_block_with_multiple_local_block_positions(
@@ -174,9 +200,10 @@ def test_action_statements_block_with_multiple_local_block_positions(
         + "    }\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "LOCAL_NAME") == ["first_inner", "second_inner"]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == [
-        "act",
-        "first_child",
-        "second_child",
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/act",
+        "first_inner",
+        "/first_child",
+        "second_inner",
+        "/second_child",
     ]

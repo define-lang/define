@@ -64,26 +64,26 @@ def test_extra_space_after_potential_action(p: parser.Parser) -> None:
 def test_define_the_potential_no_terminator(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
         p.parse("define the potential\n")
-    assert str(exc_info.value.token) == "define"
+    assert str(exc_info.value.token) == "define the potential"
     assert exc_info.value.column == 1
 
 
 def test_define_the_potential_with_terminator(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
         p.parse("define the potential.\n")
-    assert str(exc_info.value.token) == "define"
+    assert str(exc_info.value.token) == "define the potential."
     assert exc_info.value.column == 1
 
 
 def test_define_the_no_terminator(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
         p.parse("define the\n")
-    assert str(exc_info.value.token) == "define"
+    assert str(exc_info.value.token) == "define the"
     assert exc_info.value.column == 1
 
 
 def test_define_the_with_terminator(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.IncompleteStatementError) as exc_info:
         p.parse("define the.\n")
-    assert str(exc_info.value.token) == "define"
+    assert str(exc_info.value.token) == "define the."
     assert exc_info.value.column == 1

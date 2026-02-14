@@ -71,6 +71,7 @@ See [define/spec/spec.md] for the language specification.
 - When renaming or moving files, always use `git mv` so that git records the
   change as a rename.
 - Don't use git -C on the current directory.
+- Never use `git commit --no-verify`; fix commit hook issues instead.
 
 ## Tests
 

@@ -51,7 +51,9 @@ def test_comment_with_zero_width_joiner_in_grapheme_cluster(p: parser.Parser) ->
         "# devanagari ligature with ZWJ: \u0915\u094d\u200d\u0937\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path"
+    ]
 
 
 def test_comment_with_valid_bidi_isolates(p: parser.Parser) -> None:
@@ -59,4 +61,6 @@ def test_comment_with_valid_bidi_isolates(p: parser.Parser) -> None:
         "# isolate-wrapped rtl text: \u2067\u05e9\u05dc\u05d5\u05dd\u2069\n"
         + "define the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path"
+    ]

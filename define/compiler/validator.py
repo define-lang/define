@@ -7,7 +7,15 @@ from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
 
-from define.compiler import ast, diagnostics, name_validators, parser, transformer
+from lark import exceptions as lark_exceptions
+
+from define.compiler import (
+    ast,
+    diagnostics,
+    name_validators,
+    parser,
+    transformer,
+)
 
 
 @dataclass
@@ -42,7 +50,13 @@ class Validator:
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
         tree, source = self._parser.parse_file(path)
-        program = transformer.DefineTransformer().transform(tree)
+        try:
+            program = transformer.DefineTransformer().transform(tree)
+        except lark_exceptions.VisitError as e:
+            # Lark wraps exceptions raised inside transformer callbacks.
+            # TODO: make parsing that happens in the transformer provide
+            # diagnostics instead of exceptions.
+            raise e.orig_exc from e
         file_path = os.fspath(path).removesuffix(".def")
         result = self.validate(
             program=program,

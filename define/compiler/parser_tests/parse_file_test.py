@@ -18,7 +18,7 @@ def test_parse_file(p: parser.Parser, tmp_path: Path):
     file.write_text(source, encoding="utf-8")
     tree, returned_source = p.parse_file(file)
     assert returned_source == source
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path"]
 
 
 def test_parse_file_preserves_crlf(p: parser.Parser, tmp_path: Path):

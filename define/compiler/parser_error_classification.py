@@ -226,7 +226,15 @@ def extract_char_error_from_token(
     # The contextual lexer can surface spaces as UnexpectedToken instead of
     # UnexpectedCharacters depending on parser state. Handle both paths in
     # one place so whitespace diagnostics stay stable.
-    if str(e.token) == " ":
+    token_str = str(e.token)
+    if token_str:
+        char_class = _classify_invalid_char(token_str[0])
+        if char_class is not None:
+            return char_class(
+                e.get_context(source), e.line, e.column, token_str[0], file_path
+            )
+
+    if token_str and token_str.strip() == "" and "\n" not in token_str:
         if not _is_space_followed_only_by_whitespace(source, e.line, e.column):
             return parser_exceptions.UnexpectedWhitespaceError(
                 e.get_context(source),
@@ -239,17 +247,6 @@ def extract_char_error_from_token(
             e.get_context(source), e.line, e.column, " ", file_path
         )
 
-    token_str = str(e.token)
-    if not token_str:
-        return None
-    # When invalid bytes/characters are absorbed into broad name terminals,
-    # the parse error points at the whole token; classify by first codepoint
-    # here so users still get the precise character-level syntax error.
-    char_class = _classify_invalid_char(token_str[0])
-    if char_class is not None:
-        return char_class(
-            e.get_context(source), e.line, e.column, token_str[0], file_path
-        )
     return None
 
 
@@ -263,6 +260,27 @@ def classify_token_error(
 
     if "  " in error_line.lstrip():
         return parser_exceptions.UnexpectedWhitespaceError
+
+    if e.token.type == "NAME_CONTENT":
+        token_text = str(e.token)
+        if (
+            token_text.startswith("define the potential position<")
+            and "DEFINE_THE_POSITION" in e.expected
+        ):
+            return parser_exceptions.GlobalPositionInLocalScopeError
+        if token_text.startswith(
+            "it may only contain dimension points where"
+        ) and _NEWLINE_OR_RBRACE_EXPECTED.issubset(e.expected):
+            return parser_exceptions.MultiplePositionConstraintBlocksError
+        if "LESSTHAN" in e.expected:
+            return parser_exceptions.MissingOpenAngleBracketError
+        # Using accepts-based matching with ParserState can fail for contextual
+        # lexer fallback tokens. State-only matching is enough here.
+        return e.match_examples(
+            parse_fn,
+            _TOKEN_ERROR_EXAMPLES,
+            use_accepts=False,
+        )
 
     # Local positions are only valid before "it happens when" in an action
     # block. If we see one when only line-break-or-close is legal, report

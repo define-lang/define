@@ -1,12 +1,7 @@
 %import common.LF -> NEWLINE
 
 # Name Terminals
-PATH_SEGMENT: /[^:<>\/{}\s]+/
-MULTIVERSE_NAME.2: /[^:<>\/{}\s]+(?=:[^:>]*:[^:>]*:\/)/
-AUTHORITY_DOMAIN.1: /[^:<>\/{}\s]+(?=[^:>]*:[^:>]*:\/)/
-AUTHORITY_PATH_SEGMENT: /[^:<>\/{}\s]+/
-UNIVERSE_NAME: /[^:<>\/{}\s]+(?=:(?![^:>]*:)[^:>]*\/)/
-LOCAL_NAME: /[^:<>{}\s]+/
+NAME_CONTENT: /[^>\n]+/
 
 # Syntax Terminals
 DEFINE_THE_POSITION: "define the position"
@@ -36,19 +31,12 @@ terminator: "." NEWLINE
 _block_open: " {" NEWLINE
 _block_close: "}" NEWLINE
 
-# Global Name Syntax
+# Name Syntax
 
-authority_path: ("/" AUTHORITY_PATH_SEGMENT)+
-authority: AUTHORITY_DOMAIN authority_path?
-
-fqun: MULTIVERSE_NAME ":" authority ":" UNIVERSE_NAME ":"
-    | authority ":" UNIVERSE_NAME ":"
-    | UNIVERSE_NAME ":"
-
-global_name_path: ("/" PATH_SEGMENT)+
-global_name: fqun global_name_path
-global_name_reference: fqun? global_name_path
-typed_global_name_reference: NAME_TYPE "<" global_name_reference ">"
+global_name_definition_content: "<" NAME_CONTENT ">"
+global_name_reference_content: "<" NAME_CONTENT ">"
+local_name_content: "<" NAME_CONTENT ">"
+typed_global_name_reference: NAME_TYPE global_name_reference_content
 
 # Position Constraint Block Syntax
 
@@ -64,13 +52,13 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 # Potential Position Definition Syntax
 
-position_definition: DEFINE_THE_POTENTIAL_POSITION "<" global_name ">" position_definition_terminator_or_block
+position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content position_definition_terminator_or_block
 
 # Action Definition Syntax
 
-action_definition: DEFINE_THE_POTENTIAL_ACTION "<" global_name ">" (terminator | action_definition_block)
+action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content (terminator | action_definition_block)
 
-local_position_definition: DEFINE_THE_POSITION "<" LOCAL_NAME ">" position_definition_terminator_or_block
+local_position_definition: DEFINE_THE_POSITION local_name_content position_definition_terminator_or_block
 trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* "}"
 action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition)* _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block

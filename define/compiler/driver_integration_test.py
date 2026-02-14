@@ -51,6 +51,7 @@ EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
     "invalid_universe_name_format/": diagnostics.UniverseNameInvalidCharDiagnostic,
     "local_names/duplicate": diagnostics.LocalNameConflictDiagnostic,
     "local_names/leading_digit": diagnostics.InvalidLocalNameFormatDiagnostic,
+    "local_names/space": diagnostics.InvalidLocalNameFormatDiagnostic,
     "local_names/uppercase": diagnostics.InvalidLocalNameFormatDiagnostic,
     "local_names/hyphen": diagnostics.InvalidLocalNameFormatDiagnostic,
     "local_names/special_characters": diagnostics.InvalidLocalNameFormatDiagnostic,

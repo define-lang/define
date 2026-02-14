@@ -143,12 +143,36 @@ py_binary(
 )
 
 py_library(
+    name = "name_parser",
+    srcs = ["name_parser.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":parser_exceptions",
+        "@pypi//lark",
+    ],
+)
+
+py_library(
     name = "name_validators",
     srcs = ["name_validators.py"],
     data = ["//define/reserved_words"],
     deps = [
         ":ast",
         ":diagnostics",
+    ],
+)
+
+py_test(
+    name = "name_parser_test",
+    size = "small",
+    srcs = ["name_parser_test.py"],
+    pytest_main = True,
+    deps = [
+        ":ast",
+        ":name_parser",
+        ":parser_exceptions",
+        "@pypi//pytest",
     ],
 )
 
@@ -203,6 +227,8 @@ py_library(
     srcs = ["transformer.py"],
     deps = [
         ":ast",
+        ":name_parser",
+        ":parser_exceptions",
         "@pypi//lark",
     ],
 )
@@ -271,6 +297,8 @@ pyright_test(
         ":driver_test",
         ":exceptions",
         ":main",
+        ":name_parser",
+        ":name_parser_test",
         ":name_validators",
         ":name_validators_test",
         ":parser",

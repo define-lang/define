@@ -36,7 +36,7 @@ def test_block_with_blank_lines(p: parser.Parser) -> None:
         + "\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
 
 
 def test_block_with_comment_inside(p: parser.Parser) -> None:
@@ -48,7 +48,7 @@ def test_block_with_comment_inside(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
 
 
 def test_block_with_comment_after_open(p: parser.Parser) -> None:
@@ -59,7 +59,7 @@ def test_block_with_comment_after_open(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
 
 
 def test_block_with_comment_after_close(p: parser.Parser) -> None:
@@ -70,7 +70,7 @@ def test_block_with_comment_after_close(p: parser.Parser) -> None:
         + "}\n"
         + "} # comment\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path", "child"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
 
 
 def test_block_with_full_fqun(p: parser.Parser) -> None:
@@ -81,14 +81,9 @@ def test_block_with_full_fqun(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "MULTIVERSE_NAME") == ["my_mv"]
-    assert get_tokens_by_type(tree, "AUTHORITY_DOMAIN") == ["example.com"]
-    assert get_tokens_by_type(tree, "UNIVERSE_NAME") == ["my_lib"]
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == [
-        "some",
-        "path",
-        "some",
-        "action",
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "my_mv:example.com:my_lib:/some/path",
+        "/some/action",
     ]
 
 
@@ -105,11 +100,11 @@ def test_multiple_definitions_with_blocks(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == [
-        "first",
-        "first_child",
-        "second",
-        "second_child",
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "standard:/first",
+        "/first_child",
+        "standard:/second",
+        "/second_child",
     ]
 
 
@@ -122,7 +117,11 @@ def test_mixed_block_and_terminator(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["first", "second", "do_work"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "standard:/first",
+        "standard:/second",
+        "/do_work",
+    ]
 
 
 def test_missing_block_close(p: parser.Parser) -> None:
@@ -138,9 +137,9 @@ def test_missing_newline_after_block_open(p: parser.Parser) -> None:
 
 
 def test_no_space_before_brace(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
         p.parse("define the potential position<standard:/path>{\n")
-    assert exc_info.value.char == "{"
+    assert str(exc_info.value.token) == "{"
 
 
 def test_missing_terminator_still_works(p: parser.Parser) -> None:

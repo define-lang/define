@@ -127,6 +127,16 @@ class TestMultiverseNameFormat:
         assert result[0].position.line == 1
         assert result[0].position.column == 10
 
+    def test_non_ascii(self):
+        result = name_validators.validate_multiverse_name_format(
+            _multiverse("muv\u00e9")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+        assert result[0].multiverse_name == "muv\u00e9"
+        assert result[0].position.line == 1
+        assert result[0].position.column == 13
+
 
 class TestAuthorityDomainFormat:
     def test_valid(self):
@@ -163,6 +173,26 @@ class TestAuthorityDomainFormat:
         assert result[0].position.line == 1
         assert result[0].position.column == 10
 
+    def test_trailing_hyphen(self):
+        result = name_validators.validate_authority_domain_format(
+            _authority("example.com-")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+        assert result[0].domain == "example.com-"
+        assert result[0].position.line == 1
+        assert result[0].position.column == 21
+
+    def test_leading_dot(self):
+        result = name_validators.validate_authority_domain_format(
+            _authority(".example.com")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+        assert result[0].domain == ".example.com"
+        assert result[0].position.line == 1
+        assert result[0].position.column == 10
+
     def test_single_char_invalid(self):
         result = name_validators.validate_authority_domain_format(_authority("-"))
         assert len(result) == 2
@@ -180,6 +210,16 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == "Example.Com"
         assert result[0].position.line == 1
         assert result[0].position.column == 10
+
+    def test_non_ascii(self):
+        result = name_validators.validate_authority_domain_format(
+            _authority("ex\u00e4mple.com")
+        )
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+        assert result[0].domain == "ex\u00e4mple.com"
+        assert result[0].position.line == 1
+        assert result[0].position.column == 12
 
 
 class TestAuthorityPathFormat:
@@ -267,6 +307,14 @@ class TestUniverseNameFormat:
         assert result[0].position.line == 1
         assert result[0].position.column == 10
 
+    def test_non_ascii(self):
+        result = name_validators.validate_universe_name_format(_universe("m\u00fclib"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+        assert result[0].universe_name == "m\u00fclib"
+        assert result[0].position.line == 1
+        assert result[0].position.column == 11
+
 
 class TestGlobalNamePathSegment:
     def test_valid(self):
@@ -304,6 +352,36 @@ class TestGlobalNamePathSegment:
         assert result.segment == "BadName"
         assert result.position.line == 1
         assert result.position.column == 21
+
+    def test_dot(self):
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("bad.name")
+        )
+        assert result is not None
+        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result.segment == "bad.name"
+        assert result.position.line == 1
+        assert result.position.column == 24
+
+    def test_tilde(self):
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("bad~name")
+        )
+        assert result is not None
+        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result.segment == "bad~name"
+        assert result.position.line == 1
+        assert result.position.column == 24
+
+    def test_bang(self):
+        result = name_validators.validate_global_name_path_segment(
+            _path_segment("bad!name")
+        )
+        assert result is not None
+        assert isinstance(result, diagnostics.InvalidGlobalNamePathDiagnostic)
+        assert result.segment == "bad!name"
+        assert result.position.line == 1
+        assert result.position.column == 24
 
 
 class TestGlobalNamePath:
@@ -438,6 +516,22 @@ class TestUniverseNameReserved:
 class TestLocalNameFormat:
     def test_valid(self):
         result = name_validators.validate_local_name_format(_local_def("my_pos"))
+        assert not result
+
+    def test_valid_leading_underscore(self):
+        result = name_validators.validate_local_name_format(_local_def("_private"))
+        assert not result
+
+    def test_valid_with_digits(self):
+        result = name_validators.validate_local_name_format(_local_def("pos_1"))
+        assert not result
+
+    def test_valid_single_char(self):
+        result = name_validators.validate_local_name_format(_local_def("x"))
+        assert not result
+
+    def test_valid_single_underscore(self):
+        result = name_validators.validate_local_name_format(_local_def("_"))
         assert not result
 
     def test_hyphen(self):

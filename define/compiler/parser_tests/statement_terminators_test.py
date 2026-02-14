@@ -12,7 +12,9 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 def test_valid_terminator(p: parser.Parser) -> None:
     tree = p.parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
-    assert get_tokens_by_type(tree, "PATH_SEGMENT") == ["path"]
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path"
+    ]
 
 
 def test_missing_terminator(p: parser.Parser) -> None:
@@ -30,9 +32,10 @@ def test_missing_newline_after_terminator(p: parser.Parser) -> None:
 
 
 def test_space_before_terminator(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.UnexpectedWhitespaceError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracketError) as exc_info:
         p.parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
-    assert exc_info.value.column == 65
+    assert str(exc_info.value.token) == "\n"
+    assert exc_info.value.column == 67
 
 
 def test_trailing_space_before_newline(p: parser.Parser) -> None:
