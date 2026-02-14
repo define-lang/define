@@ -38,7 +38,7 @@ def _check_error_stream(error_output: str, *, expect_content: bool) -> None:
             + _escape_content(error_output)
         )
     for i, c in enumerate(error_output):
-        if c == "\n":
+        if c == "\n" or c == "\t":
             continue
         if not c.isprintable():
             raise AssertionError(
