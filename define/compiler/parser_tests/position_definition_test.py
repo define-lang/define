@@ -18,14 +18,14 @@ def test_position_definition_parses(p: parser.Parser) -> None:
 
 
 def test_position_definition_missing_open_angle(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracketError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         p.parse("define the potential positionstandard:/path>.\n")
     assert str(exc_info.value.token) == "standard:/path"
     assert exc_info.value.column == 30
 
 
 def test_position_definition_empty_name_content(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.EmptyNameError) as exc_info:
+    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         p.parse("define the potential position<>.\n")
     assert str(exc_info.value.token) == ">"
     assert exc_info.value.column == 31
@@ -62,7 +62,7 @@ def test_position_definition_with_multiple_requirements(p: parser.Parser) -> Non
 
 
 def test_position_definition_block_requires_constraint_block(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.EmptyBlockTerminatorError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         p.parse("define the potential position<mv:define-lang.org:parser:/path> {\n}\n")
     assert str(exc_info.value.token) == "}"
     assert exc_info.value.line == 2
@@ -70,7 +70,7 @@ def test_position_definition_block_requires_constraint_block(p: parser.Parser) -
 
 
 def test_position_constraint_block_requires_requirements(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.EmptyBlockTerminatorError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
         p.parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain dimension points where {\n"
@@ -85,9 +85,7 @@ def test_position_constraint_block_requires_requirements(p: parser.Parser) -> No
 def test_position_definition_rejects_multiple_constraint_blocks(
     p: parser.Parser,
 ) -> None:
-    with pytest.raises(
-        parser_exceptions.MultiplePositionConstraintBlocksError
-    ) as exc_info:
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         p.parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain dimension points where {\n"
@@ -101,6 +99,43 @@ def test_position_definition_rejects_multiple_constraint_blocks(
     assert str(exc_info.value.token).startswith("it may only contain")
     assert exc_info.value.line == 5
     assert exc_info.value.column == 5
+
+
+def test_second_constraint_block_after_close_on_same_line(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
+        p.parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</first>.\n"
+            + "    }    it may only contain dimension points where {\n"
+            + "        it has the action</second>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token.type == "NAME_CONTENT"
+    assert str(exc_info.value.token).startswith("    it may only contain")
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 6
+
+
+def test_second_constraint_block_on_requirement_line(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
+        p.parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</first>.    it may only contain dimension points where {\n"
+            + "        it has the action</second>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token.type == "NAME_CONTENT"
+    assert str(exc_info.value.token).startswith("    it may only contain")
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 37
 
 
 def test_action_definition_block_with_mixed_local_position_forms(

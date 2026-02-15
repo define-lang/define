@@ -363,9 +363,10 @@ def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
         d.validate_file(Path("test.def"))
     except (parser_exceptions.DefineSyntaxError, exceptions.DriverError):
         pass
-    except lark_exceptions.UnexpectedInput:
+    except lark_exceptions.UnexpectedInput as e:
         pytest.fail(
-            f"Unclassified lark error for {file_path}: {_escape_content(source)}"
+            f"Unclassified {e!r}:\n\t{e!s}\n" + f"\nSource:\n{_escape_content(source)}",
+            pytrace=False,
         )
 
 

@@ -1,153 +1,18 @@
-"""Error classification logic for the Define parser."""
+"""Error classification logic for the Define parser.
+
+This whole module is an implementation detail of parser.py.
+"""
 
 import os
-from collections.abc import Callable
 
-from lark import Token, Tree, exceptions
+import lark
 
 from define.compiler import parser_exceptions
-
-_TOKEN_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineTokenError], list[str]] = {
-    parser_exceptions.MissingBlockCloseError: [
-        "define the potential position<standard:/path> {\n",
-        "define the potential position<standard:/a/path> {\n",
-        "define the potential position<example.com:my_lib:/path> {\n",
-        "define the potential position<example.com:my_lib:/a/path> {\n",
-        "define the potential position<mymv:example.com:my_lib:/path> {\n",
-        "define the potential position<mymv:example.com:my_lib:/a/path> {\n",
-        "define the potential action<standard:/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n",
-        "define the potential action<standard:/a/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n",
-        "define the potential action<example.com:my_lib:/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n",
-        "define the potential action<example.com:my_lib:/a/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n",
-        "define the potential action<mymv:example.com:my_lib:/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n",
-        "define the potential action<mymv:example.com:my_lib:/a/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n",
-    ],
-    parser_exceptions.EmptyBlockTerminatorError: [
-        "define the potential position<standard:/path> {\n}\n",
-        "define the potential position<standard:/a/path> {\n}\n",
-        "define the potential position<standard:/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "}\n"
-        + "}\n",
-        "define the potential position<standard:/a/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "}\n"
-        + "}\n",
-        "define the potential action<standard:/path> {\n}\n",
-        "define the potential action<standard:/a/path> {\n}\n",
-        "define the potential action<example.com:my_lib:/path> {\n}\n",
-        "define the potential action<example.com:my_lib:/a/path> {\n}\n",
-        "define the potential action<mymv:example.com:my_lib:/path> {\n}\n",
-        "define the potential action<mymv:example.com:my_lib:/a/path> {\n}\n",
-        "define the potential action<standard:/path> {\n"
-        + "define the position<x>.\n"
-        + "}\n",
-        "define the potential action<standard:/a/path> {\n"
-        + "define the position<x>.\n"
-        + "}\n",
-    ],
-    parser_exceptions.MissingActionStatementsBlockError: [
-        "define the potential action<standard:/path> {\n"
-        + "it happens when {\n"
-        + "}\n",
-        "define the potential action<standard:/a/path> {\n"
-        + "it happens when {\n"
-        + "}\n",
-    ],
-    parser_exceptions.MissingNewlineAfterBlockCloseError: [
-        "define the potential action<standard:/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}}\n",
-        "define the potential action<standard:/a/path> {\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}}\n",
-    ],
-    parser_exceptions.MissingNewlineAfterBlockOpenError: [
-        "define the potential position<standard:/path> {}\n",
-        "define the potential position<standard:/a/path> {}\n",
-        "define the potential position<example.com:my_lib:/path> {}\n",
-        "define the potential position<example.com:my_lib:/a/path> {}\n",
-        "define the potential position<mymv:example.com:my_lib:/path> {}\n",
-        "define the potential position<mymv:example.com:my_lib:/a/path> {}\n",
-        "define the potential action<standard:/path> {}\n",
-        "define the potential action<standard:/a/path> {}\n",
-        "define the potential action<example.com:my_lib:/path> {}\n",
-        "define the potential action<example.com:my_lib:/a/path> {}\n",
-        "define the potential action<mymv:example.com:my_lib:/path> {}\n",
-        "define the potential action<mymv:example.com:my_lib:/a/path> {}\n",
-    ],
-    parser_exceptions.MissingTerminatorError: [
-        "define the potential position<standard:/path>\n",
-    ],
-    parser_exceptions.MissingNewlineError: [
-        "define the potential position<standard:/path>.",
-    ],
-    parser_exceptions.MissingOpenAngleBracketError: [
-        "define the potential positionstandard:/path>.\n",
-    ],
-    parser_exceptions.MissingCloseAngleBracketError: [
-        "define the potential position<standard:/path.\n",
-        "define the potential position<mymv:example.com:my_lib:/path.\n",
-        "define the potential position<mymv:example.com:my_lib:/a/path.\n",
-    ],
-    parser_exceptions.EmptyNameError: [
-        "define the potential position<>.\n",
-        "define the potential action<standard:/act> {\n"
-        + "define the position<>.\n"
-        + "it happens when {\n"
-        + "} and it does {\n"
-        + "}\n"
-        + "}\n",
-    ],
-    parser_exceptions.EmptyFileError: [
-        "",
-        "\n\n\n",
-        "# a comment",
-    ],
-    parser_exceptions.IncompleteStatementError: [
-        "define the potential\n",
-        "define the potential.\n",
-        "define the\n",
-        "define the.\n",
-    ],
-    parser_exceptions.UnexpectedWhitespaceError: [
-        "define  the potential position<standard:/path>.\n",
-    ],
-}
-
-_CHAR_ERROR_EXAMPLES: dict[type[parser_exceptions.DefineCharError], list[str]] = {
-    # TODO: Make this into MissingWhitespaceError.
-    parser_exceptions.InvalidCharacterError: [
-        "define the potential position<standard:/path>{\n",
-    ],
-}
 
 _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
     "\r": parser_exceptions.CarriageReturnError,
 }
-
-_NEWLINE_OR_RBRACE_EXPECTED = {"NEWLINE", "RBRACE"}
 
 
 def _classify_invalid_char(
@@ -176,129 +41,171 @@ def _is_space_followed_only_by_whitespace(source: str, line: int, column: int) -
 
 
 def classify_char_error(
-    e: exceptions.UnexpectedCharacters,
+    e: lark.exceptions.UnexpectedCharacters,
     source: str,
-    parse_fn: Callable[[str], Tree[Token]],
 ) -> type[parser_exceptions.DefineCharError] | None:
     """Classify a character rejected by the lexer in a syntax position."""
     char_class = _classify_invalid_char(e.char)
     if char_class is not None:
         return char_class
 
-    if e.char == " ":
-        if not _is_space_followed_only_by_whitespace(source, e.line, e.column):
-            return None
+    if e.char == " " and _is_space_followed_only_by_whitespace(
+        source, e.line, e.column
+    ):
         return parser_exceptions.TrailingWhitespaceError
-
-    return e.match_examples(
-        parse_fn,
-        _CHAR_ERROR_EXAMPLES,
-        use_accepts=True,
-    )
-
-
-def extract_char_error_from_token(
-    e: exceptions.UnexpectedToken,
-    source: str,
-    file_path: str | os.PathLike[str] | None,
-) -> parser_exceptions.DefineSyntaxError | None:
-    r"""Extract a syntax error directly from an unexpected token, if possible.
-
-    Name terminals accept any non-structural characters, so invalid
-    characters can be absorbed into tokens in syntax positions — e.g.
-    "\ufeffdefine" becomes AUTHORITY_PATH_SEGMENT instead of the "define"
-    keyword. Only the first character matters because invalid characters
-    mid-token parse successfully and are caught by the validator.
-    """
-    # The contextual lexer can surface spaces as UnexpectedToken instead of
-    # UnexpectedCharacters depending on parser state. Handle both paths in
-    # one place so whitespace diagnostics stay stable.
-    token_str = str(e.token)
-    if token_str:
-        char_class = _classify_invalid_char(token_str[0])
-        if char_class is not None:
-            return char_class(
-                e.get_context(source), e.line, e.column, token_str[0], file_path
-            )
-
-    if token_str and token_str.strip() == "" and "\n" not in token_str:
-        if not _is_space_followed_only_by_whitespace(source, e.line, e.column):
-            return parser_exceptions.UnexpectedWhitespaceError(
-                e.get_context(source),
-                e.line,
-                e.column,
-                e.token,
-                file_path,
-            )
-        return parser_exceptions.TrailingWhitespaceError(
-            e.get_context(source), e.line, e.column, " ", file_path
-        )
 
     return None
 
 
-def classify_token_error(
-    e: exceptions.UnexpectedToken,
+def raise_token_error(
+    e: lark.exceptions.UnexpectedToken,
     source: str,
-    parse_fn: Callable[[str], Tree[Token]],
-) -> type[parser_exceptions.DefineTokenError] | None:
+    file_path: str | os.PathLike[str] | None,
+):
     """Classify a token error into a specific exception type."""
-    error_line = source.split("\n")[e.line - 1]
+    ####################################
+    ## First Character Classification ##
+    ####################################
 
-    if "  " in error_line.lstrip():
-        return parser_exceptions.UnexpectedWhitespaceError
+    # This needs to come first; it's the only error type that reliably escapes control
+    # characters.
+    if len(e.token) > 0:
+        char_error = _classify_invalid_char(e.token[0])
+        if char_error:
+            raise char_error.from_lark_exception(e, source, e.token[0], file_path)
 
-    if e.token.type == "NAME_CONTENT":
-        token_text = str(e.token)
-        if (
-            token_text.startswith("define the potential position<")
-            and "DEFINE_THE_POSITION" in e.expected
-        ):
-            return parser_exceptions.GlobalPositionInLocalScopeError
-        if token_text.startswith(
-            "it may only contain dimension points where"
-        ) and _NEWLINE_OR_RBRACE_EXPECTED.issubset(e.expected):
-            return parser_exceptions.MultiplePositionConstraintBlocksError
-        if "LESSTHAN" in e.expected:
-            return parser_exceptions.MissingOpenAngleBracketError
-        # Using accepts-based matching with ParserState can fail for contextual
-        # lexer fallback tokens. State-only matching is enough here.
-        return e.match_examples(
-            parse_fn,
-            _TOKEN_ERROR_EXAMPLES,
-            use_accepts=False,
+    if e.token.startswith(" ") and _is_space_followed_only_by_whitespace(
+        source, e.line, e.column
+    ):
+        raise parser_exceptions.TrailingWhitespaceError.from_lark_exception(
+            e, source, e.token, file_path
         )
 
-    # Local positions are only valid before "it happens when" in an action
-    # block. If we see one when only line-break-or-close is legal, report
-    # the specific ordering error instead of a generic missing close brace.
+    ###############################
+    ## e.accepts Classification ##
+    ###############################
+
+    # If we see we need a >, that means we are parsing a name and forgot
+    # the closing bracket. We check e.token_history just to make the type
+    # checker happy---we always have a token history here.
+    if e.accepts == {"MORETHAN"} and e.token_history:
+        raise parser_exceptions.MissingCloseAngleBracket(
+            e, source, file_path, e.token_history[-1]
+        )
+
+    # Same for <, which means the previous token was the start of a definition
+    # and we expect a name and didn't get <.
+    if e.accepts == {"LESSTHAN"}:
+        raise parser_exceptions.MissingOpenAngleBracket(e, source, file_path, e.token)
+
+    # This is just <> while expecting a name.
     if (
-        e.token.type == "DEFINE_THE_POSITION"
-        and e.expected == _NEWLINE_OR_RBRACE_EXPECTED
+        e.accepts == {"NAME_CONTENT"}
+        and e.token == ">"
+        and e.token_history
+        and e.token_history[-1] == "<"
     ):
-        return parser_exceptions.LocalPositionAfterTriggerError
+        raise parser_exceptions.EmptyName(e, source, file_path)
 
-    if (
-        e.token.type == "IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE"
-        and _NEWLINE_OR_RBRACE_EXPECTED.issubset(e.expected)
+    if e.accepts == {"SPACE_AND_OPEN_BRACE", "DOT"}:
+        if e.token == "{":
+            raise parser_exceptions.MissingWhitespaceBeforeBrace(e, source, file_path)
+        # This happens at least if it's a newline or just a space and a newline.
+        raise parser_exceptions.MissingTerminator(e, source, file_path)
+
+    if e.accepts == {"SPACE_AND_OPEN_BRACE"}:
+        raise parser_exceptions.MissingOpenBrace(e, source, file_path)
+
+    if e.accepts == {"NEWLINE"}:
+        # TODO: This EOF one shows up sometimes when we really want MissingCloseBrace.
+        if e.token.type == "$END":
+            raise parser_exceptions.MissingNewlineAtEof(e, source, file_path)
+        if e.token_history:
+            match e.token_history[-1].type:
+                case "DOT":
+                    raise parser_exceptions.MissingNewlineAfterTerminator(
+                        e, source, file_path
+                    )
+                case "SPACE_AND_OPEN_BRACE":
+                    if e.token == "}":
+                        raise parser_exceptions.EmptyBlock(e, source, file_path)
+                    raise parser_exceptions.MissingNewlineAfterOpenBrace(
+                        e, source, file_path
+                    )
+                case "RBRACE":
+                    raise parser_exceptions.MissingNewlineAfterCloseBrace(
+                        e, source, file_path
+                    )
+                case _:
+                    pass
+
+    if e.accepts == {"NEWLINE", "RBRACE"}:
+        # TODO: This may be fragile when we allow this in other places.
+        if e.token.type == "DEFINE_THE_POSITION":
+            raise parser_exceptions.InvalidPositionDefinitionLocationInAction(
+                e, source, file_path
+            )
+        raise parser_exceptions.MissingCloseBrace(e, source, file_path)
+
+    if e.accepts == {"AND_IT_DOES"}:
+        # This catches the case where you put too many spaces before "and it does"
+        if "  " in e.token and "and it does" in e.token:
+            raise parser_exceptions.ExtraWhitespace(e, source, file_path)
+        raise parser_exceptions.MissingActionStatementsBlock(e, source, file_path)
+
+    # This has to be here, because otherwise the "IT_HAPPENS_WHEN" will match
+    # when this happens inside an Action Definition Block.
+    if "DEFINE_THE_POSITION" in e.accepts and e.token.startswith(
+        "define the potential "
     ):
-        return parser_exceptions.MultiplePositionConstraintBlocksError
-    # The contextual lexer may tokenize this prefix as PATH_SEGMENT in this
-    # parser state; keep the same classification in that case.
-    if str(e.token) == "it" and _NEWLINE_OR_RBRACE_EXPECTED.issubset(e.expected):
-        return parser_exceptions.MultiplePositionConstraintBlocksError
+        raise parser_exceptions.GlobalDefinitionInLocalContext(e, source, file_path)
 
-    if "DEFINE_THE_POSITION" in e.expected and str(e.token) == "define":
-        return parser_exceptions.GlobalPositionInLocalScopeError
+    #######################
+    ## Generic Fallbacks ##
+    #######################
 
-    if "MORETHAN" in e.expected:
-        return parser_exceptions.MissingCloseAngleBracketError
+    # This is a generic fallback because we don't want to mask more specific errors above.
+    # (For example, 'position  <foo>' should throw MissingOpenAngleBracket, not this error.)
+    # However, it's more specific than the errors below because if you type
+    # "define  the potential position" we want to tell you about the whitespace, not other
+    # errors.
+    #
+    # TODO: Ideally, we would actually throw this _before_ all other errors, because it's
+    # more helpful in many cases. However, due to the way Lark works, that would require
+    # re-lexing and re-parsing the entire file with fixed syntax.
+    if "  " in e.token.strip(" "):
+        raise parser_exceptions.ExtraWhitespace(e, source, file_path)
 
-    return e.match_examples(
-        parse_fn,
-        _TOKEN_ERROR_EXAMPLES,
-        use_accepts=True,
-    )
+    # Because the top-level syntax is so constrained, if we expect a global definition,
+    # this error should basically always be the correct one.
+    if "DEFINE_THE_POTENTIAL_POSITION" in e.accepts:
+        raise parser_exceptions.ExpectedGlobalDefinition(e, source, file_path)
+
+    # A relatively broad fallback for random nonsense inside an Action Definition Block.
+    # We use e.accepts here because it's narrower than e.expected.
+    if "IT_HAPPENS_WHEN" in e.accepts:
+        if e.token == "}":
+            # TODO: Needs more context to see the start of the block, not the end of it.
+            raise parser_exceptions.MissingActionDefinitionSyntax(e, source, file_path)
+        raise parser_exceptions.InvalidActionDefinitionsBlock(e, source, file_path)
+
+    # We are in an Action Statements Block. Need to update this check when
+    # other local position definition locations are acceptable in the future.
+    # This check must happen after the IT_HAPPENS_WHEN check above.
+    if "DEFINE_THE_POSITION" in e.accepts:
+        raise parser_exceptions.InvalidActionStatementsBlock(e, source, file_path)
+
+    # We are in a position definition block.
+    if "IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE" in e.accepts:
+        if e.token == "}":
+            raise parser_exceptions.MissingPositionDefinitionContent(
+                e, source, file_path
+            )
+        raise parser_exceptions.InvalidPositionDefinitionBlock(e, source, file_path)
+
+    # We are in a position constraint block.
+    if "IT_HAS_THE" in e.accepts and e.token == "}":
+        raise parser_exceptions.MissingPositionConstraintContent(e, source, file_path)
 
 
 def make_invalid_encoding_error(

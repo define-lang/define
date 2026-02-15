@@ -16,7 +16,7 @@ def test_error_message_without_path(p: parser.Parser) -> None:
         "line 1, column 1\n"
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
-        "Unexpected byte order mark (\\ufeff)."
+        "UTF-8 Byte Order Marks (\\ufeff) are not allowed in Define source code files."
     )
 
 
@@ -30,7 +30,7 @@ def test_error_message_with_path(p: parser.Parser) -> None:
         'File "test.def", line 1, column 1\n'
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
-        "Unexpected byte order mark (\\ufeff)."
+        "UTF-8 Byte Order Marks (\\ufeff) are not allowed in Define source code files."
     )
 
 
@@ -46,18 +46,18 @@ def test_char_error_message(p: parser.Parser) -> None:
 
 
 def test_token_error_message(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         p.parse("define the potential position<standard:/path>\n")
     assert str(exc_info.value) == (
         "line 1, column 46\n"
         "e the potential position<standard:/path>\n"
         "                                        ^\n"
-        "Definition is missing a terminator ('.' or '{')."
+        "Statements must end with a '.' or a single space followed by '{'"
     )
 
 
 def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracketError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         p.parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<local_name.\n"
@@ -70,5 +70,5 @@ def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> No
         "line 2, column 36\n"
         "    define the position<local_name.\n"
         "                                   ^\n"
-        "Expected '>' after the name."
+        "Missing > on this name: local_name."
     )

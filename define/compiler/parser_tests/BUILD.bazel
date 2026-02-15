@@ -64,6 +64,19 @@ py_test(
 )
 
 py_test(
+    name = "extra_whitespace_test",
+    size = "small",
+    srcs = ["extra_whitespace_test.py"],
+    pytest_main = True,
+    deps = [
+        ":conftest",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "file_encoding_test",
     size = "small",
     srcs = ["file_encoding_test.py"],
@@ -202,6 +215,7 @@ pyright_test(
         ":comments_test",
         ":conftest",
         ":error_messages_test",
+        ":extra_whitespace_test",
         ":file_encoding_test",
         ":incomplete_statements_test",
         ":local_name_format_test",

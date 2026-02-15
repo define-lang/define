@@ -79,7 +79,94 @@ def test_same_line_comment_with_trailing_whitespace(p: parser.Parser) -> None:
 
 
 def test_comment_only_file_without_newline(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.EmptyFileError) as exc_info:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         p.parse("# a comment")
     assert str(exc_info.value.token) == ""
+    assert exc_info.value.line == 1
     assert exc_info.value.column == 1
+
+
+def test_empty_comment_hash_only_file_by_itself(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        p.parse("#")
+    assert str(exc_info.value.token) == ""
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_empty_comment_hash_newline_file_by_itself(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        p.parse("#\n")
+    assert str(exc_info.value.token) == ""
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 2
+
+
+def test_empty_comment_hash_space_file_by_itself(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        p.parse("# ")
+    assert str(exc_info.value.char) == " "
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 2
+
+
+def test_empty_comment_hash_space_newline_file_by_itself(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        p.parse("# \n")
+    assert str(exc_info.value.char) == " "
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 2
+
+
+def test_empty_comment_hash_newline_above_statement(p: parser.Parser) -> None:
+    tree = p.parse(
+        "#\ndefine the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path"
+    ]
+    assert get_tokens_by_type(tree, "COMMENT") == []
+
+
+def test_empty_comment_hash_space_newline_above_statement(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        p.parse("# \ndefine the potential position<mv:define-lang.org:parser:/path>.\n")
+    assert str(exc_info.value.char) == " "
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 2
+
+
+def test_empty_comment_hash_only_after_statement_same_line(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
+        p.parse("define the potential position<mv:define-lang.org:parser:/path>. #")
+    assert str(exc_info.value.token) == ""
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 63
+
+
+def test_empty_comment_hash_newline_after_statement_same_line(p: parser.Parser) -> None:
+    tree = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path>. #\n"
+    )
+    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path"
+    ]
+    assert get_tokens_by_type(tree, "COMMENT") == []
+
+
+def test_empty_comment_hash_space_after_statement_same_line(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        p.parse("define the potential position<mv:define-lang.org:parser:/path>. # ")
+    assert str(exc_info.value.char) == " "
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 66
+
+
+def test_empty_comment_hash_space_newline_after_statement_same_line(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
+        p.parse("define the potential position<mv:define-lang.org:parser:/path>. # \n")
+    assert str(exc_info.value.char) == " "
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 66

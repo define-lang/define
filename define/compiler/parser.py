@@ -5,7 +5,7 @@ from pathlib import Path
 
 from lark import Lark, Token, Tree, exceptions
 
-from define.compiler import parser_error_classification, parser_exceptions
+from define.compiler import parser_error_classification
 
 _GRAMMAR_PATH = Path(__file__).parent / "grammar.lark"
 
@@ -34,35 +34,12 @@ class Parser:
         try:
             return self._lark.parse(source)
         except exceptions.UnexpectedCharacters as e:
-            exc_class = parser_error_classification.classify_char_error(
-                e, source, self._lark.parse
-            )
+            exc_class = parser_error_classification.classify_char_error(e, source)
             if exc_class is not None:
-                raise exc_class(
-                    e.get_context(source), e.line, e.column, e.char, file_path
-                ) from e
-            if e.char == " ":
-                raise parser_exceptions.UnexpectedWhitespaceError(
-                    e.get_context(source), e.line, e.column, Token("", ""), file_path
-                ) from e
+                raise exc_class.from_lark_exception(e, source, e.char, file_path) from e
             raise
         except exceptions.UnexpectedToken as e:
-            token_error = parser_error_classification.extract_char_error_from_token(
-                e, source, file_path
-            )
-            if token_error is not None:
-                raise token_error from e
-            exc_class = parser_error_classification.classify_token_error(
-                e, source, self._lark.parse
-            )
-            if exc_class is not None:
-                raise exc_class(
-                    e.get_context(source),
-                    e.line,
-                    e.column,
-                    e.token,
-                    file_path,
-                ) from e
+            parser_error_classification.raise_token_error(e, source, file_path)
             raise
 
     def parse_file(self, path: os.PathLike[str]) -> tuple[Tree[Token], str]:

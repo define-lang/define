@@ -48,12 +48,18 @@ known-first-party = ["define", "defcl", "tools"]
 "**/*.py" = [
     "S603", # Allow subprocess calls without a shell.
 ]
+"define/compiler/**/*.py" = [
+    "S105", # Stop complaining about assigning things to "token"
+]
 "**/*_test.py" = [
     "S101", # Allow assert statements.
     "D100", # Don't require docstrings on test modules.
     "D101", # Don't require docstrings on test classes.
     "D102", # Don't require docstrings on test methods.
     "D103", # Don't require docstrings on test functions.
+]
+"define/compiler/parser_exceptions.py" = [
+    "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
 ]
 "define/compiler/ast.py" = [
     "A005", # Module intentionally named ast for AST definitions.

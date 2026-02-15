@@ -116,7 +116,7 @@ def test_local_name_uppercase(p: parser.Parser) -> None:
 
 
 def test_local_name_missing_open_angle(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracketError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         p.parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the positionmy_pos>.\n"
@@ -131,7 +131,7 @@ def test_local_name_missing_open_angle(p: parser.Parser) -> None:
 
 
 def test_local_name_empty(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.EmptyNameError) as exc_info:
+    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         p.parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
             + "    define the position<>.\n"

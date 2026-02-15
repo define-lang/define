@@ -1,7 +1,7 @@
 """Human-readable parser error messages for the Define language."""
 
 import os
-from typing import ClassVar, override
+from typing import ClassVar, Self, override
 
 import lark
 
@@ -31,7 +31,7 @@ class DefineSyntaxError(Exception):
         context: str,
         line: int,
         column: int,
-        file_path: str | os.PathLike[str] | None = None,
+        file_path: str | os.PathLike[str] | None,
     ):
         """Initialize the syntax error with location and context information."""
         super().__init__(context, line, column)
@@ -68,33 +68,18 @@ class DefineTokenError(DefineSyntaxError):
 
     def __init__(
         self,
-        context: str,
-        line: int,
-        column: int,
-        token: lark.Token,
-        file_path: str | os.PathLike[str] | None = None,
+        exception: lark.exceptions.UnexpectedToken,
+        source: str,
+        file_path: str | os.PathLike[str] | None,
     ):
         """Initialize with the unexpected token."""
-        super().__init__(context, line, column, file_path)
-        self.token = token
-
-    @property
-    def token_description(self) -> str:
-        """Return a readable description of the unexpected token."""
-        text = str(self.token)
-        if self.token.type == "$END":
-            return "the end of the file"
-        if text == "\n":
-            return "a newline"
-        if text.strip() == "":
-            return "whitespace"
-        return f"'{_escape_invisible(text)}'"
-
-    @override
-    def _message_fields(self) -> dict[str, object]:
-        fields = super()._message_fields()
-        fields["token_description"] = self.token_description
-        return fields
+        super().__init__(
+            exception.get_context(source),
+            exception.line,
+            exception.column,
+            file_path,
+        )
+        self.token = exception.token
 
 
 class DefineCharError(DefineSyntaxError):
@@ -108,11 +93,28 @@ class DefineCharError(DefineSyntaxError):
         line: int,
         column: int,
         char: str,
-        file_path: str | os.PathLike[str] | None = None,
+        file_path: str | os.PathLike[str] | None,
     ):
         """Initialize with the unexpected character."""
         super().__init__(context, line, column, file_path)
         self.char = char
+
+    @classmethod
+    def from_lark_exception(
+        cls,
+        exception: lark.exceptions.UnexpectedInput,
+        source: str,
+        char: str,
+        file_path: str | os.PathLike[str] | None,
+    ) -> Self:
+        """Construct a character error from a Lark exception."""
+        return cls(
+            exception.get_context(source),
+            exception.line,
+            exception.column,
+            char,
+            file_path,
+        )
 
     @property
     def escaped_char(self) -> str:
@@ -126,7 +128,7 @@ class DefineCharError(DefineSyntaxError):
         return fields
 
 
-class DefineNameSyntaxError(DefineTokenError):
+class DefineNameSyntaxError(DefineSyntaxError):
     """Base class for Define syntax errors from parsing name content."""
 
 
@@ -136,7 +138,9 @@ class DefineNameSyntaxError(DefineTokenError):
 class ByteOrderMarkError(DefineCharError):
     """Raised when a byte order mark is present."""
 
-    message_format: ClassVar[str] = "Unexpected byte order mark ({escaped_char})."
+    message_format: ClassVar[str] = (
+        "UTF-8 Byte Order Marks ({escaped_char}) are not allowed in Define source code files."
+    )
 
 
 class CarriageReturnError(DefineCharError):
@@ -156,9 +160,7 @@ class ControlCharacterError(DefineCharError):
 class TrailingWhitespaceError(DefineCharError):
     """Raised when trailing whitespace is found."""
 
-    message_format: ClassVar[str] = (
-        "Trailing whitespace ({escaped_char}) is not allowed."
-    )
+    message_format: ClassVar[str] = "Trailing whitespace is not allowed."
 
 
 class InvalidCharacterError(DefineCharError):
@@ -172,132 +174,206 @@ class InvalidCharacterError(DefineCharError):
 class InvalidEncodingError(DefineCharError):
     """Raised when a file contains bytes that are not valid UTF-8."""
 
-    message_format: ClassVar[str] = "Invalid UTF-8 content ({escaped_char}) was found."
+    message_format: ClassVar[str] = "Invalid UTF-8 byte sequence: ({escaped_char})."
 
 
 # --- Token error subclasses ---
 
-
-class MissingBlockCloseError(DefineTokenError):
-    """Raised when a closing brace is missing."""
-
-    message_format: ClassVar[str] = "Missing '}}' to close block."
-
-
-class MissingNewlineAfterBlockOpenError(DefineTokenError):
-    """Raised when a newline is missing after an opening brace."""
-
-    message_format: ClassVar[str] = "Expected a newline after '{{'."
+# The token error subclasses don't use the suffix "Error." Instead, they are expressed
+# as the name of the problem. This is much more intuitive to type and read in the
+# parser error classification system.
+#
+# Keep these in alphabetical order.
 
 
-class EmptyBlockTerminatorError(DefineTokenError):
-    """Raised when a definition uses an empty block instead of '.'."""
+class EmptyBlock(DefineTokenError):
+    """Wrote {}."""
 
     message_format: ClassVar[str] = (
-        "Empty blocks are not allowed for definitions. Use '.' to end the definition."
+        "Blocks cannot be empty. Instead, use a period (.) to terminate the statement."
     )
 
 
-class LocalPositionAfterTriggerError(DefineTokenError):
-    """Raised when a local position definition appears after the trigger block."""
-
-    message_format: ClassVar[str] = (
-        "Local position definitions must appear before 'it happens when' "
-        "in an action block."
-    )
-
-
-class GlobalPositionInLocalScopeError(DefineTokenError):
-    """Raised when a global position definition appears in a local scope."""
-
-    message_format: ClassVar[str] = (
-        "Global position definitions are not allowed in local scopes. "
-        "Use 'define the position<...>' for local positions."
-    )
-
-
-class MissingActionStatementsBlockError(DefineTokenError):
-    """Raised when 'and it does' is missing after the trigger conditions block."""
-
-    message_format: ClassVar[str] = (
-        "Action definitions require an 'and it does' block after 'it happens when'."
-    )
-
-
-class MissingNewlineAfterBlockCloseError(DefineTokenError):
-    """Raised when a newline is missing after a closing brace."""
-
-    message_format: ClassVar[str] = "Expected a newline after '}}'."
-
-
-class MissingTerminatorError(DefineTokenError):
-    """Raised when a period or block is missing at the end of a definition."""
-
-    message_format: ClassVar[str] = "Definition is missing a terminator ('.' or '{{')."
-
-
-class MissingNewlineError(DefineTokenError):
-    """Raised when a newline is missing after a period."""
-
-    message_format: ClassVar[str] = "Expected a newline after '.'."
-
-
-class MissingOpenAngleBracketError(DefineTokenError):
-    """Raised when '<' is missing before a name."""
-
-    message_format: ClassVar[str] = "Expected '<' before the name."
-
-
-class MissingCloseAngleBracketError(DefineTokenError):
-    """Raised when '>' is missing after a name."""
-
-    message_format: ClassVar[str] = "Expected '>' after the name."
-
-
-class EmptyNameError(DefineTokenError):
-    """Raised when a name is empty."""
+class EmptyName(DefineTokenError):
+    """Saw a <> in a name."""
 
     message_format: ClassVar[str] = "Name cannot be empty."
 
 
-class EmptyFileError(DefineTokenError):
-    """Raised when a file contains no definitions."""
+class ExpectedGlobalDefinition(DefineTokenError):
+    """Thrown when the parser expected to see a global definition and didn't see one."""
 
     message_format: ClassVar[str] = (
-        "File has no definitions. Add at least one 'define the potential ...' line."
+        "Expected a global definition like 'define the potential ...'"
     )
 
 
-class IncompleteStatementError(DefineTokenError):
-    """Raised when a definition is incomplete."""
-
-    message_format: ClassVar[str] = "This definition is incomplete."
-
-
-class MultiplePositionConstraintBlocksError(DefineTokenError):
-    """Raised when a position definition contains more than one constraints block."""
+class ExtraWhitespace(DefineTokenError):
+    """When you write two spaces where you should have written one."""
 
     message_format: ClassVar[str] = (
-        "Only one 'it may only contain dimension points where' block "
-        "is allowed per position definition."
+        "Line looks like it contains too many spaces between words."
+        + " All words in Define require exactly one space between them."
     )
 
 
-class UnexpectedWhitespaceError(DefineTokenError):
-    """Raised when there is unexpected whitespace."""
-
-    message_format: ClassVar[str] = "Unexpected whitespace near {token_description}."
-
-
-class InvalidGlobalNameSyntaxError(DefineNameSyntaxError):
-    """Raised when a global name has invalid structural syntax."""
+class GlobalDefinitionInLocalContext(DefineTokenError):
+    """Trying to do 'define the potential' where you should just do 'define the'."""
 
     message_format: ClassVar[str] = (
-        "Global name syntax is invalid at {token_description}."
+        "Global definition not allowed in a local scope. Write 'define the' instead of 'define the potential'."
     )
 
 
-class GlobalNameDefinitionRequiresFqunError(InvalidGlobalNameSyntaxError):
+class InvalidActionStatementsBlock(DefineTokenError):
+    """Nonsense in an Action Statements Block."""
+
+    message_format: ClassVar[str] = "Not a valid action statement or local definition."
+
+
+class InvalidActionDefinitionsBlock(DefineTokenError):
+    """Wrote something totally invalid in an Action Definition Block."""
+
+    message_format: ClassVar[str] = "Invalid syntax in a potential action definition."
+
+
+class InvalidPositionDefinitionBlock(DefineTokenError):
+    """Write something nonsensical in a Position Definition Block."""
+
+    message_format: ClassVar[str] = "Invalid syntax in a position definition."
+
+
+class InvalidPositionDefinitionLocationInAction(DefineTokenError):
+    """Wrote 'define the position' after the action statements block."""
+
+    message_format: ClassVar[str] = (
+        "'define the position' statements in an action must go above the 'it happens when' block."
+    )
+
+
+class MissingActionDefinitionSyntax(DefineTokenError):
+    """Forgot to write 'it happens when' in an Action Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "Action definition is missing an 'it happens when' block."
+    )
+
+
+class MissingActionStatementsBlock(DefineTokenError):
+    """Forgot the 'and it does' in an Action Definition Block."""
+
+    message_format: ClassVar[str] = "Missing 'and it does' in this action definition."
+
+
+class MissingCloseAngleBracket(DefineTokenError):
+    """A missing > on a name."""
+
+    name: str
+    message_format: ClassVar[str] = "Missing '>' on this name: {name}"
+
+    def __init__(
+        self,
+        exception: lark.exceptions.UnexpectedToken,
+        source: str,
+        file_path: str | os.PathLike[str] | None,
+        name: str,
+    ):
+        """Initialize with the parsed name token that missed '>'."""
+        super().__init__(exception, source, file_path)
+        self.name = name
+
+
+class MissingCloseBrace(DefineTokenError):
+    """Forgot to write } at the end of a block."""
+
+    message_format: ClassVar[str] = "Missing a closing '}}' somewhere in this block."
+
+
+class MissingNewlineAfterCloseBrace(DefineTokenError):
+    """Forgot the newline after }."""
+
+    message_format: ClassVar[str] = "Missing newline after '}}'"
+
+
+class MissingNewlineAfterOpenBrace(DefineTokenError):
+    """Forgot the newline after {."""
+
+    message_format: ClassVar[str] = "Missing newline after '{{'"
+
+
+class MissingNewlineAfterTerminator(DefineTokenError):
+    """Didn't see a newline after ."""
+
+    message_format: ClassVar[str] = "Missing newline after statement terminator."
+
+
+class MissingNewlineAtEof(DefineTokenError):
+    """Hitting an EOF without a newline before it."""
+
+    message_format: ClassVar[str] = "Define source code files must end with a newline."
+
+
+class MissingOpenAngleBracket(DefineTokenError):
+    """A missing < on a name (could be just a raw "define the position", too)."""
+
+    name: str
+    message_format: ClassVar[str] = "Missing '<' at the start of a name: {name}"
+
+    def __init__(
+        self,
+        exception: lark.exceptions.UnexpectedToken,
+        source: str,
+        file_path: str | os.PathLike[str] | None,
+        name: str,
+    ):
+        """Initialize with the parsed name token that missed '<'."""
+        super().__init__(exception, source, file_path)
+        self.name = name
+
+
+class MissingOpenBrace(DefineTokenError):
+    """Forgot the { in a situation where only that is valid."""
+
+    message_format: ClassVar[str] = (
+        "This line must end with a single space followed by a '{{'."
+    )
+
+
+class MissingPositionConstraintContent(DefineTokenError):
+    """Left out syntax from a position constraint block."""
+
+    message_format: ClassVar[str] = (
+        "Position constraint blocks must contain at least one 'it has the' statement."
+    )
+
+
+class MissingPositionDefinitionContent(DefineTokenError):
+    """Left out mandatory content from a position definition block."""
+
+    message_format: ClassVar[str] = (
+        "Position definition blocks must contain at least a 'it may only contain the dimension points where' block."
+        + " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
+    )
+
+
+class MissingTerminator(DefineTokenError):
+    """Forgot . or {."""
+
+    message_format: ClassVar[str] = (
+        "Statements must end with a '.' or a single space followed by '{{'"
+    )
+
+
+class MissingWhitespaceBeforeBrace(DefineTokenError):
+    """Forgot to put a space before {."""
+
+    message_format: ClassVar[str] = "Missing a space before '{{'"
+
+
+# --- Name syntax errors ---
+
+
+class GlobalNameDefinitionRequiresFqun(DefineNameSyntaxError):
     """Raised when a global definition uses short-form '/path'."""
 
     message_format: ClassVar[str] = (
@@ -306,7 +382,7 @@ class GlobalNameDefinitionRequiresFqunError(InvalidGlobalNameSyntaxError):
     )
 
 
-class GlobalNameInvalidFqunFormatError(InvalidGlobalNameSyntaxError):
+class GlobalNameInvalidFqunFormat(DefineNameSyntaxError):
     """Raised when a fully-qualified universe name has invalid parts."""
 
     message_format: ClassVar[str] = (

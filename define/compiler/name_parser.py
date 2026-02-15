@@ -23,7 +23,7 @@ def parse_global_name_definition(token: lark.Token) -> ast.GlobalNameDefinition:
     """Parse definition-site global name content into an AST node."""
     parsed = _parse_global_name(token)
     if parsed.fqun is None:
-        raise parser_exceptions.GlobalNameDefinitionRequiresFqunError(
+        raise parser_exceptions.GlobalNameDefinitionRequiresFqun(
             token,
             _line(token),
             _column(token),
@@ -76,7 +76,7 @@ def _parse_fqun(token: lark.Token, text: str) -> ast.Fqun:
     # TODO: Support escaped :
     parts = text.split(":")
     if len(parts) not in {1, 2, 3} or any(part == "" for part in parts):
-        raise parser_exceptions.GlobalNameInvalidFqunFormatError(
+        raise parser_exceptions.GlobalNameInvalidFqunFormat(
             token,
             _line(token),
             _column(token),

@@ -18,21 +18,21 @@ def test_valid_terminator(p: parser.Parser) -> None:
 
 
 def test_missing_terminator(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingTerminatorError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         p.parse("define the potential position<standard:/path>\n")
     assert str(exc_info.value.token) == "\n"
     assert exc_info.value.column == 46
 
 
 def test_missing_newline_after_terminator(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingNewlineError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
         p.parse("define the potential position<standard:/path>.")
     assert str(exc_info.value.token) == ""
     assert exc_info.value.column == 46
 
 
 def test_space_before_terminator(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracketError) as exc_info:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         p.parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
     assert str(exc_info.value.token) == "\n"
     assert exc_info.value.column == 67

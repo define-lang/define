@@ -95,6 +95,10 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Discard the action-statements keyword token."""
         return Discard
 
+    def SPACE_AND_OPEN_BRACE(self, _token: lark.Token) -> object:  # noqa: N802
+        """Discard opening braces."""
+        return Discard
+
     @v_args(meta=True)
     def local_position_definition(
         self,

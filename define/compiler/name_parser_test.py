@@ -102,9 +102,7 @@ def test_parse_global_name_reference_full_form_authority_with_path():
 
 def test_global_name_definition_requires_fqun():
     token = _make_name_content_token("/path/only", line=1, column=30)
-    with pytest.raises(
-        parser_exceptions.GlobalNameDefinitionRequiresFqunError
-    ) as error:
+    with pytest.raises(parser_exceptions.GlobalNameDefinitionRequiresFqun) as error:
         name_parser.parse_global_name_definition(token)
     assert error.value.line == 1
     assert error.value.column == 30
@@ -112,7 +110,7 @@ def test_global_name_definition_requires_fqun():
 
 def test_global_name_definition_rejects_too_many_fqun_parts():
     token = _make_name_content_token("a:b:c:d:/x", line=1, column=1)
-    with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormatError) as error:
+    with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as error:
         name_parser.parse_global_name_definition(token)
     assert error.value.line == 1
     assert error.value.column == 1

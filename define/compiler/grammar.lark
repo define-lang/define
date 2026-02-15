@@ -28,7 +28,8 @@ COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 terminator: "." NEWLINE
 # TODO: Enforce that leading whitespace before "}" matches the opening
 # statement's leading whitespace, per spec.
-_block_open: " {" NEWLINE
+SPACE_AND_OPEN_BRACE: " {"
+_block_open: SPACE_AND_OPEN_BRACE NEWLINE
 _block_close: "}" NEWLINE
 
 # Name Syntax
