@@ -204,8 +204,12 @@ def raise_token_error(
         raise parser_exceptions.InvalidPositionDefinitionBlock(e, source, file_path)
 
     # We are in a position constraint block.
-    if "IT_HAS_THE" in e.accepts and e.token == "}":
-        raise parser_exceptions.MissingPositionConstraintContent(e, source, file_path)
+    if "IT_HAS_THE" in e.accepts:
+        if e.token == "}":
+            raise parser_exceptions.MissingPositionConstraintContent(
+                e, source, file_path
+            )
+        raise parser_exceptions.InvalidPositionConstraintBlock(e, source, file_path)
 
 
 def make_invalid_encoding_error(

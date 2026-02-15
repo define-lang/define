@@ -70,5 +70,5 @@ def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> No
         "line 2, column 36\n"
         "    define the position<local_name.\n"
         "                                   ^\n"
-        "Missing > on this name: local_name."
+        "Missing '>' on this name: local_name."
     )

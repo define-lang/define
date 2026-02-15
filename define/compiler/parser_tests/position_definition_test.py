@@ -82,6 +82,24 @@ def test_position_constraint_block_requires_requirements(p: parser.Parser) -> No
     assert exc_info.value.column == 5
 
 
+def test_position_constraint_block_with_invalid_statement_then_more_definitions(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
+        p.parse(
+            "define the potential position<my_lib:/path>.\n"
+            + "define the potential position<my_lib:/path> {\n"
+            + "it may only contain dimension points where {\n"
+            + "t has the position<my_lib:/path>.\n"
+            + "}\n"
+            + "}\n"
+            + "define the potential position<my_lib:/path>.\n"
+        )
+    assert str(exc_info.value.token).startswith("t has the")
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 1
+
+
 def test_position_definition_rejects_multiple_constraint_blocks(
     p: parser.Parser,
 ) -> None:

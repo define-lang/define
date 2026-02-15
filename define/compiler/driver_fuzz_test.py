@@ -22,7 +22,7 @@ def _escape_content(text: str) -> str:
     """Escape invisible and control characters, preserving spaces."""
     chars: list[str] = []
     for c in text:
-        if c == " " or (c.isprintable() and c != "\n"):
+        if c == " " or c.isprintable():
             chars.append(c)
         else:
             chars.append(repr(c)[1:-1])

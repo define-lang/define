@@ -237,6 +237,12 @@ class InvalidActionDefinitionsBlock(DefineTokenError):
     message_format: ClassVar[str] = "Invalid syntax in a potential action definition."
 
 
+class InvalidPositionConstraintBlock(DefineTokenError):
+    """Write something nonsensical in a position constraint block."""
+
+    message_format: ClassVar[str] = "Invalid syntax in a position constraint block."
+
+
 class InvalidPositionDefinitionBlock(DefineTokenError):
     """Write something nonsensical in a Position Definition Block."""
 
