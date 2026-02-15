@@ -111,10 +111,16 @@ def raise_token_error(
         if e.token == "{":
             raise parser_exceptions.MissingWhitespaceBeforeBrace(e, source, file_path)
         # This happens at least if it's a newline or just a space and a newline.
+        raise parser_exceptions.MissingTerminatorOrBrace(e, source, file_path)
+
+    if e.accepts == {"DOT"}:
         raise parser_exceptions.MissingTerminator(e, source, file_path)
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE"}:
         raise parser_exceptions.MissingOpenBrace(e, source, file_path)
+
+    if e.accepts == {"SPACE"}:
+        raise parser_exceptions.MissingWhitespace(e, source, file_path)
 
     if e.accepts == {"NEWLINE"}:
         # TODO: This EOF one shows up sometimes when we really want MissingCloseBrace.
@@ -152,6 +158,9 @@ def raise_token_error(
         if "  " in e.token and "and it does" in e.token:
             raise parser_exceptions.ExtraWhitespace(e, source, file_path)
         raise parser_exceptions.MissingActionStatementsBlock(e, source, file_path)
+
+    if e.accepts == {"NAME_TYPE"}:
+        raise parser_exceptions.ExpectedNameType(e, source, file_path)
 
     # This has to be here, because otherwise the "IT_HAPPENS_WHEN" will match
     # when this happens inside an Action Definition Block.

@@ -46,13 +46,13 @@ def test_char_error_message(p: parser.Parser) -> None:
 
 
 def test_token_error_message(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         p.parse("define the potential position<standard:/path>\n")
     assert str(exc_info.value) == (
         "line 1, column 46\n"
         "e the potential position<standard:/path>\n"
         "                                        ^\n"
-        "Statements must end with a '.' or a single space followed by '{'"
+        "This statement must end with a '.' or a single space followed by '{'"
     )
 
 

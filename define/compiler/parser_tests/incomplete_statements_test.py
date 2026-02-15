@@ -186,3 +186,37 @@ def test_position_requirement_missing_name(p: parser.Parser) -> None:
     assert exc_info.value.token == "\n"
     assert exc_info.value.line == 3
     assert exc_info.value.column == 20
+
+
+def test_position_requirement_missing_name_after_type(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+        p.parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "it may only contain dimension points where {\n"
+            + "it has the position.\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "."
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 20
+
+
+def test_position_requirement_missing_space_after_it_has_the(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
+        p.parse(
+            "define the potential action<example.com:my_lib:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "}\n"
+            + "}\n"
+            + "define the potential position<my_lib:/path> {\n"
+            + "it may only contain dimension points where {\n"
+            + "it has theposition<my_lib:/path>.\n"
+            + "}\n"
+            + "}\n"
+            + "define the potential position<my_lib:/path>.\n"
+        )
+    assert exc_info.value.token == "position<my_lib:/path"
+    assert exc_info.value.line == 8
+    assert exc_info.value.column == 11

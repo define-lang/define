@@ -145,7 +145,7 @@ def test_no_space_before_brace(p: parser.Parser) -> None:
 
 
 def test_missing_terminator_still_works(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         p.parse("define the potential position<standard:/path>\n")
     assert exc_info.value.line == 1
     assert exc_info.value.column == 46
@@ -162,3 +162,18 @@ def test_missing_outer_block_close_with_inner_block_message(p: parser.Parser) ->
     assert str(exc_info.value) == (
         "line 4, column 2\n}\n ^\nMissing a closing '}' somewhere in this block."
     )
+
+
+def test_position_constraint_invalid_type_keyword(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential position<my_lib:/path> {\n"
+            + "it may only contain dimension points where {\n"
+            + "it has the osition<my_lib:/path>.\n"
+            + "}\n"
+            + "}\n"
+            + "define the potential position<my_lib:/path>.\n"
+        )
+    assert str(exc_info.value.token) == "osition<my_lib:/path"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 12

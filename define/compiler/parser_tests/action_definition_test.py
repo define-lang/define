@@ -366,7 +366,7 @@ def test_action_block_missing_outer_close(p: parser.Parser) -> None:
 
 
 def test_action_block_extra_space_before_brace(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
+    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         p.parse(
             "define the potential action<mv:define-lang.org:parser:/path>  {\n"
             + "    it happens when {\n"

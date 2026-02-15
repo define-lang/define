@@ -208,6 +208,12 @@ class ExpectedGlobalDefinition(DefineTokenError):
     )
 
 
+class ExpectedNameType(DefineTokenError):
+    """Expected a typed reference kind."""
+
+    message_format: ClassVar[str] = "Expected 'position' or 'action'."
+
+
 class ExtraWhitespace(DefineTokenError):
     """When you write two spaces where you should have written one."""
 
@@ -363,11 +369,23 @@ class MissingPositionDefinitionContent(DefineTokenError):
 
 
 class MissingTerminator(DefineTokenError):
+    """Forgot ."""
+
+    message_format: ClassVar[str] = "This statement must end with a '.'."
+
+
+class MissingTerminatorOrBrace(DefineTokenError):
     """Forgot . or {."""
 
     message_format: ClassVar[str] = (
-        "Statements must end with a '.' or a single space followed by '{{'"
+        "This statement must end with a '.' or a single space followed by '{{'"
     )
+
+
+class MissingWhitespace(DefineTokenError):
+    """Forgot required whitespace."""
+
+    message_format: ClassVar[str] = "Missing a space."
 
 
 class MissingWhitespaceBeforeBrace(DefineTokenError):
