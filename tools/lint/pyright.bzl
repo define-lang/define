@@ -119,14 +119,17 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
         name = name,
         srcs = ["//tools/lint:pyright_test_runner.py"] + srcs,
         main = "//tools/lint:pyright_test_runner.py",
-        args = [native.package_name()],
+        args = [
+            "$(location //:basedpyright)",
+            native.package_name(),
+        ],
         data = pyproject_data + [
+            "//:basedpyright",
             "//:pyproject.toml",
             ":" + name + "_pyi",
             "//typestubs:typestubs",
         ],
         deps = [":" + name + "_deps"] + [
-            "@pypi//basedpyright",
             "@pypi//types_protobuf",
             "@pypi//types_pyyaml",
         ],

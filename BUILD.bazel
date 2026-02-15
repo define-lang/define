@@ -1,6 +1,8 @@
 # Root package
 
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
+load("@npm//:basedpyright/package_json.bzl", basedpyright_bin = "bin")
+load("@npm//:defs.bzl", "npm_link_all_packages")
 
 exports_files([
     ".codex/rules/default.rules",
@@ -8,6 +10,16 @@ exports_files([
     ".claude/settings.json",
     ".cursor/cli.json",
 ])
+
+# basedpyright has to go here instead of in tools/, because otherwise
+# it tries to type check its own code, which is slow.
+npm_link_all_packages(name = "node_modules")
+
+basedpyright_bin.basedpyright_binary(
+    name = "basedpyright",
+    chdir = package_name(),
+    visibility = ["//:__subpackages__"],
+)
 
 # --- Lock file management ---
 

@@ -7,7 +7,7 @@ import sys
 def main():
     """Run basedpyright on the given arguments."""
     result = subprocess.run(
-        [sys.executable, "-m", "basedpyright", *sys.argv[1:]],
+        [sys.argv[1], *sys.argv[2:]],
     )
     sys.exit(result.returncode)
 
