@@ -48,6 +48,47 @@ _pyi_files = rule(
     },
 )
 
+# This exists for performance reasons. When we put py_test and py_binary
+# rules into pyright_test deps, they all create their own runfiles tree,
+# making the test setup take forever. We only need the actual .py and .pyi
+# files from all the deps.
+def _pyright_deps_impl(ctx):
+    """Re-export only type-checking inputs from transitive Python dependencies."""
+    transitive_sources = depset(
+        transitive = [dep[PyInfo].transitive_sources for dep in ctx.attr.deps],
+    )
+    imports = depset(
+        transitive = [dep[PyInfo].imports for dep in ctx.attr.deps],
+    )
+    direct_original_sources = depset(
+        transitive = [dep[PyInfo].direct_original_sources for dep in ctx.attr.deps],
+    )
+    transitive_pyi_files = depset(
+        transitive = [dep[PyInfo].transitive_pyi_files for dep in ctx.attr.deps],
+    )
+    source_and_stub_files = depset(
+        transitive = [transitive_sources, transitive_pyi_files],
+    )
+    return [
+        DefaultInfo(
+            files = source_and_stub_files,
+            runfiles = ctx.runfiles(transitive_files = source_and_stub_files),
+        ),
+        PyInfo(
+            transitive_sources = transitive_sources,
+            imports = imports,
+            direct_original_sources = direct_original_sources,
+            transitive_pyi_files = transitive_pyi_files,
+        ),
+    ]
+
+_pyright_deps = rule(
+    implementation = _pyright_deps_impl,
+    attrs = {
+        "deps": attr.label_list(providers = [PyInfo]),
+    },
+)
+
 def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
     """Type-check Python sources in this package with basedpyright.
 
@@ -66,6 +107,11 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
         testonly = True,
         deps = deps,
     )
+    _pyright_deps(
+        name = name + "_deps",
+        testonly = True,
+        deps = deps,
+    )
 
     pyproject_data = [pyproject] if pyproject else []
 
@@ -79,7 +125,7 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
             ":" + name + "_pyi",
             "//typestubs:typestubs",
         ],
-        deps = deps + [
+        deps = [":" + name + "_deps"] + [
             "@pypi//basedpyright",
             "@pypi//types_protobuf",
             "@pypi//types_pyyaml",
