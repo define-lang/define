@@ -28,7 +28,8 @@ class ValidationResult:
 
     diagnostics: list[diagnostics.Diagnostic]
     source: str
-    stats: list[ValidationFileStats]
+    file_path: Path
+    stats: ValidationTimingStats
 
 
 @dataclass
@@ -39,14 +40,6 @@ class ValidationTimingStats:
     parse: int
     transform: int
     validate: int
-
-
-@dataclass
-class ValidationFileStats:
-    """Validation stats for one file."""
-
-    path: Path
-    timings: ValidationTimingStats
 
 
 class Validator:
@@ -94,8 +87,12 @@ class Validator:
             transform=after_transform - after_parse,
             validate=after_validate - after_transform,
         )
-        file_stats = ValidationFileStats(path=path, timings=timings)
-        return ValidationResult(diagnostics=result, source=source, stats=[file_stats])
+        return ValidationResult(
+            diagnostics=result,
+            source=source,
+            file_path=path,
+            stats=timings,
+        )
 
     def validate(
         self,

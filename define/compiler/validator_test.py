@@ -59,11 +59,9 @@ class TestParseAndValidateFileStats:
         result = validator.Validator().parse_and_validate_file(Path("sub/test.def"))
 
         assert result.diagnostics == []
-        assert len(result.stats) == 1
-        file_stats = result.stats[0]
-        assert file_stats.path == Path("sub/test.def")
+        assert result.file_path == Path("sub/test.def")
 
-        timings = file_stats.timings
+        timings = result.stats
         assert timings.overall >= 0
         assert timings.parse >= 0
         assert timings.transform >= 0
@@ -87,8 +85,7 @@ class TestPathFormats:
             result = validator.Validator().parse_and_validate_file(path=windows_path)
 
         assert result.diagnostics == []
-        assert len(result.stats) == 1
-        assert result.stats[0].path.as_posix() == "sub/test.def"
+        assert result.file_path.as_posix() == "sub/test.def"
 
 
 class TestReservedNamePositions:

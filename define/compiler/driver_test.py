@@ -53,6 +53,7 @@ class TestValidateFile:
         result = d.validate_file(Path("hello.def"))
         assert result.diagnostics == []
         assert result.source == source
+        assert result.file_path == Path("hello.def")
 
     def test_returns_diagnostics_for_path_mismatch(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
