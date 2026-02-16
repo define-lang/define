@@ -22,14 +22,14 @@ def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
     return path
 
 
-class TestValidateFileNoProjectRoot:
+class TestValidateProgramNoProjectRoot:
     def test_raises_project_root_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.chdir(tmp_path)
         d = driver.Driver()
         with pytest.raises(exceptions.NotProjectRootError):
-            d.validate_file(Path("foo.def"))
+            d.validate_program(Path("foo.def"))
 
     def test_error_includes_docs_link(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -37,10 +37,10 @@ class TestValidateFileNoProjectRoot:
         monkeypatch.chdir(tmp_path)
         d = driver.Driver()
         with pytest.raises(exceptions.NotProjectRootError, match=r"project-root\.md"):
-            d.validate_file(Path("foo.def"))
+            d.validate_program(Path("foo.def"))
 
 
-class TestValidateFile:
+class TestValidateProgram:
     def test_valid_file_no_diagnostics(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
@@ -50,7 +50,7 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("hello.def"))
+        result = d.validate_program(Path("hello.def"))
         assert result.diagnostics == []
         assert result.exception is None
         assert result.file_path == Path("hello.def")
@@ -67,7 +67,7 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("wrong.def"))
+        result = d.validate_program(Path("wrong.def"))
         assert len(result.diagnostics) == 1
         assert result.exception is None
         assert isinstance(result.diagnostics[0], diagnostics.PathMismatchDiagnostic)
@@ -84,7 +84,7 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("hello.def"))
+        result = d.validate_program(Path("hello.def"))
         assert result.exception is None
         assert any(
             isinstance(d, diagnostics.FqunMismatchDiagnostic)
@@ -99,7 +99,7 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("bad.def"))
+        result = d.validate_program(Path("bad.def"))
         assert result.diagnostics == []
         assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
 
@@ -113,7 +113,7 @@ class TestValidateFile:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("sub/dir/leaf.def"))
+        result = d.validate_program(Path("sub/dir/leaf.def"))
         assert result.diagnostics == []
         assert result.exception is None
 
@@ -131,7 +131,7 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(tmp_path / "hello.def")
+        result = d.validate_program(tmp_path / "hello.def")
         assert result.diagnostics == []
         assert result.exception is None
 
@@ -151,7 +151,7 @@ class TestPathResolution:
 
         d = driver.Driver()
         with pytest.raises(exceptions.AbsolutePathError) as exc_info:
-            d.validate_file(source_file)
+            d.validate_program(source_file)
         assert exc_info.value.input_path == source_file
         assert exc_info.value.project_root == project
 
@@ -168,7 +168,7 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("sub/../hello.def"))
+        result = d.validate_program(Path("sub/../hello.def"))
         assert result.diagnostics == []
         assert result.exception is None
 
@@ -189,7 +189,7 @@ class TestPathResolution:
         monkeypatch.chdir(project)
 
         d = driver.Driver()
-        result = d.validate_file(Path("link/hello.def"))
+        result = d.validate_program(Path("link/hello.def"))
         assert result.diagnostics == []
         assert result.exception is None
 
@@ -206,7 +206,7 @@ class TestPathResolution:
 
         d = driver.Driver()
         with pytest.raises(exceptions.RelativePathError) as exc_info:
-            d.validate_file(Path("link/../hello.def"))
+            d.validate_program(Path("link/../hello.def"))
         assert exc_info.value.input_path == Path("link/../hello.def")
         assert exc_info.value.project_root == project.resolve()
 
@@ -224,7 +224,7 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        result = d.validate_file(Path("link/../hello.def"))
+        result = d.validate_program(Path("link/../hello.def"))
         assert result.diagnostics == []
         assert result.exception is None
 
@@ -236,6 +236,6 @@ class TestPathResolution:
 
         d = driver.Driver()
         with pytest.raises(exceptions.RelativePathError) as exc_info:
-            d.validate_file(Path("../hello.def"))
+            d.validate_program(Path("../hello.def"))
         assert exc_info.value.input_path == Path("../hello.def")
         assert exc_info.value.project_root == tmp_path.resolve()

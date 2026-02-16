@@ -359,7 +359,7 @@ def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     file_path.write_text(source, encoding="utf-8")
     d = driver.Driver()
     try:
-        result = d.validate_file(Path("test.def"))
+        result = d.validate_program(Path("test.def"))
     except exceptions.DriverError:
         return
     if result.exception is None:

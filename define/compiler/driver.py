@@ -30,7 +30,7 @@ class Driver:
         """Load and return the project configuration."""
         return config.project_config()
 
-    def validate_file(self, path: os.PathLike[str]) -> validator.ValidationResult:
+    def validate_program(self, path: os.PathLike[str]) -> validator.ValidationResult:
         """Compile one source file and return syntax errors, diagnostics, and source text."""
         config.assert_is_project_root()
         resolved_path = self._resolve_path(path)
@@ -86,7 +86,7 @@ class Driver:
         if error_stream is None:
             error_stream = sys.stderr
         try:
-            result = self.validate_file(path)
+            result = self.validate_program(path)
         except exceptions.DriverError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR

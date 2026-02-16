@@ -107,7 +107,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
 
-    result = driver.Driver().validate_file(def_file)
+    result = driver.Driver().validate_program(def_file)
     assert not result.diagnostics, f"Expected no diagnostics, got: {result.diagnostics}"
 
 
@@ -135,13 +135,13 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
     )
 
     if expected_diagnostic:
-        result = d.validate_file(def_file)
+        result = d.validate_program(def_file)
         assert result.exception is None
         assert any(
             isinstance(diag, expected_diagnostic) for diag in result.diagnostics
         ), f"Expected {expected_diagnostic.__name__} for {file_name}"
     else:
-        result = d.validate_file(def_file)
+        result = d.validate_program(def_file)
         assert result.diagnostics == []
         assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
 
@@ -156,7 +156,7 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
     d = driver.Driver()
 
     entry_point = project_entrypoint(project_dir)
-    result = d.validate_file(entry_point)
+    result = d.validate_program(entry_point)
     assert result.exception is None
     assert not result.diagnostics, (
         f"Expected no diagnostics for {entry_point}, got: {result.diagnostics}"
@@ -175,7 +175,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
     d = driver.Driver()
 
     entry_point = project_entrypoint(project_dir)
-    result = d.validate_file(entry_point)
+    result = d.validate_program(entry_point)
     assert result.exception is None
 
     project_str = str(project_dir)
