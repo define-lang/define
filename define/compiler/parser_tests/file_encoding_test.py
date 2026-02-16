@@ -46,6 +46,14 @@ def test_surrogate_character(p: parser.Parser) -> None:
     assert exc_info.value.column == 1
 
 
+def test_invalid_character_error(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
+        p.parse("define the potential position<standard:/path>.\n☃\n")
+    assert exc_info.value.char == "☃"
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 1
+
+
 def test_comment_with_zero_width_joiner_in_grapheme_cluster(p: parser.Parser) -> None:
     tree = p.parse(
         "# devanagari ligature with ZWJ: \u0915\u094d\u200d\u0937\n"

@@ -386,6 +386,19 @@ def test_action_block_no_newline_after_open_brace(p: parser.Parser) -> None:
     assert exc_info.value.column == 63
 
 
+def test_action_block_missing_newline_after_outer_open_brace(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> { it happens when {\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == " it happens when {"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 63
+
+
 def test_action_block_missing_newline_after_inner_close(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
         p.parse(
@@ -460,3 +473,18 @@ def test_missing_close_brace_followed_by_global_definition(p: parser.Parser) -> 
     assert str(exc_info.value.token) == "define the potential position"
     assert exc_info.value.line == 5
     assert exc_info.value.column == 1
+
+
+def test_action_statements_block_invalid_statement(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        nonsense\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "nonsense"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 9
