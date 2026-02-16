@@ -54,8 +54,6 @@ class Validator:
             program = transformer.DefineTransformer().transform(tree)
         except lark_exceptions.VisitError as e:
             # Lark wraps exceptions raised inside transformer callbacks.
-            # TODO: make parsing that happens in the transformer provide
-            # diagnostics instead of exceptions.
             raise e.orig_exc from e
         file_path = os.fspath(path).removesuffix(".def")
         result = self.validate(
