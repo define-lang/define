@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-import os
+import time
 from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from lark import exceptions as lark_exceptions
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from define.compiler import (
     ast,
@@ -24,6 +28,25 @@ class ValidationResult:
 
     diagnostics: list[diagnostics.Diagnostic]
     source: str
+    stats: list[ValidationFileStats]
+
+
+@dataclass
+class ValidationTimingStats:
+    """Timing measurements for parse/transform/validate steps."""
+
+    overall: int
+    parse: int
+    transform: int
+    validate: int
+
+
+@dataclass
+class ValidationFileStats:
+    """Validation stats for one file."""
+
+    path: Path
+    timings: ValidationTimingStats
 
 
 class Validator:
@@ -45,23 +68,34 @@ class Validator:
     # the end-to-end filesystem/context behavior is verified in one place.
     def parse_and_validate_file(
         self,
-        path: os.PathLike[str],
+        path: Path,
         expected_universe_name: str | None = None,
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
+        overall_start = time.perf_counter_ns()
         tree, source = self._parser.parse_file(path)
+        after_parse = time.perf_counter_ns()
         try:
             program = transformer.DefineTransformer().transform(tree)
         except lark_exceptions.VisitError as e:
             # Lark wraps exceptions raised inside transformer callbacks.
             raise e.orig_exc from e
-        file_path = os.fspath(path).removesuffix(".def")
+        after_transform = time.perf_counter_ns()
+        file_path = path.with_suffix("").as_posix()
         result = self.validate(
             program=program,
             file_path=file_path,
             expected_universe_name=expected_universe_name,
         )
-        return ValidationResult(diagnostics=result, source=source)
+        after_validate = time.perf_counter_ns()
+        timings = ValidationTimingStats(
+            overall=after_validate - overall_start,
+            parse=after_parse - overall_start,
+            transform=after_transform - after_parse,
+            validate=after_validate - after_transform,
+        )
+        file_stats = ValidationFileStats(path=path, timings=timings)
+        return ValidationResult(diagnostics=result, source=source, stats=[file_stats])
 
     def validate(
         self,

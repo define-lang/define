@@ -4,6 +4,12 @@ Keep test assertions simple: assert on the exact diagnostics list you get
 (len, isinstance, fields) rather than filtering by type.
 """
 
+from pathlib import Path, PureWindowsPath
+from typing import cast
+from unittest.mock import patch
+
+import pytest
+
 from define.compiler import diagnostics, parser, validator
 from define.compiler.transformer import DefineTransformer
 
@@ -38,6 +44,51 @@ def _check_diagnostic_format(
     lines = formatted.split("\n")
     caret_line = next(line for line in lines if "^" in line)
     assert caret_line.index("^") == expected_column + 1
+
+
+class TestParseAndValidateFileStats:
+    def test_returns_single_file_timing_stats(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
+        source_path = tmp_path / "sub" / "test.def"
+        source_path.parent.mkdir(parents=True)
+        _ = source_path.write_text(source, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        result = validator.Validator().parse_and_validate_file(Path("sub/test.def"))
+
+        assert result.diagnostics == []
+        assert len(result.stats) == 1
+        file_stats = result.stats[0]
+        assert file_stats.path == Path("sub/test.def")
+
+        timings = file_stats.timings
+        assert timings.overall >= 0
+        assert timings.parse >= 0
+        assert timings.transform >= 0
+        assert timings.validate >= 0
+        assert timings.parse < timings.overall
+        assert timings.transform < timings.overall
+        assert timings.validate < timings.overall
+        assert timings.overall == (timings.parse + timings.transform + timings.validate)
+
+
+class TestPathFormats:
+    def test_windows_style_string_path_still_validates_with_posix_file_path(self):
+        source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
+        windows_path = cast(
+            "Path",
+            cast("object", PureWindowsPath("sub\\test.def")),
+        )
+
+        with patch.object(parser.Parser, "parse_file", autospec=True) as parse_file:
+            parse_file.return_value = (_parser.parse(source), source)
+            result = validator.Validator().parse_and_validate_file(path=windows_path)
+
+        assert result.diagnostics == []
+        assert len(result.stats) == 1
+        assert result.stats[0].path.as_posix() == "sub/test.def"
 
 
 class TestReservedNamePositions:
