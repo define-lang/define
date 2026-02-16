@@ -23,7 +23,7 @@ class Diagnostic:
         fields: dict[str, object] = asdict(self)
         return self.message_format.format(**fields)
 
-    def format(self, source_lines: list[str]) -> str:
+    def format(self, source_lines: list[str], file_name: str | None = None) -> str:
         """Format the diagnostic with source context and caret pointer."""
         line_idx = self.position.line - 1
         source_line = (
@@ -32,13 +32,15 @@ class Diagnostic:
 
         column = self.position.column
         caret_line = " " * (column - 1) + "^"
+        if file_name is not None:
+            header = (
+                f'File "{file_name}", line {self.position.line}, '
+                + f"column {self.position.column}"
+            )
+        else:
+            header = f"line {self.position.line}, column {self.position.column}"
 
-        return (
-            f"line {self.position.line}, column {self.position.column}: "
-            f"{self.message}\n"
-            f"  {source_line}\n"
-            f"  {caret_line}"
-        )
+        return f"{header}\n{source_line}\n{caret_line}\n{self.message}"
 
 
 @dataclass
@@ -279,4 +281,15 @@ class GlobalReferenceMustUseShortFormDiagnostic(Diagnostic):
         "global name references with the same fully-qualified universe name "
         "as the enclosing definition must use the short form; "
         "delete '{fqun}:' from this reference"
+    )
+
+
+@dataclass
+class ReferencedGlobalNameWrongTypeDiagnostic(Diagnostic):
+    """Diagnostic for when a referenced file lacks the referenced type at that path."""
+
+    path: str
+    expected_type: str
+    message_format: ClassVar[str] = (
+        "path '{path}' does not define a global name with the type '{expected_type}'"
     )

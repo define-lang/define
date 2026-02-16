@@ -45,7 +45,9 @@ def parse_and_validate_file(
         else:
             _ = source_path.write_bytes(source)
         monkeypatch.chdir(tmp_path)
-        return validator.Validator().parse_and_validate_file(relative_path)
+        results = validator.Validator().parse_and_validate_program(relative_path)
+        assert len(results) == 1
+        return results[0]
 
     return _run
 
@@ -62,7 +64,7 @@ def _check_diagnostic_format(
     assert source_lines[expected_line - 1] in formatted
     lines = formatted.split("\n")
     caret_line = next(line for line in lines if "^" in line)
-    assert caret_line.index("^") == expected_column + 1
+    assert caret_line.index("^") == expected_column - 1
 
 
 class TestParseAndValidateFile:
@@ -166,7 +168,9 @@ class TestPathFormats:
             validator.Validator, "_load_file", autospec=True
         ) as load_file:
             load_file.return_value = (source, None)
-            result = validator.Validator().parse_and_validate_file(path=path)
+            results = validator.Validator().parse_and_validate_program(path=path)
+            assert len(results) == 1
+            result = results[0]
 
         assert result.diagnostics == []
         assert result.exception is None

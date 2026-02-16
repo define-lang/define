@@ -5,7 +5,7 @@ from __future__ import annotations
 import enum
 import typing
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Self
 
 if typing.TYPE_CHECKING:
@@ -78,6 +78,11 @@ class QualityDefinition(ASTNode):
     name: GlobalNameDefinition
     type_name: TypeName
 
+    @property
+    def fully_qualified_typed_name(self) -> str:
+        """Return canonical typed-name text including FQUN and path."""
+        return f"{self.type_name.value}<{self.name.fully_qualified()}>"
+
 
 @dataclass
 class PositionDefinition(QualityDefinition):
@@ -112,6 +117,13 @@ class TypedGlobalNameReference(ASTNode):
     type_name: TypeName
     global_name: GlobalNameReference
 
+    def fully_qualified_typed_name(self, with_fqun: Fqun | None = None) -> str:
+        """Return canonical typed-name text including effective FQUN and path."""
+        return (
+            f"{self.type_name.value}"
+            + f"<{self.global_name.fully_qualified(with_fqun=with_fqun)}>"
+        )
+
 
 @dataclass
 class PositionRequirementStatement(ASTNode):
@@ -134,9 +146,9 @@ class GlobalPathName(ASTNode):
     name: str
 
     @property
-    def relative_path(self) -> Path:
-        """Return the path as a relative Path object."""
-        return Path(self.name[1:])
+    def relative_path(self) -> PurePosixPath:
+        """Return the path as a relative POSIX path object."""
+        return PurePosixPath(self.name[1:])
 
 
 @dataclass
@@ -219,6 +231,17 @@ class GlobalName(ASTNode):
 
     fqun: Fqun | None
     path: GlobalPathName
+
+    def fully_qualified(self, with_fqun: Fqun | None = None) -> str:
+        """Return canonical FQUN:path text with optional short-form resolution."""
+        if with_fqun is not None and self.fqun is not None:
+            raise ValueError(
+                "global name already has an FQUN; with_fqun is not allowed"
+            )
+        fqun = self.fqun or with_fqun
+        if fqun is None:
+            raise ValueError("global name requires an effective FQUN")
+        return f"{fqun.canonical}:{self.path.name}"
 
 
 @dataclass

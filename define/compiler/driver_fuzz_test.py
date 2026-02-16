@@ -68,7 +68,7 @@ _PROJECT_FQUN = "mv:define-lang.org:fuzz_test:"
 
 
 @st.composite
-def global_names(draw: st.DrawFn) -> str:
+def long_global_names(draw: st.DrawFn) -> str:
     fqun = draw(fquns())
     num_segments = draw(st.integers(min_value=1, max_value=3))
     path = ""
@@ -76,6 +76,21 @@ def global_names(draw: st.DrawFn) -> str:
         seg = draw(st.sampled_from(_PATH_SEGMENTS))
         path += f"/{seg}"
     return f"{fqun}{path}"
+
+
+@st.composite
+def short_global_names(draw: st.DrawFn) -> str:
+    num_segments = draw(st.integers(min_value=1, max_value=3))
+    path = ""
+    for _ in range(num_segments):
+        seg = draw(st.sampled_from(_PATH_SEGMENTS))
+        path += f"/{seg}"
+    return path
+
+
+@st.composite
+def global_names(draw: st.DrawFn) -> str:
+    return draw(st.one_of(short_global_names(), long_global_names()))
 
 
 @st.composite
@@ -324,6 +339,14 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (config_dir / "config.defcl").write_text(
         'project: {\n  universe_name: "mv:define-lang.org:fuzz_test"\n}\n'
     )
+    # Some generated valid snippets include short-form references to /another_test.
+    (tmp_path / "another_test.def").write_text(
+        (
+            "define the potential action<mv:define-lang.org:fuzz_test:/another_test>.\n"
+            + "define the potential position<mv:define-lang.org:fuzz_test:/another_test>.\n"
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -359,15 +382,26 @@ def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     file_path.write_text(source, encoding="utf-8")
     d = driver.Driver()
     try:
-        result = d.validate_program(Path("test.def"))
+        results = d.validate_program(Path("test.def"))
     except exceptions.DriverError:
         return
-    if result.exception is None:
+    exceptions_seen = [
+        result.exception for result in results if result.exception is not None
+    ]
+    if not exceptions_seen:
         return
-    if not isinstance(result.exception, parser_exceptions.DefineSyntaxError):
-        first_error = result.exception
+    unclassified_errors = [
+        error
+        for error in exceptions_seen
+        if not isinstance(error, parser_exceptions.DefineSyntaxError)
+    ]
+    if unclassified_errors:
+        rendered_errors = "\n".join(
+            f"- {error!r}:\n\t{error!s}" for error in unclassified_errors
+        )
         pytest.fail(
-            f"Unclassified {first_error!r}:\n\t{first_error!s}\n"
+            "Unclassified errors:\n"
+            + f"{rendered_errors}\n"
             + f"\nSource:\n{_escape_content(source)}",
             pytrace=False,
         )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import time
-from collections import ChainMap
+from collections import ChainMap, OrderedDict
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -20,8 +20,10 @@ from define.compiler import (
     transformer,
 )
 
-type AnySyntaxError = (
-    parser_exceptions.DefineSyntaxError | lark_exceptions.UnexpectedInput
+type AnyValidationException = (
+    parser_exceptions.DefineSyntaxError
+    | lark_exceptions.UnexpectedInput
+    | FileNotFoundError
 )
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
@@ -34,7 +36,7 @@ class ValidationResult:
     """Validation output for one source file."""
 
     diagnostics: list[diagnostics.Diagnostic]
-    exception: AnySyntaxError | None
+    exception: AnyValidationException | None
     source: str | None
     file_path: pathlib.PurePath
     stats: ValidationTimingStats
@@ -68,7 +70,7 @@ class _ValidationRun:
 
     def incomplete(
         self,
-        syntax_error: AnySyntaxError,
+        syntax_error: AnyValidationException,
     ) -> ValidationResult:
         if self.parse_finished_at is None:
             raise ValueError("Parse timing was not recorded before syntax failure.")
@@ -116,25 +118,46 @@ class _ValidationRun:
         )
 
 
+@dataclass
+class _ValidationFrame:
+    """Per-file validation context used by the validator call stack."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+    file_path: str | None
+    expected_universe_name: str | None
+
+
 class Validator:
-    """Validates semantic rules for a Define program AST."""
+    """Validates a single Define program."""
 
     def __init__(self):
-        """Initialize validator state."""
-        self._diagnostics: list[diagnostics.Diagnostic] = []
-        self._seen_global_definitions: dict[
-            tuple[ast.TypeName, str], ast.QualityDefinition
-        ] = {}
+        """Initialize state for validating exactly one program per Validator instance."""
+        self.results_by_path: OrderedDict[
+            pathlib.PurePosixPath, ValidationResult | None
+        ] = OrderedDict()
+        self.seen_global_definitions: dict[str, ast.QualityDefinition] = {}
+        self._validation_frames: list[_ValidationFrame] = []
 
     @cached_property
     def _parser(self) -> parser.Parser:
         """Parser instance, created only when file parsing is needed."""
         return parser.Parser()
 
+    def parse_and_validate_program(
+        self,
+        path: pathlib.PurePath,
+        expected_universe_name: str | None = None,
+    ) -> list[ValidationResult]:
+        """Parse, transform, and validate all reached files from one entrypoint."""
+        self._parse_validate_and_collect(path, expected_universe_name)
+        return [
+            result for result in self.results_by_path.values() if result is not None
+        ]
+
     # Much of this method's behavior is intentionally exercised only through
     # Driver tests so the end-to-end filesystem/context behavior is verified
     # in one place.
-    def parse_and_validate_file(
+    def _parse_and_validate_file(
         self,
         path: pathlib.PurePath,
         expected_universe_name: str | None = None,
@@ -179,13 +202,36 @@ class Validator:
         )
         return run.complete(validation_diagnostics)
 
+    def _parse_validate_and_collect(
+        self,
+        path: pathlib.PurePath,
+        expected_universe_name: str | None,
+    ) -> None:
+        """Parse/validate one file once and append its result in encounter order."""
+        logical_path = pathlib.PurePosixPath(path.as_posix())
+        if logical_path in self.results_by_path:
+            return
+        self.results_by_path[logical_path] = None
+        result = self._parse_and_validate_file(
+            path=logical_path,
+            expected_universe_name=expected_universe_name,
+        )
+        self.results_by_path[logical_path] = result
+
     def _load_file(
         self,
         path: pathlib.PurePath,
-    ) -> tuple[str, AnySyntaxError | None]:
+    ) -> tuple[str, AnyValidationException | None]:
         """Load a Define source file and return source and syntax errors."""
-        with open(pathlib.Path(path), "rb") as source_file:
-            raw = source_file.read()
+        try:
+            # We have to do pathlib.Path here in case we are converting
+            # from a POSIX path to a Windows path.
+            with open(pathlib.Path(path), "rb") as source_file:
+                raw = source_file.read()
+        # TODO: When we are loading a file due to a global name reference,
+        # it's unclear what line of code caused this error.
+        except FileNotFoundError as e:
+            return "", e
         try:
             source = raw.decode("utf-8")
         except UnicodeDecodeError as e:
@@ -197,6 +243,7 @@ class Validator:
     def validate(
         self,
         program: ast.Program,
+        # TODO: Make this take PurePosixPath and rename it.
         file_path: str | None = None,
         expected_universe_name: str | None = None,
     ) -> list[diagnostics.Diagnostic]:
@@ -212,22 +259,36 @@ class Validator:
                 When provided, validates that each definition's FQUN matches this
                 value. When None, skips FQUN matching validation.
         """
-        self._diagnostics = []
-        self._seen_global_definitions = {}
-        for definition in program.definitions:
-            self._validate_definition(definition, file_path, expected_universe_name)
-        return self._diagnostics
+        frame = _ValidationFrame(
+            diagnostics=[],
+            file_path=file_path,
+            expected_universe_name=expected_universe_name,
+        )
+        self._validation_frames.append(frame)
+        try:
+            for definition in program.definitions:
+                self._validate_definition(definition)
+            return frame.diagnostics
+        finally:
+            _ = self._validation_frames.pop()
 
-    def _validate_definition(
-        self,
-        definition: ast.QualityDefinition,
-        file_path: str | None,
-        expected_universe_name: str | None,
-    ) -> None:
+    @property
+    def _frame(self) -> _ValidationFrame:
+        """Return the current validation frame."""
+        if not self._validation_frames:
+            raise ValueError("Validation frame stack is empty.")
+        return self._validation_frames[-1]
+
+    @property
+    def _diagnostics(self) -> list[diagnostics.Diagnostic]:
+        """Return diagnostics list for the current validation frame."""
+        return self._frame.diagnostics
+
+    def _validate_definition(self, definition: ast.QualityDefinition) -> None:
         """Validate a quality definition."""
         self._diagnostics.extend(name_validators.validate_global_name(definition.name))
-        self._validate_path_matches_file(definition, file_path)
-        self._validate_fqun_matches_expected(definition, expected_universe_name)
+        self._validate_path_matches_file(definition)
+        self._validate_fqun_matches_expected(definition)
         self._validate_not_duplicate(definition)
         if (
             isinstance(definition, ast.ActionDefinition)
@@ -243,10 +304,9 @@ class Validator:
                 definition.constraints, definition.name.fqun
             )
 
-    def _validate_path_matches_file(
-        self, definition: ast.QualityDefinition, file_path: str | None
-    ) -> None:
+    def _validate_path_matches_file(self, definition: ast.QualityDefinition) -> None:
         """Validate that the definition's path matches the file path."""
+        file_path = self._frame.file_path
         if file_path is None:
             return
 
@@ -264,9 +324,9 @@ class Validator:
 
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
-        key = (definition.type_name, definition.name.path.name)
-        if key in self._seen_global_definitions:
-            first_def = self._seen_global_definitions[key]
+        key = definition.fully_qualified_typed_name
+        if key in self.seen_global_definitions:
+            first_def = self.seen_global_definitions[key]
             def_type = definition.type_name.value
             path_str = definition.name.path.name
             self._diagnostics.append(
@@ -278,7 +338,7 @@ class Validator:
                 )
             )
         else:
-            self._seen_global_definitions[key] = definition
+            self.seen_global_definitions[key] = definition
 
     def _validate_local_names(
         self, definition_block: ast.ActionDefinitionBlock
@@ -315,11 +375,10 @@ class Validator:
         scope.maps[0][name] = local_def
 
     def _validate_fqun_matches_expected(
-        self,
-        definition: ast.QualityDefinition,
-        expected_universe_name: str | None,
+        self, definition: ast.QualityDefinition
     ) -> None:
         """Validate that the definition's FQUN matches the expected project FQUN."""
+        expected_universe_name = self._frame.expected_universe_name
         if expected_universe_name is None:
             return
 
@@ -355,7 +414,9 @@ class Validator:
                 )
 
     def _validate_position_constraints(
-        self, constraints: ast.PositionConstraintBlock, enclosing_fqun: ast.Fqun | None
+        self,
+        constraints: ast.PositionConstraintBlock,
+        enclosing_fqun: ast.Fqun | None,
     ) -> None:
         """Validate names and short-form usage in position constraints."""
         if enclosing_fqun is None:
@@ -363,8 +424,49 @@ class Validator:
 
         for requirement in constraints.requirements:
             reference = requirement.typed_global_name.global_name
-            self._diagnostics.extend(
-                name_validators.validate_global_name(
-                    reference, must_use_short_form=enclosing_fqun
+            reference_diagnostics = name_validators.validate_global_name(
+                reference, must_use_short_form=enclosing_fqun
+            )
+            self._diagnostics.extend(reference_diagnostics)
+            if reference_diagnostics:
+                continue
+            self._load_global_name_reference(
+                typed_global_name=requirement.typed_global_name,
+                enclosing_fqun=enclosing_fqun,
+            )
+
+    def _load_global_name_reference(
+        self,
+        typed_global_name: ast.TypedGlobalNameReference,
+        enclosing_fqun: ast.Fqun,
+    ) -> None:
+        """Load and validate one global name reference."""
+        reference = typed_global_name.global_name
+        expected_type = typed_global_name.type_name
+        if reference.fqun is not None:
+            raise NotImplementedError(
+                "Global-reference file walking for FQUN references is not implemented."
+            )
+
+        referenced_file = reference.path.relative_path.with_suffix(".def")
+
+        self._parse_validate_and_collect(
+            path=referenced_file,
+            expected_universe_name=self._frame.expected_universe_name,
+        )
+
+        referenced_result = self.results_by_path[referenced_file]
+        if referenced_result is None or referenced_result.exception is not None:
+            return
+
+        definition_key = typed_global_name.fully_qualified_typed_name(
+            with_fqun=enclosing_fqun,
+        )
+        if definition_key not in self.seen_global_definitions:
+            self._diagnostics.append(
+                diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
+                    position=reference.position,
+                    path=reference.path.name,
+                    expected_type=expected_type.value,
                 )
             )

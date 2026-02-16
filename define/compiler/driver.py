@@ -30,11 +30,13 @@ class Driver:
         """Load and return the project configuration."""
         return config.project_config()
 
-    def validate_program(self, path: os.PathLike[str]) -> validator.ValidationResult:
-        """Compile one source file and return syntax errors, diagnostics, and source text."""
+    def validate_program(
+        self, path: os.PathLike[str]
+    ) -> list[validator.ValidationResult]:
+        """Compile one source file and all loaded references in encounter order."""
         config.assert_is_project_root()
         resolved_path = self._resolve_path(path)
-        return validator.Validator().parse_and_validate_file(
+        return validator.Validator().parse_and_validate_program(
             path=resolved_path,
             expected_universe_name=self.project_config.project.universe_name or "",
         )
@@ -86,21 +88,25 @@ class Driver:
         if error_stream is None:
             error_stream = sys.stderr
         try:
-            result = self.validate_program(path)
+            results = self.validate_program(path)
         except exceptions.DriverError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 
-        if result.exception is not None:
-            print(str(result.exception), file=error_stream)
-            return ExitCode.ERROR
+        had_errors = False
+        for result in results:
+            if result.exception is not None:
+                print(str(result.exception), file=error_stream)
+                had_errors = True
+            if result.diagnostics:
+                if result.source is None:
+                    raise ValueError(
+                        "result.source must be set when there are diagnostics"
+                    )
+                source_lines = result.source.splitlines()
+                file_name = str(result.file_path)
+                for diagnostic in result.diagnostics:
+                    print(diagnostic.format(source_lines, file_name), file=error_stream)
+                had_errors = True
 
-        if result.diagnostics:
-            source_lines = (
-                result.source.splitlines() if result.source is not None else []
-            )
-            for diagnostic in result.diagnostics:
-                print(diagnostic.format(source_lines), file=error_stream)
-            return ExitCode.ERROR
-
-        return ExitCode.SUCCESS
+        return ExitCode.ERROR if had_errors else ExitCode.SUCCESS

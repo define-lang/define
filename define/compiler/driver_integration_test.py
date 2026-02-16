@@ -15,11 +15,12 @@ of parser exceptions) you will have to update the EXPECTED_DIAGNOSTIC_BY_SUBSTRI
 table.
 """
 
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics, driver, parser_exceptions
+from define.compiler import diagnostics, driver, parser_exceptions, validator
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -29,6 +30,7 @@ VALID_FILES = sorted((FILES_ROOT / "valid").glob("*.def"))
 INVALID_SYNTAX_FILES = sorted((FILES_ROOT / "invalid" / "syntax").rglob("*.def"))
 
 # Substrings that indicate validation diagnostics (path/context) -> expected diagnostic type or None
+# TODO: Refactor this to be per-test, and also check for all diagnostics we expect to be emitted.
 EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
     "universe_uppercase": diagnostics.UniverseNameInvalidCharDiagnostic,
     "path_mismatch": diagnostics.PathMismatchDiagnostic,
@@ -61,6 +63,11 @@ EXPECTED_DIAGNOSTIC_BY_SUBSTRING: dict[str, type | None] = {
     "local_names/uppercase": diagnostics.InvalidLocalNameFormatDiagnostic,
     "local_names/hyphen": diagnostics.InvalidLocalNameFormatDiagnostic,
     "local_names/special_characters": diagnostics.InvalidLocalNameFormatDiagnostic,
+    "global_name_walk_wrong_type": diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+}
+
+EXPECTED_EXCEPTION_BY_SUBSTRING: dict[str, type[Exception]] = {
+    "global_name_walk_missing": FileNotFoundError,
 }
 
 
@@ -98,6 +105,23 @@ def project_entrypoint(project_dir: Path) -> Path:
     return Path("test.def")
 
 
+def _all_diagnostics(
+    results: list[validator.ValidationResult],
+) -> list[diagnostics.Diagnostic]:
+    diags: list[diagnostics.Diagnostic] = []
+    for result in results:
+        diags.extend(result.diagnostics)
+    return diags
+
+
+def _find_substring_mapping_match[T](
+    mapping: Mapping[str, T], haystack: str
+) -> T | None:
+    return next(
+        (value for substring, value in mapping.items() if substring in haystack), None
+    )
+
+
 @pytest.mark.parametrize(
     "def_file",
     [f.relative_to(FILES_ROOT) for f in VALID_FILES],
@@ -107,8 +131,9 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
 
-    result = driver.Driver().validate_program(def_file)
-    assert not result.diagnostics, f"Expected no diagnostics, got: {result.diagnostics}"
+    results = driver.Driver().validate_program(def_file)
+    assert all(not result.diagnostics for result in results)
+    assert all(result.exception is None for result in results)
 
 
 @pytest.mark.parametrize(
@@ -125,25 +150,27 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
     file_name = str(def_file)
     d = driver.Driver()
 
-    expected_diagnostic = next(
-        (
-            EXPECTED_DIAGNOSTIC_BY_SUBSTRING[substring]
-            for substring in EXPECTED_DIAGNOSTIC_BY_SUBSTRING
-            if substring in file_name
-        ),
-        None,
+    expected_diagnostic = _find_substring_mapping_match(
+        EXPECTED_DIAGNOSTIC_BY_SUBSTRING, file_name
     )
-
     if expected_diagnostic:
-        result = d.validate_program(def_file)
-        assert result.exception is None
-        assert any(
-            isinstance(diag, expected_diagnostic) for diag in result.diagnostics
-        ), f"Expected {expected_diagnostic.__name__} for {file_name}"
+        results = d.validate_program(def_file)
+        assert all(result.exception is None for result in results)
+        all_diagnostics = _all_diagnostics(results)
+        # TODO: Refactor to assert that all diagnostics are as expected.
+        assert any(isinstance(diag, expected_diagnostic) for diag in all_diagnostics), (
+            f"Expected {expected_diagnostic.__name__} for {file_name}"
+        )
     else:
-        result = d.validate_program(def_file)
-        assert result.diagnostics == []
-        assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
+        results = d.validate_program(def_file)
+        assert not _all_diagnostics(results)
+        exceptions_seen = [
+            result.exception for result in results if result.exception is not None
+        ]
+        assert exceptions_seen, "Expected at least one exception"
+        assert all(
+            isinstance(e, parser_exceptions.DefineSyntaxError) for e in exceptions_seen
+        )
 
 
 @pytest.mark.parametrize(
@@ -156,11 +183,9 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
     d = driver.Driver()
 
     entry_point = project_entrypoint(project_dir)
-    result = d.validate_program(entry_point)
-    assert result.exception is None
-    assert not result.diagnostics, (
-        f"Expected no diagnostics for {entry_point}, got: {result.diagnostics}"
-    )
+    results = d.validate_program(entry_point)
+    assert all(result.exception is None for result in results)
+    assert all(not result.diagnostics for result in results)
 
 
 @pytest.mark.parametrize(
@@ -175,24 +200,31 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
     d = driver.Driver()
 
     entry_point = project_entrypoint(project_dir)
-    result = d.validate_program(entry_point)
-    assert result.exception is None
-
     project_str = str(project_dir)
-    expected_type = next(
-        (
-            EXPECTED_DIAGNOSTIC_BY_SUBSTRING[substring]
-            for substring in EXPECTED_DIAGNOSTIC_BY_SUBSTRING
-            if substring in project_str
-        ),
-        None,
+    expected_exception = _find_substring_mapping_match(
+        EXPECTED_EXCEPTION_BY_SUBSTRING, project_str
+    )
+    results = d.validate_program(entry_point)
+    if expected_exception is not None:
+        exceptions_seen = [
+            result.exception for result in results if result.exception is not None
+        ]
+        assert exceptions_seen, "Expected at least one exception"
+        assert all(isinstance(e, expected_exception) for e in exceptions_seen)
+        return
+
+    assert all(result.exception is None for result in results)
+    all_diagnostics = _all_diagnostics(results)
+    expected_type = _find_substring_mapping_match(
+        EXPECTED_DIAGNOSTIC_BY_SUBSTRING, project_str
     )
     if expected_type is None:
         pytest.fail(
             "Expected diagnostic for "
-            + f"{entry_point} not specified. Got: {result.diagnostics!r}"
+            + f"{entry_point} not specified. Got: {all_diagnostics!r}"
         )
 
-    assert any(isinstance(diag, expected_type) for diag in result.diagnostics), (
+    # TODO: Refactor to assert that all diagnostics are as expected.
+    assert any(isinstance(diag, expected_type) for diag in all_diagnostics), (
         f"Expected {expected_type.__name__} for {entry_point}"
     )
