@@ -1,0 +1,10 @@
+define the potential action<mv:define-lang.org:test_walk_local_definition:/test> {
+    define the position<inner_pos> {
+        it may only contain dimension points where {
+            it has the position</target>.
+        }
+    }
+    it happens when {
+    } and it does {
+    }
+}

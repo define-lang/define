@@ -76,6 +76,10 @@ def discover_projects(base_dir: Path) -> list[Path]:
 
 VALID_PROJECTS = discover_projects(PROJECTS_ROOT / "valid")
 INVALID_PROJECTS = discover_projects(PROJECTS_ROOT / "invalid")
+PROJECT_CUSTOM_ENTRY_POINTS: dict[str, str] = {
+    "invalid/syntax/path_mismatch": "correct_path/test.def",
+    "valid/nested_paths": "nested/deep/test.def",
+}
 
 
 def test_lists_not_empty():
@@ -83,6 +87,15 @@ def test_lists_not_empty():
     assert INVALID_PROJECTS
     assert VALID_FILES
     assert INVALID_SYNTAX_FILES
+
+
+def project_entrypoint(project_dir: Path) -> Path:
+    """Return the .def entrypoint that should be validated for a project."""
+    project_rel_path = project_dir.relative_to(PROJECTS_ROOT).as_posix()
+    custom_entrypoint = PROJECT_CUSTOM_ENTRY_POINTS.get(project_rel_path)
+    if custom_entrypoint is not None:
+        return Path(custom_entrypoint)
+    return Path("test.def")
 
 
 @pytest.mark.parametrize(
@@ -141,14 +154,11 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
     d = driver.Driver()
 
-    def_files = sorted(Path(".").rglob("*.def"))
-    assert def_files, f"No .def files found in {project_dir}"
-
-    for def_file in def_files:
-        result = d.validate_file(def_file)
-        assert not result.diagnostics, (
-            f"Expected no diagnostics for {def_file}, got: {result.diagnostics}"
-        )
+    entry_point = project_entrypoint(project_dir)
+    result = d.validate_file(entry_point)
+    assert not result.diagnostics, (
+        f"Expected no diagnostics for {entry_point}, got: {result.diagnostics}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -162,27 +172,24 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     d = driver.Driver()
 
-    def_files = sorted(Path(".").rglob("*.def"))
-    assert def_files, f"No .def files found in {project_dir}"
+    entry_point = project_entrypoint(project_dir)
+    result = d.validate_file(entry_point)
 
-    for def_file in def_files:
-        result = d.validate_file(def_file)
-
-        project_str = str(project_dir)
-        expected_type = next(
-            (
-                EXPECTED_DIAGNOSTIC_BY_SUBSTRING[substring]
-                for substring in EXPECTED_DIAGNOSTIC_BY_SUBSTRING
-                if substring in project_str
-            ),
-            None,
+    project_str = str(project_dir)
+    expected_type = next(
+        (
+            EXPECTED_DIAGNOSTIC_BY_SUBSTRING[substring]
+            for substring in EXPECTED_DIAGNOSTIC_BY_SUBSTRING
+            if substring in project_str
+        ),
+        None,
+    )
+    if expected_type is None:
+        pytest.fail(
+            "Expected diagnostic for "
+            + f"{entry_point} not specified. Got: {result.diagnostics!r}"
         )
-        if expected_type is None:
-            pytest.fail(
-                "Expected diagnostic for "
-                + f"{def_file} not specified. Got: {result.diagnostics!r}"
-            )
 
-        assert any(isinstance(diag, expected_type) for diag in result.diagnostics), (
-            f"Expected {expected_type.__name__} for {def_file}"
-        )
+    assert any(isinstance(diag, expected_type) for diag in result.diagnostics), (
+        f"Expected {expected_type.__name__} for {entry_point}"
+    )

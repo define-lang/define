@@ -1,0 +1,6 @@
+define the potential position<mv:define-lang.org:test_walk_dual:/test> {
+    it may only contain dimension points where {
+        it has the position</shared>.
+        it has the action</shared>.
+    }
+}
