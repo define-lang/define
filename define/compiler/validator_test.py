@@ -4,17 +4,18 @@ Keep test assertions simple: assert on the exact diagnostics list you get
 (len, isinstance, fields) rather than filtering by type.
 """
 
+from collections.abc import Callable
 from pathlib import Path, PureWindowsPath
-from typing import cast
 from unittest.mock import patch
 
 import pytest
 
-from define.compiler import diagnostics, parser, validator
+from define.compiler import diagnostics, parser, parser_exceptions, validator
 from define.compiler.transformer import DefineTransformer
 
 _parser = parser.Parser()
 _transformer = DefineTransformer()
+type ParseAndValidateFile = Callable[[str | bytes], validator.ValidationResult]
 
 
 def _parse_transform_validate(
@@ -29,6 +30,24 @@ def _parse_transform_validate(
         file_path=file_path,
         expected_universe_name=expected_universe_name,
     )
+
+
+@pytest.fixture
+def parse_and_validate_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> ParseAndValidateFile:
+    def _run(source: str | bytes) -> validator.ValidationResult:
+        relative_path = Path("sub/test.def")
+        source_path = tmp_path / relative_path
+        source_path.parent.mkdir(parents=True)
+        if isinstance(source, str):
+            _ = source_path.write_text(source, encoding="utf-8")
+        else:
+            _ = source_path.write_bytes(source)
+        monkeypatch.chdir(tmp_path)
+        return validator.Validator().parse_and_validate_file(relative_path)
+
+    return _run
 
 
 def _check_diagnostic_format(
@@ -46,24 +65,24 @@ def _check_diagnostic_format(
     assert caret_line.index("^") == expected_column + 1
 
 
-class TestParseAndValidateFileStats:
+class TestParseAndValidateFile:
     def test_returns_single_file_timing_stats(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self,
+        parse_and_validate_file: ParseAndValidateFile,
     ):
         source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
-        source_path = tmp_path / "sub" / "test.def"
-        source_path.parent.mkdir(parents=True)
-        _ = source_path.write_text(source, encoding="utf-8")
-        monkeypatch.chdir(tmp_path)
-
-        result = validator.Validator().parse_and_validate_file(Path("sub/test.def"))
+        result = parse_and_validate_file(source)
 
         assert result.diagnostics == []
+        assert result.exception is None
+        assert result.source == source
         assert result.file_path == Path("sub/test.def")
 
         timings = result.stats
         assert timings.overall >= 0
         assert timings.parse >= 0
+        assert timings.transform is not None
+        assert timings.validate is not None
         assert timings.transform >= 0
         assert timings.validate >= 0
         assert timings.parse < timings.overall
@@ -71,21 +90,87 @@ class TestParseAndValidateFileStats:
         assert timings.validate < timings.overall
         assert timings.overall == (timings.parse + timings.transform + timings.validate)
 
+    def test_parse_error_populates_exceptions_and_sets_later_phases_to_none(
+        self,
+        parse_and_validate_file: ParseAndValidateFile,
+    ):
+        result = parse_and_validate_file(
+            "defin the potential position<my.domain.com:my_lib:/sub/bad>.\n"
+        )
+
+        assert result.diagnostics == []
+        assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
+        assert result.source is not None
+        assert result.file_path == Path("sub/test.def")
+
+        timings = result.stats
+        assert timings.overall >= 0
+        assert timings.parse >= 0
+        assert timings.transform is None
+        assert timings.validate is None
+        assert timings.overall == timings.parse
+
+    def test_invalid_utf8_populates_exceptions_and_source_is_none(
+        self,
+        parse_and_validate_file: ParseAndValidateFile,
+    ):
+        result = parse_and_validate_file(
+            b"define the potential position<my.domain.com:my_lib:/sub/bad>.\n\xff"
+        )
+
+        assert result.diagnostics == []
+        assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+        assert result.source is None
+        assert result.file_path == Path("sub/test.def")
+
+        timings = result.stats
+        assert timings.overall >= 0
+        assert timings.parse >= 0
+        assert timings.transform is None
+        assert timings.validate is None
+        assert timings.overall == timings.parse
+
+    def test_transform_error_from_name_parser_populates_exceptions(
+        self,
+        parse_and_validate_file: ParseAndValidateFile,
+    ):
+        source = (
+            "define the potential position<"
+            + "mv:define-lang.org:test:files:/invalid/syntax/fqun_format/too_many_colons"
+            + ">.\n"
+        )
+        result = parse_and_validate_file(source)
+
+        assert result.diagnostics == []
+        assert isinstance(
+            result.exception, parser_exceptions.GlobalNameInvalidFqunFormat
+        )
+        assert result.source == source
+        assert result.file_path == Path("sub/test.def")
+
+        timings = result.stats
+        assert timings.overall >= 0
+        assert timings.parse >= 0
+        assert timings.transform is not None
+        assert timings.transform >= 0
+        assert timings.validate is None
+        assert timings.overall == (timings.parse + timings.transform)
+
 
 class TestPathFormats:
     def test_windows_style_string_path_still_validates_with_posix_file_path(self):
         source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
-        windows_path = cast(
-            "Path",
-            cast("object", PureWindowsPath("sub\\test.def")),
-        )
+        path = PureWindowsPath("sub\\test.def")
 
-        with patch.object(parser.Parser, "parse_file", autospec=True) as parse_file:
-            parse_file.return_value = (_parser.parse(source), source)
-            result = validator.Validator().parse_and_validate_file(path=windows_path)
+        with patch.object(
+            validator.Validator, "_load_file", autospec=True
+        ) as load_file:
+            load_file.return_value = (source, None)
+            result = validator.Validator().parse_and_validate_file(path=path)
 
         assert result.diagnostics == []
-        assert result.file_path.as_posix() == "sub/test.def"
+        assert result.exception is None
+        assert str(result.file_path) == "sub/test.def"
 
 
 class TestReservedNamePositions:

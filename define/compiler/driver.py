@@ -7,12 +7,9 @@ from functools import cached_property
 from pathlib import Path
 from typing import TextIO
 
-import lark
-
 from define.compiler import (
     config,
     exceptions,
-    parser_exceptions,
     validator,
 )
 from define.config.project import config_pb2
@@ -34,7 +31,7 @@ class Driver:
         return config.project_config()
 
     def validate_file(self, path: os.PathLike[str]) -> validator.ValidationResult:
-        """Compile a single Define source file and return diagnostics and source text."""
+        """Compile one source file and return syntax errors, diagnostics, and source text."""
         config.assert_is_project_root()
         resolved_path = self._resolve_path(path)
         return validator.Validator().parse_and_validate_file(
@@ -90,18 +87,18 @@ class Driver:
             error_stream = sys.stderr
         try:
             result = self.validate_file(path)
-        except parser_exceptions.DefineSyntaxError as e:
-            print(str(e), file=error_stream)
-            return ExitCode.ERROR
-        except lark.exceptions.UnexpectedInput as e:
-            print(str(e), file=error_stream)
-            return ExitCode.ERROR
         except exceptions.DriverError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 
+        if result.exception is not None:
+            print(str(result.exception), file=error_stream)
+            return ExitCode.ERROR
+
         if result.diagnostics:
-            source_lines = result.source.splitlines()
+            source_lines = (
+                result.source.splitlines() if result.source is not None else []
+            )
             for diagnostic in result.diagnostics:
                 print(diagnostic.format(source_lines), file=error_stream)
             return ExitCode.ERROR

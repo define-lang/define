@@ -68,14 +68,9 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":config",
-        ":diagnostics",
         ":exceptions",
-        ":parser",
-        ":parser_exceptions",
-        ":transformer",
         ":validator",
         "//define/config/project:config_proto_py",
-        "@pypi//lark",
     ],
 )
 
@@ -104,7 +99,6 @@ py_test(
     deps = [
         ":diagnostics",
         ":driver",
-        ":parser_exceptions",
         "@pypi//pytest",
     ],
 )
@@ -252,6 +246,11 @@ py_library(
         ":ast",
         ":diagnostics",
         ":name_validators",
+        ":parser",
+        ":parser_error_classification",
+        ":parser_exceptions",
+        ":transformer",
+        "@pypi//lark",
     ],
 )
 
@@ -263,6 +262,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":parser",
+        ":parser_exceptions",
         ":transformer",
         ":validator",
         "@pypi//pytest",

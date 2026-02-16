@@ -52,7 +52,7 @@ class TestValidateFile:
         d = driver.Driver()
         result = d.validate_file(Path("hello.def"))
         assert result.diagnostics == []
-        assert result.source == source
+        assert result.exception is None
         assert result.file_path == Path("hello.def")
 
     def test_returns_diagnostics_for_path_mismatch(
@@ -69,6 +69,7 @@ class TestValidateFile:
         d = driver.Driver()
         result = d.validate_file(Path("wrong.def"))
         assert len(result.diagnostics) == 1
+        assert result.exception is None
         assert isinstance(result.diagnostics[0], diagnostics.PathMismatchDiagnostic)
 
     def test_returns_diagnostics_for_fqun_mismatch(
@@ -84,19 +85,23 @@ class TestValidateFile:
 
         d = driver.Driver()
         result = d.validate_file(Path("hello.def"))
+        assert result.exception is None
         assert any(
             isinstance(d, diagnostics.FqunMismatchDiagnostic)
             for d in result.diagnostics
         )
 
-    def test_syntax_error_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    def test_syntax_error_populates_exceptions(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
         _setup_project(tmp_path, "test.example.com:my_lib")
         _write_source(tmp_path, "bad.def", "this is not valid define\n")
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver()
-        with pytest.raises(parser_exceptions.DefineSyntaxError):
-            d.validate_file(Path("bad.def"))
+        result = d.validate_file(Path("bad.def"))
+        assert result.diagnostics == []
+        assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
 
     def test_nested_file_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _setup_project(tmp_path, "test.example.com:my_lib")
@@ -110,6 +115,7 @@ class TestValidateFile:
         d = driver.Driver()
         result = d.validate_file(Path("sub/dir/leaf.def"))
         assert result.diagnostics == []
+        assert result.exception is None
 
 
 class TestPathResolution:
@@ -127,6 +133,7 @@ class TestPathResolution:
         d = driver.Driver()
         result = d.validate_file(tmp_path / "hello.def")
         assert result.diagnostics == []
+        assert result.exception is None
 
     def test_absolute_path_outside_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -163,6 +170,7 @@ class TestPathResolution:
         d = driver.Driver()
         result = d.validate_file(Path("sub/../hello.def"))
         assert result.diagnostics == []
+        assert result.exception is None
 
     def test_symlink_to_outside_without_dotdot_is_allowed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -183,6 +191,7 @@ class TestPathResolution:
         d = driver.Driver()
         result = d.validate_file(Path("link/hello.def"))
         assert result.diagnostics == []
+        assert result.exception is None
 
     def test_symlink_with_dotdot_escaping_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -217,6 +226,7 @@ class TestPathResolution:
         d = driver.Driver()
         result = d.validate_file(Path("link/../hello.def"))
         assert result.diagnostics == []
+        assert result.exception is None
 
     def test_path_escaping_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

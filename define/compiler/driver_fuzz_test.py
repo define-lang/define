@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
-from lark import exceptions as lark_exceptions
 
 from define.compiler import driver, exceptions, parser_exceptions
 
@@ -360,12 +359,16 @@ def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     file_path.write_text(source, encoding="utf-8")
     d = driver.Driver()
     try:
-        d.validate_file(Path("test.def"))
-    except (parser_exceptions.DefineSyntaxError, exceptions.DriverError):
-        pass
-    except lark_exceptions.UnexpectedInput as e:
+        result = d.validate_file(Path("test.def"))
+    except exceptions.DriverError:
+        return
+    if result.exception is None:
+        return
+    if not isinstance(result.exception, parser_exceptions.DefineSyntaxError):
+        first_error = result.exception
         pytest.fail(
-            f"Unclassified {e!r}:\n\t{e!s}\n" + f"\nSource:\n{_escape_content(source)}",
+            f"Unclassified {first_error!r}:\n\t{first_error!s}\n"
+            + f"\nSource:\n{_escape_content(source)}",
             pytrace=False,
         )
 

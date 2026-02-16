@@ -130,20 +130,6 @@ py_test(
     ],
 )
 
-py_test(
-    name = "parse_file_test",
-    size = "small",
-    srcs = ["parse_file_test.py"],
-    pytest_main = True,
-    deps = [
-        ":conftest",
-        ":test_helpers",
-        "//define/compiler:parser",
-        "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
-    ],
-)
-
 py_library(
     name = "parser_tests",
     srcs = ["__init__.py"],
@@ -220,7 +206,6 @@ pyright_test(
         ":incomplete_statements_test",
         ":local_name_format_test",
         ":multiple_definitions_test",
-        ":parse_file_test",
         ":parser_tests",
         ":position_definition_test",
         ":statement_terminators_test",

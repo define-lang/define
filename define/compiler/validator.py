@@ -2,23 +2,30 @@
 
 from __future__ import annotations
 
+import pathlib
 import time
 from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
-from typing import TYPE_CHECKING
 
 from lark import exceptions as lark_exceptions
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 from define.compiler import (
     ast,
     diagnostics,
     name_validators,
     parser,
+    parser_error_classification,
+    parser_exceptions,
     transformer,
+)
+
+type AnySyntaxError = (
+    parser_exceptions.DefineSyntaxError | lark_exceptions.UnexpectedInput
+)
+SYNTAX_ERROR_TYPES = (
+    parser_exceptions.DefineSyntaxError,
+    lark_exceptions.UnexpectedInput,
 )
 
 
@@ -27,8 +34,9 @@ class ValidationResult:
     """Validation output for one source file."""
 
     diagnostics: list[diagnostics.Diagnostic]
-    source: str
-    file_path: Path
+    exception: AnySyntaxError | None
+    source: str | None
+    file_path: pathlib.PurePath
     stats: ValidationTimingStats
 
 
@@ -38,8 +46,74 @@ class ValidationTimingStats:
 
     overall: int
     parse: int
-    transform: int
-    validate: int
+    transform: int | None
+    validate: int | None
+
+
+@dataclass
+class _ValidationRun:
+    """Tracks a single parse/validate run and builds consistent results."""
+
+    file_path: pathlib.PurePath
+    started_at: int
+    source: str | None = None
+    parse_finished_at: int | None = None
+    transform_finished_at: int | None = None
+
+    def mark_parse_finished(self) -> None:
+        self.parse_finished_at = time.perf_counter_ns()
+
+    def mark_transform_finished(self) -> None:
+        self.transform_finished_at = time.perf_counter_ns()
+
+    def incomplete(
+        self,
+        syntax_error: AnySyntaxError,
+    ) -> ValidationResult:
+        if self.parse_finished_at is None:
+            raise ValueError("Parse timing was not recorded before syntax failure.")
+        parse_elapsed = self.parse_finished_at - self.started_at
+        if self.transform_finished_at is None:
+            overall_elapsed = parse_elapsed
+            transform_elapsed: int | None = None
+        else:
+            transform_elapsed = self.transform_finished_at - self.parse_finished_at
+            overall_elapsed = self.transform_finished_at - self.started_at
+        return ValidationResult(
+            diagnostics=[],
+            exception=syntax_error,
+            source=self.source,
+            file_path=self.file_path,
+            stats=ValidationTimingStats(
+                overall=overall_elapsed,
+                parse=parse_elapsed,
+                transform=transform_elapsed,
+                validate=None,
+            ),
+        )
+
+    def complete(
+        self, diagnostics_list: list[diagnostics.Diagnostic]
+    ) -> ValidationResult:
+        if self.parse_finished_at is None:
+            raise ValueError("Parse timing was not recorded before success.")
+        if self.transform_finished_at is None:
+            raise ValueError("Transform timing was not recorded before success.")
+        if self.source is None:
+            raise ValueError("Source text was not recorded before success.")
+        validate_finished_at = time.perf_counter_ns()
+        return ValidationResult(
+            diagnostics=diagnostics_list,
+            exception=None,
+            source=self.source,
+            file_path=self.file_path,
+            stats=ValidationTimingStats(
+                overall=validate_finished_at - self.started_at,
+                parse=self.parse_finished_at - self.started_at,
+                transform=self.transform_finished_at - self.parse_finished_at,
+                validate=validate_finished_at - self.transform_finished_at,
+            ),
+        )
 
 
 class Validator:
@@ -57,42 +131,68 @@ class Validator:
         """Parser instance, created only when file parsing is needed."""
         return parser.Parser()
 
-    # This method is intentionally exercised primarily through Driver tests so
-    # the end-to-end filesystem/context behavior is verified in one place.
+    # Much of this method's behavior is intentionally exercised only through
+    # Driver tests so the end-to-end filesystem/context behavior is verified
+    # in one place.
     def parse_and_validate_file(
         self,
-        path: Path,
+        path: pathlib.PurePath,
         expected_universe_name: str | None = None,
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
-        overall_start = time.perf_counter_ns()
-        tree, source = self._parser.parse_file(path)
-        after_parse = time.perf_counter_ns()
+        # Ensure Windows-style paths are converted to POSIX paths for
+        # all internal Define logical operations, and for consistent
+        # error messages across platforms.
+        logical_path = pathlib.PurePosixPath(path.as_posix())
+        run = _ValidationRun(file_path=logical_path, started_at=time.perf_counter_ns())
+
+        source, syntax_error = self._load_file(path)
+        if syntax_error is not None:
+            run.mark_parse_finished()
+            return run.incomplete(syntax_error)
+        run.source = source
+
+        try:
+            tree = self._parser.parse(source, file_path=logical_path)
+        except SYNTAX_ERROR_TYPES as e:
+            run.mark_parse_finished()
+            return run.incomplete(e)
+        run.mark_parse_finished()
+
         try:
             program = transformer.DefineTransformer().transform(tree)
         except lark_exceptions.VisitError as e:
             # Lark wraps exceptions raised inside transformer callbacks.
-            raise e.orig_exc from e
-        after_transform = time.perf_counter_ns()
-        file_path = path.with_suffix("").as_posix()
-        result = self.validate(
+            if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
+                run.mark_transform_finished()
+                return run.incomplete(e.orig_exc)
+            raise
+        run.mark_transform_finished()
+
+        # TODO: This isn't a file path, it's mis-named. It's the
+        # GlobalPathName we expect.
+        file_path = logical_path.with_suffix("").as_posix()
+        validation_diagnostics = self.validate(
             program=program,
             file_path=file_path,
             expected_universe_name=expected_universe_name,
         )
-        after_validate = time.perf_counter_ns()
-        timings = ValidationTimingStats(
-            overall=after_validate - overall_start,
-            parse=after_parse - overall_start,
-            transform=after_transform - after_parse,
-            validate=after_validate - after_transform,
-        )
-        return ValidationResult(
-            diagnostics=result,
-            source=source,
-            file_path=path,
-            stats=timings,
-        )
+        return run.complete(validation_diagnostics)
+
+    def _load_file(
+        self,
+        path: pathlib.PurePath,
+    ) -> tuple[str, AnySyntaxError | None]:
+        """Load a Define source file and return source and syntax errors."""
+        with open(pathlib.Path(path), "rb") as source_file:
+            raw = source_file.read()
+        try:
+            source = raw.decode("utf-8")
+        except UnicodeDecodeError as e:
+            return "", parser_error_classification.make_invalid_encoding_error(
+                raw, e, path
+            )
+        return source, None
 
     def validate(
         self,

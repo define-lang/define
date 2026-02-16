@@ -45,6 +45,19 @@ def test_char_error_message(p: parser.Parser) -> None:
     )
 
 
+def test_char_error_message_with_path(p: parser.Parser) -> None:
+    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
+        p.parse(
+            "define the potential position<standard:/path>.\r\n", file_path="test.def"
+        )
+    assert str(exc_info.value) == (
+        'File "test.def", line 1, column 47\n'
+        " the potential position<standard:/path>.\\r\n"
+        "                                        ^\n"
+        "Carriage return character (\\r) is not allowed."
+    )
+
+
 def test_token_error_message(p: parser.Parser) -> None:
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         p.parse("define the potential position<standard:/path>\n")

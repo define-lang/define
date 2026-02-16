@@ -120,7 +120,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     ],
 )
 def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that invalid syntax files either raise parsing exceptions or produce validation diagnostics."""
+    """Test that invalid syntax files produce syntax errors or validation diagnostics."""
     monkeypatch.chdir(FILES_ROOT)
     file_name = str(def_file)
     d = driver.Driver()
@@ -136,13 +136,14 @@ def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -
 
     if expected_diagnostic:
         result = d.validate_file(def_file)
+        assert result.exception is None
         assert any(
             isinstance(diag, expected_diagnostic) for diag in result.diagnostics
         ), f"Expected {expected_diagnostic.__name__} for {file_name}"
     else:
-        # These files should fail during parsing
-        with pytest.raises(parser_exceptions.DefineSyntaxError):
-            _ = d.validate_file(def_file)
+        result = d.validate_file(def_file)
+        assert result.diagnostics == []
+        assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
 
 
 @pytest.mark.parametrize(
@@ -156,6 +157,7 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
     entry_point = project_entrypoint(project_dir)
     result = d.validate_file(entry_point)
+    assert result.exception is None
     assert not result.diagnostics, (
         f"Expected no diagnostics for {entry_point}, got: {result.diagnostics}"
     )
@@ -174,6 +176,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     entry_point = project_entrypoint(project_dir)
     result = d.validate_file(entry_point)
+    assert result.exception is None
 
     project_str = str(project_dir)
     expected_type = next(
