@@ -129,7 +129,8 @@ def generate_codex_rules(permissions: dict[str, list[str]]) -> str:
         if command is not None:
             pattern_parts = command_to_pattern_parts(command)
             if pattern_parts:
-                append_prefix_rule(lines, pattern_parts, "deny")
+                # Codex uses "forbidden" (not "deny") for blocking rules.
+                append_prefix_rule(lines, pattern_parts, "forbidden")
 
     return "\n".join(lines).rstrip() + "\n"
 

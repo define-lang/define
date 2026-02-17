@@ -132,50 +132,50 @@ prefix_rule(
 
 prefix_rule(
     pattern = ["pip"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["pip3"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["pipx"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["python", "-m", "pip"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["uv", "run", "pip"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["uv", "run", "pip3"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["uv", "run", "pipx"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["uv", "run", "python", "-m", "pip"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["uv", "run", "python", "-m", "pip3"],
-    decision = "deny",
+    decision = "forbidden",
 )
 
 prefix_rule(
     pattern = ["uv", "run", "python", "-m", "pipx"],
-    decision = "deny",
+    decision = "forbidden",
 )
