@@ -34,7 +34,9 @@ py_library(
     deps = [
         ":exceptions",
         "//defcl/python:parser",
+        "//define/config/deps:local_proto_py",
         "//define/config/project:config_proto_py",
+        "@pypi//protobuf",
         "@pypi//protovalidate",
     ],
 )

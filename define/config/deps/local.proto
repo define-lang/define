@@ -1,0 +1,44 @@
+edition = "2023";
+
+package define.config.deps;
+
+import "buf/validate/validate.proto";
+
+// Top-level wrapper for .define/deps/local.defcl files.
+message LocalDepsFile {
+  // The local dependency overrides.
+  Deps deps = 1;
+}
+
+// Wrapper for the repeated local dependency field.
+message Deps {
+  // The list of local dependency overrides. Each entry must have a unique
+  // universe_name (enforced at load time, not by proto validation).
+  repeated LocalDep local = 1;
+}
+
+// A single local dependency override mapping a universe name to a local path.
+message LocalDep {
+  // The fully-qualified universe name to override. Must be unique in the list.
+  string universe_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The relative filesystem path to the local dependency, in POSIX format
+  // (forward slashes only).
+  string path = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_absolute"
+      message: "path must not be absolute"
+      expression: "!this.startsWith('/')"
+    },
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_dotdot"
+      message: "path must not contain '..'"
+      expression: "!this.contains('..')"
+    }
+  ];
+}
