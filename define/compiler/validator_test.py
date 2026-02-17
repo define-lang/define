@@ -5,7 +5,7 @@ Keep test assertions simple: assert on the exact diagnostics list you get
 """
 
 from collections.abc import Callable
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from unittest.mock import patch
 
 import pytest
@@ -20,14 +20,15 @@ type ParseAndValidateFile = Callable[[str | bytes], validator.ValidationResult]
 
 def _parse_transform_validate(
     source: str,
-    file_path: str | None = None,
+    expected_definition_path: str | None = None,
     expected_universe_name: str | None = None,
 ) -> list[diagnostics.Diagnostic]:
     tree = _parser.parse(source)
     program = _transformer.transform(tree)
+    path = PurePosixPath(expected_definition_path) if expected_definition_path else None
     return validator.Validator().validate(
         program=program,
-        file_path=file_path,
+        expected_definition_path=path,
         expected_universe_name=expected_universe_name,
     )
 
@@ -246,12 +247,12 @@ class TestDiagnosticCollection:
 class TestPathMismatch:
     def test_path_matches_file_no_error(self):
         source = "define the potential position<my.domain.com:my_lib:/foo/bar>.\n"
-        diags = _parse_transform_validate(source, file_path="foo/bar")
+        diags = _parse_transform_validate(source, expected_definition_path="foo/bar")
         assert len(diags) == 0
 
     def test_path_mismatch_error(self):
         source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
-        diags = _parse_transform_validate(source, file_path="foo/bar")
+        diags = _parse_transform_validate(source, expected_definition_path="foo/bar")
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
         assert diags[0].expected_path == "/foo/bar"
@@ -260,12 +261,12 @@ class TestPathMismatch:
 
     def test_no_file_path_skips_validation(self):
         source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
-        diags = _parse_transform_validate(source, file_path=None)
+        diags = _parse_transform_validate(source, expected_definition_path=None)
         assert len(diags) == 0
 
     def test_nested_path_matches(self):
         source = "define the potential position<my.domain.com:my_lib:/a/b/c>.\n"
-        diags = _parse_transform_validate(source, file_path="a/b/c")
+        diags = _parse_transform_validate(source, expected_definition_path="a/b/c")
         assert len(diags) == 0
 
 
@@ -654,6 +655,44 @@ class TestPositionConstraintReferences:
         )
         assert diags[0].fqun == "my.domain.com:my_lib"
         _check_diagnostic_format(diags[0], source, 4, 21)
+
+
+class TestFileNotFound:
+    def test_entrypoint_file_not_found(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        results = validator.Validator().parse_and_validate_program(
+            Path("nonexistent.def")
+        )
+        assert len(results) == 1
+        assert isinstance(results[0].exception, FileNotFoundError)
+        assert results[0].diagnostics == []
+
+    def test_referenced_file_not_found(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position</missing>.\n"
+            "}\n"
+            "}\n"
+        )
+        source_path = tmp_path / "test.def"
+        _ = source_path.write_text(source, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+        results = validator.Validator().parse_and_validate_program(
+            Path("test.def"),
+            expected_universe_name="my.domain.com:my_lib",
+        )
+        assert len(results) == 1
+        assert results[0].exception is None
+        assert len(results[0].diagnostics) == 1
+        diag = results[0].diagnostics[0]
+        assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+        assert diag.path == "/missing"
+        _check_diagnostic_format(diag, source, 3, 21)
 
 
 # Tests just the positions of name formatting errors to make sure they are

@@ -207,6 +207,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
 
 # Key: path relative to PROJECTS_ROOT / "invalid" (as posix string)
 EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
+    "global_name_walk/missing": [diagnostics.ReferencedFileNotFoundDiagnostic],
     "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
@@ -214,10 +215,6 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],
     "syntax/path_mismatch": [diagnostics.PathMismatchDiagnostic],
     "syntax/universe_uppercase": [diagnostics.UniverseNameInvalidCharDiagnostic],
-}
-
-EXPECTED_PROJECT_EXCEPTIONS: dict[str, type[Exception]] = {
-    "global_name_walk/missing": FileNotFoundError,
 }
 
 
@@ -341,16 +338,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     entry_point = project_entrypoint(project_dir)
     rel_key = project_dir.relative_to(PROJECTS_ROOT / "invalid").as_posix()
-    expected_exception = EXPECTED_PROJECT_EXCEPTIONS.get(rel_key)
     results = d.validate_program(entry_point)
-    if expected_exception is not None:
-        exceptions_seen = [
-            result.exception for result in results if result.exception is not None
-        ]
-        assert exceptions_seen, "Expected at least one exception"
-        assert all(isinstance(e, expected_exception) for e in exceptions_seen)
-        return
-
     assert all(result.exception is None for result in results)
     all_diags = _all_diagnostics(results)
     expected_types = EXPECTED_PROJECT_DIAGNOSTICS.get(rel_key)

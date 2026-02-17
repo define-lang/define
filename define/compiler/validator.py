@@ -123,7 +123,7 @@ class _ValidationFrame:
     """Per-file validation context used by the validator call stack."""
 
     diagnostics: list[diagnostics.Diagnostic]
-    file_path: str | None
+    expected_definition_path: pathlib.PurePosixPath | None
     expected_universe_name: str | None
 
 
@@ -137,6 +137,7 @@ class Validator:
         ] = OrderedDict()
         self.seen_global_definitions: dict[str, ast.QualityDefinition] = {}
         self._validation_frames: list[_ValidationFrame] = []
+        self._reference_not_found_paths: set[pathlib.PurePosixPath] = set()
 
     @cached_property
     def _parser(self) -> parser.Parser:
@@ -151,7 +152,10 @@ class Validator:
         """Parse, transform, and validate all reached files from one entrypoint."""
         self._parse_validate_and_collect(path, expected_universe_name)
         return [
-            result for result in self.results_by_path.values() if result is not None
+            result
+            for result in self.results_by_path.values()
+            if result is not None
+            and result.file_path not in self._reference_not_found_paths
         ]
 
     # Much of this method's behavior is intentionally exercised only through
@@ -192,12 +196,10 @@ class Validator:
             raise
         run.mark_transform_finished()
 
-        # TODO: This isn't a file path, it's mis-named. It's the
-        # GlobalPathName we expect.
-        file_path = logical_path.with_suffix("").as_posix()
+        expected_definition_path = logical_path.with_suffix("")
         validation_diagnostics = self.validate(
             program=program,
-            file_path=file_path,
+            expected_definition_path=expected_definition_path,
             expected_universe_name=expected_universe_name,
         )
         return run.complete(validation_diagnostics)
@@ -228,8 +230,6 @@ class Validator:
             # from a POSIX path to a Windows path.
             with open(pathlib.Path(path), "rb") as source_file:
                 raw = source_file.read()
-        # TODO: When we are loading a file due to a global name reference,
-        # it's unclear what line of code caused this error.
         except FileNotFoundError as e:
             return "", e
         try:
@@ -243,25 +243,25 @@ class Validator:
     def validate(
         self,
         program: ast.Program,
-        # TODO: Make this take PurePosixPath and rename it.
-        file_path: str | None = None,
+        expected_definition_path: pathlib.PurePosixPath | None = None,
         expected_universe_name: str | None = None,
     ) -> list[diagnostics.Diagnostic]:
         """Validate all semantic rules and return collected diagnostics.
 
         Args:
-            file_path: Optional path to the source file, relative to project root,
-                without the .def extension. When provided, the validator operates
-                in filesystem context and validates that definition paths match
-                the file path. When None, the validator operates in non-filesystem
-                context and skips path matching validation.
+            expected_definition_path: Optional expected definition path, relative
+                to project root, without the .def extension. When provided, the
+                validator operates in filesystem context and validates that
+                definition paths match this path. When None, the validator
+                operates in non-filesystem context and skips path matching
+                validation.
             expected_universe_name: Optional FQUN string from the project config.
                 When provided, validates that each definition's FQUN matches this
                 value. When None, skips FQUN matching validation.
         """
         frame = _ValidationFrame(
             diagnostics=[],
-            file_path=file_path,
+            expected_definition_path=expected_definition_path,
             expected_universe_name=expected_universe_name,
         )
         self._validation_frames.append(frame)
@@ -306,12 +306,12 @@ class Validator:
 
     def _validate_path_matches_file(self, definition: ast.QualityDefinition) -> None:
         """Validate that the definition's path matches the file path."""
-        file_path = self._frame.file_path
-        if file_path is None:
+        expected_definition_path = self._frame.expected_definition_path
+        if expected_definition_path is None:
             return
 
         definition_path = definition.name.path.name
-        expected_path = "/" + file_path
+        expected_path = "/" + expected_definition_path.as_posix()
 
         if definition_path != expected_path:
             self._diagnostics.append(
@@ -457,6 +457,16 @@ class Validator:
 
         referenced_result = self.results_by_path[referenced_file]
         if referenced_result is None or referenced_result.exception is not None:
+            if referenced_result is not None and isinstance(
+                referenced_result.exception, FileNotFoundError
+            ):
+                self._diagnostics.append(
+                    diagnostics.ReferencedFileNotFoundDiagnostic(
+                        position=reference.position,
+                        path=reference.path.name,
+                    )
+                )
+                self._reference_not_found_paths.add(referenced_file)
             return
 
         definition_key = typed_global_name.fully_qualified_typed_name(

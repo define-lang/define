@@ -293,3 +293,11 @@ class ReferencedGlobalNameWrongTypeDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "path '{path}' does not define a global name with the type '{expected_type}'"
     )
+
+
+@dataclass
+class ReferencedFileNotFoundDiagnostic(Diagnostic):
+    """Diagnostic for when a referenced file does not exist."""
+
+    path: str
+    message_format: ClassVar[str] = "referenced file '{path}' does not exist"
