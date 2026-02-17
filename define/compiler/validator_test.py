@@ -723,7 +723,7 @@ class TestFileNotFound:
         assert len(results[0].diagnostics) == 1
         diag = results[0].diagnostics[0]
         assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-        assert diag.path == "/missing"
+        assert diag.file_path == "missing.def"
         _check_diagnostic_format(diag, source, 3, 21)
 
 

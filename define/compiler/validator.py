@@ -463,7 +463,7 @@ class Validator:
                 self._diagnostics.append(
                     diagnostics.ReferencedFileNotFoundDiagnostic(
                         position=reference.position,
-                        path=reference.path.name,
+                        file_path=str(referenced_file),
                     )
                 )
                 self._reference_not_found_paths.add(referenced_file)

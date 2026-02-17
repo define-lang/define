@@ -299,5 +299,5 @@ class ReferencedGlobalNameWrongTypeDiagnostic(Diagnostic):
 class ReferencedFileNotFoundDiagnostic(Diagnostic):
     """Diagnostic for when a referenced file does not exist."""
 
-    path: str
-    message_format: ClassVar[str] = "referenced file '{path}' does not exist"
+    file_path: str
+    message_format: ClassVar[str] = "there is no file '{file_path}' in this project"
