@@ -31,6 +31,7 @@
       "WebFetch(domain:blog.bazel.build)",
       "Bash(uv run python -c *)",
       "Bash(uv run python3 -c *)",
+      "Bash(uv run python - *)",
       "Bash(echo *)",
       "Bash(ls *)",
       "Bash(grep *)",
