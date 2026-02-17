@@ -74,10 +74,9 @@ class TestRun:
             error_stream=error_stream,
         )
         assert result == driver.ExitCode.ERROR
-        # TODO: The caret is pointing to the wrong place.
         assert error_stream.getvalue() == (
-            'File "wrong_file.def", line 1, column 31\n'
+            'File "wrong_file.def", line 1, column 60\n'
             "define the potential position<mv:define-lang.org:test_path:/different>.\n"
-            "                              ^\n"
+            "                                                           ^\n"
             "definition path '/different' does not match file path '/wrong_file'\n"
         )

@@ -316,7 +316,7 @@ class Validator:
         if definition_path != expected_path:
             self._diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
-                    position=definition.name.position,
+                    position=definition.name.path.position,
                     expected_path=expected_path,
                     actual_path=definition_path,
                 )

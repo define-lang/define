@@ -257,7 +257,7 @@ class TestPathMismatch:
         assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
         assert diags[0].expected_path == "/foo/bar"
         assert diags[0].actual_path == "/wrong/path"
-        _check_diagnostic_format(diags[0], source, 1, 31)
+        _check_diagnostic_format(diags[0], source, 1, 52)
 
     def test_no_file_path_skips_validation(self):
         source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
@@ -372,6 +372,7 @@ class TestFqunMismatch:
         assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
         assert diags[0].expected == "my.domain.com:my_lib"
         assert diags[0].actual == "my.domain.com:wrong_lib"
+        assert diags[0].position.column == 31
 
     def test_mismatched_authority(self):
         source = "define the potential position<other.org:my_lib:/path>.\n"
@@ -655,6 +656,37 @@ class TestPositionConstraintReferences:
         )
         assert diags[0].fqun == "my.domain.com:my_lib"
         _check_diagnostic_format(diags[0], source, 4, 21)
+
+    def test_referenced_global_name_wrong_type_position(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _ = (tmp_path / "target.def").write_text(
+            "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            encoding="utf-8",
+        )
+        _ = (tmp_path / "test.def").write_text(
+            (
+                "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
+                + "    it may only contain dimension points where {\n"
+                + "        it has the position</target>.\n"
+                + "    }\n"
+                + "}\n"
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        results = validator.Validator().parse_and_validate_program(
+            Path("test.def"),
+            expected_universe_name="mv:define-lang.org:test_walk_wrong_type",
+        )
+        assert len(results) == 2
+        assert results[0].file_path == Path("test.def")
+        diags = results[0].diagnostics
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+        assert diags[0].position.line == 3
+        assert diags[0].position.column == 29
 
 
 class TestFileNotFound:

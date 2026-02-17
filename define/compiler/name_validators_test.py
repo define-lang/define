@@ -316,6 +316,7 @@ class TestGlobalNamePath:
             result[0], diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic
         )
         assert result[0].path == "invalid/path"
+        assert result[0].position.column == 10
 
     def test_trailing_slash(self):
         result = name_validators.validate_global_name_path(
@@ -389,6 +390,7 @@ class TestMultiverseNameReserved:
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
         assert result[0].reserved_name == "python"
+        assert result[0].position.column == 10
 
     def test_reserved_package_repository(self):
         result = name_validators.validate_multiverse_name_reserved(_multiverse("npm"))
@@ -428,6 +430,7 @@ class TestAuthorityReserved:
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert result[0].reserved_name == "example.com"
+        assert result[0].position.column == 10
 
     def test_reserved_common_word_domain(self):
         result = name_validators.validate_authority_reserved(
@@ -443,6 +446,7 @@ class TestAuthorityReserved:
         )
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.DotlessAuthorityDomainDiagnostic)
+        assert result[0].position.column == 10
 
     def test_dotless_domain_in_mv_multiverse(self):
         result = name_validators.validate_authority_reserved(
@@ -477,6 +481,7 @@ class TestUniverseNameReserved:
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
         assert result[0].reserved_name == "standard"
+        assert result[0].position.column == 10
 
     def test_reserved_common_word(self):
         result = name_validators.validate_universe_name_reserved(_universe("about"))
@@ -562,6 +567,7 @@ class TestValidateFqun:
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
         assert result[0].universe_name == "my_lib"
+        assert result[0].position.column == 10
 
     def test_invalid_multiverse_and_reserved_universe(self):
         fqun = _fqun(
@@ -676,6 +682,7 @@ class TestValidateGlobalName:
             result[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
         )
         assert result[0].fqun == "my.domain.com:my_lib"
+        assert result[0].position.column == 10
 
     def test_reference_with_different_fqun_allows_full_form(self):
         name_fqun = _fqun("other_lib", authority=_authority("other.domain.com"))
