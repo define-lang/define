@@ -222,12 +222,13 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
 
 
 def discover_projects(base_dir: Path) -> list[Path]:
-    """Discover all Define project directories."""
+    """Discover Define project directories that contain a test.def entrypoint."""
     projects: list[Path] = []
     for config_file in base_dir.rglob("config.defcl"):
         if ".define/project" in str(config_file):
             project_dir = config_file.parent.parent.parent
-            projects.append(project_dir)
+            if (project_dir / "test.def").exists():
+                projects.append(project_dir)
     return sorted(projects)
 
 
