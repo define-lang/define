@@ -1,5 +1,6 @@
 """Project configuration loading and validation."""
 
+import types
 from pathlib import Path, PurePosixPath
 
 import protovalidate
@@ -51,13 +52,16 @@ def project_config() -> config_pb2.ProjectConfigFile:
     return _load_config(CONFIG_PATH, config_pb2.ProjectConfigFile)
 
 
-def local_deps_config() -> dict[str, PurePosixPath]:
+_EMPTY_DEPS: types.MappingProxyType[str, PurePosixPath] = types.MappingProxyType({})
+
+
+def local_deps_config() -> types.MappingProxyType[str, PurePosixPath]:
     """Load and validate the local dependency overrides from the current directory.
 
-    Returns a mapping from universe name to relative path.
+    Returns an immutable mapping from universe name to relative path.
     """
     if not LOCAL_DEPS_PATH.exists():
-        return {}
+        return _EMPTY_DEPS
     result = _load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)
     deps: dict[str, PurePosixPath] = {}
     for dep in result.deps.local:
@@ -67,4 +71,4 @@ def local_deps_config() -> dict[str, PurePosixPath]:
                 [f'deps.local: duplicate universe_name "{dep.universe_name}"'],
             )
         deps[dep.universe_name] = PurePosixPath(dep.path)
-    return deps
+    return types.MappingProxyType(deps)

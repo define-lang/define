@@ -7,6 +7,10 @@ import time
 from collections import ChainMap, OrderedDict
 from dataclasses import dataclass
 from functools import cached_property
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 from lark import exceptions as lark_exceptions
 
@@ -125,6 +129,7 @@ class _ValidationFrame:
     diagnostics: list[diagnostics.Diagnostic]
     expected_definition_path: pathlib.PurePosixPath | None
     expected_universe_name: str | None
+    universe_locations: Mapping[str, pathlib.PurePosixPath]
 
 
 class Validator:
@@ -138,6 +143,7 @@ class Validator:
         self._seen_global_definitions: dict[str, ast.QualityDefinition] = {}
         self._validation_frames: list[_ValidationFrame] = []
         self._reference_not_found_paths: set[pathlib.PurePosixPath] = set()
+        self._unknown_universes: set[str] = set()
 
     @cached_property
     def _parser(self) -> parser.Parser:
@@ -148,9 +154,14 @@ class Validator:
         self,
         path: pathlib.PurePath,
         expected_universe_name: str | None = None,
+        universe_locations: Mapping[str, pathlib.PurePosixPath] | None = None,
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
-        self._parse_validate_and_collect(path, expected_universe_name)
+        self._parse_validate_and_collect(
+            path,
+            expected_universe_name,
+            universe_locations if universe_locations is not None else {},
+        )
         return [
             result
             for result in self.results_by_path.values()
@@ -164,7 +175,8 @@ class Validator:
     def _parse_and_validate_file(
         self,
         path: pathlib.PurePath,
-        expected_universe_name: str | None = None,
+        expected_universe_name: str | None,
+        universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
         # Ensure Windows-style paths are converted to POSIX paths for
@@ -201,6 +213,7 @@ class Validator:
             program=program,
             expected_definition_path=expected_definition_path,
             expected_universe_name=expected_universe_name,
+            universe_locations=universe_locations,
         )
         return run.complete(validation_diagnostics)
 
@@ -208,6 +221,7 @@ class Validator:
         self,
         path: pathlib.PurePath,
         expected_universe_name: str | None,
+        universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> None:
         """Parse/validate one file once and append its result in encounter order."""
         logical_path = pathlib.PurePosixPath(path.as_posix())
@@ -217,6 +231,7 @@ class Validator:
         result = self._parse_and_validate_file(
             path=logical_path,
             expected_universe_name=expected_universe_name,
+            universe_locations=universe_locations,
         )
         self.results_by_path[logical_path] = result
 
@@ -245,6 +260,7 @@ class Validator:
         program: ast.Program,
         expected_definition_path: pathlib.PurePosixPath | None = None,
         expected_universe_name: str | None = None,
+        universe_locations: Mapping[str, pathlib.PurePosixPath] | None = None,
     ) -> list[diagnostics.Diagnostic]:
         """Validate all semantic rules and return collected diagnostics.
 
@@ -258,11 +274,17 @@ class Validator:
             expected_universe_name: Optional FQUN string from the project config.
                 When provided, validates that each definition's FQUN matches this
                 value. When None, skips FQUN matching validation.
+            universe_locations: Mapping from universe name to local path for
+                configured external dependencies. Defaults to no configured
+                dependencies.
         """
         frame = _ValidationFrame(
             diagnostics=[],
             expected_definition_path=expected_definition_path,
             expected_universe_name=expected_universe_name,
+            universe_locations=universe_locations
+            if universe_locations is not None
+            else {},
         )
         self._validation_frames.append(frame)
         try:
@@ -444,6 +466,23 @@ class Validator:
         reference = typed_global_name.global_name
         expected_type = typed_global_name.type_name
         if reference.fqun is not None:
+            canonical = reference.fqun.canonical
+            if canonical not in self._frame.universe_locations:
+                if canonical not in self._unknown_universes:
+                    expected = self._frame.expected_universe_name
+                    if expected is None:
+                        raise ValueError(
+                            "expected_universe_name must be set for cross-universe references"
+                        )
+                    self._unknown_universes.add(canonical)
+                    self._diagnostics.append(
+                        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                            position=reference.fqun.position,
+                            universe=canonical,
+                            current_universe_name=expected,
+                        )
+                    )
+                return
             raise NotImplementedError(
                 "Global-reference file walking for FQUN references is not implemented."
             )
@@ -453,6 +492,7 @@ class Validator:
         self._parse_validate_and_collect(
             path=referenced_file,
             expected_universe_name=self._frame.expected_universe_name,
+            universe_locations=self._frame.universe_locations,
         )
 
         referenced_result = self.results_by_path[referenced_file]

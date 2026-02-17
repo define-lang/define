@@ -301,3 +301,16 @@ class ReferencedFileNotFoundDiagnostic(Diagnostic):
 
     file_path: str
     message_format: ClassVar[str] = "there is no file '{file_path}' in this project"
+
+
+@dataclass
+class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
+    """Diagnostic for when a cross-universe reference targets an unconfigured universe."""
+
+    universe: str
+    current_universe_name: str
+    message_format: ClassVar[str] = (
+        "universe '{universe}' is not configured as a dependency "
+        "of this universe ({current_universe_name}); "
+        "add it to .define/deps/local.defcl"
+    )

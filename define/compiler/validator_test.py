@@ -809,3 +809,53 @@ class TestNameFormatPositions:
         assert len(ln_diags) == 1
         assert ln_diags[0].position.line == 2
         assert ln_diags[0].position.column == 23
+
+
+class TestCrossUniverseReference:
+    def test_unknown_universe_emits_diagnostic(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        source = (
+            "define the potential position<mv:define-lang.org:my_universe:/test> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position<other.example.com:other_universe:/target>.\n"
+            "}\n"
+            "}\n"
+        )
+        source_path = tmp_path / "test.def"
+        _ = source_path.write_text(source, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+        results = validator.Validator().parse_and_validate_program(
+            Path("test.def"),
+            expected_universe_name="mv:define-lang.org:my_universe",
+        )
+        assert len(results) == 1
+        diags = results[0].diagnostics
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+        assert diags[0].universe == "other.example.com:other_universe"
+        assert diags[0].current_universe_name == "mv:define-lang.org:my_universe"
+
+    def test_duplicate_unknown_universe_emits_one_diagnostic(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        source = (
+            "define the potential position<mv:define-lang.org:my_universe:/test> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position<other.example.com:other_universe:/target>.\n"
+            "it has the position<other.example.com:other_universe:/another>.\n"
+            "}\n"
+            "}\n"
+        )
+        source_path = tmp_path / "test.def"
+        _ = source_path.write_text(source, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+        results = validator.Validator().parse_and_validate_program(
+            Path("test.def"),
+            expected_universe_name="mv:define-lang.org:my_universe",
+        )
+        assert len(results) == 1
+        diags = results[0].diagnostics
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+        assert diags[0].universe == "other.example.com:other_universe"

@@ -39,6 +39,7 @@ class Driver:
         return validator.Validator().parse_and_validate_program(
             path=resolved_path,
             expected_universe_name=self.project_config.project.universe_name or "",
+            universe_locations=config.local_deps_config(),
         )
 
     @staticmethod
