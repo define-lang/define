@@ -151,6 +151,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["git", "reset"],
+    decision = "prompt",
+)
+
+prefix_rule(
     pattern = ["pip"],
     decision = "forbidden",
 )

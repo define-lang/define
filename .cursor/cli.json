@@ -55,7 +55,8 @@
     "ask": [
       "Shell(git checkout*)",
       "Shell(git commit*)",
-      "Shell(git push*)"
+      "Shell(git push*)",
+      "Shell(git reset)"
     ]
   }
 }

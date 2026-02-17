@@ -3,7 +3,8 @@
     "ask": [
       "Bash(git checkout*)",
       "Bash(git commit*)",
-      "Bash(git push*)"
+      "Bash(git push*)",
+      "Bash(git reset)"
     ],
     "deny": [
       "Bash(pip *)",
