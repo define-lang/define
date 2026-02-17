@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:test_walk_cycle:/test> {
+    it may only contain dimension points where {
+        it has the position</loop>.
+    }
+}

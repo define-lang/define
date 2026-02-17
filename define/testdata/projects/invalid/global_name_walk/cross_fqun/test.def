@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:test_walk_cross_fqun:/test> {
+    it may only contain dimension points where {
+        it has the position<other.example.com:other_universe:/target>.
+    }
+}

@@ -1,0 +1,6 @@
+define the potential position<mv:define-lang.org:test_sub_root_conflict:/test> {
+    it may only contain dimension points where {
+        it has the position</lib/parent_target>.
+        it has the position<mv:define-lang.org:test_sub_root_child:/sub_root_target>.
+    }
+}
