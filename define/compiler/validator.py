@@ -135,7 +135,7 @@ class Validator:
         self.results_by_path: OrderedDict[
             pathlib.PurePosixPath, ValidationResult | None
         ] = OrderedDict()
-        self.seen_global_definitions: dict[str, ast.QualityDefinition] = {}
+        self._seen_global_definitions: dict[str, ast.QualityDefinition] = {}
         self._validation_frames: list[_ValidationFrame] = []
         self._reference_not_found_paths: set[pathlib.PurePosixPath] = set()
 
@@ -325,8 +325,8 @@ class Validator:
     def _validate_not_duplicate(self, definition: ast.QualityDefinition) -> None:
         """Validate that this definition is not a duplicate of a previous one."""
         key = definition.fully_qualified_typed_name
-        if key in self.seen_global_definitions:
-            first_def = self.seen_global_definitions[key]
+        if key in self._seen_global_definitions:
+            first_def = self._seen_global_definitions[key]
             def_type = definition.type_name.value
             path_str = definition.name.path.name
             self._diagnostics.append(
@@ -338,7 +338,7 @@ class Validator:
                 )
             )
         else:
-            self.seen_global_definitions[key] = definition
+            self._seen_global_definitions[key] = definition
 
     def _validate_local_names(
         self, definition_block: ast.ActionDefinitionBlock
@@ -472,7 +472,7 @@ class Validator:
         definition_key = typed_global_name.fully_qualified_typed_name(
             with_fqun=enclosing_fqun,
         )
-        if definition_key not in self.seen_global_definitions:
+        if definition_key not in self._seen_global_definitions:
             self._diagnostics.append(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=reference.position,
