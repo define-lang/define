@@ -207,7 +207,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
 
 # Key: path relative to PROJECTS_ROOT / "invalid" (as posix string)
 EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
-    "global_name_walk_wrong_type": [
+    "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
     "syntax/duplicate_definitions": [diagnostics.DuplicateDefinitionDiagnostic],
@@ -217,7 +217,7 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
 }
 
 EXPECTED_PROJECT_EXCEPTIONS: dict[str, type[Exception]] = {
-    "global_name_walk_missing": FileNotFoundError,
+    "global_name_walk/missing": FileNotFoundError,
 }
 
 
