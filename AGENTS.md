@@ -164,19 +164,8 @@ BUILD file generator.
 
 ### Keeping Dependencies Up to Date
 
-- Periodically check that all versions listed in `MODULE.bazel` are on the
-  latest stable version.
-- Periodically run `uv run pre-commit autoupdate`.
-- Periodically force-upgrade all Python dependencies with `uv sync --upgrade`
-- For Node dependency updates, run pnpm through Bazel instead of a globally
-  installed pnpm binary: `bazel run @pnpm --dir "$PWD" -- up --latest`.
-- Check the dependency versions in `tools/multitool.lock.json` and upgrade them
-  to the latest versions using multitool.
-- Check the versions of actions we use in our GitHub Actions configuration and
-  upgrade them to the latest major versions (and fix any backwards incompatible
-  changes the new versions introduced).
-- Periodically check the go dependencies in any go.mod file to ensure we are
-  using the latest versions.
+- Run `uv run tools/update_toolchains.py` to update Go SDK version, buf
+  toolchain (version + SHA256), and multitool (ruff, uv).
 
 ### uv Workspace
 

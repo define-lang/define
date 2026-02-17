@@ -16,6 +16,12 @@ py_binary(
     srcs = ["sync_agent_permissions.py"],
 )
 
+py_binary(
+    name = "update_toolchains",
+    srcs = ["update_toolchains.py"],
+    deps = ["@pypi//requests"],
+)
+
 native_test(
     name = "sync_agent_permissions_test",
     size = "small",
@@ -70,6 +76,7 @@ pyright_test(
     deps = [
         ":generate_programming_languages",
         ":sync_agent_permissions",
+        ":update_toolchains",
         ":validate_proposals",
     ],
 )
