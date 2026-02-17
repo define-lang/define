@@ -70,6 +70,9 @@ def _check_field(
                 path_name,
             )
         for item_value in child.children:
+            # Empty repeated fields (e.g. `[]`) produce a None child in Lark.
+            if item_value is None:
+                continue
             item_value = cast("lark.Tree[lark.Token]", item_value)
             _check_value(name_token, field_desc, item_value, path_name)
         return

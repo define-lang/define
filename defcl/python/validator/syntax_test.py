@@ -51,7 +51,9 @@ class TestValidFiles:
         assert _get_tokens_by_type(tree, "FIELD_NAME") == ["project"]
 
     def test_empty_repeated(self):
-        tree = _parser.parse_file(_TESTDATA_PATH / "valid" / "empty_repeated.defcl")
+        tree = _parser.parse_file(
+            _TESTDATA_PATH / "valid" / "empty_repeated_scalars.defcl"
+        )
         assert _get_tokens_by_type(tree, "FIELD_NAME") == ["config", "tags", "items"]
 
     def test_enums(self):

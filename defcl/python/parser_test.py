@@ -47,6 +47,13 @@ class TestParseValidFiles:
         assert result.project.database.port == 5432
         assert result.project.database.pool.max_connections == 10
 
+    def test_empty_repeated_messages(self):
+        result = parser.parse_file(
+            _TESTDATA_PATH / "empty_repeated_messages.defcl",
+            repeated_messages_pb2.RepeatedMessagesFile,
+        )
+        assert len(result.project.dependencies) == 0
+
     def test_repeated_messages(self):
         result = parser.parse_file(
             _TESTDATA_PATH / "repeated_messages.defcl",
