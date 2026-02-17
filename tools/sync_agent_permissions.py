@@ -68,6 +68,10 @@ def generate_cursor_config(permissions: dict[str, list[str]]) -> dict[str, objec
         "deny": [translate_permission(p) for p in permissions.get("deny", [])],
     }
 
+    ask_permissions = [translate_permission(p) for p in permissions.get("ask", [])]
+    if ask_permissions:
+        cursor_permissions["ask"] = ask_permissions
+
     return {
         "_comment": "This file is auto-generated from .claude/settings.json. Do not edit manually.",
         "permissions": cursor_permissions,
@@ -86,13 +90,31 @@ def render_codex_pattern(pattern_parts: list[str]) -> str:
     return f"[{', '.join(quoted_parts)}]"
 
 
+def _sanitize_pattern_part(part: str) -> str | None:
+    """Drop trailing asterisks from a token and skip pure wildcards."""
+    if part == "*":
+        return None
+
+    stripped = part.rstrip("*")
+    if not stripped:
+        return None
+
+    return stripped
+
+
 def command_to_pattern_parts(command: str) -> list[str]:
     """Convert a bash permission command into Codex pattern parts."""
     try:
         parts = shlex.split(command)
     except ValueError:
         parts = command.split()
-    return [part for part in parts if part != "*"]
+
+    sanitized_parts: list[str] = []
+    for part in parts:
+        sanitized = _sanitize_pattern_part(part)
+        if sanitized:
+            sanitized_parts.append(sanitized)
+    return sanitized_parts
 
 
 def append_prefix_rule(
@@ -123,6 +145,13 @@ def generate_codex_rules(permissions: dict[str, list[str]]) -> str:
             pattern_parts = command_to_pattern_parts(command)
             if pattern_parts:
                 append_prefix_rule(lines, pattern_parts, "allow")
+
+    for permission in permissions.get("ask", []):
+        command = extract_bash_command(permission)
+        if command is not None:
+            pattern_parts = command_to_pattern_parts(command)
+            if pattern_parts:
+                append_prefix_rule(lines, pattern_parts, "prompt")
 
     for permission in permissions.get("deny", []):
         command = extract_bash_command(permission)
