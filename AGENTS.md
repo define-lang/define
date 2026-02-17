@@ -168,6 +168,8 @@ BUILD file generator.
   latest stable version.
 - Periodically run `uv run pre-commit autoupdate`.
 - Periodically force-upgrade all Python dependencies with `uv sync --upgrade`
+- For Node dependency updates, run pnpm through Bazel instead of a globally
+  installed pnpm binary: `bazel run @pnpm --dir "$PWD" -- up --latest`.
 - Check the dependency versions in `tools/multitool.lock.json` and upgrade them
   to the latest versions using multitool.
 - Check the versions of actions we use in our GitHub Actions configuration and
