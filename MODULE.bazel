@@ -19,6 +19,7 @@ bazel_dep(name = "rules_buf", version = "0.5.2")
 bazel_dep(name = "rules_multitool", version = "1.11.1")
 bazel_dep(name = "aspect_rules_lint", version = "2.1.0")
 bazel_dep(name = "aspect_rules_js", version = "2.9.2")
+bazel_dep(name = "rules_nodejs", version = "6.7.3")
 
 # Override transitive dep incompatible with Bazel 9.
 single_version_override(
@@ -81,6 +82,9 @@ multitool.hub(lockfile = "//tools:multitool.lock.json")
 use_repo(multitool, "multitool")
 
 # --- NodeJS ---
+
+node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
+node.toolchain(node_version = "24.13.0")
 
 # Translate the pnpm-lock.yaml file to bazel targets
 npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")

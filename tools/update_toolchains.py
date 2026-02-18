@@ -1,7 +1,8 @@
 """Update toolchain versions that Renovate cannot handle.
 
 Handles Go SDK version (MODULE.bazel + go.mod), buf toolchain
-version + SHA256 (MODULE.bazel), and multitool lockfile (ruff, uv).
+version + SHA256 (MODULE.bazel), Node.js toolchain version
+(MODULE.bazel), and multitool lockfile (ruff, uv).
 
 Usage:
     uv run tools/update_toolchains.py
@@ -25,6 +26,7 @@ _GO_MOD = _REPO_ROOT / "defcl" / "buf" / "go.mod"
 _GO_DL_API = "https://go.dev/dl/?mode=json"
 _BUF_LATEST_API = "https://api.github.com/repos/bufbuild/buf/releases/latest"
 _BUF_SHA256_URL = "https://github.com/bufbuild/buf/releases/download/{tag}/sha256.txt"
+_NODE_DL_API = "https://nodejs.org/dist/index.json"
 
 
 def _fetch_latest_go_version() -> str:
@@ -90,6 +92,42 @@ def _update_go_sdk(latest: str) -> bool:
     return changed
 
 
+def _fetch_latest_node_lts_version() -> str:
+    """Fetch the latest LTS Node.js version from nodejs.org.
+
+    Returns the version as "major.minor.0" since rules_nodejs only
+    includes .0 patch versions in its known-version list.
+    """
+    resp = requests.get(_NODE_DL_API, timeout=30)
+    resp.raise_for_status()
+    releases = cast("list[dict[str, object]]", json.loads(resp.text))
+    # Releases are newest-first; lts is a codename string when active, False otherwise.
+    for release in releases:
+        if release.get("lts"):
+            version_str = cast("str", release["version"]).lstrip("v")
+            major, minor, _ = version_str.split(".")
+            return f"{major}.{minor}.0"
+    raise RuntimeError("No LTS release found in Node.js dist index")
+
+
+def _update_node_toolchain(version: str) -> bool:
+    """Update Node.js toolchain version in MODULE.bazel.
+
+    Returns True if the file was modified.
+    """
+    text = _MODULE_BAZEL.read_text()
+    new_text = re.sub(
+        r'(node\.toolchain\(node_version\s*=\s*")[^"]+(")',
+        rf"\g<1>{version}\2",
+        text,
+    )
+    if new_text != text:
+        _ = _MODULE_BAZEL.write_text(new_text)
+        print(f"  MODULE.bazel: node_version -> {version}")
+        return True
+    return False
+
+
 def _update_buf_toolchain(tag: str, sha256: str) -> bool:
     """Update buf toolchain version and SHA256 in MODULE.bazel.
 
@@ -147,6 +185,13 @@ def main() -> int:
         print(f"  Updated buf to {buf_tag}")
     else:
         print(f"  Already at latest ({buf_tag})")
+
+    print("\nChecking Node.js toolchain...")
+    latest_node = _fetch_latest_node_lts_version()
+    if _update_node_toolchain(latest_node):
+        print(f"  Updated Node.js to {latest_node}")
+    else:
+        print(f"  Already at latest ({latest_node})")
 
     print("\nUpdating multitool (ruff, uv)...")
     _update_multitool()
