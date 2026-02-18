@@ -1,9 +1,9 @@
 edition = "2023";
 
-package test;
+package buf.testdata.invalid.time_suffix;
 
 import "google/protobuf/timestamp.proto";
 
-message Config {
+message TimestampWrongSuffix {
   google.protobuf.Timestamp created = 1;
 }

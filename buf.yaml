@@ -3,9 +3,6 @@ deps:
   - buf.build/bufbuild/protovalidate
 modules:
   - path: defcl
-    excludes:
-      - defcl/buf/testdata
-      - defcl/testdata
   - path: define
 lint:
   use:
@@ -17,5 +14,8 @@ lint:
     - PACKAGE_VERSION_SUFFIX
     - PACKAGE_DIRECTORY_MATCH
   enum_zero_value_suffix: UNSPECIFIED
+  ignore:
+    - defcl/buf/testdata
+    - defcl/testdata
 plugins:
   - plugin: bazel-bin/defcl/buf/buf_/buf

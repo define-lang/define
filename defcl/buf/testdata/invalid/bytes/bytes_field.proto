@@ -1,6 +1,6 @@
 edition = "2023";
 
-package test;
+package buf.testdata.invalid.bytes;
 
 message Config {
   bytes data = 1;

@@ -1,8 +1,8 @@
 edition = "2023";
 
-package test;
+package buf.testdata.invalid.enum_zero;
 
-message Config {
+message WrongZeroName {
   enum Status {
     UNKNOWN = 0;
     ACTIVE = 1;

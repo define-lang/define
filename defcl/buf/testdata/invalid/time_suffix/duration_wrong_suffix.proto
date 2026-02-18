@@ -1,9 +1,9 @@
 edition = "2023";
 
-package test;
+package buf.testdata.invalid.time_suffix;
 
 import "google/protobuf/duration.proto";
 
-message Config {
+message DurationWrongSuffix {
   google.protobuf.Duration timeout = 1;
 }

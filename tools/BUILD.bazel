@@ -96,6 +96,14 @@ format_multirun(
     protocol_buffer = "@multitool//tools/buf",
     python = "@multitool//tools/ruff",
     starlark = "@multitool//tools/buildifier",
+    starlark_check_args = [
+        "-mode=check",
+        "-lint=check",
+    ],
+    starlark_fix_args = [
+        "-mode=fix",
+        "-lint=fix",
+    ],
     yaml = ":prettier",
     yaml_check_args = [
         "--check",

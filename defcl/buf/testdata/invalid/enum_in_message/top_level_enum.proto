@@ -1,6 +1,6 @@
 edition = "2023";
 
-package test;
+package buf.testdata.invalid.enum_in_message;
 
 enum Status {
   UNSPECIFIED = 0;

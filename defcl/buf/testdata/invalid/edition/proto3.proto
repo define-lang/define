@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package test;
+package buf.testdata.invalid.edition;
 
 message Config {
   string name = 1;
