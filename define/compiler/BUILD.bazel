@@ -276,7 +276,7 @@ py_test(
 format_test(
     name = "format_test",
     srcs = glob(["*.py"]),
-    python = "@aspect_rules_lint//format:ruff",
+    python = "@multitool//tools/ruff",
 )
 
 # --- Type-checking ---

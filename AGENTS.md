@@ -5,20 +5,14 @@ never existed before.
 
 See [define/spec/spec.md] for the language specification.
 
-## Python Execution
-
-- Always use `uv` to run Python applications and scripts.
-- Use `uv run` to execute Python code.
-- Use `uv sync` to install dependencies.
-
 ## Formatting
 
-- Formatting is done with `uv run ruff format`
-- Format all code after making a change.
-- Format all .md files with `prettier --write`
-- Format all .proto files with `npx @bufbuild/buf format -w`
-- Format all Bazel files (BUILD.bazel, .bzl, MODULE.bazel) with
-  `npx @bazel/buildifier`
+- After making a change to any file, reformat by running
+  `bazelisk run --noshow_progress //tools:format`
+
+## Python Execution
+
+- If you have to run a local Python script, do it via `uv run`.
 
 ## Linting
 
@@ -125,8 +119,6 @@ BUILD file generator.
 - Test all targets: `bazelisk test --noshow_progress //...`
 - Always run the full test suite (`bazelisk test --noshow_progress //...`) when
   done working, to make sure nothing is broken.
-- Keep build targets atomic — each target should contain only the minimum
-  necessary sources and dependencies.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
 
@@ -137,8 +129,9 @@ BUILD file generator.
 - Dependencies are declared in per-package `pyproject.toml` files
   (`define/compiler/pyproject.toml`, `defcl/pyproject.toml`,
   `tools/pyproject.toml`).
-- To regenerate `uv.lock` after changing any `pyproject.toml`: `uv lock`
-- Reference dependencies in BUILD files as `@pypi//package_name`.
+- To regenerate `uv.lock` after changing any `pyproject.toml`:
+  `bazelisk run @multitool/tools/uv lock`
+- Reference Python dependencies in BUILD files as `@pypi//package_name`.
 
 ### Basedpyright Type-Checking
 
@@ -148,7 +141,7 @@ BUILD file generator.
   also add it to the `deps` of the `pyright_test` in the same BUILD file (or the
   parent package's `pyright_test` for sub-packages under `defcl/python`).
 
-### Format Checking
+### Python Format Checking
 
 - Every BUILD file that contains Python targets must also have a `format_test`
   target that checks formatting of all Python sources in that package.
@@ -158,17 +151,11 @@ BUILD file generator.
   format_test(
       name = "format_test",
       srcs = glob(["*.py"]),
-      python = "@aspect_rules_lint//format:ruff",
+      python = "@multitool//tools/ruff",
   )
   ```
 
 ### Keeping Dependencies Up to Date
 
 - Run `uv run tools/update_toolchains.py` to update Go SDK version, buf
-  toolchain (version + SHA256), and multitool (ruff, uv).
-
-### uv Workspace
-
-- The root `pyproject.toml` declares a uv workspace with members `compiler`,
-  `defcl`, and `tools`.
-- `uv sync` still works for local development outside Bazel.
+  toolchain (version + SHA256), node version, and multitool (ruff, uv).

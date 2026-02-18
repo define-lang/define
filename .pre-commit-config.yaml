@@ -1,9 +1,4 @@
 repos:
-  - repo: https://github.com/keith/pre-commit-buildifier
-    rev: 8.2.1.1
-    hooks:
-      - id: buildifier
-      - id: buildifier-lint
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -24,21 +19,9 @@ repos:
         exclude: ".*trailing_space.*"
   - repo: local
     hooks:
-      - id: prettier
-        name: prettier
-        entry: npx prettier --check
-        language: system
-        types_or: [markdown, yaml]
-
       - id: ruff-check
         name: ruff check
         entry: uv run ruff check --fix
-        language: system
-        types: [python]
-
-      - id: ruff-format-check
-        name: ruff format check
-        entry: uv run ruff format --check --diff
         language: system
         types: [python]
 
@@ -52,16 +35,23 @@ repos:
       - id: bazel-checks
         name: bazel-based checks
         entry:
-          bazelisk test //define/proposals:validate_proposals_test
+          bazelisk test --noshow_progress
+          //define/proposals:validate_proposals_test
           //defcl/proposals:validate_proposals_test
           //tools:sync_agent_permissions_test
         language: system
         types_or: [markdown, json]
         pass_filenames: false
 
+      - id: format
+        name: reformat files
+        entry: bazelisk run --noshow_progress //tools:format --
+        language: system
+        require_serial: true
+
       - id: buf-plugin-build
         name: build buf plugin
-        entry: bazelisk build //defcl/buf
+        entry: bazelisk build --noshow_progress //defcl/buf
         language: system
         files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
         pass_filenames: false
@@ -71,12 +61,3 @@ repos:
       - id: buf-lint
         files: (^defcl/buf.*)|^defcl/.*\.proto$|^define/.*\.proto$
         args: []
-      - id: buf-format
-        files: ^.*\.proto$
-        args:
-          [
-            "--exclude-path=bazel-bin",
-            "--exclude-path=bazel-define",
-            "--exclude-path=bazel-out",
-            "--exclude-path=bazel-testlogs",
-          ]

@@ -31,14 +31,11 @@ jobs:
       - name: Additional Build
         run: bazelisk build --noshow_progress //...
 
-      # --- Non-Bazel checks ---
-      - name: Prettier
-        run: npx prettier --check "**/*.md" "**/*.yaml"
-
-      - name: Buildifier
-        run: npx @bazel/buildifier -mode=diff -lint=warn -r .
+      - name: Format
+        run: bazelisk run --noshow_progress //tools:format.check
 
       - uses: bufbuild/buf-action@v1
         with:
           breaking: false
           push: false
+          format: false
