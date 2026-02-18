@@ -508,41 +508,26 @@ class Validator:
         enclosing_definition: ast.QualityDefinition,
     ):
         """Load and validate one global name reference with stack already set."""
-        reference = typed_global_name.global_name
-        if reference.fqun is None:
-            definition_key = typed_global_name.fully_qualified_typed_name(
+        if typed_global_name.global_name.fqun is None:
+            typed_name_str = typed_global_name.fully_qualified_typed_name(
                 with_fqun=enclosing_definition.name.fqun,
             )
         else:
-            definition_key = typed_global_name.fully_qualified_typed_name()
+            typed_name_str = typed_global_name.fully_qualified_typed_name()
 
-        cycle = self._reference_stack.cycle_for(definition_key)
-        if cycle is not None:
-            self._diagnostics.append(
-                diagnostics.CircularGlobalReferenceDiagnostic(
-                    position=reference.position,
-                    cycle=cycle,
-                )
-            )
+        diagnostic = self._check_cycle(typed_global_name, typed_name_str)
+        if diagnostic:
+            self._diagnostics.append(diagnostic)
             return
 
+        reference = typed_global_name.global_name
         if reference.fqun is not None:
-            canonical = reference.fqun.canonical
-            if canonical not in self._frame.universe_locations:
-                if canonical not in self._unknown_universes:
-                    expected = self._frame.expected_universe_name
-                    if expected is None:
-                        raise ValueError(
-                            "expected_universe_name must be set for cross-universe references"
-                        )
-                    self._unknown_universes.add(canonical)
-                    self._diagnostics.append(
-                        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                            position=reference.fqun.position,
-                            universe=canonical,
-                            current_universe_name=expected,
-                        )
-                    )
+            if reference.fqun.canonical in self._unknown_universes:
+                return
+            diagnostic = self._check_sub_root_configured(reference.fqun)
+            if diagnostic:
+                self._unknown_universes.add(reference.fqun.canonical)
+                self._diagnostics.append(diagnostic)
                 return
             raise NotImplementedError(
                 "Global-reference file walking for FQUN references is not implemented."
@@ -556,21 +541,13 @@ class Validator:
             universe_locations=self._frame.universe_locations,
         )
 
-        referenced_result = self.results_by_path[referenced_file]
-        if referenced_result is None or referenced_result.exception is not None:
-            if referenced_result is not None and isinstance(
-                referenced_result.exception, FileNotFoundError
-            ):
-                self._diagnostics.append(
-                    diagnostics.ReferencedFileNotFoundDiagnostic(
-                        position=reference.position,
-                        file_path=str(referenced_file),
-                    )
-                )
-                self._reference_not_found_paths.add(referenced_file)
+        diagnostic = self._check_file_not_found(reference, referenced_file)
+        if diagnostic is not None:
+            self._reference_not_found_paths.add(referenced_file)
+            self._diagnostics.append(diagnostic)
             return
 
-        if definition_key not in self._seen_global_definitions:
+        if typed_name_str not in self._seen_global_definitions:
             self._diagnostics.append(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=reference.position,
@@ -578,3 +555,48 @@ class Validator:
                     expected_type=typed_global_name.type_name.value,
                 )
             )
+
+    def _check_file_not_found(
+        self, reference: ast.GlobalNameReference, referenced_file: pathlib.PurePosixPath
+    ) -> diagnostics.ReferencedFileNotFoundDiagnostic | None:
+        referenced_result = self.results_by_path[referenced_file]
+        if referenced_result is None or referenced_result.exception is not None:
+            if referenced_result is not None and isinstance(
+                referenced_result.exception, FileNotFoundError
+            ):
+                return diagnostics.ReferencedFileNotFoundDiagnostic(
+                    position=reference.position,
+                    file_path=str(referenced_file),
+                )
+            return None
+        return None
+
+    def _check_cycle(
+        self,
+        typed_global_name: ast.TypedGlobalNameReference,
+        typed_name_str: str,
+    ) -> diagnostics.CircularGlobalReferenceDiagnostic | None:
+        cycle = self._reference_stack.cycle_for(typed_name_str)
+        if cycle is not None:
+            return diagnostics.CircularGlobalReferenceDiagnostic(
+                position=typed_global_name.position,
+                cycle=cycle,
+            )
+        return None
+
+    def _check_sub_root_configured(
+        self, fqun: ast.Fqun
+    ) -> diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
+        fqun_string = fqun.canonical
+        if fqun_string not in self._frame.universe_locations:
+            expected = self._frame.expected_universe_name
+            if expected is None:
+                raise ValueError(
+                    "expected_universe_name must be set for cross-universe references"
+                )
+            return diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                position=fqun.position,
+                universe=fqun_string,
+                current_universe_name=expected,
+            )
+        return None
