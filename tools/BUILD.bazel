@@ -1,8 +1,12 @@
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
 load("//tools/lint:format.bzl", "format_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
+
+npm_link_all_packages()
 
 exports_files(["pyproject.toml"])
 
@@ -10,6 +14,14 @@ py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
     deps = ["@pypi//pyyaml"],
+)
+
+prettier_bin.prettier_binary(
+    name = "prettier",
+    env = {
+        "BAZEL_BINDIR": ".",
+    },
+    visibility = ["//:__subpackages__"],
 )
 
 py_binary(
@@ -63,8 +75,36 @@ py_binary(
 
 format_multirun(
     name = "format",
+    javascript = ":prettier",
+    javascript_check_args = [
+        "--check",
+        "--log-level=warn",
+    ],
+    javascript_fix_args = [
+        "--write",
+        "--log-level=warn",
+    ],
+    markdown = ":prettier",
+    markdown_check_args = [
+        "--check",
+        "--log-level=warn",
+    ],
+    markdown_fix_args = [
+        "--write",
+        "--log-level=warn",
+    ],
+    protocol_buffer = "@multitool//tools/buf",
     python = "@multitool//tools/ruff",
     starlark = "@multitool//tools/buildifier",
+    yaml = ":prettier",
+    yaml_check_args = [
+        "--check",
+        "--log-level=warn",
+    ],
+    yaml_fix_args = [
+        "--write",
+        "--log-level=warn",
+    ],
 )
 
 format_test(

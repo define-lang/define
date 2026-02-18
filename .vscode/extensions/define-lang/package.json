@@ -3,18 +3,30 @@
   "displayName": "Define Language",
   "description": "Minimal highlighting for Define",
   "version": "0.0.1",
-  "engines": { "vscode": "^1.0.0" },
+  "engines": {
+    "vscode": "^1.0.0"
+  },
   "contributes": {
-    "languages": [{
-      "id": "define",
-      "aliases": ["Define", "define"],
-      "extensions": [".define", ".def"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "define",
-      "scopeName": "source.define",
-      "path": "./syntaxes/define.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "define",
+        "aliases": [
+          "Define",
+          "define"
+        ],
+        "extensions": [
+          ".define",
+          ".def"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "define",
+        "scopeName": "source.define",
+        "path": "./syntaxes/define.tmLanguage.json"
+      }
+    ]
   }
 }

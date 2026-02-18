@@ -1,0 +1,8 @@
+{
+  "name": "define-tools",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "prettier": "latest"
+  }
+}

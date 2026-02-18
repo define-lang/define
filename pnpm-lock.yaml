@@ -4,10 +4,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-devDependencies:
-  basedpyright:
-    specifier: latest
-    version: 1.38.0
+importers:
+  .:
+    devDependencies:
+      basedpyright:
+        specifier: latest
+        version: 1.38.0
+
+  tools:
+    devDependencies:
+      prettier:
+        specifier: latest
+        version: 3.8.1
 
 packages:
   /basedpyright@1.38.0:
@@ -31,3 +39,12 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
+
+  /prettier@3.8.1:
+    resolution:
+      {
+        integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==,
+      }
+    engines: { node: ">=14" }
+    hasBin: true
+    dev: true

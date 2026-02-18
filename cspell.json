@@ -1,23 +1,19 @@
 {
-    "version": "0.2",
-    "words": [
-        "codepoints",
-        "defcl",
-        "Disambiguator",
-        "ebnf",
-        "fqun",
-        "Kanat",
-        "omniverse",
-        "Onmiverse",
-        "refactorable",
-        "textproto",
-        "unassignment",
-        "unassignments"
-    ],
-    "flagWords": [
-        "fqdn"
-    ],
-    "ignorePaths": [
-        "cspell.json"
-    ]
+  "version": "0.2",
+  "words": [
+    "codepoints",
+    "defcl",
+    "Disambiguator",
+    "ebnf",
+    "fqun",
+    "Kanat",
+    "omniverse",
+    "Onmiverse",
+    "refactorable",
+    "textproto",
+    "unassignment",
+    "unassignments"
+  ],
+  "flagWords": ["fqdn"],
+  "ignorePaths": ["cspell.json"]
 }

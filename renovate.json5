@@ -1,36 +1,36 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "dependencyDashboardApproval": true,
-  "automerge": false,
-  "postUpdateOptions": ["gomodTidy"],
-  "lockFileMaintenance": {
-    "enabled": true
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended"],
+  dependencyDashboardApproval: true,
+  automerge: false,
+  postUpdateOptions: ["gomodTidy"],
+  lockFileMaintenance: {
+    enabled: true,
   },
   "pre-commit": {
-    "enabled": true
+    enabled: true,
   },
-  "packageRules": [
+  packageRules: [
     {
-      "matchManagers": ["bazel-module"],
-      "groupName": "bazel modules"
+      matchManagers: ["bazel-module"],
+      groupName: "bazel modules",
     },
     {
-      "matchManagers": ["github-actions"],
-      "groupName": "github actions"
+      matchManagers: ["github-actions"],
+      groupName: "github actions",
     },
     {
-      "matchManagers": ["pre-commit"],
-      "groupName": "pre-commit hooks"
+      matchManagers: ["pre-commit"],
+      groupName: "pre-commit hooks",
     },
     {
-      "matchManagers": ["gomod"],
-      "groupName": "go dependencies"
+      matchManagers: ["gomod"],
+      groupName: "go dependencies",
     },
     {
-      "matchManagers": ["pep621"],
-      "groupName": "python dependencies"
-    }
+      matchManagers: ["pep621"],
+      groupName: "python dependencies",
+    },
   ],
-  "ignorePaths": ["experimental/**"]
+  ignorePaths: ["experimental/**"],
 }
