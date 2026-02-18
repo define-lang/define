@@ -2,8 +2,11 @@ version: v2
 deps:
   - buf.build/bufbuild/protovalidate
 modules:
-  - path: defcl/schema
-  - path: define/config
+  - path: defcl
+    excludes:
+      - defcl/buf/testdata
+      - defcl/testdata
+  - path: define
 lint:
   use:
     - STANDARD
