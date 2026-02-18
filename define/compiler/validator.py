@@ -132,6 +132,38 @@ class _ValidationFrame:
     universe_locations: Mapping[str, pathlib.PurePosixPath]
 
 
+class _ReferenceStack:
+    """Tracks the global definitions we are currently walking, for cycle detection."""
+
+    def __init__(self) -> None:
+        self._stack: list[str] = []
+        self._stack_index: dict[str, int] = {}
+
+    def push(self, definition: ast.QualityDefinition) -> None:
+        """Push one definition key onto the active stack."""
+        definition_key = definition.fully_qualified_typed_name
+        if definition_key in self._stack_index:
+            raise ValueError(
+                f"reference stack already contains definition: {definition_key}"
+            )
+        self._stack_index[definition_key] = len(self._stack)
+        self._stack.append(definition_key)
+
+    def pop(self) -> None:
+        """Pop one definition key from the active stack."""
+        if not self._stack:
+            raise ValueError("reference stack is empty")
+        definition_key = self._stack.pop()
+        _ = self._stack_index.pop(definition_key)
+
+    def cycle_for(self, definition_key: str) -> list[str] | None:
+        """Return the cycle closed by this key, or None if it is not a back-edge."""
+        cycle_start = self._stack_index.get(definition_key)
+        if cycle_start is None:
+            return None
+        return [*self._stack[cycle_start:], definition_key]
+
+
 class Validator:
     """Validates a single Define program."""
 
@@ -141,6 +173,7 @@ class Validator:
             pathlib.PurePosixPath, ValidationResult | None
         ] = OrderedDict()
         self._seen_global_definitions: dict[str, ast.QualityDefinition] = {}
+        self._reference_stack: _ReferenceStack = _ReferenceStack()
         self._validation_frames: list[_ValidationFrame] = []
         self._reference_not_found_paths: set[pathlib.PurePosixPath] = set()
         self._unknown_universes: set[str] = set()
@@ -319,11 +352,12 @@ class Validator:
             self._validate_local_names(definition.definition_block)
             self._validate_action_position_constraints(
                 definition.definition_block,
-                definition.name.fqun,
+                definition,
             )
         if isinstance(definition, ast.PositionDefinition) and definition.constraints:
             self._validate_position_constraints(
-                definition.constraints, definition.name.fqun
+                definition.constraints,
+                definition,
             )
 
     def _validate_path_matches_file(self, definition: ast.QualityDefinition) -> None:
@@ -421,28 +455,29 @@ class Validator:
     def _validate_action_position_constraints(
         self,
         definition_block: ast.ActionDefinitionBlock,
-        enclosing_fqun: ast.Fqun | None,
+        enclosing_definition: ast.QualityDefinition,
     ) -> None:
         """Validate constraints inside local position definitions in an action."""
         for local_def in definition_block.local_definitions:
             if local_def.constraints is not None:
                 self._validate_position_constraints(
-                    local_def.constraints, enclosing_fqun
+                    local_def.constraints,
+                    enclosing_definition,
                 )
         for local_def in definition_block.action_statements.statements:
             if local_def.constraints is not None:
                 self._validate_position_constraints(
-                    local_def.constraints, enclosing_fqun
+                    local_def.constraints,
+                    enclosing_definition,
                 )
 
     def _validate_position_constraints(
         self,
         constraints: ast.PositionConstraintBlock,
-        enclosing_fqun: ast.Fqun | None,
+        enclosing_definition: ast.QualityDefinition,
     ) -> None:
         """Validate names and short-form usage in position constraints."""
-        if enclosing_fqun is None:
-            raise ValueError("Global quality definitions must have a non-None fqun")
+        enclosing_fqun = enclosing_definition.name.fqun
 
         for requirement in constraints.requirements:
             reference = requirement.typed_global_name.global_name
@@ -454,17 +489,43 @@ class Validator:
                 continue
             self._load_global_name_reference(
                 typed_global_name=requirement.typed_global_name,
-                enclosing_fqun=enclosing_fqun,
+                enclosing_definition=enclosing_definition,
             )
 
     def _load_global_name_reference(
         self,
         typed_global_name: ast.TypedGlobalNameReference,
-        enclosing_fqun: ast.Fqun,
-    ) -> None:
+        enclosing_definition: ast.QualityDefinition,
+    ):
         """Load and validate one global name reference."""
+        self._reference_stack.push(enclosing_definition)
+        self._do_load_global_name_reference(typed_global_name, enclosing_definition)
+        self._reference_stack.pop()
+
+    def _do_load_global_name_reference(
+        self,
+        typed_global_name: ast.TypedGlobalNameReference,
+        enclosing_definition: ast.QualityDefinition,
+    ):
+        """Load and validate one global name reference with stack already set."""
         reference = typed_global_name.global_name
-        expected_type = typed_global_name.type_name
+        if reference.fqun is None:
+            definition_key = typed_global_name.fully_qualified_typed_name(
+                with_fqun=enclosing_definition.name.fqun,
+            )
+        else:
+            definition_key = typed_global_name.fully_qualified_typed_name()
+
+        cycle = self._reference_stack.cycle_for(definition_key)
+        if cycle is not None:
+            self._diagnostics.append(
+                diagnostics.CircularGlobalReferenceDiagnostic(
+                    position=reference.position,
+                    cycle=cycle,
+                )
+            )
+            return
+
         if reference.fqun is not None:
             canonical = reference.fqun.canonical
             if canonical not in self._frame.universe_locations:
@@ -509,14 +570,11 @@ class Validator:
                 self._reference_not_found_paths.add(referenced_file)
             return
 
-        definition_key = typed_global_name.fully_qualified_typed_name(
-            with_fqun=enclosing_fqun,
-        )
         if definition_key not in self._seen_global_definitions:
             self._diagnostics.append(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=reference.position,
                     path=reference.path.name,
-                    expected_type=expected_type.value,
+                    expected_type=typed_global_name.type_name.value,
                 )
             )

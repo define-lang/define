@@ -314,3 +314,24 @@ class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
         "of this universe ({current_universe_name}); "
         "add it to .define/deps/local.defcl"
     )
+
+
+@dataclass
+class CircularGlobalReferenceDiagnostic(Diagnostic):
+    """Diagnostic for when resolving references would create a cycle."""
+
+    cycle: list[str]
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render a multi-line cycle listing with one edge per line."""
+        if not self.cycle:
+            raise ValueError("cycle must contain at least one typed global name")
+        lines = [self.cycle[0]]
+        lines.extend(f"  --> {name}" for name in self.cycle[1:])
+        cycle_text = "\n".join(lines)
+        return (
+            "circular references between definitions are not allowed in Define:\n"
+            + cycle_text
+        )

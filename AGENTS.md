@@ -64,7 +64,8 @@ See [define/spec/spec.md] for the language specification.
 
 - Prefer positive booleans. For example: `enable_feature=False` rather than
   `disable_feature=True`.
-- Do not add `-> None` to `__init__` methods.
+- Do not add `-> None` return annotations unless a type checker explicitly
+  requires one.
 
 ## Git
 
@@ -77,7 +78,6 @@ See [define/spec/spec.md] for the language specification.
 
 - Avoid adding debug messages to assert calls.
 - Do not write docstrings in tests.
-- Do not add `-> None` return type annotations to test methods.
 - When using `unittest.mock`, always use `patch.object` with `autospec=True`
   instead of `patch`.
 
