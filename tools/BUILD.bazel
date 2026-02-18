@@ -1,3 +1,4 @@
+load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("//tools/lint:format.bzl", "format_test")
@@ -59,6 +60,12 @@ py_binary(
 )
 
 # --- Format checking ---
+
+format_multirun(
+    name = "format",
+    python = "@multitool//tools/ruff",
+    starlark = "@multitool//tools/buildifier",
+)
 
 format_test(
     name = "format_test",
