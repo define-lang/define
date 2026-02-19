@@ -9,6 +9,7 @@ class DefineError(Exception):
     """Base class for errors raised by the Define compiler."""
 
 
+# TODO: This will need to specify what directory is missing the config, for sub-roots.
 class NotProjectRootError(DefineError):
     """The current directory is not a Define project root."""
 
