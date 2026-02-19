@@ -39,6 +39,11 @@ message LocalDep {
       id: "local_dep.path.no_dotdot"
       message: "path must not contain '..'"
       expression: "!this.contains('..')"
+    },
+    (buf.validate.field).cel = {
+      id: "local_dep.path.no_trailing_slash"
+      message: "path must not end with '/'"
+      expression: "!this.endsWith('/')"
     }
   ];
 }

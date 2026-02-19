@@ -205,6 +205,23 @@ class TestLocalDepsConfig:
         with pytest.raises(exceptions.ConfigValidationError):
             _ = config.local_deps_config()
 
+    def test_trailing_slash_in_path_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_local_deps(
+            tmp_path,
+            (
+                "deps: { local: [{"
+                ' universe_name: "mv:define-lang.org:lib"'
+                ' path: "vendor/lib/"'
+                " }] }\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigValidationError):
+            _ = config.local_deps_config()
+
     def test_duplicate_universe_name_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
