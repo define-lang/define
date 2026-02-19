@@ -14,8 +14,6 @@ from define.config.project import config_pb2
 CONFIG_PATH = Path(".define/project/config.defcl")
 LOCAL_DEPS_PATH = Path(".define/deps/local.defcl")
 
-_DOCS_ROOT = "https://github.com/mkanat/define/define/docs"
-
 
 def _load_config[M: message.Message](path: Path, message_type: type[M]) -> M:
     """Load and validate a defcl config file."""
@@ -39,12 +37,7 @@ def _load_config[M: message.Message](path: Path, message_type: type[M]) -> M:
 def assert_is_project_root() -> None:
     """Raise NotProjectRootError if the current directory is not a project root."""
     if not CONFIG_PATH.exists():
-        raise exceptions.NotProjectRootError(
-            f"Not a Define project root: {CONFIG_PATH} not found.\n"
-            + "The Define compiler must be run from a project root directory.\n"
-            + f"A project root is any directory containing {CONFIG_PATH}.\n"
-            + f"For more information, see {_DOCS_ROOT}/project-root.md"
-        )
+        raise exceptions.NotProjectRootError(CONFIG_PATH)
 
 
 def project_config() -> config_pb2.ProjectConfigFile:

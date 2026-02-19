@@ -12,6 +12,18 @@ class DefineError(Exception):
 class NotProjectRootError(DefineError):
     """The current directory is not a Define project root."""
 
+    config_path: Path
+
+    def __init__(self, config_path: Path):
+        """Initialize with the config path that was not found."""
+        self.config_path = config_path
+        super().__init__(
+            f"Not a Define project root: {config_path} not found.\n"
+            + "The Define compiler must be run from a project root directory.\n"
+            + f"A project root is any directory containing {config_path}.\n"
+            + f"For more information, see {_DOCS_ROOT}/project-root.md"
+        )
+
 
 class SourceFileNotFoundError(DefineError):
     """A Define source file could not be found on disk."""
