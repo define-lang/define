@@ -63,9 +63,8 @@ def parse_and_validate_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> ParseAndValidateFile:
     def _run(source: str | bytes) -> validator.ValidationResult:
-        relative_path = PurePosixPath("sub/test.def")
+        relative_path = PurePosixPath("test.def")
         source_path = tmp_path / relative_path
-        source_path.parent.mkdir(parents=True)
         _write_project_config(tmp_path, "my.domain.com:my_lib")
         if isinstance(source, str):
             source_path.write_text(source, encoding="utf-8")
@@ -84,13 +83,13 @@ class TestParseAndValidateFile:
         self,
         parse_and_validate_file: ParseAndValidateFile,
     ):
-        source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         result = parse_and_validate_file(source)
 
         assert result.diagnostics == []
         assert result.exception is None
         assert result.source == source
-        assert result.file_path == PurePosixPath("sub/test.def")
+        assert result.file_path == PurePosixPath("test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -109,13 +108,13 @@ class TestParseAndValidateFile:
         parse_and_validate_file: ParseAndValidateFile,
     ):
         result = parse_and_validate_file(
-            "defin the potential position<my.domain.com:my_lib:/sub/bad>.\n"
+            "defin the potential position<my.domain.com:my_lib:/bad>.\n"
         )
 
         assert result.diagnostics == []
         assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
         assert result.source is not None
-        assert result.file_path == PurePosixPath("sub/test.def")
+        assert result.file_path == PurePosixPath("test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -129,13 +128,13 @@ class TestParseAndValidateFile:
         parse_and_validate_file: ParseAndValidateFile,
     ):
         result = parse_and_validate_file(
-            b"define the potential position<my.domain.com:my_lib:/sub/bad>.\n\xff"
+            b"define the potential position<my.domain.com:my_lib:/bad>.\n\xff"
         )
 
         assert result.diagnostics == []
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
         assert result.source is None
-        assert result.file_path == PurePosixPath("sub/test.def")
+        assert result.file_path == PurePosixPath("test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -160,7 +159,7 @@ class TestParseAndValidateFile:
             result.exception, parser_exceptions.GlobalNameInvalidFqunFormat
         )
         assert result.source == source
-        assert result.file_path == PurePosixPath("sub/test.def")
+        assert result.file_path == PurePosixPath("test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -807,7 +806,7 @@ class TestFileNotFound:
         assert results[0].diagnostics == []
 
     def test_referenced_file_not_found(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, parse_and_validate_file: ParseAndValidateFile
     ):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
@@ -816,17 +815,10 @@ class TestFileNotFound:
             "}\n"
             "}\n"
         )
-        source_path = tmp_path / "test.def"
-        source_path.write_text(source, encoding="utf-8")
-        _write_project_config(tmp_path, "my.domain.com:my_lib")
-        monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            PurePosixPath("test.def")
-        )
-        assert len(results) == 1
-        assert results[0].exception is None
-        assert len(results[0].diagnostics) == 1
-        diag = results[0].diagnostics[0]
+        result = parse_and_validate_file(source)
+        assert result.exception is None
+        assert len(result.diagnostics) == 1
+        diag = result.diagnostics[0]
         assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
         assert diag.file_path == "missing.def"
         assert diag.position.line == 3
@@ -835,37 +827,31 @@ class TestFileNotFound:
 
 class TestCircularGlobalReferences:
     def test_self_cycle_emits_diagnostic(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, parse_and_validate_file: ParseAndValidateFile
     ):
         source = (
-            "define the potential position<mv:define-lang.org:test_walk_self_cycle:/test> {\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
             "it may only contain dimension points where {\n"
             "it has the position</test>.\n"
             "}\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
-        _write_project_config(tmp_path, "mv:define-lang.org:test_walk_self_cycle")
-        monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            PurePosixPath("test.def")
-        )
-        assert len(results) == 1
-        assert results[0].exception is None
-        diags = results[0].diagnostics
+        result = parse_and_validate_file(source)
+        assert result.exception is None
+        diags = result.diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
         assert diags[0].cycle == [
-            "position<mv:define-lang.org:test_walk_self_cycle:/test>",
-            "position<mv:define-lang.org:test_walk_self_cycle:/test>",
+            "position<my.domain.com:my_lib:/test>",
+            "position<my.domain.com:my_lib:/test>",
         ]
         assert diags[0].position.line == 3
         assert diags[0].position.column == 21
         assert (
             diags[0].message
             == "circular references between definitions are not allowed in Define:\n"
-            + "position<mv:define-lang.org:test_walk_self_cycle:/test>\n"
-            + "  --> position<mv:define-lang.org:test_walk_self_cycle:/test>"
+            + "position<my.domain.com:my_lib:/test>\n"
+            + "  --> position<my.domain.com:my_lib:/test>"
         )
 
     def test_two_file_cycle_emits_diagnostic(
@@ -1007,49 +993,35 @@ class TestNameFormatPositions:
 
 class TestCrossUniverseReference:
     def test_unknown_universe_emits_diagnostic(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, parse_and_validate_file: ParseAndValidateFile
     ):
         source = (
-            "define the potential position<mv:define-lang.org:my_universe:/test> {\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
             "it may only contain dimension points where {\n"
             "it has the position<other.example.com:other_universe:/target>.\n"
             "}\n"
             "}\n"
         )
-        source_path = tmp_path / "test.def"
-        source_path.write_text(source, encoding="utf-8")
-        _write_project_config(tmp_path, "mv:define-lang.org:my_universe")
-        monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            PurePosixPath("test.def")
-        )
-        assert len(results) == 1
-        diags = results[0].diagnostics
+        result = parse_and_validate_file(source)
+        diags = result.diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
         assert diags[0].universe == "other.example.com:other_universe"
-        assert diags[0].current_universe_name == "mv:define-lang.org:my_universe"
+        assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
     def test_duplicate_unknown_universe_emits_one_diagnostic(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, parse_and_validate_file: ParseAndValidateFile
     ):
         source = (
-            "define the potential position<mv:define-lang.org:my_universe:/test> {\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
             "it may only contain dimension points where {\n"
             "it has the position<other.example.com:other_universe:/target>.\n"
             "it has the position<other.example.com:other_universe:/another>.\n"
             "}\n"
             "}\n"
         )
-        source_path = tmp_path / "test.def"
-        source_path.write_text(source, encoding="utf-8")
-        _write_project_config(tmp_path, "mv:define-lang.org:my_universe")
-        monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            PurePosixPath("test.def")
-        )
-        assert len(results) == 1
-        diags = results[0].diagnostics
+        result = parse_and_validate_file(source)
+        diags = result.diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
         assert diags[0].universe == "other.example.com:other_universe"
