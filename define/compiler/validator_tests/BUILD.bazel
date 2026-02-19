@@ -2,38 +2,12 @@ load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 load("//tools/lint:format.bzl", "format_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
-py_test(
-    name = "circular_global_references_test",
-    size = "small",
-    srcs = ["circular_global_references_test.py"],
-    pytest_main = True,
-    deps = [
-        ":conftest",
-        ":test_helpers",
-        "//define/compiler:diagnostics",
-        "//define/compiler:validator",
-        "@pypi//pytest",
-    ],
-)
-
 py_library(
     name = "conftest",
     srcs = ["conftest.py"],
     deps = [
         ":test_helpers",
         "//define/compiler:validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "cross_universe_reference_test",
-    size = "small",
-    srcs = ["cross_universe_reference_test.py"],
-    pytest_main = True,
-    deps = [
-        ":conftest",
-        "//define/compiler:diagnostics",
         "@pypi//pytest",
     ],
 )
@@ -105,7 +79,9 @@ py_test(
     srcs = ["global_name_walking_test.py"],
     pytest_main = True,
     deps = [
+        ":conftest",
         ":test_helpers",
+        "//define/compiler:diagnostics",
         "//define/compiler:validator",
         "@pypi//pytest",
     ],
@@ -237,9 +213,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":circular_global_references_test",
         ":conftest",
-        ":cross_universe_reference_test",
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",
         ":error_messages_test",
