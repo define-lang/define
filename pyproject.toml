@@ -58,6 +58,9 @@ known-first-party = ["define", "defcl", "tools"]
     "D102", # Don't require docstrings on test methods.
     "D103", # Don't require docstrings on test functions.
 ]
+"**/conftest.py" = [
+    "S101", # Allow assert statements.
+]
 "define/compiler/parser_exceptions.py" = [
     "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
 ]
