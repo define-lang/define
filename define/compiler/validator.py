@@ -44,7 +44,7 @@ class ValidationResult:
     diagnostics: list[diagnostics.Diagnostic]
     exception: AnyValidationException | None
     source: str | None
-    file_path: pathlib.PurePath
+    file_path: pathlib.PurePosixPath
     stats: ValidationTimingStats
 
 
@@ -62,7 +62,7 @@ class ValidationTimingStats:
 class _ValidationRun:
     """Tracks a single parse/validate run and builds consistent results."""
 
-    file_path: pathlib.PurePath
+    file_path: pathlib.PurePosixPath
     started_at: int
     source: str | None = None
     parse_finished_at: int | None = None
@@ -187,9 +187,7 @@ class Validator:
 
     def parse_and_validate_program(
         self,
-        # TODO: This should really be PurePosixPath everywhere in this file,
-        # including in the returns.
-        path: pathlib.PurePath,
+        path: pathlib.PurePosixPath,
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
         # TODO: We need a DefineError root for all of these and probably
@@ -214,16 +212,12 @@ class Validator:
     # in one place.
     def _parse_and_validate_file(
         self,
-        path: pathlib.PurePath,
+        path: pathlib.PurePosixPath,
         expected_universe_name: str | None,
         universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
-        # Ensure Windows-style paths are converted to POSIX paths for
-        # all internal Define logical operations, and for consistent
-        # error messages across platforms.
-        logical_path = pathlib.PurePosixPath(path.as_posix())
-        run = _ValidationRun(file_path=logical_path, started_at=time.perf_counter_ns())
+        run = _ValidationRun(file_path=path, started_at=time.perf_counter_ns())
 
         source, syntax_error = self._load_file(path)
         if syntax_error is not None:
@@ -232,7 +226,7 @@ class Validator:
         run.source = source
 
         try:
-            tree = self._parser.parse(source, file_path=logical_path)
+            tree = self._parser.parse(source, file_path=path)
         except SYNTAX_ERROR_TYPES as e:
             run.mark_parse_finished()
             return run.incomplete(e)
@@ -248,7 +242,7 @@ class Validator:
             raise
         run.mark_transform_finished()
 
-        expected_definition_path = logical_path.with_suffix("")
+        expected_definition_path = path.with_suffix("")
         validation_diagnostics = self.validate(
             program=program,
             expected_definition_path=expected_definition_path,
@@ -259,25 +253,24 @@ class Validator:
 
     def _parse_validate_and_collect(
         self,
-        path: pathlib.PurePath,
+        path: pathlib.PurePosixPath,
         expected_universe_name: str | None,
         universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> None:
         """Parse/validate one file once and append its result in encounter order."""
-        logical_path = pathlib.PurePosixPath(path.as_posix())
-        if logical_path in self.results_by_path:
+        if path in self.results_by_path:
             return
-        self.results_by_path[logical_path] = None
+        self.results_by_path[path] = None
         result = self._parse_and_validate_file(
-            path=logical_path,
+            path=path,
             expected_universe_name=expected_universe_name,
             universe_locations=universe_locations,
         )
-        self.results_by_path[logical_path] = result
+        self.results_by_path[path] = result
 
     def _load_file(
         self,
-        path: pathlib.PurePath,
+        path: pathlib.PurePosixPath,
     ) -> tuple[str, AnyValidationException | None]:
         """Load a Define source file and return source and syntax errors."""
         try:

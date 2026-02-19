@@ -8,8 +8,7 @@ Keep test assertions simple: assert on the exact diagnostics list you get
 # TODO: Split this file.
 
 from collections.abc import Callable
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from unittest.mock import patch
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -64,7 +63,7 @@ def parse_and_validate_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> ParseAndValidateFile:
     def _run(source: str | bytes) -> validator.ValidationResult:
-        relative_path = Path("sub/test.def")
+        relative_path = PurePosixPath("sub/test.def")
         source_path = tmp_path / relative_path
         source_path.parent.mkdir(parents=True)
         _write_project_config(tmp_path, "my.domain.com:my_lib")
@@ -106,7 +105,7 @@ class TestParseAndValidateFile:
         assert result.diagnostics == []
         assert result.exception is None
         assert result.source == source
-        assert result.file_path == Path("sub/test.def")
+        assert result.file_path == PurePosixPath("sub/test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -131,7 +130,7 @@ class TestParseAndValidateFile:
         assert result.diagnostics == []
         assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
         assert result.source is not None
-        assert result.file_path == Path("sub/test.def")
+        assert result.file_path == PurePosixPath("sub/test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -151,7 +150,7 @@ class TestParseAndValidateFile:
         assert result.diagnostics == []
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
         assert result.source is None
-        assert result.file_path == Path("sub/test.def")
+        assert result.file_path == PurePosixPath("sub/test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -176,7 +175,7 @@ class TestParseAndValidateFile:
             result.exception, parser_exceptions.GlobalNameInvalidFqunFormat
         )
         assert result.source == source
-        assert result.file_path == Path("sub/test.def")
+        assert result.file_path == PurePosixPath("sub/test.def")
 
         timings = result.stats
         assert timings.overall >= 0
@@ -799,7 +798,7 @@ class TestPositionConstraintReferences:
         monkeypatch.chdir(tmp_path)
         results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 2
-        assert results[0].file_path == Path("test.def")
+        assert results[0].file_path == PurePosixPath("test.def")
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
@@ -814,7 +813,7 @@ class TestFileNotFound:
         _write_project_config(tmp_path, "my.domain.com:my_lib")
         monkeypatch.chdir(tmp_path)
         results = validator.Validator().parse_and_validate_program(
-            Path("nonexistent.def")
+            PurePosixPath("nonexistent.def")
         )
         assert len(results) == 1
         assert isinstance(results[0].exception, exceptions.SourceFileNotFoundError)
@@ -904,10 +903,10 @@ class TestCircularGlobalReferences:
         monkeypatch.chdir(tmp_path)
         results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 2
-        assert results[0].file_path == Path("test.def")
+        assert results[0].file_path == PurePosixPath("test.def")
         assert results[0].exception is None
         assert results[0].diagnostics == []
-        assert results[1].file_path == Path("loop.def")
+        assert results[1].file_path == PurePosixPath("loop.def")
         assert results[1].exception is None
         diags = results[1].diagnostics
         assert len(diags) == 1

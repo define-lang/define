@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 """Tests for driver-only behavior."""
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import pytest
 
@@ -23,6 +23,25 @@ def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(source, encoding="utf-8")
     return path
+
+
+class TestPathFormats:
+    def test_windows_style_string_path_still_validates_with_posix_file_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "my.domain.com:my_lib")
+        source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
+        _write_source(tmp_path, "sub/test.def", source)
+        monkeypatch.chdir(tmp_path)
+
+        d = driver.Driver()
+        results = d.validate_program(Path(PureWindowsPath("sub\\test.def")))
+        assert len(results) == 1
+        result = results[0]
+
+        assert result.diagnostics == []
+        assert result.exception is None
+        assert str(result.file_path) == "sub/test.def"
 
 
 class TestPathResolution:

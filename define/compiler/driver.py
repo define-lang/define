@@ -1,9 +1,16 @@
-"""Compilation driver for the Define compiler."""
+"""Compilation driver for the Define compiler.
+
+The interfaces in this file deal with real OS Path objects,
+compared to most of the rest of Define where the interfaces
+expect and return PurePosixPath. This is essentially the interface
+to the outside world's unvalidated command-line input, as well
+as the interface that translates our internal error objects into
+actual error strings.
+"""
 
 import enum
-import os
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TextIO
 
 from define.compiler import (
@@ -22,25 +29,22 @@ class ExitCode(enum.IntEnum):
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
-    def validate_program(
-        self, path: os.PathLike[str]
-    ) -> list[validator.ValidationResult]:
-        """Compile one source file and all loaded references in encounter order."""
+    def validate_program(self, path: Path) -> list[validator.ValidationResult]:
+        """Compile a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
         return validator.Validator().parse_and_validate_program(path=resolved_path)
 
     @staticmethod
-    def _resolve_path(path: os.PathLike[str]) -> Path:
-        """Resolve a file path to be relative to the project root."""
-        input_path = Path(path)
-        resolved = input_path
+    def _resolve_path(path: Path) -> PurePosixPath:
+        """Resolve a file path to be a POSIX path relative to the project root."""
+        resolved = path
         if resolved.is_absolute():
             cwd = Path.cwd()
             try:
                 resolved = resolved.relative_to(cwd)
             except ValueError:
                 raise exceptions.AbsolutePathError(
-                    input_path=input_path,
+                    input_path=path,
                     resolved_path=resolved,
                     project_root=cwd,
                 ) from None
@@ -51,15 +55,15 @@ class Driver:
                 resolved = resolved.relative_to(project_root)
             except ValueError:
                 raise exceptions.RelativePathError(
-                    input_path=input_path,
+                    input_path=path,
                     resolved_path=resolved,
                     project_root=project_root,
                 ) from None
-        return resolved
+        return PurePosixPath(resolved.as_posix())
 
     def run(
         self,
-        path: os.PathLike[str],
+        path: Path,
         error_stream: TextIO | None = None,
     ) -> ExitCode:
         """Validate a Define source file and write any errors to the given stream.
