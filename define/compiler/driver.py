@@ -3,16 +3,13 @@
 import enum
 import os
 import sys
-from functools import cached_property
 from pathlib import Path
 from typing import TextIO
 
 from define.compiler import (
-    config,
     exceptions,
     validator,
 )
-from define.config.project import config_pb2
 
 
 class ExitCode(enum.IntEnum):
@@ -25,22 +22,12 @@ class ExitCode(enum.IntEnum):
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
-    @cached_property
-    def project_config(self) -> config_pb2.ProjectConfigFile:
-        """Load and return the project configuration."""
-        return config.project_config()
-
     def validate_program(
         self, path: os.PathLike[str]
     ) -> list[validator.ValidationResult]:
         """Compile one source file and all loaded references in encounter order."""
-        config.assert_is_project_root()
         resolved_path = self._resolve_path(path)
-        return validator.Validator().parse_and_validate_program(
-            path=resolved_path,
-            expected_universe_name=self.project_config.project.universe_name or "",
-            universe_locations=config.local_deps_config(),
-        )
+        return validator.Validator().parse_and_validate_program(path=resolved_path)
 
     @staticmethod
     def _resolve_path(path: os.PathLike[str]) -> Path:

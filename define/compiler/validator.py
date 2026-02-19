@@ -16,6 +16,7 @@ from lark import exceptions as lark_exceptions
 
 from define.compiler import (
     ast,
+    config,
     diagnostics,
     exceptions,
     name_validators,
@@ -186,15 +187,20 @@ class Validator:
 
     def parse_and_validate_program(
         self,
+        # TODO: This should really be PurePosixPath everywhere in this file,
+        # including in the returns.
         path: pathlib.PurePath,
-        expected_universe_name: str | None = None,
-        universe_locations: Mapping[str, pathlib.PurePosixPath] | None = None,
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
+        # TODO: We need a DefineError root for all of these and probably
+        # to return them in results somehow so that the errors are consistent
+        # whether you cause them for the parent root or a sub-root.
+        config.assert_is_project_root()
+        project_config = config.project_config()
         self._parse_validate_and_collect(
             path,
-            expected_universe_name,
-            universe_locations if universe_locations is not None else {},
+            project_config.project.universe_name or "",
+            config.local_deps_config(),
         )
         return [
             result

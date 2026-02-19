@@ -1,8 +1,11 @@
+# pyright: reportUnusedCallResult=false
 """Tests for the Define language validator.
 
 Keep test assertions simple: assert on the exact diagnostics list you get
 (len, isinstance, fields) rather than filtering by type.
 """
+
+# TODO: Split this file.
 
 from collections.abc import Callable
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -22,6 +25,23 @@ from define.compiler.transformer import DefineTransformer
 _parser = parser.Parser()
 _transformer = DefineTransformer()
 type ParseAndValidateFile = Callable[[str | bytes], validator.ValidationResult]
+
+
+def _write_project_config(tmp_path: Path, universe_name: str) -> None:
+    config_dir = tmp_path / ".define" / "project"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.defcl").write_text(
+        f'project: {{\n  universe_name: "{universe_name}"\n}}\n',
+        encoding="utf-8",
+    )
+
+
+# TODO: Should have a multi-file-writing fixture.
+def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
+    path = tmp_path / rel_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(source, encoding="utf-8")
+    return path
 
 
 def _parse_transform_validate(
@@ -47,10 +67,11 @@ def parse_and_validate_file(
         relative_path = Path("sub/test.def")
         source_path = tmp_path / relative_path
         source_path.parent.mkdir(parents=True)
+        _write_project_config(tmp_path, "my.domain.com:my_lib")
         if isinstance(source, str):
-            _ = source_path.write_text(source, encoding="utf-8")
+            source_path.write_text(source, encoding="utf-8")
         else:
-            _ = source_path.write_bytes(source)
+            source_path.write_bytes(source)
         monkeypatch.chdir(tmp_path)
         results = validator.Validator().parse_and_validate_program(relative_path)
         assert len(results) == 1
@@ -166,10 +187,104 @@ class TestParseAndValidateFile:
         assert timings.overall == (timings.parse + timings.transform)
 
 
+class TestParseAndValidateProgramConfig:
+    def test_requires_project_root(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(exceptions.NotProjectRootError):
+            validator.Validator().parse_and_validate_program(Path("test.def"))
+
+    def test_not_project_root_error_includes_docs_link(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(exceptions.NotProjectRootError, match=r"project-root\.md"):
+            validator.Validator().parse_and_validate_program(Path("test.def"))
+
+    def test_invalid_project_config_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True)
+        (config_dir / "config.defcl").write_text("project: {}\n", encoding="utf-8")
+        (tmp_path / "test.def").write_text(
+            "define the potential position<x.com:lib:/test>.\n", encoding="utf-8"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigValidationError):
+            validator.Validator().parse_and_validate_program(Path("test.def"))
+
+
+class TestGlobalNameWalking:
+    def test_nested_file_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        _write_project_config(tmp_path, "test.example.com:my_lib")
+        _write_source(
+            tmp_path,
+            "sub/dir/leaf.def",
+            "define the potential position<test.example.com:my_lib:/sub/dir/leaf>.\n",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        results = validator.Validator().parse_and_validate_program(
+            Path("sub/dir/leaf.def")
+        )
+        assert len(results) == 1
+        result = results[0]
+        assert result.exception is None
+        assert result.diagnostics == []
+        assert result.file_path == PurePosixPath("sub/dir/leaf.def")
+
+    def test_walk_returns_results_in_encounter_order(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _write_project_config(tmp_path, "mv:define-lang.org:walk_order")
+        _write_source(
+            tmp_path,
+            "test.def",
+            (
+                "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
+                + "it may only contain dimension points where {\n"
+                + "it has the position</middle>.\n"
+                + "}\n"
+                + "}\n"
+            ),
+        )
+        _write_source(
+            tmp_path,
+            "middle.def",
+            (
+                "define the potential position<mv:define-lang.org:walk_order:/middle> {\n"
+                + "it may only contain dimension points where {\n"
+                + "it has the position</leaf>.\n"
+                + "}\n"
+                + "}\n"
+            ),
+        )
+        _write_source(
+            tmp_path,
+            "leaf.def",
+            "define the potential position<mv:define-lang.org:walk_order:/leaf>.\n",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        assert [result.file_path for result in results] == [
+            PurePosixPath("test.def"),
+            PurePosixPath("middle.def"),
+            PurePosixPath("leaf.def"),
+        ]
+
+
 class TestPathFormats:
-    def test_windows_style_string_path_still_validates_with_posix_file_path(self):
+    def test_windows_style_string_path_still_validates_with_posix_file_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
         source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
         path = PureWindowsPath("sub\\test.def")
+        _write_project_config(tmp_path, "my.domain.com:my_lib")
+        monkeypatch.chdir(tmp_path)
 
         with patch.object(
             validator.Validator, "_load_file", autospec=True
@@ -666,11 +781,11 @@ class TestPositionConstraintReferences:
     def test_referenced_global_name_wrong_type_position(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        _ = (tmp_path / "target.def").write_text(
+        (tmp_path / "target.def").write_text(
             "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
             encoding="utf-8",
         )
-        _ = (tmp_path / "test.def").write_text(
+        (tmp_path / "test.def").write_text(
             (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
                 + "    it may only contain dimension points where {\n"
@@ -680,12 +795,9 @@ class TestPositionConstraintReferences:
             ),
             encoding="utf-8",
         )
+        _write_project_config(tmp_path, "mv:define-lang.org:test_walk_wrong_type")
         monkeypatch.chdir(tmp_path)
-
-        results = validator.Validator().parse_and_validate_program(
-            Path("test.def"),
-            expected_universe_name="mv:define-lang.org:test_walk_wrong_type",
-        )
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 2
         assert results[0].file_path == Path("test.def")
         diags = results[0].diagnostics
@@ -699,6 +811,7 @@ class TestFileNotFound:
     def test_entrypoint_file_not_found(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
+        _write_project_config(tmp_path, "my.domain.com:my_lib")
         monkeypatch.chdir(tmp_path)
         results = validator.Validator().parse_and_validate_program(
             Path("nonexistent.def")
@@ -718,12 +831,10 @@ class TestFileNotFound:
             "}\n"
         )
         source_path = tmp_path / "test.def"
-        _ = source_path.write_text(source, encoding="utf-8")
+        source_path.write_text(source, encoding="utf-8")
+        _write_project_config(tmp_path, "my.domain.com:my_lib")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            Path("test.def"),
-            expected_universe_name="my.domain.com:my_lib",
-        )
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 1
         assert results[0].exception is None
         assert len(results[0].diagnostics) == 1
@@ -744,12 +855,10 @@ class TestCircularGlobalReferences:
             "}\n"
             "}\n"
         )
-        _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        _write_project_config(tmp_path, "mv:define-lang.org:test_walk_self_cycle")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            Path("test.def"),
-            expected_universe_name="mv:define-lang.org:test_walk_self_cycle",
-        )
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 1
         assert results[0].exception is None
         diags = results[0].diagnostics
@@ -771,7 +880,7 @@ class TestCircularGlobalReferences:
     def test_two_file_cycle_emits_diagnostic(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        _ = (tmp_path / "test.def").write_text(
+        (tmp_path / "test.def").write_text(
             (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/test> {\n"
                 + "it may only contain dimension points where {\n"
@@ -781,7 +890,7 @@ class TestCircularGlobalReferences:
             ),
             encoding="utf-8",
         )
-        _ = (tmp_path / "loop.def").write_text(
+        (tmp_path / "loop.def").write_text(
             (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/loop> {\n"
                 + "it may only contain dimension points where {\n"
@@ -791,11 +900,9 @@ class TestCircularGlobalReferences:
             ),
             encoding="utf-8",
         )
+        _write_project_config(tmp_path, "mv:define-lang.org:test_walk_cycle")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            Path("test.def"),
-            expected_universe_name="mv:define-lang.org:test_walk_cycle",
-        )
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 2
         assert results[0].file_path == Path("test.def")
         assert results[0].exception is None
@@ -917,12 +1024,10 @@ class TestCrossUniverseReference:
             "}\n"
         )
         source_path = tmp_path / "test.def"
-        _ = source_path.write_text(source, encoding="utf-8")
+        source_path.write_text(source, encoding="utf-8")
+        _write_project_config(tmp_path, "mv:define-lang.org:my_universe")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            Path("test.def"),
-            expected_universe_name="mv:define-lang.org:my_universe",
-        )
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 1
         diags = results[0].diagnostics
         assert len(diags) == 1
@@ -942,12 +1047,10 @@ class TestCrossUniverseReference:
             "}\n"
         )
         source_path = tmp_path / "test.def"
-        _ = source_path.write_text(source, encoding="utf-8")
+        source_path.write_text(source, encoding="utf-8")
+        _write_project_config(tmp_path, "mv:define-lang.org:my_universe")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(
-            Path("test.def"),
-            expected_universe_name="mv:define-lang.org:my_universe",
-        )
+        results = validator.Validator().parse_and_validate_program(Path("test.def"))
         assert len(results) == 1
         diags = results[0].diagnostics
         assert len(diags) == 1

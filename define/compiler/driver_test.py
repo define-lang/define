@@ -1,15 +1,13 @@
 # pyright: reportUnusedCallResult=false
-"""Tests for the compilation driver."""
+"""Tests for driver-only behavior."""
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
 from define.compiler import (
-    diagnostics,
     driver,
     exceptions,
-    parser_exceptions,
 )
 
 
@@ -27,170 +25,23 @@ def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
     return path
 
 
-class TestValidateProgramNoProjectRoot:
-    def test_raises_project_root_error(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        monkeypatch.chdir(tmp_path)
-        d = driver.Driver()
-        with pytest.raises(exceptions.NotProjectRootError):
-            d.validate_program(Path("foo.def"))
-
-    def test_error_includes_docs_link(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        monkeypatch.chdir(tmp_path)
-        d = driver.Driver()
-        with pytest.raises(exceptions.NotProjectRootError, match=r"project-root\.md"):
-            d.validate_program(Path("foo.def"))
-
-
-class TestValidateProgram:
-    def test_valid_file_no_diagnostics(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        _setup_project(tmp_path, "test.example.com:my_lib")
-        source = "define the potential position<test.example.com:my_lib:/hello>.\n"
-        _write_source(tmp_path, "hello.def", source)
-        monkeypatch.chdir(tmp_path)
-
-        d = driver.Driver()
-        results = d.validate_program(Path("hello.def"))
-        assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert result.exception is None
-        assert result.file_path == Path("hello.def")
-
-    def test_returns_diagnostics_for_path_mismatch(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        _setup_project(tmp_path, "test.example.com:my_lib")
-        _write_source(
-            tmp_path,
-            "wrong.def",
-            "define the potential position<test.example.com:my_lib:/other>.\n",
-        )
-        monkeypatch.chdir(tmp_path)
-
-        d = driver.Driver()
-        results = d.validate_program(Path("wrong.def"))
-        assert len(results) == 1
-        result = results[0]
-        assert len(result.diagnostics) == 1
-        assert result.exception is None
-        assert isinstance(result.diagnostics[0], diagnostics.PathMismatchDiagnostic)
-
-    def test_returns_diagnostics_for_fqun_mismatch(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        _setup_project(tmp_path, "test.example.com:my_lib")
-        _write_source(
-            tmp_path,
-            "hello.def",
-            "define the potential position<other.com:my_lib:/hello>.\n",
-        )
-        monkeypatch.chdir(tmp_path)
-
-        d = driver.Driver()
-        results = d.validate_program(Path("hello.def"))
-        assert len(results) == 1
-        result = results[0]
-        assert result.exception is None
-        assert any(
-            isinstance(d, diagnostics.FqunMismatchDiagnostic)
-            for d in result.diagnostics
-        )
-
-    def test_syntax_error_populates_exceptions(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        _setup_project(tmp_path, "test.example.com:my_lib")
-        _write_source(tmp_path, "bad.def", "this is not valid define\n")
-        monkeypatch.chdir(tmp_path)
-
-        d = driver.Driver()
-        results = d.validate_program(Path("bad.def"))
-        assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
-
-    def test_nested_file_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        _setup_project(tmp_path, "test.example.com:my_lib")
-        _write_source(
-            tmp_path,
-            "sub/dir/leaf.def",
-            "define the potential position<test.example.com:my_lib:/sub/dir/leaf>.\n",
-        )
-        monkeypatch.chdir(tmp_path)
-
-        d = driver.Driver()
-        results = d.validate_program(Path("sub/dir/leaf.def"))
-        assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert result.exception is None
-
-    def test_walk_returns_results_in_encounter_order(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        _setup_project(tmp_path, "mv:define-lang.org:walk_order")
-        _write_source(
-            tmp_path,
-            "test.def",
-            (
-                "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
-                + "it may only contain dimension points where {\n"
-                + "it has the position</middle>.\n"
-                + "}\n"
-                + "}\n"
-            ),
-        )
-        _write_source(
-            tmp_path,
-            "middle.def",
-            (
-                "define the potential position<mv:define-lang.org:walk_order:/middle> {\n"
-                + "it may only contain dimension points where {\n"
-                + "it has the position</leaf>.\n"
-                + "}\n"
-                + "}\n"
-            ),
-        )
-        _write_source(
-            tmp_path,
-            "leaf.def",
-            "define the potential position<mv:define-lang.org:walk_order:/leaf>.\n",
-        )
-        monkeypatch.chdir(tmp_path)
-
-        results = driver.Driver().validate_program(Path("test.def"))
-        assert [result.file_path for result in results] == [
-            Path("test.def"),
-            Path("middle.def"),
-            Path("leaf.def"),
-        ]
-
-
 class TestPathResolution:
     def test_absolute_path_is_relativized(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         _setup_project(tmp_path, "test.example.com:my_lib")
-        _write_source(
+        source_file = _write_source(
             tmp_path,
             "hello.def",
             "define the potential position<test.example.com:my_lib:/hello>.\n",
         )
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver()
-        results = d.validate_program(tmp_path / "hello.def")
+        results = driver.Driver().validate_program(source_file)
         assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert result.exception is None
+        assert results[0].exception is None
+        assert results[0].diagnostics == []
+        assert results[0].file_path == PurePosixPath("hello.def")
 
     def test_absolute_path_outside_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -201,9 +52,6 @@ class TestPathResolution:
         outside = tmp_path / "outside"
         outside.mkdir()
         source_file = outside / "hello.def"
-        source_file.write_text(
-            "define the potential position<test.example.com:my_lib:/hello>.\n"
-        )
         monkeypatch.chdir(project)
 
         d = driver.Driver()
@@ -224,12 +72,11 @@ class TestPathResolution:
         )
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver()
-        results = d.validate_program(Path("sub/../hello.def"))
+        results = driver.Driver().validate_program(Path("sub/../hello.def"))
         assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert result.exception is None
+        assert results[0].exception is None
+        assert results[0].diagnostics == []
+        assert results[0].file_path == PurePosixPath("hello.def")
 
     def test_symlink_to_outside_without_dotdot_is_allowed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -247,12 +94,11 @@ class TestPathResolution:
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        d = driver.Driver()
-        results = d.validate_program(Path("link/hello.def"))
+        results = driver.Driver().validate_program(Path("link/hello.def"))
         assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert result.exception is None
+        assert results[0].exception is None
+        assert results[0].diagnostics == []
+        assert results[0].file_path == PurePosixPath("link/hello.def")
 
     def test_symlink_with_dotdot_escaping_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -284,12 +130,11 @@ class TestPathResolution:
         (tmp_path / "link").symlink_to(tmp_path / "real" / "sub")
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver()
-        results = d.validate_program(Path("link/../hello.def"))
+        results = driver.Driver().validate_program(Path("link/../hello.def"))
         assert len(results) == 1
-        result = results[0]
-        assert result.diagnostics == []
-        assert result.exception is None
+        assert results[0].exception is None
+        assert results[0].diagnostics == []
+        assert results[0].file_path == PurePosixPath("real/hello.def")
 
     def test_path_escaping_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

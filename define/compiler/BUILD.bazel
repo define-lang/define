@@ -69,10 +69,8 @@ py_library(
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
-        ":config",
         ":exceptions",
         ":validator",
-        "//define/config/project:config_proto_py",
     ],
 )
 
@@ -247,6 +245,7 @@ py_library(
     srcs = ["validator.py"],
     deps = [
         ":ast",
+        ":config",
         ":diagnostics",
         ":exceptions",
         ":name_validators",
