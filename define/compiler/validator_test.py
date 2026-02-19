@@ -192,14 +192,14 @@ class TestParseAndValidateProgramConfig:
     ):
         monkeypatch.chdir(tmp_path)
         with pytest.raises(exceptions.NotProjectRootError):
-            validator.Validator().parse_and_validate_program(Path("test.def"))
+            validator.Validator().parse_and_validate_program(PurePosixPath("test.def"))
 
     def test_not_project_root_error_includes_docs_link(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.chdir(tmp_path)
         with pytest.raises(exceptions.NotProjectRootError, match=r"project-root\.md"):
-            validator.Validator().parse_and_validate_program(Path("test.def"))
+            validator.Validator().parse_and_validate_program(PurePosixPath("test.def"))
 
     def test_invalid_project_config_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -213,7 +213,7 @@ class TestParseAndValidateProgramConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            validator.Validator().parse_and_validate_program(Path("test.def"))
+            validator.Validator().parse_and_validate_program(PurePosixPath("test.def"))
 
 
 class TestGlobalNameWalking:
@@ -227,7 +227,7 @@ class TestGlobalNameWalking:
         monkeypatch.chdir(tmp_path)
 
         results = validator.Validator().parse_and_validate_program(
-            Path("sub/dir/leaf.def")
+            PurePosixPath("sub/dir/leaf.def")
         )
         assert len(results) == 1
         result = results[0]
@@ -268,34 +268,14 @@ class TestGlobalNameWalking:
         )
         monkeypatch.chdir(tmp_path)
 
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert [result.file_path for result in results] == [
             PurePosixPath("test.def"),
             PurePosixPath("middle.def"),
             PurePosixPath("leaf.def"),
         ]
-
-
-class TestPathFormats:
-    def test_windows_style_string_path_still_validates_with_posix_file_path(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
-        path = PureWindowsPath("sub\\test.def")
-        _write_project_config(tmp_path, "my.domain.com:my_lib")
-        monkeypatch.chdir(tmp_path)
-
-        with patch.object(
-            validator.Validator, "_load_file", autospec=True
-        ) as load_file:
-            load_file.return_value = (source, None)
-            results = validator.Validator().parse_and_validate_program(path=path)
-            assert len(results) == 1
-            result = results[0]
-
-        assert result.diagnostics == []
-        assert result.exception is None
-        assert str(result.file_path) == "sub/test.def"
 
 
 class TestReservedNamePositions:
@@ -796,7 +776,9 @@ class TestPositionConstraintReferences:
         )
         _write_project_config(tmp_path, "mv:define-lang.org:test_walk_wrong_type")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert len(results) == 2
         assert results[0].file_path == PurePosixPath("test.def")
         diags = results[0].diagnostics
@@ -833,7 +815,9 @@ class TestFileNotFound:
         source_path.write_text(source, encoding="utf-8")
         _write_project_config(tmp_path, "my.domain.com:my_lib")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert len(results) == 1
         assert results[0].exception is None
         assert len(results[0].diagnostics) == 1
@@ -857,7 +841,9 @@ class TestCircularGlobalReferences:
         (tmp_path / "test.def").write_text(source, encoding="utf-8")
         _write_project_config(tmp_path, "mv:define-lang.org:test_walk_self_cycle")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert len(results) == 1
         assert results[0].exception is None
         diags = results[0].diagnostics
@@ -901,7 +887,9 @@ class TestCircularGlobalReferences:
         )
         _write_project_config(tmp_path, "mv:define-lang.org:test_walk_cycle")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert len(results) == 2
         assert results[0].file_path == PurePosixPath("test.def")
         assert results[0].exception is None
@@ -1026,7 +1014,9 @@ class TestCrossUniverseReference:
         source_path.write_text(source, encoding="utf-8")
         _write_project_config(tmp_path, "mv:define-lang.org:my_universe")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert len(results) == 1
         diags = results[0].diagnostics
         assert len(diags) == 1
@@ -1049,7 +1039,9 @@ class TestCrossUniverseReference:
         source_path.write_text(source, encoding="utf-8")
         _write_project_config(tmp_path, "mv:define-lang.org:my_universe")
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(Path("test.def"))
+        results = validator.Validator().parse_and_validate_program(
+            PurePosixPath("test.def")
+        )
         assert len(results) == 1
         diags = results[0].diagnostics
         assert len(diags) == 1
