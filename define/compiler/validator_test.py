@@ -79,21 +79,6 @@ def parse_and_validate_file(
     return _run
 
 
-def _check_diagnostic_format(
-    diagnostic: diagnostics.Diagnostic,
-    source: str,
-    expected_line: int,
-    expected_column: int,
-) -> None:
-    source_lines = source.splitlines()
-    formatted = diagnostic.format(source_lines)
-    assert f"line {expected_line}, column {expected_column}" in formatted
-    assert source_lines[expected_line - 1] in formatted
-    lines = formatted.split("\n")
-    caret_line = next(line for line in lines if "^" in line)
-    assert caret_line.index("^") == expected_column - 1
-
-
 class TestParseAndValidateFile:
     def test_returns_single_file_timing_stats(
         self,
@@ -284,7 +269,8 @@ class TestReservedNamePositions:
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
-        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 31
 
     def test_reserved_universe_name_with_authority_position(self):
         source = "define the potential position<example.com:example:/path>.\n"
@@ -292,35 +278,40 @@ class TestReservedNamePositions:
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
-        _check_diagnostic_format(diags[1], source, 1, 43)
+        assert diags[1].position.line == 1
+        assert diags[1].position.column == 43
 
     def test_reserved_authority_position(self):
         source = "define the potential position<example.com:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
-        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 31
 
     def test_reserved_authority_with_multiverse_position(self):
         source = "define the potential position<mv:example.com:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
-        _check_diagnostic_format(diags[0], source, 1, 34)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 34
 
     def test_dotless_authority_position(self):
         source = "define the potential position<localhost:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.DotlessAuthorityDomainDiagnostic)
-        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 31
 
     def test_reserved_multiverse_position(self):
         source = "define the potential position<python:example.org:my_lib:/path>.\n"
         diags = _parse_transform_validate(source)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
-        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 31
 
 
 class TestDiagnosticCollection:
@@ -331,8 +322,10 @@ class TestDiagnosticCollection:
         )
         diags = _parse_transform_validate(source)
         assert len(diags) == 2
-        _check_diagnostic_format(diags[0], source, 1, 31)
-        _check_diagnostic_format(diags[1], source, 2, 31)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 31
+        assert diags[1].position.line == 2
+        assert diags[1].position.column == 31
 
     def test_diagnostics_in_source_order(self):
         source = (
@@ -357,7 +350,8 @@ class TestPathMismatch:
         assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
         assert diags[0].expected_path == "/foo/bar"
         assert diags[0].actual_path == "/wrong/path"
-        _check_diagnostic_format(diags[0], source, 1, 52)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 52
 
     def test_no_file_path_skips_validation(self):
         source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
@@ -383,7 +377,8 @@ class TestUniverseWithoutAuthority:
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
         assert diags[0].universe_name == "my_universe"
-        _check_diagnostic_format(diags[0], source, 1, 31)
+        assert diags[0].position.line == 1
+        assert diags[0].position.column == 31
 
     def test_with_authority_ok(self):
         source = "define the potential position<my.domain.com:my_universe:/path>.\n"
@@ -418,7 +413,8 @@ class TestDuplicateDefinitions:
         assert diags[0].definition_type == "position"
         assert diags[0].path == "/same"
         assert diags[0].first_definition_line == 1
-        _check_diagnostic_format(diags[0], source, 2, 1)
+        assert diags[0].position.line == 2
+        assert diags[0].position.column == 1
 
     def test_duplicate_action_error(self):
         source = (
@@ -431,7 +427,8 @@ class TestDuplicateDefinitions:
         assert diags[0].definition_type == "action"
         assert diags[0].path == "/same"
         assert diags[0].first_definition_line == 1
-        _check_diagnostic_format(diags[0], source, 2, 1)
+        assert diags[0].position.line == 2
+        assert diags[0].position.column == 1
 
     def test_same_path_different_types_ok(self):
         source = (
@@ -562,7 +559,8 @@ class TestLocalNameConflicts:
         assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert diags[0].local_name == "alpha"
         assert diags[0].first_definition_line == 2
-        _check_diagnostic_format(diags[0], source, 3, 21)
+        assert diags[0].position.line == 3
+        assert diags[0].position.column == 21
 
     def test_three_locals_two_same_one_diagnostic(self):
         source = (
@@ -661,7 +659,8 @@ class TestLocalNameConflicts:
         assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert diags[0].local_name == "alpha"
         assert diags[0].first_definition_line == 4
-        _check_diagnostic_format(diags[0], source, 5, 21)
+        assert diags[0].position.line == 5
+        assert diags[0].position.column == 21
 
     def test_action_statements_name_conflicts_with_parent_scope(self):
         source = (
@@ -678,7 +677,8 @@ class TestLocalNameConflicts:
         assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert diags[0].local_name == "alpha"
         assert diags[0].first_definition_line == 2
-        _check_diagnostic_format(diags[0], source, 5, 21)
+        assert diags[0].position.line == 5
+        assert diags[0].position.column == 21
 
     def test_action_statements_two_duplicates_point_to_parent_scope_definition(self):
         source = (
@@ -699,8 +699,10 @@ class TestLocalNameConflicts:
         assert diags[1].local_name == "alpha"
         assert diags[0].first_definition_line == 2
         assert diags[1].first_definition_line == 2
-        _check_diagnostic_format(diags[0], source, 5, 21)
-        _check_diagnostic_format(diags[1], source, 6, 21)
+        assert diags[0].position.line == 5
+        assert diags[0].position.column == 21
+        assert diags[1].position.line == 6
+        assert diags[1].position.column == 21
 
 
 class TestPositionConstraintReferences:
@@ -718,7 +720,8 @@ class TestPositionConstraintReferences:
             diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
         )
         assert diags[0].segment == "Bad"
-        _check_diagnostic_format(diags[0], source, 3, 22)
+        assert diags[0].position.line == 3
+        assert diags[0].position.column == 22
 
     def test_same_fqun_constraint_reference_must_use_short_form(self):
         source = (
@@ -734,7 +737,8 @@ class TestPositionConstraintReferences:
             diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
         )
         assert diags[0].fqun == "my.domain.com:my_lib"
-        _check_diagnostic_format(diags[0], source, 3, 21)
+        assert diags[0].position.line == 3
+        assert diags[0].position.column == 21
 
     def test_same_fqun_constraint_reference_in_local_position_must_use_short_form(self):
         source = (
@@ -755,7 +759,8 @@ class TestPositionConstraintReferences:
             diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
         )
         assert diags[0].fqun == "my.domain.com:my_lib"
-        _check_diagnostic_format(diags[0], source, 4, 21)
+        assert diags[0].position.line == 4
+        assert diags[0].position.column == 21
 
     def test_referenced_global_name_wrong_type_position(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -824,7 +829,8 @@ class TestFileNotFound:
         diag = results[0].diagnostics[0]
         assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
         assert diag.file_path == "missing.def"
-        _check_diagnostic_format(diag, source, 3, 21)
+        assert diag.position.line == 3
+        assert diag.position.column == 21
 
 
 class TestCircularGlobalReferences:
@@ -1047,3 +1053,45 @@ class TestCrossUniverseReference:
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
         assert diags[0].universe == "other.example.com:other_universe"
+
+
+class TestErrorMessages:
+    def test_reserved_universe_name_format(self):
+        source = "define the potential position<standard:/path>.\n"
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        formatted = diags[0].format(source.splitlines())
+        assert formatted == (
+            "line 1, column 31\n"
+            "define the potential position<standard:/path>.\n"
+            "                              ^\n"
+            "'standard' is a reserved universe name"
+        )
+
+    def test_path_mismatch_format(self):
+        source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
+        diags = _parse_transform_validate(source, expected_definition_path="foo/bar")
+        assert len(diags) == 1
+        formatted = diags[0].format(source.splitlines())
+        assert formatted == (
+            "line 1, column 52\n"
+            "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
+            "                                                   ^\n"
+            "definition path '/wrong/path' does not match file path '/foo/bar'"
+        )
+
+    def test_duplicate_definition_format(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+        )
+        diags = _parse_transform_validate(source)
+        assert len(diags) == 1
+        formatted = diags[0].format(source.splitlines())
+        assert formatted == (
+            "line 2, column 1\n"
+            "define the potential position<my.domain.com:my_lib:/same>.\n"
+            "^\n"
+            "duplicate position definition for path '/same'; "
+            "first defined on line 1"
+        )

@@ -7,6 +7,8 @@ from dataclasses import asdict, dataclass
 from typing import ClassVar
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from define.compiler import ast
 
 
@@ -23,7 +25,7 @@ class Diagnostic:
         fields: dict[str, object] = asdict(self)
         return self.message_format.format(**fields)
 
-    def format(self, source_lines: list[str], file_name: str | None = None) -> str:
+    def format(self, source_lines: Sequence[str], file_name: str | None = None) -> str:
         """Format the diagnostic with source context and caret pointer."""
         line_idx = self.position.line - 1
         source_line = (
