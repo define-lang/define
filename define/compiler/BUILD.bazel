@@ -214,6 +214,7 @@ py_library(
     srcs = ["parser_exceptions.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":exceptions",
         "@pypi//lark",
     ],
 )
@@ -247,6 +248,7 @@ py_library(
     deps = [
         ":ast",
         ":diagnostics",
+        ":exceptions",
         ":name_validators",
         ":parser",
         ":parser_error_classification",
@@ -263,6 +265,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":diagnostics",
+        ":exceptions",
         ":parser",
         ":parser_exceptions",
         ":transformer",

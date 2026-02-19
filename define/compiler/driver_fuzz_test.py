@@ -383,7 +383,7 @@ def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     d = driver.Driver()
     try:
         results = d.validate_program(Path("test.def"))
-    except exceptions.DriverError:
+    except exceptions.DefineError:
         return
     exceptions_seen = [
         result.exception for result in results if result.exception is not None

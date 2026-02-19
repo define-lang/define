@@ -10,7 +10,13 @@ from unittest.mock import patch
 
 import pytest
 
-from define.compiler import diagnostics, parser, parser_exceptions, validator
+from define.compiler import (
+    diagnostics,
+    exceptions,
+    parser,
+    parser_exceptions,
+    validator,
+)
 from define.compiler.transformer import DefineTransformer
 
 _parser = parser.Parser()
@@ -698,7 +704,7 @@ class TestFileNotFound:
             Path("nonexistent.def")
         )
         assert len(results) == 1
-        assert isinstance(results[0].exception, FileNotFoundError)
+        assert isinstance(results[0].exception, exceptions.SourceFileNotFoundError)
         assert results[0].diagnostics == []
 
     def test_referenced_file_not_found(

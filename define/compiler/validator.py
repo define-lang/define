@@ -17,6 +17,7 @@ from lark import exceptions as lark_exceptions
 from define.compiler import (
     ast,
     diagnostics,
+    exceptions,
     name_validators,
     parser,
     parser_error_classification,
@@ -27,7 +28,7 @@ from define.compiler import (
 type AnyValidationException = (
     parser_exceptions.DefineSyntaxError
     | lark_exceptions.UnexpectedInput
-    | FileNotFoundError
+    | exceptions.SourceFileNotFoundError
 )
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
@@ -278,8 +279,10 @@ class Validator:
             # from a POSIX path to a Windows path.
             with open(pathlib.Path(path), "rb") as source_file:
                 raw = source_file.read()
-        except FileNotFoundError as e:
-            return "", e
+        except FileNotFoundError:
+            return "", exceptions.SourceFileNotFoundError(
+                filesystem_path=pathlib.Path(path)
+            )
         try:
             source = raw.decode("utf-8")
         except UnicodeDecodeError as e:
@@ -562,7 +565,7 @@ class Validator:
         referenced_result = self.results_by_path[referenced_file]
         if referenced_result is None or referenced_result.exception is not None:
             if referenced_result is not None and isinstance(
-                referenced_result.exception, FileNotFoundError
+                referenced_result.exception, exceptions.SourceFileNotFoundError
             ):
                 return diagnostics.ReferencedFileNotFoundDiagnostic(
                     position=reference.position,

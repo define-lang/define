@@ -90,7 +90,7 @@ class Driver:
             error_stream = sys.stderr
         try:
             results = self.validate_program(path)
-        except exceptions.DriverError as e:
+        except exceptions.DefineError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 

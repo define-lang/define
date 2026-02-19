@@ -5,6 +5,8 @@ from typing import ClassVar, Self, override
 
 import lark
 
+from define.compiler import exceptions
+
 
 def _escape_invisible(text: str) -> str:
     """Replace non-printable characters with their Python escape sequences."""
@@ -17,7 +19,7 @@ def _escape_invisible(text: str) -> str:
     return "".join(chars)
 
 
-class DefineSyntaxError(Exception):
+class DefineSyntaxError(exceptions.DefineError):
     """Base class for Define syntax errors."""
 
     message_format: ClassVar[str] = "Syntax error."

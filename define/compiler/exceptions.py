@@ -5,15 +5,26 @@ from pathlib import Path
 _DOCS_ROOT = "https://github.com/mkanat/define/define/docs"
 
 
-class DriverError(Exception):
-    """Base class for errors raised by the driver."""
+class DefineError(Exception):
+    """Base class for errors raised by the Define compiler."""
 
 
-class NotProjectRootError(DriverError):
+class NotProjectRootError(DefineError):
     """The current directory is not a Define project root."""
 
 
-class ConfigValidationError(DriverError):
+class SourceFileNotFoundError(DefineError):
+    """A Define source file could not be found on disk."""
+
+    filesystem_path: Path
+
+    def __init__(self, filesystem_path: Path):
+        """Initialize with the filesystem path that was not found."""
+        self.filesystem_path = filesystem_path
+        super().__init__(f"Source file not found: {filesystem_path}")
+
+
+class ConfigValidationError(DefineError):
     """Project configuration failed validation."""
 
     config_path: Path
@@ -29,7 +40,7 @@ class ConfigValidationError(DriverError):
         )
 
 
-class PathError(DriverError):
+class PathError(DefineError):
     """A file path that does not fall under the project root."""
 
     label: str = "Path is outside the project root"
