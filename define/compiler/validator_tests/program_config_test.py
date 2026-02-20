@@ -8,16 +8,23 @@ from define.compiler import exceptions, validator
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(exceptions.NotProjectRootError):
-        validator.Validator().parse_and_validate_program(PurePosixPath("test.def"))
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 1
+    assert isinstance(results[0].exception, exceptions.NotProjectRootError)
 
 
 def test_not_project_root_error_includes_docs_link(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(exceptions.NotProjectRootError, match=r"project-root\.md"):
-        validator.Validator().parse_and_validate_program(PurePosixPath("test.def"))
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 1
+    assert isinstance(results[0].exception, exceptions.NotProjectRootError)
+    assert "project-root.md" in str(results[0].exception)
 
 
 def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -29,5 +36,8 @@ def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.Monke
     )
     monkeypatch.chdir(tmp_path)
 
-    with pytest.raises(exceptions.ConfigValidationError):
-        validator.Validator().parse_and_validate_program(PurePosixPath("test.def"))
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 1
+    assert isinstance(results[0].exception, exceptions.ConfigValidationError)

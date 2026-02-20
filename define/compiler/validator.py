@@ -26,15 +26,24 @@ from define.compiler import (
     transformer,
 )
 
-type AnyValidationException = (
-    parser_exceptions.DefineSyntaxError
-    | lark_exceptions.UnexpectedInput
-    | exceptions.SourceFileNotFoundError
-)
+type AnyValidationException = exceptions.DefineError | lark_exceptions.UnexpectedInput
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
     lark_exceptions.UnexpectedInput,
 )
+
+
+def _config_error_result(
+    path: pathlib.PurePosixPath,
+    error: AnyValidationException,
+) -> ValidationResult:
+    return ValidationResult(
+        diagnostics=[],
+        exception=error,
+        source=None,
+        file_path=path,
+        stats=ValidationTimingStats(overall=0, parse=0, transform=None, validate=None),
+    )
 
 
 @dataclass
@@ -190,15 +199,16 @@ class Validator:
         path: pathlib.PurePosixPath,
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
-        # TODO: We need a DefineError root for all of these and probably
-        # to return them in results somehow so that the errors are consistent
-        # whether you cause them for the parent root or a sub-root.
-        config.assert_is_project_root()
-        project_config = config.project_config()
+        try:
+            config.assert_is_project_root()
+            project_config = config.project_config()
+            universe_locations = config.local_deps_config()
+        except exceptions.DefineError as e:
+            return [_config_error_result(path, e)]
         self._parse_validate_and_collect(
             path,
             project_config.project.universe_name or "",
-            config.local_deps_config(),
+            universe_locations,
         )
         return [
             result
