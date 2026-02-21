@@ -39,6 +39,7 @@ py_library(
     srcs = ["config.py"],
     deps = [
         ":exceptions",
+        "//defcl/python:exceptions",
         "//defcl/python:parser",
         "//define/config/deps:local_proto_py",
         "//define/config/project:config_proto_py",
@@ -55,6 +56,7 @@ py_test(
     deps = [
         ":config",
         ":exceptions",
+        "//defcl/python:exceptions",
         "@pypi//pytest",
     ],
 )
@@ -63,7 +65,10 @@ py_library(
     name = "exceptions",
     srcs = ["exceptions.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [":constants"],
+    deps = [
+        ":constants",
+        "//defcl/python:exceptions",
+    ],
 )
 
 py_library(

@@ -607,7 +607,7 @@ class Validator:
                 universe=fqun_string,
                 config_path=str(e.config_path),
             )
-        except exceptions.ConfigValidationError as e:
+        except exceptions.ConfigError as e:
             return diagnostics.ConfigLoadErrorDiagnostic(
                 position=fqun.position,
                 error=e,

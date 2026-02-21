@@ -1,7 +1,9 @@
 """Exceptions raised by the Define compiler."""
 
 from pathlib import Path
+from typing import override
 
+from defcl.python import exceptions as dcl_exceptions
 from define.compiler import constants
 
 
@@ -39,6 +41,23 @@ class SourceFileNotFoundError(DefineError):
         """Initialize with the filesystem path that was not found."""
         self.filesystem_path = filesystem_path
         super().__init__(f"Source file not found: {filesystem_path}")
+
+
+class ConfigSyntaxError(ConfigError):
+    """Configuration file has DCL syntax errors."""
+
+    # TODO: I don't like having exceptions.py depend on defcl. We should
+    # perhaps move the config exceptions into config.py or their own module.
+    syntax_error: dcl_exceptions.DclSyntaxError
+
+    def __init__(self, syntax_error: dcl_exceptions.DclSyntaxError):
+        """Initialize with the underlying syntax error."""
+        self.syntax_error = syntax_error
+        super().__init__(str(syntax_error))
+
+    @override
+    def __str__(self) -> str:
+        return str(self.syntax_error)
 
 
 class ConfigValidationError(ConfigError):

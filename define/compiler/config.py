@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 import protovalidate
 from google.protobuf import message
 
+from defcl.python import exceptions as dcl_exceptions
 from defcl.python import parser as defcl_parser
 from define.compiler import exceptions
 from define.config.deps import local_pb2
@@ -17,7 +18,10 @@ LOCAL_DEPS_PATH = Path(".define/deps/local.defcl")
 
 def _load_config[M: message.Message](path: Path, message_type: type[M]) -> M:
     """Load and validate a defcl config file."""
-    result = defcl_parser.parse_file(path, message_type)
+    try:
+        result = defcl_parser.parse_file(path, message_type)
+    except dcl_exceptions.DclSyntaxError as e:
+        raise exceptions.ConfigSyntaxError(e) from e
     try:
         protovalidate.validate(result)
     except protovalidate.ValidationError as e:

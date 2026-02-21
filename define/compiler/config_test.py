@@ -2,6 +2,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
+from defcl.python import exceptions as dcl_exceptions
 from define.compiler import config, exceptions
 
 
@@ -272,3 +273,35 @@ class TestLocalDepsConfig:
         assert exc_info.value.violation_messages == [
             "deps.local.path: value is required"
         ]
+
+
+class TestConfigSyntaxError:
+    def test_project_config_syntax_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "config.defcl").write_text(
+            "project: { universe_name: 'bad' }\n"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
+            _ = config.project_config()
+
+        assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
+
+    def test_local_deps_syntax_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        deps_dir = tmp_path / ".define" / "deps"
+        deps_dir.mkdir(parents=True)
+        _ = (deps_dir / "local.defcl").write_text(
+            "deps: { local: [{ universe_name: 'bad' }] }\n"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
+            _ = config.local_deps_config()
+
+        assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)

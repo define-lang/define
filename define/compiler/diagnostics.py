@@ -9,7 +9,7 @@ from typing import ClassVar
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import ast
+    from define.compiler import ast, exceptions
 
 from define.compiler import constants
 
@@ -340,7 +340,7 @@ class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
 class ConfigLoadErrorDiagnostic(Diagnostic):
     """Diagnostic for when project configuration fails to load."""
 
-    error: Exception
+    error: exceptions.ConfigError
     message_format: ClassVar[str] = (
         "an error occurred while loading the project configuration:\n{error}"
     )
