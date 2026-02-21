@@ -199,7 +199,7 @@ class Validator:
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
         try:
-            self._ensure_sub_root_registered()
+            self._ensure_current_project_root_registered()
         except exceptions.ConfigError as e:
             return [_config_error_result(path, e)]
         self._parse_validate_and_collect(path)
@@ -424,7 +424,7 @@ class Validator:
             return
         scope.maps[0][name] = local_def
 
-    def _ensure_sub_root_registered(self):
+    def _ensure_current_project_root_registered(self):
         """Load project config and register the root sub_root if not already done."""
         if self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
             return
@@ -602,7 +602,7 @@ class Validator:
             raise ValueError("GlobalNameDefinition must have a non-None fqun")
         current_universe = enclosing_fqun.canonical
         try:
-            self._ensure_sub_root_registered()
+            self._ensure_current_project_root_registered()
         except exceptions.NotProjectRootError as e:
             return diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
                 position=fqun.position,
