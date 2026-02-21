@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import time
-from collections import ChainMap, OrderedDict
+from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -23,6 +23,7 @@ from define.compiler import (
     parser,
     parser_error_classification,
     parser_exceptions,
+    path_tracker,
     transformer,
 )
 
@@ -180,13 +181,12 @@ class Validator:
 
     def __init__(self):
         """Initialize state for validating exactly one program per Validator instance."""
-        self.results_by_path: OrderedDict[
-            pathlib.PurePosixPath, ValidationResult | None
-        ] = OrderedDict()
+        self._path_tracker: path_tracker.PathTracker[ValidationResult] = (
+            path_tracker.PathTracker()
+        )
         self._seen_global_definitions: dict[str, ast.QualityDefinition] = {}
         self._reference_stack: _ReferenceStack = _ReferenceStack()
         self._validation_frames: list[_ValidationFrame] = []
-        self._reference_not_found_paths: set[pathlib.PurePosixPath] = set()
         self._unknown_universes: set[str] = set()
 
     @cached_property
@@ -210,12 +210,7 @@ class Validator:
             project_config.project.universe_name or "",
             universe_locations,
         )
-        return [
-            result
-            for result in self.results_by_path.values()
-            if result is not None
-            and result.file_path not in self._reference_not_found_paths
-        ]
+        return self._path_tracker.completed_results()
 
     # Much of this method's behavior is intentionally exercised only through
     # Driver tests so the end-to-end filesystem/context behavior is verified
@@ -268,15 +263,15 @@ class Validator:
         universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> None:
         """Parse/validate one file once and append its result in encounter order."""
-        if path in self.results_by_path:
+        if self._path_tracker.is_tracked(path):
             return
-        self.results_by_path[path] = None
+        self._path_tracker.mark_in_progress(path)
         result = self._parse_and_validate_file(
             path=path,
             expected_universe_name=expected_universe_name,
             universe_locations=universe_locations,
         )
-        self.results_by_path[path] = result
+        self._path_tracker.set_result(path, result)
 
     def _load_file(
         self,
@@ -555,7 +550,7 @@ class Validator:
 
         diagnostic = self._check_file_not_found(reference, referenced_file)
         if diagnostic is not None:
-            self._reference_not_found_paths.add(referenced_file)
+            self._path_tracker.mark_not_found(referenced_file)
             self._diagnostics.append(diagnostic)
             return
 
@@ -571,16 +566,14 @@ class Validator:
     def _check_file_not_found(
         self, reference: ast.GlobalNameReference, referenced_file: pathlib.PurePosixPath
     ) -> diagnostics.ReferencedFileNotFoundDiagnostic | None:
-        referenced_result = self.results_by_path[referenced_file]
-        if referenced_result is None or referenced_result.exception is not None:
-            if referenced_result is not None and isinstance(
-                referenced_result.exception, exceptions.SourceFileNotFoundError
-            ):
-                return diagnostics.ReferencedFileNotFoundDiagnostic(
-                    position=reference.position,
-                    file_path=str(referenced_file),
-                )
+        if not self._path_tracker.has_result(referenced_file):
             return None
+        referenced_result = self._path_tracker.get_result(referenced_file)
+        if isinstance(referenced_result.exception, exceptions.SourceFileNotFoundError):
+            return diagnostics.ReferencedFileNotFoundDiagnostic(
+                position=reference.position,
+                file_path=str(referenced_file),
+            )
         return None
 
     def _check_cycle(

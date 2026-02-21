@@ -220,6 +220,23 @@ py_library(
 )
 
 py_library(
+    name = "path_tracker",
+    srcs = ["path_tracker.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_test(
+    name = "path_tracker_test",
+    size = "small",
+    srcs = ["path_tracker_test.py"],
+    pytest_main = True,
+    deps = [
+        ":path_tracker",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "transformer",
     srcs = ["transformer.py"],
     visibility = ["//define/compiler/validator_tests:__pkg__"],
@@ -256,6 +273,7 @@ py_library(
         ":parser",
         ":parser_error_classification",
         ":parser_exceptions",
+        ":path_tracker",
         ":transformer",
         "@pypi//lark",
     ],
@@ -296,6 +314,8 @@ pyright_test(
         ":parser",
         ":parser_error_classification",
         ":parser_exceptions",
+        ":path_tracker",
+        ":path_tracker_test",
         ":transformer",
         ":transformer_test",
         ":validator",
