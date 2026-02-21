@@ -427,9 +427,10 @@ class Validator:
         """Load project config and register the root sub_root if not already done."""
         if self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
             return
-        config.assert_is_project_root()
-        project_config = config.project_config()
-        universe_locations = config.local_deps_config()
+        loader = config.ConfigLoader(pathlib.PurePosixPath("."))
+        loader.assert_is_project_root()
+        project_config = loader.project_config()
+        universe_locations = loader.local_deps_config()
         self._path_tracker.set_sub_root(
             pathlib.PurePosixPath(""),
             project_config.project.universe_name or "",

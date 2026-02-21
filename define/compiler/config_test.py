@@ -13,7 +13,7 @@ class TestAssertIsProjectRoot:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.NotProjectRootError):
-            config.assert_is_project_root()
+            config.ConfigLoader(PurePosixPath(".")).assert_is_project_root()
 
     def test_succeeds_when_config_exists(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -23,7 +23,7 @@ class TestAssertIsProjectRoot:
         _ = (config_dir / "config.defcl").write_text("")
         monkeypatch.chdir(tmp_path)
 
-        config.assert_is_project_root()
+        config.ConfigLoader(PurePosixPath(".")).assert_is_project_root()
 
 
 class TestProjectConfig:
@@ -35,7 +35,7 @@ class TestProjectConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        result = config.project_config()
+        result = config.ConfigLoader(PurePosixPath(".")).project_config()
         assert result.project.universe_name == "test.example.com:my_lib"
 
     def test_empty_universe_name_raises(
@@ -49,7 +49,7 @@ class TestProjectConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.project_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).project_config()
 
     def test_missing_universe_name_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -60,7 +60,7 @@ class TestProjectConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.project_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).project_config()
 
     def test_error_message_format(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -71,7 +71,7 @@ class TestProjectConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError) as exc_info:
-            _ = config.project_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).project_config()
 
         assert str(exc_info.value) == (
             'File ".define/project/config.defcl"\n'
@@ -110,7 +110,7 @@ class TestLocalDepsConfig:
         )
         monkeypatch.chdir(tmp_path)
 
-        result = config.local_deps_config()
+        result = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
         assert result == {
             "mv:define-lang.org:lib": PurePosixPath("vendor/lib"),
             "mv:define-lang.org:core": PurePosixPath("vendor/core"),
@@ -121,21 +121,21 @@ class TestLocalDepsConfig:
     ):
         monkeypatch.chdir(tmp_path)
 
-        result = config.local_deps_config()
+        result = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
         assert result == {}
 
     def test_empty_deps_list(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         self._write_local_deps(tmp_path, "deps: {}\n")
         monkeypatch.chdir(tmp_path)
 
-        result = config.local_deps_config()
+        result = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
         assert result == {}
 
     def test_empty_local_list(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         self._write_local_deps(tmp_path, "deps: { local: [] }\n")
         monkeypatch.chdir(tmp_path)
 
-        result = config.local_deps_config()
+        result = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
         assert result == {}
 
     def test_missing_universe_name_raises(
@@ -148,7 +148,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
     def test_empty_universe_name_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -160,7 +160,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
     def test_missing_path_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         self._write_local_deps(
@@ -170,7 +170,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
     def test_absolute_path_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -187,7 +187,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
     def test_dotdot_in_path_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -204,7 +204,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
     def test_trailing_slash_in_path_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -221,7 +221,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError):
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
     def test_duplicate_universe_name_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -246,7 +246,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError) as exc_info:
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
         assert exc_info.value.violation_messages == [
             'deps.local: duplicate universe_name "mv:define-lang.org:lib"'
@@ -262,7 +262,7 @@ class TestLocalDepsConfig:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError) as exc_info:
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
         assert str(exc_info.value) == (
             'File ".define/deps/local.defcl"\n'
@@ -287,7 +287,7 @@ class TestConfigSyntaxError:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
-            _ = config.project_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).project_config()
 
         assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
 
@@ -302,6 +302,107 @@ class TestConfigSyntaxError:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
-            _ = config.local_deps_config()
+            _ = config.ConfigLoader(PurePosixPath(".")).local_deps_config()
 
         assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
+
+
+class TestSubRoot:
+    def _write_project_config(self, tmp_path: Path, subroot: str, content: str) -> None:
+        config_dir = tmp_path / subroot / ".define" / "project"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        _ = (config_dir / "config.defcl").write_text(content)
+
+    def _write_local_deps(self, tmp_path: Path, subroot: str, content: str) -> None:
+        deps_dir = tmp_path / subroot / ".define" / "deps"
+        deps_dir.mkdir(parents=True, exist_ok=True)
+        _ = (deps_dir / "local.defcl").write_text(content)
+
+    def test_assert_is_project_root_succeeds(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_project_config(tmp_path, "subroot", "")
+        monkeypatch.chdir(tmp_path)
+
+        config.ConfigLoader(PurePosixPath("subroot")).assert_is_project_root()
+
+    def test_assert_is_project_root_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        (tmp_path / "subroot").mkdir()
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.NotProjectRootError) as exc_info:
+            config.ConfigLoader(PurePosixPath("subroot")).assert_is_project_root()
+
+        assert exc_info.value.config_path == Path(
+            "subroot/.define/project/config.defcl"
+        )
+
+    def test_project_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        self._write_project_config(
+            tmp_path,
+            "subroot",
+            'project: {\n  universe_name: "sub.example.com:lib"\n}\n',
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = config.ConfigLoader(PurePosixPath("subroot")).project_config()
+        assert result.project.universe_name == "sub.example.com:lib"
+
+    def test_project_config_validation_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_project_config(tmp_path, "subroot", "project: {}\n")
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+            _ = config.ConfigLoader(PurePosixPath("subroot")).project_config()
+
+        assert exc_info.value.config_path == Path(
+            "subroot/.define/project/config.defcl"
+        )
+
+    def test_local_deps_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        self._write_local_deps(
+            tmp_path,
+            "subroot",
+            (
+                "deps: {\n"
+                "  local: [\n"
+                "    {\n"
+                '      universe_name: "mv:define-lang.org:lib"\n'
+                '      path: "vendor/lib"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n"
+            ),
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = config.ConfigLoader(PurePosixPath("subroot")).local_deps_config()
+        assert result == {"mv:define-lang.org:lib": PurePosixPath("vendor/lib")}
+
+    def test_local_deps_missing_returns_empty(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        (tmp_path / "subroot").mkdir()
+        monkeypatch.chdir(tmp_path)
+
+        result = config.ConfigLoader(PurePosixPath("subroot")).local_deps_config()
+        assert result == {}
+
+    def test_local_deps_validation_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        self._write_local_deps(
+            tmp_path,
+            "subroot",
+            'deps: { local: [{ universe_name: "mv:define-lang.org:lib" }] }\n',
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigValidationError) as exc_info:
+            _ = config.ConfigLoader(PurePosixPath("subroot")).local_deps_config()
+
+        assert exc_info.value.config_path == Path("subroot/.define/deps/local.defcl")
