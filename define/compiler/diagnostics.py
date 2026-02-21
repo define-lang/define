@@ -11,6 +11,8 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
 
+from define.compiler import constants
+
 
 @dataclass
 class Diagnostic:
@@ -315,6 +317,32 @@ class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
         "universe '{universe}' is not configured as a dependency "
         "of this universe ({current_universe_name}); "
         "add it to .define/deps/local.defcl"
+    )
+
+
+@dataclass
+class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
+    """Diagnostic for when an external universe reference requires loading from disk outside a project root."""
+
+    universe: str
+    config_path: str
+    message_format: ClassVar[str] = (
+        "universe '{universe}' was not previously defined, "
+        + "so the compiler tried to load it from the filesystem. "
+        + "However, {config_path} was not found.\n"
+        + "For more information, see "
+        + constants.DOCS_ROOT
+        + "/project-root.md"
+    )
+
+
+@dataclass
+class ConfigLoadErrorDiagnostic(Diagnostic):
+    """Diagnostic for when project configuration fails to load."""
+
+    error: Exception
+    message_format: ClassVar[str] = (
+        "an error occurred while loading the project configuration:\n{error}"
     )
 
 

@@ -29,6 +29,12 @@ py_library(
 )
 
 py_library(
+    name = "constants",
+    srcs = ["constants.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_library(
     name = "config",
     srcs = ["config.py"],
     deps = [
@@ -57,13 +63,17 @@ py_library(
     name = "exceptions",
     srcs = ["exceptions.py"],
     visibility = ["//define/compiler:__subpackages__"],
+    deps = [":constants"],
 )
 
 py_library(
     name = "diagnostics",
     srcs = ["diagnostics.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [":ast"],
+    deps = [
+        ":ast",
+        ":constants",
+    ],
 )
 
 py_library(
@@ -223,6 +233,7 @@ py_library(
     name = "path_tracker",
     srcs = ["path_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
+    deps = ["@pypi//pygtrie"],
 )
 
 py_test(
@@ -232,6 +243,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":path_tracker",
+        "@pypi//pygtrie",
         "@pypi//pytest",
     ],
 )
@@ -299,6 +311,7 @@ pyright_test(
         ":compiler",
         ":config",
         ":config_test",
+        ":constants",
         ":diagnostics",
         ":driver",
         ":driver_fuzz_test",

@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, validator
+from define.compiler import diagnostics, exceptions, validator
 from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.conftest import ParseAndValidateFile
 
@@ -157,6 +157,88 @@ def test_two_file_cycle_emits_diagnostic(
         + "  --> position<mv:define-lang.org:test_walk_cycle:/loop>\n"
         + "  --> position<mv:define-lang.org:test_walk_cycle:/test>"
     )
+
+
+_EXTERNAL_UNIVERSE_SOURCE = (
+    "define the potential position<my.domain.com:my_lib:/test> {\n"
+    "it may only contain dimension points where {\n"
+    "it has the position<other.example.com:other_universe:/target>.\n"
+    "}\n"
+    "}\n"
+)
+
+
+def test_external_universe_no_project_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(tmp_path)
+    diags = test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
+    assert len(diags) == 1
+    assert isinstance(
+        diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    assert diags[0].universe == "other.example.com:other_universe"
+
+
+def test_external_universe_without_local_deps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    monkeypatch.chdir(tmp_path)
+    diags = test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "other.example.com:other_universe"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+
+
+def test_external_universe_not_in_local_deps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    test_helpers.write_local_deps_config(
+        tmp_path, {"some.other.com:some_lib": "vendor/some_lib"}
+    )
+    monkeypatch.chdir(tmp_path)
+    diags = test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "other.example.com:other_universe"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+
+
+def test_external_universe_invalid_local_deps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    deps_dir = tmp_path / ".define" / "deps"
+    deps_dir.mkdir(parents=True, exist_ok=True)
+    (deps_dir / "local.defcl").write_text(
+        (
+            "deps: {\n  local: [\n"
+            '    { universe_name: "dup" path: "a" },\n'
+            '    { universe_name: "dup" path: "b" }\n'
+            "  ]\n}\n"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    diags = test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert isinstance(diags[0].error, exceptions.ConfigValidationError)
+
+
+def test_external_universe_configured_in_local_deps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    test_helpers.write_local_deps_config(
+        tmp_path, {"other.example.com:other_universe": "vendor/other"}
+    )
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(NotImplementedError):
+        test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
 
 
 def test_unknown_universe_emits_diagnostic(

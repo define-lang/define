@@ -8,6 +8,7 @@ dependencies = [
     "lark",
     "protobuf",
     "protovalidate",
+    "pygtrie",
     "regex",
 ]
 

@@ -2,15 +2,19 @@
 
 from pathlib import Path
 
-_DOCS_ROOT = "https://github.com/mkanat/define/define/docs"
+from define.compiler import constants
 
 
 class DefineError(Exception):
     """Base class for errors raised by the Define compiler."""
 
 
+class ConfigError(DefineError):
+    """Base class for errors raise by anything to do with configuration."""
+
+
 # TODO: This will need to specify what directory is missing the config, for sub-roots.
-class NotProjectRootError(DefineError):
+class NotProjectRootError(ConfigError):
     """The current directory is not a Define project root."""
 
     config_path: Path
@@ -22,7 +26,7 @@ class NotProjectRootError(DefineError):
             f"Not a Define project root: {config_path} not found.\n"
             + "The Define compiler must be run from a project root directory.\n"
             + f"A project root is any directory containing {config_path}.\n"
-            + f"For more information, see {_DOCS_ROOT}/project-root.md"
+            + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
         )
 
 
@@ -37,7 +41,7 @@ class SourceFileNotFoundError(DefineError):
         super().__init__(f"Source file not found: {filesystem_path}")
 
 
-class ConfigValidationError(DefineError):
+class ConfigValidationError(ConfigError):
     """Project configuration failed validation."""
 
     config_path: Path
@@ -70,7 +74,7 @@ class PathError(DefineError):
             f"{self.label}: {input_path}\n"
             + f"  Resolved to: {resolved_path}\n"
             + f"  Project root: {project_root}\n"
-            + f"For more information, see {_DOCS_ROOT}/project-root.md"
+            + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
         )
 
 

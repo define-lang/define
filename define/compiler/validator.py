@@ -140,10 +140,9 @@ class _ValidationFrame:
 
     diagnostics: list[diagnostics.Diagnostic]
     expected_definition_path: pathlib.PurePosixPath | None
-    expected_universe_name: str | None
-    universe_locations: Mapping[str, pathlib.PurePosixPath]
 
 
+# TODO: Factor this out into its own file.
 class _ReferenceStack:
     """Tracks the global definitions we are currently walking, for cycle detection."""
 
@@ -187,7 +186,6 @@ class Validator:
         self._seen_global_definitions: dict[str, ast.QualityDefinition] = {}
         self._reference_stack: _ReferenceStack = _ReferenceStack()
         self._validation_frames: list[_ValidationFrame] = []
-        self._unknown_universes: set[str] = set()
 
     @cached_property
     def _parser(self) -> parser.Parser:
@@ -200,16 +198,10 @@ class Validator:
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
         try:
-            config.assert_is_project_root()
-            project_config = config.project_config()
-            universe_locations = config.local_deps_config()
-        except exceptions.DefineError as e:
+            self._ensure_sub_root_registered()
+        except exceptions.ConfigError as e:
             return [_config_error_result(path, e)]
-        self._parse_validate_and_collect(
-            path,
-            project_config.project.universe_name or "",
-            universe_locations,
-        )
+        self._parse_validate_and_collect(path)
         return self._path_tracker.completed_results()
 
     # Much of this method's behavior is intentionally exercised only through
@@ -218,8 +210,6 @@ class Validator:
     def _parse_and_validate_file(
         self,
         path: pathlib.PurePosixPath,
-        expected_universe_name: str | None,
-        universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
         run = _ValidationRun(file_path=path, started_at=time.perf_counter_ns())
@@ -251,26 +241,18 @@ class Validator:
         validation_diagnostics = self.validate(
             program=program,
             expected_definition_path=expected_definition_path,
-            expected_universe_name=expected_universe_name,
-            universe_locations=universe_locations,
         )
         return run.complete(validation_diagnostics)
 
     def _parse_validate_and_collect(
         self,
         path: pathlib.PurePosixPath,
-        expected_universe_name: str | None,
-        universe_locations: Mapping[str, pathlib.PurePosixPath],
     ) -> None:
         """Parse/validate one file once and append its result in encounter order."""
         if self._path_tracker.is_tracked(path):
             return
         self._path_tracker.mark_in_progress(path)
-        result = self._parse_and_validate_file(
-            path=path,
-            expected_universe_name=expected_universe_name,
-            universe_locations=universe_locations,
-        )
+        result = self._parse_and_validate_file(path)
         self._path_tracker.set_result(path, result)
 
     def _load_file(
@@ -318,13 +300,17 @@ class Validator:
                 configured external dependencies. Defaults to no configured
                 dependencies.
         """
+        if expected_universe_name is not None and not self._path_tracker.seen_sub_root(
+            pathlib.PurePosixPath("")
+        ):
+            self._path_tracker.set_sub_root(
+                pathlib.PurePosixPath(""),
+                expected_universe_name,
+                universe_locations if universe_locations is not None else {},
+            )
         frame = _ValidationFrame(
             diagnostics=[],
             expected_definition_path=expected_definition_path,
-            expected_universe_name=expected_universe_name,
-            universe_locations=universe_locations
-            if universe_locations is not None
-            else {},
         )
         self._validation_frames.append(frame)
         try:
@@ -437,13 +423,28 @@ class Validator:
             return
         scope.maps[0][name] = local_def
 
+    def _ensure_sub_root_registered(self):
+        """Load project config and register the root sub_root if not already done."""
+        if self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
+            return
+        config.assert_is_project_root()
+        project_config = config.project_config()
+        universe_locations = config.local_deps_config()
+        self._path_tracker.set_sub_root(
+            pathlib.PurePosixPath(""),
+            project_config.project.universe_name or "",
+            universe_locations,
+        )
+
     def _validate_fqun_matches_expected(
         self, definition: ast.QualityDefinition
     ) -> None:
         """Validate that the definition's FQUN matches the expected project FQUN."""
-        expected_universe_name = self._frame.expected_universe_name
-        if expected_universe_name is None:
+        if not self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
             return
+        expected_universe_name = self._path_tracker.expected_universe(
+            pathlib.PurePosixPath(".")
+        )
 
         # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
         if definition.name.fqun is None:
@@ -529,11 +530,13 @@ class Validator:
 
         reference = typed_global_name.global_name
         if reference.fqun is not None:
-            if reference.fqun.canonical in self._unknown_universes:
+            if self._path_tracker.is_unknown_universe(reference.fqun.canonical):
                 return
-            diagnostic = self._check_sub_root_configured(reference.fqun)
+            diagnostic = self._check_sub_root_configured(
+                reference.fqun, enclosing_definition
+            )
             if diagnostic:
-                self._unknown_universes.add(reference.fqun.canonical)
+                self._path_tracker.mark_unknown_universe(reference.fqun.canonical)
                 self._diagnostics.append(diagnostic)
                 return
             raise NotImplementedError(
@@ -542,11 +545,7 @@ class Validator:
 
         referenced_file = reference.path.relative_path.with_suffix(".def")
 
-        self._parse_validate_and_collect(
-            path=referenced_file,
-            expected_universe_name=self._frame.expected_universe_name,
-            universe_locations=self._frame.universe_locations,
-        )
+        self._parse_validate_and_collect(referenced_file)
 
         diagnostic = self._check_file_not_found(reference, referenced_file)
         if diagnostic is not None:
@@ -590,18 +589,35 @@ class Validator:
         return None
 
     def _check_sub_root_configured(
-        self, fqun: ast.Fqun
-    ) -> diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
+        self,
+        fqun: ast.Fqun,
+        enclosing_definition: ast.QualityDefinition,
+    ) -> diagnostics.Diagnostic | None:
         fqun_string = fqun.canonical
-        if fqun_string not in self._frame.universe_locations:
-            expected = self._frame.expected_universe_name
-            if expected is None:
-                raise ValueError(
-                    "expected_universe_name must be set for cross-universe references"
-                )
+        enclosing_fqun = enclosing_definition.name.fqun
+        # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
+        if enclosing_fqun is None:
+            raise ValueError("GlobalNameDefinition must have a non-None fqun")
+        current_universe = enclosing_fqun.canonical
+        try:
+            self._ensure_sub_root_registered()
+        except exceptions.NotProjectRootError as e:
+            return diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
+                position=fqun.position,
+                universe=fqun_string,
+                config_path=str(e.config_path),
+            )
+        except exceptions.ConfigValidationError as e:
+            return diagnostics.ConfigLoadErrorDiagnostic(
+                position=fqun.position,
+                error=e,
+            )
+        if not self._path_tracker.universe_has_sub_root_in(
+            fqun_string, pathlib.PurePosixPath("")
+        ):
             return diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                 position=fqun.position,
                 universe=fqun_string,
-                current_universe_name=expected,
+                current_universe_name=current_universe,
             )
         return None

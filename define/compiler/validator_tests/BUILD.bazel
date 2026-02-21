@@ -82,6 +82,7 @@ py_test(
         ":conftest",
         ":test_helpers",
         "//define/compiler:diagnostics",
+        "//define/compiler:exceptions",
         "//define/compiler:validator",
         "@pypi//pytest",
     ],
