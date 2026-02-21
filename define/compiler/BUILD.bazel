@@ -55,6 +55,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":config",
+        ":constants",
         ":exceptions",
         "//defcl/python:exceptions",
         "@pypi//pytest",
@@ -284,6 +285,7 @@ py_library(
     deps = [
         ":ast",
         ":config",
+        ":constants",
         ":diagnostics",
         ":exceptions",
         ":name_validators",

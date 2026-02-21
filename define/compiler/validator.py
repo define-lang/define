@@ -17,6 +17,7 @@ from lark import exceptions as lark_exceptions
 from define.compiler import (
     ast,
     config,
+    constants,
     diagnostics,
     exceptions,
     name_validators,
@@ -427,7 +428,7 @@ class Validator:
         """Load project config and register the root sub_root if not already done."""
         if self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
             return
-        loader = config.ConfigLoader(pathlib.PurePosixPath("."))
+        loader = config.ConfigLoader(constants.PROJECT_ROOT)
         loader.assert_is_project_root()
         project_config = loader.project_config()
         universe_locations = loader.local_deps_config()
@@ -444,7 +445,7 @@ class Validator:
         if not self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
             return
         expected_universe_name = self._path_tracker.expected_universe(
-            pathlib.PurePosixPath(".")
+            constants.PROJECT_ROOT
         )
 
         # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
