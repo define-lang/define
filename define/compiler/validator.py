@@ -500,10 +500,6 @@ class Validator:
         if expected_fqun is None:
             return
 
-        # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
-        if definition.name.fqun is None:
-            raise ValueError("GlobalNameDefinition must have a non-None fqun")
-
         actual = definition.name.fqun.canonical
         if actual != expected_fqun:
             self._diagnostics.append(
@@ -597,8 +593,6 @@ class Validator:
             return
 
         enclosing_fqun = enclosing_definition.name.fqun
-        if enclosing_fqun is None:
-            raise ValueError("GlobalNameDefinition must have a non-None fqun")
         self._walk_in_current_root(
             typed_global_name, typed_name_str, enclosing_fqun.canonical
         )
@@ -759,9 +753,6 @@ class Validator:
     ) -> diagnostics.Diagnostic | None:
         fqun_string = fqun.canonical
         enclosing_fqun = enclosing_definition.name.fqun
-        # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
-        if enclosing_fqun is None:
-            raise ValueError("GlobalNameDefinition must have a non-None fqun")
         current_universe = enclosing_fqun.canonical
         try:
             # TODO: This should return a Config object, and that's what we

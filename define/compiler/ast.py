@@ -250,16 +250,11 @@ class GlobalName(ASTNode):
         return f"{fqun.canonical}:{self.path.name}"
 
 
-# TODO: Regardless of pyright's complaints, we need to make fqun
-# always be non-None on this subclass; there are too many needless
-# None checks in callers.
 @dataclass
 class GlobalNameDefinition(GlobalName):
     """Represents a global name at a definition site."""
 
-    def __init__(self, position: SourcePosition, fqun: Fqun, path: GlobalPathName):
-        """Initialize a definition-site global name with a required FQUN."""
-        super().__init__(position=position, fqun=fqun, path=path)
+    fqun: Fqun  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 @dataclass
