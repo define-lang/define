@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  # Needed for the buf action to leave a comment explaining what's wrong.
+  pull-requests: write
+
 jobs:
   ci:
     runs-on: ubuntu-latest
