@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Self
 
+from define.compiler import constants
+
 if typing.TYPE_CHECKING:
     import lark
 
@@ -150,6 +152,10 @@ class GlobalPathName(ASTNode):
         """Return the path as a relative POSIX path object."""
         return PurePosixPath(self.name[1:])
 
+    def file_path(self, root: PurePosixPath = constants.PROJECT_ROOT) -> PurePosixPath:
+        """Return the .def file path, prefixed by root."""
+        return root / self.relative_path.with_suffix(".def")
+
 
 @dataclass
 class TriggerConditionsBlock(ASTNode):
@@ -244,6 +250,9 @@ class GlobalName(ASTNode):
         return f"{fqun.canonical}:{self.path.name}"
 
 
+# TODO: Regardless of pyright's complaints, we need to make fqun
+# always be non-None on this subclass; there are too many needless
+# None checks in callers.
 @dataclass
 class GlobalNameDefinition(GlobalName):
     """Represents a global name at a definition site."""

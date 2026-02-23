@@ -347,6 +347,36 @@ class ConfigLoadErrorDiagnostic(Diagnostic):
 
 
 @dataclass
+class SubRootAlreadyOccupiedDiagnostic(Diagnostic):
+    """Diagnostic for when a sub-root path already has files loaded under a different universe."""
+
+    universe: str
+    sub_root_path: str
+    existing_file: str
+    existing_universe: str
+    message_format: ClassVar[str] = (
+        "attempted to load the universe '{universe}' in '{sub_root_path}' "
+        "but '{existing_file}' was already registered as having the universe "
+        "'{existing_universe}' ; two different universes cannot occupy "
+        "'{sub_root_path}'"
+    )
+
+
+@dataclass
+class PathInsideOtherUniverseDiagnostic(Diagnostic):
+    """Diagnostic for when a path being loaded falls inside a different universe's sub-root."""
+
+    path: str
+    other_universe: str
+    sub_root_path: str
+    message_format: ClassVar[str] = (
+        "the path '{path}' is inside of a different universe from this one "
+        "('{other_universe}' located at '{sub_root_path}') ; "
+        "two different universes cannot both occupy '{sub_root_path}'"
+    )
+
+
+@dataclass
 class CircularGlobalReferenceDiagnostic(Diagnostic):
     """Diagnostic for when resolving references would create a cycle."""
 

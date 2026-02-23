@@ -55,7 +55,7 @@ class ConfigLoader:
         """Raise NotProjectRootError if the root is not a project root."""
         config_path = Path(self._root / CONFIG_PATH)
         if not config_path.exists():
-            raise exceptions.NotProjectRootError(config_path)
+            raise exceptions.NotProjectRootError(config_path, self._root)
 
     def project_config(self) -> config_pb2.ProjectConfigFile:
         """Load and validate the project configuration."""

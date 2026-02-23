@@ -36,6 +36,12 @@ def write_project_config(tmp_path: Path, universe_name: str) -> None:
     )
 
 
+def write_sub_root(tmp_path: Path, sub_root_rel_path: str, universe_name: str) -> None:
+    """Create a sub-root directory with a project config."""
+    sub_root = tmp_path / sub_root_rel_path
+    write_project_config(sub_root, universe_name)
+
+
 def write_local_deps_config(tmp_path: Path, deps: dict[str, str]) -> None:
     """Write a .define/deps/local.defcl file under tmp_path."""
     deps_dir = tmp_path / ".define" / "deps"

@@ -17,13 +17,11 @@ class TestPathTracker:
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.mark_in_progress(PurePosixPath("a.def"))
         assert tracker.is_tracked(PurePosixPath("a.def"))
-        assert not tracker.has_result(PurePosixPath("a.def"))
 
     def test_set_and_get_result(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.mark_in_progress(PurePosixPath("a.def"))
         tracker.set_result(PurePosixPath("a.def"), "ok")
-        assert tracker.has_result(PurePosixPath("a.def"))
         assert tracker.get_result(PurePosixPath("a.def")) == "ok"
 
     def test_get_result_raises_when_in_progress(self):
@@ -60,83 +58,46 @@ class TestPathTracker:
 
 
 class TestSubRootTracking:
-    def test_set_and_seen_sub_root_empty_path(self):
+    def test_project_root_loaded_false_when_not_registered(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        assert not tracker.project_root_loaded(PurePosixPath("ext/dep"))
+
+    def test_project_root_loaded_true_after_register(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         root = PurePosixPath("")
-        tracker.set_sub_root(root, "my.universe", {"dep": PurePosixPath("ext/dep")})
-        assert tracker.seen_sub_root(root)
+        tracker.register_project_root(root, "my.universe", {})
+        assert tracker.project_root_loaded(root)
 
-    def test_set_and_seen_sub_root_non_empty(self):
+    def test_register_and_fqun_for_root_empty_path(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        root = PurePosixPath("")
+        tracker.register_project_root(
+            root, "my.universe", {"dep": PurePosixPath("ext/dep")}
+        )
+        assert tracker.fqun_for_root(root) == "my.universe"
+
+    def test_register_and_fqun_for_root_non_empty(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         root = PurePosixPath("ext/dep")
-        tracker.set_sub_root(root, "dep.universe", {})
-        assert tracker.seen_sub_root(root)
+        tracker.register_project_root(root, "dep.universe", {})
+        assert tracker.fqun_for_root(root) == "dep.universe"
 
-    def test_seen_sub_root_false_when_not_set(self):
+    def test_fqun_for_root_none_when_not_registered(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert not tracker.seen_sub_root(PurePosixPath("ext/dep"))
+        assert tracker.fqun_for_root(PurePosixPath("ext/dep")) is None
 
-    def test_set_sub_root_duplicate_root_raises(self):
+    def test_register_project_root_duplicate_root_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         root = PurePosixPath("")
-        tracker.set_sub_root(root, "my.universe", {})
+        tracker.register_project_root(root, "my.universe", {})
         with pytest.raises(ValueError, match="already registered"):
-            tracker.set_sub_root(root, "other.universe", {})
+            tracker.register_project_root(root, "other.universe", {})
 
-    def test_set_sub_root_duplicate_fqun_raises(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(PurePosixPath(""), "my.universe", {})
-        with pytest.raises(ValueError, match="already maps"):
-            tracker.set_sub_root(PurePosixPath("ext/other"), "my.universe", {})
-
-    def test_set_sub_root_unknown_fqun_raises(self):
+    def test_register_project_root_unknown_fqun_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.mark_unknown_universe("bad.universe")
         with pytest.raises(ValueError, match="marked unknown"):
-            tracker.set_sub_root(PurePosixPath(""), "bad.universe", {})
-
-    def test_expected_universe_empty_root(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(PurePosixPath(""), "my.universe", {})
-        assert tracker.expected_universe(PurePosixPath("foo/bar")) == "my.universe"
-
-    def test_expected_universe_nested_sub_root(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(
-            PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
-        )
-        tracker.set_sub_root(PurePosixPath("ext/dep"), "dep.universe", {})
-        assert tracker.expected_universe(PurePosixPath("ext/dep/foo")) == "dep.universe"
-        assert tracker.expected_universe(PurePosixPath("local/bar")) == "my.universe"
-
-    def test_expected_universe_deeply_nested(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(PurePosixPath(""), "root", {"a": PurePosixPath("a")})
-        tracker.set_sub_root(PurePosixPath("a"), "a.uni", {"b": PurePosixPath("a/b")})
-        tracker.set_sub_root(PurePosixPath("a/b"), "b.uni", {})
-        assert tracker.expected_universe(PurePosixPath("a/b/c/d")) == "b.uni"
-        assert tracker.expected_universe(PurePosixPath("a/x")) == "a.uni"
-        assert tracker.expected_universe(PurePosixPath("other")) == "root"
-
-    def test_expected_universe_no_sub_root_raises(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        with pytest.raises(KeyError):
-            tracker.expected_universe(PurePosixPath("foo"))
-
-    def test_path_to_universe_project_root(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(PurePosixPath(""), "my.universe", {})
-        assert tracker.path_to_universe("my.universe") == PurePosixPath("")
-
-    def test_path_to_universe_non_empty(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(PurePosixPath("ext/dep"), "dep.universe", {})
-        assert tracker.path_to_universe("dep.universe") == PurePosixPath("ext/dep")
-
-    def test_path_to_universe_unknown_raises(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        with pytest.raises(KeyError):
-            tracker.path_to_universe("nope")
+            tracker.register_project_root(PurePosixPath(""), "bad.universe", {})
 
     def test_mark_and_is_unknown_universe(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
@@ -146,17 +107,88 @@ class TestSubRootTracking:
 
     def test_universe_has_sub_root_in(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(
+        tracker.register_project_root(
             PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
         )
         assert tracker.universe_has_sub_root_in("dep", PurePosixPath(""))
 
     def test_universe_has_sub_root_in_missing(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.set_sub_root(PurePosixPath(""), "my.universe", {})
+        tracker.register_project_root(PurePosixPath(""), "my.universe", {})
         assert not tracker.universe_has_sub_root_in("dep", PurePosixPath(""))
 
     def test_universe_has_sub_root_in_unregistered_root_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         with pytest.raises(KeyError):
             tracker.universe_has_sub_root_in("dep", PurePosixPath("not/registered"))
+
+    def test_sub_root_location(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(
+            PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
+        )
+        assert tracker.sub_root_location("dep", PurePosixPath("")) == PurePosixPath(
+            "ext/dep"
+        )
+
+    def test_sub_root_location_unregistered_parent_raises(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        with pytest.raises(KeyError):
+            tracker.sub_root_location("dep", PurePosixPath("not/registered"))
+
+    def test_sub_root_location_unknown_fqun_raises(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "my.universe", {})
+        with pytest.raises(KeyError):
+            tracker.sub_root_location("unknown", PurePosixPath(""))
+
+
+class TestConflictDetection:
+    def test_find_enclosing_root_no_roots_raises(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        with pytest.raises(KeyError):
+            tracker.find_enclosing_root(PurePosixPath("foo/bar.def"))
+
+    def test_find_enclosing_root_returns_project_root(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
+        assert tracker.find_enclosing_root(
+            PurePosixPath("foo/bar.def")
+        ) == PurePosixPath(".")
+
+    def test_find_enclosing_root_returns_nested(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
+        tracker.register_project_root(PurePosixPath("lib"), "lib.uni", {})
+        assert tracker.find_enclosing_root(
+            PurePosixPath("lib/foo.def")
+        ) == PurePosixPath("lib")
+
+    def test_find_enclosing_root_returns_most_specific(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
+        tracker.register_project_root(PurePosixPath("lib"), "lib.uni", {})
+        tracker.register_project_root(PurePosixPath("lib/inner"), "inner.uni", {})
+        assert tracker.find_enclosing_root(
+            PurePosixPath("lib/inner/x.def")
+        ) == PurePosixPath("lib/inner")
+
+    def test_first_tracked_file_under_no_files(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
+        assert tracker.first_tracked_file_under(PurePosixPath("lib")) == (None, None)
+
+    def test_first_tracked_file_under_finds_conflict(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
+        tracker.mark_in_progress(PurePosixPath("lib/target.def"))
+        result = tracker.first_tracked_file_under(PurePosixPath("lib"))
+        assert result == (PurePosixPath("lib/target.def"), "root.uni")
+
+    def test_first_tracked_file_under_returns_nested_sub_root_owner(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
+        tracker.register_project_root(PurePosixPath("lib/inner"), "inner.uni", {})
+        tracker.mark_in_progress(PurePosixPath("lib/inner/x.def"))
+        result = tracker.first_tracked_file_under(PurePosixPath("lib"))
+        assert result == (PurePosixPath("lib/inner/x.def"), "inner.uni")

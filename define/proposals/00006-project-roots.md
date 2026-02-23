@@ -155,7 +155,7 @@ which case the tool will discover that directory and then change its current
 working directory to that directory.
 
 The compiler's current working directory must continue to be the project root
-for the lifetime of the compiler (with exceptions as specified below).
+for the lifetime of the compiler.
 
 ### Sub-Roots
 
@@ -164,10 +164,8 @@ project unless the project configuration says otherwise. If there are project
 roots in a directory structure below the current root, then the current root's
 configuration files must indicate the existence of those "sub-projects."
 
-When a compiler or define tool encounters a sub-root, it creates a new context
-for itself and switches its current working directory to that sub-root. It then
-runs a complete compilation on that sub-root as its own universe, before
-returning to compiling the parent root.
+When compiling code in a sub-root, all paths in global names for the sub-root's
+universe are treated as relative to the sub-root.
 
 Sub-roots are only compiled when the _code_ indicates that compiling them is
 necessary, not simply because they are listed in the configuration. For example,

@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:expected_child"
+      path: "lib"
+    }
+  ]
+}

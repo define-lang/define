@@ -229,16 +229,18 @@ def test_external_universe_invalid_local_deps(
     assert isinstance(diags[0].error, exceptions.ConfigValidationError)
 
 
-def test_external_universe_configured_in_local_deps(
+def test_external_universe_configured_but_no_sub_root_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     test_helpers.write_local_deps_config(
         tmp_path, {"other.example.com:other_universe": "vendor/other"}
     )
+    (tmp_path / "vendor" / "other").mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(NotImplementedError):
-        test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
+    diags = test_helpers.parse_transform_validate(_EXTERNAL_UNIVERSE_SOURCE)
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
 
 
 def test_unknown_universe_emits_diagnostic(
@@ -275,3 +277,370 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].universe == "other.example.com:other_universe"
+
+
+_PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
+_CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
+
+
+def _setup_cross_fqun_project(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    child_universe: str = _CHILD_UNIVERSE,
+    sub_root_path: str = "lib",
+) -> None:
+    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
+    test_helpers.write_local_deps_config(tmp_path, {child_universe: sub_root_path})
+    monkeypatch.chdir(tmp_path)
+
+
+def test_cross_fqun_walks_into_sub_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 2
+    assert all(r.exception is None for r in results)
+    assert all(r.diagnostics == [] for r in results)
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[1].file_path == PurePosixPath("lib/target.def")
+
+
+def test_cross_fqun_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/missing>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 1
+    assert results[0].exception is None
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+
+
+def test_cross_fqun_sub_root_missing_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 1
+    assert results[0].exception is None
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+
+
+def test_cross_fqun_sub_root_fqun_mismatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    wrong_universe = "mv:define-lang.org:wrong_universe"
+    test_helpers.write_sub_root(tmp_path, "lib", wrong_universe)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        f"define the potential position<{wrong_universe}:/target>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 1
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
+    assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
+    assert diags[0].error.actual_fqun == wrong_universe
+
+
+def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position</lib/parent_target>.\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/parent_target.def",
+        f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
+    )
+    _write_source(
+        tmp_path,
+        "lib/sub_root_target.def",
+        f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert any(
+        isinstance(d, diagnostics.SubRootAlreadyOccupiedDiagnostic) for d in all_diags
+    )
+
+
+def test_sub_root_conflict_continues_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position</lib/parent_target>.\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/missing_target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/parent_target.def",
+        f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert any(
+        isinstance(d, diagnostics.SubRootAlreadyOccupiedDiagnostic) for d in all_diags
+    )
+    assert any(
+        isinstance(d, diagnostics.ReferencedFileNotFoundDiagnostic) for d in all_diags
+    )
+
+
+def test_cross_fqun_file_wrong_fqun_in_sub_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    wrong_fqun = "mv:define-lang.org:totally_wrong"
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        f"define the potential position<{wrong_fqun}:/target>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    file_diags = [d for r in results for d in r.diagnostics]
+    assert any(isinstance(d, diagnostics.FqunMismatchDiagnostic) for d in file_diags)
+
+
+def test_cross_fqun_wrong_type_in_sub_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        (
+            f"define the potential action<{_CHILD_UNIVERSE}:/target> {{\n"
+            f"it happens when {{\n"
+            f"}} and it does {{\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    file_diags = [d for r in results for d in r.diagnostics]
+    assert any(
+        isinstance(d, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+        for d in file_diags
+    )
+
+
+def test_same_fqun_reference_inside_sub_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/entry>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/entry.def",
+        (
+            f"define the potential position<{_CHILD_UNIVERSE}:/entry> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position</leaf>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/leaf.def",
+        f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 3
+    assert all(r.exception is None for r in results)
+    assert all(r.diagnostics == [] for r in results)
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[1].file_path == PurePosixPath("lib/entry.def")
+    assert results[2].file_path == PurePosixPath("lib/leaf.def")
+
+
+def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    grandchild_universe = "mv:define-lang.org:grandchild_universe"
+    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
+    test_helpers.write_local_deps_config(tmp_path, {_CHILD_UNIVERSE: "lib"})
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    test_helpers.write_local_deps_config(
+        tmp_path / "lib", {grandchild_universe: "inner"}
+    )
+    test_helpers.write_sub_root(tmp_path, "lib/inner", grandchild_universe)
+    monkeypatch.chdir(tmp_path)
+
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        (
+            f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{grandchild_universe}:/leaf>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/inner/leaf.def",
+        f"define the potential position<{grandchild_universe}:/leaf>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 3
+    assert all(r.exception is None for r in results)
+    assert all(r.diagnostics == [] for r in results)
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert results[2].file_path == PurePosixPath("lib/inner/leaf.def")

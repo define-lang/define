@@ -1,7 +1,7 @@
 define the potential action<mv:define-lang.org:test_walk_scope_isolation:/test> {
     define the position<dup_local> {
         it may only contain dimension points where {
-            it has the position</target>.
+            it has the action</target>.
         }
     }
     it happens when {

@@ -7,10 +7,6 @@ import time
 from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 from lark import exceptions as lark_exceptions
 
@@ -33,19 +29,6 @@ SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
     lark_exceptions.UnexpectedInput,
 )
-
-
-def _config_error_result(
-    path: pathlib.PurePosixPath,
-    error: AnyValidationException,
-) -> ValidationResult:
-    return ValidationResult(
-        diagnostics=[],
-        exception=error,
-        source=None,
-        file_path=path,
-        stats=ValidationTimingStats(overall=0, parse=0, transform=None, validate=None),
-    )
 
 
 @dataclass
@@ -141,6 +124,7 @@ class _ValidationFrame:
 
     diagnostics: list[diagnostics.Diagnostic]
     expected_definition_path: pathlib.PurePosixPath | None
+    root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT
 
 
 # TODO: Factor this out into its own file.
@@ -198,10 +182,6 @@ class Validator:
         path: pathlib.PurePosixPath,
     ) -> list[ValidationResult]:
         """Parse, transform, and validate all reached files from one entrypoint."""
-        try:
-            self._ensure_current_project_root_registered()
-        except exceptions.ConfigError as e:
-            return [_config_error_result(path, e)]
         self._parse_validate_and_collect(path)
         return self._path_tracker.completed_results()
 
@@ -211,18 +191,31 @@ class Validator:
     def _parse_and_validate_file(
         self,
         path: pathlib.PurePosixPath,
+        root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT,
+        expected_fqun: str | None = None,
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
-        run = _ValidationRun(file_path=path, started_at=time.perf_counter_ns())
+        full_path = root_prefix / path
+        run = _ValidationRun(file_path=full_path, started_at=time.perf_counter_ns())
 
-        source, syntax_error = self._load_file(path)
+        # TODO: Need to add stats for config loading time.
+        try:
+            loaded_fqun = self._load_root_config_if_not_loaded(
+                root_prefix, expected_fqun
+            )
+        except exceptions.ConfigError as e:
+            run.mark_parse_finished()
+            return run.incomplete(e)
+
+        source, syntax_error = self._load_file(full_path)
         if syntax_error is not None:
+            # TODO: Perhaps add stats for file loading.
             run.mark_parse_finished()
             return run.incomplete(syntax_error)
         run.source = source
 
         try:
-            tree = self._parser.parse(source, file_path=path)
+            tree = self._parser.parse(source, file_path=full_path)
         except SYNTAX_ERROR_TYPES as e:
             run.mark_parse_finished()
             return run.incomplete(e)
@@ -239,22 +232,27 @@ class Validator:
         run.mark_transform_finished()
 
         expected_definition_path = path.with_suffix("")
-        validation_diagnostics = self.validate(
+        validation_diagnostics = self._validate_file_definitions(
             program=program,
             expected_definition_path=expected_definition_path,
+            expected_fqun=loaded_fqun,
+            root_prefix=root_prefix,
         )
         return run.complete(validation_diagnostics)
 
     def _parse_validate_and_collect(
         self,
         path: pathlib.PurePosixPath,
+        root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT,
+        expected_fqun: str | None = None,
     ) -> None:
         """Parse/validate one file once and append its result in encounter order."""
-        if self._path_tracker.is_tracked(path):
+        full_path = root_prefix / path
+        if self._path_tracker.is_tracked(full_path):
             return
-        self._path_tracker.mark_in_progress(path)
-        result = self._parse_and_validate_file(path)
-        self._path_tracker.set_result(path, result)
+        self._path_tracker.mark_in_progress(full_path)
+        result = self._parse_and_validate_file(path, root_prefix, expected_fqun)
+        self._path_tracker.set_result(full_path, result)
 
     def _load_file(
         self,
@@ -282,41 +280,42 @@ class Validator:
         self,
         program: ast.Program,
         expected_definition_path: pathlib.PurePosixPath | None = None,
+        # TODO: Rename this to expected_fqun.
         expected_universe_name: str | None = None,
-        universe_locations: Mapping[str, pathlib.PurePosixPath] | None = None,
     ) -> list[diagnostics.Diagnostic]:
         """Validate all semantic rules and return collected diagnostics.
 
         Args:
             expected_definition_path: Optional expected definition path, relative
                 to project root, without the .def extension. When provided, the
-                validator operates in filesystem context and validates that
-                definition paths match this path. When None, the validator
-                operates in non-filesystem context and skips path matching
-                validation.
+                validator validates that definition paths match this path.
             expected_universe_name: Optional FQUN string from the project config.
-                When provided, validates that each definition's FQUN matches this
-                value. When None, skips FQUN matching validation.
-            universe_locations: Mapping from universe name to local path for
-                configured external dependencies. Defaults to no configured
-                dependencies.
+                When provided, validates that each definition's FQUN matches
+                this value.
         """
-        if expected_universe_name is not None and not self._path_tracker.seen_sub_root(
-            pathlib.PurePosixPath("")
-        ):
-            self._path_tracker.set_sub_root(
-                pathlib.PurePosixPath(""),
-                expected_universe_name,
-                universe_locations if universe_locations is not None else {},
-            )
+        return self._validate_file_definitions(
+            program=program,
+            expected_definition_path=expected_definition_path,
+            expected_fqun=expected_universe_name,
+        )
+
+    def _validate_file_definitions(
+        self,
+        program: ast.Program,
+        expected_definition_path: pathlib.PurePosixPath | None = None,
+        expected_fqun: str | None = None,
+        root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT,
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate definitions in one file with the given root context."""
         frame = _ValidationFrame(
             diagnostics=[],
             expected_definition_path=expected_definition_path,
+            root_prefix=root_prefix,
         )
         self._validation_frames.append(frame)
         try:
             for definition in program.definitions:
-                self._validate_definition(definition)
+                self._validate_definition(definition, expected_fqun)
             return frame.diagnostics
         finally:
             _ = self._validation_frames.pop()
@@ -333,11 +332,13 @@ class Validator:
         """Return diagnostics list for the current validation frame."""
         return self._frame.diagnostics
 
-    def _validate_definition(self, definition: ast.QualityDefinition) -> None:
+    def _validate_definition(
+        self, definition: ast.QualityDefinition, expected_fqun: str | None
+    ) -> None:
         """Validate a quality definition."""
         self._diagnostics.extend(name_validators.validate_global_name(definition.name))
         self._validate_path_matches_file(definition)
-        self._validate_fqun_matches_expected(definition)
+        self._validate_fqun_matches_expected(definition, expected_fqun)
         self._validate_not_duplicate(definition)
         if (
             isinstance(definition, ast.ActionDefinition)
@@ -424,40 +425,63 @@ class Validator:
             return
         scope.maps[0][name] = local_def
 
-    def _ensure_current_project_root_registered(self):
-        """Load project config and register the root sub_root if not already done."""
-        if self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
-            return
-        loader = config.ConfigLoader(constants.PROJECT_ROOT)
+    def _load_root_config_if_not_loaded(
+        self,
+        root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT,
+        expected_fqun: str | None = None,
+    ) -> str:
+        """Load project config for root_prefix and register it if not already done.
+
+        Returns the FQUN string for the root.
+
+        Raises ConfigError if the config cannot be loaded or the FQUN
+        doesn't match expected_fqun.
+        """
+        existing = self._path_tracker.fqun_for_root(root_prefix)
+        if existing is not None:
+            if expected_fqun is not None and existing != expected_fqun:
+                raise exceptions.SubRootFqunMismatchError(
+                    expected_fqun=expected_fqun,
+                    actual_fqun=existing,
+                    sub_root_path=str(root_prefix),
+                )
+            return existing
+        loader = config.ConfigLoader(root_prefix)
         loader.assert_is_project_root()
         project_config = loader.project_config()
+        # TODO: This could possibly be done lazily.
         universe_locations = loader.local_deps_config()
-        self._path_tracker.set_sub_root(
-            pathlib.PurePosixPath(""),
-            project_config.project.universe_name or "",
+        fqun = project_config.project.universe_name or ""
+        if expected_fqun is not None and fqun != expected_fqun:
+            raise exceptions.SubRootFqunMismatchError(
+                expected_fqun=expected_fqun,
+                actual_fqun=fqun,
+                sub_root_path=str(root_prefix),
+            )
+        self._path_tracker.register_project_root(
+            root_prefix,
+            fqun,
             universe_locations,
         )
+        return fqun
 
     def _validate_fqun_matches_expected(
-        self, definition: ast.QualityDefinition
+        self, definition: ast.QualityDefinition, expected_fqun: str | None
     ) -> None:
         """Validate that the definition's FQUN matches the expected project FQUN."""
-        if not self._path_tracker.seen_sub_root(pathlib.PurePosixPath("")):
+        if expected_fqun is None:
             return
-        expected_universe_name = self._path_tracker.expected_universe(
-            constants.PROJECT_ROOT
-        )
 
         # Narrow fqun for pyright; GlobalNameDefinition always has a non-None fqun.
         if definition.name.fqun is None:
             raise ValueError("GlobalNameDefinition must have a non-None fqun")
 
         actual = definition.name.fqun.canonical
-        if actual != expected_universe_name:
+        if actual != expected_fqun:
             self._diagnostics.append(
                 diagnostics.FqunMismatchDiagnostic(
                     position=definition.name.fqun.position,
-                    expected=expected_universe_name,
+                    expected=expected_fqun,
                     actual=actual,
                 )
             )
@@ -530,45 +554,155 @@ class Validator:
             self._diagnostics.append(diagnostic)
             return
 
-        reference = typed_global_name.global_name
-        if reference.fqun is not None:
-            if self._path_tracker.is_unknown_universe(reference.fqun.canonical):
+        global_name = typed_global_name.global_name
+        if global_name.fqun is not None:
+            if self._path_tracker.is_unknown_universe(global_name.fqun.canonical):
                 return
             diagnostic = self._check_sub_root_configured(
-                reference.fqun, enclosing_definition
+                global_name.fqun, enclosing_definition
             )
             if diagnostic:
-                self._path_tracker.mark_unknown_universe(reference.fqun.canonical)
+                self._path_tracker.mark_unknown_universe(global_name.fqun.canonical)
                 self._diagnostics.append(diagnostic)
                 return
-            raise NotImplementedError(
-                "Global-reference file walking for FQUN references is not implemented."
+            self._walk_into_sub_root(typed_global_name, typed_name_str)
+            return
+
+        enclosing_fqun = enclosing_definition.name.fqun
+        if enclosing_fqun is None:
+            raise ValueError("GlobalNameDefinition must have a non-None fqun")
+        self._walk_in_current_root(
+            typed_global_name, typed_name_str, enclosing_fqun.canonical
+        )
+
+    def _walk_in_current_root(
+        self,
+        typed_global_name: ast.TypedGlobalNameReference,
+        typed_name_str: str,
+        expected_fqun: str,
+    ):
+        """Resolve a same-FQUN reference within the current root."""
+        full_file_path = typed_global_name.global_name.path.file_path(
+            self._frame.root_prefix
+        )
+
+        # Check if a sub-root has already claimed this path.
+        enclosing_root = self._path_tracker.find_enclosing_root(full_file_path)
+        if enclosing_root != self._frame.root_prefix:
+            self._diagnostics.append(
+                diagnostics.PathInsideOtherUniverseDiagnostic(
+                    position=typed_global_name.global_name.position,
+                    path=str(full_file_path),
+                    other_universe=self._path_tracker.fqun_for_root(enclosing_root)
+                    or "",
+                    sub_root_path=str(enclosing_root),
+                )
             )
+            return
 
-        referenced_file = reference.path.relative_path.with_suffix(".def")
+        self._load_and_check_reference(
+            root_prefix=self._frame.root_prefix,
+            expected_fqun=expected_fqun,
+            typed_global_name=typed_global_name,
+            typed_name_str=typed_name_str,
+        )
 
-        self._parse_validate_and_collect(referenced_file)
+    def _walk_into_sub_root(
+        self,
+        typed_global_name: ast.TypedGlobalNameReference,
+        typed_name_str: str,
+    ):
+        """Walk into a configured sub-root to resolve a cross-FQUN reference."""
+        fqun = typed_global_name.global_name.fqun
+        if fqun is None:
+            raise ValueError("_walk_into_sub_root requires a non-None fqun")
+        fqun_string = fqun.canonical
+        universe_location = self._path_tracker.sub_root_location(
+            fqun_string, self._frame.root_prefix
+        )
+        sub_root_path = self._frame.root_prefix / universe_location
 
-        diagnostic = self._check_file_not_found(reference, referenced_file)
+        # The first time we load a sub-root, we need to make sure no other
+        # files were loaded under that path already.
+        if not self._path_tracker.project_root_loaded(sub_root_path):
+            conflicting_path, existing_universe = (
+                self._path_tracker.first_tracked_file_under(sub_root_path)
+            )
+            if conflicting_path is not None:
+                # We don't stop processing after this diagnostic, because there's
+                # nothing actually preventing us from continuing validation.
+                self._diagnostics.append(
+                    diagnostics.SubRootAlreadyOccupiedDiagnostic(
+                        position=fqun.position,
+                        universe=fqun_string,
+                        sub_root_path=str(sub_root_path),
+                        existing_file=str(conflicting_path),
+                        existing_universe=existing_universe or "",
+                    )
+                )
+
+        self._load_and_check_reference(
+            root_prefix=sub_root_path,
+            expected_fqun=fqun_string,
+            typed_global_name=typed_global_name,
+            typed_name_str=typed_name_str,
+        )
+
+    def _load_and_check_reference(
+        self,
+        root_prefix: pathlib.PurePosixPath,
+        expected_fqun: str,
+        typed_global_name: ast.TypedGlobalNameReference,
+        typed_name_str: str,
+    ):
+        """Load a referenced file and check for not-found and wrong-type errors."""
+        global_name = typed_global_name.global_name
+        full_file_path = global_name.path.file_path(root_prefix)
+        self._parse_validate_and_collect(
+            global_name.path.file_path(),
+            root_prefix=root_prefix,
+            expected_fqun=expected_fqun,
+        )
+
+        config_diagnostic = self._check_config_error(global_name, full_file_path)
+        if config_diagnostic is not None:
+            self._path_tracker.mark_not_found(full_file_path)
+            self._path_tracker.mark_unknown_universe(expected_fqun)
+            self._diagnostics.append(config_diagnostic)
+            return
+
+        diagnostic = self._check_file_not_found(global_name, full_file_path)
         if diagnostic is not None:
-            self._path_tracker.mark_not_found(referenced_file)
+            self._path_tracker.mark_not_found(full_file_path)
             self._diagnostics.append(diagnostic)
             return
 
         if typed_name_str not in self._seen_global_definitions:
             self._diagnostics.append(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
-                    position=reference.position,
-                    path=reference.path.name,
+                    position=global_name.position,
+                    path=global_name.path.name,
                     expected_type=typed_global_name.type_name.value,
                 )
             )
 
+    def _check_config_error(
+        self,
+        global_name: ast.GlobalNameReference,
+        full_file_path: pathlib.PurePosixPath,
+    ) -> diagnostics.ConfigLoadErrorDiagnostic | None:
+        """Check if the referenced file failed due to a config error in its root."""
+        referenced_result = self._path_tracker.get_result(full_file_path)
+        if isinstance(referenced_result.exception, exceptions.ConfigError):
+            return diagnostics.ConfigLoadErrorDiagnostic(
+                position=global_name.position,
+                error=referenced_result.exception,
+            )
+        return None
+
     def _check_file_not_found(
         self, reference: ast.GlobalNameReference, referenced_file: pathlib.PurePosixPath
     ) -> diagnostics.ReferencedFileNotFoundDiagnostic | None:
-        if not self._path_tracker.has_result(referenced_file):
-            return None
         referenced_result = self._path_tracker.get_result(referenced_file)
         if isinstance(referenced_result.exception, exceptions.SourceFileNotFoundError):
             return diagnostics.ReferencedFileNotFoundDiagnostic(
@@ -602,11 +736,17 @@ class Validator:
             raise ValueError("GlobalNameDefinition must have a non-None fqun")
         current_universe = enclosing_fqun.canonical
         try:
-            self._ensure_current_project_root_registered()
+            # TODO: This should return a Config object, and that's what we
+            # should store in path_tracker. Then we can delete
+            # universe_has_sub_root_in.
+            _ = self._load_root_config_if_not_loaded(
+                self._frame.root_prefix, expected_fqun=current_universe
+            )
         except exceptions.NotProjectRootError as e:
             return diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
                 position=fqun.position,
                 universe=fqun_string,
+                # TODO: This will stringify incorrectly on Windows.
                 config_path=str(e.config_path),
             )
         except exceptions.ConfigError as e:
@@ -615,7 +755,7 @@ class Validator:
                 error=e,
             )
         if not self._path_tracker.universe_has_sub_root_in(
-            fqun_string, pathlib.PurePosixPath("")
+            fqun_string, self._frame.root_prefix
         ):
             return diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                 position=fqun.position,

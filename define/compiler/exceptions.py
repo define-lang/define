@@ -1,6 +1,6 @@
 """Exceptions raised by the Define compiler."""
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import override
 
 from defcl.python import exceptions as dcl_exceptions
@@ -15,20 +15,46 @@ class ConfigError(DefineError):
     """Base class for errors raise by anything to do with configuration."""
 
 
-# TODO: This will need to specify what directory is missing the config, for sub-roots.
 class NotProjectRootError(ConfigError):
-    """The current directory is not a Define project root."""
+    """A directory is not a Define project root."""
 
     config_path: Path
+    root: str
 
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path, root: PurePosixPath):
         """Initialize with the config path that was not found."""
         self.config_path = config_path
+        self.root = str(root)
+        if root == constants.PROJECT_ROOT:
+            header = "The Define compiler must be run from a project root directory."
+        else:
+            header = (
+                f"The referenced subroot ({self.root}) is not a valid project root:"
+                + f" {config_path} not found."
+            )
         super().__init__(
-            f"Not a Define project root: {config_path} not found.\n"
-            + "The Define compiler must be run from a project root directory.\n"
+            f"{header}\n"
             + f"A project root is any directory containing {config_path}.\n"
             + f"For more information, see {constants.DOCS_ROOT}/project-root.md"
+        )
+
+
+class SubRootFqunMismatchError(ConfigError):
+    """A sub-root's project config declares a different universe than expected."""
+
+    expected_fqun: str
+    actual_fqun: str
+    sub_root_path: str
+
+    def __init__(self, expected_fqun: str, actual_fqun: str, sub_root_path: str):
+        """Initialize with the expected and actual FQUNs."""
+        self.expected_fqun = expected_fqun
+        self.actual_fqun = actual_fqun
+        self.sub_root_path = sub_root_path
+        super().__init__(
+            f"Sub-root at '{sub_root_path}' is configured as a dependency"
+            + f" with universe '{expected_fqun}' but the actual project root"
+            + f" in that path says it has the universe name '{actual_fqun}'"
         )
 
 

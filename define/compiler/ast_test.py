@@ -1,6 +1,6 @@
 """Tests for AST nodes."""
 
-from pathlib import Path
+from pathlib import PurePosixPath
 
 import pytest
 
@@ -71,11 +71,25 @@ class TestFqunCanonical:
 class TestGlobalPathName:
     def test_relative_path_single_segment(self):
         path = ast.GlobalPathName(name="/foo", position=_POS)
-        assert path.relative_path == Path("foo")
+        assert path.relative_path == PurePosixPath("foo")
 
     def test_relative_path_multiple_segments(self):
         path = ast.GlobalPathName(name="/foo/bar/baz", position=_POS)
-        assert path.relative_path == Path("foo/bar/baz")
+        assert path.relative_path == PurePosixPath("foo/bar/baz")
+
+    def test_file_path_default_root(self):
+        path = ast.GlobalPathName(name="/foo", position=_POS)
+        assert path.file_path() == PurePosixPath("foo.def")
+
+    def test_file_path_multiple_segments(self):
+        path = ast.GlobalPathName(name="/foo/bar/baz", position=_POS)
+        assert path.file_path() == PurePosixPath("foo/bar/baz.def")
+
+    def test_file_path_with_root(self):
+        path = ast.GlobalPathName(name="/foo", position=_POS)
+        assert path.file_path(PurePosixPath("lib/inner")) == PurePosixPath(
+            "lib/inner/foo.def"
+        )
 
 
 class TestGlobalName:

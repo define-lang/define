@@ -213,8 +213,20 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "global_name_walk/cycle": [diagnostics.CircularGlobalReferenceDiagnostic],
     "global_name_walk/missing": [diagnostics.ReferencedFileNotFoundDiagnostic],
     "global_name_walk/self_cycle": [diagnostics.CircularGlobalReferenceDiagnostic],
+    "global_name_walk/cross_fqun_missing_file": [
+        diagnostics.ReferencedFileNotFoundDiagnostic,
+    ],
+    "global_name_walk/cross_fqun_missing_sub_root": [
+        diagnostics.ConfigLoadErrorDiagnostic,
+    ],
+    "global_name_walk/parent_has_wrong_universe_for_sub_root": [
+        diagnostics.ConfigLoadErrorDiagnostic,
+    ],
     "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    ],
+    "sub_root_conflict_load": [
+        diagnostics.SubRootAlreadyOccupiedDiagnostic,
     ],
     "syntax/duplicate_definitions": [diagnostics.DuplicateDefinitionDiagnostic],
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],

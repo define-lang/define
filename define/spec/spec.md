@@ -586,11 +586,11 @@ When the compiler reads the configuration in a sub-root, the file
 fully-qualified universe name that the parent configuration specified for that
 sub-root.
 
-Sub-roots are only compiled when the code indicates that compiling them is
-necessary, not simply because they are listed in the configuration. When a
-compiler or Define tool compiles a sub-root, it creates a new context, switches
-its current working directory to that sub-root, runs a complete compilation on
-that sub-root as its own universe, then returns to compiling the parent root.
+The configuration of a sub-root is only loaded when the compiler needs to load a
+file inside of the sub-root. The code of a sub-root is compiled only when it is
+referenced from another file being compiled, just like all other files.
+(Sub-roots are not automatically compiled just because they are referenced in
+parent's configuration.)
 
 ### Duplicate Universes are Forbidden
 

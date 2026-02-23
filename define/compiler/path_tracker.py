@@ -2,15 +2,32 @@
 
 from __future__ import annotations
 
+import pathlib
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import pygtrie
 
 if TYPE_CHECKING:
-    import pathlib
     from collections.abc import Mapping
+
+
+class _PathTrie[V](pygtrie.Trie[pathlib.PurePosixPath, V]):
+    """A trie keyed by PurePosixPath, with slash-separated path components."""
+
+    @override
+    def _path_from_key(self, key: pathlib.PurePosixPath) -> list[str]:
+        posix = key.as_posix()
+        if posix == ".":
+            return [""]
+        return ["", *posix.split("/")]
+
+    @override
+    def _key_from_path(self, path: tuple[str, ...]) -> pathlib.PurePosixPath:
+        if len(path) <= 1:
+            return pathlib.PurePosixPath(".")
+        return pathlib.PurePosixPath("/".join(path[1:]))
 
 
 @dataclass
@@ -34,10 +51,10 @@ class PathTracker[T]:
         """Initialize empty path tracking state."""
         self._results: OrderedDict[pathlib.PurePosixPath, T | None] = OrderedDict()
         self._not_found: set[pathlib.PurePosixPath] = set()
-        self._sub_root_trie: pygtrie.StringTrie[_UniverseInfo] = pygtrie.StringTrie(
-            separator="/"
+        self._project_roots: _PathTrie[_UniverseInfo] = _PathTrie()
+        self._tracked_files: pygtrie.PrefixSet[pathlib.PurePosixPath] = (
+            pygtrie.PrefixSet(factory=_PathTrie)
         )
-        self._fqun_to_root: dict[str, pathlib.PurePosixPath] = {}
         self._unknown_universes: set[str] = set()
 
     def is_tracked(self, path: pathlib.PurePosixPath) -> bool:
@@ -47,14 +64,11 @@ class PathTracker[T]:
     def mark_in_progress(self, path: pathlib.PurePosixPath):
         """Record that validation of this path has begun."""
         self._results[path] = None
+        self._tracked_files.add(path)
 
     def set_result(self, path: pathlib.PurePosixPath, result: T):
         """Store the completed result for a previously-started path."""
         self._results[path] = result
-
-    def has_result(self, path: pathlib.PurePosixPath) -> bool:
-        """Return True if this path has a completed result."""
-        return self._results.get(path) is not None
 
     def get_result(self, path: pathlib.PurePosixPath) -> T:
         """Return the completed result for a path.
@@ -81,69 +95,40 @@ class PathTracker[T]:
             if result is not None and path not in self._not_found
         ]
 
-    def _trie_key(self, root: pathlib.PurePosixPath) -> str:
-        """Convert a sub_root path to its trie key."""
-        posix = root.as_posix()
-        if posix == ".":
-            return ""
-        return "/" + posix
-
-    def _lookup_key(self, path: pathlib.PurePosixPath) -> str:
-        """Convert a file path to its trie lookup key."""
-        return "/" + path.as_posix()
-
-    def set_sub_root(
+    def register_project_root(
         self,
         root: pathlib.PurePosixPath,
         fqun: str,
         sub_roots: Mapping[str, pathlib.PurePosixPath],
     ):
-        """Register a sub_root path with its universe info.
+        """Register a project root as existing at a certain path.
 
         Args:
-            root: The filesystem path for this sub_root (empty for project root).
-            fqun: The fully qualified universe name.
+            root: The filesystem path for a project root, relative to the
+              top-most project root. Can be PurePosixPath(".") for the
+              top-most root.
+            fqun: The fully qualified universe name configured for the root
+              specified in the root arg.
             sub_roots: Mapping of dependency names to their paths.
 
         Raises:
-            ValueError: If root is already registered, fqun already maps to a
-                root, or fqun was marked unknown.
+            ValueError: If root is already registered or fqun was marked unknown.
         """
-        key = self._trie_key(root)
-        if key in self._sub_root_trie:
+        if root in self._project_roots:
             raise ValueError(f"sub_root already registered: {root}")
-        if fqun in self._fqun_to_root:
-            raise ValueError(f"fqun already maps to a root: {fqun}")
         if fqun in self._unknown_universes:
             raise ValueError(f"fqun was marked unknown: {fqun}")
-        self._sub_root_trie[key] = _UniverseInfo(fqun=fqun, sub_roots=sub_roots)
-        self._fqun_to_root[fqun] = root
+        self._project_roots[root] = _UniverseInfo(fqun=fqun, sub_roots=sub_roots)
 
-    def seen_sub_root(self, root: pathlib.PurePosixPath) -> bool:
-        """Return True if this sub_root path has been registered."""
-        return self._trie_key(root) in self._sub_root_trie
+    def project_root_loaded(self, root: pathlib.PurePosixPath) -> bool:
+        """Return True if a project root has been registered at this path."""
+        return root in self._project_roots
 
-    def expected_universe(self, path: pathlib.PurePosixPath) -> str:
-        """Return the FQUN for the sub_root that owns this file path.
-
-        Uses longest-prefix matching in the trie.
-
-        Raises:
-            KeyError: If no sub_root matches the path.
-        """
-        step = self._sub_root_trie.longest_prefix(self._lookup_key(path))
-        if not step:
-            raise KeyError(f"no sub_root matches path: {path}")
-        info = step.value
-        return info.fqun
-
-    def path_to_universe(self, fqun: str) -> pathlib.PurePosixPath:
-        """Return the sub_root path for a given FQUN.
-
-        Raises:
-            KeyError: If the FQUN is not registered.
-        """
-        return self._fqun_to_root[fqun]
+    def fqun_for_root(self, root: pathlib.PurePosixPath) -> str | None:
+        """Return the FQUN registered for an exact project root path, or None."""
+        if root not in self._project_roots:
+            return None
+        return self._project_roots[root].fqun
 
     def universe_has_sub_root_in(
         self, universe: str, root: pathlib.PurePosixPath
@@ -153,8 +138,7 @@ class PathTracker[T]:
         Raises:
             KeyError: If root is not a registered sub_root.
         """
-        key = self._trie_key(root)
-        info = self._sub_root_trie[key]
+        info = self._project_roots[root]
         return universe in info.sub_roots
 
     def mark_unknown_universe(self, fqun: str):
@@ -164,3 +148,44 @@ class PathTracker[T]:
     def is_unknown_universe(self, fqun: str) -> bool:
         """Return True if this FQUN was marked as unknown."""
         return fqun in self._unknown_universes
+
+    def sub_root_location(
+        self, fqun: str, parent_root: pathlib.PurePosixPath
+    ) -> pathlib.PurePosixPath:
+        """Return the configured path for fqun relative to parent_root.
+
+        Raises:
+            KeyError: If parent_root is not registered or fqun is not a
+                configured sub_root under it.
+        """
+        info = self._project_roots[parent_root]
+        return info.sub_roots[fqun]
+
+    def find_enclosing_root(self, path: pathlib.PurePosixPath) -> pathlib.PurePosixPath:
+        """Find the innermost project root containing this path.
+
+        At least one project root must be registered.
+
+        Raises:
+            KeyError: If no project root has been registered.
+        """
+        step = self._project_roots.longest_prefix(path)
+        if not step or step.key is None:
+            raise KeyError(f"no project root registered for path: {path}")
+        return step.key
+
+    def first_tracked_file_under(
+        self, sub_root_path: pathlib.PurePosixPath
+    ) -> tuple[pathlib.PurePosixPath, str] | tuple[None, None]:
+        """Find the first tracked file under sub_root_path and its owning universe.
+
+        Returns (file_path, owner_universe) or None.
+        """
+        try:
+            file_path = next(iter(self._tracked_files.iter(sub_root_path)))
+        except StopIteration:
+            return (None, None)
+        owner_step = self._project_roots.longest_prefix(file_path)
+        if owner_step and owner_step.value:
+            return (file_path, owner_step.value.fqun)
+        return (None, None)
