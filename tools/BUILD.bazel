@@ -98,7 +98,7 @@ format_multirun(
     starlark = "@multitool//tools/buildifier",
     starlark_check_args = [
         "-mode=check",
-        "-lint=check",
+        "-lint=warn",
     ],
     starlark_fix_args = [
         "-mode=fix",
