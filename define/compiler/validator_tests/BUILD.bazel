@@ -119,7 +119,10 @@ py_test(
     pytest_main = True,
     deps = [
         ":conftest",
+        ":test_helpers",
+        "//define/compiler:exceptions",
         "//define/compiler:parser_exceptions",
+        "//define/compiler:validator",
         "@pypi//pytest",
     ],
 )

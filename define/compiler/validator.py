@@ -47,7 +47,9 @@ class ValidationTimingStats:
     """Timing measurements for parse/transform/validate steps."""
 
     overall: int
-    parse: int
+    config_loading: int
+    file_loading: int | None
+    parse: int | None
     transform: int | None
     validate: int | None
 
@@ -59,8 +61,16 @@ class _ValidationRun:
     file_path: pathlib.PurePosixPath
     started_at: int
     source: str | None = None
+    config_loading_finished_at: int | None = None
+    file_loading_finished_at: int | None = None
     parse_finished_at: int | None = None
     transform_finished_at: int | None = None
+
+    def mark_config_loading_finished(self) -> None:
+        self.config_loading_finished_at = time.perf_counter_ns()
+
+    def mark_file_loading_finished(self) -> None:
+        self.file_loading_finished_at = time.perf_counter_ns()
 
     def mark_parse_finished(self) -> None:
         self.parse_finished_at = time.perf_counter_ns()
@@ -68,30 +78,50 @@ class _ValidationRun:
     def mark_transform_finished(self) -> None:
         self.transform_finished_at = time.perf_counter_ns()
 
+    def _compute_stats(self) -> ValidationTimingStats:
+        """Compute timing stats from whichever phases have completed."""
+        if self.config_loading_finished_at is None:
+            raise ValueError(
+                "Config loading timing was not recorded before building stats."
+            )
+        config_loading = self.config_loading_finished_at - self.started_at
+        last_timestamp = self.config_loading_finished_at
+
+        file_loading: int | None = None
+        if self.file_loading_finished_at is not None:
+            file_loading = self.file_loading_finished_at - last_timestamp
+            last_timestamp = self.file_loading_finished_at
+
+        parse: int | None = None
+        if self.parse_finished_at is not None:
+            parse = self.parse_finished_at - last_timestamp
+            last_timestamp = self.parse_finished_at
+
+        transform: int | None = None
+        if self.transform_finished_at is not None:
+            transform = self.transform_finished_at - last_timestamp
+            last_timestamp = self.transform_finished_at
+
+        validate: int | None = None
+        return ValidationTimingStats(
+            overall=last_timestamp - self.started_at,
+            config_loading=config_loading,
+            file_loading=file_loading,
+            parse=parse,
+            transform=transform,
+            validate=validate,
+        )
+
     def incomplete(
         self,
         syntax_error: AnyValidationException,
     ) -> ValidationResult:
-        if self.parse_finished_at is None:
-            raise ValueError("Parse timing was not recorded before syntax failure.")
-        parse_elapsed = self.parse_finished_at - self.started_at
-        if self.transform_finished_at is None:
-            overall_elapsed = parse_elapsed
-            transform_elapsed: int | None = None
-        else:
-            transform_elapsed = self.transform_finished_at - self.parse_finished_at
-            overall_elapsed = self.transform_finished_at - self.started_at
         return ValidationResult(
             diagnostics=[],
             exception=syntax_error,
             source=self.source,
             file_path=self.file_path,
-            stats=ValidationTimingStats(
-                overall=overall_elapsed,
-                parse=parse_elapsed,
-                transform=transform_elapsed,
-                validate=None,
-            ),
+            stats=self._compute_stats(),
         )
 
     def complete(
@@ -104,17 +134,15 @@ class _ValidationRun:
         if self.source is None:
             raise ValueError("Source text was not recorded before success.")
         validate_finished_at = time.perf_counter_ns()
+        stats = self._compute_stats()
+        stats.validate = validate_finished_at - self.transform_finished_at
+        stats.overall = validate_finished_at - self.started_at
         return ValidationResult(
             diagnostics=diagnostics_list,
             exception=None,
             source=self.source,
             file_path=self.file_path,
-            stats=ValidationTimingStats(
-                overall=validate_finished_at - self.started_at,
-                parse=self.parse_finished_at - self.started_at,
-                transform=self.transform_finished_at - self.parse_finished_at,
-                validate=validate_finished_at - self.transform_finished_at,
-            ),
+            stats=stats,
         )
 
 
@@ -198,20 +226,20 @@ class Validator:
         full_path = root_prefix / path
         run = _ValidationRun(file_path=full_path, started_at=time.perf_counter_ns())
 
-        # TODO: Need to add stats for config loading time.
         try:
             loaded_fqun = self._load_root_config_if_not_loaded(
                 root_prefix, expected_fqun
             )
         except exceptions.ConfigError as e:
-            run.mark_parse_finished()
+            run.mark_config_loading_finished()
             return run.incomplete(e)
+        run.mark_config_loading_finished()
 
         source, syntax_error = self._load_file(full_path)
         if syntax_error is not None:
-            # TODO: Perhaps add stats for file loading.
-            run.mark_parse_finished()
+            run.mark_file_loading_finished()
             return run.incomplete(syntax_error)
+        run.mark_file_loading_finished()
         run.source = source
 
         try:

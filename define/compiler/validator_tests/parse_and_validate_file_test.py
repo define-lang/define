@@ -1,8 +1,24 @@
 # pyright: reportUnusedCallResult=false
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
-from define.compiler import parser_exceptions
+import pytest
+
+from define.compiler import exceptions, parser_exceptions, validator
+from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.conftest import ParseAndValidateFile
+
+
+def _assert_overall_equals_phase_sum(timings: validator.ValidationTimingStats):
+    phase_sum = timings.config_loading
+    if timings.file_loading is not None:
+        phase_sum += timings.file_loading
+    if timings.parse is not None:
+        phase_sum += timings.parse
+    if timings.transform is not None:
+        phase_sum += timings.transform
+    if timings.validate is not None:
+        phase_sum += timings.validate
+    assert timings.overall == phase_sum
 
 
 def test_returns_single_file_timing_stats(
@@ -18,15 +34,16 @@ def test_returns_single_file_timing_stats(
 
     timings = result.stats
     assert timings.overall >= 0
+    assert timings.config_loading >= 0
+    assert timings.file_loading is not None
+    assert timings.file_loading >= 0
+    assert timings.parse is not None
     assert timings.parse >= 0
     assert timings.transform is not None
     assert timings.validate is not None
     assert timings.transform >= 0
     assert timings.validate >= 0
-    assert timings.parse < timings.overall
-    assert timings.transform < timings.overall
-    assert timings.validate < timings.overall
-    assert timings.overall == (timings.parse + timings.transform + timings.validate)
+    _assert_overall_equals_phase_sum(timings)
 
 
 def test_parse_error_populates_exceptions_and_sets_later_phases_to_none(
@@ -43,10 +60,14 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_none(
 
     timings = result.stats
     assert timings.overall >= 0
+    assert timings.config_loading >= 0
+    assert timings.file_loading is not None
+    assert timings.file_loading >= 0
+    assert timings.parse is not None
     assert timings.parse >= 0
     assert timings.transform is None
     assert timings.validate is None
-    assert timings.overall == timings.parse
+    _assert_overall_equals_phase_sum(timings)
 
 
 def test_invalid_utf8_populates_exceptions_and_source_is_none(
@@ -63,10 +84,13 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
 
     timings = result.stats
     assert timings.overall >= 0
-    assert timings.parse >= 0
+    assert timings.config_loading >= 0
+    assert timings.file_loading is not None
+    assert timings.file_loading >= 0
+    assert timings.parse is None
     assert timings.transform is None
     assert timings.validate is None
-    assert timings.overall == timings.parse
+    _assert_overall_equals_phase_sum(timings)
 
 
 def test_transform_error_from_name_parser_populates_exceptions(
@@ -86,8 +110,59 @@ def test_transform_error_from_name_parser_populates_exceptions(
 
     timings = result.stats
     assert timings.overall >= 0
+    assert timings.config_loading >= 0
+    assert timings.file_loading is not None
+    assert timings.file_loading >= 0
+    assert timings.parse is not None
     assert timings.parse >= 0
     assert timings.transform is not None
     assert timings.transform >= 0
     assert timings.validate is None
-    assert timings.overall == (timings.parse + timings.transform)
+    _assert_overall_equals_phase_sum(timings)
+
+
+def test_config_error_sets_later_phases_to_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    relative_path = PurePosixPath("test.def")
+    source_path = tmp_path / relative_path
+    source_path.write_text(
+        "define the potential position<my.domain.com:my_lib:/test>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = validator.Validator().parse_and_validate_program(relative_path)
+    assert len(results) == 1
+    result = results[0]
+
+    assert isinstance(result.exception, exceptions.ConfigError)
+
+    timings = result.stats
+    assert timings.config_loading >= 0
+    assert timings.file_loading is None
+    assert timings.parse is None
+    assert timings.transform is None
+    assert timings.validate is None
+    _assert_overall_equals_phase_sum(timings)
+
+
+def test_file_not_found_sets_later_phases_to_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    relative_path = PurePosixPath("nonexistent.def")
+    monkeypatch.chdir(tmp_path)
+    results = validator.Validator().parse_and_validate_program(relative_path)
+    assert len(results) == 1
+    result = results[0]
+
+    assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
+
+    timings = result.stats
+    assert timings.config_loading >= 0
+    assert timings.file_loading is not None
+    assert timings.file_loading >= 0
+    assert timings.parse is None
+    assert timings.transform is None
+    assert timings.validate is None
+    _assert_overall_equals_phase_sum(timings)
