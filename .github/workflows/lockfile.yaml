@@ -1,0 +1,34 @@
+name: Update MODULE.bazel.lock
+
+on:
+  push:
+    branches:
+      - "renovate/**"
+    paths:
+      - MODULE.bazel
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+
+      - name: Update lockfile
+        run: bazelisk mod deps --lockfile_mode=update
+
+      - name: Commit and push
+        run: |
+          git diff --quiet MODULE.bazel.lock && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add MODULE.bazel.lock
+          git commit -m "Update MODULE.bazel.lock"
+          git push
