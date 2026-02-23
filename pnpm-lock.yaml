@@ -1,15 +1,16 @@
-lockfileVersion: "6.0"
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
 importers:
+
   .:
     devDependencies:
       basedpyright:
         specifier: latest
-        version: 1.38.0
+        version: 1.38.1
 
   tools:
     devDependencies:
@@ -18,33 +19,25 @@ importers:
         version: 3.8.1
 
 packages:
-  /basedpyright@1.38.0:
-    resolution:
-      {
-        integrity: sha512-1XKGpoRYE4JRJcgxWGr6NqnMMWlh3RYHmRqEUHi5lxgdnfATE7SWT+yK6jOGn4N0bONBcb76kZBlv9mOp7ifyA==,
-      }
-    engines: { node: ">=14.0.0" }
+
+  /basedpyright@1.38.1:
+    resolution: {integrity: sha512-A5GqJHSTjvaJnqAdyzIObKNg3TzEQt0rGzZN/kVSmYh3gIEMkI47pklyILIbnHqdG6iAACmDZ9gU9asHWMaUoA==}
+    engines: {node: '>=14.0.0'}
     hasBin: true
     optionalDependencies:
       fsevents: 2.3.3
     dev: true
 
   /fsevents@2.3.3:
-    resolution:
-      {
-        integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==,
-      }
-    engines: { node: ^8.16.0 || ^10.6.0 || >=11.0.0 }
+    resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
     requiresBuild: true
     dev: true
     optional: true
 
   /prettier@3.8.1:
-    resolution:
-      {
-        integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==,
-      }
-    engines: { node: ">=14" }
+    resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
+    engines: {node: '>=14'}
     hasBin: true
     dev: true
