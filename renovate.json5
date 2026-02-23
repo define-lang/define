@@ -31,6 +31,26 @@
       matchManagers: ["pep621"],
       groupName: "python dependencies",
     },
+    {
+      matchUpdateTypes: ["lockFileMaintenance"],
+      matchManagers: ["pep621"],
+      commitMessageTopic: "Python lock file (uv.lock)",
+    },
+    {
+      matchUpdateTypes: ["lockFileMaintenance"],
+      matchManagers: ["gomod"],
+      commitMessageTopic: "Go lock file (go.sum)",
+    },
+    {
+      matchUpdateTypes: ["lockFileMaintenance"],
+      matchManagers: ["npm"],
+      commitMessageTopic: "pnpm lock file (pnpm-lock.yaml)",
+    },
+    {
+      matchUpdateTypes: ["lockFileMaintenance"],
+      matchManagers: ["pre-commit"],
+      commitMessageTopic: "pre-commit lock file",
+    },
   ],
   ignorePaths: ["experimental/**"],
 }
