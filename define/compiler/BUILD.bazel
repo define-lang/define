@@ -256,6 +256,23 @@ py_test(
 )
 
 py_library(
+    name = "stats",
+    srcs = ["stats.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_test(
+    name = "stats_test",
+    size = "small",
+    srcs = ["stats_test.py"],
+    pytest_main = True,
+    deps = [
+        ":stats",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "transformer",
     srcs = ["transformer.py"],
     visibility = ["//define/compiler/validator_tests:__pkg__"],
@@ -294,6 +311,7 @@ py_library(
         ":parser_error_classification",
         ":parser_exceptions",
         ":path_tracker",
+        ":stats",
         ":transformer",
         "@pypi//lark",
     ],
@@ -337,6 +355,8 @@ pyright_test(
         ":parser_exceptions",
         ":path_tracker",
         ":path_tracker_test",
+        ":stats",
+        ":stats_test",
         ":transformer",
         ":transformer_test",
         ":validator",

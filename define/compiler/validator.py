@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pathlib
-import time
 from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
@@ -21,8 +20,11 @@ from define.compiler import (
     parser_error_classification,
     parser_exceptions,
     path_tracker,
+    stats,
     transformer,
 )
+
+ValidationTimingStats = stats.ValidationTimingStats
 
 type AnyValidationException = exceptions.DefineError | lark_exceptions.UnexpectedInput
 SYNTAX_ERROR_TYPES = (
@@ -43,74 +45,12 @@ class ValidationResult:
 
 
 @dataclass
-class ValidationTimingStats:
-    """Timing measurements for parse/transform/validate steps."""
-
-    overall: int
-    config_loading: int
-    file_loading: int | None
-    parse: int | None
-    transform: int | None
-    validate: int | None
-
-
-@dataclass
 class _ValidationRun:
     """Tracks a single parse/validate run and builds consistent results."""
 
     file_path: pathlib.PurePosixPath
-    started_at: int
+    stats: stats.ValidationStatsTracker
     source: str | None = None
-    config_loading_finished_at: int | None = None
-    file_loading_finished_at: int | None = None
-    parse_finished_at: int | None = None
-    transform_finished_at: int | None = None
-
-    def mark_config_loading_finished(self) -> None:
-        self.config_loading_finished_at = time.perf_counter_ns()
-
-    def mark_file_loading_finished(self) -> None:
-        self.file_loading_finished_at = time.perf_counter_ns()
-
-    def mark_parse_finished(self) -> None:
-        self.parse_finished_at = time.perf_counter_ns()
-
-    def mark_transform_finished(self) -> None:
-        self.transform_finished_at = time.perf_counter_ns()
-
-    def _compute_stats(self) -> ValidationTimingStats:
-        """Compute timing stats from whichever phases have completed."""
-        if self.config_loading_finished_at is None:
-            raise ValueError(
-                "Config loading timing was not recorded before building stats."
-            )
-        config_loading = self.config_loading_finished_at - self.started_at
-        last_timestamp = self.config_loading_finished_at
-
-        file_loading: int | None = None
-        if self.file_loading_finished_at is not None:
-            file_loading = self.file_loading_finished_at - last_timestamp
-            last_timestamp = self.file_loading_finished_at
-
-        parse: int | None = None
-        if self.parse_finished_at is not None:
-            parse = self.parse_finished_at - last_timestamp
-            last_timestamp = self.parse_finished_at
-
-        transform: int | None = None
-        if self.transform_finished_at is not None:
-            transform = self.transform_finished_at - last_timestamp
-            last_timestamp = self.transform_finished_at
-
-        validate: int | None = None
-        return ValidationTimingStats(
-            overall=last_timestamp - self.started_at,
-            config_loading=config_loading,
-            file_loading=file_loading,
-            parse=parse,
-            transform=transform,
-            validate=validate,
-        )
 
     def incomplete(
         self,
@@ -121,28 +61,21 @@ class _ValidationRun:
             exception=syntax_error,
             source=self.source,
             file_path=self.file_path,
-            stats=self._compute_stats(),
+            stats=self.stats.build(),
         )
 
     def complete(
         self, diagnostics_list: list[diagnostics.Diagnostic]
     ) -> ValidationResult:
-        if self.parse_finished_at is None:
-            raise ValueError("Parse timing was not recorded before success.")
-        if self.transform_finished_at is None:
-            raise ValueError("Transform timing was not recorded before success.")
         if self.source is None:
             raise ValueError("Source text was not recorded before success.")
-        validate_finished_at = time.perf_counter_ns()
-        stats = self._compute_stats()
-        stats.validate = validate_finished_at - self.transform_finished_at
-        stats.overall = validate_finished_at - self.started_at
+        self.stats.mark_validate_finished()
         return ValidationResult(
             diagnostics=diagnostics_list,
             exception=None,
             source=self.source,
             file_path=self.file_path,
-            stats=stats,
+            stats=self.stats.build(),
         )
 
 
@@ -224,40 +157,40 @@ class Validator:
     ) -> ValidationResult:
         """Parse, transform, and validate one Define file."""
         full_path = root_prefix / path
-        run = _ValidationRun(file_path=full_path, started_at=time.perf_counter_ns())
+        run = _ValidationRun(file_path=full_path, stats=stats.ValidationStatsTracker())
 
         try:
             loaded_fqun = self._load_root_config_if_not_loaded(
                 root_prefix, expected_fqun
             )
         except exceptions.ConfigError as e:
-            run.mark_config_loading_finished()
+            run.stats.mark_config_loading_finished()
             return run.incomplete(e)
-        run.mark_config_loading_finished()
+        run.stats.mark_config_loading_finished()
 
         source, syntax_error = self._load_file(full_path)
         if syntax_error is not None:
-            run.mark_file_loading_finished()
+            run.stats.mark_file_loading_finished()
             return run.incomplete(syntax_error)
-        run.mark_file_loading_finished()
+        run.stats.mark_file_loading_finished()
         run.source = source
 
         try:
             tree = self._parser.parse(source, file_path=full_path)
         except SYNTAX_ERROR_TYPES as e:
-            run.mark_parse_finished()
+            run.stats.mark_parse_finished()
             return run.incomplete(e)
-        run.mark_parse_finished()
+        run.stats.mark_parse_finished()
 
         try:
             program = transformer.DefineTransformer().transform(tree)
         except lark_exceptions.VisitError as e:
             # Lark wraps exceptions raised inside transformer callbacks.
             if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
-                run.mark_transform_finished()
+                run.stats.mark_transform_finished()
                 return run.incomplete(e.orig_exc)
             raise
-        run.mark_transform_finished()
+        run.stats.mark_transform_finished()
 
         expected_definition_path = path.with_suffix("")
         validation_diagnostics = self._validate_file_definitions(

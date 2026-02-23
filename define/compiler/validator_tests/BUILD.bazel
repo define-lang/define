@@ -122,6 +122,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:exceptions",
         "//define/compiler:parser_exceptions",
+        "//define/compiler:stats",
         "//define/compiler:validator",
         "@pypi//pytest",
     ],

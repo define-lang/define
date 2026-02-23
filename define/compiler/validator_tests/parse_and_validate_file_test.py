@@ -3,12 +3,12 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions, parser_exceptions, validator
+from define.compiler import exceptions, parser_exceptions, stats, validator
 from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.conftest import ParseAndValidateFile
 
 
-def _assert_overall_equals_phase_sum(timings: validator.ValidationTimingStats):
+def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
     phase_sum = timings.config_loading
     if timings.file_loading is not None:
         phase_sum += timings.file_loading
