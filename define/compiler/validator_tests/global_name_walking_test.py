@@ -484,6 +484,46 @@ def test_sub_root_conflict_continues_validation(
     )
 
 
+def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
+            f"it has the position</lib/parent_target>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/sub_root_target.def",
+        f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
+    )
+    _write_source(
+        tmp_path,
+        "lib/parent_target.def",
+        f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    path_diags = [
+        d
+        for d in all_diags
+        if isinstance(d, diagnostics.PathInsideOtherUniverseDiagnostic)
+    ]
+    assert len(path_diags) == 1
+    assert path_diags[0].other_universe == _CHILD_UNIVERSE
+    assert path_diags[0].path.endswith("lib/parent_target.def")
+
+
 def test_cross_fqun_file_wrong_fqun_in_sub_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
