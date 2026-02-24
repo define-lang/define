@@ -296,6 +296,47 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
 
+def test_duplicate_unknown_universe_across_files_emits_one_diagnostic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position<other.example.com:other_universe:/target>.\n"
+            "it has the position</other>.\n"
+            "}\n"
+            "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "other.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/other> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position<other.example.com:other_universe:/another>.\n"
+            "}\n"
+            "}\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert all_diags[0].position.line == 3
+    assert all_diags[0].position.column == 21
+    assert all_diags[0].universe == "other.example.com:other_universe"
+    assert all_diags[0].current_universe_name == "my.domain.com:my_lib"
+
+
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
 _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
 
