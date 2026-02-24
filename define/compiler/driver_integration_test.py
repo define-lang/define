@@ -222,6 +222,12 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "global_name_walk/parent_has_wrong_universe_for_sub_root": [
         diagnostics.ConfigLoadErrorDiagnostic,
     ],
+    "global_name_walk/sub_root_is_current_universe": [
+        # TODO: ReferencedGlobalNameWrongTypeDiagnostic should not fire here.
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedFileNotFoundDiagnostic,
+        diagnostics.PathMismatchDiagnostic,
+    ],
     "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],

@@ -1,0 +1,6 @@
+define the potential position<mv:define-lang.org:test_parent:/test> {
+    it may only contain dimension points where {
+        it has the position</lib/target>.
+        it has the position</target>.
+    }
+}
