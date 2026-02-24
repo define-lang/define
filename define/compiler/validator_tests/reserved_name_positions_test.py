@@ -16,6 +16,8 @@ def test_reserved_universe_name_with_authority_position():
     diags = parse_transform_validate(source)
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 31
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].position.line == 1
     assert diags[1].position.column == 43

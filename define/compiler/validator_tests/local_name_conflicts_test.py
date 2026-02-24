@@ -51,6 +51,8 @@ def test_three_locals_two_same_one_diagnostic():
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 21
 
 
 def test_three_same_name_two_diagnostics():
@@ -69,7 +71,11 @@ def test_three_same_name_two_diagnostics():
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].first_definition_line == 2
+    assert diags[0].position.line == 3
+    assert diags[0].position.column == 21
     assert diags[1].first_definition_line == 2
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 21
 
 
 def test_terminated_action_no_error():

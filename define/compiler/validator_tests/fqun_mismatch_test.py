@@ -19,6 +19,7 @@ def test_mismatched_universe():
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].expected == "my.domain.com:my_lib"
     assert diags[0].actual == "my.domain.com:wrong_lib"
+    assert diags[0].position.line == 1
     assert diags[0].position.column == 31
 
 
@@ -31,6 +32,8 @@ def test_mismatched_authority():
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].expected == "my.domain.com:my_lib"
     assert diags[0].actual == "other.org:my_lib"
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 31
 
 
 def test_mismatched_multiverse():
@@ -42,6 +45,8 @@ def test_mismatched_multiverse():
     assert len(npm_diags) == 1
     assert npm_diags[0].expected == "mv:my.domain.com:my_lib"
     assert npm_diags[0].actual == "npm:my.domain.com:my_lib"
+    assert npm_diags[0].position.line == 1
+    assert npm_diags[0].position.column == 31
 
 
 def test_none_skips_check():
@@ -73,6 +78,8 @@ def test_authority_with_path_mismatch():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
     assert diags[0].actual == "my.domain.com/org:my_lib"
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 31
 
 
 def test_multiverse_matching():
