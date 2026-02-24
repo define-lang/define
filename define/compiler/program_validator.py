@@ -357,7 +357,6 @@ class ProgramValidator:
         loader = config.ConfigLoader(root_prefix)
         loader.assert_is_project_root()
         project_config = loader.project_config()
-        universe_locations = loader.local_deps_config()
         fqun = project_config.project.universe_name or ""
         if expected_fqun is not None and fqun != expected_fqun:
             raise exceptions.SubRootFqunMismatchError(
@@ -365,6 +364,15 @@ class ProgramValidator:
                 actual_fqun=fqun,
                 sub_root_path=str(root_prefix),
             )
+        existing_root = self._path_tracker.root_for_fqun(fqun)
+        if existing_root is not None and existing_root != root_prefix:
+            raise exceptions.DuplicateFqunError(
+                fqun=fqun,
+                existing_root=existing_root,
+                new_root=root_prefix,
+                config_subpath=config.CONFIG_PATH,
+            )
+        universe_locations = loader.local_deps_config()
         self._path_tracker.register_project_root(
             root_prefix,
             fqun,

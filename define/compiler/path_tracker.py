@@ -52,6 +52,7 @@ class PathTracker[T]:
         self._results: OrderedDict[pathlib.PurePosixPath, T | None] = OrderedDict()
         self._not_found: set[pathlib.PurePosixPath] = set()
         self._project_roots: _PathTrie[_UniverseInfo] = _PathTrie()
+        self._fqun_to_root: dict[str, pathlib.PurePosixPath] = {}
         self._tracked_files: pygtrie.PrefixSet[pathlib.PurePosixPath] = (
             pygtrie.PrefixSet(factory=_PathTrie)
         )
@@ -131,10 +132,15 @@ class PathTracker[T]:
         if root in self._project_roots:
             raise ValueError(f"sub_root already registered: {root}")
         self._project_roots[root] = _UniverseInfo(fqun=fqun, sub_roots=sub_roots)
+        self._fqun_to_root[fqun] = root
 
     def project_root_loaded(self, root: pathlib.PurePosixPath) -> bool:
         """Return True if a project root has been registered at this path."""
         return root in self._project_roots
+
+    def root_for_fqun(self, fqun: str) -> pathlib.PurePosixPath | None:
+        """Return the root path registered for a given FQUN, or None."""
+        return self._fqun_to_root.get(fqun)
 
     def fqun_for_root(self, root: pathlib.PurePosixPath) -> str | None:
         """Return the FQUN registered for an exact project root path, or None."""

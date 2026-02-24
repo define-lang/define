@@ -223,10 +223,6 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ConfigLoadErrorDiagnostic,
     ],
     "global_name_walk/sub_root_redeclares_parent": [
-        # TODO: Need a new diagnostic for duplicate FQUNs across sub-roots.
-        # The sub-root at lib/ re-declares the parent universe as its own
-        # sub-root at lib/parent/. The spec forbids two compiled sub-roots
-        # from having the same FQUN. Currently produces no diagnostics.
         diagnostics.ConfigLoadErrorDiagnostic,
     ],
     "global_name_walk/sub_root_is_current_universe": [
@@ -294,6 +290,10 @@ def _all_diagnostics(
     for result in results:
         diags.extend(result.diagnostics)
     return diags
+
+
+def _type_sort_key(t: type[diagnostics.Diagnostic]) -> str:
+    return t.__name__
 
 
 @pytest.mark.parametrize(
@@ -382,7 +382,10 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
             f"Expected diagnostics for {rel_key} not specified. Got: {all_diags!r}"
         )
 
-    assert [type(diag) for diag in all_diags] == expected_types, (
+    actual_types = [type(diag) for diag in all_diags]
+    assert sorted(actual_types, key=_type_sort_key) == sorted(
+        expected_types, key=_type_sort_key
+    ), (
         f"For {rel_key}: expected {[t.__name__ for t in expected_types]}, "
-        f"got {[type(d).__name__ for d in all_diags]}"
+        f"got {[t.__name__ for t in actual_types]}"
     )

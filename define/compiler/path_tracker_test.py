@@ -82,6 +82,22 @@ class TestSubRootTracking:
         tracker.register_project_root(root, "dep.universe", {})
         assert tracker.fqun_for_root(root) == "dep.universe"
 
+    def test_root_for_fqun_returns_root(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(
+            PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
+        )
+        assert tracker.root_for_fqun("my.universe") == PurePosixPath(".")
+
+    def test_root_for_fqun_returns_none_when_no_match(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(PurePosixPath(""), "my.universe", {})
+        assert tracker.root_for_fqun("other.universe") is None
+
+    def test_root_for_fqun_returns_none_when_empty(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        assert tracker.root_for_fqun("my.universe") is None
+
     def test_fqun_for_root_none_when_not_registered(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         assert tracker.fqun_for_root(PurePosixPath("ext/dep")) is None

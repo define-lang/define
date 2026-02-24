@@ -39,6 +39,32 @@ class NotProjectRootError(ConfigError):
         )
 
 
+class DuplicateFqunError(ConfigError):
+    """Two different sub-roots have the same fully-qualified universe name."""
+
+    fqun: str
+    existing_config: PurePosixPath
+    new_config: PurePosixPath
+
+    def __init__(
+        self,
+        fqun: str,
+        existing_root: PurePosixPath,
+        new_root: PurePosixPath,
+        config_subpath: PurePosixPath,
+    ):
+        """Initialize with the duplicate FQUN and both root paths."""
+        self.fqun = fqun
+        existing_config = existing_root / config_subpath
+        new_config = new_root / config_subpath
+        self.existing_config = existing_config
+        self.new_config = new_config
+        super().__init__(
+            f"Universe '{fqun}' is already defined in '{existing_config}'"
+            + f" and cannot be redefined in '{new_config}'"
+        )
+
+
 class SubRootFqunMismatchError(ConfigError):
     """A sub-root's project config declares a different universe than expected."""
 
