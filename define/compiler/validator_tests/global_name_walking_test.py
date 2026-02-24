@@ -443,10 +443,19 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     results = validator.Validator().parse_and_validate_program(
         PurePosixPath("test.def")
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert any(
-        isinstance(d, diagnostics.SubRootAlreadyOccupiedDiagnostic) for d in all_diags
+    assert len(results) == 3
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 1
+    assert isinstance(
+        results[0].diagnostics[0], diagnostics.SubRootAlreadyOccupiedDiagnostic
     )
+    assert results[1].file_path == PurePosixPath("lib/parent_target.def")
+    assert results[1].exception is None
+    assert results[1].diagnostics == []
+    assert results[2].file_path == PurePosixPath("lib/sub_root_target.def")
+    assert results[2].exception is None
+    assert results[2].diagnostics == []
 
 
 def test_sub_root_conflict_continues_validation(
@@ -475,13 +484,19 @@ def test_sub_root_conflict_continues_validation(
     results = validator.Validator().parse_and_validate_program(
         PurePosixPath("test.def")
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert any(
-        isinstance(d, diagnostics.SubRootAlreadyOccupiedDiagnostic) for d in all_diags
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 2
+    assert isinstance(
+        results[0].diagnostics[0], diagnostics.SubRootAlreadyOccupiedDiagnostic
     )
-    assert any(
-        isinstance(d, diagnostics.ReferencedFileNotFoundDiagnostic) for d in all_diags
+    assert isinstance(
+        results[0].diagnostics[1], diagnostics.ReferencedFileNotFoundDiagnostic
     )
+    assert results[1].file_path == PurePosixPath("lib/parent_target.def")
+    assert results[1].exception is None
+    assert results[1].diagnostics == []
 
 
 def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -550,8 +565,18 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
     results = validator.Validator().parse_and_validate_program(
         PurePosixPath("test.def")
     )
-    file_diags = [d for r in results for d in r.diagnostics]
-    assert any(isinstance(d, diagnostics.FqunMismatchDiagnostic) for d in file_diags)
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 1
+    assert isinstance(
+        results[0].diagnostics[0],
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    )
+    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert results[1].exception is None
+    assert len(results[1].diagnostics) == 1
+    assert isinstance(results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic)
 
 
 def test_cross_fqun_wrong_type_in_sub_root(
@@ -585,11 +610,17 @@ def test_cross_fqun_wrong_type_in_sub_root(
     results = validator.Validator().parse_and_validate_program(
         PurePosixPath("test.def")
     )
-    file_diags = [d for r in results for d in r.diagnostics]
-    assert any(
-        isinstance(d, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-        for d in file_diags
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 1
+    assert isinstance(
+        results[0].diagnostics[0],
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
+    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert results[1].exception is None
+    assert results[1].diagnostics == []
 
 
 def test_same_fqun_reference_inside_sub_root(
