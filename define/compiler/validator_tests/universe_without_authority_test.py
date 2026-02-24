@@ -7,6 +7,7 @@ def test_standard_without_authority_ok():
     diags = parse_transform_validate(source)
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert diags[0].reserved_name == "standard"
     assert diags[0].position.line == 1
     assert diags[0].position.column == 31
 
@@ -32,8 +33,11 @@ def test_case_insensitive_standard():
     diags = parse_transform_validate(source)
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert diags[0].universe_name == "STANDARD"
+    assert diags[0].char == "S"
     assert diags[0].position.line == 1
     assert diags[0].position.column == 31
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert diags[1].reserved_name == "STANDARD"
     assert diags[1].position.line == 1
     assert diags[1].position.column == 31

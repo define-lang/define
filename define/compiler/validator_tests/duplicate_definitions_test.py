@@ -60,9 +60,13 @@ def test_three_duplicates_two_errors():
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)
+    assert diags[0].definition_type == "position"
+    assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
     assert diags[0].position.line == 2
     assert diags[0].position.column == 1
+    assert diags[1].definition_type == "position"
+    assert diags[1].path == "/same"
     assert diags[1].first_definition_line == 1
     assert diags[1].position.line == 3
     assert diags[1].position.column == 1

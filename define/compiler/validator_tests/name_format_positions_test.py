@@ -11,6 +11,8 @@ def test_multiverse_name_position():
         if isinstance(d, diagnostics.MultiverseNameInvalidCharDiagnostic)
     ]
     assert len(mv_diags) == 1
+    assert mv_diags[0].multiverse_name == "_mv"
+    assert mv_diags[0].char == "_"
     assert mv_diags[0].position.line == 1
     assert mv_diags[0].position.column == 31
 
@@ -24,6 +26,8 @@ def test_authority_domain_position():
         if isinstance(d, diagnostics.AuthorityDomainInvalidCharDiagnostic)
     ]
     assert len(ad_diags) == 1
+    assert ad_diags[0].domain == "-example.com"
+    assert ad_diags[0].char == "-"
     assert ad_diags[0].position.line == 1
     assert ad_diags[0].position.column == 34
 
@@ -37,6 +41,8 @@ def test_authority_path_position():
         if isinstance(d, diagnostics.InvalidAuthorityPathSegmentDiagnostic)
     ]
     assert len(ap_diags) == 1
+    assert ap_diags[0].segment == ".hidden"
+    assert ap_diags[0].char == "."
     assert ap_diags[0].position.line == 1
     assert ap_diags[0].position.column == 46
 
@@ -48,6 +54,8 @@ def test_universe_name_position():
         d for d in diags if isinstance(d, diagnostics.UniverseNameInvalidCharDiagnostic)
     ]
     assert len(un_diags) == 1
+    assert un_diags[0].universe_name == "_my_lib"
+    assert un_diags[0].char == "_"
     assert un_diags[0].position.line == 1
     assert un_diags[0].position.column == 48
 
@@ -61,6 +69,8 @@ def test_path_segment_position():
         if isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     ]
     assert len(ps_diags) == 1
+    assert ps_diags[0].segment == "2bad"
+    assert ps_diags[0].char == "2"
     assert ps_diags[0].position.line == 1
     assert ps_diags[0].position.column == 53
 
@@ -79,5 +89,7 @@ def test_local_name_position():
         d for d in diags if isinstance(d, diagnostics.InvalidLocalNameFormatDiagnostic)
     ]
     assert len(ln_diags) == 1
+    assert ln_diags[0].local_name == "my-pos"
+    assert ln_diags[0].char == "-"
     assert ln_diags[0].position.line == 2
     assert ln_diags[0].position.column == 23

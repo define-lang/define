@@ -20,6 +20,7 @@ def test_position_constraint_reference_with_invalid_path():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "Bad"
+    assert diags[0].char == "B"
     assert diags[0].position.line == 3
     assert diags[0].position.column == 22
 
@@ -90,5 +91,7 @@ def test_referenced_global_name_wrong_type_position(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert diags[0].path == "/target"
+    assert diags[0].expected_type == "position"
     assert diags[0].position.line == 3
     assert diags[0].position.column == 29

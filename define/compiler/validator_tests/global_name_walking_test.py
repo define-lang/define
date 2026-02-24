@@ -180,6 +180,7 @@ def test_external_universe_no_project_config(
     assert diags[0].position.line == 3
     assert diags[0].position.column == 21
     assert diags[0].universe == "other.example.com:other_universe"
+    assert diags[0].config_path == ".define/project/config.defcl"
 
 
 def test_external_universe_without_local_deps(
@@ -251,6 +252,7 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
     assert diags[0].position.column == 21
+    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
 
 
 def test_unknown_universe_emits_diagnostic(
@@ -291,6 +293,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     assert diags[0].position.line == 3
     assert diags[0].position.column == 21
     assert diags[0].universe == "other.example.com:other_universe"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
@@ -365,6 +368,7 @@ def test_cross_fqun_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].position.line == 3
     assert diags[0].position.column == 21
+    assert diags[0].file_path == "lib/missing.def"
 
 
 def test_cross_fqun_sub_root_missing_config(
@@ -472,6 +476,10 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     assert results[0].diagnostics[0].position.line == 4
     assert results[0].diagnostics[0].position.column == 21
+    assert results[0].diagnostics[0].universe == _CHILD_UNIVERSE
+    assert results[0].diagnostics[0].sub_root_path == "lib"
+    assert results[0].diagnostics[0].existing_file == "lib/parent_target.def"
+    assert results[0].diagnostics[0].existing_universe == _PARENT_UNIVERSE
     assert results[1].file_path == PurePosixPath("lib/parent_target.def")
     assert results[1].exception is None
     assert results[1].diagnostics == []
@@ -515,11 +523,16 @@ def test_sub_root_conflict_continues_validation(
     )
     assert results[0].diagnostics[0].position.line == 4
     assert results[0].diagnostics[0].position.column == 21
+    assert results[0].diagnostics[0].universe == _CHILD_UNIVERSE
+    assert results[0].diagnostics[0].sub_root_path == "lib"
+    assert results[0].diagnostics[0].existing_file == "lib/parent_target.def"
+    assert results[0].diagnostics[0].existing_universe == _PARENT_UNIVERSE
     assert isinstance(
         results[0].diagnostics[1], diagnostics.ReferencedFileNotFoundDiagnostic
     )
     assert results[0].diagnostics[1].position.line == 4
     assert results[0].diagnostics[1].position.column == 21
+    assert results[0].diagnostics[1].file_path == "lib/missing_target.def"
     assert results[1].file_path == PurePosixPath("lib/parent_target.def")
     assert results[1].exception is None
     assert results[1].diagnostics == []
@@ -565,6 +578,7 @@ def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert path_diags[0].position.column == 21
     assert path_diags[0].other_universe == _CHILD_UNIVERSE
     assert path_diags[0].path.endswith("lib/parent_target.def")
+    assert path_diags[0].sub_root_path == "lib"
 
 
 def test_cross_fqun_file_wrong_fqun_in_sub_root(
@@ -603,12 +617,16 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
     )
     assert results[0].diagnostics[0].position.line == 3
     assert results[0].diagnostics[0].position.column == 21
+    assert results[0].diagnostics[0].path == "/target"
+    assert results[0].diagnostics[0].expected_type == "position"
     assert results[1].file_path == PurePosixPath("lib/target.def")
     assert results[1].exception is None
     assert len(results[1].diagnostics) == 1
     assert isinstance(results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic)
     assert results[1].diagnostics[0].position.line == 1
     assert results[1].diagnostics[0].position.column == 31
+    assert results[1].diagnostics[0].expected == _CHILD_UNIVERSE
+    assert results[1].diagnostics[0].actual == wrong_fqun
 
 
 def test_cross_fqun_wrong_type_in_sub_root(
@@ -652,6 +670,8 @@ def test_cross_fqun_wrong_type_in_sub_root(
     )
     assert results[0].diagnostics[0].position.line == 3
     assert results[0].diagnostics[0].position.column == 21
+    assert results[0].diagnostics[0].path == "/target"
+    assert results[0].diagnostics[0].expected_type == "position"
     assert results[1].file_path == PurePosixPath("lib/target.def")
     assert results[1].exception is None
     assert results[1].diagnostics == []

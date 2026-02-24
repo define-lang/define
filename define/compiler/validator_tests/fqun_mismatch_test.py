@@ -77,6 +77,7 @@ def test_authority_with_path_mismatch():
     )
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert diags[0].expected == "my.domain.com:my_lib"
     assert diags[0].actual == "my.domain.com/org:my_lib"
     assert diags[0].position.line == 1
     assert diags[0].position.column == 31
