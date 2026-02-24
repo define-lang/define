@@ -8,10 +8,21 @@ from dataclasses import dataclass
 
 @dataclass
 class ValidationTimingStats:
-    """Timing measurements for config-load/file-load/parse/transform/validate steps."""
+    """Timing measurements for file-load/parse/transform/validate steps.
+
+    TODO: Split validation timing into file_validation (per-file FileValidator
+    work), global_validation (cross-file reference edge processing), and
+    deferred_validation (deferred edge resolution). Each should measure only
+    the actual work time for that file.
+
+    TODO: Track config loading time separately (it currently happens in
+    ProgramValidator, not per-file).
+
+    TODO: Track wait time in the thread pool queue (time between submission
+    and start of actual work).
+    """
 
     overall: int
-    config_loading: int
     file_loading: int | None
     parse: int | None
     transform: int | None
@@ -24,15 +35,10 @@ class ValidationStatsTracker:
     def __init__(self):
         """Start the overall timer."""
         self._started_at: int = time.perf_counter_ns()
-        self._config_loading_finished_at: int | None = None
         self._file_loading_finished_at: int | None = None
         self._parse_finished_at: int | None = None
         self._transform_finished_at: int | None = None
         self._validate_finished_at: int | None = None
-
-    def mark_config_loading_finished(self):
-        """Record the end of the config-loading phase."""
-        self._config_loading_finished_at = time.perf_counter_ns()
 
     def mark_file_loading_finished(self):
         """Record the end of the file-loading phase."""
@@ -52,12 +58,7 @@ class ValidationStatsTracker:
 
     def build(self) -> ValidationTimingStats:
         """Compute timing stats from whichever phases have completed."""
-        if self._config_loading_finished_at is None:
-            raise ValueError(
-                "Config loading timing was not recorded before building stats."
-            )
-        config_loading = self._config_loading_finished_at - self._started_at
-        last_timestamp = self._config_loading_finished_at
+        last_timestamp = self._started_at
 
         file_loading: int | None = None
         if self._file_loading_finished_at is not None:
@@ -81,7 +82,6 @@ class ValidationStatsTracker:
 
         return ValidationTimingStats(
             overall=last_timestamp - self._started_at,
-            config_loading=config_loading,
             file_loading=file_loading,
             parse=parse,
             transform=transform,

@@ -64,16 +64,6 @@ py_test(
 )
 
 py_library(
-    name = "exceptions",
-    srcs = ["exceptions.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":constants",
-        "//defcl/python:exceptions",
-    ],
-)
-
-py_library(
     name = "diagnostics",
     srcs = ["diagnostics.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -84,11 +74,55 @@ py_library(
 )
 
 py_library(
+    name = "exceptions",
+    srcs = ["exceptions.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":constants",
+        "//defcl/python:exceptions",
+    ],
+)
+
+py_library(
+    name = "file_validator",
+    srcs = ["file_validator.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":diagnostics",
+        ":exceptions",
+        ":name_validators",
+        ":parser",
+        ":parser_error_classification",
+        ":parser_exceptions",
+        ":stats",
+        ":transformer",
+        ":validation_result",
+        "@pypi//lark",
+    ],
+)
+
+py_test(
+    name = "file_validator_test",
+    size = "small",
+    srcs = ["file_validator_test.py"],
+    pytest_main = True,
+    deps = [
+        ":diagnostics",
+        ":exceptions",
+        ":file_validator",
+        ":parser",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "driver",
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
         ":exceptions",
+        ":validation_result",
         ":validator",
     ],
 )
@@ -118,6 +152,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":driver",
+        ":validation_result",
         "@pypi//pytest",
     ],
 )
@@ -256,6 +291,54 @@ py_test(
 )
 
 py_library(
+    name = "program_validator",
+    srcs = ["program_validator.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":config",
+        ":constants",
+        ":diagnostics",
+        ":exceptions",
+        ":file_validator",
+        ":parser",
+        ":path_tracker",
+        ":reference_graph",
+        ":stats",
+        ":validation_result",
+    ],
+)
+
+py_test(
+    name = "program_validator_test",
+    size = "small",
+    srcs = ["program_validator_test.py"],
+    pytest_main = True,
+    deps = [
+        ":diagnostics",
+        ":exceptions",
+        ":program_validator",
+        "//define/compiler/validator_tests:test_helpers",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "reference_graph",
+    srcs = ["reference_graph.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_test(
+    name = "reference_graph_test",
+    size = "small",
+    srcs = ["reference_graph_test.py"],
+    deps = [
+        ":reference_graph",
+    ],
+)
+
+py_library(
     name = "stats",
     srcs = ["stats.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -297,6 +380,20 @@ py_test(
 )
 
 py_library(
+    name = "validation_result",
+    srcs = ["validation_result.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":diagnostics",
+        ":exceptions",
+        ":parser_exceptions",
+        ":stats",
+        "@pypi//lark",
+    ],
+)
+
+py_library(
     name = "validator",
     srcs = ["validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -306,14 +403,9 @@ py_library(
         ":constants",
         ":diagnostics",
         ":exceptions",
-        ":name_validators",
-        ":parser",
-        ":parser_error_classification",
-        ":parser_exceptions",
-        ":path_tracker",
-        ":stats",
-        ":transformer",
-        "@pypi//lark",
+        ":file_validator",
+        ":program_validator",
+        ":validation_result",
     ],
 )
 
@@ -345,6 +437,8 @@ pyright_test(
         ":driver_run_test",
         ":driver_test",
         ":exceptions",
+        ":file_validator",
+        ":file_validator_test",
         ":main",
         ":name_parser",
         ":name_parser_test",
@@ -355,10 +449,15 @@ pyright_test(
         ":parser_exceptions",
         ":path_tracker",
         ":path_tracker_test",
+        ":program_validator",
+        ":program_validator_test",
+        ":reference_graph",
+        ":reference_graph_test",
         ":stats",
         ":stats_test",
         ":transformer",
         ":transformer_test",
+        ":validation_result",
         ":validator",
     ],
 )

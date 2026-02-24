@@ -9,7 +9,7 @@ from define.compiler.validator_tests.conftest import ParseAndValidateFile
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
-    phase_sum = timings.config_loading
+    phase_sum = 0
     if timings.file_loading is not None:
         phase_sum += timings.file_loading
     if timings.parse is not None:
@@ -34,7 +34,7 @@ def test_returns_single_file_timing_stats(
 
     timings = result.stats
     assert timings.overall >= 0
-    assert timings.config_loading >= 0
+
     assert timings.file_loading is not None
     assert timings.file_loading >= 0
     assert timings.parse is not None
@@ -60,7 +60,7 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_none(
 
     timings = result.stats
     assert timings.overall >= 0
-    assert timings.config_loading >= 0
+
     assert timings.file_loading is not None
     assert timings.file_loading >= 0
     assert timings.parse is not None
@@ -84,7 +84,7 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
 
     timings = result.stats
     assert timings.overall >= 0
-    assert timings.config_loading >= 0
+
     assert timings.file_loading is not None
     assert timings.file_loading >= 0
     assert timings.parse is None
@@ -110,7 +110,7 @@ def test_transform_error_from_name_parser_populates_exceptions(
 
     timings = result.stats
     assert timings.overall >= 0
-    assert timings.config_loading >= 0
+
     assert timings.file_loading is not None
     assert timings.file_loading >= 0
     assert timings.parse is not None
@@ -138,7 +138,7 @@ def test_config_error_sets_later_phases_to_none(
     assert isinstance(result.exception, exceptions.ConfigError)
 
     timings = result.stats
-    assert timings.config_loading >= 0
+
     assert timings.file_loading is None
     assert timings.parse is None
     assert timings.transform is None
@@ -159,7 +159,7 @@ def test_file_not_found_sets_later_phases_to_none(
     assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
 
     timings = result.stats
-    assert timings.config_loading >= 0
+
     assert timings.file_loading is not None
     assert timings.file_loading >= 0
     assert timings.parse is None

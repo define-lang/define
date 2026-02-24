@@ -15,6 +15,7 @@ from typing import TextIO
 
 from define.compiler import (
     exceptions,
+    validation_result,
     validator,
 )
 
@@ -29,7 +30,7 @@ class ExitCode(enum.IntEnum):
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
-    def validate_program(self, path: Path) -> list[validator.ValidationResult]:
+    def validate_program(self, path: Path) -> list[validation_result.ValidationResult]:
         """Compile a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
         return validator.Validator().parse_and_validate_program(path=resolved_path)

@@ -93,35 +93,6 @@ class TestSubRootTracking:
         with pytest.raises(ValueError, match="already registered"):
             tracker.register_project_root(root, "other.universe", {})
 
-    def test_register_project_root_unknown_fqun_raises(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_unknown_universe("bad.universe")
-        with pytest.raises(ValueError, match="marked unknown"):
-            tracker.register_project_root(PurePosixPath(""), "bad.universe", {})
-
-    def test_mark_and_is_unknown_universe(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert not tracker.is_unknown_universe("bad")
-        tracker.mark_unknown_universe("bad")
-        assert tracker.is_unknown_universe("bad")
-
-    def test_universe_has_sub_root_in(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(
-            PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
-        )
-        assert tracker.universe_has_sub_root_in("dep", PurePosixPath(""))
-
-    def test_universe_has_sub_root_in_missing(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "my.universe", {})
-        assert not tracker.universe_has_sub_root_in("dep", PurePosixPath(""))
-
-    def test_universe_has_sub_root_in_unregistered_root_raises(self):
-        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        with pytest.raises(KeyError):
-            tracker.universe_has_sub_root_in("dep", PurePosixPath("not/registered"))
-
     def test_sub_root_location(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(

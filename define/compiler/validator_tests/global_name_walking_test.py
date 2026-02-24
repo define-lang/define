@@ -296,7 +296,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
 
-def test_duplicate_unknown_universe_across_files_emits_one_diagnostic(
+def test_unknown_universe_across_files_reported_per_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
@@ -329,12 +329,13 @@ def test_duplicate_unknown_universe_across_files_emits_one_diagnostic(
         PurePosixPath("test.def")
     )
     all_diags = [d for r in results for d in r.diagnostics]
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert all_diags[0].position.line == 3
-    assert all_diags[0].position.column == 21
-    assert all_diags[0].universe == "other.example.com:other_universe"
-    assert all_diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert len(all_diags) == 2
+    for diag in all_diags:
+        assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+        assert diag.position.line == 3
+        assert diag.position.column == 21
+        assert diag.universe == "other.example.com:other_universe"
+        assert diag.current_universe_name == "my.domain.com:my_lib"
 
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
@@ -445,6 +446,8 @@ def test_cross_fqun_sub_root_missing_config(
 def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
+    # Verifies that a failed sub-root config is only loaded once,
+    # emitting one diagnostic even when multiple files reference it.
     _setup_cross_fqun_project(tmp_path, monkeypatch)
     (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
     _write_source(
@@ -551,16 +554,18 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert len(results) == 3
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[0].exception is None
-    assert len(results[0].diagnostics) == 1
-    assert isinstance(
-        results[0].diagnostics[0], diagnostics.SubRootAlreadyOccupiedDiagnostic
-    )
-    assert results[0].diagnostics[0].position.line == 4
-    assert results[0].diagnostics[0].position.column == 21
-    assert results[0].diagnostics[0].universe == _CHILD_UNIVERSE
-    assert results[0].diagnostics[0].sub_root_path == "lib"
-    assert results[0].diagnostics[0].existing_file == "lib/parent_target.def"
-    assert results[0].diagnostics[0].existing_universe == _PARENT_UNIVERSE
+    assert [type(d) for d in results[0].diagnostics] == [
+        diagnostics.SubRootAlreadyOccupiedDiagnostic,
+        diagnostics.PathInsideOtherUniverseDiagnostic,
+    ]
+    sub_root_diag = results[0].diagnostics[0]
+    assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
+    assert sub_root_diag.position.line == 4
+    assert sub_root_diag.position.column == 21
+    assert sub_root_diag.universe == _CHILD_UNIVERSE
+    assert sub_root_diag.sub_root_path == "lib"
+    assert sub_root_diag.existing_file == "lib/parent_target.def"
+    assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
     assert results[1].file_path == PurePosixPath("lib/parent_target.def")
     assert results[1].exception is None
     assert results[1].diagnostics == []
@@ -598,22 +603,24 @@ def test_sub_root_conflict_continues_validation(
     assert len(results) == 2
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[0].exception is None
-    assert len(results[0].diagnostics) == 2
-    assert isinstance(
-        results[0].diagnostics[0], diagnostics.SubRootAlreadyOccupiedDiagnostic
-    )
-    assert results[0].diagnostics[0].position.line == 4
-    assert results[0].diagnostics[0].position.column == 21
-    assert results[0].diagnostics[0].universe == _CHILD_UNIVERSE
-    assert results[0].diagnostics[0].sub_root_path == "lib"
-    assert results[0].diagnostics[0].existing_file == "lib/parent_target.def"
-    assert results[0].diagnostics[0].existing_universe == _PARENT_UNIVERSE
-    assert isinstance(
-        results[0].diagnostics[1], diagnostics.ReferencedFileNotFoundDiagnostic
-    )
-    assert results[0].diagnostics[1].position.line == 4
-    assert results[0].diagnostics[1].position.column == 21
-    assert results[0].diagnostics[1].file_path == "lib/missing_target.def"
+    assert [type(d) for d in results[0].diagnostics] == [
+        diagnostics.SubRootAlreadyOccupiedDiagnostic,
+        diagnostics.PathInsideOtherUniverseDiagnostic,
+        diagnostics.ReferencedFileNotFoundDiagnostic,
+    ]
+    sub_root_diag = results[0].diagnostics[0]
+    assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
+    assert sub_root_diag.position.line == 4
+    assert sub_root_diag.position.column == 21
+    assert sub_root_diag.universe == _CHILD_UNIVERSE
+    assert sub_root_diag.sub_root_path == "lib"
+    assert sub_root_diag.existing_file == "lib/parent_target.def"
+    assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
+    not_found_diag = results[0].diagnostics[2]
+    assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert not_found_diag.position.line == 4
+    assert not_found_diag.position.column == 21
+    assert not_found_diag.file_path == "lib/missing_target.def"
     assert results[1].file_path == PurePosixPath("lib/parent_target.def")
     assert results[1].exception is None
     assert results[1].diagnostics == []

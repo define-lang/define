@@ -6,10 +6,10 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import validator
+from define.compiler import validation_result, validator
 from define.compiler.validator_tests import test_helpers
 
-type ParseAndValidateFile = Callable[[str | bytes], validator.ValidationResult]
+type ParseAndValidateFile = Callable[[str | bytes], validation_result.ValidationResult]
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def parse_and_validate_file(
 ) -> ParseAndValidateFile:
     """Parse and validate a single source string as a file in a temp project."""
 
-    def _run(source: str | bytes) -> validator.ValidationResult:
+    def _run(source: str | bytes) -> validation_result.ValidationResult:
         relative_path = PurePosixPath("test.def")
         source_path = tmp_path / relative_path
         test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")

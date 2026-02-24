@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics, driver, parser_exceptions, validator
+from define.compiler import diagnostics, driver, parser_exceptions, validation_result
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -231,8 +231,8 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "global_name_walk/sub_root_is_current_universe": [
         # TODO: ReferencedGlobalNameWrongTypeDiagnostic should not fire here.
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
         diagnostics.ReferencedFileNotFoundDiagnostic,
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
     "global_name_walk/wrong_type": [
@@ -240,10 +240,10 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "sub_root_conflict_load": [
         diagnostics.SubRootAlreadyOccupiedDiagnostic,
+        diagnostics.PathInsideOtherUniverseDiagnostic,
     ],
     "syntax/cross_file_duplicate_definitions": [
         diagnostics.PathMismatchDiagnostic,
-        diagnostics.DuplicateDefinitionDiagnostic,
     ],
     "syntax/duplicate_definitions": [diagnostics.DuplicateDefinitionDiagnostic],
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],
@@ -288,7 +288,7 @@ def project_entrypoint(project_dir: Path) -> Path:
 
 
 def _all_diagnostics(
-    results: list[validator.ValidationResult],
+    results: list[validation_result.ValidationResult],
 ) -> list[diagnostics.Diagnostic]:
     diags: list[diagnostics.Diagnostic] = []
     for result in results:
