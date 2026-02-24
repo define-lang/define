@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions, parser_exceptions, stats, validator
+from define.compiler import exceptions, parser_exceptions, program_validator, stats
 from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.conftest import ParseAndValidateFile
 
@@ -131,7 +131,7 @@ def test_config_error_sets_later_phases_to_none(
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(relative_path)
+    results = program_validator.ProgramValidator().validate_program(relative_path)
     assert len(results) == 1
     result = results[0]
 
@@ -152,7 +152,7 @@ def test_file_not_found_sets_later_phases_to_none(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     relative_path = PurePosixPath("nonexistent.def")
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(relative_path)
+    results = program_validator.ProgramValidator().validate_program(relative_path)
     assert len(results) == 1
     result = results[0]
 

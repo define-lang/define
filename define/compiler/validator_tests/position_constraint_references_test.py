@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, validator
+from define.compiler import diagnostics, program_validator
 from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.test_helpers import parse_transform_validate
 
@@ -83,7 +83,7 @@ def test_referenced_global_name_wrong_type_position(
         tmp_path, "mv:define-lang.org:test_walk_wrong_type"
     )
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 2

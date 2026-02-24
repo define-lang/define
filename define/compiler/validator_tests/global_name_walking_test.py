@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions, validator
+from define.compiler import diagnostics, exceptions, program_validator
 from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.conftest import ParseAndValidateFile
 
@@ -24,7 +24,7 @@ def test_nested_file_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.chdir(tmp_path)
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("sub/dir/leaf.def")
     )
     assert len(results) == 1
@@ -67,7 +67,7 @@ def test_walk_returns_results_in_encounter_order(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert [result.file_path for result in results] == [
@@ -131,7 +131,7 @@ def test_two_file_cycle_emits_diagnostic(
     )
     test_helpers.write_project_config(tmp_path, "mv:define-lang.org:test_walk_cycle")
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 2
@@ -325,7 +325,7 @@ def test_unknown_universe_across_files_reported_per_file(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     all_diags = [d for r in results for d in r.diagnostics]
@@ -375,7 +375,7 @@ def test_cross_fqun_walks_into_sub_root(
         f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 2
@@ -400,7 +400,7 @@ def test_cross_fqun_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         ),
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 1
@@ -430,7 +430,7 @@ def test_cross_fqun_sub_root_missing_config(
         ),
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 1
@@ -474,7 +474,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
         ),
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     all_diags = [d for r in results for d in r.diagnostics]
@@ -508,7 +508,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
         f"define the potential position<{wrong_universe}:/target>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 1
@@ -548,7 +548,7 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 3
@@ -597,7 +597,7 @@ def test_sub_root_conflict_continues_validation(
         f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 2
@@ -652,7 +652,7 @@ def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     all_diags = [d for r in results for d in r.diagnostics]
@@ -692,7 +692,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
         f"define the potential position<{wrong_fqun}:/target>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 2
@@ -745,7 +745,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
         ),
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 2
@@ -798,7 +798,7 @@ def test_same_fqun_reference_inside_sub_root(
         f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 3
@@ -848,7 +848,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         f"define the potential position<{grandchild_universe}:/leaf>.\n",
     )
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 3

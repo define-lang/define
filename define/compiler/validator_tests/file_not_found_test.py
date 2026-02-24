@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions, validator
+from define.compiler import diagnostics, exceptions, program_validator
 from define.compiler.validator_tests import test_helpers
 from define.compiler.validator_tests.conftest import ParseAndValidateFile
 
@@ -11,7 +11,7 @@ from define.compiler.validator_tests.conftest import ParseAndValidateFile
 def test_entrypoint_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("nonexistent.def")
     )
     assert len(results) == 1

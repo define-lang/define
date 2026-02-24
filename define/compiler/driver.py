@@ -15,8 +15,8 @@ from typing import TextIO
 
 from define.compiler import (
     exceptions,
+    program_validator,
     validation_result,
-    validator,
 )
 
 
@@ -33,7 +33,7 @@ class Driver:
     def validate_program(self, path: Path) -> list[validation_result.ValidationResult]:
         """Compile a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
-        return validator.Validator().parse_and_validate_program(path=resolved_path)
+        return program_validator.ProgramValidator().validate_program(path=resolved_path)
 
     @staticmethod
     def _resolve_path(path: Path) -> PurePosixPath:

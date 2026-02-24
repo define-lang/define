@@ -3,12 +3,12 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions, validator
+from define.compiler import exceptions, program_validator
 
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 1
@@ -19,7 +19,7 @@ def test_not_project_root_error_includes_docs_link(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 1
@@ -36,7 +36,7 @@ def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.Monke
     )
     monkeypatch.chdir(tmp_path)
 
-    results = validator.Validator().parse_and_validate_program(
+    results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(results) == 1

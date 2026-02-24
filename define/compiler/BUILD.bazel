@@ -122,8 +122,8 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":exceptions",
+        ":program_validator",
         ":validation_result",
-        ":validator",
     ],
 )
 
@@ -404,8 +404,6 @@ py_library(
         ":diagnostics",
         ":exceptions",
         ":file_validator",
-        ":program_validator",
-        ":validation_result",
     ],
 )
 

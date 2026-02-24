@@ -6,7 +6,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import validation_result, validator
+from define.compiler import program_validator, validation_result
 from define.compiler.validator_tests import test_helpers
 
 type ParseAndValidateFile = Callable[[str | bytes], validation_result.ValidationResult]
@@ -27,7 +27,7 @@ def parse_and_validate_file(
         else:
             source_path.write_bytes(source)
         monkeypatch.chdir(tmp_path)
-        results = validator.Validator().parse_and_validate_program(relative_path)
+        results = program_validator.ProgramValidator().validate_program(relative_path)
         assert len(results) == 1
         return results[0]
 

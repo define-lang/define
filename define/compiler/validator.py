@@ -11,20 +11,11 @@ from define.compiler import (
     diagnostics,
     exceptions,
     file_validator,
-    program_validator,
-    validation_result,
 )
 
 
 class Validator:
     """Validates a single Define program."""
-
-    def parse_and_validate_program(
-        self,
-        path: pathlib.PurePosixPath,
-    ) -> list[validation_result.ValidationResult]:
-        """Parse, transform, and validate all reached files from one entrypoint."""
-        return program_validator.ProgramValidator().validate_program(path)
 
     # TODO: Re-enable the correct non-filesystem context behavior.
     # Delete _build_validation_context because it's nonsense.
