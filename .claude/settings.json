@@ -32,6 +32,7 @@
       "Bash(uv run python -c *)",
       "Bash(uv run python3 -c *)",
       "Bash(uv run python - *)",
+      "Bash(find * -exec cat *)",
       "Bash(echo *)",
       "Bash(ls *)",
       "Bash(grep *)",
