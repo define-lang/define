@@ -222,6 +222,13 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "global_name_walk/parent_has_wrong_universe_for_sub_root": [
         diagnostics.ConfigLoadErrorDiagnostic,
     ],
+    "global_name_walk/sub_root_redeclares_parent": [
+        # TODO: Need a new diagnostic for duplicate FQUNs across sub-roots.
+        # The sub-root at lib/ re-declares the parent universe as its own
+        # sub-root at lib/parent/. The spec forbids two compiled sub-roots
+        # from having the same FQUN. Currently produces no diagnostics.
+        diagnostics.ConfigLoadErrorDiagnostic,
+    ],
     "global_name_walk/sub_root_is_current_universe": [
         # TODO: ReferencedGlobalNameWrongTypeDiagnostic should not fire here.
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
