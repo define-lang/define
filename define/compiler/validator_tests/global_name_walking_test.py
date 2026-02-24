@@ -442,6 +442,46 @@ def test_cross_fqun_sub_root_missing_config(
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
 
 
+def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"it has the position</other>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "other.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/other> {{\n"
+            f"it may only contain dimension points where {{\n"
+            f"it has the position<{_CHILD_UNIVERSE}:/another>.\n"
+            f"}}\n"
+            f"}}\n"
+        ),
+    )
+
+    results = validator.Validator().parse_and_validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert all_diags[0].position.line == 3
+    assert all_diags[0].position.column == 21
+    assert isinstance(all_diags[0].error, exceptions.NotProjectRootError)
+
+
 def test_cross_fqun_sub_root_fqun_mismatch(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
