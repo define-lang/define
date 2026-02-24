@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:test_cross_file_dup:/test> {
+    it may only contain dimension points where {
+        it has the position</other>.
+    }
+}

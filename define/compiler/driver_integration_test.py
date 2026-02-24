@@ -228,6 +228,10 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "sub_root_conflict_load": [
         diagnostics.SubRootAlreadyOccupiedDiagnostic,
     ],
+    "syntax/cross_file_duplicate_definitions": [
+        diagnostics.PathMismatchDiagnostic,
+        diagnostics.DuplicateDefinitionDiagnostic,
+    ],
     "syntax/duplicate_definitions": [diagnostics.DuplicateDefinitionDiagnostic],
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],
     "syntax/path_mismatch": [diagnostics.PathMismatchDiagnostic],
