@@ -200,6 +200,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
+    "constraint_refs/action_local_pos_requires_missing_global.def": [
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    ],
     "short_form_required/full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
