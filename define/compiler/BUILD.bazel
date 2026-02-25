@@ -89,6 +89,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":ast",
+        ":constants",
         ":diagnostics",
         ":exceptions",
         ":name_validators",
@@ -295,7 +296,6 @@ py_library(
     srcs = ["program_validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":ast",
         ":config",
         ":constants",
         ":diagnostics",
@@ -393,20 +393,6 @@ py_library(
     ],
 )
 
-py_library(
-    name = "validator",
-    srcs = ["validator.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":ast",
-        ":config",
-        ":constants",
-        ":diagnostics",
-        ":exceptions",
-        ":file_validator",
-    ],
-)
-
 # --- Format checking ---
 
 format_test(
@@ -456,6 +442,5 @@ pyright_test(
         ":transformer",
         ":transformer_test",
         ":validation_result",
-        ":validator",
     ],
 )

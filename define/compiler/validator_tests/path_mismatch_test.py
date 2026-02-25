@@ -1,16 +1,26 @@
+from pathlib import PurePosixPath
+
 from define.compiler import diagnostics
-from define.compiler.validator_tests.test_helpers import parse_transform_validate
+from define.compiler.validator_tests.conftest import ValidateSourceAsFile
 
 
-def test_path_matches_file_no_error():
+def test_path_matches_file_no_error(validate_source_as_file: ValidateSourceAsFile):
     source = "define the potential position<my.domain.com:my_lib:/foo/bar>.\n"
-    diags = parse_transform_validate(source, expected_definition_path="foo/bar")
+    diags = validate_source_as_file(
+        source,
+        "my.domain.com:my_lib",
+        PurePosixPath("foo/bar.def"),
+    )
     assert len(diags) == 0
 
 
-def test_path_mismatch_error():
+def test_path_mismatch_error(validate_source_as_file: ValidateSourceAsFile):
     source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
-    diags = parse_transform_validate(source, expected_definition_path="foo/bar")
+    diags = validate_source_as_file(
+        source,
+        "my.domain.com:my_lib",
+        PurePosixPath("foo/bar.def"),
+    )
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
     assert diags[0].expected_path == "/foo/bar"
@@ -19,13 +29,21 @@ def test_path_mismatch_error():
     assert diags[0].position.column == 52
 
 
-def test_no_file_path_skips_validation():
+def test_no_file_path_skips_validation(validate_source_as_file: ValidateSourceAsFile):
     source = "define the potential position<my.domain.com:my_lib:/any/path>.\n"
-    diags = parse_transform_validate(source, expected_definition_path=None)
+    diags = validate_source_as_file(
+        source,
+        "my.domain.com:my_lib",
+        PurePosixPath("any/path.def"),
+    )
     assert len(diags) == 0
 
 
-def test_nested_path_matches():
+def test_nested_path_matches(validate_source_as_file: ValidateSourceAsFile):
     source = "define the potential position<my.domain.com:my_lib:/a/b/c>.\n"
-    diags = parse_transform_validate(source, expected_definition_path="a/b/c")
+    diags = validate_source_as_file(
+        source,
+        "my.domain.com:my_lib",
+        PurePosixPath("a/b/c.def"),
+    )
     assert len(diags) == 0

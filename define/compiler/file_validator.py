@@ -11,6 +11,7 @@ import pathlib
 import typing
 from collections import ChainMap
 from dataclasses import dataclass
+from functools import cached_property
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
@@ -19,6 +20,7 @@ from lark import exceptions as lark_exceptions
 
 from define.compiler import (
     ast,
+    constants,
     diagnostics,
     exceptions,
     name_validators,
@@ -43,11 +45,23 @@ class FileValidationContext:
     file_path: pathlib.PurePosixPath
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str
-    sub_root_mappings: Mapping[str, pathlib.PurePosixPath]
-    # TODO: These are backward-compatibility jank for non-filesystem contexts.
-    # They need to be refactored away.
-    config_load_error: exceptions.ConfigError | None = None
-    broken_sub_root_errors: Mapping[str, exceptions.ConfigError] | None = None
+    # If sub_root_mappings is None, we are in a non-filesystem context.
+    sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
+
+    @cached_property
+    def full_path(self) -> pathlib.PurePosixPath:
+        """Return full filesystem path for this validation context."""
+        return self.root_prefix / self.file_path
+
+
+@dataclass(frozen=True)
+class EmptyFileValidationContext(FileValidationContext):
+    """Validation context for non-filesystem source validation."""
+
+    file_path: pathlib.PurePosixPath = constants.NON_FILESYSTEM_PATH
+    root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT
+    expected_fqun: str = ""
+    sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
 
 
 class FileValidator:
@@ -68,30 +82,59 @@ class FileValidator:
         self, context: FileValidationContext
     ) -> validation_result.ValidationResult:
         """Validate a single file and return the result."""
-        full_path = context.root_prefix / context.file_path
         tracker = stats.ValidationStatsTracker()
 
-        source, load_eror = self._load_file(full_path)
+        source, load_error = self._load_file(context.full_path)
         tracker.mark_file_loading_finished()
-        if load_eror is not None:
+        if load_error is not None:
             return validation_result.ValidationResult(
                 diagnostics=[],
-                exception=load_eror,
+                exception=load_error,
                 source=None,
-                file_path=full_path,
+                file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
             )
+        expected_definition_path = context.file_path.with_suffix("")
+        return self._validate_source(
+            context=context,
+            source=source,
+            tracker=tracker,
+            expected_definition_path=expected_definition_path,
+        )
 
+    def validate_source(
+        self,
+        source: str,
+    ) -> validation_result.ValidationResult:
+        """Validate source text without loading from the filesystem."""
+        context = EmptyFileValidationContext()
+        tracker = stats.ValidationStatsTracker()
+        tracker.mark_file_loading_finished()
+        return self._validate_source(
+            context=context,
+            source=source,
+            tracker=tracker,
+            expected_definition_path=None,
+        )
+
+    def _validate_source(
+        self,
+        context: FileValidationContext,
+        source: str,
+        tracker: stats.ValidationStatsTracker,
+        expected_definition_path: pathlib.PurePosixPath | None,
+    ) -> validation_result.ValidationResult:
+        """Parse, transform, and validate source text."""
         try:
-            tree = self._parser.parse(source, file_path=full_path)
+            tree = self._parser.parse(source, file_path=context.full_path)
         except SYNTAX_ERROR_TYPES as e:
             tracker.mark_parse_finished()
             return validation_result.ValidationResult(
                 diagnostics=[],
                 exception=e,
                 source=source,
-                file_path=full_path,
+                file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
             )
@@ -106,14 +149,13 @@ class FileValidator:
                     diagnostics=[],
                     exception=e.orig_exc,
                     source=source,
-                    file_path=full_path,
+                    file_path=context.full_path,
                     root_prefix=context.root_prefix,
                     stats=tracker.build(),
                 )
             raise
         tracker.mark_transform_finished()
 
-        expected_definition_path = context.file_path.with_suffix("")
         fdv = ProgramAstValidator(context, expected_definition_path)
         fdv.validate_program(program)
         tracker.mark_validate_finished()
@@ -121,7 +163,7 @@ class FileValidator:
             diagnostics=fdv.diagnostics,
             exception=None,
             source=source,
-            file_path=full_path,
+            file_path=context.full_path,
             root_prefix=context.root_prefix,
             stats=tracker.build(),
             definitions=fdv.definitions,
@@ -325,28 +367,6 @@ class ProgramAstValidator:
                 enclosing_definition,
             )
 
-    def _make_cross_fqun_diagnostic(
-        self, fqun: ast.Fqun, fqun_string: str
-    ) -> diagnostics.Diagnostic:
-        """Produce the appropriate diagnostic for an unresolvable cross-FQUN reference."""
-        config_err = self._context.config_load_error
-        if isinstance(config_err, exceptions.NotProjectRootError):
-            return diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
-                position=fqun.position,
-                universe=fqun_string,
-                config_path=str(config_err.config_path),
-            )
-        if config_err is not None:
-            return diagnostics.ConfigLoadErrorDiagnostic(
-                position=fqun.position,
-                error=config_err,
-            )
-        return diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-            position=fqun.position,
-            universe=fqun_string,
-            current_universe_name=self._context.expected_fqun,
-        )
-
     def _process_reference(
         self,
         typed_global_name: ast.TypedGlobalNameReference,
@@ -354,53 +374,71 @@ class ProgramAstValidator:
     ):
         """Record a reference edge and determine the target file to discover."""
         global_name = typed_global_name.global_name
+        edge = validation_result.ReferenceEdge(
+            enclosing_definition=enclosing_definition,
+            global_name_reference=typed_global_name,
+        )
+        # Process a reference that's inside of this same file.
+        if edge.fully_qualified_typed_name in self._seen_in_file:
+            self.reference_edges.append(edge)
+            return
 
-        if global_name.fqun is not None:
-            fqun_string = global_name.fqun.canonical
-            if fqun_string in self._unknown_fquns:
-                return
-            broken_errors = self._context.broken_sub_root_errors
-            if broken_errors is not None and fqun_string in broken_errors:
-                self._unknown_fquns.add(fqun_string)
-                self.diagnostics.append(
-                    diagnostics.ConfigLoadErrorDiagnostic(
-                        position=global_name.position,
-                        error=broken_errors[fqun_string],
-                    )
-                )
-                return
-            if fqun_string not in self._context.sub_root_mappings:
-                self._unknown_fquns.add(fqun_string)
-                self.diagnostics.append(
-                    self._make_cross_fqun_diagnostic(global_name.fqun, fqun_string)
-                )
-                return
-            edge = validation_result.ReferenceEdge(
-                enclosing_definition=enclosing_definition,
-                global_name_reference=typed_global_name,
+        if global_name.fqun is None:
+            # Process a reference from this universe.
+            self._add_edge_and_discovered_file(
+                edge=edge,
+                global_name=global_name,
+                root_prefix=self._context.root_prefix,
+                expected_fqun=enclosing_definition.name.fqun,
             )
-            self.reference_edges.append(edge)
-            sub_root_rel = self._context.sub_root_mappings[fqun_string]
-            sub_root_path = self._context.root_prefix / sub_root_rel
-            self.discovered_files.append(
-                validation_result.DiscoveredFile(
-                    path=global_name.path.file_path(),
-                    root_prefix=sub_root_path,
-                    expected_fqun=fqun_string,
-                    position=global_name.position,
-                )
+            return
+
+        sub_root_mappings = self._context.sub_root_mappings
+        if sub_root_mappings is None:
+            # Process a cross-FQUN reference in a non-filesystem context.
+            self._add_edge_and_discovered_file(
+                edge=edge,
+                global_name=global_name,
+                root_prefix=self._context.root_prefix,
+                expected_fqun=global_name.fqun,
             )
-        else:
-            edge = validation_result.ReferenceEdge(
-                enclosing_definition=enclosing_definition,
-                global_name_reference=typed_global_name,
-            )
-            self.reference_edges.append(edge)
-            self.discovered_files.append(
-                validation_result.DiscoveredFile(
-                    path=global_name.path.file_path(),
-                    root_prefix=self._context.root_prefix,
-                    expected_fqun=self._context.expected_fqun,
-                    position=global_name.position,
+            return
+
+        # Process a cross-FQUN reference in a filesystem context.
+        fqun_string = global_name.fqun.canonical
+        if fqun_string in self._unknown_fquns:
+            return
+        if fqun_string not in sub_root_mappings:
+            self._unknown_fquns.add(fqun_string)
+            self.diagnostics.append(
+                diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                    position=global_name.fqun.position,
+                    universe=fqun_string,
+                    current_universe_name=self._context.expected_fqun,
                 )
             )
+            return
+        sub_root_rel = sub_root_mappings[fqun_string]
+        self._add_edge_and_discovered_file(
+            edge=edge,
+            global_name=global_name,
+            root_prefix=self._context.root_prefix / sub_root_rel,
+            expected_fqun=global_name.fqun,
+        )
+
+    def _add_edge_and_discovered_file(
+        self,
+        edge: validation_result.ReferenceEdge,
+        global_name: ast.GlobalNameReference,
+        root_prefix: pathlib.PurePosixPath,
+        expected_fqun: ast.Fqun,
+    ):
+        self.reference_edges.append(edge)
+        self.discovered_files.append(
+            validation_result.DiscoveredFile(
+                path=global_name.path.file_path(),
+                root_prefix=root_prefix,
+                expected_fqun=expected_fqun.canonical,
+                position=global_name.position,
+            )
+        )

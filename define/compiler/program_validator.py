@@ -10,6 +10,7 @@ from __future__ import annotations
 import typing
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from functools import cached_property
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -45,14 +46,15 @@ class _FileWorkPool:
     _executor: ThreadPoolExecutor
     _fv: file_validator.FileValidator
 
-    def __init__(self, max_workers: int | None = None):
+    def __init__(
+        self,
+        parser_instance: parser.Parser,
+        max_workers: int | None = None,
+    ):
         """Initialize with pool configuration only — no side effects."""
         self._max_workers = max_workers
         self._submitted = []
-        # Lark parsers are thread-safe, so we only need to construct one
-        # (which is good because constructing it multiple times is
-        #  slow---it has to read and parse the grammar file each time).
-        self._fv = file_validator.FileValidator(parser.Parser())
+        self._fv = file_validator.FileValidator(parser_instance)
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def __enter__(self) -> _FileWorkPool:
@@ -96,6 +98,13 @@ class ProgramValidator:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
 
+    @cached_property
+    def _parser(self) -> parser.Parser:
+        """Lazily construct and cache the parser for this validator instance."""
+        # Lark parsers are thread-safe, so we construct one shared instance.
+        # Reconstructing repeatedly is slow because it must parse the grammar.
+        return parser.Parser()
+
     def validate_program(
         self,
         path: pathlib.PurePosixPath,
@@ -115,15 +124,43 @@ class ProgramValidator:
             sub_root_mappings=sub_root_mappings,
         )
 
-        with _FileWorkPool(max_workers=max_workers) as pool:
+        with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._path_tracker.mark_in_progress(root_prefix / path)
             pool.submit(initial_context)
-            while pool.has_pending():
-                result = pool.wait_for_next()
-                self._path_tracker.set_result(result.file_path, result)
-                self._process_completed_result(result, pool)
+            self._run_pool_loop(pool)
 
         return self._path_tracker.completed_results()
+
+    def validate_program_non_filesystem(
+        self,
+        source: str,
+        max_workers: int | None = None,
+    ) -> list[validation_result.ValidationResult]:
+        """Validate a program from source text, loading config only when needed."""
+        result = file_validator.FileValidator(self._parser).validate_source(source)
+        if result.exception is not None:
+            return [result]
+
+        self._path_tracker.mark_in_progress(result.file_path)
+        self._path_tracker.set_result(result.file_path, result)
+
+        if not self._resolve_non_filesystem_discovered_files(result):
+            return self._path_tracker.completed_results()
+
+        with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
+            self._process_completed_result(result, pool)
+            self._run_pool_loop(pool)
+        return self._path_tracker.completed_results()
+
+    def _run_pool_loop(
+        self,
+        pool: _FileWorkPool,
+    ):
+        """Run the coordinator loop for queued work."""
+        while pool.has_pending():
+            result = pool.wait_for_next()
+            self._path_tracker.set_result(result.file_path, result)
+            self._process_completed_result(result, pool)
 
     def _process_completed_result(
         self,
@@ -175,6 +212,95 @@ class ProgramValidator:
             self._path_tracker.mark_in_progress(full_path)
             pool.submit(context)
 
+    def _resolve_non_filesystem_discovered_files(
+        self,
+        result: validation_result.ValidationResult,
+    ) -> bool:
+        """Load project config if necessary, and resolve FQUNs to sub-roots."""
+        if not result.discovered_files:
+            return True
+
+        current_fqun, sub_root_mappings = self._load_config_in_non_filesystem_context(
+            result
+        )
+        # We check both of these just for type narrowing.
+        if current_fqun is None or sub_root_mappings is None:
+            return False
+        self._resolve_non_filesystem_discovered_files_with_config(
+            result=result,
+            current_fqun=current_fqun,
+            sub_root_mappings=sub_root_mappings,
+        )
+        return True
+
+    def _resolve_non_filesystem_discovered_files_with_config(
+        self,
+        result: validation_result.ValidationResult,
+        current_fqun: str,
+        sub_root_mappings: Mapping[str, pathlib.PurePosixPath],
+    ):
+        """Resolve discovered files/edges in non-filesystem mode after config load."""
+        resolved_discoveries: list[validation_result.DiscoveredFile] = []
+        unknown_fquns: set[str] = set()
+        for discovered in result.discovered_files:
+            sub_root_rel = sub_root_mappings.get(discovered.expected_fqun)
+            if sub_root_rel is None:
+                if discovered.expected_fqun in unknown_fquns:
+                    continue
+                unknown_fquns.add(discovered.expected_fqun)
+                result.diagnostics.append(
+                    diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                        position=discovered.position,
+                        universe=discovered.expected_fqun,
+                        current_universe_name=current_fqun,
+                    )
+                )
+                continue
+            discovered.root_prefix = constants.PROJECT_ROOT / sub_root_rel
+            resolved_discoveries.append(discovered)
+        result.discovered_files = resolved_discoveries
+
+        # In a filesystem context, we don't return reference edges for
+        # unknown sub-roots, so we are keeping that behavior consistent
+        # in a non-filesystem context.
+        result.reference_edges = [
+            ref_edge
+            for ref_edge in result.reference_edges
+            if (
+                ref_edge.global_name_reference.global_name.fqun is None
+                or ref_edge.global_name_reference.global_name.fqun.canonical
+                not in unknown_fquns
+            )
+        ]
+
+    def _load_config_in_non_filesystem_context(
+        self,
+        result: validation_result.ValidationResult,
+    ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]] | tuple[None, None]:
+        """Load root config and map loading errors to non-filesystem diagnostics."""
+        first_discovered = result.discovered_files[0]
+        try:
+            return self._load_root_config(constants.PROJECT_ROOT)
+        except exceptions.NotProjectRootError as e:
+            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
+            result.diagnostics.append(
+                diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
+                    position=first_discovered.position,
+                    universe=first_discovered.expected_fqun,
+                    config_path=str(e.config_path),
+                )
+            )
+            return (None, None)
+        except exceptions.ConfigError as e:
+            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
+            result.diagnostics.append(
+                diagnostics.ConfigLoadErrorDiagnostic(
+                    position=first_discovered.position,
+                    error=e,
+                )
+            )
+            return (None, None)
+
     def _process_reference_edges(
         self,
         enclosing_root: pathlib.PurePosixPath,
@@ -186,7 +312,8 @@ class ProgramValidator:
             if self._path_tracker.is_under_failed_root(target_file):
                 continue
 
-            source_key, target_key = _edge_keys(ref_edge)
+            source_key = ref_edge.enclosing_definition.fully_qualified_typed_name
+            target_key = ref_edge.fully_qualified_typed_name
             detected = self._reference_graph.try_add_edge(source_key, target_key)
             if detected is not None:
                 result.diagnostics.append(
@@ -283,9 +410,8 @@ class ProgramValidator:
             self._path_tracker.mark_not_found(target_file)
             return
 
-        _, target_key = _edge_keys(edge)
         target_has_match = any(
-            d.fully_qualified_typed_name == target_key
+            d.fully_qualified_typed_name == edge.fully_qualified_typed_name
             for d in target_result.definitions
         )
         if not target_has_match:
@@ -346,7 +472,7 @@ class ProgramValidator:
         # can just return a Config.
         existing = self._path_tracker.fqun_for_root(root_prefix)
         if existing is not None:
-            if expected_fqun is not None and existing != expected_fqun:
+            if expected_fqun and existing != expected_fqun:
                 raise exceptions.SubRootFqunMismatchError(
                     expected_fqun=expected_fqun,
                     actual_fqun=existing,
@@ -358,7 +484,7 @@ class ProgramValidator:
         loader.assert_is_project_root()
         project_config = loader.project_config()
         fqun = project_config.project.universe_name or ""
-        if expected_fqun is not None and fqun != expected_fqun:
+        if expected_fqun and fqun != expected_fqun:
             raise exceptions.SubRootFqunMismatchError(
                 expected_fqun=expected_fqun,
                 actual_fqun=fqun,
@@ -379,19 +505,6 @@ class ProgramValidator:
             universe_locations,
         )
         return fqun, universe_locations
-
-
-def _edge_keys(edge: validation_result.ReferenceEdge) -> tuple[str, str]:
-    """Extract (source_key, target_key) from a reference edge."""
-    source_key = edge.enclosing_definition.fully_qualified_typed_name
-    ref = edge.global_name_reference
-    if ref.global_name.fqun is None:
-        target_key = ref.fully_qualified_typed_name(
-            with_fqun=edge.enclosing_definition.name.fqun
-        )
-    else:
-        target_key = ref.fully_qualified_typed_name()
-    return source_key, target_key
 
 
 def _make_config_error_result(

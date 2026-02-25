@@ -5,7 +5,6 @@ import pytest
 
 from define.compiler import diagnostics, program_validator
 from define.compiler.validator_tests import test_helpers
-from define.compiler.validator_tests.test_helpers import parse_transform_validate
 
 
 def test_position_constraint_reference_with_invalid_path():
@@ -16,7 +15,10 @@ def test_position_constraint_reference_with_invalid_path():
         "}\n"
         "}\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "Bad"
@@ -33,7 +35,10 @@ def test_same_fqun_constraint_reference_must_use_short_form():
         "}\n"
         "}\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
@@ -54,7 +59,10 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
         "}\n"
         "}\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"

@@ -1,29 +1,7 @@
 # pyright: reportUnusedCallResult=false
 """Shared validator test helpers."""
 
-from pathlib import Path, PurePosixPath
-
-from define.compiler import diagnostics, parser, validator
-from define.compiler.transformer import DefineTransformer
-
-_parser = parser.Parser()
-_transformer = DefineTransformer()
-
-
-def parse_transform_validate(
-    source: str,
-    expected_definition_path: str | None = None,
-    expected_universe_name: str | None = None,
-) -> list[diagnostics.Diagnostic]:
-    """Parse, transform, and validate a source string."""
-    tree = _parser.parse(source)
-    program = _transformer.transform(tree)
-    path = PurePosixPath(expected_definition_path) if expected_definition_path else None
-    return validator.Validator().validate(
-        program=program,
-        expected_definition_path=path,
-        expected_universe_name=expected_universe_name,
-    )
+from pathlib import Path
 
 
 def write_project_config(tmp_path: Path, universe_name: str) -> None:

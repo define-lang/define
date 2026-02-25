@@ -1,5 +1,4 @@
-from define.compiler import diagnostics
-from define.compiler.validator_tests.test_helpers import parse_transform_validate
+from define.compiler import diagnostics, program_validator
 
 
 def test_no_duplicates_ok():
@@ -7,7 +6,10 @@ def test_no_duplicates_ok():
         "define the potential position<my.domain.com:my_lib:/first>.\n"
         "define the potential position<my.domain.com:my_lib:/second>.\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 0
 
 
@@ -16,7 +18,10 @@ def test_duplicate_position_error():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].definition_type == "position"
@@ -31,7 +36,10 @@ def test_duplicate_action_error():
         "define the potential action<my.domain.com:my_lib:/same>.\n"
         "define the potential action<my.domain.com:my_lib:/same>.\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].definition_type == "action"
@@ -46,7 +54,10 @@ def test_same_path_different_types_ok():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential action<my.domain.com:my_lib:/same>.\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 0
 
 
@@ -56,7 +67,10 @@ def test_three_duplicates_two_errors():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)

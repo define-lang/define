@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass, field
+from functools import cached_property
 
 from lark import exceptions as lark_exceptions
 
@@ -11,7 +12,6 @@ from define.compiler import (
     ast,
     diagnostics,
     exceptions,
-    parser_exceptions,
     stats,
 )
 
@@ -19,13 +19,9 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 type AnyValidationException = exceptions.DefineError | lark_exceptions.UnexpectedInput
-SYNTAX_ERROR_TYPES = (
-    parser_exceptions.DefineSyntaxError,
-    lark_exceptions.UnexpectedInput,
-)
 
 
-@dataclass(frozen=True)
+@dataclass
 class DiscoveredFile:
     """A file discovered during validation that should be validated next."""
 
@@ -41,6 +37,15 @@ class ReferenceEdge:
 
     enclosing_definition: ast.QualityDefinition
     global_name_reference: ast.TypedGlobalNameReference
+
+    @cached_property
+    def fully_qualified_typed_name(self) -> str:
+        """Return the fully qualified typed-name key for this edge target."""
+        if self.global_name_reference.global_name.fqun is None:
+            return self.global_name_reference.fully_qualified_typed_name(
+                with_fqun=self.enclosing_definition.name.fqun
+            )
+        return self.global_name_reference.fully_qualified_typed_name()
 
 
 @dataclass

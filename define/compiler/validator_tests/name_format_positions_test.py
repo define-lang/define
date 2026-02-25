@@ -1,10 +1,12 @@
-from define.compiler import diagnostics
-from define.compiler.validator_tests.test_helpers import parse_transform_validate
+from define.compiler import diagnostics, program_validator
 
 
 def test_multiverse_name_position():
     source = "define the potential position<_mv:my.domain.com:my_lib:/path>.\n"
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     mv_diags = [
         d
         for d in diags
@@ -19,7 +21,10 @@ def test_multiverse_name_position():
 
 def test_authority_domain_position():
     source = "define the potential position<mv:-example.com:my_lib:/path>.\n"
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     ad_diags = [
         d
         for d in diags
@@ -34,7 +39,10 @@ def test_authority_domain_position():
 
 def test_authority_path_position():
     source = "define the potential position<mv:example.com/.hidden:my_lib:/path>.\n"
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     ap_diags = [
         d
         for d in diags
@@ -49,7 +57,10 @@ def test_authority_path_position():
 
 def test_universe_name_position():
     source = "define the potential position<mv:my.domain.com:_my_lib:/path>.\n"
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     un_diags = [
         d for d in diags if isinstance(d, diagnostics.UniverseNameInvalidCharDiagnostic)
     ]
@@ -62,7 +73,10 @@ def test_universe_name_position():
 
 def test_path_segment_position():
     source = "define the potential position<my.domain.com:my_lib:/2bad>.\n"
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     ps_diags = [
         d
         for d in diags
@@ -84,7 +98,10 @@ def test_local_name_position():
         "}\n"
         "}\n"
     )
-    diags = parse_transform_validate(source)
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
     ln_diags = [
         d for d in diags if isinstance(d, diagnostics.InvalidLocalNameFormatDiagnostic)
     ]

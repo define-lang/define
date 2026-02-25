@@ -19,7 +19,7 @@ py_test(
     srcs = ["diagnostic_collection_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -30,8 +30,8 @@ py_test(
     srcs = ["duplicate_definitions_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
         "//define/compiler:diagnostics",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -43,6 +43,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":test_helpers",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -68,7 +69,7 @@ py_test(
     srcs = ["fqun_mismatch_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        ":conftest",
         "//define/compiler:diagnostics",
         "@pypi//pytest",
     ],
@@ -95,8 +96,8 @@ py_test(
     srcs = ["local_name_conflicts_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
         "//define/compiler:diagnostics",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -107,8 +108,8 @@ py_test(
     srcs = ["name_format_positions_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
         "//define/compiler:diagnostics",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -135,7 +136,7 @@ py_test(
     srcs = ["path_mismatch_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        ":conftest",
         "//define/compiler:diagnostics",
         "@pypi//pytest",
     ],
@@ -172,8 +173,8 @@ py_test(
     srcs = ["reserved_name_positions_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
         "//define/compiler:diagnostics",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -182,12 +183,6 @@ py_library(
     name = "test_helpers",
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__pkg__"],
-    deps = [
-        "//define/compiler:diagnostics",
-        "//define/compiler:parser",
-        "//define/compiler:transformer",
-        "//define/compiler:validator",
-    ],
 )
 
 py_test(
@@ -196,8 +191,8 @@ py_test(
     srcs = ["universe_without_authority_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
         "//define/compiler:diagnostics",
+        "//define/compiler:program_validator",
         "@pypi//pytest",
     ],
 )
