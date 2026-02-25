@@ -1,5 +1,5 @@
 # pyright: reportUnusedCallResult=false
-"""Shared validator fixtures for validator_tests."""
+"""Shared validator fixtures for program_validator_tests."""
 
 from collections.abc import Callable
 from pathlib import Path, PurePosixPath
@@ -8,7 +8,7 @@ from typing import Protocol, overload
 import pytest
 
 from define.compiler import diagnostics, program_validator, validation_result
-from define.compiler.validator_tests import test_helpers
+from define.compiler.program_validator_tests import test_helpers
 
 type ParseAndValidateFile = Callable[[str | bytes], validation_result.ValidationResult]
 _DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")

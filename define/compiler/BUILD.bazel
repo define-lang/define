@@ -318,7 +318,7 @@ py_test(
         ":diagnostics",
         ":exceptions",
         ":program_validator",
-        "//define/compiler/validator_tests:test_helpers",
+        "//define/compiler/program_validator_tests:test_helpers",
         "@pypi//pytest",
     ],
 )
@@ -358,7 +358,7 @@ py_test(
 py_library(
     name = "transformer",
     srcs = ["transformer.py"],
-    visibility = ["//define/compiler/validator_tests:__pkg__"],
+    visibility = ["//define/compiler/program_validator_tests:__pkg__"],
     deps = [
         ":ast",
         ":name_parser",

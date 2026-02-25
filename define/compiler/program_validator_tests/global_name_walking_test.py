@@ -4,8 +4,8 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import diagnostics, exceptions, program_validator
-from define.compiler.validator_tests import test_helpers
-from define.compiler.validator_tests.conftest import ParseAndValidateFile
+from define.compiler.program_validator_tests import test_helpers
+from define.compiler.program_validator_tests.conftest import ParseAndValidateFile
 
 
 def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:

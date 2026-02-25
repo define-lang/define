@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import program_validator
-from define.compiler.validator_tests import test_helpers
+from define.compiler.program_validator_tests import test_helpers
 
 
 def test_reserved_universe_name_format():

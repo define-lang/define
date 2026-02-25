@@ -198,7 +198,7 @@ py_test(
 )
 
 py_library(
-    name = "validator_tests",
+    name = "program_validator_tests",
     srcs = ["__init__.py"],
 )
 
@@ -228,9 +228,9 @@ pyright_test(
         ":path_mismatch_test",
         ":position_constraint_references_test",
         ":program_config_test",
+        ":program_validator_tests",
         ":reserved_name_positions_test",
         ":test_helpers",
         ":universe_without_authority_test",
-        ":validator_tests",
     ],
 )
