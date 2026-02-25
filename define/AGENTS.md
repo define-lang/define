@@ -30,10 +30,16 @@ flowchart LR
     ParserErrorClassification["parser_error_classification.py"] --> Parser
     Parser --> Transformer["transformer.py"]
     AST["ast.py"] --> Transformer
-    Transformer --> Validator["validator.py"]
-    Validator --> Driver["driver.py"]
+    Transformer --> FileValidator["validator/file_validator.py"]
+    NameValidators["validator/name_validators.py"] --> FileValidator
+    Stats["validator/stats.py"] --> FileValidator
+    ValidationResult["validator/validation_result.py"] --> FileValidator
+    FileValidator --> ProgramValidator["validator/program_validator.py"]
+    PathTracker["validator/path_tracker.py"] --> ProgramValidator
+    ReferenceGraph["validator/reference_graph.py"] --> ProgramValidator
+    ProgramValidator --> Driver["driver.py"]
 
-    Config["config.py"] --> Driver
+    Config["config.py"] --> ProgramValidator
     Diagnostics["diagnostics.py"] --> Driver
     Exceptions["exceptions.py"] --> Driver
 
@@ -61,9 +67,12 @@ flowchart LR
 
 ## Validator
 
-= The validator checks syntax that the parser can't check. It also checks
-semantics. It is `compiler/validator.py`. Its test is
-`compiler/validator_test.py`.
+- The validator checks syntax that the parser can't check, and it also checks
+  semantics.
+- Validator coordinator code is in `compiler/validator/program_validator.py`.
+- Per-file validation code is in `compiler/validator/file_validator.py`.
+- Validator tests are in `compiler/validator/` and
+  `compiler/validator/program_validator_tests/`.
 
 ## Driver
 
