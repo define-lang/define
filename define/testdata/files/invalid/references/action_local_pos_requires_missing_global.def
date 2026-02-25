@@ -1,0 +1,10 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/references/action_local_pos_requires_missing_global> {
+    define the position<my_pos> {
+        it may only contain dimension points where {
+            it has the position</invalid/references/action_local_pos_requires_missing_global>.
+        }
+    }
+    it happens when {
+    } and it does {
+    }
+}

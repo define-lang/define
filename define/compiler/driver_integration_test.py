@@ -27,183 +27,185 @@ FILES_ROOT = TESTDATA_ROOT / "files"
 PROJECTS_ROOT = TESTDATA_ROOT / "projects"
 
 VALID_FILES = sorted((FILES_ROOT / "valid").glob("*.def"))
-INVALID_SYNTAX_FILES = sorted((FILES_ROOT / "invalid" / "syntax").rglob("*.def"))
+INVALID_FILES = sorted((FILES_ROOT / "invalid").rglob("*.def"))
 
-# Key: path relative to FILES_ROOT / "invalid" / "syntax" (as posix string)
+# Key: path relative to FILES_ROOT / "invalid" (as posix string)
 # Value: list of expected diagnostic types in order
 # Files NOT in this dict are expected to produce DefineSyntaxError.
 EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
-    "authority_path_empty_segment/empty_segment.def": [
+    "references/action_local_pos_requires_missing_global.def": [
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    ],
+    "syntax/authority_path_empty_segment/empty_segment.def": [
         diagnostics.AuthorityPathEmptySegmentDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "fqun_format/universe_uppercase.def": [
+    "syntax/fqun_format/universe_uppercase.def": [
         diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "fqun_validation/universe_without_authority.def": [
+    "syntax/fqun_validation/universe_without_authority.def": [
         diagnostics.UniverseWithoutAuthorityDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_domain/authority_leading_dot.def": [
+    "syntax/invalid_authority_domain/authority_leading_dot.def": [
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_domain/authority_leading_hyphen.def": [
+    "syntax/invalid_authority_domain/authority_leading_hyphen.def": [
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_domain/authority_single_char.def": [
+    "syntax/invalid_authority_domain/authority_single_char.def": [
         diagnostics.AuthorityDomainTooShortDiagnostic,
         diagnostics.DotlessAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_domain/authority_trailing_dot.def": [
+    "syntax/invalid_authority_domain/authority_trailing_dot.def": [
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_domain/authority_trailing_hyphen.def": [
+    "syntax/invalid_authority_domain/authority_trailing_hyphen.def": [
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_domain/authority_uppercase.def": [
+    "syntax/invalid_authority_domain/authority_uppercase.def": [
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_authority_path_segment/authority_path_leading_dot.def": [
+    "syntax/invalid_authority_path_segment/authority_path_leading_dot.def": [
         diagnostics.InvalidAuthorityPathSegmentDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_global_name_path/hyphen.def": [
+    "syntax/invalid_global_name_path/hyphen.def": [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "invalid_global_name_path/leading_digit.def": [
+    "syntax/invalid_global_name_path/leading_digit.def": [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "invalid_global_name_path/path_leading_digit.def": [
+    "syntax/invalid_global_name_path/path_leading_digit.def": [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "invalid_global_name_path/path_uppercase.def": [
+    "syntax/invalid_global_name_path/path_uppercase.def": [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "invalid_global_name_path/special_characters.def": [
+    "syntax/invalid_global_name_path/special_characters.def": [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "invalid_global_name_path/uppercase_letter.def": [
+    "syntax/invalid_global_name_path/uppercase_letter.def": [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "invalid_multiverse_name/multiverse_leading_underscore.def": [
+    "syntax/invalid_multiverse_name/multiverse_leading_underscore.def": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_multiverse_name/multiverse_single_char.def": [
+    "syntax/invalid_multiverse_name/multiverse_single_char.def": [
         diagnostics.MultiverseNameTooShortDiagnostic,
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_multiverse_name/multiverse_trailing_underscore.def": [
+    "syntax/invalid_multiverse_name/multiverse_trailing_underscore.def": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_multiverse_name/multiverse_uppercase.def": [
+    "syntax/invalid_multiverse_name/multiverse_uppercase.def": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_universe_name_format/universe_leading_underscore.def": [
+    "syntax/invalid_universe_name_format/universe_leading_underscore.def": [
         diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_universe_name_format/universe_single_char.def": [
+    "syntax/invalid_universe_name_format/universe_single_char.def": [
         diagnostics.UniverseNameTooShortDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "invalid_universe_name_format/universe_trailing_underscore.def": [
+    "syntax/invalid_universe_name_format/universe_trailing_underscore.def": [
         diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "local_names/duplicate.def": [diagnostics.LocalNameConflictDiagnostic],
-    "local_names/duplicate_across_scopes.def": [
+    "syntax/local_names/duplicate.def": [diagnostics.LocalNameConflictDiagnostic],
+    "syntax/local_names/duplicate_across_scopes.def": [
         diagnostics.LocalNameConflictDiagnostic,
     ],
-    "local_names/duplicate_inner_scope.def": [
+    "syntax/local_names/duplicate_inner_scope.def": [
         diagnostics.LocalNameConflictDiagnostic,
     ],
-    "local_names/hyphen.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "local_names/leading_digit.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "local_names/space.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "local_names/special_characters.def": [
+    "syntax/local_names/hyphen.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/local_names/leading_digit.def": [
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
-    "local_names/uppercase.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "paths/double_slash.def": [
+    "syntax/local_names/space.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/local_names/special_characters.def": [
+        diagnostics.InvalidLocalNameFormatDiagnostic,
+    ],
+    "syntax/local_names/uppercase.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/paths/double_slash.def": [
         diagnostics.GlobalNamePathEmptySegmentDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "paths/empty_path.def": [
+    "syntax/paths/empty_path.def": [
         diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "paths/missing_leading_slash.def": [
+    "syntax/paths/missing_leading_slash.def": [
         diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "paths/path_leading_underscore.def": [diagnostics.PathMismatchDiagnostic],
-    "paths/trailing_slash.def": [
+    "syntax/paths/path_leading_underscore.def": [diagnostics.PathMismatchDiagnostic],
+    "syntax/paths/trailing_slash.def": [
         diagnostics.GlobalNamePathTrailingSlashDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "reserved_names/reserved_authority_example_com.def": [
+    "syntax/reserved_names/reserved_authority_example_com.def": [
         diagnostics.ReservedAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_authority_no_dot_local.def": [
+    "syntax/reserved_names/reserved_authority_no_dot_local.def": [
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.DotlessAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_authority_no_dot_mv.def": [
+    "syntax/reserved_names/reserved_authority_no_dot_mv.def": [
         diagnostics.DotlessAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_multiverse_language.def": [
+    "syntax/reserved_names/reserved_multiverse_language.def": [
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_multiverse_package_repo.def": [
+    "syntax/reserved_names/reserved_multiverse_package_repo.def": [
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_universe_case_insensitive.def": [
+    "syntax/reserved_names/reserved_universe_case_insensitive.def": [
         diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_universe_common_word.def": [
+    "syntax/reserved_names/reserved_universe_common_word.def": [
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_universe_define.def": [
+    "syntax/reserved_names/reserved_universe_define.def": [
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_universe_example.def": [
+    "syntax/reserved_names/reserved_universe_example.def": [
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "reserved_names/reserved_universe_standard.def": [
+    "syntax/reserved_names/reserved_universe_standard.def": [
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "constraint_refs/action_local_pos_requires_missing_global.def": [
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
-    ],
-    "short_form_required/full_form_same_fqun.def": [
+    "syntax/short_form_required/full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
 }
@@ -274,7 +276,7 @@ def test_lists_not_empty():
     assert VALID_PROJECTS
     assert INVALID_PROJECTS
     assert VALID_FILES
-    assert INVALID_SYNTAX_FILES
+    assert INVALID_FILES
 
 
 def project_entrypoint(project_dir: Path) -> Path:
@@ -315,17 +317,14 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.parametrize(
     "def_file",
-    [f.relative_to(FILES_ROOT) for f in INVALID_SYNTAX_FILES],
-    ids=[
-        f.relative_to(FILES_ROOT / "invalid" / "syntax").as_posix()
-        for f in INVALID_SYNTAX_FILES
-    ],
+    [f.relative_to(FILES_ROOT) for f in INVALID_FILES],
+    ids=[f.relative_to(FILES_ROOT / "invalid").as_posix() for f in INVALID_FILES],
 )
-def test_invalid_syntax_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that invalid syntax files produce syntax errors or validation diagnostics."""
+def test_invalid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that invalid files produce syntax errors or validation diagnostics."""
     monkeypatch.chdir(FILES_ROOT)
     d = driver.Driver()
-    rel_key = def_file.relative_to(Path("invalid/syntax")).as_posix()
+    rel_key = def_file.relative_to(Path("invalid")).as_posix()
 
     expected_types = EXPECTED_FILE_DIAGNOSTICS.get(rel_key)
     if expected_types is not None:
