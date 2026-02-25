@@ -15,9 +15,8 @@ from typing import TextIO
 
 from define.compiler import (
     exceptions,
-    program_validator,
-    validation_result,
 )
+from define.compiler.validator import program_validator, validation_result
 
 
 class ExitCode(enum.IntEnum):

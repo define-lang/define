@@ -12,11 +12,12 @@ from define.compiler import (
     ast,
     diagnostics,
     exceptions,
-    stats,
 )
 
 if typing.TYPE_CHECKING:
     import pathlib
+
+    from define.compiler.validator import stats
 
 type AnyValidationException = exceptions.DefineError | lark_exceptions.UnexpectedInput
 

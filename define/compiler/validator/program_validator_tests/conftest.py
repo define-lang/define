@@ -7,8 +7,9 @@ from typing import Protocol, overload
 
 import pytest
 
-from define.compiler import diagnostics, program_validator, validation_result
-from define.compiler.program_validator_tests import test_helpers
+from define.compiler import diagnostics
+from define.compiler.validator import program_validator, validation_result
+from define.compiler.validator.program_validator_tests import test_helpers
 
 type ParseAndValidateFile = Callable[[str | bytes], validation_result.ValidationResult]
 _DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")

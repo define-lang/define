@@ -1,4 +1,4 @@
-from define.compiler import program_validator
+from define.compiler.validator import program_validator
 
 
 def test_multiple_diagnostics_collected():

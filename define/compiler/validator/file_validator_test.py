@@ -6,7 +6,8 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions, file_validator, parser
+from define.compiler import diagnostics, exceptions, parser
+from define.compiler.validator import file_validator
 
 
 @pytest.fixture

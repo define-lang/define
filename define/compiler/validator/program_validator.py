@@ -21,8 +21,10 @@ from define.compiler import (
     constants,
     diagnostics,
     exceptions,
-    file_validator,
     parser,
+)
+from define.compiler.validator import (
+    file_validator,
     path_tracker,
     reference_graph,
     stats,

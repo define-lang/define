@@ -4,7 +4,7 @@ from __future__ import annotations
 import time
 from unittest.mock import patch
 
-from define.compiler import stats
+from define.compiler.validator import stats
 
 
 def _make_tracker(timestamps: list[int]) -> stats.ValidationStatsTracker:

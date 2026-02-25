@@ -3,8 +3,9 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, program_validator
-from define.compiler.program_validator_tests import test_helpers
+from define.compiler import diagnostics
+from define.compiler.validator import program_validator
+from define.compiler.validator.program_validator_tests import test_helpers
 
 
 def test_position_constraint_reference_with_invalid_path():

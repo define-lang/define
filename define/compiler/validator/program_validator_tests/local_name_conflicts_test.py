@@ -1,4 +1,5 @@
-from define.compiler import diagnostics, program_validator
+from define.compiler import diagnostics
+from define.compiler.validator import program_validator
 
 
 def test_different_names_no_error():

@@ -1,4 +1,5 @@
-from define.compiler import diagnostics, program_validator
+from define.compiler import diagnostics
+from define.compiler.validator import program_validator
 
 
 def test_reserved_universe_name_position():

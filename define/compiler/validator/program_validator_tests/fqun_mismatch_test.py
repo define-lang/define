@@ -1,5 +1,7 @@
 from define.compiler import diagnostics
-from define.compiler.program_validator_tests.conftest import ValidateSourceAsFile
+from define.compiler.validator.program_validator_tests.conftest import (
+    ValidateSourceAsFile,
+)
 
 
 def test_matching_authority_universe(validate_source_as_file: ValidateSourceAsFile):

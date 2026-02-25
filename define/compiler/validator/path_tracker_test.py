@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import path_tracker
+from define.compiler.validator import path_tracker
 
 
 class TestPathTracker:

@@ -1,7 +1,9 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.program_validator_tests.conftest import ValidateSourceAsFile
+from define.compiler.validator.program_validator_tests.conftest import (
+    ValidateSourceAsFile,
+)
 
 
 def test_path_matches_file_no_error(validate_source_as_file: ValidateSourceAsFile):

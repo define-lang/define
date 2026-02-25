@@ -23,14 +23,12 @@ from define.compiler import (
     constants,
     diagnostics,
     exceptions,
-    name_validators,
     parser,
     parser_error_classification,
     parser_exceptions,
-    stats,
     transformer,
-    validation_result,
 )
+from define.compiler.validator import name_validators, stats, validation_result
 
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,

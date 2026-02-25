@@ -5,8 +5,9 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions, program_validator
-from define.compiler.program_validator_tests import test_helpers
+from define.compiler import diagnostics, exceptions
+from define.compiler.validator import program_validator
+from define.compiler.validator.program_validator_tests import test_helpers
 
 _POSITION_WITH_REF = (
     "define the potential position<my.domain.com:my_lib:/{name}> {{\n"

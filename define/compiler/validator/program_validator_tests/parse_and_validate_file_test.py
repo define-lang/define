@@ -3,9 +3,12 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions, parser_exceptions, program_validator, stats
-from define.compiler.program_validator_tests import test_helpers
-from define.compiler.program_validator_tests.conftest import ParseAndValidateFile
+from define.compiler import exceptions, parser_exceptions
+from define.compiler.validator import program_validator, stats
+from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.program_validator_tests.conftest import (
+    ParseAndValidateFile,
+)
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):

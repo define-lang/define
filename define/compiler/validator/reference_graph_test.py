@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 """Tests for ReferenceGraph incremental cycle detection."""
 
-from define.compiler import reference_graph
+from define.compiler.validator import reference_graph
 
 
 def _add(graph: reference_graph.ReferenceGraph, *edges: tuple[str, str]):

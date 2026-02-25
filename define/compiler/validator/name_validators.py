@@ -7,7 +7,7 @@ from pathlib import Path
 
 from define.compiler import ast, diagnostics
 
-_RESERVED_WORDS_DIR = Path(__file__).parent.parent / "reserved_words"
+_RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent / "reserved_words"
 
 
 def _load_reserved_words(filename: str) -> frozenset[str]:

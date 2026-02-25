@@ -3,7 +3,8 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import exceptions, program_validator
+from define.compiler import exceptions
+from define.compiler.validator import program_validator
 
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

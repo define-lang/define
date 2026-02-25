@@ -20,7 +20,8 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics, driver, parser_exceptions, validation_result
+from define.compiler import diagnostics, driver, parser_exceptions
+from define.compiler.validator import validation_result
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
