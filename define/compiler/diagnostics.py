@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, fields
 from typing import ClassVar
 
 if typing.TYPE_CHECKING:
@@ -24,8 +24,11 @@ class Diagnostic:
     @property
     def message(self) -> str:
         """Render the diagnostic message from the format template."""
-        fields: dict[str, object] = asdict(self)
-        return self.message_format.format(**fields)
+        values: dict[str, object] = {
+            field.name: typing.cast("object", getattr(self, field.name))
+            for field in fields(self)
+        }
+        return self.message_format.format(**values)
 
     def format(self, source_lines: Sequence[str], file_name: str | None = None) -> str:
         """Format the diagnostic with source context and caret pointer."""

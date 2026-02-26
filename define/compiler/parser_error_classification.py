@@ -98,10 +98,10 @@ def raise_token_error(
     if e.accepts == {"LESSTHAN"}:
         raise parser_exceptions.MissingOpenAngleBracket(e, source, file_path, e.token)
 
-    # This is just <> while expecting a name.
+    # This is just <> or < with nothing after it, while expecting a name.
     if (
         e.accepts == {"NAME_CONTENT"}
-        and e.token == ">"
+        and (e.token == ">" or e.token.type in ("NEWLINE, $END"))
         and e.token_history
         and e.token_history[-1] == "<"
     ):
