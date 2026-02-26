@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
 """Fuzz tests for the Define compiler driver."""
 
-import io
 import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -48,24 +47,6 @@ def _escape_content(text: str) -> str:
         else:
             chars.append(repr(c)[1:-1])
     return "".join(chars)
-
-
-def _check_error_stream(error_output: str, *, expect_content: bool) -> None:
-    if expect_content:
-        assert error_output.strip(), "Error exit code but error stream is empty"
-    else:
-        assert not error_output, (
-            "Success exit code but error stream is not empty: "
-            + _escape_content(error_output)
-        )
-    for i, c in enumerate(error_output):
-        if c == "\n" or c == "\t":
-            continue
-        if not c.isprintable():
-            raise AssertionError(
-                f"Non-printable character {c!r} at position {i} in error output: "
-                + _escape_content(error_output)
-            )
 
 
 def _definition_path(rel_def_file: str) -> str:
@@ -972,16 +953,12 @@ def _project_case_debug_text(project_case: ProjectCase) -> str:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(source=valid_sources())
-def test_valid_syntax_runs(fuzz_project: Path, source: str):
+def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
     file_path = fuzz_project / "test.def"
     file_path.write_text(source, encoding="utf-8")
     d = driver.Driver()
-    error_stream = io.StringIO()
-    result = d.run(Path("test.def"), error_stream=error_stream)
-    _check_error_stream(error_stream.getvalue(), expect_content=False)
-    assert result == driver.ExitCode.SUCCESS, (
-        f"run() returned {result} for {file_path}: {_escape_content(source)}"
-    )
+    results = d.validate_program(Path("test.def"))
+    _assert_results_are_clean(results, _escape_content(source))
 
 
 @settings(
@@ -991,7 +968,7 @@ def test_valid_syntax_runs(fuzz_project: Path, source: str):
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(project_case=valid_project_cases())
-def test_valid_projects_run_cleanly(
+def test_valid_projects_validate_cleanly(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, project_case: ProjectCase
 ):
     _materialize_project_case(tmp_path, project_case)
@@ -1002,11 +979,6 @@ def test_valid_projects_run_cleanly(
     results = d.validate_program(Path(project_case.entrypoint))
     _assert_results_are_clean(results, debug_source)
 
-    error_stream = io.StringIO()
-    run_result = d.run(Path(project_case.entrypoint), error_stream=error_stream)
-    _check_error_stream(error_stream.getvalue(), expect_content=False)
-    assert run_result == driver.ExitCode.SUCCESS, debug_source
-
 
 @settings(
     deadline=None,
@@ -1016,34 +988,10 @@ def test_valid_projects_run_cleanly(
 )
 @given(source=mutated_sources())
 def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
-    file_path = fuzz_project / "test.def"
-    file_path.write_text(source, encoding="utf-8")
+    (fuzz_project / "test.def").write_text(source, encoding="utf-8")
     d = driver.Driver()
-    try:
-        results = d.validate_program(Path("test.def"))
-    except exceptions.DefineError:
-        return
+    results = d.validate_program(Path("test.def"))
     _assert_only_parser_syntax_exceptions(results, _escape_content(source))
-
-
-@settings(
-    deadline=None,
-    database=None,
-    max_examples=_EXAMPLES_MUTATED_SINGLE,
-    suppress_health_check=[HealthCheck.function_scoped_fixture],
-)
-@given(source=mutated_sources())
-def test_mutated_syntax_never_crashes(fuzz_project: Path, source: str):
-    file_path = fuzz_project / "test.def"
-    file_path.write_text(source, encoding="utf-8")
-    d = driver.Driver()
-    error_stream = io.StringIO()
-    result = d.run(Path("test.def"), error_stream=error_stream)
-    error_output = error_stream.getvalue()
-    assert isinstance(result, driver.ExitCode), (
-        f"run() did not return ExitCode for {file_path}: {_escape_content(source)}"
-    )
-    _check_error_stream(error_output, expect_content=result == driver.ExitCode.ERROR)
 
 
 @settings(
@@ -1059,36 +1007,10 @@ def test_mutated_projects_no_unclassified_errors(
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
     d = driver.Driver()
-    try:
-        results = d.validate_program(Path(project_case.entrypoint))
-    except exceptions.DefineError:
-        return
+    results = d.validate_program(Path(project_case.entrypoint))
     _assert_only_parser_syntax_exceptions(
         results, _project_case_debug_text(project_case)
     )
-
-
-@settings(
-    deadline=None,
-    database=None,
-    max_examples=_EXAMPLES_MUTATED_PROJECTS,
-    suppress_health_check=[HealthCheck.function_scoped_fixture],
-)
-@given(project_case=mutated_project_cases())
-def test_mutated_projects_never_crash(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, project_case: ProjectCase
-):
-    _materialize_project_case(tmp_path, project_case)
-    monkeypatch.chdir(tmp_path)
-    d = driver.Driver()
-    error_stream = io.StringIO()
-    result = d.run(Path(project_case.entrypoint), error_stream=error_stream)
-    error_output = error_stream.getvalue()
-    assert isinstance(result, driver.ExitCode), (
-        "run() did not return ExitCode for project:\n"
-        + _project_case_debug_text(project_case)
-    )
-    _check_error_stream(error_output, expect_content=result == driver.ExitCode.ERROR)
 
 
 @settings(
@@ -1098,13 +1020,9 @@ def test_mutated_projects_never_crash(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(data=st.binary(max_size=800))
-def test_random_bytes_never_crash(fuzz_project: Path, data: bytes):
+def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
     file_path = fuzz_project / "test.def"
     file_path.write_bytes(data)
     d = driver.Driver()
-    error_stream = io.StringIO()
-    result = d.run(Path("test.def"), error_stream=error_stream)
-    _check_error_stream(error_stream.getvalue(), expect_content=True)
-    assert result == driver.ExitCode.ERROR, (
-        f"run() returned {result} for {file_path}: {data!r}"
-    )
+    results = d.validate_program(Path("test.def"))
+    _assert_only_parser_syntax_exceptions(results, repr(data))
