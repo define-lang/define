@@ -80,6 +80,48 @@ def test_walk_returns_results_in_encounter_order(
     ]
 
 
+def test_duplicate_does_not_corrupt_reference_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_source(
+        tmp_path,
+        "root.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/root> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the position</target>.\n"
+            "it has the position</dup>.\n"
+            "}\n"
+            "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "target.def",
+        "define the potential position<my.domain.com:my_lib:/target>.\n",
+    )
+    _write_source(
+        tmp_path,
+        "dup.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/target>.\n"
+            "define the potential position<my.domain.com:my_lib:/dup>.\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("root.def"), max_workers=1
+    )
+    all_diag_types = [type(d) for r in results for d in r.diagnostics]
+    assert all_diag_types == [
+        diagnostics.PathMismatchDiagnostic,
+    ]
+    root_result = next(r for r in results if r.file_path == PurePosixPath("root.def"))
+    assert root_result.diagnostics == []
+
+
 def test_self_cycle_emits_diagnostic(
     parse_and_validate_file: ParseAndValidateFile,
 ):
@@ -369,6 +411,62 @@ def _setup_cross_fqun_project(
     test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
     test_helpers.write_local_deps_config(tmp_path, {child_universe: sub_root_path})
     monkeypatch.chdir(tmp_path)
+
+
+def test_sub_root_redeclares_parent_fqun(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    parent_fqun = "mv:define-lang.org:parent"
+    child_fqun = "mv:define-lang.org:child"
+    test_helpers.write_project_config(tmp_path, parent_fqun)
+    test_helpers.write_local_deps_config(tmp_path, {child_fqun: "lib"})
+    test_helpers.write_sub_root(tmp_path, "lib", child_fqun)
+    test_helpers.write_local_deps_config(tmp_path / "lib", {parent_fqun: "nested"})
+    test_helpers.write_sub_root(tmp_path, "lib/nested", parent_fqun)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{parent_fqun}:/test> {{\n"
+            + "it may only contain dimension points where {\n"
+            + f"it has the position<{child_fqun}:/target>.\n"
+            + "}\n"
+            + "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        (
+            f"define the potential position<{child_fqun}:/target> {{\n"
+            + "it may only contain dimension points where {\n"
+            + f"it has the position<{parent_fqun}:/leaf>.\n"
+            + "}\n"
+            + "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/nested/leaf.def",
+        f"define the potential position<{parent_fqun}:/leaf>.\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ConfigLoadErrorDiagnostic)
+    assert diag.position.line == 3
+    assert diag.position.column == 21
+    assert isinstance(diag.error, exceptions.DuplicateFqunError)
+    assert diag.error.fqun == parent_fqun
+    assert diag.error.existing_config == PurePosixPath(".define/project/config.defcl")
+    assert diag.error.new_config == PurePosixPath(
+        "lib/nested/.define/project/config.defcl"
+    )
 
 
 def test_cross_fqun_walks_into_sub_root(

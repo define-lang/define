@@ -115,6 +115,19 @@ py_test(
 )
 
 py_test(
+    name = "parallel_test",
+    size = "small",
+    srcs = ["parallel_test.py"],
+    pytest_main = True,
+    deps = [
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "parse_and_validate_file_test",
     size = "small",
     srcs = ["parse_and_validate_file_test.py"],
@@ -224,6 +237,7 @@ pyright_test(
         ":global_name_walking_test",
         ":local_name_conflicts_test",
         ":name_format_positions_test",
+        ":parallel_test",
         ":parse_and_validate_file_test",
         ":path_mismatch_test",
         ":position_constraint_references_test",

@@ -100,20 +100,6 @@ py_library(
     ],
 )
 
-py_test(
-    name = "program_validator_test",
-    size = "small",
-    srcs = ["program_validator_test.py"],
-    pytest_main = True,
-    deps = [
-        ":program_validator",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
-        "//define/compiler/validator/program_validator_tests:test_helpers",
-        "@pypi//pytest",
-    ],
-)
-
 py_library(
     name = "reference_graph",
     srcs = ["reference_graph.py"],
@@ -186,7 +172,6 @@ pyright_test(
         ":path_tracker",
         ":path_tracker_test",
         ":program_validator",
-        ":program_validator_test",
         ":reference_graph",
         ":reference_graph_test",
         ":stats",
