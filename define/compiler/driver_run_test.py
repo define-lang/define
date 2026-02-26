@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import driver
+from define.compiler import driver, overall_stats
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -80,3 +80,28 @@ class TestRun:
             "                                                           ^\n"
             "definition path '/different' does not match file path '/wrong_file'\n"
         )
+
+    def test_stats_stream_receives_output(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
+        stats_stream = io.StringIO()
+        result = driver.Driver().run(
+            Path("test.def"),
+            stats_stream=stats_stream,
+            stats_mode=overall_stats.StatsMode.OVERALL,
+        )
+        assert result == driver.ExitCode.SUCCESS
+        output = stats_stream.getvalue()
+        assert "--- Compilation Stats ---" in output
+        assert "-- Overall --" in output
+        assert "-- Breakdown --" in output
+
+    def test_stats_stream_none_produces_no_stats(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
+        error_stream = io.StringIO()
+        result = driver.Driver().run(Path("test.def"), error_stream=error_stream)
+        assert result == driver.ExitCode.SUCCESS
+        assert "Compilation Stats" not in error_stream.getvalue()

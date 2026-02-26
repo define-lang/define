@@ -10,11 +10,13 @@ actual error strings.
 
 import enum
 import sys
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TextIO
 
 from define.compiler import (
     exceptions,
+    overall_stats,
 )
 from define.compiler.validator import program_validator, validation_result
 
@@ -26,13 +28,28 @@ class ExitCode(enum.IntEnum):
     ERROR = 1
 
 
+@dataclass
+class DriverResult:
+    """Full result of a compilation run."""
+
+    results: list[validation_result.ValidationResult]
+    overall_stats: overall_stats.OverallStats
+
+
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
-    def validate_program(self, path: Path) -> list[validation_result.ValidationResult]:
+    def validate_program(self, path: Path) -> DriverResult:
         """Compile a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
-        return program_validator.ProgramValidator().validate_program(path=resolved_path)
+        pv = program_validator.ProgramValidator()
+        results = pv.validate_program(path=resolved_path)
+        return DriverResult(
+            results=results,
+            overall_stats=overall_stats.calculate_overall_stats(
+                results, pv.config_loading_time_ns
+            ),
+        )
 
     @staticmethod
     def _resolve_path(path: Path) -> PurePosixPath:
@@ -65,6 +82,8 @@ class Driver:
         self,
         path: Path,
         error_stream: TextIO | None = None,
+        stats_stream: TextIO | None = None,
+        stats_mode: overall_stats.StatsMode = overall_stats.StatsMode.OVERALL,
     ) -> ExitCode:
         """Validate a Define source file and write any errors to the given stream.
 
@@ -72,21 +91,20 @@ class Driver:
             path: Path to the .def file to validate.
             error_stream: Where to write error messages (syntax errors, diagnostics).
                 Defaults to sys.stderr.
-
-        Returns:
-            ExitCode.SUCCESS if validation passed with no errors.
-            ExitCode.ERROR if a syntax error occurred or validation diagnostics were reported.
+            stats_stream: Where to write timing statistics.
+                If None, no stats are printed.
+            stats_mode: Level of detail for stats output.
         """
         if error_stream is None:
             error_stream = sys.stderr
         try:
-            results = self.validate_program(path)
+            driver_result = self.validate_program(path)
         except exceptions.DefineError as e:
             print(str(e), file=error_stream)
             return ExitCode.ERROR
 
         had_errors = False
-        for result in results:
+        for result in driver_result.results:
             if result.exception is not None:
                 print(str(result.exception), file=error_stream)
                 had_errors = True
@@ -100,5 +118,13 @@ class Driver:
                 for diagnostic in result.diagnostics:
                     print(diagnostic.format(source_lines, file_name), file=error_stream)
                 had_errors = True
+
+        if stats_stream is not None:
+            stats_output = overall_stats.format_stats(
+                driver_result.overall_stats,
+                driver_result.results,
+                stats_mode,
+            )
+            print(stats_output, file=stats_stream, end="")
 
         return ExitCode.ERROR if had_errors else ExitCode.SUCCESS

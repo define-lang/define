@@ -91,6 +91,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":exceptions",
+        ":overall_stats",
         "//define/compiler/validator:program_validator",
         "//define/compiler/validator:validation_result",
     ],
@@ -134,6 +135,7 @@ py_test(
     pytest_main = True,
     deps = [
         ":driver",
+        ":overall_stats",
         "@pypi//pytest",
     ],
 )
@@ -156,7 +158,25 @@ py_binary(
     name = "main",
     srcs = ["main.py"],
     visibility = ["//visibility:public"],
-    deps = [":driver"],
+    deps = [
+        ":driver",
+        ":overall_stats",
+        "@pypi//click",
+    ],
+)
+
+py_test(
+    name = "main_test",
+    size = "small",
+    srcs = ["main_test.py"],
+    pytest_main = True,
+    deps = [
+        ":driver",
+        ":main",
+        ":overall_stats",
+        "@pypi//click",
+        "@pypi//pytest",
+    ],
 )
 
 py_library(
@@ -179,6 +199,26 @@ py_test(
         ":ast",
         ":name_parser",
         ":parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "overall_stats",
+    srcs = ["overall_stats.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["//define/compiler/validator:validation_result"],
+)
+
+py_test(
+    name = "overall_stats_test",
+    size = "small",
+    srcs = ["overall_stats_test.py"],
+    pytest_main = True,
+    deps = [
+        ":overall_stats",
+        "//define/compiler/validator:stats",
+        "//define/compiler/validator:validation_result",
         "@pypi//pytest",
     ],
 )
@@ -273,8 +313,11 @@ pyright_test(
         ":driver_test",
         ":exceptions",
         ":main",
+        ":main_test",
         ":name_parser",
         ":name_parser_test",
+        ":overall_stats",
+        ":overall_stats_test",
         ":parser",
         ":parser_error_classification",
         ":parser_exceptions",

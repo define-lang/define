@@ -3,18 +3,35 @@
 import sys
 from pathlib import Path
 
-from define.compiler import driver
+import click
+
+from define.compiler import driver, overall_stats
 
 
-def main() -> int:
-    """Run the Define compiler CLI."""
-    if len(sys.argv) < 2:
-        print("Usage: main <file.def>", file=sys.stderr)
-        return 2  # Usual error code for bad usage.
-
+@click.command()
+@click.argument("file", type=click.Path(path_type=Path))
+@click.option(
+    "--stats",
+    type=click.Choice([m.value for m in overall_stats.StatsMode]),
+    is_flag=False,
+    flag_value=overall_stats.StatsMode.OVERALL.value,
+    default=None,
+    help="Print timing stats.",
+)
+@click.pass_context
+def main(ctx: click.Context, file: Path, stats: str | None):
+    """Run the Define compiler."""
     d = driver.Driver()
-    return d.run(Path(sys.argv[1]), sys.stderr)
+    stats_mode = overall_stats.StatsMode(stats) if stats else None
+    stats_stream = sys.stdout if stats_mode is not None else None
+    code = d.run(
+        file,
+        error_stream=sys.stderr,
+        stats_stream=stats_stream,
+        stats_mode=stats_mode or overall_stats.StatsMode.OVERALL,
+    )
+    ctx.exit(code)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
