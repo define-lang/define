@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from typing import ClassVar
 
 if typing.TYPE_CHECKING:
@@ -24,11 +24,7 @@ class Diagnostic:
     @property
     def message(self) -> str:
         """Render the diagnostic message from the format template."""
-        values: dict[str, object] = {
-            field.name: typing.cast("object", getattr(self, field.name))
-            for field in fields(self)
-        }
-        return self.message_format.format(**values)
+        return self.message_format.format(self=self)
 
     def format(self, source_lines: Sequence[str], file_name: str | None = None) -> str:
         """Format the diagnostic with source context and caret pointer."""
@@ -61,14 +57,16 @@ class ReservedNameDiagnostic(Diagnostic):
 class ReservedUniverseNameDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved universe name is used."""
 
-    message_format: ClassVar[str] = "'{reserved_name}' is a reserved universe name"
+    message_format: ClassVar[str] = "'{self.reserved_name}' is a reserved universe name"
 
 
 @dataclass
 class ReservedAuthorityDomainDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved authority domain is used."""
 
-    message_format: ClassVar[str] = "'{reserved_name}' is a reserved authority domain"
+    message_format: ClassVar[str] = (
+        "'{self.reserved_name}' is a reserved authority domain"
+    )
 
 
 @dataclass
@@ -77,9 +75,9 @@ class DotlessAuthorityDomainDiagnostic(ReservedNameDiagnostic):
 
     multiverse_name: str
     message_format: ClassVar[str] = (
-        "'{reserved_name}' is reserved: "
+        "'{self.reserved_name}' is reserved: "
         "authority domains without '.' are reserved "
-        "in the '{multiverse_name}' multiverse"
+        "in the '{self.multiverse_name}' multiverse"
     )
 
 
@@ -87,7 +85,9 @@ class DotlessAuthorityDomainDiagnostic(ReservedNameDiagnostic):
 class ReservedMultiverseNameDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved multiverse name is used."""
 
-    message_format: ClassVar[str] = "'{reserved_name}' is a reserved multiverse name"
+    message_format: ClassVar[str] = (
+        "'{self.reserved_name}' is a reserved multiverse name"
+    )
 
 
 @dataclass
@@ -97,7 +97,8 @@ class PathMismatchDiagnostic(Diagnostic):
     expected_path: str
     actual_path: str
     message_format: ClassVar[str] = (
-        "definition path '{actual_path}' does not match file path '{expected_path}'"
+        "definition path '{self.actual_path}' does not match file path "
+        "'{self.expected_path}'"
     )
 
 
@@ -107,7 +108,7 @@ class UniverseWithoutAuthorityDiagnostic(Diagnostic):
 
     universe_name: str
     message_format: ClassVar[str] = (
-        "universe '{universe_name}' requires an authority; "
+        "universe '{self.universe_name}' requires an authority; "
         "only 'standard' may be used without an authority"
     )
 
@@ -120,8 +121,8 @@ class DuplicateDefinitionDiagnostic(Diagnostic):
     path: str
     first_definition_line: int
     message_format: ClassVar[str] = (
-        "duplicate {definition_type} definition for path '{path}'; "
-        "first defined on line {first_definition_line}"
+        "duplicate {self.definition_type} definition for path '{self.path}'; "
+        "first defined on line {self.first_definition_line}"
     )
 
 
@@ -132,8 +133,8 @@ class LocalNameConflictDiagnostic(Diagnostic):
     local_name: str
     first_definition_line: int
     message_format: ClassVar[str] = (
-        "duplicate local definition '{local_name}'; "
-        "first defined on line {first_definition_line}"
+        "duplicate local definition '{self.local_name}'; "
+        "first defined on line {self.first_definition_line}"
     )
 
 
@@ -144,8 +145,8 @@ class FqunMismatchDiagnostic(Diagnostic):
     expected: str
     actual: str
     message_format: ClassVar[str] = (
-        "Fully-qualified universe name '{actual}' does not match "
-        "project universe name '{expected}'"
+        "Fully-qualified universe name '{self.actual}' does not match "
+        "project universe name '{self.expected}'"
     )
 
 
@@ -155,7 +156,7 @@ class AuthorityDomainTooShortDiagnostic(Diagnostic):
 
     domain: str
     message_format: ClassVar[str] = (
-        "authority domain '{domain}' must be at least 2 characters"
+        "authority domain '{self.domain}' must be at least 2 characters"
     )
 
 
@@ -166,7 +167,7 @@ class AuthorityDomainInvalidCharDiagnostic(Diagnostic):
     domain: str
     char: str
     message_format: ClassVar[str] = (
-        "invalid character '{char}' in authority domain '{domain}'"
+        "invalid character '{self.char}' in authority domain '{self.domain}'"
     )
 
 
@@ -177,7 +178,7 @@ class InvalidAuthorityPathSegmentDiagnostic(Diagnostic):
     segment: str
     char: str
     message_format: ClassVar[str] = (
-        "invalid character '{char}' in authority path segment '{segment}'"
+        "invalid character '{self.char}' in authority path segment '{self.segment}'"
     )
 
 
@@ -187,7 +188,7 @@ class AuthorityPathEmptySegmentDiagnostic(Diagnostic):
 
     authority: str
     message_format: ClassVar[str] = (
-        "authority path in '{authority}' must not contain '//'"
+        "authority path in '{self.authority}' must not contain '//'"
     )
 
 
@@ -198,7 +199,7 @@ class InvalidGlobalNamePathCharacterDiagnostic(Diagnostic):
     segment: str
     char: str
     message_format: ClassVar[str] = (
-        "invalid character '{char}' in path segment '{segment}'"
+        "invalid character '{self.char}' in path segment '{self.segment}'"
     )
 
 
@@ -207,7 +208,7 @@ class GlobalNamePathMissingLeadingSlashDiagnostic(Diagnostic):
     """Diagnostic for when a global path does not start with '/'."""
 
     path: str
-    message_format: ClassVar[str] = "global name path '{path}' must start with '/'"
+    message_format: ClassVar[str] = "global name path '{self.path}' must start with '/'"
 
 
 @dataclass
@@ -215,7 +216,9 @@ class GlobalNamePathTrailingSlashDiagnostic(Diagnostic):
     """Diagnostic for when a global path ends with '/'."""
 
     path: str
-    message_format: ClassVar[str] = "global name path '{path}' must not end with '/'"
+    message_format: ClassVar[str] = (
+        "global name path '{self.path}' must not end with '/'"
+    )
 
 
 @dataclass
@@ -223,7 +226,9 @@ class GlobalNamePathEmptySegmentDiagnostic(Diagnostic):
     """Diagnostic for when a global path contains an empty segment."""
 
     path: str
-    message_format: ClassVar[str] = "global name path '{path}' must not contain '//'"
+    message_format: ClassVar[str] = (
+        "global name path '{self.path}' must not contain '//'"
+    )
 
 
 @dataclass
@@ -233,7 +238,7 @@ class InvalidLocalNameFormatDiagnostic(Diagnostic):
     local_name: str
     char: str
     message_format: ClassVar[str] = (
-        "invalid character '{char}' in local name '{local_name}'"
+        "invalid character '{self.char}' in local name '{self.local_name}'"
     )
 
 
@@ -243,7 +248,7 @@ class MultiverseNameTooShortDiagnostic(Diagnostic):
 
     multiverse_name: str
     message_format: ClassVar[str] = (
-        "multiverse name '{multiverse_name}' must be at least 2 characters"
+        "multiverse name '{self.multiverse_name}' must be at least 2 characters"
     )
 
 
@@ -254,7 +259,7 @@ class MultiverseNameInvalidCharDiagnostic(Diagnostic):
     multiverse_name: str
     char: str
     message_format: ClassVar[str] = (
-        "invalid character '{char}' in multiverse name '{multiverse_name}'"
+        "invalid character '{self.char}' in multiverse name '{self.multiverse_name}'"
     )
 
 
@@ -264,7 +269,7 @@ class UniverseNameTooShortDiagnostic(Diagnostic):
 
     universe_name: str
     message_format: ClassVar[str] = (
-        "universe name '{universe_name}' must be at least 2 characters"
+        "universe name '{self.universe_name}' must be at least 2 characters"
     )
 
 
@@ -275,7 +280,7 @@ class UniverseNameInvalidCharDiagnostic(Diagnostic):
     universe_name: str
     char: str
     message_format: ClassVar[str] = (
-        "invalid character '{char}' in universe name '{universe_name}'"
+        "invalid character '{self.char}' in universe name '{self.universe_name}'"
     )
 
 
@@ -287,7 +292,7 @@ class GlobalReferenceMustUseShortFormDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "global name references with the same fully-qualified universe name "
         "as the enclosing definition must use the short form; "
-        "delete '{fqun}:' from this reference"
+        "delete '{self.fqun}:' from this reference"
     )
 
 
@@ -298,7 +303,8 @@ class ReferencedGlobalNameWrongTypeDiagnostic(Diagnostic):
     path: str
     expected_type: str
     message_format: ClassVar[str] = (
-        "path '{path}' does not define a global name with the type '{expected_type}'"
+        "path '{self.path}' does not define a global name with the type "
+        "'{self.expected_type}'"
     )
 
 
@@ -307,7 +313,9 @@ class ReferencedFileNotFoundDiagnostic(Diagnostic):
     """Diagnostic for when a referenced file does not exist."""
 
     file_path: str
-    message_format: ClassVar[str] = "there is no file '{file_path}' in this project"
+    message_format: ClassVar[str] = (
+        "there is no file '{self.file_path}' in this project"
+    )
 
 
 @dataclass
@@ -317,8 +325,8 @@ class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
     universe: str
     current_universe_name: str
     message_format: ClassVar[str] = (
-        "universe '{universe}' is not configured as a dependency "
-        "of this universe ({current_universe_name}); "
+        "universe '{self.universe}' is not configured as a dependency "
+        "of this universe ({self.current_universe_name}); "
         "add it to .define/deps/local.defcl"
     )
 
@@ -330,9 +338,9 @@ class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
     universe: str
     config_path: str
     message_format: ClassVar[str] = (
-        "universe '{universe}' was not previously defined, "
+        "universe '{self.universe}' was not previously defined, "
         + "so the compiler tried to load it from the filesystem. "
-        + "However, {config_path} was not found.\n"
+        + "However, {self.config_path} was not found.\n"
         + "For more information, see "
         + constants.DOCS_ROOT
         + "/project-root.md"
@@ -345,7 +353,7 @@ class ConfigLoadErrorDiagnostic(Diagnostic):
 
     error: exceptions.ConfigError
     message_format: ClassVar[str] = (
-        "an error occurred while loading the project configuration:\n{error}"
+        "an error occurred while loading the project configuration:\n{self.error}"
     )
 
 
@@ -358,10 +366,10 @@ class SubRootAlreadyOccupiedDiagnostic(Diagnostic):
     existing_file: str
     existing_universe: str
     message_format: ClassVar[str] = (
-        "attempted to load the universe '{universe}' in '{sub_root_path}' "
-        "but '{existing_file}' was already registered as having the universe "
-        "'{existing_universe}' ; two different universes cannot occupy "
-        "'{sub_root_path}'"
+        "attempted to load the universe '{self.universe}' in "
+        "'{self.sub_root_path}' but '{self.existing_file}' was already "
+        "registered as having the universe '{self.existing_universe}' ; "
+        "two different universes cannot occupy '{self.sub_root_path}'"
     )
 
 
@@ -373,9 +381,9 @@ class PathInsideOtherUniverseDiagnostic(Diagnostic):
     other_universe: str
     sub_root_path: str
     message_format: ClassVar[str] = (
-        "the path '{path}' is inside of a different universe from this one "
-        "('{other_universe}' located at '{sub_root_path}') ; "
-        "two different universes cannot both occupy '{sub_root_path}'"
+        "the path '{self.path}' is inside of a different universe from this one "
+        "('{self.other_universe}' located at '{self.sub_root_path}') ; "
+        "two different universes cannot both occupy '{self.sub_root_path}'"
     )
 
 
