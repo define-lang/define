@@ -937,3 +937,25 @@ action_statement =
     | quality_assignment_statement
     | wait_until_statement ;
 ```
+
+## Creating Dimension Points
+
+Proposals:
+
+- [DLP 13: Creating Dimension Points](../proposals/00013-creating-dimension-points.md)
+
+A Create Dimension Point Statement starts with `create a dimension point in`,
+followed by exactly one space and a position reference (which may be a chained
+name), and ends with a statement terminator.
+
+It is an error if the referenced position already contains a dimension point.
+
+```ebnf
+local_or_global_position = local_position_name | global_position_name ;
+position_reference_middle = local_or_global_position | action_name ;
+position_reference =
+    local_or_global_position,
+    [ "::", { position_reference_middle, "::" }, local_or_global_position ] ;
+create_dimension_point_statement =
+    "create a dimension point in", " ", position_reference, terminator ;
+```
