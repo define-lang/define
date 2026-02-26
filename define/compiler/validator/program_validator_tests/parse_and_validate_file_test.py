@@ -12,16 +12,15 @@ from define.compiler.validator.program_validator_tests.conftest import (
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
-    phase_sum = 0
-    if timings.file_loading is not None:
-        phase_sum += timings.file_loading
-    if timings.parse is not None:
-        phase_sum += timings.parse
-    if timings.transform is not None:
-        phase_sum += timings.transform
-    if timings.validate is not None:
-        phase_sum += timings.validate
-    assert timings.overall == phase_sum
+    phase_sum = (
+        timings.file_loading
+        + timings.parse
+        + timings.transform
+        + timings.file_validation
+        + timings.global_validation
+        + timings.deferred_validation
+    )
+    assert timings.overall_compile == phase_sum
 
 
 def test_returns_single_file_timing_stats(
@@ -36,20 +35,17 @@ def test_returns_single_file_timing_stats(
     assert result.file_path == PurePosixPath("test.def")
 
     timings = result.stats
-    assert timings.overall >= 0
+    assert timings.overall_compile > 0
 
-    assert timings.file_loading is not None
-    assert timings.file_loading >= 0
-    assert timings.parse is not None
-    assert timings.parse >= 0
-    assert timings.transform is not None
-    assert timings.validate is not None
-    assert timings.transform >= 0
-    assert timings.validate >= 0
+    assert timings.file_loading > 0
+    assert timings.parse > 0
+    assert timings.transform > 0
+    assert timings.file_validation > 0
+    assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
 
 
-def test_parse_error_populates_exceptions_and_sets_later_phases_to_none(
+def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
     parse_and_validate_file: ParseAndValidateFile,
 ):
     result = parse_and_validate_file(
@@ -62,14 +58,13 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_none(
     assert result.file_path == PurePosixPath("test.def")
 
     timings = result.stats
-    assert timings.overall >= 0
+    assert timings.overall_compile > 0
 
-    assert timings.file_loading is not None
-    assert timings.file_loading >= 0
-    assert timings.parse is not None
-    assert timings.parse >= 0
-    assert timings.transform is None
-    assert timings.validate is None
+    assert timings.file_loading > 0
+    assert timings.parse > 0
+    assert timings.transform == 0
+    assert timings.file_validation == 0
+    assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
 
 
@@ -86,13 +81,13 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
     assert result.file_path == PurePosixPath("test.def")
 
     timings = result.stats
-    assert timings.overall >= 0
+    assert timings.overall_compile > 0
 
-    assert timings.file_loading is not None
-    assert timings.file_loading >= 0
-    assert timings.parse is None
-    assert timings.transform is None
-    assert timings.validate is None
+    assert timings.file_loading > 0
+    assert timings.parse == 0
+    assert timings.transform == 0
+    assert timings.file_validation == 0
+    assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
 
 
@@ -112,19 +107,17 @@ def test_transform_error_from_name_parser_populates_exceptions(
     assert result.file_path == PurePosixPath("test.def")
 
     timings = result.stats
-    assert timings.overall >= 0
+    assert timings.overall_compile > 0
 
-    assert timings.file_loading is not None
-    assert timings.file_loading >= 0
-    assert timings.parse is not None
-    assert timings.parse >= 0
-    assert timings.transform is not None
-    assert timings.transform >= 0
-    assert timings.validate is None
+    assert timings.file_loading > 0
+    assert timings.parse > 0
+    assert timings.transform > 0
+    assert timings.file_validation == 0
+    assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
 
 
-def test_config_error_sets_later_phases_to_none(
+def test_config_error_sets_later_phases_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     relative_path = PurePosixPath("test.def")
@@ -142,14 +135,15 @@ def test_config_error_sets_later_phases_to_none(
 
     timings = result.stats
 
-    assert timings.file_loading is None
-    assert timings.parse is None
-    assert timings.transform is None
-    assert timings.validate is None
+    assert timings.file_loading == 0
+    assert timings.parse == 0
+    assert timings.transform == 0
+    assert timings.file_validation == 0
+    assert timings.queue_wait == 0
     _assert_overall_equals_phase_sum(timings)
 
 
-def test_file_not_found_sets_later_phases_to_none(
+def test_file_not_found_sets_later_phases_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
@@ -163,9 +157,44 @@ def test_file_not_found_sets_later_phases_to_none(
 
     timings = result.stats
 
-    assert timings.file_loading is not None
-    assert timings.file_loading >= 0
-    assert timings.parse is None
-    assert timings.transform is None
-    assert timings.validate is None
+    assert timings.file_loading > 0
+    assert timings.parse == 0
+    assert timings.transform == 0
+    assert timings.file_validation == 0
+    assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
+
+
+def test_config_loading_time_ns_tracks_successful_root_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    relative_path = PurePosixPath("test.def")
+    source_path = tmp_path / relative_path
+    source_path.write_text(
+        "define the potential position<my.domain.com:my_lib:/test>.\n",
+        encoding="utf-8",
+    )
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    monkeypatch.chdir(tmp_path)
+
+    validator = program_validator.ProgramValidator()
+    validator.validate_program(relative_path)
+
+    assert validator.config_loading_time_ns > 0
+
+
+def test_config_loading_time_ns_tracks_failing_root_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    relative_path = PurePosixPath("test.def")
+    source_path = tmp_path / relative_path
+    source_path.write_text(
+        "define the potential position<my.domain.com:my_lib:/test>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    validator = program_validator.ProgramValidator()
+    validator.validate_program(relative_path)
+
+    assert validator.config_loading_time_ns > 0

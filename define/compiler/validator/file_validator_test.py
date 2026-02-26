@@ -207,8 +207,8 @@ class TestFileValidatorTimingStats:
         ctx = _make_context(tmp_path)
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
-        assert result.stats.overall >= 0
-        assert result.stats.file_loading is not None
-        assert result.stats.parse is not None
-        assert result.stats.transform is not None
-        assert result.stats.validate is not None
+        assert result.stats.overall_compile > 0
+        assert result.stats.file_loading > 0
+        assert result.stats.parse > 0
+        assert result.stats.transform > 0
+        assert result.stats.file_validation > 0

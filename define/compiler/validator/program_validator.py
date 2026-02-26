@@ -7,6 +7,7 @@ per-file validation to FileValidator workers.
 
 from __future__ import annotations
 
+import time
 import typing
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -67,7 +68,15 @@ class _FileWorkPool:
 
     def submit(self, context: file_validator.FileValidationContext):
         """Submit a file for validation. Starts immediately on a worker thread."""
-        future = self._executor.submit(self._fv.validate_file, context)
+        submitted_at = time.perf_counter_ns()
+
+        def _validate() -> validation_result.ValidationResult:
+            started_at = time.perf_counter_ns()
+            result = self._fv.validate_file(context)
+            result.stats.queue_wait = started_at - submitted_at
+            return result
+
+        future = self._executor.submit(_validate)
         self._submitted.append(future)
 
     def wait_for_next(self) -> validation_result.ValidationResult:
@@ -88,17 +97,21 @@ class ProgramValidator:
     Runs a single-threaded coordinator loop that submits files to a thread
     pool and processes results as they complete. All shared state is
     managed on the coordinator thread.
+
+    config_loading_time_ns stores program-level config loading time.
     """
 
     _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredEdge]]
+    config_loading_time_ns: int
 
     def __init__(self):
         """Initialize coordinator state for one program validation."""
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
+        self.config_loading_time_ns = 0
 
     @cached_property
     def _parser(self) -> parser.Parser:
@@ -170,8 +183,10 @@ class ProgramValidator:
         pool: _FileWorkPool,
     ):
         """Handle a completed file: check edges, submit discovered."""
+        started_at = time.perf_counter_ns()
         self._submit_discovered_files(result, pool)
         self._process_reference_edges(result.root_prefix, result)
+        result.stats.global_validation += time.perf_counter_ns() - started_at
         self._resolve_deferred_edges_for(result.file_path)
 
     def _submit_discovered_files(
@@ -400,6 +415,23 @@ class ProgramValidator:
         source_result: validation_result.ValidationResult,
     ):
         """Validate a reference edge against a completed target file's result."""
+        started_at = time.perf_counter_ns()
+        self._do_validate_reference_against_target(
+            edge=edge,
+            target_file=target_file,
+            target_result=target_result,
+            source_result=source_result,
+        )
+        source_result.stats.deferred_validation += time.perf_counter_ns() - started_at
+
+    def _do_validate_reference_against_target(
+        self,
+        edge: validation_result.ReferenceEdge,
+        target_file: pathlib.PurePosixPath,
+        target_result: validation_result.ValidationResult,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Apply reference-target validation checks without timing side effects."""
         global_name = edge.global_name_reference.global_name
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
@@ -470,6 +502,18 @@ class ProgramValidator:
 
         Returns (fqun, sub_root_mappings).
         """
+        started_at = time.perf_counter_ns()
+        try:
+            return self._do_load_root_config(root_prefix, expected_fqun)
+        finally:
+            self.config_loading_time_ns += time.perf_counter_ns() - started_at
+
+    def _do_load_root_config(
+        self,
+        root_prefix: pathlib.PurePosixPath,
+        expected_fqun: str | None = None,
+    ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]]:
+        """Load project config for a root and register it without timing side effects."""
         # TODO: When _path_tracker just stores Config objects, this
         # can just return a Config.
         existing = self._path_tracker.fqun_for_root(root_prefix)

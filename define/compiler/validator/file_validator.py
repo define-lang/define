@@ -156,7 +156,7 @@ class FileValidator:
 
         fdv = ProgramAstValidator(context, expected_definition_path)
         fdv.validate_program(program)
-        tracker.mark_validate_finished()
+        tracker.mark_file_validation_finished()
         return validation_result.ValidationResult(
             diagnostics=fdv.diagnostics,
             exception=None,
