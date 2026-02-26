@@ -235,3 +235,110 @@ def test_position_requirement_missing_space_after_it_has_the(p: parser.Parser) -
     assert exc_info.value.token == "position<my_lib:/path"
     assert exc_info.value.line == 8
     assert exc_info.value.column == 11
+
+
+def test_create_dimension_point_missing_reference(
+    p: parser.Parser,
+) -> None:
+    # TODO: I don't love this error classification here, it's not as clear
+    # as it could be.
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "create a dimension point in.\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 1
+
+
+def test_create_dimension_point_reference_missing_name_after_chain_separator(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "create a dimension point in position<foo>::.\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "."
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 44
+
+
+def test_create_dimension_point_reference_chain_separator_then_newline(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "create a dimension point in position<foo>::\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "\n"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 44
+
+
+def test_create_dimension_point_reference_single_colon_then_newline(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(
+        parser_exceptions.ExpectedChainSeparatorOrTerminator
+    ) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "create a dimension point in position<foo>:\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == ":"
+    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 42
+
+
+def test_name_content_forbids_double_colon_in_create_reference(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "create a dimension point in position</foo::bar>.\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "::"
+    assert str(exc_info.value.name) == "/foo"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 42
+
+
+def test_name_chain_invalid_item(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "it happens when {\n"
+            + "} and it does {\n"
+            + "create a dimension point in position<foo>::a\n"
+            + "}\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "a"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 44

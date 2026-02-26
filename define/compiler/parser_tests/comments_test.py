@@ -14,7 +14,7 @@ def test_comment_before_statement(p: parser.Parser) -> None:
     tree = p.parse(
         "# This is a comment\ndefine the potential position<standard:/path>.\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
     assert get_tokens_by_type(tree, "COMMENT") == []
 
 
@@ -22,19 +22,19 @@ def test_comment_after_statement(p: parser.Parser) -> None:
     tree = p.parse(
         "define the potential position<standard:/path>.\n# Trailing comment\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
     assert get_tokens_by_type(tree, "COMMENT") == []
 
 
 def test_comment_on_same_line_as_statement(p: parser.Parser) -> None:
     tree = p.parse("define the potential position<standard:/path>. # comment\n")
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
     assert get_tokens_by_type(tree, "COMMENT") == []
 
 
 def test_comment_on_same_line_multiple_spaces(p: parser.Parser) -> None:
     tree = p.parse("define the potential position<standard:/path>.   # comment\n")
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
     assert get_tokens_by_type(tree, "COMMENT") == []
 
 
@@ -42,7 +42,7 @@ def test_multiline_comments_with_blank_hash_line(p: parser.Parser) -> None:
     tree = p.parse(
         "# first line\n#\n# third line\ndefine the potential position<standard:/path>.\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
     assert get_tokens_by_type(tree, "COMMENT") == []
 
 
@@ -51,7 +51,7 @@ def test_valid_syntax_in_comment_is_ignored(p: parser.Parser) -> None:
         "# define the potential position<standard:/ignored>.\n"
         + "define the potential position<standard:/actual>.\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/actual"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/actual"]
 
 
 def test_control_character_in_comment(p: parser.Parser) -> None:
@@ -122,7 +122,7 @@ def test_empty_comment_hash_newline_above_statement(p: parser.Parser) -> None:
     tree = p.parse(
         "#\ndefine the potential position<mv:define-lang.org:parser:/path>.\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
     ]
     assert get_tokens_by_type(tree, "COMMENT") == []
@@ -148,7 +148,7 @@ def test_empty_comment_hash_newline_after_statement_same_line(p: parser.Parser) 
     tree = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path>. #\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
     ]
     assert get_tokens_by_type(tree, "COMMENT") == []

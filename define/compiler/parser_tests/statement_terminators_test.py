@@ -12,7 +12,7 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 def test_valid_terminator(p: parser.Parser) -> None:
     tree = p.parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
     ]
 

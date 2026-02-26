@@ -32,11 +32,11 @@ _VALID_GRANDCHILD_UNIVERSES = [
     "mv:define-lang.org:fuzz_grandchild",
     "mv:define-lang.org:fuzz_leafroot",
 ]
-_EXAMPLES_VALID_SINGLE = 180
-_EXAMPLES_VALID_PROJECTS = 120
-_EXAMPLES_MUTATED_SINGLE = 240
-_EXAMPLES_MUTATED_PROJECTS = 120
-_EXAMPLES_RANDOM_BYTES = 120
+_EXAMPLES_VALID_SINGLE = 600
+_EXAMPLES_VALID_PROJECTS = 400
+_EXAMPLES_MUTATED_SINGLE = 800
+_EXAMPLES_MUTATED_PROJECTS = 400
+_EXAMPLES_RANDOM_BYTES = 400
 
 
 def _escape_content(text: str) -> str:
@@ -137,6 +137,26 @@ def _local_position_with_requirements(
         ]
     )
     return _join_lines(lines)
+
+
+def _create_dimension_point_statement(position_reference: str, *, indent: str) -> str:
+    return f"{indent}create a dimension point in {position_reference}.\n"
+
+
+@st.composite
+def create_dimension_point_references(draw: st.DrawFn) -> str:
+    start = f"position<{draw(global_names())}>"
+    chain_length = draw(st.integers(min_value=0, max_value=2))
+    if chain_length == 0:
+        return start
+
+    segments = [start]
+    for _ in range(chain_length):
+        middle_kind = draw(st.sampled_from(["position", "action"]))
+        middle_name = draw(global_names())
+        segments.append(f"{middle_kind}<{middle_name}>")
+    end = f"position<{draw(global_names())}>"
+    return "::".join([*segments, end])
 
 
 def _action_block_with_name(
@@ -355,6 +375,12 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
                     indent=indent,
                 )
             )
+    create_count = draw(st.integers(min_value=0, max_value=2))
+    for _ in range(create_count):
+        position_reference = draw(create_dimension_point_references())
+        inner_locals.append(
+            _create_dimension_point_statement(position_reference, indent=indent)
+        )
     return _action_block_with_name(
         name,
         outer_locals=outer_locals,
@@ -528,6 +554,7 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "potential",
             "position",
             "action",
+            "create a dimension point in",
             "it happens when",
             "and it does",
         ]
@@ -567,7 +594,12 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
 @st.composite
 def mutated_sources(draw: st.DrawFn) -> str:
     source = draw(syntactic_sources())
-    return _mutate_source(source, draw)
+    mutated = _mutate_source(source, draw)
+    if "create a dimension point in " in mutated:
+        return mutated.replace(
+            "create a dimension point in ", "create a dimension point in", 1
+        )
+    return mutated
 
 
 @dataclass(frozen=True)

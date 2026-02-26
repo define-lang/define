@@ -1,7 +1,13 @@
 %import common.LF -> NEWLINE
 
 # Name Terminals
-NAME_CONTENT: /[^>\n]+/
+GLOBAL_NAME_CONTENT: /(?:[^:>\n]|:(?!:))+/
+# We have to make LOCAL_NAME_CONTENT exclude : and / in order to
+# successfully differentiate it in circumstances where both local
+# and global names are accepted. We also have to prioritize it over
+# GLOBAL_NAME_CONTENT because otherwise GLOBAL_NAME_CONTENT would
+# always match.
+LOCAL_NAME_CONTENT.2: /(?![^>\n]*[:\/])[^>\n]+/
 
 # Syntax Terminals
 DEFINE_THE_POSITION: "define the position"
@@ -12,6 +18,8 @@ IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE: "it may only contain dimension point
 IT_HAS_THE: "it has the"
 IT_HAPPENS_WHEN: "it happens when"
 AND_IT_DOES: " and it does"
+CREATE_A_DIMENSION_POINT_IN: "create a dimension point in "
+CHAIN_SEPARATOR: "::"
 
 # General
 
@@ -34,10 +42,12 @@ _block_close: "}" NEWLINE
 
 # Name Syntax
 
-global_name_definition_content: "<" NAME_CONTENT ">"
-global_name_reference_content: "<" NAME_CONTENT ">"
-local_name_content: "<" NAME_CONTENT ">"
+global_name_definition_content: "<" GLOBAL_NAME_CONTENT ">"
+global_name_reference_content: "<" GLOBAL_NAME_CONTENT ">"
+local_name_content: "<" LOCAL_NAME_CONTENT ">"
 typed_global_name_reference: NAME_TYPE global_name_reference_content
+typed_local_name_reference: NAME_TYPE local_name_content
+typed_name_reference: typed_local_name_reference | typed_global_name_reference
 
 # Position Constraint Block Syntax
 
@@ -55,13 +65,18 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content position_definition_terminator_or_block
 
+# Create Dimension Point Syntax
+
+position_reference: typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
+create_dimension_point_statement: CREATE_A_DIMENSION_POINT_IN position_reference terminator
+
 # Action Definition Syntax
 
 action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content (terminator | action_definition_block)
 
 local_position_definition: DEFINE_THE_POSITION local_name_content position_definition_terminator_or_block
 trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* "}"
-action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition)* _block_close
+action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition | create_dimension_point_statement)* _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
 action_definition_block: _block_open (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* _block_close
 

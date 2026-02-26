@@ -173,6 +173,12 @@ class InvalidCharacterError(DefineCharError):
     )
 
 
+class InvalidLocalNameCharacter(DefineCharError):
+    """Wrote / or : where only a local name is accepted."""
+
+    message_format: ClassVar[str] = "'{escaped_char}' is not allowed in local names."
+
+
 class InvalidEncodingError(DefineCharError):
     """Raised when a file contains bytes that are not valid UTF-8."""
 
@@ -200,6 +206,12 @@ class EmptyName(DefineTokenError):
     """Saw a <> in a name."""
 
     message_format: ClassVar[str] = "Name cannot be empty."
+
+
+class ExpectedChainSeparatorOrTerminator(DefineTokenError):
+    """Wrote something wrong where we expect :: or the end of a statement."""
+
+    message_format: ClassVar[str] = "Expected '::' or '.' here."
 
 
 class ExpectedGlobalDefinition(DefineTokenError):

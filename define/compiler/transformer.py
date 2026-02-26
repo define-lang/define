@@ -63,8 +63,12 @@ class DefineTransformer(lark.Transformer[lark.Token, ast.Program]):
         """Remove empty block trees from the parse tree."""
         return Discard
 
-    def NAME_CONTENT(self, token: lark.Token) -> lark.Token:  # noqa: N802
+    def GLOBAL_NAME_CONTENT(self, token: lark.Token) -> lark.Token:  # noqa: N802
         """Pass through raw name content tokens for context-specific parsing."""
+        return token
+
+    def LOCAL_NAME_CONTENT(self, token: lark.Token) -> lark.Token:  # noqa: N802
+        """Pass through raw local name content tokens for context-specific parsing."""
         return token
 
     def DEFINE_THE_POSITION(self, _token: lark.Token) -> object:  # noqa: N802

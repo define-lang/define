@@ -36,7 +36,10 @@ def test_block_with_blank_lines(p: parser.Parser) -> None:
         + "\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "standard:/path",
+        "/child",
+    ]
 
 
 def test_block_with_comment_inside(p: parser.Parser) -> None:
@@ -48,7 +51,10 @@ def test_block_with_comment_inside(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "standard:/path",
+        "/child",
+    ]
 
 
 def test_block_with_comment_after_open(p: parser.Parser) -> None:
@@ -59,7 +65,10 @@ def test_block_with_comment_after_open(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "standard:/path",
+        "/child",
+    ]
 
 
 def test_block_with_comment_after_close(p: parser.Parser) -> None:
@@ -70,7 +79,10 @@ def test_block_with_comment_after_close(p: parser.Parser) -> None:
         + "}\n"
         + "} # comment\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == ["standard:/path", "/child"]
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "standard:/path",
+        "/child",
+    ]
 
 
 def test_block_with_full_fqun(p: parser.Parser) -> None:
@@ -81,7 +93,7 @@ def test_block_with_full_fqun(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "my_mv:example.com:my_lib:/some/path",
         "/some/action",
     ]
@@ -100,7 +112,7 @@ def test_multiple_definitions_with_blocks(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "standard:/first",
         "/first_child",
         "standard:/second",
@@ -117,7 +129,7 @@ def test_mixed_block_and_terminator(p: parser.Parser) -> None:
         + "}\n"
         + "}\n"
     )
-    assert get_tokens_by_type(tree, "NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "standard:/first",
         "standard:/second",
         "/do_work",

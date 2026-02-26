@@ -49,6 +49,9 @@ def classify_char_error(
     if char_class is not None:
         return char_class
 
+    if e.char in {":", "/"} and "MORETHAN" in e.allowed:
+        return parser_exceptions.InvalidCharacterError
+
     if e.char == " " and _is_space_followed_only_by_whitespace(
         source, e.line, e.column
     ):
@@ -100,12 +103,18 @@ def raise_token_error(
 
     # This is just <> or < with nothing after it, while expecting a name.
     if (
-        e.accepts == {"NAME_CONTENT"}
-        and (e.token == ">" or e.token.type in ("NEWLINE, $END"))
+        ("GLOBAL_NAME_CONTENT" in e.accepts or "LOCAL_NAME_CONTENT" in e.accepts)
+        and (e.token == ">" or e.token.type in ("NEWLINE", "$END"))
         and e.token_history
         and e.token_history[-1] == "<"
     ):
         raise parser_exceptions.EmptyName(e, source, file_path)
+
+    if e.accepts == {"LOCAL_NAME_CONTENT"} and ("/" in e.token or ":" in e.token):
+        invalid_char = next(c for c in e.token if c in {"/", ":"})
+        raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
+            e, source, invalid_char, file_path
+        )
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE", "DOT"}:
         if e.token == "{":
@@ -161,6 +170,9 @@ def raise_token_error(
 
     if e.accepts == {"NAME_TYPE"}:
         raise parser_exceptions.ExpectedNameType(e, source, file_path)
+
+    if e.accepts == {"CHAIN_SEPARATOR", "DOT"}:
+        raise parser_exceptions.ExpectedChainSeparatorOrTerminator(e, source, file_path)
 
     # This has to be here, because otherwise the "IT_HAPPENS_WHEN" will match
     # when this happens inside an Action Definition Block.
