@@ -10,7 +10,8 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from define.compiler import driver, exceptions, parser_exceptions, validation_result
+from define.compiler import driver, exceptions, parser_exceptions
+from define.compiler.validator import validation_result
 
 _MULTIVERSE_NAMES = ["mv", "standard", "mymv", "test_mv"]
 _AUTHORITY_DOMAINS = ["example.com", "define-lang.org", "test.io", "my.domain.co"]
