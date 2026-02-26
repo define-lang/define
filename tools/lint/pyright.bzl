@@ -114,6 +114,8 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
     )
 
     pyproject_data = [pyproject] if pyproject else []
+    env = dict(kwargs.pop("env", {}))
+    env["FORCE_COLOR"] = "1"
 
     py_test(
         name = name,
@@ -133,6 +135,7 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
             "@pypi//types_protobuf",
             "@pypi//types_pyyaml",
         ],
+        env = env,
         tags = ["pyright"],
         **kwargs
     )
