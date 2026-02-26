@@ -11,6 +11,16 @@ npm_link_all_packages()
 exports_files(["pyproject.toml"])
 
 py_binary(
+    name = "generate_lark_standalone",
+    srcs = ["generate_lark_standalone.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@pypi//lark",
+        "@pypi//regex",
+    ],
+)
+
+py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
     deps = ["@pypi//pyyaml"],
@@ -129,6 +139,7 @@ pyright_test(
     name = "pyright_test",
     pyproject = "//tools:pyproject.toml",
     deps = [
+        ":generate_lark_standalone",
         ":generate_programming_languages",
         ":sync_agent_permissions",
         ":update_toolchains",

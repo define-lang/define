@@ -1,10 +1,10 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import Path
 
-import lark
 import pytest
 
 from defcl.python import exceptions
+from defcl.python.lark import lark_standalone
 from defcl.python.validator import syntax
 
 _TESTDATA_PATH = Path(__file__).parent.parent.parent / "testdata"
@@ -12,12 +12,14 @@ _INVALID_SYNTAX_PATH = _TESTDATA_PATH / "invalid" / "syntax"
 _parser = syntax.Parser()
 
 
-def _get_tokens_by_type(tree: lark.Tree[lark.Token], token_type: str) -> list[str]:
+def _get_tokens_by_type(
+    tree: lark_standalone.Tree[lark_standalone.Token], token_type: str
+) -> list[str]:
     tokens: list[str] = []
     for child in tree.children:
-        if isinstance(child, lark.Tree):
+        if isinstance(child, lark_standalone.Tree):
             tokens.extend(_get_tokens_by_type(child, token_type))
-        elif isinstance(child, lark.Token) and child.type == token_type:
+        elif isinstance(child, lark_standalone.Token) and child.type == token_type:
             tokens.append(str(child))
     return tokens
 

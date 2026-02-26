@@ -2,14 +2,9 @@
 
 import os
 from functools import cached_property
-from pathlib import Path
-
-import lark
-from lark import exceptions
 
 from defcl.python import exceptions as dcl_exceptions
-
-_GRAMMAR_PATH = Path(__file__).parent.parent / "grammar.lark"
+from defcl.python.lark import lark_standalone
 
 _TOKEN_ERROR_EXAMPLES: dict[type[dcl_exceptions.DclTokenError], list[str]] = {
     dcl_exceptions.MissingColonError: [
@@ -110,13 +105,11 @@ class Parser:
     """Parser for DCL files using Lark."""
 
     @cached_property
-    def _parser(self) -> lark.Lark:
-        return lark.Lark(
-            _GRAMMAR_PATH.read_text(), parser="lalr", start="start", regex=True
-        )
+    def _parser(self) -> lark_standalone.Lark:
+        return lark_standalone.Lark_StandAlone()
 
     def _classify_char_error(
-        self, e: exceptions.UnexpectedCharacters
+        self, e: lark_standalone.UnexpectedCharacters
     ) -> type[dcl_exceptions.DclCharError] | None:
         """Classify a character error using direct lookup and example matching."""
         char_class = _CHAR_ERRORS.get(e.char)
@@ -140,7 +133,7 @@ class Parser:
         )
 
     def _classify_token_error(
-        self, e: exceptions.UnexpectedToken
+        self, e: lark_standalone.UnexpectedToken
     ) -> type[dcl_exceptions.DclTokenError] | None:
         """Classify a token error using pattern matching and example matching."""
         if e.token.type == "RBRACE" and e.token_history:
@@ -158,7 +151,7 @@ class Parser:
 
     def parse(
         self, text: str, path_name: str | os.PathLike[str] | None = None
-    ) -> lark.Tree[lark.Token]:
+    ) -> lark_standalone.Tree[lark_standalone.Token]:
         """Parse DCL text and return the parse tree.
 
         path_name is only used for error messages.
@@ -167,14 +160,14 @@ class Parser:
             tree = self._parser.parse(text)
             if text and text[-1] != "\n":
                 raise dcl_exceptions.MissingTrailingNewlineError(path_name)
-        except exceptions.UnexpectedCharacters as e:
+        except lark_standalone.UnexpectedCharacters as e:
             exc_class = self._classify_char_error(e)
             if exc_class is not None:
                 raise exc_class(
                     e.get_context(text), e.line, e.column, e.char, path_name
                 ) from e
             raise
-        except exceptions.UnexpectedToken as e:
+        except lark_standalone.UnexpectedToken as e:
             exc_class = self._classify_token_error(e)
             if exc_class is not None:
                 raise exc_class(
@@ -183,7 +176,9 @@ class Parser:
             raise
         return tree
 
-    def parse_file(self, path: str | os.PathLike[str]) -> lark.Tree[lark.Token]:
+    def parse_file(
+        self, path: str | os.PathLike[str]
+    ) -> lark_standalone.Tree[lark_standalone.Token]:
         """Parse a DCL file and return the parse tree."""
         with open(path, encoding="utf-8", newline="") as f:
             return self.parse(f.read(), path_name=path)

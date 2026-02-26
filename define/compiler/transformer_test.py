@@ -10,8 +10,7 @@ _parser = parser.Parser()
 
 def _parse_and_transform(source: str) -> ast.Program:
     tree = _parser.parse(source)
-    transformer = DefineTransformer()
-    return transformer.transform(tree)
+    return DefineTransformer().transform(tree)
 
 
 def _require_fqun(name: ast.GlobalName) -> ast.Fqun:

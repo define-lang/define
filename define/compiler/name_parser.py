@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING
 from define.compiler import ast, parser_exceptions
 
 if TYPE_CHECKING:
-    import lark
+    from define.compiler.lark import lark_standalone
 
 
-def parse_local_name(token: lark.Token) -> ast.LocalName:
+def parse_local_name(token: lark_standalone.Token) -> ast.LocalName:
     """Parse local name content into an AST local-name node."""
     return ast.LocalName(
         name=token,
@@ -19,7 +19,9 @@ def parse_local_name(token: lark.Token) -> ast.LocalName:
     )
 
 
-def parse_global_name_definition(token: lark.Token) -> ast.GlobalNameDefinition:
+def parse_global_name_definition(
+    token: lark_standalone.Token,
+) -> ast.GlobalNameDefinition:
     """Parse definition-site global name content into an AST node."""
     parsed = _parse_global_name(token)
     if parsed.fqun is None:
@@ -27,7 +29,7 @@ def parse_global_name_definition(token: lark.Token) -> ast.GlobalNameDefinition:
             token,
             _line(token),
             _column(token),
-            token,
+            None,
         )
     return ast.GlobalNameDefinition(
         position=ast.SourcePosition.from_token(token),
@@ -36,7 +38,9 @@ def parse_global_name_definition(token: lark.Token) -> ast.GlobalNameDefinition:
     )
 
 
-def parse_global_name_reference(token: lark.Token) -> ast.GlobalNameReference:
+def parse_global_name_reference(
+    token: lark_standalone.Token,
+) -> ast.GlobalNameReference:
     """Parse reference-site global name content into an AST node."""
     parsed = _parse_global_name(token)
     return ast.GlobalNameReference(
@@ -52,7 +56,7 @@ class _ParsedGlobalName:
     path: ast.GlobalPathName
 
 
-def _parse_global_name(token: lark.Token) -> _ParsedGlobalName:
+def _parse_global_name(token: lark_standalone.Token) -> _ParsedGlobalName:
     # TODO: Support escaped :
     fqun_sep_index = token.rfind(":")
     fqun = None
@@ -72,7 +76,7 @@ def _parse_global_name(token: lark.Token) -> _ParsedGlobalName:
     return _ParsedGlobalName(fqun, global_path)
 
 
-def _parse_fqun(token: lark.Token, text: str) -> ast.Fqun:
+def _parse_fqun(token: lark_standalone.Token, text: str) -> ast.Fqun:
     # TODO: Support escaped :
     parts = text.split(":")
     if len(parts) not in {1, 2, 3} or any(part == "" for part in parts):
@@ -80,7 +84,7 @@ def _parse_fqun(token: lark.Token, text: str) -> ast.Fqun:
             token,
             _line(token),
             _column(token),
-            token,
+            None,
         )
 
     multiverse = None
@@ -138,14 +142,14 @@ def _parse_fqun(token: lark.Token, text: str) -> ast.Fqun:
     )
 
 
-def _line(token: lark.Token) -> int:
+def _line(token: lark_standalone.Token) -> int:
     line = token.line
     if line is None:
         raise ValueError("Expected token.line to be present")
     return line
 
 
-def _column(token: lark.Token) -> int:
+def _column(token: lark_standalone.Token) -> int:
     column = token.column
     if column is None:
         raise ValueError("Expected token.column to be present")
@@ -153,7 +157,7 @@ def _column(token: lark.Token) -> int:
 
 
 def _position_for_offsets(
-    token: lark.Token, start_offset: int, end_offset: int
+    token: lark_standalone.Token, start_offset: int, end_offset: int
 ) -> ast.SourcePosition:
     line = _line(token)
     base_column = _column(token)

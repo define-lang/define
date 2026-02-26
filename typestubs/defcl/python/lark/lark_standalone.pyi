@@ -1,0 +1,1 @@
+../../../define/compiler/lark/lark_standalone.pyi

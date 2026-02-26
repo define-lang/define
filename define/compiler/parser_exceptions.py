@@ -3,9 +3,8 @@
 import os
 from typing import ClassVar, Self, override
 
-import lark
-
 from define.compiler import exceptions
+from define.compiler.lark import lark_standalone
 
 
 def _escape_invisible(text: str) -> str:
@@ -66,11 +65,11 @@ class DefineSyntaxError(exceptions.DefineError):
 class DefineTokenError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected tokens."""
 
-    token: lark.Token
+    token: lark_standalone.Token
 
     def __init__(
         self,
-        exception: lark.exceptions.UnexpectedToken,
+        exception: lark_standalone.UnexpectedToken,
         source: str,
         file_path: str | os.PathLike[str] | None,
     ):
@@ -104,7 +103,7 @@ class DefineCharError(DefineSyntaxError):
     @classmethod
     def from_lark_exception(
         cls,
-        exception: lark.exceptions.UnexpectedInput,
+        exception: lark_standalone.UnexpectedInput,
         source: str,
         char: str,
         file_path: str | os.PathLike[str] | None,
@@ -299,7 +298,7 @@ class MissingCloseAngleBracket(DefineTokenError):
 
     def __init__(
         self,
-        exception: lark.exceptions.UnexpectedToken,
+        exception: lark_standalone.UnexpectedToken,
         source: str,
         file_path: str | os.PathLike[str] | None,
         name: str,
@@ -347,7 +346,7 @@ class MissingOpenAngleBracket(DefineTokenError):
 
     def __init__(
         self,
-        exception: lark.exceptions.UnexpectedToken,
+        exception: lark_standalone.UnexpectedToken,
         source: str,
         file_path: str | os.PathLike[str] | None,
         name: str,

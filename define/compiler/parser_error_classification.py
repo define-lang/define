@@ -3,11 +3,16 @@
 This whole module is an implementation detail of parser.py.
 """
 
-import os
+from __future__ import annotations
 
-import lark
+import typing
 
 from define.compiler import parser_exceptions
+
+if typing.TYPE_CHECKING:
+    import os
+
+    from define.compiler.lark import lark_standalone
 
 _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
@@ -41,7 +46,7 @@ def _is_space_followed_only_by_whitespace(source: str, line: int, column: int) -
 
 
 def classify_char_error(
-    e: lark.exceptions.UnexpectedCharacters,
+    e: lark_standalone.UnexpectedCharacters,
     source: str,
 ) -> type[parser_exceptions.DefineCharError] | None:
     """Classify a character rejected by the lexer in a syntax position."""
@@ -61,7 +66,7 @@ def classify_char_error(
 
 
 def raise_token_error(
-    e: lark.exceptions.UnexpectedToken,
+    e: lark_standalone.UnexpectedToken,
     source: str,
     file_path: str | os.PathLike[str] | None,
 ):

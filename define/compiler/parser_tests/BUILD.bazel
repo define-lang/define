@@ -166,7 +166,7 @@ py_test(
 py_library(
     name = "test_helpers",
     srcs = ["test_helpers.py"],
-    deps = ["@pypi//lark"],
+    deps = ["//define/compiler/lark:lark_standalone"],
 )
 
 py_test(

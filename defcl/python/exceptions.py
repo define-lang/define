@@ -3,7 +3,7 @@
 import os
 from typing import override
 
-import lark
+from defcl.python.lark import lark_standalone
 
 
 class DclSyntaxError(Exception):
@@ -44,14 +44,14 @@ class DclSyntaxError(Exception):
 class DclTokenError(DclSyntaxError):
     """Base class for DCL syntax errors caused by unexpected tokens."""
 
-    token: lark.Token
+    token: lark_standalone.Token
 
     def __init__(
         self,
         context: str,
         line: int,
         column: int,
-        token: lark.Token,
+        token: lark_standalone.Token,
         path_name: str | os.PathLike[str] | None = None,
     ):
         """Initialize with the unexpected token."""

@@ -18,7 +18,7 @@ py_library(
         "//define/compiler:parser_error_classification",
         "//define/compiler:parser_exceptions",
         "//define/compiler:transformer",
-        "@pypi//lark",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 
@@ -142,8 +142,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
-        "//define/compiler:parser_exceptions",
-        "@pypi//lark",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 

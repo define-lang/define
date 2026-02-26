@@ -2,6 +2,8 @@ load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("//tools/lint:format.bzl", "format_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
+exports_files(["grammar.lark"])
+
 py_library(
     name = "ast",
     srcs = ["ast.py"],
@@ -9,7 +11,7 @@ py_library(
     deps = [
         ":compiler",
         ":constants",
-        "@pypi//lark",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 
@@ -108,7 +110,6 @@ py_test(
         ":exceptions",
         ":parser_exceptions",
         "@pypi//hypothesis",
-        "@pypi//lark",
         "@pypi//pytest",
     ],
 )
@@ -186,7 +187,7 @@ py_library(
     deps = [
         ":ast",
         ":parser_exceptions",
-        "@pypi//lark",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 
@@ -226,14 +227,12 @@ py_test(
 py_library(
     name = "parser",
     srcs = ["parser.py"],
-    data = ["grammar.lark"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":compiler",
         ":parser_error_classification",
         ":parser_exceptions",
-        "@pypi//lark",
-        "@pypi//regex",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 
@@ -241,10 +240,7 @@ py_library(
     name = "parser_error_classification",
     srcs = ["parser_error_classification.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":parser_exceptions",
-        "@pypi//lark",
-    ],
+    deps = [":parser_exceptions"],
 )
 
 py_library(
@@ -253,7 +249,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":exceptions",
-        "@pypi//lark",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 
@@ -268,7 +264,7 @@ py_library(
         ":ast",
         ":name_parser",
         ":parser_exceptions",
-        "@pypi//lark",
+        "//define/compiler/lark:lark_standalone",
     ],
 )
 

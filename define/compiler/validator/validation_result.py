@@ -6,20 +6,19 @@ import typing
 from dataclasses import dataclass, field
 from functools import cached_property
 
-from lark import exceptions as lark_exceptions
-
 from define.compiler import (
     ast,
     diagnostics,
     exceptions,
 )
+from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
 
     from define.compiler.validator import stats
 
-type AnyValidationException = exceptions.DefineError | lark_exceptions.UnexpectedInput
+type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
 
 @dataclass

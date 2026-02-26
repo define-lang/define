@@ -1,20 +1,20 @@
 # pyright: reportUnusedCallResult=false
-import lark
 import pytest
 
 from define.compiler import ast, name_parser, parser_exceptions
+from define.compiler.lark import lark_standalone
 
 
-def _make_name_content_token(value: str, line: int, column: int) -> lark.Token:
-    return lark.Token(
+def _make_name_content_token(
+    value: str, line: int, column: int
+) -> lark_standalone.Token:
+    return lark_standalone.Token(
         "NAME_CONTENT",
         value,
         line=line,
         column=column,
         end_line=line,
         end_column=column + len(value),
-        start_pos=0,
-        end_pos=len(value),
     )
 
 

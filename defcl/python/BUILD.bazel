@@ -11,13 +11,12 @@ py_library(
         "//defcl/python:__subpackages__",
         "//define/compiler:__pkg__",
     ],
-    deps = ["@pypi//lark"],
+    deps = ["//defcl/python/lark:lark_standalone"],
 )
 
 py_library(
     name = "parser",
     srcs = ["parser.py"],
-    data = ["grammar.lark"],
     visibility = ["//define/compiler:__pkg__"],
     deps = [
         ":python",

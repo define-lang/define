@@ -1,0 +1,22 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+
+py_library(
+    name = "lark",
+    srcs = ["__init__.py"],
+    visibility = ["//defcl/python:__subpackages__"],
+)
+
+genrule(
+    name = "lark_standalone_gen",
+    srcs = ["//defcl/python:grammar.lark"],
+    outs = ["lark_standalone.py"],
+    cmd = "$(location //tools:generate_lark_standalone) $(location //defcl/python:grammar.lark) && mv lark_parser.py $@",
+    tools = ["//tools:generate_lark_standalone"],
+)
+
+py_library(
+    name = "lark_standalone",
+    srcs = [":lark_standalone.py"],
+    visibility = ["//defcl/python:__subpackages__"],
+    deps = ["@pypi//regex"],
+)

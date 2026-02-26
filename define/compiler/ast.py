@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import enum
-import typing
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from define.compiler import constants
 
-if typing.TYPE_CHECKING:
-    import lark
+if TYPE_CHECKING:
+    from define.compiler.lark import lark_standalone
 
 
 class TypeName(enum.StrEnum):
@@ -32,7 +31,7 @@ class SourcePosition:
     end_column: int
 
     @classmethod
-    def from_meta(cls, meta: lark.tree.Meta) -> Self:
+    def from_meta(cls, meta: lark_standalone.Meta) -> Self:
         """Create a SourcePosition from a Lark Meta object."""
         return cls(
             line=meta.line,
@@ -42,7 +41,7 @@ class SourcePosition:
         )
 
     @classmethod
-    def from_token(cls, token: lark.Token) -> Self:
+    def from_token(cls, token: lark_standalone.Token) -> Self:
         """Create a SourcePosition from a Lark Token."""
         if (
             token.line is None

@@ -16,8 +16,6 @@ from functools import cached_property
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
-from lark import exceptions as lark_exceptions
-
 from define.compiler import (
     ast,
     constants,
@@ -28,11 +26,12 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
+from define.compiler.lark import lark_standalone
 from define.compiler.validator import name_validators, stats, validation_result
 
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
-    lark_exceptions.UnexpectedInput,
+    lark_standalone.UnexpectedInput,
 )
 
 
@@ -140,7 +139,7 @@ class FileValidator:
 
         try:
             program = transformer.DefineTransformer().transform(tree)
-        except lark_exceptions.VisitError as e:
+        except lark_standalone.VisitError as e:
             if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
                 tracker.mark_transform_finished()
                 return validation_result.ValidationResult(
