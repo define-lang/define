@@ -1,6 +1,7 @@
 """Project configuration loading and validation."""
 
 import types
+from functools import cached_property
 from pathlib import Path, PurePosixPath
 
 import protovalidate
@@ -27,13 +28,17 @@ class ConfigLoader:
         """Initialize with the project root path."""
         self._root = root
 
+    @cached_property
+    def _parser(self) -> defcl_parser.Parser:
+        return defcl_parser.Parser()
+
     def _load_config[M: message.Message](
         self, subpath: PurePosixPath, message_type: type[M]
     ) -> M:
         """Load and validate a defcl config file."""
         path = Path(self._root / subpath)
         try:
-            result = defcl_parser.parse_file(path, message_type)
+            result = self._parser.parse_file(path, message_type)
         except dcl_exceptions.DclSyntaxError as e:
             raise exceptions.ConfigSyntaxError(e) from e
         try:

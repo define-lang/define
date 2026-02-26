@@ -13,15 +13,17 @@ _TESTDATA_PATH = Path(__file__).parent.parent / "testdata" / "valid"
 
 
 class TestParseValidFiles:
+    _parser: parser.Parser = parser.Parser()
+
     def test_single_toplevel(self):
-        result = parser.parse_file(
+        result = self._parser.parse_file(
             _TESTDATA_PATH / "single_toplevel.defcl",
             single_toplevel_pb2.SingleToplevelFile,
         )
         assert result.project.universe_name == "example"
 
     def test_integers(self):
-        result = parser.parse_file(
+        result = self._parser.parse_file(
             _TESTDATA_PATH / "integers.defcl",
             integers_pb2.IntegersFile,
         )
@@ -30,7 +32,7 @@ class TestParseValidFiles:
         assert result.config.zero == 0
 
     def test_strings(self):
-        result = parser.parse_file(
+        result = self._parser.parse_file(
             _TESTDATA_PATH / "strings.defcl",
             strings_pb2.StringsFile,
         )
@@ -38,7 +40,7 @@ class TestParseValidFiles:
         assert result.config.with_newline == "line1\nline2"
 
     def test_nested_messages(self):
-        result = parser.parse_file(
+        result = self._parser.parse_file(
             _TESTDATA_PATH / "nested_messages.defcl",
             nested_messages_pb2.NestedMessagesFile,
         )
@@ -48,14 +50,14 @@ class TestParseValidFiles:
         assert result.project.database.pool.max_connections == 10
 
     def test_empty_repeated_messages(self):
-        result = parser.parse_file(
+        result = self._parser.parse_file(
             _TESTDATA_PATH / "empty_repeated_messages.defcl",
             repeated_messages_pb2.RepeatedMessagesFile,
         )
         assert len(result.project.dependencies) == 0
 
     def test_repeated_messages(self):
-        result = parser.parse_file(
+        result = self._parser.parse_file(
             _TESTDATA_PATH / "repeated_messages.defcl",
             repeated_messages_pb2.RepeatedMessagesFile,
         )
