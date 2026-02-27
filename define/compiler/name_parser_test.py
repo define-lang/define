@@ -102,7 +102,9 @@ def test_parse_global_name_reference_full_form_authority_with_path():
 
 def test_global_name_definition_requires_fqun():
     token = _make_name_content_token("/path/only", line=1, column=30)
-    with pytest.raises(parser_exceptions.GlobalNameDefinitionRequiresFqun) as error:
+    with pytest.raises(
+        parser_exceptions.DefinitionGlobalNameContentRequiresFqun
+    ) as error:
         name_parser.parse_global_name_definition(token)
     assert error.value.line == 1
     assert error.value.column == 30
@@ -125,7 +127,7 @@ def test_positions_for_fqun_and_path():
     name = name_parser.parse_global_name_definition(token)
     fqun = _require_fqun(name)
     assert token.column is not None
-    assert isinstance(name, ast.GlobalNameDefinition)
+    assert isinstance(name, ast.DefinitionGlobalNameContent)
     assert fqun.universe.position.column > token.column
     assert name.path.position.line == 9
     assert name.path.position.column > token.column

@@ -46,8 +46,8 @@ def _fqun(
 def _global_name(
     fqun: ast.Fqun,
     path_name: str,
-) -> ast.GlobalNameDefinition:
-    return ast.GlobalNameDefinition(
+) -> ast.DefinitionGlobalNameContent:
+    return ast.DefinitionGlobalNameContent(
         fqun=fqun,
         path=_global_path_name(path_name),
         position=_POS,
@@ -662,7 +662,7 @@ class TestValidateGlobalName:
         assert len(path_errors) == 1
 
     def test_reference_without_fqun_skips_fqun_validation(self):
-        name = ast.GlobalNameReference(
+        name = ast.ReferenceGlobalNameContent(
             fqun=None,
             path=_global_path_name("/valid_path"),
             position=_POS,
@@ -672,7 +672,7 @@ class TestValidateGlobalName:
 
     def test_reference_same_fqun_must_use_short_form(self):
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        name = ast.GlobalNameReference(
+        name = ast.ReferenceGlobalNameContent(
             fqun=fqun,
             path=_global_path_name("/valid_path"),
             position=_POS,
@@ -688,7 +688,7 @@ class TestValidateGlobalName:
     def test_reference_with_different_fqun_allows_full_form(self):
         name_fqun = _fqun("other_lib", authority=_authority("other.domain.com"))
         enclosing_fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        name = ast.GlobalNameReference(
+        name = ast.ReferenceGlobalNameContent(
             fqun=name_fqun,
             path=_global_path_name("/valid_path"),
             position=_POS,
@@ -700,7 +700,7 @@ class TestValidateGlobalName:
 
     def test_reference_short_form_allowed_when_required(self):
         enclosing_fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        name = ast.GlobalNameReference(
+        name = ast.ReferenceGlobalNameContent(
             fqun=None,
             path=_global_path_name("/valid_path"),
             position=_POS,

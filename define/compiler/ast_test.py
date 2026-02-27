@@ -131,12 +131,12 @@ class TestGlobalNameContent:
             _ = name.full_name()
 
 
-class TestTypedGlobalNameInDefinition:
+class TestGlobalTypedNameInDefinition:
     def test_full_typed_name(self):
-        typed_name = ast.TypedGlobalNameInDefinition(
+        typed_name = ast.GlobalTypedNameInDefinition(
             position=_POS,
             name_type=ast.NameType.POSITION,
-            name_content=ast.GlobalNameDefinition(
+            name_content=ast.DefinitionGlobalNameContent(
                 position=_POS,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
@@ -145,12 +145,12 @@ class TestTypedGlobalNameInDefinition:
         assert typed_name.full_typed_name() == "position<my.domain.com:my_lib:/thing>"
 
 
-class TestTypedGlobalNameReference:
+class TestGlobalTypedNameReference:
     def test_full_typed_name_with_explicit_fqun(self):
-        reference = ast.TypedGlobalNameReference(
+        reference = ast.GlobalTypedNameReference(
             position=_POS,
             name_type=ast.NameType.ACTION,
-            name_content=ast.GlobalNameReference(
+            name_content=ast.ReferenceGlobalNameContent(
                 position=_POS,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
@@ -159,10 +159,10 @@ class TestTypedGlobalNameReference:
         assert reference.full_typed_name() == "action<my.domain.com:my_lib:/thing>"
 
     def test_full_typed_name_with_short_name_uses_in_universe(self):
-        reference = ast.TypedGlobalNameReference(
+        reference = ast.GlobalTypedNameReference(
             position=_POS,
             name_type=ast.NameType.POSITION,
-            name_content=ast.GlobalNameReference(
+            name_content=ast.ReferenceGlobalNameContent(
                 position=_POS,
                 fqun=None,
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
@@ -176,10 +176,10 @@ class TestTypedGlobalNameReference:
         )
 
     def test_full_typed_name_own_fqun_takes_precedence(self):
-        reference = ast.TypedGlobalNameReference(
+        reference = ast.GlobalTypedNameReference(
             position=_POS,
             name_type=ast.NameType.POSITION,
-            name_content=ast.GlobalNameReference(
+            name_content=ast.ReferenceGlobalNameContent(
                 position=_POS,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(position=_POS, name="/thing"),

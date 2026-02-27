@@ -21,17 +21,17 @@ def parse_local_name(token: lark_standalone.Token) -> ast.LocalNameContent:
 
 def parse_global_name_definition(
     token: lark_standalone.Token,
-) -> ast.GlobalNameDefinition:
+) -> ast.DefinitionGlobalNameContent:
     """Parse definition-site global name content into an AST node."""
     parsed = _parse_global_name(token)
     if parsed.fqun is None:
-        raise parser_exceptions.GlobalNameDefinitionRequiresFqun(
+        raise parser_exceptions.DefinitionGlobalNameContentRequiresFqun(
             token,
             _line(token),
             _column(token),
             None,
         )
-    return ast.GlobalNameDefinition(
+    return ast.DefinitionGlobalNameContent(
         position=ast.SourcePosition.from_token(token),
         fqun=parsed.fqun,
         path=parsed.path,
@@ -40,10 +40,10 @@ def parse_global_name_definition(
 
 def parse_global_name_reference(
     token: lark_standalone.Token,
-) -> ast.GlobalNameReference:
+) -> ast.ReferenceGlobalNameContent:
     """Parse reference-site global name content into an AST node."""
     parsed = _parse_global_name(token)
-    return ast.GlobalNameReference(
+    return ast.ReferenceGlobalNameContent(
         position=ast.SourcePosition.from_token(token),
         fqun=parsed.fqun,
         path=parsed.path,

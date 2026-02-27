@@ -25,10 +25,10 @@ class DefineTransformer(
     def position_definition(
         self,
         meta: lark_standalone.Meta,
-        items: list[ast.GlobalNameDefinition | ast.PositionConstraintBlock],
+        items: list[ast.DefinitionGlobalNameContent | ast.PositionConstraintBlock],
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
-        name = cast("ast.GlobalNameDefinition", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[0])
         constraints = (
             cast("ast.PositionConstraintBlock", items[1]) if len(items) > 1 else None
         )
@@ -42,10 +42,10 @@ class DefineTransformer(
     def action_definition(
         self,
         meta: lark_standalone.Meta,
-        items: list[ast.GlobalNameDefinition | ast.ActionDefinitionBlock],
+        items: list[ast.DefinitionGlobalNameContent | ast.ActionDefinitionBlock],
     ) -> ast.ActionDefinition:
         """Transform an action definition."""
-        name = cast("ast.GlobalNameDefinition", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[0])
         definition_block = (
             cast("ast.ActionDefinitionBlock", items[1]) if len(items) > 1 else None
         )
@@ -158,7 +158,7 @@ class DefineTransformer(
 
     @lark_standalone.v_args(meta=True)
     def position_requirement_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.TypedGlobalNameReference]
+        self, meta: lark_standalone.Meta, items: list[ast.GlobalTypedNameReference]
     ) -> ast.PositionRequirementStatement:
         """Transform a position requirement statement."""
         return ast.PositionRequirementStatement(
@@ -171,12 +171,12 @@ class DefineTransformer(
         return ast.NameType(token)
 
     def typed_global_name_reference(
-        self, items: list[ast.NameType | ast.GlobalNameReference]
-    ) -> ast.TypedGlobalNameReference:
+        self, items: list[ast.NameType | ast.ReferenceGlobalNameContent]
+    ) -> ast.GlobalTypedNameReference:
         """Transform typed global name references."""
         name_type = cast("ast.NameType", items[0])
-        name_content = cast("ast.GlobalNameReference", items[1])
-        return ast.TypedGlobalNameReference(
+        name_content = cast("ast.ReferenceGlobalNameContent", items[1])
+        return ast.GlobalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
             position=name_content.position,
@@ -184,11 +184,11 @@ class DefineTransformer(
 
     def typed_local_name_reference(
         self, items: list[ast.NameType | ast.LocalNameContent]
-    ) -> ast.TypedLocalNameReference:
+    ) -> ast.LocalTypedNameReference:
         """Transform typed local name references."""
         name_type = cast("ast.NameType", items[0])
         name_content = cast("ast.LocalNameContent", items[1])
-        return ast.TypedLocalNameReference(
+        return ast.LocalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
             position=name_content.position,
@@ -264,13 +264,13 @@ class DefineTransformer(
 
     def global_name_definition_content(
         self, items: list[lark_standalone.Token]
-    ) -> ast.GlobalNameDefinition:
+    ) -> ast.DefinitionGlobalNameContent:
         """Parse definition-site name content into a global definition node."""
         return name_parser.parse_global_name_definition(items[0])
 
     def global_name_reference_content(
         self, items: list[lark_standalone.Token]
-    ) -> ast.GlobalNameReference:
+    ) -> ast.ReferenceGlobalNameContent:
         """Parse reference-site name content into a global reference node."""
         return name_parser.parse_global_name_reference(items[0])
 

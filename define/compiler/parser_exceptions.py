@@ -410,7 +410,7 @@ class MissingWhitespaceBeforeBrace(DefineTokenError):
 # --- Name syntax errors ---
 
 
-class GlobalNameDefinitionRequiresFqun(DefineNameSyntaxError):
+class DefinitionGlobalNameContentRequiresFqun(DefineNameSyntaxError):
     """Raised when a global definition uses short-form '/path'."""
 
     message_format: ClassVar[str] = (

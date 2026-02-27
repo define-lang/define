@@ -77,7 +77,7 @@ class Program(ASTNode):
 class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
-    typed_name: TypedGlobalNameInDefinition
+    typed_name: GlobalTypedNameInDefinition
 
 
 @dataclass(init=False)
@@ -89,13 +89,13 @@ class PositionDefinition(QualityDefinition):
     def __init__(
         self,
         *,
-        name: GlobalNameDefinition,
+        name: DefinitionGlobalNameContent,
         position: SourcePosition,
         constraints: PositionConstraintBlock | None = None,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
         super().__init__(
-            typed_name=TypedGlobalNameInDefinition(
+            typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.POSITION,
                 name_content=name,
                 position=name.position,
@@ -147,14 +147,14 @@ class TypedName(ASTNode):
 
 
 @dataclass
-class TypedGlobalNameReference(TypedName):
+class GlobalTypedNameReference(TypedName):
     """Represents a typed global name reference."""
 
-    name_content: GlobalNameReference  # pyright: ignore[reportIncompatibleVariableOverride]
+    name_content: ReferenceGlobalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 @dataclass
-class TypedLocalNameReference(TypedName):
+class LocalTypedNameReference(TypedName):
     """Represents a typed local name reference."""
 
     name_content: LocalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -181,7 +181,7 @@ type ActionStatement = LocalPositionDefinition | CreateDimensionPointStatement
 class PositionRequirementStatement(ASTNode):
     """Represents a position requirement statement in a constraints block."""
 
-    typed_global_name: TypedGlobalNameReference
+    typed_global_name: GlobalTypedNameReference
 
 
 @dataclass
@@ -237,13 +237,13 @@ class ActionDefinition(QualityDefinition):
     def __init__(
         self,
         *,
-        name: GlobalNameDefinition,
+        name: DefinitionGlobalNameContent,
         position: SourcePosition,
         definition_block: ActionDefinitionBlock | None = None,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
         super().__init__(
-            typed_name=TypedGlobalNameInDefinition(
+            typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.ACTION,
                 name_content=name,
                 position=name.position,
@@ -315,19 +315,19 @@ class GlobalNameContent(NameContent):
 
 
 @dataclass
-class GlobalNameDefinition(GlobalNameContent):
+class DefinitionGlobalNameContent(GlobalNameContent):
     """Represents a global name at a definition site."""
 
     fqun: Fqun  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 @dataclass
-class GlobalNameReference(GlobalNameContent):
+class ReferenceGlobalNameContent(GlobalNameContent):
     """Represents a global name at a reference site."""
 
 
 @dataclass
-class TypedGlobalNameInDefinition(TypedName):
+class GlobalTypedNameInDefinition(TypedName):
     """Represents a typed global name at a definition site."""
 
-    name_content: GlobalNameDefinition  # pyright: ignore[reportIncompatibleVariableOverride]
+    name_content: DefinitionGlobalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]

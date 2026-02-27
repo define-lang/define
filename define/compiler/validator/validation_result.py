@@ -36,7 +36,7 @@ class ReferenceEdge:
     """A reference from one definition to a global name in another file."""
 
     enclosing_definition: ast.QualityDefinition
-    global_name_reference: ast.TypedGlobalNameReference
+    global_name_reference: ast.GlobalTypedNameReference
 
     @cached_property
     def full_typed_name(self) -> str:

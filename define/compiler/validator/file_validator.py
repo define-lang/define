@@ -372,7 +372,7 @@ class ProgramAstValidator:
 
     def _process_reference(
         self,
-        typed_global_name: ast.TypedGlobalNameReference,
+        typed_global_name: ast.GlobalTypedNameReference,
         enclosing_definition: ast.QualityDefinition,
     ):
         """Record a reference edge and determine the target file to discover."""
@@ -432,7 +432,7 @@ class ProgramAstValidator:
     def _add_edge_and_discovered_file(
         self,
         edge: validation_result.ReferenceEdge,
-        global_name: ast.GlobalNameReference,
+        global_name: ast.ReferenceGlobalNameContent,
         root_prefix: pathlib.PurePosixPath,
         expected_fqun: ast.Fqun,
     ):
