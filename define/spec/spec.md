@@ -948,6 +948,11 @@ A Create Dimension Point Statement starts with `create a dimension point in`,
 followed by exactly one space and a position reference (which may be a chained
 name), and ends with a statement terminator.
 
+Position references must start and end their chain with a position name.
+
+The referenced position must have already been defined before reaching this
+point in the program.
+
 It is an error if the referenced position already contains a dimension point.
 
 ```ebnf
