@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
-"""Tests for FileValidator pure per-file validation."""
+# NOTE: Tests for new syntax or diagnostics belong in program_validator_tests/,
+# not here. This file tests FileValidator internals only (edges, discovered
+# files, timing stats, error handling).
 
 import types
 from pathlib import Path, PurePosixPath
@@ -198,6 +200,71 @@ class TestFileValidatorReferenceDiscovery:
 
         assert len(result.reference_edges) == 2
         assert len(result.discovered_files) == 2
+
+
+class TestDimensionPointReferenceEdges:
+    def test_chained_globals_produce_multiple_edges(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in position</alpha>::action</beta>::position</gamma>.\n"
+            "    }\n"
+            "}\n"
+        )
+        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        ctx = _make_context(tmp_path)
+        result = file_validator.FileValidator(lark_parser).validate_file(ctx)
+
+        assert result.diagnostics == []
+        assert len(result.reference_edges) == 3
+        assert len(result.discovered_files) == 3
+
+    def test_local_names_produce_no_edges(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<inner_pos>.\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<inner_pos>.\n"
+            "    }\n"
+            "}\n"
+        )
+        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        ctx = _make_context(tmp_path)
+        result = file_validator.FileValidator(lark_parser).validate_file(ctx)
+
+        assert result.diagnostics == []
+        assert result.reference_edges == []
+        assert result.discovered_files == []
+
+    def test_invalid_global_name_produces_no_edges(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<my_pos>.\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<my_pos>::position</Bad>.\n"
+            "    }\n"
+            "}\n"
+        )
+        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        ctx = _make_context(tmp_path)
+        result = file_validator.FileValidator(lark_parser).validate_file(ctx)
+
+        assert len(result.diagnostics) == 1
+        assert isinstance(
+            result.diagnostics[0],
+            diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
+        )
+        assert result.reference_edges == []
+        assert result.discovered_files == []
 
 
 class TestFileValidatorTimingStats:

@@ -456,10 +456,9 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
 
 
 def validate_local_name_format(
-    local_def: ast.LocalPositionDefinition,
+    local_name: ast.LocalNameContent,
 ) -> list[diagnostics.InvalidLocalNameFormatDiagnostic]:
     """Validate local name character format."""
-    local_name = local_def.local_name
     name = local_name.name
     for i, char in enumerate(name):
         allowed = _LOCAL_NAME_START_CHARS if i == 0 else _LOCAL_NAME_CONTINUE_CHARS
@@ -477,4 +476,27 @@ def validate_local_name_format(
                     char=char,
                 )
             ]
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Typed name validation
+# ---------------------------------------------------------------------------
+
+
+def validate_typed_name(
+    typed_name: ast.TypedName,
+    enclosing_definition: ast.QualityDefinition,
+) -> list[diagnostics.Diagnostic]:
+    """Validate any typed name reference (global or local)."""
+    enclosing_fqun = enclosing_definition.typed_name.name_content.fqun
+    if isinstance(typed_name, ast.GlobalTypedNameReference):
+        return validate_global_name(
+            typed_name.name_content, must_use_short_form=enclosing_fqun
+        )
+    if isinstance(typed_name, ast.LocalTypedNameReference):
+        result: list[diagnostics.Diagnostic] = list(
+            validate_local_name_format(typed_name.name_content)
+        )
+        return result
     return []

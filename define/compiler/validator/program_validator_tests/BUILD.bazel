@@ -25,6 +25,19 @@ py_test(
 )
 
 py_test(
+    name = "create_dimension_point_test",
+    size = "small",
+    srcs = ["create_dimension_point_test.py"],
+    pytest_main = True,
+    deps = [
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "duplicate_definitions_test",
     size = "small",
     srcs = ["duplicate_definitions_test.py"],
@@ -229,6 +242,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":conftest",
+        ":create_dimension_point_test",
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",
         ":error_messages_test",

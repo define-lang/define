@@ -241,8 +241,7 @@ class ProgramAstValidator:
             isinstance(definition, ast.ActionDefinition)
             and definition.definition_block is not None
         ):
-            self._validate_local_names(definition.definition_block)
-            self._validate_action_position_constraints(
+            self._validate_action_definition_block(
                 definition.definition_block,
                 definition,
             )
@@ -299,23 +298,59 @@ class ProgramAstValidator:
         self._seen_in_file[key] = definition
         return False
 
-    def _validate_local_names(self, definition_block: ast.ActionDefinitionBlock):
+    def _validate_action_definition_block(
+        self,
+        definition_block: ast.ActionDefinitionBlock,
+        enclosing_definition: ast.QualityDefinition,
+    ):
         outer_scope: ChainMap[str, ast.LocalPositionDefinition] = ChainMap({})
         for local_def in definition_block.local_definitions:
-            self._validate_local_name_format_and_conflicts(local_def, outer_scope)
+            self._validate_local_position_definition(
+                local_def, enclosing_definition, outer_scope
+            )
         action_statements_scope = outer_scope.new_child({})
-        for stmt in definition_block.action_statements.statements:
-            if isinstance(stmt, ast.LocalPositionDefinition):
-                self._validate_local_name_format_and_conflicts(
-                    stmt, action_statements_scope
-                )
+        self._validate_action_statements(
+            definition_block.action_statements,
+            enclosing_definition,
+            action_statements_scope,
+        )
+
+    def _validate_action_statements(
+        self,
+        action_statements: ast.ActionStatementsBlock,
+        enclosing_definition: ast.QualityDefinition,
+        scope: ChainMap[str, ast.LocalPositionDefinition],
+    ):
+        for stmt in action_statements.statements:
+            match stmt:
+                case ast.LocalPositionDefinition():
+                    self._validate_local_position_definition(
+                        stmt, enclosing_definition, scope
+                    )
+                case ast.CreateDimensionPointStatement():
+                    self._validate_create_dimension_point(stmt, enclosing_definition)
+
+    def _validate_local_position_definition(
+        self,
+        local_def: ast.LocalPositionDefinition,
+        enclosing_definition: ast.QualityDefinition,
+        scope: ChainMap[str, ast.LocalPositionDefinition],
+    ):
+        self._validate_local_name_format_and_conflicts(local_def, scope)
+        if local_def.constraints is not None:
+            self._validate_position_constraints(
+                local_def.constraints,
+                enclosing_definition,
+            )
 
     def _validate_local_name_format_and_conflicts(
         self,
         local_def: ast.LocalPositionDefinition,
         scope: ChainMap[str, ast.LocalPositionDefinition],
     ):
-        self.diagnostics.extend(name_validators.validate_local_name_format(local_def))
+        self.diagnostics.extend(
+            name_validators.validate_local_name_format(local_def.local_name)
+        )
         name = local_def.local_name.name
         if name in scope:
             first_def = scope[name]
@@ -329,38 +364,29 @@ class ProgramAstValidator:
             return
         scope[name] = local_def
 
-    def _validate_action_position_constraints(
+    def _validate_create_dimension_point(
         self,
-        definition_block: ast.ActionDefinitionBlock,
+        stmt: ast.CreateDimensionPointStatement,
         enclosing_definition: ast.QualityDefinition,
     ):
-        for local_def in definition_block.local_definitions:
-            if local_def.constraints is not None:
-                self._validate_position_constraints(
-                    local_def.constraints,
-                    enclosing_definition,
-                )
-        for stmt in definition_block.action_statements.statements:
-            if (
-                isinstance(stmt, ast.LocalPositionDefinition)
-                and stmt.constraints is not None
-            ):
-                self._validate_position_constraints(
-                    stmt.constraints,
-                    enclosing_definition,
-                )
+        for typed_name in stmt.position_reference.chain:
+            reference_diagnostics = name_validators.validate_typed_name(
+                typed_name, enclosing_definition
+            )
+            self.diagnostics.extend(reference_diagnostics)
+            if reference_diagnostics:
+                continue
+            if isinstance(typed_name, ast.GlobalTypedNameReference):
+                self._process_reference(typed_name, enclosing_definition)
 
     def _validate_position_constraints(
         self,
         constraints: ast.PositionConstraintBlock,
         enclosing_definition: ast.QualityDefinition,
     ):
-        enclosing_fqun = enclosing_definition.typed_name.name_content.fqun
-
         for requirement in constraints.requirements:
-            reference = requirement.typed_global_name.name_content
-            reference_diagnostics = name_validators.validate_global_name(
-                reference, must_use_short_form=enclosing_fqun
+            reference_diagnostics = name_validators.validate_typed_name(
+                requirement.typed_global_name, enclosing_definition
             )
             self.diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:

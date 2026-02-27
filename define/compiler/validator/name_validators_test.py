@@ -23,11 +23,8 @@ def _global_path_name(name: str) -> ast.GlobalPathName:
     return ast.GlobalPathName(name=name, position=_POS)
 
 
-def _local_def(name: str) -> ast.LocalPositionDefinition:
-    return ast.LocalPositionDefinition(
-        local_name=ast.LocalNameContent(name=name, position=_POS),
-        position=_POS,
-    )
+def _local_name(name: str) -> ast.LocalNameContent:
+    return ast.LocalNameContent(name=name, position=_POS)
 
 
 def _fqun(
@@ -498,27 +495,27 @@ class TestUniverseNameReserved:
 
 class TestLocalNameFormat:
     def test_valid(self):
-        result = name_validators.validate_local_name_format(_local_def("my_pos"))
+        result = name_validators.validate_local_name_format(_local_name("my_pos"))
         assert not result
 
     def test_valid_leading_underscore(self):
-        result = name_validators.validate_local_name_format(_local_def("_private"))
+        result = name_validators.validate_local_name_format(_local_name("_private"))
         assert not result
 
     def test_valid_with_digits(self):
-        result = name_validators.validate_local_name_format(_local_def("pos_1"))
+        result = name_validators.validate_local_name_format(_local_name("pos_1"))
         assert not result
 
     def test_valid_single_char(self):
-        result = name_validators.validate_local_name_format(_local_def("x"))
+        result = name_validators.validate_local_name_format(_local_name("x"))
         assert not result
 
     def test_valid_single_underscore(self):
-        result = name_validators.validate_local_name_format(_local_def("_"))
+        result = name_validators.validate_local_name_format(_local_name("_"))
         assert not result
 
     def test_hyphen(self):
-        result = name_validators.validate_local_name_format(_local_def("my-pos"))
+        result = name_validators.validate_local_name_format(_local_name("my-pos"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert result[0].local_name == "my-pos"
@@ -526,7 +523,7 @@ class TestLocalNameFormat:
         assert result[0].position.column == 12
 
     def test_digit_start(self):
-        result = name_validators.validate_local_name_format(_local_def("2bad"))
+        result = name_validators.validate_local_name_format(_local_name("2bad"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert result[0].local_name == "2bad"
@@ -534,7 +531,7 @@ class TestLocalNameFormat:
         assert result[0].position.column == 10
 
     def test_uppercase(self):
-        result = name_validators.validate_local_name_format(_local_def("MyPos"))
+        result = name_validators.validate_local_name_format(_local_name("MyPos"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert result[0].local_name == "MyPos"
@@ -542,7 +539,7 @@ class TestLocalNameFormat:
         assert result[0].position.column == 10
 
     def test_slash(self):
-        result = name_validators.validate_local_name_format(_local_def("my/pos"))
+        result = name_validators.validate_local_name_format(_local_name("my/pos"))
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert result[0].local_name == "my/pos"
@@ -709,3 +706,64 @@ class TestValidateGlobalName:
             name, must_use_short_form=enclosing_fqun
         )
         assert not result
+
+
+def _enclosing_definition() -> ast.PositionDefinition:
+    return ast.PositionDefinition(
+        name=ast.DefinitionGlobalNameContent(
+            fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
+            path=_global_path_name("/test"),
+            position=_POS,
+        ),
+        position=_POS,
+    )
+
+
+class TestValidateTypedName:
+    def test_global_reference_valid(self):
+        ref = ast.GlobalTypedNameReference(
+            name_type=ast.NameType.POSITION,
+            name_content=ast.ReferenceGlobalNameContent(
+                fqun=None,
+                path=_global_path_name("/other"),
+                position=_POS,
+            ),
+            position=_POS,
+        )
+        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        assert not result
+
+    def test_global_reference_same_fqun_must_use_short_form(self):
+        ref = ast.GlobalTypedNameReference(
+            name_type=ast.NameType.POSITION,
+            name_content=ast.ReferenceGlobalNameContent(
+                fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
+                path=_global_path_name("/other"),
+                position=_POS,
+            ),
+            position=_POS,
+        )
+        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        assert len(result) == 1
+        assert isinstance(
+            result[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        )
+
+    def test_local_reference_valid(self):
+        ref = ast.LocalTypedNameReference(
+            name_type=ast.NameType.POSITION,
+            name_content=ast.LocalNameContent(name="my_pos", position=_POS),
+            position=_POS,
+        )
+        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        assert not result
+
+    def test_local_reference_invalid_char(self):
+        ref = ast.LocalTypedNameReference(
+            name_type=ast.NameType.POSITION,
+            name_content=ast.LocalNameContent(name="My-pos", position=_POS),
+            position=_POS,
+        )
+        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
