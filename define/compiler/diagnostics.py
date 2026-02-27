@@ -422,3 +422,14 @@ class PositionReferenceChainEndDiagnostic(Diagnostic):
     """Diagnostic for when a position reference chain ends with an action."""
 
     message_format: ClassVar[str] = "position references must end with a position name"
+
+
+@dataclass
+class UndefinedLocalPositionDiagnostic(Diagnostic):
+    """Diagnostic for when a local position name is used before being defined."""
+
+    local_name: str
+    message_format: ClassVar[str] = (
+        "local position '{self.local_name}' has not been defined"
+        " before this line of code"
+    )

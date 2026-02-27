@@ -328,7 +328,9 @@ class ProgramAstValidator:
                         stmt, enclosing_definition, scope
                     )
                 case ast.CreateDimensionPointStatement():
-                    self._validate_create_dimension_point(stmt, enclosing_definition)
+                    self._validate_create_dimension_point(
+                        stmt, enclosing_definition, scope
+                    )
 
     def _validate_local_position_definition(
         self,
@@ -368,6 +370,7 @@ class ProgramAstValidator:
         self,
         stmt: ast.CreateDimensionPointStatement,
         enclosing_definition: ast.QualityDefinition,
+        scope: Mapping[str, ast.LocalPositionDefinition],
     ):
         for typed_name in stmt.position_reference.chain:
             reference_diagnostics = name_validators.validate_typed_name(
@@ -379,6 +382,20 @@ class ProgramAstValidator:
             if isinstance(typed_name, ast.GlobalTypedNameReference):
                 self._process_reference(typed_name, enclosing_definition)
         self._validate_position_reference_chain_endpoints(stmt.position_reference.chain)
+        first = stmt.position_reference.chain[0]
+        if (
+            isinstance(first, ast.LocalTypedNameReference)
+            and first.name_type == ast.NameType.POSITION
+            and first.name_content.name not in scope
+        ):
+            self.diagnostics.append(
+                diagnostics.UndefinedLocalPositionDiagnostic(
+                    position=first.name_content.position,
+                    local_name=first.name_content.name,
+                )
+            )
+        # TODO: Validate that global definition name references exist when
+        # the first chain element is a GlobalTypedNameReference.
 
     def _validate_position_reference_chain_endpoints(
         self,

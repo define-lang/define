@@ -121,6 +121,7 @@ def test_chain_both_endpoints_action():
 def test_chain_ending_with_action():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "define the position<pos_a>.\n"
         "it happens when {\n"
         "} and it does {\n"
         "create a dimension point in position<pos_a>::action<act_b>.\n"
@@ -133,7 +134,7 @@ def test_chain_ending_with_action():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
-    assert diags[0].position.line == 4
+    assert diags[0].position.line == 5
     assert diags[0].position.column == 53
 
 
@@ -202,6 +203,7 @@ def test_single_action_in_position_reference():
 def test_valid_chain_with_action_in_middle():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "define the position<pos_a>.\n"
         "it happens when {\n"
         "} and it does {\n"
         "create a dimension point in position<pos_a>::action<act_b>::position<pos_c>.\n"
@@ -233,5 +235,82 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].universe == "other.domain.com:other_lib"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 38
+
+
+def test_undefined_local_position():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<no_such_pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UndefinedLocalPositionDiagnostic)
+    assert diags[0].local_name == "no_such_pos"
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 38
+
+
+def test_local_position_defined_after_use():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<later_pos>.\n"
+        "define the position<later_pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UndefinedLocalPositionDiagnostic)
+    assert diags[0].local_name == "later_pos"
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 38
+
+
+def test_local_position_defined_in_action_statements_before_use():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<stmt_pos>.\n"
+        "create a dimension point in position<stmt_pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    assert results[0].diagnostics == []
+
+
+def test_undefined_local_position_in_chain():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<no_pos>::action<act_b>::position<pos_c>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UndefinedLocalPositionDiagnostic)
+    assert diags[0].local_name == "no_pos"
     assert diags[0].position.line == 4
     assert diags[0].position.column == 38
