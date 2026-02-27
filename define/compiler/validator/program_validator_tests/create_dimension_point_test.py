@@ -88,12 +88,17 @@ def test_invalid_local_name_char():
         source
     )
     diags = results[0].diagnostics
-    assert len(diags) == 1
+    assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].local_name == "Bad"
     assert diags[0].char == "B"
     assert diags[0].position.line == 5
     assert diags[0].position.column == 59
+    assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diags[1].element_name == "position<Bad>"
+    assert diags[1].parent_name == "inner_pos"
+    assert diags[1].position.line == 5
+    assert diags[1].position.column == 59
 
 
 def test_chain_both_endpoints_action():
@@ -132,10 +137,15 @@ def test_chain_ending_with_action():
         source
     )
     diags = results[0].diagnostics
-    assert len(diags) == 1
+    assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[0].position.line == 5
     assert diags[0].position.column == 53
+    assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diags[1].element_name == "action<act_b>"
+    assert diags[1].parent_name == "pos_a"
+    assert diags[1].position.line == 5
+    assert diags[1].position.column == 53
 
 
 def test_chain_starting_with_action():
@@ -200,20 +210,36 @@ def test_single_action_in_position_reference():
     assert diags[0].position.column == 36
 
 
-def test_valid_chain_with_action_in_middle():
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "define the position<pos_a>.\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<pos_a>::action<act_b>::position<pos_c>.\n"
-        "}\n"
-        "}\n"
+def test_valid_chain_with_action_in_middle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    (tmp_path / "test.def").write_text(
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "define the position<pos_a> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the action</act_b>.\n"
+            "}\n"
+            "}\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
+            "}\n"
+            "}\n"
+        ),
+        encoding="utf-8",
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    (tmp_path / "act_b.def").write_text(
+        "define the potential action<my.domain.com:my_lib:/act_b>.\n",
+        encoding="utf-8",
     )
-    assert results[0].diagnostics == []
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert all_diags == []
 
 
 def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -314,3 +340,216 @@ def test_undefined_local_position_in_chain():
     assert diags[0].local_name == "no_pos"
     assert diags[0].position.line == 4
     assert diags[0].position.column == 38
+
+
+def test_chain_second_element_not_in_constraints():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "define the position<pos_a> {\n"
+        "it may only contain dimension points where {\n"
+        "it has the action</other>.\n"
+        "}\n"
+        "}\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<pos_a>::action<wrong>::position<pos_end>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diags[0].parent_name == "pos_a"
+    assert diags[0].element_name == "action<wrong>"
+    assert diags[0].position.line == 9
+    assert diags[0].position.column == 53
+    assert isinstance(
+        diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    assert diags[1].universe == "my.domain.com:my_lib"
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 19
+
+
+def test_chain_second_element_position_has_no_constraints():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "define the position<pos_a>.\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<pos_a>::action<act_b>::position<pos_c>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diags[0].parent_name == "pos_a"
+    assert diags[0].element_name == "action<act_b>"
+    assert diags[0].position.line == 5
+    assert diags[0].position.column == 53
+
+
+def test_chain_second_element_matches_constraint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    (tmp_path / "test.def").write_text(
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "define the position<pos_a> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the action</child>.\n"
+            "}\n"
+            "}\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
+            "}\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "child.def").write_text(
+        "define the potential action<my.domain.com:my_lib:/child>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert all_diags == []
+
+
+def test_duplicate_definition_preserves_first_constraints(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    (tmp_path / "test.def").write_text(
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "define the position<pos_a> {\n"
+            "it may only contain dimension points where {\n"
+            "it has the action</child>.\n"
+            "}\n"
+            "}\n"
+            "define the position<pos_a>.\n"
+            "it happens when {\n"
+            "} and it does {\n"
+            "create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
+            "}\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "child.def").write_text(
+        "define the potential action<my.domain.com:my_lib:/child>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert all_diags[0].local_name == "pos_a"
+    assert all_diags[0].first_definition_line == 2
+    assert all_diags[0].position.line == 7
+    assert all_diags[0].position.column == 21
+
+
+def test_chain_second_element_wrong_type_in_constraints():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "define the position<pos_a> {\n"
+        "it may only contain dimension points where {\n"
+        "it has the position</child>.\n"
+        "}\n"
+        "}\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<pos_a>::action<child>::position<pos_end>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diags[0].element_name == "action<child>"
+    assert diags[0].parent_name == "pos_a"
+    assert diags[0].position.line == 9
+    assert diags[0].position.column == 53
+    assert isinstance(
+        diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    assert diags[1].universe == "my.domain.com:my_lib"
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 21
+
+
+def test_chain_second_element_skipped_when_first_undefined():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<no_such>::action<act_b>::position<pos_c>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UndefinedLocalPositionDiagnostic)
+    assert diags[0].local_name == "no_such"
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 38
+
+
+def test_chain_second_element_name_error_also_not_in_constraints():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "define the position<pos_a> {\n"
+        "it may only contain dimension points where {\n"
+        "it has the action</child>.\n"
+        "}\n"
+        "}\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<pos_a>::action<Bad>::position<pos_end>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 3
+    assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[0].local_name == "Bad"
+    assert diags[0].char == "B"
+    assert diags[0].position.line == 9
+    assert diags[0].position.column == 53
+    assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diags[1].element_name == "action<Bad>"
+    assert diags[1].parent_name == "pos_a"
+    assert diags[1].position.line == 9
+    assert diags[1].position.column == 53
+    assert isinstance(
+        diags[2], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    assert diags[2].universe == "my.domain.com:my_lib"
+    assert diags[2].position.line == 4
+    assert diags[2].position.column == 19

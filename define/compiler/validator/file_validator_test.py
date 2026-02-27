@@ -247,7 +247,11 @@ class TestDimensionPointReferenceEdges:
     ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<my_pos>.\n"
+            "    define the position<my_pos> {\n"
+            "    it may only contain dimension points where {\n"
+            "    it has the position</Bad>.\n"
+            "    }\n"
+            "    }\n"
             "    it happens when {\n"
             "    } and it does {\n"
             "        create a dimension point in position<my_pos>::position</Bad>.\n"
@@ -258,11 +262,23 @@ class TestDimensionPointReferenceEdges:
         ctx = _make_context(tmp_path)
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
-        assert len(result.diagnostics) == 1
+        assert len(result.diagnostics) == 2
         assert isinstance(
             result.diagnostics[0],
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         )
+        assert result.diagnostics[0].segment == "Bad"
+        assert result.diagnostics[0].char == "B"
+        assert result.diagnostics[0].position.line == 4
+        assert result.diagnostics[0].position.column == 26
+        assert isinstance(
+            result.diagnostics[1],
+            diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
+        )
+        assert result.diagnostics[1].segment == "Bad"
+        assert result.diagnostics[1].char == "B"
+        assert result.diagnostics[1].position.line == 9
+        assert result.diagnostics[1].position.column == 65
         assert result.reference_edges == []
         assert result.discovered_files == []
 

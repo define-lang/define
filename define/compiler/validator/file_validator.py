@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import pathlib
 import typing
-from collections import ChainMap
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -27,7 +26,12 @@ from define.compiler import (
     transformer,
 )
 from define.compiler.lark import lark_standalone
-from define.compiler.validator import name_validators, stats, validation_result
+from define.compiler.validator import (
+    name_validators,
+    scope_tracker,
+    stats,
+    validation_result,
+)
 
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
@@ -303,23 +307,25 @@ class ProgramAstValidator:
         definition_block: ast.ActionDefinitionBlock,
         enclosing_definition: ast.QualityDefinition,
     ):
-        outer_scope: ChainMap[str, ast.LocalPositionDefinition] = ChainMap({})
+        scope = scope_tracker.ScopeTracker(
+            enclosing_definition.typed_name.name_content.fqun
+        )
         for local_def in definition_block.local_definitions:
             self._validate_local_position_definition(
-                local_def, enclosing_definition, outer_scope
+                local_def, enclosing_definition, scope
             )
-        action_statements_scope = outer_scope.new_child({})
+        scope.enter_child_scope()
         self._validate_action_statements(
             definition_block.action_statements,
             enclosing_definition,
-            action_statements_scope,
+            scope,
         )
 
     def _validate_action_statements(
         self,
         action_statements: ast.ActionStatementsBlock,
         enclosing_definition: ast.QualityDefinition,
-        scope: ChainMap[str, ast.LocalPositionDefinition],
+        scope: scope_tracker.ScopeTracker,
     ):
         for stmt in action_statements.statements:
             match stmt:
@@ -336,7 +342,7 @@ class ProgramAstValidator:
         self,
         local_def: ast.LocalPositionDefinition,
         enclosing_definition: ast.QualityDefinition,
-        scope: ChainMap[str, ast.LocalPositionDefinition],
+        scope: scope_tracker.ScopeTracker,
     ):
         self._validate_local_name_format_and_conflicts(local_def, scope)
         if local_def.constraints is not None:
@@ -348,14 +354,14 @@ class ProgramAstValidator:
     def _validate_local_name_format_and_conflicts(
         self,
         local_def: ast.LocalPositionDefinition,
-        scope: ChainMap[str, ast.LocalPositionDefinition],
+        scope: scope_tracker.ScopeTracker,
     ):
         self.diagnostics.extend(
             name_validators.validate_local_name_format(local_def.local_name)
         )
         name = local_def.local_name.name
-        if name in scope:
-            first_def = scope[name]
+        first_def = scope.get_definition(name)
+        if first_def is not None:
             self.diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
                     position=local_def.local_name.position,
@@ -364,13 +370,13 @@ class ProgramAstValidator:
                 )
             )
             return
-        scope[name] = local_def
+        scope.add_local_definition(local_def)
 
     def _validate_create_dimension_point(
         self,
         stmt: ast.CreateDimensionPointStatement,
         enclosing_definition: ast.QualityDefinition,
-        scope: Mapping[str, ast.LocalPositionDefinition],
+        scope: scope_tracker.ScopeTracker,
     ):
         for typed_name in stmt.position_reference.chain:
             reference_diagnostics = name_validators.validate_typed_name(
@@ -381,21 +387,39 @@ class ProgramAstValidator:
                 continue
             if isinstance(typed_name, ast.GlobalTypedNameReference):
                 self._process_reference(typed_name, enclosing_definition)
+
         self._validate_position_reference_chain_endpoints(stmt.position_reference.chain)
-        first = stmt.position_reference.chain[0]
-        if (
+
+        self._validate_chained_names_exist(
+            stmt.position_reference.chain, enclosing_definition, scope
+        )
+
+    def _validate_chained_names_exist(
+        self,
+        chain: list[ast.TypedName],
+        enclosing_definition: ast.QualityDefinition,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        first = chain[0]
+        if not (
             isinstance(first, ast.LocalTypedNameReference)
             and first.name_type == ast.NameType.POSITION
-            and first.name_content.name not in scope
         ):
+            # TODO: Validate that global definition name references exist when
+            # the first chain element is a GlobalTypedNameReference.
+            return
+        if not scope.is_defined(first):
             self.diagnostics.append(
                 diagnostics.UndefinedLocalPositionDiagnostic(
                     position=first.name_content.position,
                     local_name=first.name_content.name,
                 )
             )
-        # TODO: Validate that global definition name references exist when
-        # the first chain element is a GlobalTypedNameReference.
+            return
+        if len(chain) >= 2:
+            self._validate_chain_element_against_constraints(
+                chain[1], first, enclosing_definition, scope
+            )
 
     def _validate_position_reference_chain_endpoints(
         self,
@@ -408,6 +432,8 @@ class ProgramAstValidator:
                     position=first.position,
                 )
             )
+        # TODO: Validate chain elements at index 2 and beyond against
+        # their position's constraints.
         if len(chain) > 1:
             last = chain[-1]
             if last.name_type != ast.NameType.POSITION:
@@ -416,6 +442,23 @@ class ProgramAstValidator:
                         position=last.position,
                     )
                 )
+
+    def _validate_chain_element_against_constraints(
+        self,
+        chain_element: ast.TypedName,
+        parent: ast.TypedName,
+        enclosing_definition: ast.QualityDefinition,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        if not scope.definition_has_quality(parent, chain_element):
+            fqun = enclosing_definition.typed_name.name_content.fqun
+            self.diagnostics.append(
+                diagnostics.ChainElementNotInConstraintsDiagnostic(
+                    position=chain_element.position,
+                    element_name=chain_element.full_typed_name(in_universe=fqun),
+                    parent_name=parent.name_content.full_name(),
+                )
+            )
 
     def _validate_position_constraints(
         self,

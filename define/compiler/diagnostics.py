@@ -433,3 +433,15 @@ class UndefinedLocalPositionDiagnostic(Diagnostic):
         "local position '{self.local_name}' has not been defined"
         " before this line of code"
     )
+
+
+@dataclass
+class ChainElementNotInConstraintsDiagnostic(Diagnostic):
+    """Diagnostic for when a chain element is not in the first position's constraints."""
+
+    element_name: str
+    parent_name: str
+    message_format: ClassVar[str] = (
+        "'{self.element_name}' is not declared as one of the"
+        " 'it has the' requirements in the definition of '{self.parent_name}'"
+    )

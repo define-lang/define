@@ -8,6 +8,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":name_validators",
+        ":scope_tracker",
         ":stats",
         ":validation_result",
         "//define/compiler:ast",
@@ -101,6 +102,25 @@ py_library(
 )
 
 py_library(
+    name = "scope_tracker",
+    srcs = ["scope_tracker.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["//define/compiler:ast"],
+)
+
+py_test(
+    name = "scope_tracker_test",
+    size = "small",
+    srcs = ["scope_tracker_test.py"],
+    pytest_main = True,
+    deps = [
+        ":scope_tracker",
+        "//define/compiler:ast",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "reference_graph",
     srcs = ["reference_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -173,6 +193,8 @@ pyright_test(
         ":program_validator",
         ":reference_graph",
         ":reference_graph_test",
+        ":scope_tracker",
+        ":scope_tracker_test",
         ":stats",
         ":stats_test",
         ":validation_result",
