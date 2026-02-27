@@ -1,4 +1,9 @@
 # pyright: reportUnusedCallResult=false
+"""Create dimension point validation tests.
+
+Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
+"""
+
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -86,8 +91,127 @@ def test_invalid_local_name_char():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].local_name == "Bad"
+    assert diags[0].char == "B"
     assert diags[0].position.line == 5
     assert diags[0].position.column == 59
+
+
+def test_chain_both_endpoints_action():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in action<act_a>::position<pos_mid>::action<act_b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.PositionReferenceChainStartDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 36
+    assert isinstance(diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 70
+
+
+def test_chain_ending_with_action():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<pos_a>::action<act_b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 53
+
+
+def test_chain_starting_with_action():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in action<act_a>::position<pos_b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.PositionReferenceChainStartDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 36
+
+
+def test_name_error_with_chain_endpoint_check():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in action<Bad>::position<pos_other>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[0].local_name == "Bad"
+    assert diags[0].char == "B"
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 36
+    assert isinstance(diags[1], diagnostics.PositionReferenceChainStartDiagnostic)
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 36
+
+
+def test_single_action_in_position_reference():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in action<act_other>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.PositionReferenceChainStartDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 36
+
+
+def test_valid_chain_with_action_in_middle():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "create a dimension point in position<pos_a>::action<act_b>::position<pos_c>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    assert results[0].diagnostics == []
 
 
 def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -108,5 +232,6 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].universe == "other.domain.com:other_lib"
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert diags[0].position.line == 4
     assert diags[0].position.column == 38

@@ -406,3 +406,19 @@ class CircularGlobalReferenceDiagnostic(Diagnostic):
             "circular references between definitions are not allowed in Define:\n"
             + cycle_text
         )
+
+
+@dataclass
+class PositionReferenceChainStartDiagnostic(Diagnostic):
+    """Diagnostic for when a position reference chain starts with an action."""
+
+    message_format: ClassVar[str] = (
+        "position references must start with a position name"
+    )
+
+
+@dataclass
+class PositionReferenceChainEndDiagnostic(Diagnostic):
+    """Diagnostic for when a position reference chain ends with an action."""
+
+    message_format: ClassVar[str] = "position references must end with a position name"

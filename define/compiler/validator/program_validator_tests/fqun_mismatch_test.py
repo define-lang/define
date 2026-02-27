@@ -1,3 +1,8 @@
+"""FQUN mismatch validation tests.
+
+Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
+"""
+
 from define.compiler import diagnostics
 from define.compiler.validator.program_validator_tests.conftest import (
     ValidateSourceAsFile,

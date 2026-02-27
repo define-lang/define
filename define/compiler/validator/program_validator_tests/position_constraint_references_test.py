@@ -1,4 +1,9 @@
 # pyright: reportUnusedCallResult=false
+"""Position constraint reference validation tests.
+
+Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
+"""
+
 from pathlib import Path, PurePosixPath
 
 import pytest

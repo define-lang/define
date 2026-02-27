@@ -378,6 +378,27 @@ class ProgramAstValidator:
                 continue
             if isinstance(typed_name, ast.GlobalTypedNameReference):
                 self._process_reference(typed_name, enclosing_definition)
+        self._validate_position_reference_chain_endpoints(stmt.position_reference.chain)
+
+    def _validate_position_reference_chain_endpoints(
+        self,
+        chain: list[ast.TypedName],
+    ):
+        first = chain[0]
+        if first.name_type != ast.NameType.POSITION:
+            self.diagnostics.append(
+                diagnostics.PositionReferenceChainStartDiagnostic(
+                    position=first.position,
+                )
+            )
+        if len(chain) > 1:
+            last = chain[-1]
+            if last.name_type != ast.NameType.POSITION:
+                self.diagnostics.append(
+                    diagnostics.PositionReferenceChainEndDiagnostic(
+                        position=last.position,
+                    )
+                )
 
     def _validate_position_constraints(
         self,
