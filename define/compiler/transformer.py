@@ -103,6 +103,14 @@ class DefineTransformer(
         """Discard the action-statements keyword token."""
         return lark_standalone.Discard
 
+    def CREATE_A_DIMENSION_POINT_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the create-dimension-point keyword token."""
+        return lark_standalone.Discard
+
+    def CHAIN_SEPARATOR(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard chain separator tokens."""
+        return lark_standalone.Discard
+
     def SPACE_AND_OPEN_BRACE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard opening braces."""
         return lark_standalone.Discard
@@ -172,6 +180,44 @@ class DefineTransformer(
             type_name=type_name,
             global_name=global_name,
             position=global_name.position,
+        )
+
+    def typed_local_name_reference(
+        self, items: list[ast.TypeName | ast.LocalName]
+    ) -> ast.TypedLocalNameReference:
+        """Transform typed local name references."""
+        type_name = cast("ast.TypeName", items[0])
+        local_name = cast("ast.LocalName", items[1])
+        return ast.TypedLocalNameReference(
+            type_name=type_name,
+            local_name=local_name,
+            position=local_name.position,
+        )
+
+    def typed_name_reference(
+        self, items: list[ast.TypedNameReference]
+    ) -> ast.TypedNameReference:
+        """Unwrap the typed name reference wrapper rule."""
+        return items[0]
+
+    @lark_standalone.v_args(meta=True)
+    def position_reference(
+        self, meta: lark_standalone.Meta, items: list[ast.TypedNameReference]
+    ) -> ast.PositionReference:
+        """Transform a position reference (possibly chained with ::)."""
+        return ast.PositionReference(
+            chain=items,
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @lark_standalone.v_args(meta=True)
+    def create_dimension_point_statement(
+        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
+    ) -> ast.CreateDimensionPointStatement:
+        """Transform a create dimension point statement."""
+        return ast.CreateDimensionPointStatement(
+            position_reference=items[0],
+            position=ast.SourcePosition.from_meta(meta),
         )
 
     @lark_standalone.v_args(meta=True)

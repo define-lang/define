@@ -108,14 +108,17 @@ class LocalPositionDefinition(ASTNode):
     constraints: PositionConstraintBlock | None = None
 
 
-type ActionStatement = LocalPositionDefinition
+@dataclass
+class TypedNameReference(ASTNode):
+    """Represents a typed name reference (local or global)."""
+
+    type_name: TypeName
 
 
 @dataclass
-class TypedGlobalNameReference(ASTNode):
+class TypedGlobalNameReference(TypedNameReference):
     """Represents a typed global name reference."""
 
-    type_name: TypeName
     global_name: GlobalNameReference
 
     def fully_qualified_typed_name(self, with_fqun: Fqun | None = None) -> str:
@@ -124,6 +127,30 @@ class TypedGlobalNameReference(ASTNode):
             f"{self.type_name.value}"
             + f"<{self.global_name.fully_qualified(with_fqun=with_fqun)}>"
         )
+
+
+@dataclass
+class TypedLocalNameReference(TypedNameReference):
+    """Represents a typed local name reference."""
+
+    local_name: LocalName
+
+
+@dataclass
+class PositionReference(ASTNode):
+    """Represents a position reference, possibly chained with ::."""
+
+    chain: list[TypedNameReference]
+
+
+@dataclass
+class CreateDimensionPointStatement(ASTNode):
+    """Represents a 'create a dimension point in' statement."""
+
+    position_reference: PositionReference
+
+
+type ActionStatement = LocalPositionDefinition | CreateDimensionPointStatement
 
 
 @dataclass

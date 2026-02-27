@@ -302,10 +302,11 @@ class ProgramAstValidator:
         for local_def in definition_block.local_definitions:
             self._validate_local_name_format_and_conflicts(local_def, outer_scope)
         action_statements_scope = outer_scope.new_child({})
-        for local_def in definition_block.action_statements.statements:
-            self._validate_local_name_format_and_conflicts(
-                local_def, action_statements_scope
-            )
+        for stmt in definition_block.action_statements.statements:
+            if isinstance(stmt, ast.LocalPositionDefinition):
+                self._validate_local_name_format_and_conflicts(
+                    stmt, action_statements_scope
+                )
 
     def _validate_local_name_format_and_conflicts(
         self,
@@ -337,10 +338,13 @@ class ProgramAstValidator:
                     local_def.constraints,
                     enclosing_definition,
                 )
-        for local_def in definition_block.action_statements.statements:
-            if local_def.constraints is not None:
+        for stmt in definition_block.action_statements.statements:
+            if (
+                isinstance(stmt, ast.LocalPositionDefinition)
+                and stmt.constraints is not None
+            ):
                 self._validate_position_constraints(
-                    local_def.constraints,
+                    stmt.constraints,
                     enclosing_definition,
                 )
 

@@ -243,6 +243,7 @@ def test_action_definition_block_with_action_statement_local_definition():
     assert block is not None
     assert len(block.action_statements.statements) == 1
     local_def = block.action_statements.statements[0]
+    assert isinstance(local_def, ast.LocalPositionDefinition)
     assert local_def.local_name.name == "inner_pos"
     assert local_def.position.line == 4
     assert local_def.position.column == 9
@@ -265,6 +266,8 @@ def test_action_definition_block_with_multiple_action_statement_local_definition
     assert len(block.action_statements.statements) == 2
     first_local_def = block.action_statements.statements[0]
     second_local_def = block.action_statements.statements[1]
+    assert isinstance(first_local_def, ast.LocalPositionDefinition)
+    assert isinstance(second_local_def, ast.LocalPositionDefinition)
     assert first_local_def.local_name.name == "first_inner"
     assert second_local_def.local_name.name == "second_inner"
     assert first_local_def.position.line == 4
@@ -298,6 +301,183 @@ def test_position_definition_with_constraints_block_transforms():
     assert definition.constraints.position.line == 2
     assert first_requirement.position.line == 3
     assert second_requirement.position.line == 4
+
+
+def test_create_dimension_point_with_local_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.action_statements.statements) == 1
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert len(stmt.position_reference.chain) == 1
+    ref = stmt.position_reference.chain[0]
+    assert isinstance(ref, ast.TypedLocalNameReference)
+    assert ref.type_name == ast.TypeName.POSITION
+    assert ref.local_name.name == "run"
+
+
+def test_create_dimension_point_with_short_global_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position</run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    ref = stmt.position_reference.chain[0]
+    assert isinstance(ref, ast.TypedGlobalNameReference)
+    assert ref.type_name == ast.TypeName.POSITION
+    assert ref.global_name.fqun is None
+    assert ref.global_name.path.name == "/run"
+
+
+def test_create_dimension_point_with_full_fqun_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<mv:define-lang.org:parser:/run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    ref = stmt.position_reference.chain[0]
+    assert isinstance(ref, ast.TypedGlobalNameReference)
+    assert ref.type_name == ast.TypeName.POSITION
+    fqun = ref.global_name.fqun
+    assert fqun is not None
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == "mv"
+    assert fqun.authority is not None
+    assert fqun.authority.name == "define-lang.org"
+    assert fqun.universe.name == "parser"
+    assert ref.global_name.path.name == "/run"
+
+
+def test_chained_position_reference_with_local_names():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<to>::action<deposit>::position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    chain = stmt.position_reference.chain
+    assert len(chain) == 3
+    assert isinstance(chain[0], ast.TypedLocalNameReference)
+    assert chain[0].type_name == ast.TypeName.POSITION
+    assert chain[0].local_name.name == "to"
+    assert isinstance(chain[1], ast.TypedLocalNameReference)
+    assert chain[1].type_name == ast.TypeName.ACTION
+    assert chain[1].local_name.name == "deposit"
+    assert isinstance(chain[2], ast.TypedLocalNameReference)
+    assert chain[2].type_name == ast.TypeName.POSITION
+    assert chain[2].local_name.name == "run"
+
+
+def test_chained_position_reference_with_global_names():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position</to>::action</deposit>::position</run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    chain = stmt.position_reference.chain
+    assert len(chain) == 3
+    assert isinstance(chain[0], ast.TypedGlobalNameReference)
+    assert chain[0].global_name.path.name == "/to"
+    assert isinstance(chain[1], ast.TypedGlobalNameReference)
+    assert chain[1].global_name.path.name == "/deposit"
+    assert isinstance(chain[2], ast.TypedGlobalNameReference)
+    assert chain[2].global_name.path.name == "/run"
+
+
+def test_chained_position_reference_mixed_types():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in action</start>::position<mid>::action</end>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    chain = stmt.position_reference.chain
+    assert len(chain) == 3
+    assert isinstance(chain[0], ast.TypedGlobalNameReference)
+    assert chain[0].type_name == ast.TypeName.ACTION
+    assert chain[0].global_name.path.name == "/start"
+    assert isinstance(chain[1], ast.TypedLocalNameReference)
+    assert chain[1].type_name == ast.TypeName.POSITION
+    assert chain[1].local_name.name == "mid"
+    assert isinstance(chain[2], ast.TypedGlobalNameReference)
+    assert chain[2].type_name == ast.TypeName.ACTION
+    assert chain[2].global_name.path.name == "/end"
+
+
+def test_mixed_action_statements():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        define the position<inner_pos>.\n"
+        + "        create a dimension point in position<run>.\n"
+        + "        create a dimension point in position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmts = block.action_statements.statements
+    assert len(stmts) == 3
+    assert isinstance(stmts[0], ast.LocalPositionDefinition)
+    assert stmts[0].local_name.name == "inner_pos"
+    assert isinstance(stmts[1], ast.CreateDimensionPointStatement)
+    assert isinstance(stmts[2], ast.CreateDimensionPointStatement)
 
 
 def test_action_definition_block_with_constrained_local_definition():
