@@ -18,7 +18,7 @@ def _make_name_content_token(
     )
 
 
-def _require_fqun(name: ast.GlobalName) -> ast.Fqun:
+def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:
     assert name.fqun is not None
     return name.fqun
 

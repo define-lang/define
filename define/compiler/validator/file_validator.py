@@ -356,7 +356,7 @@ class ProgramAstValidator:
         enclosing_fqun = enclosing_definition.name.fqun
 
         for requirement in constraints.requirements:
-            reference = requirement.typed_global_name.global_name
+            reference = requirement.typed_global_name.name_content
             reference_diagnostics = name_validators.validate_global_name(
                 reference, must_use_short_form=enclosing_fqun
             )
@@ -374,7 +374,7 @@ class ProgramAstValidator:
         enclosing_definition: ast.QualityDefinition,
     ):
         """Record a reference edge and determine the target file to discover."""
-        global_name = typed_global_name.global_name
+        global_name = typed_global_name.name_content
         edge = validation_result.ReferenceEdge(
             enclosing_definition=enclosing_definition,
             global_name_reference=typed_global_name,

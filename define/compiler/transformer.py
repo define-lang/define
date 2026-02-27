@@ -119,10 +119,10 @@ class DefineTransformer(
     def local_position_definition(
         self,
         meta: lark_standalone.Meta,
-        items: list[ast.LocalName | ast.PositionConstraintBlock],
+        items: list[ast.LocalNameContent | ast.PositionConstraintBlock],
     ) -> ast.LocalPositionDefinition:
         """Transform a local position definition."""
-        local_name = cast("ast.LocalName", items[0])
+        local_name = cast("ast.LocalNameContent", items[0])
         constraints = (
             cast("ast.PositionConstraintBlock", items[1]) if len(items) > 1 else None
         )
@@ -175,23 +175,23 @@ class DefineTransformer(
     ) -> ast.TypedGlobalNameReference:
         """Transform typed global name references."""
         type_name = cast("ast.TypeName", items[0])
-        global_name = cast("ast.GlobalNameReference", items[1])
+        name_content = cast("ast.GlobalNameReference", items[1])
         return ast.TypedGlobalNameReference(
             type_name=type_name,
-            global_name=global_name,
-            position=global_name.position,
+            name_content=name_content,
+            position=name_content.position,
         )
 
     def typed_local_name_reference(
-        self, items: list[ast.TypeName | ast.LocalName]
+        self, items: list[ast.TypeName | ast.LocalNameContent]
     ) -> ast.TypedLocalNameReference:
         """Transform typed local name references."""
         type_name = cast("ast.TypeName", items[0])
-        local_name = cast("ast.LocalName", items[1])
+        name_content = cast("ast.LocalNameContent", items[1])
         return ast.TypedLocalNameReference(
             type_name=type_name,
-            local_name=local_name,
-            position=local_name.position,
+            name_content=name_content,
+            position=name_content.position,
         )
 
     def typed_name_reference(
@@ -276,7 +276,9 @@ class DefineTransformer(
         """Parse reference-site name content into a global reference node."""
         return name_parser.parse_global_name_reference(items[0])
 
-    def local_name_content(self, items: list[lark_standalone.Token]) -> ast.LocalName:
+    def local_name_content(
+        self, items: list[lark_standalone.Token]
+    ) -> ast.LocalNameContent:
         """Parse local-name content into a local-name node."""
         return name_parser.parse_local_name(items[0])
 

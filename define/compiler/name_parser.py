@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from define.compiler.lark import lark_standalone
 
 
-def parse_local_name(token: lark_standalone.Token) -> ast.LocalName:
+def parse_local_name(token: lark_standalone.Token) -> ast.LocalNameContent:
     """Parse local name content into an AST local-name node."""
-    return ast.LocalName(
+    return ast.LocalNameContent(
         name=token,
         position=ast.SourcePosition.from_token(token),
     )

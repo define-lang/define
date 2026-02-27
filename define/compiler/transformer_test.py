@@ -13,7 +13,7 @@ def _parse_and_transform(source: str) -> ast.Program:
     return DefineTransformer().transform(tree)
 
 
-def _require_fqun(name: ast.GlobalName) -> ast.Fqun:
+def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:
     assert name.fqun is not None
     return name.fqun
 
@@ -291,11 +291,11 @@ def test_position_definition_with_constraints_block_transforms():
     second_requirement = definition.constraints.requirements[1]
     assert first_requirement.typed_global_name.type_name == ast.TypeName.POSITION
     assert second_requirement.typed_global_name.type_name == ast.TypeName.ACTION
-    assert first_requirement.typed_global_name.global_name.fqun is None
-    assert first_requirement.typed_global_name.global_name.path.relative_path == Path(
+    assert first_requirement.typed_global_name.name_content.fqun is None
+    assert first_requirement.typed_global_name.name_content.path.relative_path == Path(
         "child"
     )
-    assert second_requirement.typed_global_name.global_name.path.relative_path == Path(
+    assert second_requirement.typed_global_name.name_content.path.relative_path == Path(
         "other"
     )
     assert definition.constraints.position.line == 2
@@ -323,7 +323,7 @@ def test_create_dimension_point_with_local_position():
     ref = stmt.position_reference.chain[0]
     assert isinstance(ref, ast.TypedLocalNameReference)
     assert ref.type_name == ast.TypeName.POSITION
-    assert ref.local_name.name == "run"
+    assert ref.name_content.name == "run"
 
 
 def test_create_dimension_point_with_short_global_position():
@@ -344,8 +344,8 @@ def test_create_dimension_point_with_short_global_position():
     ref = stmt.position_reference.chain[0]
     assert isinstance(ref, ast.TypedGlobalNameReference)
     assert ref.type_name == ast.TypeName.POSITION
-    assert ref.global_name.fqun is None
-    assert ref.global_name.path.name == "/run"
+    assert ref.name_content.fqun is None
+    assert ref.name_content.path.name == "/run"
 
 
 def test_create_dimension_point_with_full_fqun_position():
@@ -366,14 +366,14 @@ def test_create_dimension_point_with_full_fqun_position():
     ref = stmt.position_reference.chain[0]
     assert isinstance(ref, ast.TypedGlobalNameReference)
     assert ref.type_name == ast.TypeName.POSITION
-    fqun = ref.global_name.fqun
+    fqun = ref.name_content.fqun
     assert fqun is not None
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
     assert fqun.authority is not None
     assert fqun.authority.name == "define-lang.org"
     assert fqun.universe.name == "parser"
-    assert ref.global_name.path.name == "/run"
+    assert ref.name_content.path.name == "/run"
 
 
 def test_chained_position_reference_with_local_names():
@@ -395,13 +395,13 @@ def test_chained_position_reference_with_local_names():
     assert len(chain) == 3
     assert isinstance(chain[0], ast.TypedLocalNameReference)
     assert chain[0].type_name == ast.TypeName.POSITION
-    assert chain[0].local_name.name == "to"
+    assert chain[0].name_content.name == "to"
     assert isinstance(chain[1], ast.TypedLocalNameReference)
     assert chain[1].type_name == ast.TypeName.ACTION
-    assert chain[1].local_name.name == "deposit"
+    assert chain[1].name_content.name == "deposit"
     assert isinstance(chain[2], ast.TypedLocalNameReference)
     assert chain[2].type_name == ast.TypeName.POSITION
-    assert chain[2].local_name.name == "run"
+    assert chain[2].name_content.name == "run"
 
 
 def test_chained_position_reference_with_global_names():
@@ -422,11 +422,11 @@ def test_chained_position_reference_with_global_names():
     chain = stmt.position_reference.chain
     assert len(chain) == 3
     assert isinstance(chain[0], ast.TypedGlobalNameReference)
-    assert chain[0].global_name.path.name == "/to"
+    assert chain[0].name_content.path.name == "/to"
     assert isinstance(chain[1], ast.TypedGlobalNameReference)
-    assert chain[1].global_name.path.name == "/deposit"
+    assert chain[1].name_content.path.name == "/deposit"
     assert isinstance(chain[2], ast.TypedGlobalNameReference)
-    assert chain[2].global_name.path.name == "/run"
+    assert chain[2].name_content.path.name == "/run"
 
 
 def test_chained_position_reference_mixed_types():
@@ -448,13 +448,13 @@ def test_chained_position_reference_mixed_types():
     assert len(chain) == 3
     assert isinstance(chain[0], ast.TypedGlobalNameReference)
     assert chain[0].type_name == ast.TypeName.ACTION
-    assert chain[0].global_name.path.name == "/start"
+    assert chain[0].name_content.path.name == "/start"
     assert isinstance(chain[1], ast.TypedLocalNameReference)
     assert chain[1].type_name == ast.TypeName.POSITION
-    assert chain[1].local_name.name == "mid"
+    assert chain[1].name_content.name == "mid"
     assert isinstance(chain[2], ast.TypedGlobalNameReference)
     assert chain[2].type_name == ast.TypeName.ACTION
-    assert chain[2].global_name.path.name == "/end"
+    assert chain[2].name_content.path.name == "/end"
 
 
 def test_mixed_action_statements():
@@ -502,7 +502,9 @@ def test_action_definition_block_with_constrained_local_definition():
     assert len(local_def.constraints.requirements) == 1
     requirement = local_def.constraints.requirements[0]
     assert requirement.typed_global_name.type_name == ast.TypeName.ACTION
-    assert requirement.typed_global_name.global_name.path.relative_path == Path("child")
+    assert requirement.typed_global_name.name_content.path.relative_path == Path(
+        "child"
+    )
     assert local_def.position.line == 2
     assert local_def.constraints.position.line == 3
     assert requirement.position.line == 4

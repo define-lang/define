@@ -284,8 +284,8 @@ class ProgramValidator:
             ref_edge
             for ref_edge in result.reference_edges
             if (
-                ref_edge.global_name_reference.global_name.fqun is None
-                or ref_edge.global_name_reference.global_name.fqun.canonical
+                ref_edge.global_name_reference.name_content.fqun is None
+                or ref_edge.global_name_reference.name_content.fqun.canonical
                 not in unknown_fquns
             )
         ]
@@ -365,7 +365,7 @@ class ProgramValidator:
         enclosing_root: pathlib.PurePosixPath,
     ) -> pathlib.PurePosixPath:
         """Determine the full file path for a reference edge's target."""
-        global_name = edge.global_name_reference.global_name
+        global_name = edge.global_name_reference.name_content
 
         # A reference to another universe, so we need its full sub-root path.
         if global_name.fqun is not None:
@@ -390,7 +390,7 @@ class ProgramValidator:
         Returns True (and appends a diagnostic) when the edge should be skipped.
         """
         # This check is only for current-universe references.
-        if edge.global_name_reference.global_name.fqun is not None:
+        if edge.global_name_reference.name_content.fqun is not None:
             return False
 
         actual_root = self._path_tracker.find_enclosing_root(target_file)
@@ -399,7 +399,7 @@ class ProgramValidator:
 
         source_result.diagnostics.append(
             diagnostics.PathInsideOtherUniverseDiagnostic(
-                position=edge.global_name_reference.global_name.position,
+                position=edge.global_name_reference.name_content.position,
                 path=str(target_file),
                 other_universe=self._path_tracker.fqun_for_root(actual_root) or "",
                 sub_root_path=str(actual_root),
@@ -432,7 +432,7 @@ class ProgramValidator:
         source_result: validation_result.ValidationResult,
     ):
         """Apply reference-target validation checks without timing side effects."""
-        global_name = edge.global_name_reference.global_name
+        global_name = edge.global_name_reference.name_content
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
             source_result.diagnostics.append(

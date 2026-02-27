@@ -25,7 +25,7 @@ def _global_path_name(name: str) -> ast.GlobalPathName:
 
 def _local_def(name: str) -> ast.LocalPositionDefinition:
     return ast.LocalPositionDefinition(
-        local_name=ast.LocalName(name=name, position=_POS),
+        local_name=ast.LocalNameContent(name=name, position=_POS),
         position=_POS,
     )
 

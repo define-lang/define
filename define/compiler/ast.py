@@ -94,7 +94,12 @@ class PositionDefinition(QualityDefinition):
 
 
 @dataclass
-class LocalName(ASTNode):
+class NameContent(ASTNode):
+    """Base class for name content nodes (local or global)."""
+
+
+@dataclass
+class LocalNameContent(NameContent):
     """Represents a local name."""
 
     name: str
@@ -104,7 +109,7 @@ class LocalName(ASTNode):
 class LocalPositionDefinition(ASTNode):
     """Represents a local position definition within an action block."""
 
-    local_name: LocalName
+    local_name: LocalNameContent
     constraints: PositionConstraintBlock | None = None
 
 
@@ -113,19 +118,20 @@ class TypedNameReference(ASTNode):
     """Represents a typed name reference (local or global)."""
 
     type_name: TypeName
+    name_content: NameContent
 
 
 @dataclass
 class TypedGlobalNameReference(TypedNameReference):
     """Represents a typed global name reference."""
 
-    global_name: GlobalNameReference
+    name_content: GlobalNameReference  # pyright: ignore[reportIncompatibleVariableOverride]
 
     def fully_qualified_typed_name(self, with_fqun: Fqun | None = None) -> str:
         """Return canonical typed-name text including effective FQUN and path."""
         return (
             f"{self.type_name.value}"
-            + f"<{self.global_name.fully_qualified(with_fqun=with_fqun)}>"
+            + f"<{self.name_content.fully_qualified(with_fqun=with_fqun)}>"
         )
 
 
@@ -133,7 +139,7 @@ class TypedGlobalNameReference(TypedNameReference):
 class TypedLocalNameReference(TypedNameReference):
     """Represents a typed local name reference."""
 
-    local_name: LocalName
+    name_content: LocalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 @dataclass
@@ -258,7 +264,7 @@ class Fqun(ASTNode):
 
 
 @dataclass
-class GlobalName(ASTNode):
+class GlobalNameContent(NameContent):
     """Base class for global name-like nodes."""
 
     fqun: Fqun | None
@@ -277,12 +283,12 @@ class GlobalName(ASTNode):
 
 
 @dataclass
-class GlobalNameDefinition(GlobalName):
+class GlobalNameDefinition(GlobalNameContent):
     """Represents a global name at a definition site."""
 
     fqun: Fqun  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 @dataclass
-class GlobalNameReference(GlobalName):
+class GlobalNameReference(GlobalNameContent):
     """Represents a global name at a reference site."""
