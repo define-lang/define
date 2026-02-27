@@ -329,8 +329,8 @@ class ProgramValidator:
             if self._path_tracker.is_under_failed_root(target_file):
                 continue
 
-            source_key = ref_edge.enclosing_definition.fully_qualified_typed_name
-            target_key = ref_edge.fully_qualified_typed_name
+            source_key = ref_edge.enclosing_definition.typed_name.full_typed_name()
+            target_key = ref_edge.full_typed_name
             detected = self._reference_graph.try_add_edge(source_key, target_key)
             if detected is not None:
                 result.diagnostics.append(
@@ -445,7 +445,7 @@ class ProgramValidator:
             return
 
         target_has_match = any(
-            d.fully_qualified_typed_name == edge.fully_qualified_typed_name
+            d.typed_name.full_typed_name() == edge.full_typed_name
             for d in target_result.definitions
         )
         if not target_has_match:
@@ -453,7 +453,7 @@ class ProgramValidator:
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=global_name.position,
                     path=global_name.path.name,
-                    expected_type=edge.global_name_reference.type_name.value,
+                    expected_type=edge.global_name_reference.name_type.value,
                 )
             )
 

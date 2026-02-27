@@ -26,18 +26,18 @@ def test_position_definition_transforms_to_program():
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
-    fqun = _require_fqun(definition.name)
+    fqun = _require_fqun(definition.typed_name.name_content)
     assert definition.position.line == 1
     assert definition.position.column == 1
     assert fqun.universe.name == "standard"
     assert fqun.universe.position.line == 1
     assert fqun.universe.position.column == 31
-    assert definition.name.path.relative_path == Path("path")
-    assert definition.name.path.name == "/path"
-    assert definition.name.path.position.line == 1
-    assert definition.name.path.position.column == 40
-    assert definition.name.position.line == 1
-    assert definition.name.position.column == 31
+    assert definition.typed_name.name_content.path.relative_path == Path("path")
+    assert definition.typed_name.name_content.path.name == "/path"
+    assert definition.typed_name.name_content.path.position.line == 1
+    assert definition.typed_name.name_content.path.position.column == 40
+    assert definition.typed_name.name_content.position.line == 1
+    assert definition.typed_name.name_content.position.column == 31
 
 
 def test_action_definition_transforms_to_program():
@@ -46,17 +46,17 @@ def test_action_definition_transforms_to_program():
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    fqun = _require_fqun(definition.name)
+    fqun = _require_fqun(definition.typed_name.name_content)
     assert definition.position.line == 1
     assert fqun.universe.name == "standard"
-    assert definition.name.path.relative_path == Path("path")
+    assert definition.typed_name.name_content.path.relative_path == Path("path")
 
 
 def test_global_name_full_fqun():
     program = _parse_and_transform(
         "define the potential position<my_mv:example.com:my_lib:/some/path>.\n"
     )
-    name = program.definitions[0].name
+    name = program.definitions[0].typed_name.name_content
     fqun = _require_fqun(name)
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "my_mv"
@@ -76,7 +76,7 @@ def test_global_name_authority_universe():
     program = _parse_and_transform(
         "define the potential position<example.com:my_lib:/some/path>.\n"
     )
-    name = program.definitions[0].name
+    name = program.definitions[0].typed_name.name_content
     fqun = _require_fqun(name)
     assert fqun.multiverse is None
     assert fqun.universe.name == "my_lib"
@@ -92,7 +92,7 @@ def test_global_name_authority_with_path_universe():
     program = _parse_and_transform(
         "define the potential position<example.com/org/repo:my_lib:/some/path>.\n"
     )
-    name = program.definitions[0].name
+    name = program.definitions[0].typed_name.name_content
     fqun = _require_fqun(name)
     assert fqun.multiverse is None
     assert fqun.universe.name == "my_lib"
@@ -105,7 +105,7 @@ def test_global_name_universe_only():
     program = _parse_and_transform(
         "define the potential position<standard:/some/path>.\n"
     )
-    name = program.definitions[0].name
+    name = program.definitions[0].typed_name.name_content
     fqun = _require_fqun(name)
     assert fqun.multiverse is None
     assert fqun.authority is None
@@ -125,8 +125,12 @@ def test_multiple_definitions_position_and_action():
     assert len(program.definitions) == 2
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.ActionDefinition)
-    assert program.definitions[0].name.path.relative_path == Path("pos")
-    assert program.definitions[1].name.path.relative_path == Path("act")
+    assert program.definitions[0].typed_name.name_content.path.relative_path == Path(
+        "pos"
+    )
+    assert program.definitions[1].typed_name.name_content.path.relative_path == Path(
+        "act"
+    )
     assert program.definitions[0].position.line == 1
     assert program.definitions[1].position.line == 2
 
@@ -289,8 +293,8 @@ def test_position_definition_with_constraints_block_transforms():
     assert len(definition.constraints.requirements) == 2
     first_requirement = definition.constraints.requirements[0]
     second_requirement = definition.constraints.requirements[1]
-    assert first_requirement.typed_global_name.type_name == ast.TypeName.POSITION
-    assert second_requirement.typed_global_name.type_name == ast.TypeName.ACTION
+    assert first_requirement.typed_global_name.name_type == ast.NameType.POSITION
+    assert second_requirement.typed_global_name.name_type == ast.NameType.ACTION
     assert first_requirement.typed_global_name.name_content.fqun is None
     assert first_requirement.typed_global_name.name_content.path.relative_path == Path(
         "child"
@@ -322,7 +326,7 @@ def test_create_dimension_point_with_local_position():
     assert len(stmt.position_reference.chain) == 1
     ref = stmt.position_reference.chain[0]
     assert isinstance(ref, ast.TypedLocalNameReference)
-    assert ref.type_name == ast.TypeName.POSITION
+    assert ref.name_type == ast.NameType.POSITION
     assert ref.name_content.name == "run"
 
 
@@ -343,7 +347,7 @@ def test_create_dimension_point_with_short_global_position():
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     ref = stmt.position_reference.chain[0]
     assert isinstance(ref, ast.TypedGlobalNameReference)
-    assert ref.type_name == ast.TypeName.POSITION
+    assert ref.name_type == ast.NameType.POSITION
     assert ref.name_content.fqun is None
     assert ref.name_content.path.name == "/run"
 
@@ -365,7 +369,7 @@ def test_create_dimension_point_with_full_fqun_position():
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     ref = stmt.position_reference.chain[0]
     assert isinstance(ref, ast.TypedGlobalNameReference)
-    assert ref.type_name == ast.TypeName.POSITION
+    assert ref.name_type == ast.NameType.POSITION
     fqun = ref.name_content.fqun
     assert fqun is not None
     assert fqun.multiverse is not None
@@ -394,13 +398,13 @@ def test_chained_position_reference_with_local_names():
     chain = stmt.position_reference.chain
     assert len(chain) == 3
     assert isinstance(chain[0], ast.TypedLocalNameReference)
-    assert chain[0].type_name == ast.TypeName.POSITION
+    assert chain[0].name_type == ast.NameType.POSITION
     assert chain[0].name_content.name == "to"
     assert isinstance(chain[1], ast.TypedLocalNameReference)
-    assert chain[1].type_name == ast.TypeName.ACTION
+    assert chain[1].name_type == ast.NameType.ACTION
     assert chain[1].name_content.name == "deposit"
     assert isinstance(chain[2], ast.TypedLocalNameReference)
-    assert chain[2].type_name == ast.TypeName.POSITION
+    assert chain[2].name_type == ast.NameType.POSITION
     assert chain[2].name_content.name == "run"
 
 
@@ -447,13 +451,13 @@ def test_chained_position_reference_mixed_types():
     chain = stmt.position_reference.chain
     assert len(chain) == 3
     assert isinstance(chain[0], ast.TypedGlobalNameReference)
-    assert chain[0].type_name == ast.TypeName.ACTION
+    assert chain[0].name_type == ast.NameType.ACTION
     assert chain[0].name_content.path.name == "/start"
     assert isinstance(chain[1], ast.TypedLocalNameReference)
-    assert chain[1].type_name == ast.TypeName.POSITION
+    assert chain[1].name_type == ast.NameType.POSITION
     assert chain[1].name_content.name == "mid"
     assert isinstance(chain[2], ast.TypedGlobalNameReference)
-    assert chain[2].type_name == ast.TypeName.ACTION
+    assert chain[2].name_type == ast.NameType.ACTION
     assert chain[2].name_content.path.name == "/end"
 
 
@@ -501,7 +505,7 @@ def test_action_definition_block_with_constrained_local_definition():
     assert local_def.constraints is not None
     assert len(local_def.constraints.requirements) == 1
     requirement = local_def.constraints.requirements[0]
-    assert requirement.typed_global_name.type_name == ast.TypeName.ACTION
+    assert requirement.typed_global_name.name_type == ast.NameType.ACTION
     assert requirement.typed_global_name.name_content.path.relative_path == Path(
         "child"
     )

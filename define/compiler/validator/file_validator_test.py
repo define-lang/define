@@ -40,7 +40,7 @@ class TestFileValidatorSuccess:
         assert result.diagnostics == []
         assert result.source == source
         assert len(result.definitions) == 1
-        assert result.definitions[0].type_name == "position"
+        assert result.definitions[0].typed_name.name_type == "position"
 
     def test_valid_action(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential action<my.domain.com:my_lib:/test>.\n"
@@ -51,7 +51,7 @@ class TestFileValidatorSuccess:
         assert result.exception is None
         assert result.diagnostics == []
         assert len(result.definitions) == 1
-        assert result.definitions[0].type_name == "action"
+        assert result.definitions[0].typed_name.name_type == "action"
 
 
 class TestFileValidatorErrors:

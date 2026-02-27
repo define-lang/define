@@ -166,43 +166,41 @@ class DefineTransformer(
             position=ast.SourcePosition.from_meta(meta),
         )
 
-    def NAME_TYPE(self, token: lark_standalone.Token) -> ast.TypeName:  # noqa: N802
-        """Transform a name-type token into a TypeName enum."""
-        return ast.TypeName(token)
+    def NAME_TYPE(self, token: lark_standalone.Token) -> ast.NameType:  # noqa: N802
+        """Transform a name-type token into a NameType enum."""
+        return ast.NameType(token)
 
     def typed_global_name_reference(
-        self, items: list[ast.TypeName | ast.GlobalNameReference]
+        self, items: list[ast.NameType | ast.GlobalNameReference]
     ) -> ast.TypedGlobalNameReference:
         """Transform typed global name references."""
-        type_name = cast("ast.TypeName", items[0])
+        name_type = cast("ast.NameType", items[0])
         name_content = cast("ast.GlobalNameReference", items[1])
         return ast.TypedGlobalNameReference(
-            type_name=type_name,
+            name_type=name_type,
             name_content=name_content,
             position=name_content.position,
         )
 
     def typed_local_name_reference(
-        self, items: list[ast.TypeName | ast.LocalNameContent]
+        self, items: list[ast.NameType | ast.LocalNameContent]
     ) -> ast.TypedLocalNameReference:
         """Transform typed local name references."""
-        type_name = cast("ast.TypeName", items[0])
+        name_type = cast("ast.NameType", items[0])
         name_content = cast("ast.LocalNameContent", items[1])
         return ast.TypedLocalNameReference(
-            type_name=type_name,
+            name_type=name_type,
             name_content=name_content,
             position=name_content.position,
         )
 
-    def typed_name_reference(
-        self, items: list[ast.TypedNameReference]
-    ) -> ast.TypedNameReference:
+    def typed_name_reference(self, items: list[ast.TypedName]) -> ast.TypedName:
         """Unwrap the typed name reference wrapper rule."""
         return items[0]
 
     @lark_standalone.v_args(meta=True)
     def position_reference(
-        self, meta: lark_standalone.Meta, items: list[ast.TypedNameReference]
+        self, meta: lark_standalone.Meta, items: list[ast.TypedName]
     ) -> ast.PositionReference:
         """Transform a position reference (possibly chained with ::)."""
         return ast.PositionReference(

@@ -131,42 +131,37 @@ class TestGlobalNameContent:
             _ = name.full_name()
 
 
-class TestQualityDefinition:
-    def test_fully_qualified_typed_name(self):
-        definition = ast.PositionDefinition(
+class TestTypedGlobalNameInDefinition:
+    def test_full_typed_name(self):
+        typed_name = ast.TypedGlobalNameInDefinition(
             position=_POS,
-            name=ast.GlobalNameDefinition(
+            name_type=ast.NameType.POSITION,
+            name_content=ast.GlobalNameDefinition(
                 position=_POS,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        assert (
-            definition.fully_qualified_typed_name
-            == "position<my.domain.com:my_lib:/thing>"
-        )
+        assert typed_name.full_typed_name() == "position<my.domain.com:my_lib:/thing>"
 
 
 class TestTypedGlobalNameReference:
-    def test_fully_qualified_typed_name_with_explicit_fqun(self):
+    def test_full_typed_name_with_explicit_fqun(self):
         reference = ast.TypedGlobalNameReference(
             position=_POS,
-            type_name=ast.TypeName.ACTION,
+            name_type=ast.NameType.ACTION,
             name_content=ast.GlobalNameReference(
                 position=_POS,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        assert (
-            reference.fully_qualified_typed_name()
-            == "action<my.domain.com:my_lib:/thing>"
-        )
+        assert reference.full_typed_name() == "action<my.domain.com:my_lib:/thing>"
 
-    def test_fully_qualified_typed_name_with_short_name_uses_in_universe(self):
+    def test_full_typed_name_with_short_name_uses_in_universe(self):
         reference = ast.TypedGlobalNameReference(
             position=_POS,
-            type_name=ast.TypeName.POSITION,
+            name_type=ast.NameType.POSITION,
             name_content=ast.GlobalNameReference(
                 position=_POS,
                 fqun=None,
@@ -174,16 +169,16 @@ class TestTypedGlobalNameReference:
             ),
         )
         assert (
-            reference.fully_qualified_typed_name(
+            reference.full_typed_name(
                 in_universe=_make_fqun("my_lib", authority="my.domain.com")
             )
             == "position<my.domain.com:my_lib:/thing>"
         )
 
-    def test_fully_qualified_typed_name_own_fqun_takes_precedence(self):
+    def test_full_typed_name_own_fqun_takes_precedence(self):
         reference = ast.TypedGlobalNameReference(
             position=_POS,
-            type_name=ast.TypeName.POSITION,
+            name_type=ast.NameType.POSITION,
             name_content=ast.GlobalNameReference(
                 position=_POS,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
@@ -192,6 +187,6 @@ class TestTypedGlobalNameReference:
         )
         in_universe = _make_fqun("other_lib", authority="other.domain.com")
         assert (
-            reference.fully_qualified_typed_name(in_universe=in_universe)
+            reference.full_typed_name(in_universe=in_universe)
             == "position<my.domain.com:my_lib:/thing>"
         )

@@ -228,7 +228,9 @@ class ProgramAstValidator:
             self._validate_definition(definition)
 
     def _validate_definition(self, definition: ast.QualityDefinition):
-        self.diagnostics.extend(name_validators.validate_global_name(definition.name))
+        self.diagnostics.extend(
+            name_validators.validate_global_name(definition.typed_name.name_content)
+        )
         self._validate_path_matches_file(definition)
         self._validate_fqun_matches_expected(definition)
         is_duplicate = self._validate_not_duplicate_in_file(definition)
@@ -253,12 +255,12 @@ class ProgramAstValidator:
     def _validate_path_matches_file(self, definition: ast.QualityDefinition):
         if self._expected_definition_path is None:
             return
-        definition_path = definition.name.path.name
+        definition_path = definition.typed_name.name_content.path.name
         expected_path = "/" + self._expected_definition_path.as_posix()
         if definition_path != expected_path:
             self.diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
-                    position=definition.name.path.position,
+                    position=definition.typed_name.name_content.path.position,
                     expected_path=expected_path,
                     actual_path=definition_path,
                 )
@@ -268,11 +270,11 @@ class ProgramAstValidator:
         expected_fqun = self._context.expected_fqun
         if not expected_fqun:
             return
-        actual = definition.name.fqun.canonical
+        actual = definition.typed_name.name_content.fqun.canonical
         if actual != expected_fqun:
             self.diagnostics.append(
                 diagnostics.FqunMismatchDiagnostic(
-                    position=definition.name.fqun.position,
+                    position=definition.typed_name.name_content.fqun.position,
                     expected=expected_fqun,
                     actual=actual,
                 )
@@ -282,14 +284,14 @@ class ProgramAstValidator:
         self, definition: ast.QualityDefinition
     ) -> bool:
         """Check for within-file duplicates. Returns True if duplicate."""
-        key = definition.fully_qualified_typed_name
+        key = definition.typed_name.full_typed_name()
         if key in self._seen_in_file:
             first_def = self._seen_in_file[key]
             self.diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
                     position=definition.position,
-                    definition_type=definition.type_name.value,
-                    path=definition.name.path.name,
+                    definition_type=definition.typed_name.name_type.value,
+                    path=definition.typed_name.name_content.path.name,
                     first_definition_line=first_def.position.line,
                 )
             )
@@ -353,7 +355,7 @@ class ProgramAstValidator:
         constraints: ast.PositionConstraintBlock,
         enclosing_definition: ast.QualityDefinition,
     ):
-        enclosing_fqun = enclosing_definition.name.fqun
+        enclosing_fqun = enclosing_definition.typed_name.name_content.fqun
 
         for requirement in constraints.requirements:
             reference = requirement.typed_global_name.name_content
@@ -380,7 +382,7 @@ class ProgramAstValidator:
             global_name_reference=typed_global_name,
         )
         # Process a reference that's inside of this same file.
-        if edge.fully_qualified_typed_name in self._seen_in_file:
+        if edge.full_typed_name in self._seen_in_file:
             self.reference_edges.append(edge)
             return
 
@@ -390,7 +392,7 @@ class ProgramAstValidator:
                 edge=edge,
                 global_name=global_name,
                 root_prefix=self._context.root_prefix,
-                expected_fqun=enclosing_definition.name.fqun,
+                expected_fqun=enclosing_definition.typed_name.name_content.fqun,
             )
             return
 

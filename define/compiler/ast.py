@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from define.compiler.lark import lark_standalone
 
 
-class TypeName(enum.StrEnum):
+class NameType(enum.StrEnum):
     """The type of a quality definition."""
 
     POSITION = "position"
@@ -77,21 +77,32 @@ class Program(ASTNode):
 class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
-    name: GlobalNameDefinition
-    type_name: TypeName
-
-    @property
-    def fully_qualified_typed_name(self) -> str:
-        """Return canonical typed-name text including FQUN and path."""
-        return f"{self.type_name.value}<{self.name.full_name()}>"
+    typed_name: TypedGlobalNameInDefinition
 
 
-@dataclass
+@dataclass(init=False)
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
-    type_name: TypeName = TypeName.POSITION
-    constraints: PositionConstraintBlock | None = None
+    constraints: PositionConstraintBlock | None
+
+    def __init__(
+        self,
+        *,
+        name: GlobalNameDefinition,
+        position: SourcePosition,
+        constraints: PositionConstraintBlock | None = None,
+    ):
+        """Initialize with a global name, wrapping it in a typed definition name."""
+        super().__init__(
+            typed_name=TypedGlobalNameInDefinition(
+                name_type=NameType.POSITION,
+                name_content=name,
+                position=name.position,
+            ),
+            position=position,
+        )
+        self.constraints = constraints
 
 
 @dataclass
@@ -124,29 +135,26 @@ class LocalPositionDefinition(ASTNode):
 
 
 @dataclass
-class TypedNameReference(ASTNode):
-    """Represents a typed name reference (local or global)."""
+class TypedName(ASTNode):
+    """Represents a typed name (local or global)."""
 
-    type_name: TypeName
+    name_type: NameType
     name_content: NameContent
+
+    def full_typed_name(self, in_universe: Fqun | None = None) -> str:
+        """Return canonical typed-name text including effective FQUN and path."""
+        return f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
 
 
 @dataclass
-class TypedGlobalNameReference(TypedNameReference):
+class TypedGlobalNameReference(TypedName):
     """Represents a typed global name reference."""
 
     name_content: GlobalNameReference  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    def fully_qualified_typed_name(self, in_universe: Fqun | None = None) -> str:
-        """Return canonical typed-name text including effective FQUN and path."""
-        return (
-            f"{self.type_name.value}"
-            + f"<{self.name_content.full_name(in_universe=in_universe)}>"
-        )
-
 
 @dataclass
-class TypedLocalNameReference(TypedNameReference):
+class TypedLocalNameReference(TypedName):
     """Represents a typed local name reference."""
 
     name_content: LocalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -156,7 +164,7 @@ class TypedLocalNameReference(TypedNameReference):
 class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
 
-    chain: list[TypedNameReference]
+    chain: list[TypedName]
 
 
 @dataclass
@@ -220,12 +228,29 @@ class ActionDefinitionBlock(ASTNode):
     action_statements: ActionStatementsBlock
 
 
-@dataclass
+@dataclass(init=False)
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
-    type_name: TypeName = TypeName.ACTION
-    definition_block: ActionDefinitionBlock | None = None
+    definition_block: ActionDefinitionBlock | None
+
+    def __init__(
+        self,
+        *,
+        name: GlobalNameDefinition,
+        position: SourcePosition,
+        definition_block: ActionDefinitionBlock | None = None,
+    ):
+        """Initialize with a global name, wrapping it in a typed definition name."""
+        super().__init__(
+            typed_name=TypedGlobalNameInDefinition(
+                name_type=NameType.ACTION,
+                name_content=name,
+                position=name.position,
+            ),
+            position=position,
+        )
+        self.definition_block = definition_block
 
 
 @dataclass
@@ -299,3 +324,10 @@ class GlobalNameDefinition(GlobalNameContent):
 @dataclass
 class GlobalNameReference(GlobalNameContent):
     """Represents a global name at a reference site."""
+
+
+@dataclass
+class TypedGlobalNameInDefinition(TypedName):
+    """Represents a typed global name at a definition site."""
+
+    name_content: GlobalNameDefinition  # pyright: ignore[reportIncompatibleVariableOverride]

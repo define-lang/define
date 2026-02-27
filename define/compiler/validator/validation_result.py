@@ -39,13 +39,11 @@ class ReferenceEdge:
     global_name_reference: ast.TypedGlobalNameReference
 
     @cached_property
-    def fully_qualified_typed_name(self) -> str:
+    def full_typed_name(self) -> str:
         """Return the fully qualified typed-name key for this edge target."""
-        if self.global_name_reference.name_content.fqun is None:
-            return self.global_name_reference.fully_qualified_typed_name(
-                in_universe=self.enclosing_definition.name.fqun
-            )
-        return self.global_name_reference.fully_qualified_typed_name()
+        return self.global_name_reference.full_typed_name(
+            in_universe=self.enclosing_definition.typed_name.name_content.fqun
+        )
 
 
 @dataclass
