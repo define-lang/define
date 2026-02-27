@@ -93,45 +93,42 @@ class TestGlobalPathName:
 
 
 class TestGlobalNameContent:
-    def test_fully_qualified_with_explicit_fqun(self):
+    def test_full_name_with_explicit_fqun(self):
         name = ast.GlobalNameContent(
             position=_POS,
             fqun=_make_fqun("my_lib", authority="my.domain.com"),
             path=ast.GlobalPathName(position=_POS, name="/thing"),
         )
-        assert name.fully_qualified() == "my.domain.com:my_lib:/thing"
+        assert name.full_name() == "my.domain.com:my_lib:/thing"
 
-    def test_fully_qualified_with_short_name_uses_with_fqun(self):
+    def test_full_name_with_in_universe(self):
         name = ast.GlobalNameContent(
             position=_POS,
             fqun=None,
             path=ast.GlobalPathName(position=_POS, name="/thing"),
         )
         assert (
-            name.fully_qualified(
-                with_fqun=_make_fqun("my_lib", authority="my.domain.com")
-            )
+            name.full_name(in_universe=_make_fqun("my_lib", authority="my.domain.com"))
             == "my.domain.com:my_lib:/thing"
         )
 
-    def test_fully_qualified_with_explicit_fqun_disallows_with_fqun_override(self):
+    def test_full_name_own_fqun_takes_precedence_over_in_universe(self):
         name = ast.GlobalNameContent(
             position=_POS,
             fqun=_make_fqun("my_lib", authority="my.domain.com"),
             path=ast.GlobalPathName(position=_POS, name="/thing"),
         )
-        with_fqun = _make_fqun("other_lib", authority="other.domain.com")
-        with pytest.raises(ValueError, match="with_fqun is not allowed"):
-            _ = name.fully_qualified(with_fqun=with_fqun)
+        in_universe = _make_fqun("other_lib", authority="other.domain.com")
+        assert name.full_name(in_universe=in_universe) == "my.domain.com:my_lib:/thing"
 
-    def test_fully_qualified_requires_effective_fqun(self):
+    def test_full_name_requires_effective_fqun(self):
         name = ast.GlobalNameContent(
             position=_POS,
             fqun=None,
             path=ast.GlobalPathName(position=_POS, name="/thing"),
         )
         with pytest.raises(ValueError, match="requires an effective FQUN"):
-            _ = name.fully_qualified()
+            _ = name.full_name()
 
 
 class TestQualityDefinition:
@@ -166,7 +163,7 @@ class TestTypedGlobalNameReference:
             == "action<my.domain.com:my_lib:/thing>"
         )
 
-    def test_fully_qualified_typed_name_with_short_name_uses_with_fqun(self):
+    def test_fully_qualified_typed_name_with_short_name_uses_in_universe(self):
         reference = ast.TypedGlobalNameReference(
             position=_POS,
             type_name=ast.TypeName.POSITION,
@@ -178,12 +175,12 @@ class TestTypedGlobalNameReference:
         )
         assert (
             reference.fully_qualified_typed_name(
-                with_fqun=_make_fqun("my_lib", authority="my.domain.com")
+                in_universe=_make_fqun("my_lib", authority="my.domain.com")
             )
             == "position<my.domain.com:my_lib:/thing>"
         )
 
-    def test_fully_qualified_typed_name_with_fqun_disallows_with_fqun_override(self):
+    def test_fully_qualified_typed_name_own_fqun_takes_precedence(self):
         reference = ast.TypedGlobalNameReference(
             position=_POS,
             type_name=ast.TypeName.POSITION,
@@ -193,6 +190,8 @@ class TestTypedGlobalNameReference:
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        with_fqun = _make_fqun("other_lib", authority="other.domain.com")
-        with pytest.raises(ValueError, match="with_fqun is not allowed"):
-            _ = reference.fully_qualified_typed_name(with_fqun=with_fqun)
+        in_universe = _make_fqun("other_lib", authority="other.domain.com")
+        assert (
+            reference.fully_qualified_typed_name(in_universe=in_universe)
+            == "position<my.domain.com:my_lib:/thing>"
+        )

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import abc
 import enum
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, override
 
 from define.compiler import constants
 
@@ -82,7 +83,7 @@ class QualityDefinition(ASTNode):
     @property
     def fully_qualified_typed_name(self) -> str:
         """Return canonical typed-name text including FQUN and path."""
-        return f"{self.type_name.value}<{self.name.fully_qualified()}>"
+        return f"{self.type_name.value}<{self.name.full_name()}>"
 
 
 @dataclass
@@ -94,8 +95,12 @@ class PositionDefinition(QualityDefinition):
 
 
 @dataclass
-class NameContent(ASTNode):
+class NameContent(ASTNode, abc.ABC):
     """Base class for name content nodes (local or global)."""
+
+    @abc.abstractmethod
+    def full_name(self, in_universe: Fqun | None = None) -> str:
+        """Return the full name text, optionally resolved against a universe."""
 
 
 @dataclass
@@ -103,6 +108,11 @@ class LocalNameContent(NameContent):
     """Represents a local name."""
 
     name: str
+
+    @override
+    def full_name(self, in_universe: Fqun | None = None) -> str:
+        """Return the local name."""
+        return self.name
 
 
 @dataclass
@@ -127,11 +137,11 @@ class TypedGlobalNameReference(TypedNameReference):
 
     name_content: GlobalNameReference  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    def fully_qualified_typed_name(self, with_fqun: Fqun | None = None) -> str:
+    def fully_qualified_typed_name(self, in_universe: Fqun | None = None) -> str:
         """Return canonical typed-name text including effective FQUN and path."""
         return (
             f"{self.type_name.value}"
-            + f"<{self.name_content.fully_qualified(with_fqun=with_fqun)}>"
+            + f"<{self.name_content.full_name(in_universe=in_universe)}>"
         )
 
 
@@ -270,13 +280,10 @@ class GlobalNameContent(NameContent):
     fqun: Fqun | None
     path: GlobalPathName
 
-    def fully_qualified(self, with_fqun: Fqun | None = None) -> str:
-        """Return canonical FQUN:path text with optional short-form resolution."""
-        if with_fqun is not None and self.fqun is not None:
-            raise ValueError(
-                "global name already has an FQUN; with_fqun is not allowed"
-            )
-        fqun = self.fqun or with_fqun
+    @override
+    def full_name(self, in_universe: Fqun | None = None) -> str:
+        """Return canonical FQUN:path text, resolved against a universe if needed."""
+        fqun = self.fqun or in_universe
         if fqun is None:
             raise ValueError("global name requires an effective FQUN")
         return f"{fqun.canonical}:{self.path.name}"

@@ -43,7 +43,7 @@ class ReferenceEdge:
         """Return the fully qualified typed-name key for this edge target."""
         if self.global_name_reference.name_content.fqun is None:
             return self.global_name_reference.fully_qualified_typed_name(
-                with_fqun=self.enclosing_definition.name.fqun
+                in_universe=self.enclosing_definition.name.fqun
             )
         return self.global_name_reference.fully_qualified_typed_name()
 
