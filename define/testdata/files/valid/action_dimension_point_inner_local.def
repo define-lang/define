@@ -1,0 +1,7 @@
+define the potential action<mv:define-lang.org:test_files:/valid/action_dimension_point_inner_local> {
+    it happens when {
+    } and it does {
+        define the position<stmt_pos>.
+        create a dimension point in position<stmt_pos>.
+    }
+}

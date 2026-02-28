@@ -206,6 +206,19 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
+    "dimension_points/chain_ending_with_action.def": [
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "dimension_points/single_action_reference.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "dimension_points/undefined_local_position.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+    ],
     "syntax/short_form_required/full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
@@ -239,6 +252,12 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    ],
+    "dimension_points/chain_not_in_action": [
+        diagnostics.ChainElementNotInActionDiagnostic,
+    ],
+    "dimension_points/chain_not_in_constraints": [
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
     "sub_root_conflict_load": [
         diagnostics.SubRootAlreadyOccupiedDiagnostic,

@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_dim_bad_action:/act_b> {
+    define the position<inner>.
+    it happens when {
+    } and it does {
+    }
+}

@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_dim_five_chain:/act_b> {
+    define the position<pos_c>.
+    it happens when {
+    } and it does {
+    }
+}
