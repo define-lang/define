@@ -25,6 +25,19 @@ py_test(
 )
 
 py_test(
+    name = "chained_name_test",
+    size = "small",
+    srcs = ["chained_name_test.py"],
+    pytest_main = True,
+    deps = [
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "create_dimension_point_test",
     size = "small",
     srcs = ["create_dimension_point_test.py"],
@@ -241,6 +254,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":chained_name_test",
         ":conftest",
         ":create_dimension_point_test",
         ":diagnostic_collection_test",
