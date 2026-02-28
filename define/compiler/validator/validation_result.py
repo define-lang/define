@@ -143,11 +143,11 @@ class ValidationResult:
             locals_map: dict[str, frozenset[str]] = {}
             for local_def in d.definition_block.local_definitions:
                 if local_def.constraints is not None:
-                    locals_map[local_def.local_name.name] = frozenset(
+                    locals_map[local_def.typed_name.name_content.name] = frozenset(
                         req.typed_global_name.full_typed_name(in_universe=fqun)
                         for req in local_def.constraints.requirements
                     )
                 else:
-                    locals_map[local_def.local_name.name] = frozenset()
+                    locals_map[local_def.typed_name.name_content.name] = frozenset()
             result[d.typed_name.full_typed_name()] = locals_map
         return result

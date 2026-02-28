@@ -360,22 +360,18 @@ class ProgramAstValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         self.diagnostics.extend(
-            name_validators.validate_local_name_format(local_def.local_name)
+            name_validators.validate_local_name_format(
+                local_def.typed_name.name_content
+            )
         )
-        name = local_def.local_name.name
-        # TODO: LocalPositionDefinition needs to have a typed_name field.
-        typed_ref = ast.LocalTypedNameReference(
-            name_type=ast.NameType.POSITION,
-            name_content=local_def.local_name,
-            position=local_def.position,
-        )
-        first_def = scope.get_definition(typed_ref)
+        name = local_def.typed_name.name_content.name
+        first_def = scope.get_definition(local_def.typed_name)
         if first_def is not None:
             self.diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
-                    position=local_def.local_name.position,
+                    position=local_def.typed_name.name_content.position,
                     local_name=name,
-                    first_definition_line=first_def.local_name.position.line,
+                    first_definition_line=first_def.typed_name.name_content.position.line,
                 )
             )
             return

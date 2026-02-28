@@ -25,7 +25,7 @@ class ScopeTracker:
 
     def add_local_definition(self, local_def: ast.LocalPositionDefinition):
         """Add a local position definition to scope, pre-computing constraint names."""
-        key = f"position<{local_def.local_name.name}>"
+        key = local_def.typed_name.full_typed_name(in_universe=self._enclosing_fqun)
         self._definitions[key] = local_def
         if local_def.constraints is not None:
             self._constraint_names[key] = frozenset(

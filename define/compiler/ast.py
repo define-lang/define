@@ -126,12 +126,28 @@ class LocalNameContent(NameContent):
         return self.name
 
 
-@dataclass
+@dataclass(init=False)
 class LocalPositionDefinition(ASTNode):
     """Represents a local position definition within an action block."""
 
-    local_name: LocalNameContent
-    constraints: PositionConstraintBlock | None = None
+    typed_name: LocalTypedNameReference
+    constraints: PositionConstraintBlock | None
+
+    def __init__(
+        self,
+        *,
+        local_name: LocalNameContent,
+        position: SourcePosition,
+        constraints: PositionConstraintBlock | None = None,
+    ):
+        """Initialize with a local name, wrapping it in a typed name."""
+        super().__init__(position=position)
+        self.typed_name = LocalTypedNameReference(
+            name_type=NameType.POSITION,
+            name_content=local_name,
+            position=local_name.position,
+        )
+        self.constraints = constraints
 
 
 @dataclass

@@ -171,7 +171,10 @@ def test_action_definition_block_with_local_definition():
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.definition_block is not None
     assert len(definition.definition_block.local_definitions) == 1
-    assert definition.definition_block.local_definitions[0].local_name.name == "my_pos"
+    assert (
+        definition.definition_block.local_definitions[0].typed_name.name_content.name
+        == "my_pos"
+    )
 
 
 def test_action_definition_block_with_multiple_local_definitions():
@@ -189,10 +192,12 @@ def test_action_definition_block_with_multiple_local_definitions():
     assert definition.definition_block is not None
     assert len(definition.definition_block.local_definitions) == 2
     assert (
-        definition.definition_block.local_definitions[0].local_name.name == "first_pos"
+        definition.definition_block.local_definitions[0].typed_name.name_content.name
+        == "first_pos"
     )
     assert (
-        definition.definition_block.local_definitions[1].local_name.name == "second_pos"
+        definition.definition_block.local_definitions[1].typed_name.name_content.name
+        == "second_pos"
     )
 
 
@@ -248,7 +253,7 @@ def test_action_definition_block_with_action_statement_local_definition():
     assert len(block.action_statements.statements) == 1
     local_def = block.action_statements.statements[0]
     assert isinstance(local_def, ast.LocalPositionDefinition)
-    assert local_def.local_name.name == "inner_pos"
+    assert local_def.typed_name.name_content.name == "inner_pos"
     assert local_def.position.line == 4
     assert local_def.position.column == 9
 
@@ -272,8 +277,8 @@ def test_action_definition_block_with_multiple_action_statement_local_definition
     second_local_def = block.action_statements.statements[1]
     assert isinstance(first_local_def, ast.LocalPositionDefinition)
     assert isinstance(second_local_def, ast.LocalPositionDefinition)
-    assert first_local_def.local_name.name == "first_inner"
-    assert second_local_def.local_name.name == "second_inner"
+    assert first_local_def.typed_name.name_content.name == "first_inner"
+    assert second_local_def.typed_name.name_content.name == "second_inner"
     assert first_local_def.position.line == 4
     assert second_local_def.position.line == 5
 
@@ -479,7 +484,7 @@ def test_mixed_action_statements():
     stmts = block.action_statements.statements
     assert len(stmts) == 3
     assert isinstance(stmts[0], ast.LocalPositionDefinition)
-    assert stmts[0].local_name.name == "inner_pos"
+    assert stmts[0].typed_name.name_content.name == "inner_pos"
     assert isinstance(stmts[1], ast.CreateDimensionPointStatement)
     assert isinstance(stmts[2], ast.CreateDimensionPointStatement)
 
