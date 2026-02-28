@@ -462,3 +462,104 @@ The trigger graph construction could be incremental. When a file changes, only
 recompute the affected subgraph. Tarjan's would need to re-run on the full
 graph, but with a sparse graph this is fast. Alternatively, there are
 incremental SCC algorithms that avoid full recomputation.
+
+---
+
+## 14. Trigger Cycle Termination Analysis
+
+Section 5 states that trigger graph cycles are compile errors. This section
+refines that position: cycles in the action trigger graph represent loops, and
+loops are a legitimate programming pattern. We should allow them when we can
+prove they terminate, or when the user explicitly marks them as intentionally
+infinite.
+
+### 14.1. Termination Is Always Decidable
+
+Define's state space is finite. There is a finite set of positions P, each
+either occupied or empty. The full state is a subset of P (the set of occupied
+positions), giving 2^|P| possible states. Combined with "trigger memory" (which
+actions are armed -- i.e., have seen their condition go false since last
+firing), the total state space is 2^(|P| + |A|). An execution is infinite if and
+only if it revisits a (state, trigger-memory) pair. The halting problem does not
+apply here -- this is a finite-state system, not a Turing-complete one.
+
+The question is efficiency, not decidability.
+
+### 14.2. Petri Net Incidence Matrix Analysis
+
+Since Define maps to a 1-bounded Petri net, the incidence matrix provides a
+direct termination tool. For each action, compute its net effect on each
+position (+1 for create/move-to, -1 for destroy/move-from, 0 otherwise). Stack
+these into a matrix A. A cycle of actions can repeat if and only if A \* x = 0
+has a non-negative integer solution x (a "T-invariant"). If no such solution
+exists, the cycle provably terminates -- the net effect of any pass through the
+cycle changes the state in a way that cannot be sustained indefinitely.
+
+This is a linear programming check. Polynomial time.
+
+### 14.3. The Ping-Pong Problem
+
+The hard case is two actions bouncing a dimension point between two positions.
+The incidence matrix:
+
+```
+         A    B
+pos p:  -1   +1
+pos q:  +1   -1
+```
+
+A \* [1,1]^T = [0,0]^T -- a T-invariant exists. The net effect is zero.
+Count-based arguments cannot prove termination, and indeed the cycle is
+infinite: state {p} → {q} → {p} → ... The false-to-true trigger semantics do not
+save you because each move creates a fresh false-to-true transition on the
+destination.
+
+### 14.4. Layered Termination Checker
+
+A practical termination checker should be layered, from cheapest to most
+expensive:
+
+**Layer 1 -- DAG check (O(V+E), nearly free):** No cycles in trigger graph →
+terminates. Handles the common case.
+
+**Layer 2 -- T-invariant analysis (polynomial, linear algebra):** For each SCC
+in the trigger graph, compute the incidence matrix. If no T-invariant exists →
+cycle terminates. This catches cycles that are net consumers or net producers of
+dimension points.
+
+**Layer 3 -- Single-pass state comparison (cheap for small SCCs):** For cycles
+that have T-invariants, simulate one full traversal. If the system returns to
+the exact same state, the cycle is infinite. Reject.
+
+**Layer 4 -- Conservative rejection:** If the compiler cannot prove termination
+by layers 1-3, reject with a clear diagnostic identifying the cycle.
+
+### 14.5. Intentionally Infinite Loops
+
+Some programs intentionally loop forever: game loops, server event loops,
+processing pipelines that feed back. Layer 3 would identify these as infinite
+and reject them. To support this pattern, the programmer marks the cycle with a
+sentinel (something like `this cycle intentionally runs forever`). The compiler
+then:
+
+1. Skips termination checking for that SCC.
+2. Verifies the **loop invariant** instead -- that each individual pass through
+   the cycle is internally consistent and paradox-free.
+
+The loop invariant check works as follows:
+
+1. The trigger condition guarantees certain position states at entry.
+2. The action body transforms those states consistently.
+3. The exit state is compatible with the trigger condition firing again.
+
+This is essentially model-checking a single step of the cycle, which is O(action
+body size) -- no complexity blowup.
+
+### 14.6. Precision of the T-Invariant Layer
+
+Most terminating cycles in practice will have some position that gets consumed
+without being replenished, which means no T-invariant exists. The T-invariant
+analysis should be precise enough to accept most legitimate terminating
+programs, so that layer 4 (conservative rejection) rarely triggers. Only the
+degenerate cases -- zero-net-effect cycles -- require the more expensive layer 3
+analysis or an explicit programmer annotation.
