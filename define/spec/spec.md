@@ -938,6 +938,34 @@ action_statement =
     | wait_until_statement ;
 ```
 
+## Position References
+
+A position reference is a single position name or a chained name that ends with
+the name of a position.
+
+Below, when we talk about a "parent name," we mean the name in the chain
+immediately before the name we are talking about. In
+`position<a>::position</b>`, `position<a>` is the parent name of `position</b>`.
+
+Unless otherwise stated, the rules for all position references are:
+
+- The first name in the chain must have been defined _before_ it is referenced.
+- For global position or action names in the chain, those must be specified as a
+  constraint on their parent name.
+- For local position names, the parent name must be an action and the local
+  position must be defined in the Action Definition Block of that action.
+- Every position named in the chain must already have a dimension point in it
+  (except for the last position in the chain, in the case where we are creating
+  or moving dimension point statements).
+
+```ebnf
+position_reference =
+    local_or_global_position,
+    [ "::", { position_reference_middle, "::" }, local_or_global_position ] ;
+local_or_global_position = local_position_name | global_position_name ;
+position_reference_middle = local_or_global_position | action_name ;
+```
+
 ## Creating Dimension Points
 
 Proposals:
@@ -945,23 +973,12 @@ Proposals:
 - [DLP 13: Creating Dimension Points](../proposals/00013-creating-dimension-points.md)
 
 A Create Dimension Point Statement starts with `create a dimension point in`,
-followed by exactly one space and a position reference (which may be a chained
-name), and ends with a statement terminator.
-
-Position references must start and end their chain with a position name.
-
-The referenced position must have already been defined before reaching this
-point in the program. All names in the chain must be guaranteed to exist already
-by defined position constraints.
+followed by exactly one space and a position reference, ending with a statement
+terminator.
 
 It is an error if the referenced position already contains a dimension point.
 
 ```ebnf
-local_or_global_position = local_position_name | global_position_name ;
-position_reference_middle = local_or_global_position | action_name ;
-position_reference =
-    local_or_global_position,
-    [ "::", { position_reference_middle, "::" }, local_or_global_position ] ;
 create_dimension_point_statement =
     "create a dimension point in", " ", position_reference, terminator ;
 ```
