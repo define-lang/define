@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
 from define.compiler import (
+    ast,
     config,
     constants,
     diagnostics,
@@ -38,6 +39,14 @@ class _DeferredEdge:
     """An edge waiting for its target file to complete validation."""
 
     edge: validation_result.ReferenceEdge
+    source_result: validation_result.ValidationResult
+
+
+@dataclass
+class _DeferredChainValidation:
+    """A chain element waiting for its parent's file to complete validation."""
+
+    deferred: validation_result.DeferredChainElements
     source_result: validation_result.ValidationResult
 
 
@@ -104,6 +113,9 @@ class ProgramValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredEdge]]
+    _deferred_chain_validations: dict[
+        pathlib.PurePosixPath, list[_DeferredChainValidation]
+    ]
     config_loading_time_ns: int
 
     def __init__(self):
@@ -111,6 +123,7 @@ class ProgramValidator:
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
+        self._deferred_chain_validations = {}
         self.config_loading_time_ns = 0
 
     @cached_property
@@ -186,8 +199,10 @@ class ProgramValidator:
         started_at = time.perf_counter_ns()
         self._submit_discovered_files(result, pool)
         self._process_reference_edges(result.root_prefix, result)
+        self._process_deferred_chained_names(result)
         result.stats.global_validation += time.perf_counter_ns() - started_at
         self._resolve_deferred_edges_for(result.file_path)
+        self._resolve_deferred_chain_validations_for(result.file_path)
 
     def _submit_discovered_files(
         self,
@@ -325,8 +340,10 @@ class ProgramValidator:
     ):
         """Try to add edges to the reference graph and validate resolved ones."""
         for ref_edge in result.reference_edges:
-            target_file = self._resolve_target_file(ref_edge, enclosing_root)
-            if self._path_tracker.is_under_failed_root(target_file):
+            target_file = self._resolve_target_file(
+                ref_edge.global_name_reference.name_content, enclosing_root
+            )
+            if target_file is None:
                 continue
 
             source_key = ref_edge.enclosing_definition.typed_name.full_typed_name()
@@ -361,20 +378,23 @@ class ProgramValidator:
 
     def _resolve_target_file(
         self,
-        edge: validation_result.ReferenceEdge,
+        global_name: ast.ReferenceGlobalNameContent,
         enclosing_root: pathlib.PurePosixPath,
-    ) -> pathlib.PurePosixPath:
-        """Determine the full file path for a reference edge's target."""
-        global_name = edge.global_name_reference.name_content
+    ) -> pathlib.PurePosixPath | None:
+        """Determine the full file path for a global name reference.
 
-        # A reference to another universe, so we need its full sub-root path.
+        Returns None if the target is under a failed root.
+        """
         if global_name.fqun is not None:
             fqun_string = global_name.fqun.canonical
             sub_root_loc = self._path_tracker.sub_root_location(
                 fqun_string, enclosing_root
             )
             sub_root_path = enclosing_root / sub_root_loc
-            return global_name.path.file_path(sub_root_path)
+            target_file = global_name.path.file_path(sub_root_path)
+            if self._path_tracker.is_under_failed_root(target_file):
+                return None
+            return target_file
 
         return global_name.path.file_path(enclosing_root)
 
@@ -444,11 +464,7 @@ class ProgramValidator:
             self._path_tracker.mark_not_found(target_file)
             return
 
-        target_has_match = any(
-            d.typed_name.full_typed_name() == edge.full_typed_name
-            for d in target_result.definitions
-        )
-        if not target_has_match:
+        if edge.full_typed_name not in target_result.definitions_by_name:
             source_result.diagnostics.append(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=global_name.position,
@@ -467,6 +483,200 @@ class ProgramValidator:
                 completed_file,
                 target_result,
                 deferred_edge.source_result,
+            )
+
+    def _process_deferred_chained_names(
+        self,
+        result: validation_result.ValidationResult,
+    ):
+        """Queue or immediately validate deferred chain elements from a result."""
+        for deferred in result.deferred_chained_names:
+            target_file = self._resolve_target_file(
+                deferred.parent_element.name_content, result.root_prefix
+            )
+            if target_file is None:
+                continue
+            target_result = self._path_tracker.try_get_result(target_file)
+            # Same race as _process_reference_edges: the target file may have
+            # already completed (e.g. it was discovered by an earlier file)
+            # before we process this result's chain elements.
+            if target_result is not None:
+                self._validate_chain_element_against_target(
+                    deferred, target_result, result
+                )
+            else:
+                self._deferred_chain_validations.setdefault(target_file, []).append(
+                    _DeferredChainValidation(deferred=deferred, source_result=result)
+                )
+
+    def _resolve_deferred_chain_validations_for(
+        self, completed_file: pathlib.PurePosixPath
+    ):
+        """Validate deferred chain elements that were waiting for this file."""
+        deferred_list = self._deferred_chain_validations.pop(completed_file, [])
+        target_result = self._path_tracker.get_result(completed_file)
+        for dcv in deferred_list:
+            self._validate_chain_element_against_target(
+                dcv.deferred, target_result, dcv.source_result
+            )
+
+    def _validate_chain_element_against_target(
+        self,
+        deferred: validation_result.DeferredChainElements,
+        target_result: validation_result.ValidationResult,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Validate a chain element against a completed target file's result."""
+        started_at = time.perf_counter_ns()
+        self._do_validate_chain_element_against_target(
+            deferred, target_result, source_result
+        )
+        source_result.stats.deferred_validation += time.perf_counter_ns() - started_at
+
+    def _do_validate_chain_element_against_target(
+        self,
+        deferred: validation_result.DeferredChainElements,
+        target_result: validation_result.ValidationResult,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Validate a chain element against its parent's definition in the target file."""
+        target_def = target_result.definitions_by_name.get(
+            deferred.parent_full_typed_name
+        )
+        if target_def is None:
+            return
+        match target_def:
+            case ast.PositionDefinition():
+                self._validate_chain_against_position_def(
+                    deferred, target_result, source_result
+                )
+            case ast.ActionDefinition():
+                self._validate_chain_against_action_def(
+                    deferred, target_result, source_result
+                )
+            case _:
+                raise TypeError(f"Unexpected definition type: {type(target_def)}")
+
+    def _validate_chain_against_position_def(
+        self,
+        deferred: validation_result.DeferredChainElements,
+        target_result: validation_result.ValidationResult,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Validate a chain element against a position definition's constraints."""
+        self._check_chain_element_against_constraints(
+            deferred.chain_element,
+            target_result.global_position_definition_constraints[
+                deferred.parent_full_typed_name
+            ],
+            deferred.parent_full_typed_name,
+            deferred.source_fqun,
+            source_result,
+        )
+        self._defer_chain_continuation(
+            deferred,
+            deferred.chain_element,
+            deferred.remaining_chain,
+            source_result,
+        )
+
+    def _validate_chain_against_action_def(
+        self,
+        deferred: validation_result.DeferredChainElements,
+        target_result: validation_result.ValidationResult,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Validate a chain element against an action definition's local positions."""
+        element = deferred.chain_element
+        if not isinstance(element, ast.LocalTypedNameReference):
+            self._emit_not_in_action_diagnostic(deferred, source_result)
+            return
+        if element.name_type != ast.NameType.POSITION:
+            self._emit_not_in_action_diagnostic(deferred, source_result)
+            return
+        locals_map = target_result.action_local_position_constraints[
+            deferred.parent_full_typed_name
+        ]
+        if element.name_content.name not in locals_map:
+            self._emit_not_in_action_diagnostic(deferred, source_result)
+            return
+        if not deferred.remaining_chain:
+            return
+        next_element = deferred.remaining_chain[0]
+        rest = deferred.remaining_chain[1:]
+        self._check_chain_element_against_constraints(
+            next_element,
+            locals_map[element.name_content.name],
+            element.full_typed_name(),
+            deferred.source_fqun,
+            source_result,
+        )
+        self._defer_chain_continuation(deferred, next_element, rest, source_result)
+
+    def _emit_not_in_action_diagnostic(
+        self,
+        deferred: validation_result.DeferredChainElements,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Emit a diagnostic for a chain element not found in an action definition."""
+        source_result.diagnostics.append(
+            diagnostics.ChainElementNotInActionDiagnostic(
+                position=deferred.chain_element.position,
+                element_name=deferred.chain_element.full_typed_name(
+                    in_universe=deferred.source_fqun
+                ),
+                parent_name=deferred.parent_full_typed_name,
+            )
+        )
+
+    def _defer_chain_continuation(
+        self,
+        deferred: validation_result.DeferredChainElements,
+        validated_element: ast.TypedName,
+        remaining: list[ast.TypedName],
+        source_result: validation_result.ValidationResult,
+    ):
+        """Submit a deferred chain validation, or validate immediately if the target is ready."""
+        if not remaining:
+            return
+        next_deferred = deferred.next_deferred(
+            typing.cast("ast.GlobalTypedNameReference", validated_element),
+            remaining,
+        )
+        target_file = self._resolve_target_file(
+            next_deferred.parent_element.name_content, source_result.root_prefix
+        )
+        if target_file is None:
+            return
+        target_result = self._path_tracker.try_get_result(target_file)
+        if target_result is not None:
+            self._validate_chain_element_against_target(
+                next_deferred, target_result, source_result
+            )
+        else:
+            self._deferred_chain_validations.setdefault(target_file, []).append(
+                _DeferredChainValidation(
+                    deferred=next_deferred, source_result=source_result
+                )
+            )
+
+    def _check_chain_element_against_constraints(
+        self,
+        element: ast.TypedName,
+        constraint_names: frozenset[str],
+        parent_name: str,
+        source_fqun: ast.Fqun,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Check if a chain element matches any constraint, adding a diagnostic if not."""
+        element_name = element.full_typed_name(in_universe=source_fqun)
+        if element_name not in constraint_names:
+            source_result.diagnostics.append(
+                diagnostics.ChainElementNotInConstraintsDiagnostic(
+                    position=element.position,
+                    element_name=element_name,
+                    parent_name=parent_name,
+                )
             )
 
     def _check_existing_root_conflicts_for_first_subroot_load(

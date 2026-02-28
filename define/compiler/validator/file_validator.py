@@ -170,6 +170,7 @@ class FileValidator:
             definitions=fdv.definitions,
             reference_edges=fdv.reference_edges,
             discovered_files=fdv.discovered_files,
+            deferred_chained_names=fdv.deferred_chained_names,
         )
 
     def _load_file(
@@ -208,6 +209,7 @@ class ProgramAstValidator:
     definitions: list[ast.QualityDefinition]
     reference_edges: list[validation_result.ReferenceEdge]
     discovered_files: list[validation_result.DiscoveredFile]
+    deferred_chained_names: list[validation_result.DeferredChainElements]
     _seen_in_file: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
 
@@ -223,6 +225,7 @@ class ProgramAstValidator:
         self.definitions = []
         self.reference_edges = []
         self.discovered_files = []
+        self.deferred_chained_names = []
         self._seen_in_file = {}
         self._unknown_fquns = set()
 
@@ -360,7 +363,13 @@ class ProgramAstValidator:
             name_validators.validate_local_name_format(local_def.local_name)
         )
         name = local_def.local_name.name
-        first_def = scope.get_definition(name)
+        # TODO: LocalPositionDefinition needs to have a typed_name field.
+        typed_ref = ast.LocalTypedNameReference(
+            name_type=ast.NameType.POSITION,
+            name_content=local_def.local_name,
+            position=local_def.position,
+        )
+        first_def = scope.get_definition(typed_ref)
         if first_def is not None:
             self.diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
@@ -378,70 +387,92 @@ class ProgramAstValidator:
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
-        for typed_name in stmt.position_reference.chain:
-            reference_diagnostics = name_validators.validate_typed_name(
-                typed_name, enclosing_definition
-            )
-            self.diagnostics.extend(reference_diagnostics)
-            if reference_diagnostics:
-                continue
-            if isinstance(typed_name, ast.GlobalTypedNameReference):
-                self._process_reference(typed_name, enclosing_definition)
-
-        self._validate_position_reference_chain_endpoints(stmt.position_reference.chain)
-
-        self._validate_chained_names_exist(
+        self._validate_full_chained_name(
             stmt.position_reference.chain, enclosing_definition, scope
         )
 
-    def _validate_chained_names_exist(
+    def _validate_full_chained_name(
         self,
         chain: list[ast.TypedName],
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
         first = chain[0]
-        if not (
-            isinstance(first, ast.LocalTypedNameReference)
-            and first.name_type == ast.NameType.POSITION
-        ):
-            # TODO: Validate that global definition name references exist when
-            # the first chain element is a GlobalTypedNameReference.
-            return
+        first_is_defined = True
         if not scope.is_defined(first):
-            self.diagnostics.append(
-                diagnostics.UndefinedLocalPositionDiagnostic(
-                    position=first.name_content.position,
-                    local_name=first.name_content.name,
-                )
-            )
-            return
-        if len(chain) >= 2:
-            self._validate_chain_element_against_constraints(
-                chain[1], first, enclosing_definition, scope
-            )
-
-    def _validate_position_reference_chain_endpoints(
-        self,
-        chain: list[ast.TypedName],
-    ):
-        first = chain[0]
-        if first.name_type != ast.NameType.POSITION:
-            self.diagnostics.append(
-                diagnostics.PositionReferenceChainStartDiagnostic(
-                    position=first.position,
-                )
-            )
-        # TODO: Validate chain elements at index 2 and beyond against
-        # their position's constraints.
-        if len(chain) > 1:
-            last = chain[-1]
-            if last.name_type != ast.NameType.POSITION:
+            first_is_defined = False
+            if isinstance(first, ast.LocalTypedNameReference):
+                fqun = enclosing_definition.typed_name.name_content.fqun
                 self.diagnostics.append(
-                    diagnostics.PositionReferenceChainEndDiagnostic(
-                        position=last.position,
+                    diagnostics.UndefinedLocalNameDiagnostic(
+                        position=first.name_content.position,
+                        local_name=first.full_typed_name(in_universe=fqun),
                     )
                 )
+            # TODO: Support global names starting positions.
+
+        for typed_name in chain:
+            self._validate_chained_name_element(typed_name, enclosing_definition)
+
+        if len(chain) > 1 and first_is_defined:
+            # If the first item is a local position, we have to do the validation
+            # of the second item immediately, because the constraint of the local
+            # position won't be passed out of the function if it's in an Action
+            # Statements Block. (If it's in an Action Definition Block, we still
+            # _can_ do it now, so we simply should.)
+            self._validate_chain_element_against_constraints(
+                chain[1], chain[0], enclosing_definition, scope
+            )
+
+        # TODO: In the future when the _first_ element can be a global name, this will
+        # be more complex.
+        if len(chain) > 2 and isinstance(chain[1], ast.GlobalTypedNameReference):
+            # We don't need to check name validation, because this doesn't cause
+            # file I/O. (Only emitting a DiscoveredFile triggers that.)
+            self.deferred_chained_names.append(
+                validation_result.DeferredChainElements(
+                    enclosing_definition=enclosing_definition,
+                    parent_element=chain[1],
+                    chain_element=chain[2],
+                    remaining_chain=chain[3:],
+                )
+            )
+
+        if chain[-1].name_type != ast.NameType.POSITION:
+            self.diagnostics.append(
+                diagnostics.PositionReferenceChainEndDiagnostic(
+                    position=chain[-1].position,
+                )
+            )
+
+    def _validate_chained_name_element(
+        self,
+        chain_element: ast.TypedName,
+        enclosing_definition: ast.QualityDefinition,
+    ):
+        """Validate a single chain element.
+
+        Returns whether or not the name was valid.
+        """
+        name_diagnostics = name_validators.validate_typed_name(
+            chain_element, enclosing_definition
+        )
+        self.diagnostics.extend(name_diagnostics)
+        if name_diagnostics:
+            return
+
+        if isinstance(chain_element, ast.GlobalTypedNameReference):
+            self._process_reference(chain_element, enclosing_definition)
+        elif (
+            isinstance(chain_element, ast.LocalTypedNameReference)
+            and chain_element.name_type == ast.NameType.ACTION
+        ):
+            self.diagnostics.append(
+                diagnostics.LocalActionNameDiagnostic(
+                    position=chain_element.name_content.position,
+                    local_name=chain_element.name_content.name,
+                )
+            )
 
     def _validate_chain_element_against_constraints(
         self,
@@ -450,13 +481,14 @@ class ProgramAstValidator:
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
+        """Check chain_element against parent's constraints. Returns True if valid."""
         if not scope.definition_has_quality(parent, chain_element):
             fqun = enclosing_definition.typed_name.name_content.fqun
             self.diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     position=chain_element.position,
                     element_name=chain_element.full_typed_name(in_universe=fqun),
-                    parent_name=parent.name_content.full_name(),
+                    parent_name=parent.full_typed_name(in_universe=fqun),
                 )
             )
 

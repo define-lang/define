@@ -25,28 +25,32 @@ class ScopeTracker:
 
     def add_local_definition(self, local_def: ast.LocalPositionDefinition):
         """Add a local position definition to scope, pre-computing constraint names."""
-        name = local_def.local_name.name
-        self._definitions[name] = local_def
+        key = f"position<{local_def.local_name.name}>"
+        self._definitions[key] = local_def
         if local_def.constraints is not None:
-            self._constraint_names[name] = frozenset(
+            self._constraint_names[key] = frozenset(
                 req.typed_global_name.full_typed_name(in_universe=self._enclosing_fqun)
                 for req in local_def.constraints.requirements
             )
         else:
-            self._constraint_names[name] = frozenset()
+            self._constraint_names[key] = frozenset()
 
-    def get_definition(self, name: str) -> ast.LocalPositionDefinition | None:
-        """Return the definition for a name, or None if not defined."""
-        return self._definitions.get(name)
+    def get_definition(
+        self, typed_name: ast.TypedName
+    ) -> ast.LocalPositionDefinition | None:
+        """Return the definition for a typed name, or None if not defined."""
+        key = typed_name.full_typed_name(in_universe=self._enclosing_fqun)
+        return self._definitions.get(key)
 
     def is_defined(self, name: ast.TypedName) -> bool:
         """Check if a typed name reference is defined in scope."""
-        return name.name_content.full_name() in self._definitions
+        key = name.full_typed_name(in_universe=self._enclosing_fqun)
+        return key in self._definitions
 
     def definition_has_quality(
         self, parent: ast.TypedName, quality: ast.TypedName
     ) -> bool:
         """Check if a quality is declared in the parent's constraints."""
-        parent_name = parent.name_content.full_name()
+        parent_key = parent.full_typed_name(in_universe=self._enclosing_fqun)
         quality_name = quality.full_typed_name(in_universe=self._enclosing_fqun)
-        return quality_name in self._constraint_names[parent_name]
+        return quality_name in self._constraint_names[parent_key]

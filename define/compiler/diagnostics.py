@@ -409,15 +409,6 @@ class CircularGlobalReferenceDiagnostic(Diagnostic):
 
 
 @dataclass
-class PositionReferenceChainStartDiagnostic(Diagnostic):
-    """Diagnostic for when a position reference chain starts with an action."""
-
-    message_format: ClassVar[str] = (
-        "position references must start with a position name"
-    )
-
-
-@dataclass
 class PositionReferenceChainEndDiagnostic(Diagnostic):
     """Diagnostic for when a position reference chain ends with an action."""
 
@@ -425,13 +416,22 @@ class PositionReferenceChainEndDiagnostic(Diagnostic):
 
 
 @dataclass
-class UndefinedLocalPositionDiagnostic(Diagnostic):
-    """Diagnostic for when a local position name is used before being defined."""
+class UndefinedLocalNameDiagnostic(Diagnostic):
+    """Diagnostic for when a local typed name is used but not defined in scope."""
 
     local_name: str
     message_format: ClassVar[str] = (
-        "local position '{self.local_name}' has not been defined"
-        " before this line of code"
+        "'{self.local_name}' has not been defined before this line of code"
+    )
+
+
+@dataclass
+class LocalActionNameDiagnostic(Diagnostic):
+    """Diagnostic for when an action uses a local name instead of a global reference."""
+
+    local_name: str
+    message_format: ClassVar[str] = (
+        "actions cannot have local names, but '{self.local_name}' is a local name"
     )
 
 
@@ -444,4 +444,15 @@ class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "'{self.element_name}' is not declared as one of the"
         " 'it has the' requirements in the definition of '{self.parent_name}'"
+    )
+
+
+@dataclass
+class ChainElementNotInActionDiagnostic(Diagnostic):
+    """Diagnostic for when a chain element is part of an action's definition definition block."""
+
+    element_name: str
+    parent_name: str
+    message_format: ClassVar[str] = (
+        "'{self.element_name}' is not defined inside the definition of '{self.parent_name}'"
     )

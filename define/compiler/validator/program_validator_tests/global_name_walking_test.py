@@ -147,7 +147,7 @@ def test_self_cycle_emits_diagnostic(
         "position<my.domain.com:my_lib:/test>",
     ]
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 12
     assert (
         diags[0].message
         == "circular references between definitions are not allowed in Define:\n"
@@ -199,7 +199,7 @@ def test_two_file_cycle_emits_diagnostic(
         "position<mv:define-lang.org:test_walk_cycle:/test>",
     ]
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 12
     assert (
         diags[0].message
         == "circular references between definitions are not allowed in Define:\n"

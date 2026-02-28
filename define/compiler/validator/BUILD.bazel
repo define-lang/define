@@ -166,6 +166,20 @@ py_library(
     ],
 )
 
+py_test(
+    name = "validation_result_test",
+    size = "small",
+    srcs = ["validation_result_test.py"],
+    pytest_main = True,
+    deps = [
+        ":stats",
+        ":validation_result",
+        "//define/compiler:parser",
+        "//define/compiler:transformer",
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "validator",
     srcs = ["__init__.py"],
@@ -198,6 +212,7 @@ pyright_test(
         ":stats",
         ":stats_test",
         ":validation_result",
+        ":validation_result_test",
         ":validator",
     ],
 )

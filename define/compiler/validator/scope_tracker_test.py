@@ -141,5 +141,16 @@ def test_get_definition():
     local_def = _make_local_def("my_pos")
     tracker.add_local_definition(local_def)
 
-    assert tracker.get_definition("my_pos") is local_def
-    assert tracker.get_definition("no_such") is None
+    assert tracker.get_definition(_make_local_typed_name("my_pos")) is local_def
+    assert tracker.get_definition(_make_local_typed_name("no_such")) is None
+
+
+def test_action_name_does_not_match_position():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.add_local_definition(_make_local_def("shared_name"))
+
+    pos_ref = _make_local_typed_name("shared_name", ast.NameType.POSITION)
+    act_ref = _make_local_typed_name("shared_name", ast.NameType.ACTION)
+
+    assert tracker.is_defined(pos_ref) is True
+    assert tracker.is_defined(act_ref) is False

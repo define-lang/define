@@ -170,8 +170,11 @@ class DefineTransformer(
         """Transform a name-type token into a NameType enum."""
         return ast.NameType(token)
 
+    @lark_standalone.v_args(meta=True)
     def typed_global_name_reference(
-        self, items: list[ast.NameType | ast.ReferenceGlobalNameContent]
+        self,
+        meta: lark_standalone.Meta,
+        items: list[ast.NameType | ast.ReferenceGlobalNameContent],
     ) -> ast.GlobalTypedNameReference:
         """Transform typed global name references."""
         name_type = cast("ast.NameType", items[0])
@@ -179,11 +182,14 @@ class DefineTransformer(
         return ast.GlobalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
-            position=name_content.position,
+            position=ast.SourcePosition.from_meta(meta),
         )
 
+    @lark_standalone.v_args(meta=True)
     def typed_local_name_reference(
-        self, items: list[ast.NameType | ast.LocalNameContent]
+        self,
+        meta: lark_standalone.Meta,
+        items: list[ast.NameType | ast.LocalNameContent],
     ) -> ast.LocalTypedNameReference:
         """Transform typed local name references."""
         name_type = cast("ast.NameType", items[0])
@@ -191,7 +197,7 @@ class DefineTransformer(
         return ast.LocalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
-            position=name_content.position,
+            position=ast.SourcePosition.from_meta(meta),
         )
 
     def typed_name_reference(self, items: list[ast.TypedName]) -> ast.TypedName:
