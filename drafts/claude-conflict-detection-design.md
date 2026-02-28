@@ -342,3 +342,123 @@ constraints reduce this to linear/polynomial.
    paradox? (C is causally after A, so C would try to write to a position A
    already wrote to. This depends on whether A filled and C is trying to fill
    the same position, vs A vacated and C fills.)
+
+---
+
+## 13. Computational Complexity Analysis
+
+This section analyzes the runtime complexity of each analysis phase, with
+particular attention to single-threaded bottlenecks.
+
+### Definitions
+
+- **N** = total number of definitions (actions, qualities, positions) across the
+  program
+- **S** = total number of statements across all action bodies
+- **D** = max depth of the dependency DAG
+- **T** = total edges in the trigger graph
+- **E** = total effects across all effect summaries
+
+### Phase 1: Intra-Action Dataflow
+
+O(S) total, fully parallelizable per-file. Each statement is O(1) amortized
+(hash map lookup/update on the occupancy map), except:
+
+- `create` in a constrained position recurses into init blocks -- depth bounded
+  by D
+- `destroy` recurses into the cascade -- depth bounded by number of qualities on
+  the dimension point
+
+Single-threaded critical path: O(largest single file). Not a concern.
+
+### Phase 2: Effect Summaries
+
+This is the first bottleneck. Summaries must be computed in topological order of
+the dependency DAG -- nodes at the same level can be parallelized, but the
+**critical path is the longest dependency chain**.
+
+Per-node work: O(S_i + merge cost). The merge cost is where it gets interesting.
+When action A creates a dimension point in a position constrained by quality Q,
+A's summary must include Q's init effects. If Q's init block itself assigns
+qualities with init blocks, the summary transitively includes those too.
+
+With efficient set union (sorted arrays or hash sets), merging a dependency's
+summary is O(size of that summary). But summaries can grow along chains: if
+definitions form a chain Q1 → Q2 → ... → Qk, and each adds effects, then Q1's
+summary includes all effects from Q1 through Qk.
+
+**Worst case along the critical path:** O(S) -- if all definitions are on one
+chain and each adds effects. In practice, dependency DAGs are wide and shallow,
+making this much smaller.
+
+**Total Phase 2 work:** O(S + sum of all summary sizes). The sum of summary
+sizes is at most O(N \* D) in the worst case, but typically O(S) because most
+summaries don't grow much from merging.
+
+### Phase 3: Trigger Graph and Cycle Detection
+
+Two parts:
+
+**Graph construction:** For each effect in each summary, look up which actions
+watch that position. With a hash index (position → watching actions), each
+lookup is O(1). Total: O(E). Parallelizable per-action.
+
+**Cycle detection (Tarjan's SCC):** O(V + T) where V = number of segments, T =
+trigger edges. **This is inherently sequential** -- Tarjan's is DFS-based.
+
+The key question: how large is T? Each trigger edge exists because some action
+writes a position that another action watches. If each position is watched by at
+most W actions, and there are E total write effects, then T = O(E \* W). For
+typical programs, W is small (few actions watch any given position). In
+pathological cases where all actions watch the same position, T = O(N²).
+
+**Single-threaded bottleneck: O(N + T).** For sparse trigger graphs (typical),
+this is O(N). For dense ones, O(N²).
+
+### Phase 4: Paradox Detection
+
+For each concurrency set, check for conflicting accesses.
+
+The naive approach (check all pairs in a set) is O(|set|²), which would be
+painful. But we can do much better: **index by position**. For each position P
+in the concurrency set's combined effects, collect all segments that access P.
+Conflicts only exist between segments accessing the _same_ position.
+
+With a hash map, this is **O(E_set)** per concurrency set, where E_set = total
+effects in the set. Not O(|set|²).
+
+The causal ordering check adds: for each potential conflict pair (S1, S2 both
+accessing P), check if there's a causal path from S1 to S2 in the trigger graph.
+With precomputed reachability (transitive closure of the trigger graph), this is
+O(1) per pair. The transitive closure itself is O(V \* T) or O(V³) with
+Floyd-Warshall -- **another single-threaded bottleneck**.
+
+However, we can avoid full transitive closure. Since the trigger graph is a DAG
+(cycles already eliminated), we can compute reachability with a
+topological-order BFS. And we only need reachability between segments in the
+same concurrency set, not all pairs globally.
+
+**Total Phase 4:** O(sum of E_set over all concurrency sets). With caching (same
+segment appears in multiple sets), bounded by O(T \* max effects per segment).
+
+### Summary Table
+
+| Bottleneck                               | Typical | Worst Case                |
+| ---------------------------------------- | ------- | ------------------------- |
+| Phase 2 critical path (dependency chain) | O(S/p)  | O(S) if all linear        |
+| Phase 3 cycle detection (Tarjan's)       | O(N)    | O(N²) if dense            |
+| Phase 4 reachability in DAG              | O(N+T)  | O(N²) if dense            |
+| Phase 4 conflict checking                | O(E)    | O(N\*E) if huge conc sets |
+
+The dominant single-threaded cost is **Tarjan's SCC on the trigger graph** and
+**reachability computation for causal ordering**. Both are O(N + T) which is
+linear for sparse graphs (the common case). The pathological case -- many
+actions watching the same position -- gives O(N²), but this likely indicates a
+design problem in the Define program itself.
+
+### Potential Optimization: Incremental Analysis
+
+The trigger graph construction could be incremental. When a file changes, only
+recompute the affected subgraph. Tarjan's would need to re-run on the full
+graph, but with a sparse graph this is fast. Alternatively, there are
+incremental SCC algorithms that avoid full recomputation.
