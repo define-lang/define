@@ -956,7 +956,7 @@ Unless otherwise stated, the rules for all position references are:
   position must be defined in the Action Definition Block of that action.
 - Every position named in the chain must already have a dimension point in it
   (except for the last position in the chain, in the case where we are creating
-  or moving dimension point statements).
+  a dimension point in a position or moving a dimension point from a position).
 
 ```ebnf
 position_reference =
@@ -981,4 +981,26 @@ It is an error if the referenced position already contains a dimension point.
 ```ebnf
 create_dimension_point_statement =
     "create a dimension point in", " ", position_reference, terminator ;
+```
+
+## Moving Dimension Points
+
+Proposals:
+
+- [DLP 17: Moving Dimension Points](../proposals/00017-moving-dimension-points.md)
+
+A Move Dimension Point Statement starts with `move the dimension point in`,
+followed by exactly one space and a source position reference, then `to`, then a
+destination position reference, ending with a statement terminator.
+
+The source position reference must contain a dimension point.
+
+It is an error if the source and destination position are the same.
+
+It is an error if the destination position reference already contains a
+dimension point.
+
+```ebnf
+move_dimension_point_statement =
+    "move the dimension point in", " ", position_reference, " to ", position_reference, terminator ;
 ```
