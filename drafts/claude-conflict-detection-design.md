@@ -1,50 +1,88 @@
-# Compile-Time Position Occupancy Tracking: Theoretical Design
+# Compile-Time Position Occupancy Tracking: Revised Theoretical Design
 
 ## Context
 
 Define needs a compile-time system to track which positions contain dimension
-points at every point during program execution, so the compiler can detect
-conflicts such as:
+points at every point during program execution, so the compiler can detect:
 
 - Creating a dimension point in an already-occupied position
 - Moving a dimension point to an occupied position
 - Moving/destroying from an empty position
+- Referencing through an empty intermediate position in a chain
 - Two concurrent actions modifying the same position (paradoxes)
 
 This document proposes a theoretical framework. No implementation yet.
 
 ---
 
-## 1. Why Define Makes This Tractable
+## 1. Three Dependency Structures
 
-Define's design constraints create what we'll call the **Closed-Form Property**
--- the compiler can almost always determine exact position occupancy:
+The compiler maintains three distinct graphs. Understanding their roles is
+essential to the design.
 
-- **No aliasing**: A dimension point exists in exactly one position. No pointers
-  or references.
-- **Sequential intra-action execution**: Within an action body, statements run
-  in sequence, instantaneously.
-- **Trigger conditions are entry invariants**: When
-  `the position<x> has a dimension point` triggers an action, `position<x>` is
-  guaranteed Occupied at entry.
-- **Position constraints are type information**: If `position<x>` requires
-  `it has the position</balance>`, then any occupied `position<x>` guarantees
-  `position<x>::position</balance>` exists.
-- **Deterministic destruction ordering**: Cascading follows reverse-assignment
-  order -- statically knowable.
-- **No conditionals or loops**: Within an action body, there are no branches or
-  iterations to create uncertainty.
-- **Acyclic dependency graph**: No circular dependencies between global
-  definitions.
+**Global Name Reference Graph** (acyclic, already implemented):
 
-The only source of uncertainty is across `wait until` boundaries, where
-concurrent actions may have modified state. But even here, the `wait until`
-conditions establish new invariants, and effect summaries bound what could have
-changed.
+- Edges: which global names reference which other global names
+- Determines file loading order and compilation order
+- Bounds what each definition can "see" and name
+
+**Quality Requirement Tree** (acyclic):
+
+- Edges: `this dimension point must have the position<...>` / `action<...>`
+- Makes names accessible in the current scope
+- Determines quality assignment order and dimension point structure
+- Multiple actions on the same dimension point share positions through this tree
+
+**Trigger relationships** (can cycle, derived from the other two):
+
+- NOT an independent graph -- structurally derived from the reference graph +
+  quality requirement tree
+- Trigger edges either follow reference edges (caller triggers callee through
+  position chain), go between quality requirement siblings (actions on the same
+  dimension point sharing a position), or go in reverse along reference edges
+  (callee satisfies caller's `wait until`)
+- Cycles can only form between sibling actions on the same dimension point via
+  shared quality requirement positions. Cross-dimension-point cycles would
+  require reference graph cycles, which are forbidden.
 
 ---
 
-## 2. The Position State Domain
+## 2. The Position Ownership Tree
+
+Positions form a dynamic tree. Each level alternates between positions and
+dimension points:
+
+```
+root position
+└── dimension point (occupies the position)
+    ├── quality position A (assigned to the dimension point)
+    │   └── dimension point
+    │       └── ...
+    └── quality position B
+        └── dimension point
+            └── ...
+```
+
+**The tree is dynamic.** A branch only exists when every intermediate position
+is occupied. For the chained reference `position<a>::position</b>::position</c>`
+to be valid:
+
+1. `position<a>` must be Occupied
+2. The dim point at `position<a>` must have `position</b>` assigned
+3. `position</b>` must be Occupied
+4. The dim point at `position</b>` must have `position</c>` assigned
+
+If any intermediate is empty, the entire subtree below it is unreachable.
+Creating a dimension point _activates_ a branch. Destroying one _deactivates_
+everything below (cascading destruction).
+
+**Concurrency is always rooted in this tree.** If two actions execute
+concurrently, there is a position in the ownership tree that transitively owns
+both of them. This common ancestor bounds the scope of potential conflicts.
+
+---
+
+## 3. The Position State Domain
 
 For each position known to the compiler at a given program point:
 
@@ -55,192 +93,196 @@ For each position known to the compiler at a given program point:
 | **Occupied**  | Position exists, contains a dimension point  |
 
 Because Define lacks conditionals and loops within action bodies, there is no
-need for an "Unknown" or "Maybe" state within a single execution segment. Across
+need for an "Unknown" state within a single execution segment. Across
 `wait until` boundaries, the new trigger conditions re-establish definite
 states.
 
 ---
 
-## 3. Intra-Action Analysis (Sequential)
+## 4. Intra-Action Analysis (Sequential)
 
 Within a single action body, the compiler runs forward dataflow analysis with
-transfer functions for each statement:
+transfer functions for each statement.
+
+### Chain Validity
+
+Every chained position reference generates occupancy checks on ALL intermediate
+positions, not just the endpoint. Referencing
+`position<a>::position</b>::position</c>` is an implicit read of `position<a>`
+and `position</b>` (both must be Occupied) plus whatever operation applies to
+`position</c>`.
+
+### Transfer Functions
 
 **`define the position<x>`**: `state[x] = Empty`
 
 **`create a dimension point in position<R>`**:
 
-- Precondition: `state[R] == Empty` (error if Occupied)
-- All intermediate chain positions must be Occupied
+- Precondition: `state[R] == Empty`, all intermediates Occupied
 - Postcondition: `state[R] = Occupied`
-- Compound effect: Required qualities from position constraints are assigned
-  atomically (DLP 20), each quality's init block runs synchronously (DLP 32),
-  potentially filling child positions
+- Compound: constraints assigned atomically (DLP 20), init blocks run
+  synchronously (DLP 32), potentially filling child positions
 
 **`move the dimension point in position<R1> to position<R2>`**:
 
-- Precondition: `state[R1] == Occupied`, `state[R2] == Empty`
-- R2 must not be a descendant of R1 (DLP 25)
+- Precondition: `state[R1] == Occupied`, `state[R2] == Empty`, all intermediates
+  Occupied, R2 not a descendant of R1 (DLP 25)
 - Postcondition: `state[R1] = Empty`, `state[R2] = Occupied`
-- Child positions transfer: `R1::child` references become `R2::child`
+- Child positions transfer with the dimension point
 
 **`destroy the dimension point in position<R>`**:
 
-- Precondition: `state[R] == Occupied`
+- Precondition: `state[R] == Occupied`, all intermediates Occupied
 - Postcondition: `state[R] = Empty`
-- Cascade: Destructors run synchronously in reverse-assignment order (DLP 34),
-  then child positions are emptied recursively (DLP 31)
+- Cascade: destructors run synchronously in reverse-assignment order (DLP 34),
+  child positions emptied recursively (DLP 31)
 
 **`assign the position<P> to dimension point in position<R>`**:
 
 - Precondition: `state[R] == Occupied`
-- Postcondition: `state[R::P] = Empty` (or post-init-block state if P has an
-  init block)
+- Postcondition: `state[R::P] = Empty` (or post-init state if P has init block)
 
 **`wait until { conditions }`**:
 
 - Splits the action body into two segments
-- After the boundary, states are re-derived from the `wait until` conditions +
-  effect summaries of what could have changed concurrently
+- After the boundary, states re-derived from `wait until` conditions + effect
+  summaries of what could have changed concurrently
 
-**End of action block**: Locally-defined positions with dimension points are
+**End of action block**: locally-defined positions with dimension points are
 automatically destroyed in reverse definition order (DLP 31). The tracker
 simulates these implicit destructions.
 
+### Synchronous vs Asynchronous Trigger Classification
+
+Each trigger point in an action body is classified locally:
+
+- **Synchronous**: `create` (triggering a sub-action) followed immediately by
+  `wait until` that depends on the triggered action's effects. This is the
+  common case (see fibonacci example). No concurrency analysis needed.
+- **Asynchronous**: `create` without a corresponding `wait until`. The triggered
+  action runs concurrently with the remainder of the current action body.
+
 ---
 
-## 4. Effect Summaries (Modular Compilation)
+## 5. Effect Summaries
 
-Each action/quality produces an **Effect Summary** that describes its observable
-behavior without revealing implementation:
+Each action produces an effect summary computed bottom-up along the reference
+graph (piggybacking on existing compilation order -- no new bottleneck).
 
 ```
 ActionEffectSummary:
   trigger_conditions:   what triggers this action
-  reads:                positions observed
-  creates:              positions where dim points are created
-  vacates:              positions emptied (move-from, destroy)
-  fills:                positions filled (move-to, create)
-
+  chain_reads:          ALL positions traversed (intermediates + endpoints)
+  writes:               positions modified (creates, fills, vacates)
   segments:             split by wait-until boundaries
   cascade_plans:        precomputed destruction cascades
+  sync_triggers:        trigger points classified as synchronous
+  async_triggers:       trigger points classified as asynchronous
 ```
 
-For position qualities with init blocks:
+**Chain reads are critical.** A reference to
+`position<a>::position</b>::position</c>` adds `position<a>` and `position</b>`
+to chain_reads (intermediates) plus `position</c>` to either reads or writes
+depending on the operation. Any concurrent write to an intermediate invalidates
+the entire reference chain.
 
-```
-PositionEffectSummary:
-  constraints:          required qualities
-  init_effects:         what the "after it is assigned" block does
-```
-
-**Computation**: Bottom-up along the acyclic dependency graph. Qualities/actions
-with no dependencies first, then those that depend on them. Each summary uses
-only its direct dependencies' summaries. Terminates because the graph is
-acyclic.
-
-**Position references are relative**: An action that declares
-`this dimension point must have the position</balance>` has effects relative to
-`this::position</balance>`. At each use site, the compiler instantiates relative
-references against the concrete position.
+**Position references are relative.** An action's effects are expressed relative
+to `this dimension point`. At each use site, the compiler instantiates against
+the concrete position.
 
 ---
 
-## 5. Trigger Graph, Cycle Detection, and Concurrency Sets
+## 6. Concurrency Analysis via the Ownership Tree
 
-**Trigger Graph**: Directed graph where:
+Instead of building a separate trigger graph with global analysis, we use the
+ownership tree directly. Concurrency is always rooted at a specific node in the
+tree.
 
-- Nodes = effect segments (portions of action bodies between `wait until`
-  boundaries)
-- Edge from S1 to S2 exists when S1 writes a position that appears in S2's
-  trigger conditions, and the write would make S2's conditions become true
+### Where Concurrency Arises
 
-**Trigger cycles are possible** and must be detected. Unlike the
-dependency/reference graph (which is acyclic by rule), the trigger graph CAN
-have cycles: Action A writes `position<x>` triggering B, B writes `position<y>`
-triggering A, etc. This would create infinite trigger chains at runtime.
+Concurrency occurs when an action body triggers multiple sub-actions
+asynchronously, or triggers a sub-action and continues doing work without
+waiting. The node in the ownership tree where this happens is the **concurrency
+root**.
 
-**Cycle detection rule**: Any cycle in the trigger graph is a compile error. The
-compiler must:
+### Conflict Scope
 
-1. Build the trigger graph from effect summaries
-2. Run standard cycle detection (e.g., Tarjan's SCC algorithm)
-3. Report any cycle as an error with the full chain of actions involved
+Two concurrent actions can only conflict on positions they can both name:
 
-This is a conservative rule -- some cyclic trigger graphs might terminate in
-practice (if the cycle conditions don't keep becoming true). But verifying
-termination in cyclic trigger graphs is equivalent to the halting problem.
-Forbidding cycles is clean, simple, and keeps analysis bounded.
+- **Local positions**: each concurrent subtree's local positions are private. No
+  conflict possible.
+- **Shared quality requirement positions**: positions accessible to multiple
+  concurrent siblings because they're on the same dimension point. This is where
+  conflicts happen.
+- **Intermediate positions**: one concurrent action traverses through a position
+  that another concurrent action writes to (chain invalidation).
 
-**Concurrency Set**: Starting from a state-changing statement, the set of all
-segments that could execute simultaneously. Includes:
+### Conflict Rules
 
-- The remainder of the current segment (triggering action continues)
-- Triggered actions' first segments
-- Transitively triggered actions (following the acyclic trigger graph -- cycles
-  are already errors)
-- But NOT segments after a `wait until` (they start only when their condition is
-  met)
+For each concurrency root, check the concurrent children's effect summaries:
 
-**Causal ordering within concurrency sets**: Two segments in a concurrency set
-may have causal ordering -- S1's effect triggers S2. This matters for conflict
-detection (see Section 6).
+1. **Write-write on shared position**: two concurrent siblings both write to the
+   same quality requirement position → paradox
+2. **Read-write on shared position**: one sibling reads (including chain
+   traversal) a position that another writes, with no causal ordering → paradox
+3. **Chain invalidation**: one sibling writes to (destroys/vacates) a position
+   that is an intermediate in another sibling's reference chain → paradox
+4. **Causally ordered access**: if the writer's effect triggers the reader, the
+   reader sees the post-write state → NOT a paradox
 
----
+### The Common Case Is Free
 
-## 6. Paradox Detection (Concurrent Conflicts)
+Most triggering is synchronous (create → wait until). The fibonacci example
+demonstrates this pattern: `generate` creates a dimension point in `next`'s
+`position<run>`, then immediately `wait until` it's destroyed. This is a
+sequential call. No concurrency analysis needed.
 
-A **paradox** = two concurrent segments with conflicting modifications to the
-same position where no causal ordering guarantees consistency. The goal is to
-prevent actual runtime race conditions, not to be overly conservative.
-
-**Causal ordering principle**: If segment S1's write to `position<x>` is what
-triggers segment S2, then S2's read of `position<x>` is NOT a conflict -- S2's
-trigger condition guarantees it sees the post-write state. More generally, if
-there is a causal path from S1 to S2 in the trigger graph, S2 sees all of S1's
-effects.
-
-**Conflict rules for each concurrency set**:
-
-- **Write-write (no causal order)**: Two segments that both write the same
-  position, with no causal path between them = paradox
-- **Read-write (no causal order)**: A segment reads a position that another
-  writes, with no causal path from the writer to the reader = paradox (race
-  condition: reader may see pre- or post-write state)
-- **Read-write (causally ordered)**: If the writer causally precedes the reader
-  (writer's effect triggered the reader), the reader sees the post-write state.
-  NOT a paradox.
-- **Write-write (causally ordered)**: Even with causal ordering, two writes to
-  the same position conflict. The first write fills it, the second would try to
-  fill an occupied position. Still a paradox (unless the first write is a vacate
-  and the second is a fill, which is sequenced correctly).
-
-**Formal check**: For each concurrency set C, for each pair of segments (S1, S2)
-in C that both access position P:
-
-1. If both are writes with no causal path between them → paradox
-2. If one reads and one writes with no causal path from writer to reader →
-   paradox
-3. If causally ordered (writer → reader), check that the reader's assumptions
-   about P's state match the writer's postcondition → OK if consistent
-
-This is isomorphic to **serializability checking** in databases, but tractable
-because:
-
-1. The "schedule" (set of concurrent transactions) is statically determined from
-   the trigger graph
-2. The trigger graph is cycle-free (cycles are already compile errors from
-   Section 5)
-3. Effect summaries are precomputed
-4. Causal ordering provides a partial order that resolves many apparent
-   conflicts
+Only the asynchronous case (create without waiting, or multiple creates before a
+wait) requires conflict checking, and even then the scope is bounded by the
+ownership tree's common ancestor.
 
 ---
 
-## 7. Destruction Cascades
+## 7. Cycle Detection and Termination
 
-Destruction is the most complex operation. The compiler precomputes a **Cascade
-Plan** for each position:
+### Where Cycles Can Form
+
+Trigger cycles can only form between sibling actions on the same dimension
+point, connected through shared quality requirement positions.
+Cross-dimension-point cycles are prevented by reference graph acyclicity.
+
+This means cycle detection is **local per dimension point**, not global. For
+each dimension point with multiple actions, check whether the sibling actions
+can trigger each other in a cycle through shared positions.
+
+### Termination Analysis
+
+Since the state space is finite (2^|P| position states), termination is always
+decidable. A layered checker:
+
+**Layer 1 -- DAG check**: If no cycles among this dimension point's sibling
+actions → done.
+
+**Layer 2 -- T-invariant analysis**: For each cycle, compute the Petri net
+incidence matrix. If no non-negative solution to Ax=0 exists → cycle provably
+terminates.
+
+**Layer 3 -- Single-pass state comparison**: For cycles with T-invariants,
+simulate one traversal. If the system returns to the same state → infinite.
+
+**Layer 4 -- Conservative rejection**: Cannot prove termination → reject.
+
+### Intentionally Infinite Loops
+
+Programmers may mark a cycle with a sentinel indicating it intentionally runs
+forever. The compiler then skips termination checking and instead verifies the
+**loop invariant**: each pass is internally consistent and paradox-free.
+
+---
+
+## 8. Destruction Cascades
+
+The compiler precomputes a **Cascade Plan** for each position:
 
 ```
 CascadePlan:
@@ -251,315 +293,97 @@ CascadePlan:
   ]
 ```
 
-Key: During cascading destruction, position constraints are suspended (DLP 31)
-and actions triggered by quality removal do NOT fire. This simplifies the
-cascade analysis -- only explicit destructors need to be traced.
+During cascading destruction, position constraints are suspended (DLP 31) and
+actions triggered by quality removal do NOT fire. Only explicit destructors need
+to be traced.
+
+**Chain invalidation during cascades**: destroying a dimension point deactivates
+its entire subtree. Any concurrent action traversing through that subtree's
+positions is in conflict.
 
 ---
 
-## 8. Interaction with Quality Constraints
+## 9. Interaction with Quality Constraints
 
 Position constraints and occupancy tracking reinforce each other:
 
-- If `position<x>` is Occupied AND has constraint
-  `it has the position</balance>`, then the compiler knows
-  `position<x>::position</balance>` exists
-- During atomic creation (DLP 20), the compiler traces quality assignments in
-  constraint-list order, updating the occupancy map for each init block
-- Constraint propagation: occupancy of a parent position implies existence of
-  all constrained child positions
+- Occupied `position<x>` with constraint `it has the position</balance>` →
+  compiler knows `position<x>::position</balance>` exists
+- Atomic creation (DLP 20) traces quality assignments in constraint-list order,
+  updating the occupancy map for each init block
+- Constraint propagation: occupancy of a parent implies existence of all
+  constrained child positions
 
 ---
 
-## 9. Analysis Architecture (Four Phases)
+## 10. Analysis Architecture
 
-**Phase 1 (per-file, parallel)**: Intra-action forward dataflow. Track occupancy
-state statement-by-statement within each action body. Produce effect segments.
+**Phase 1 (per-file, fully parallel)**: Intra-action forward dataflow. Track
+occupancy state statement-by-statement. Classify triggers as sync/async. Produce
+effect summaries including full chain reads. Piggybacks on existing per-file
+validation.
 
-**Phase 2 (bottom-up along dependency DAG)**: Compute effect summaries from
-Phase 1 results + dependency summaries. Handle init blocks, cascade plans.
+**Phase 2 (bottom-up, piggybacks on compilation order)**: Compose effect
+summaries from Phase 1 + dependency summaries. Handle init blocks, cascade
+plans. No new bottleneck -- this is additional O(file size) work per file along
+the existing compilation critical path.
 
-**Phase 3 (cross-file)**: Build trigger graph from effect summaries. Compute
-concurrency sets.
+**Phase 3 (per dimension point, fully parallel)**: For each dimension point with
+multiple actions: check sibling actions for cycles (layered termination checker)
+and write conflicts on shared quality requirement positions.
 
-**Phase 4 (cross-file)**: Check each concurrency set for conflicting writes.
-Report paradoxes.
-
-This maps naturally onto the existing compiler: Phase 1 in `FileValidator`,
-Phases 2-4 in `ProgramValidator`.
-
----
-
-## 10. Analogy to Petri Nets
-
-The system has a direct Petri net analogy:
-
-- **Places** = Positions
-- **Tokens** = Dimension points (at most 1 per place = 1-bounded net)
-- **Transitions** = Actions
-- **Marking** = Current occupancy state
-- **Firing rules** = Trigger conditions
-
-The key property we verify is **1-boundedness** (no position ever holds >1
-dimension point) and **conflict-freeness** (no two transitions fire
-simultaneously with conflicting effects).
-
-General Petri net analysis is EXPSPACE-complete, but Define's acyclicity
-constraints reduce this to linear/polynomial.
+No global trigger graph. No global Tarjan's. No global concurrency sets. No
+global causal reachability. The ownership tree structure makes all of those
+unnecessary.
 
 ---
 
-## 11. Resolved Design Decisions
+## 11. Computational Complexity
 
-- **Trigger cycles**: CAN form (independently of the dependency graph). The
-  compiler must detect and report them as errors. Cycle detection via Tarjan's
-  SCC on the trigger graph.
-- **Read-write conflicts**: Only paradoxes when truly concurrent (no causal
-  ordering). If the write triggers the read, the reader sees post-write state --
-  no race condition.
-- **Forms/collections**: Designed for 1-bounded case only. Will extend later
-  when forms are added.
+| Phase                        | Work                                    | Parallelizable?      |
+| ---------------------------- | --------------------------------------- | -------------------- |
+| Phase 1 (intra-action)       | O(S) total, O(file) per file            | Fully parallel       |
+| Phase 2 (effect summaries)   | O(S) additional on existing compilation | Existing parallelism |
+| Phase 3 (conflict detection) | O(per dimension point)                  | Fully parallel       |
 
-## 12. Remaining Open Questions
+The only new single-threaded work is bounded by the size of individual dimension
+points (their sibling action count and shared position count), not by the total
+program size.
 
-1. **Wait-until state reconstruction**: After a `wait until` boundary, how
-   precisely should the compiler determine what changed? Option A:
-   conservatively mark all concurrently-writable positions as needing
-   re-derivation from the wait conditions. Option B: use effect summaries to
-   precisely track only what could have changed.
+Worst case for a single dimension point: O(A² × P) where A = number of sibling
+actions and P = number of shared positions. For typical dimension points with a
+handful of actions, this is constant.
 
-2. **Trigger cycle error messages**: When a trigger cycle is detected, how much
-   context should the error provide? The full chain of actions and positions? A
-   minimal cycle?
+---
 
-3. **Cascade-triggered actions and paradoxes**: During cascading destruction,
+## 12. Resolved Design Decisions
+
+- **No separate trigger graph**: trigger relationships are derived from the
+  reference graph + quality requirement tree. The ownership tree is the primary
+  analysis structure.
+- **Sync/async classification is local**: determined by whether `wait until`
+  follows a trigger point. Most triggers are synchronous.
+- **Cycles are local**: can only form between sibling actions on the same
+  dimension point. Detected per dimension point, not globally.
+- **Chain reads are tracked**: every intermediate position in a chain is an
+  implicit read. Chain invalidation is a conflict type.
+- **Read-write conflicts**: only paradoxes when truly concurrent with no causal
+  ordering.
+- **Forms/collections**: designed for 1-bounded case only. Extend later.
+
+---
+
+## 13. Remaining Open Questions
+
+1. **Wait-until state reconstruction**: after a `wait until` boundary, use
+   effect summaries of concurrent actions to determine precisely what changed,
+   or conservatively re-derive from the wait conditions?
+
+2. **Cascade-triggered async actions**: during cascading destruction,
    destructors run synchronously but actions triggered BY destructors run
-   asynchronously (DLP 34). Should the paradox detector treat
-   destructor-triggered async actions differently from normal trigger chains?
+   asynchronously (DLP 34). How does this interact with the ownership tree
+   approach?
 
-4. **Transitive causal ordering**: If A triggers B and B triggers C, C sees A's
-   effects (transitively). But if A and C both write to position<x>, is that a
-   paradox? (C is causally after A, so C would try to write to a position A
-   already wrote to. This depends on whether A filled and C is trying to fill
-   the same position, vs A vacated and C fills.)
-
----
-
-## 13. Computational Complexity Analysis
-
-This section analyzes the runtime complexity of each analysis phase, with
-particular attention to single-threaded bottlenecks.
-
-### Definitions
-
-- **N** = total number of definitions (actions, qualities, positions) across the
-  program
-- **S** = total number of statements across all action bodies
-- **D** = max depth of the dependency DAG
-- **T** = total edges in the trigger graph
-- **E** = total effects across all effect summaries
-
-### Phase 1: Intra-Action Dataflow
-
-O(S) total, fully parallelizable per-file. Each statement is O(1) amortized
-(hash map lookup/update on the occupancy map), except:
-
-- `create` in a constrained position recurses into init blocks -- depth bounded
-  by D
-- `destroy` recurses into the cascade -- depth bounded by number of qualities on
-  the dimension point
-
-Single-threaded critical path: O(largest single file). Not a concern.
-
-### Phase 2: Effect Summaries
-
-This is the first bottleneck. Summaries must be computed in topological order of
-the dependency DAG -- nodes at the same level can be parallelized, but the
-**critical path is the longest dependency chain**.
-
-Per-node work: O(S_i + merge cost). The merge cost is where it gets interesting.
-When action A creates a dimension point in a position constrained by quality Q,
-A's summary must include Q's init effects. If Q's init block itself assigns
-qualities with init blocks, the summary transitively includes those too.
-
-With efficient set union (sorted arrays or hash sets), merging a dependency's
-summary is O(size of that summary). But summaries can grow along chains: if
-definitions form a chain Q1 → Q2 → ... → Qk, and each adds effects, then Q1's
-summary includes all effects from Q1 through Qk.
-
-**Worst case along the critical path:** O(S) -- if all definitions are on one
-chain and each adds effects. In practice, dependency DAGs are wide and shallow,
-making this much smaller.
-
-**Total Phase 2 work:** O(S + sum of all summary sizes). The sum of summary
-sizes is at most O(N \* D) in the worst case, but typically O(S) because most
-summaries don't grow much from merging.
-
-### Phase 3: Trigger Graph and Cycle Detection
-
-Two parts:
-
-**Graph construction:** For each effect in each summary, look up which actions
-watch that position. With a hash index (position → watching actions), each
-lookup is O(1). Total: O(E). Parallelizable per-action.
-
-**Cycle detection (Tarjan's SCC):** O(V + T) where V = number of segments, T =
-trigger edges. **This is inherently sequential** -- Tarjan's is DFS-based.
-
-The key question: how large is T? Each trigger edge exists because some action
-writes a position that another action watches. If each position is watched by at
-most W actions, and there are E total write effects, then T = O(E \* W). For
-typical programs, W is small (few actions watch any given position). In
-pathological cases where all actions watch the same position, T = O(N²).
-
-**Single-threaded bottleneck: O(N + T).** For sparse trigger graphs (typical),
-this is O(N). For dense ones, O(N²).
-
-### Phase 4: Paradox Detection
-
-For each concurrency set, check for conflicting accesses.
-
-The naive approach (check all pairs in a set) is O(|set|²), which would be
-painful. But we can do much better: **index by position**. For each position P
-in the concurrency set's combined effects, collect all segments that access P.
-Conflicts only exist between segments accessing the _same_ position.
-
-With a hash map, this is **O(E_set)** per concurrency set, where E_set = total
-effects in the set. Not O(|set|²).
-
-The causal ordering check adds: for each potential conflict pair (S1, S2 both
-accessing P), check if there's a causal path from S1 to S2 in the trigger graph.
-With precomputed reachability (transitive closure of the trigger graph), this is
-O(1) per pair. The transitive closure itself is O(V \* T) or O(V³) with
-Floyd-Warshall -- **another single-threaded bottleneck**.
-
-However, we can avoid full transitive closure. Since the trigger graph is a DAG
-(cycles already eliminated), we can compute reachability with a
-topological-order BFS. And we only need reachability between segments in the
-same concurrency set, not all pairs globally.
-
-**Total Phase 4:** O(sum of E_set over all concurrency sets). With caching (same
-segment appears in multiple sets), bounded by O(T \* max effects per segment).
-
-### Summary Table
-
-| Bottleneck                               | Typical | Worst Case                |
-| ---------------------------------------- | ------- | ------------------------- |
-| Phase 2 critical path (dependency chain) | O(S/p)  | O(S) if all linear        |
-| Phase 3 cycle detection (Tarjan's)       | O(N)    | O(N²) if dense            |
-| Phase 4 reachability in DAG              | O(N+T)  | O(N²) if dense            |
-| Phase 4 conflict checking                | O(E)    | O(N\*E) if huge conc sets |
-
-The dominant single-threaded cost is **Tarjan's SCC on the trigger graph** and
-**reachability computation for causal ordering**. Both are O(N + T) which is
-linear for sparse graphs (the common case). The pathological case -- many
-actions watching the same position -- gives O(N²), but this likely indicates a
-design problem in the Define program itself.
-
-### Potential Optimization: Incremental Analysis
-
-The trigger graph construction could be incremental. When a file changes, only
-recompute the affected subgraph. Tarjan's would need to re-run on the full
-graph, but with a sparse graph this is fast. Alternatively, there are
-incremental SCC algorithms that avoid full recomputation.
-
----
-
-## 14. Trigger Cycle Termination Analysis
-
-Section 5 states that trigger graph cycles are compile errors. This section
-refines that position: cycles in the action trigger graph represent loops, and
-loops are a legitimate programming pattern. We should allow them when we can
-prove they terminate, or when the user explicitly marks them as intentionally
-infinite.
-
-### 14.1. Termination Is Always Decidable
-
-Define's state space is finite. There is a finite set of positions P, each
-either occupied or empty. The full state is a subset of P (the set of occupied
-positions), giving 2^|P| possible states. Combined with "trigger memory" (which
-actions are armed -- i.e., have seen their condition go false since last
-firing), the total state space is 2^(|P| + |A|). An execution is infinite if and
-only if it revisits a (state, trigger-memory) pair. The halting problem does not
-apply here -- this is a finite-state system, not a Turing-complete one.
-
-The question is efficiency, not decidability.
-
-### 14.2. Petri Net Incidence Matrix Analysis
-
-Since Define maps to a 1-bounded Petri net, the incidence matrix provides a
-direct termination tool. For each action, compute its net effect on each
-position (+1 for create/move-to, -1 for destroy/move-from, 0 otherwise). Stack
-these into a matrix A. A cycle of actions can repeat if and only if A \* x = 0
-has a non-negative integer solution x (a "T-invariant"). If no such solution
-exists, the cycle provably terminates -- the net effect of any pass through the
-cycle changes the state in a way that cannot be sustained indefinitely.
-
-This is a linear programming check. Polynomial time.
-
-### 14.3. The Ping-Pong Problem
-
-The hard case is two actions bouncing a dimension point between two positions.
-The incidence matrix:
-
-```
-         A    B
-pos p:  -1   +1
-pos q:  +1   -1
-```
-
-A \* [1,1]^T = [0,0]^T -- a T-invariant exists. The net effect is zero.
-Count-based arguments cannot prove termination, and indeed the cycle is
-infinite: state {p} → {q} → {p} → ... The false-to-true trigger semantics do not
-save you because each move creates a fresh false-to-true transition on the
-destination.
-
-### 14.4. Layered Termination Checker
-
-A practical termination checker should be layered, from cheapest to most
-expensive:
-
-**Layer 1 -- DAG check (O(V+E), nearly free):** No cycles in trigger graph →
-terminates. Handles the common case.
-
-**Layer 2 -- T-invariant analysis (polynomial, linear algebra):** For each SCC
-in the trigger graph, compute the incidence matrix. If no T-invariant exists →
-cycle terminates. This catches cycles that are net consumers or net producers of
-dimension points.
-
-**Layer 3 -- Single-pass state comparison (cheap for small SCCs):** For cycles
-that have T-invariants, simulate one full traversal. If the system returns to
-the exact same state, the cycle is infinite. Reject.
-
-**Layer 4 -- Conservative rejection:** If the compiler cannot prove termination
-by layers 1-3, reject with a clear diagnostic identifying the cycle.
-
-### 14.5. Intentionally Infinite Loops
-
-Some programs intentionally loop forever: game loops, server event loops,
-processing pipelines that feed back. Layer 3 would identify these as infinite
-and reject them. To support this pattern, the programmer marks the cycle with a
-sentinel (something like `this cycle intentionally runs forever`). The compiler
-then:
-
-1. Skips termination checking for that SCC.
-2. Verifies the **loop invariant** instead -- that each individual pass through
-   the cycle is internally consistent and paradox-free.
-
-The loop invariant check works as follows:
-
-1. The trigger condition guarantees certain position states at entry.
-2. The action body transforms those states consistently.
-3. The exit state is compatible with the trigger condition firing again.
-
-This is essentially model-checking a single step of the cycle, which is O(action
-body size) -- no complexity blowup.
-
-### 14.6. Precision of the T-Invariant Layer
-
-Most terminating cycles in practice will have some position that gets consumed
-without being replenished, which means no T-invariant exists. The T-invariant
-analysis should be precise enough to accept most legitimate terminating
-programs, so that layer 4 (conservative rejection) rarely triggers. Only the
-degenerate cases -- zero-net-effect cycles -- require the more expensive layer 3
-analysis or an explicit programmer annotation.
+3. **Access controls and fan-out**: future access controls will restrict which
+   actions can watch which positions. This helps programmers avoid pathological
+   fan-out but doesn't change worst-case complexity.
