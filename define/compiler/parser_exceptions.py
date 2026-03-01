@@ -256,6 +256,16 @@ class InvalidActionDefinitionsBlock(DefineTokenError):
     message_format: ClassVar[str] = "Invalid syntax in a potential action definition."
 
 
+class InvalidMoveStatementSyntax(DefineTokenError):
+    """Expected ' to ' or '::' after a position reference in a move statement."""
+
+    message_format: ClassVar[str] = (
+        "The syntax for a move statement looks like:"
+        " move the dimension point in position<foo> to position<bar>."
+        " Expected a 'to' or a longer chained name (a '::' followed by another name) here."
+    )
+
+
 class InvalidPositionConstraintBlock(DefineTokenError):
     """Write something nonsensical in a position constraint block."""
 

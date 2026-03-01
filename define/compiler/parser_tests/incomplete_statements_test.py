@@ -342,3 +342,259 @@ def test_name_chain_invalid_item(
     assert exc_info.value.token == "a"
     assert exc_info.value.line == 4
     assert exc_info.value.column == 44
+
+
+def test_move_dimension_point_missing_source_reference(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "move the dimension point in."
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 9
+
+
+def test_move_dimension_point_missing_to_keyword(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> position<dest>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == " position<dest"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 50
+
+
+def test_move_dimension_point_missing_destination_reference(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> to.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == " to."
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 50
+
+
+def test_move_dimension_point_chain_separator_after_source_then_terminator(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<foo>::.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 52
+
+
+def test_move_dimension_point_chain_separator_after_source_then_newline(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<foo>::\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "\n"
+    assert exc_info.value.token.type == "NEWLINE"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 52
+
+
+def test_move_dimension_point_chain_separator_after_destination_then_terminator(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> to position<dest>::.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 70
+
+
+def test_move_dimension_point_chain_separator_after_destination_then_newline(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> to position<dest>::\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "\n"
+    assert exc_info.value.token.type == "NEWLINE"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 70
+
+
+def test_move_dimension_point_single_colon_after_source(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<foo>:\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == ":"
+    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 50
+
+
+def test_move_dimension_point_single_colon_after_destination(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(
+        parser_exceptions.ExpectedChainSeparatorOrTerminator
+    ) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> to position<dest>:\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == ":"
+    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 68
+
+
+def test_move_dimension_point_no_space_before_to(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src>to position<dest>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "to position<dest"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 50
+
+
+def test_move_dimension_point_no_space_after_to(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> toposition<dest>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == " toposition<dest"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 50
+
+
+def test_move_dimension_point_missing_terminator_after_destination(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(
+        parser_exceptions.ExpectedChainSeparatorOrTerminator
+    ) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src> to position<dest>\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "\n"
+    assert exc_info.value.token.type == "NEWLINE"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 68
+
+
+def test_move_keyword_then_newline(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "move"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 9
+
+
+def test_move_dimension_point_in_space_dot(
+    p: parser.Parser,
+) -> None:
+    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+        p.parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    it happens when {\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in .\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 4
+    assert exc_info.value.column == 37

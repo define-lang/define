@@ -176,6 +176,9 @@ def raise_token_error(
     if e.accepts == {"NAME_TYPE"}:
         raise parser_exceptions.ExpectedNameType(e, source, file_path)
 
+    if e.accepts == {"CHAIN_SEPARATOR", "TO"}:
+        raise parser_exceptions.InvalidMoveStatementSyntax(e, source, file_path)
+
     if e.accepts == {"CHAIN_SEPARATOR", "DOT"}:
         raise parser_exceptions.ExpectedChainSeparatorOrTerminator(e, source, file_path)
 

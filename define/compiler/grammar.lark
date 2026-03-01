@@ -19,6 +19,8 @@ IT_HAS_THE: "it has the"
 IT_HAPPENS_WHEN: "it happens when"
 AND_IT_DOES: " and it does"
 CREATE_A_DIMENSION_POINT_IN: "create a dimension point in "
+MOVE_THE_DIMENSION_POINT_IN: "move the dimension point in "
+TO: " to "
 CHAIN_SEPARATOR: "::"
 
 # General
@@ -65,10 +67,11 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content position_definition_terminator_or_block
 
-# Create Dimension Point Syntax
+# Dimension Point Statement Syntax
 
 position_reference: typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
 create_dimension_point_statement: CREATE_A_DIMENSION_POINT_IN position_reference terminator
+move_dimension_point_statement: MOVE_THE_DIMENSION_POINT_IN position_reference TO position_reference terminator
 
 # Action Definition Syntax
 
@@ -76,7 +79,7 @@ action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content (t
 
 local_position_definition: DEFINE_THE_POSITION local_name_content position_definition_terminator_or_block
 trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* "}"
-action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition | create_dimension_point_statement)* _block_close
+action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement)* _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
 action_definition_block: _block_open (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* _block_close
 
