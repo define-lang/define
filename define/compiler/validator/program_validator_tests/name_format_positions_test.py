@@ -98,10 +98,10 @@ def test_path_segment_position():
 def test_local_name_position():
     source = (
         "define the potential action<mv:my.domain.com:my_lib:/act> {\n"
-        "define the position<my-pos>.\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "}\n"
+        "    define the position<my-pos>.\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -115,4 +115,4 @@ def test_local_name_position():
     assert ln_diags[0].local_name == "my-pos"
     assert ln_diags[0].char == "-"
     assert ln_diags[0].position.line == 2
-    assert ln_diags[0].position.column == 23
+    assert ln_diags[0].position.column == 27

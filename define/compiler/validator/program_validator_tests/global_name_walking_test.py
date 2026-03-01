@@ -94,10 +94,10 @@ def test_duplicate_does_not_corrupt_reference_resolution(
         "root.def",
         (
             "define the potential position<my.domain.com:my_lib:/root> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</target>.\n"
-            "it has the position</dup>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</target>.\n"
+            "        it has the position</dup>.\n"
+            "    }\n"
             "}\n"
         ),
     )
@@ -132,9 +132,9 @@ def test_self_cycle_emits_diagnostic(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position</test>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</test>.\n"
+        "    }\n"
         "}\n"
     )
     result = parse_and_validate_file(source)
@@ -147,7 +147,7 @@ def test_self_cycle_emits_diagnostic(
         "position<my.domain.com:my_lib:/test>",
     ]
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 12
+    assert diags[0].position.column == 20
     assert (
         diags[0].message
         == "circular references between definitions are not allowed in Define:\n"
@@ -211,9 +211,9 @@ def test_two_file_cycle_emits_diagnostic(
 
 _EXTERNAL_UNIVERSE_SOURCE = (
     "define the potential position<my.domain.com:my_lib:/test> {\n"
-    "it may only contain dimension points where {\n"
-    "it has the position<other.example.com:other_universe:/target>.\n"
-    "}\n"
+    "    it may only contain dimension points where {\n"
+    "        it has the position<other.example.com:other_universe:/target>.\n"
+    "    }\n"
     "}\n"
 )
 
@@ -231,7 +231,7 @@ def test_external_universe_no_project_config(
         diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].config_path == ".define/project/config.defcl"
 
@@ -248,7 +248,7 @@ def test_external_universe_without_local_deps(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -268,7 +268,7 @@ def test_external_universe_not_in_local_deps(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -296,7 +296,7 @@ def test_external_universe_invalid_local_deps(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert isinstance(diags[0].error, exceptions.ConfigValidationError)
 
 
@@ -316,7 +316,7 @@ def test_external_universe_configured_but_no_sub_root_config(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
 
 
@@ -325,9 +325,9 @@ def test_unknown_universe_emits_diagnostic(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position<other.example.com:other_universe:/target>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "    }\n"
         "}\n"
     )
     result = parse_and_validate_file(source)
@@ -335,7 +335,7 @@ def test_unknown_universe_emits_diagnostic(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -345,10 +345,10 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position<other.example.com:other_universe:/target>.\n"
-        "it has the position<other.example.com:other_universe:/another>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "        it has the position<other.example.com:other_universe:/another>.\n"
+        "    }\n"
         "}\n"
     )
     result = parse_and_validate_file(source)
@@ -356,7 +356,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -370,10 +370,10 @@ def test_unknown_universe_across_files_reported_per_file(
         "test.def",
         (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position<other.example.com:other_universe:/target>.\n"
-            "it has the position</other>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position<other.example.com:other_universe:/target>.\n"
+            "        it has the position</other>.\n"
+            "    }\n"
             "}\n"
         ),
     )
@@ -382,9 +382,9 @@ def test_unknown_universe_across_files_reported_per_file(
         "other.def",
         (
             "define the potential position<my.domain.com:my_lib:/other> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position<other.example.com:other_universe:/another>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position<other.example.com:other_universe:/another>.\n"
+            "    }\n"
             "}\n"
         ),
     )
@@ -398,7 +398,7 @@ def test_unknown_universe_across_files_reported_per_file(
     for diag in all_diags:
         assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
         assert diag.position.line == 3
-        assert diag.position.column == 21
+        assert diag.position.column == 29
         assert diag.universe == "other.example.com:other_universe"
         assert diag.current_universe_name == "my.domain.com:my_lib"
 

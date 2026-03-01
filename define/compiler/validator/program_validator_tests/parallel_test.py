@@ -13,9 +13,9 @@ from define.compiler.validator.program_validator_tests import test_helpers
 
 _POSITION_WITH_REF = (
     "define the potential position<my.domain.com:my_lib:/{name}> {{\n"
-    "it may only contain dimension points where {{\n"
-    "it has the position</{ref}>.\n"
-    "}}\n"
+    "    it may only contain dimension points where {{\n"
+    "        it has the position</{ref}>.\n"
+    "    }}\n"
     "}}\n"
 )
 
@@ -105,16 +105,16 @@ def test_chain_element_validated_without_deferral(
         "test",
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "define the position<pos_a> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</child>.\n"
-            "}\n"
-            "}\n"
-            "it happens when {\n"
-            "} and it does {\n"
-            "create a dimension point in"
+            "    define the position<pos_a> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</child>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in"
             " position<pos_a>::position</child>::position</wrong>.\n"
-            "}\n"
+            "    }\n"
             "}\n"
         ),
     )
@@ -143,11 +143,11 @@ def test_chain_continuation_validated_without_deferral(
         "hub",
         (
             "define the potential position<my.domain.com:my_lib:/hub> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</pos_c>.\n"
-            "it has the action</test>.\n"
-            "it has the position</pos_b>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</pos_c>.\n"
+            "        it has the action</test>.\n"
+            "        it has the position</pos_b>.\n"
+            "    }\n"
             "}\n"
         ),
     )
@@ -159,16 +159,16 @@ def test_chain_continuation_validated_without_deferral(
         "test",
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "define the position<pos_a> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</pos_b>.\n"
-            "}\n"
-            "}\n"
-            "it happens when {\n"
-            "} and it does {\n"
-            "create a dimension point in"
+            "    define the position<pos_a> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</pos_b>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in"
             " position<pos_a>::position</pos_b>::position</pos_c>::position</pos_d>.\n"
-            "}\n"
+            "    }\n"
             "}\n"
         ),
     )
@@ -183,7 +183,7 @@ def test_chain_continuation_validated_without_deferral(
     diag = test_result.diagnostics[0]
     assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
     assert diag.position.line == 9
-    assert diag.position.column == 82
+    assert diag.position.column == 90
 
 
 def test_wrong_type_detected_without_deferral(

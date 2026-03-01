@@ -32,9 +32,9 @@ def test_referenced_file_not_found(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position</missing>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</missing>.\n"
+        "    }\n"
         "}\n"
     )
     result = parse_and_validate_file(source)
@@ -44,4 +44,4 @@ def test_referenced_file_not_found(
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.file_path == "missing.def"
     assert diag.position.line == 3
-    assert diag.position.column == 21
+    assert diag.position.column == 29

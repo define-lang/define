@@ -11,12 +11,12 @@ from define.compiler.validator import program_validator
 def test_duplicate_local_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<my_pos>.\n"
-        "create a dimension point in position<my_pos>.\n"
-        "create a dimension point in position<my_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<my_pos>.\n"
+        "        create a dimension point in position<my_pos>.\n"
+        "        create a dimension point in position<my_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -28,19 +28,19 @@ def test_duplicate_local_position():
     assert diags[0].position_name == "position<my_pos>"
     assert diags[0].first_creation_line == 5
     assert diags[0].position.line == 6
-    assert diags[0].position.column == 38
+    assert diags[0].position.column == 46
 
 
 def test_different_local_positions():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<pos_a>.\n"
-        "define the position<pos_b>.\n"
-        "create a dimension point in position<pos_a>.\n"
-        "create a dimension point in position<pos_b>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<pos_a>.\n"
+        "        define the position<pos_b>.\n"
+        "        create a dimension point in position<pos_a>.\n"
+        "        create a dimension point in position<pos_b>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -52,11 +52,11 @@ def test_different_local_positions():
 def test_undefined_position_not_tracked_for_duplicates():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<no_such_pos>.\n"
-        "create a dimension point in position<no_such_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<no_such_pos>.\n"
+        "        create a dimension point in position<no_such_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -70,12 +70,12 @@ def test_undefined_position_not_tracked_for_duplicates():
 def test_definition_block_position_not_enforced():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "define the position<outer_pos>.\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<outer_pos>.\n"
-        "create a dimension point in position<outer_pos>.\n"
-        "}\n"
+        "    define the position<outer_pos>.\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<outer_pos>.\n"
+        "        create a dimension point in position<outer_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(

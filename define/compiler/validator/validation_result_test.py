@@ -27,7 +27,7 @@ def test_reference_edge_same_universe():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
         "it may only contain dimension points where {\n"
-        "it has the position</a>.\n"
+        "    it has the position</a>.\n"
         "}\n"
         "}\n"
     )
@@ -46,7 +46,7 @@ def test_reference_edge_explicit_fqun():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
         "it may only contain dimension points where {\n"
-        "it has the position<other.com:other_lib:/b>.\n"
+        "    it has the position<other.com:other_lib:/b>.\n"
         "}\n"
         "}\n"
     )
@@ -83,8 +83,8 @@ def test_position_constraints_with_constraints():
     result = _parse(
         f"define the potential position<{_FQUN}:/a> {{\n"
         "it may only contain dimension points where {\n"
-        "it has the position</child>.\n"
-        "it has the position</other>.\n"
+        "    it has the position</child>.\n"
+        "    it has the position</other>.\n"
         "}\n"
         "}\n"
     )
@@ -114,15 +114,15 @@ def test_action_local_constraints_with_constraints():
     result = _parse(
         f"define the potential action<{_FQUN}:/act> {{\n"
         "define the position<pos_a> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position</child>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</child>.\n"
+        "    }\n"
         "}\n"
         "define the position<pos_b> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position</x>.\n"
-        "it has the position</y>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</x>.\n"
+        "        it has the position</y>.\n"
+        "    }\n"
         "}\n"
         "it happens when {\n"
         "} and it does {\n"
@@ -167,7 +167,7 @@ def test_action_local_constraints_skips_positions():
     result = _parse(
         f"define the potential position<{_FQUN}:/a> {{\n"
         "it may only contain dimension points where {\n"
-        "it has the position</child>.\n"
+        "    it has the position</child>.\n"
         "}\n"
         "}\n"
     )

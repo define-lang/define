@@ -123,9 +123,9 @@ class TestFileValidatorReferenceDiscovery:
     def test_short_form_reference(self, tmp_path: Path, lark_parser: parser.Parser):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</other>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</other>.\n"
+            "    }\n"
             "}\n"
         )
         (tmp_path / "test.def").write_text(source, encoding="utf-8")
@@ -144,9 +144,9 @@ class TestFileValidatorReferenceDiscovery:
     ):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position<other.domain.com:other_lib:/dep>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position<other.domain.com:other_lib:/dep>.\n"
+            "    }\n"
             "}\n"
         )
         (tmp_path / "test.def").write_text(source, encoding="utf-8")
@@ -170,9 +170,9 @@ class TestFileValidatorReferenceDiscovery:
     ):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position<other.domain.com:other_lib:/dep>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position<other.domain.com:other_lib:/dep>.\n"
+            "    }\n"
             "}\n"
         )
         (tmp_path / "test.def").write_text(source, encoding="utf-8")
@@ -188,10 +188,10 @@ class TestFileValidatorReferenceDiscovery:
     def test_multiple_references(self, tmp_path: Path, lark_parser: parser.Parser):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</dep_a>.\n"
-            "it has the position</dep_b>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</dep_a>.\n"
+            "        it has the position</dep_b>.\n"
+            "    }\n"
             "}\n"
         )
         (tmp_path / "test.def").write_text(source, encoding="utf-8")
@@ -248,9 +248,9 @@ class TestDimensionPointReferenceEdges:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<my_pos> {\n"
-            "    it may only contain dimension points where {\n"
-            "    it has the position</Bad>.\n"
-            "    }\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</Bad>.\n"
+            "        }\n"
             "    }\n"
             "    it happens when {\n"
             "    } and it does {\n"
@@ -270,7 +270,7 @@ class TestDimensionPointReferenceEdges:
         assert result.diagnostics[0].segment == "Bad"
         assert result.diagnostics[0].char == "B"
         assert result.diagnostics[0].position.line == 4
-        assert result.diagnostics[0].position.column == 26
+        assert result.diagnostics[0].position.column == 34
         assert isinstance(
             result.diagnostics[1],
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic,

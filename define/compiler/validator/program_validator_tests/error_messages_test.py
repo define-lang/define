@@ -146,24 +146,24 @@ def test_deferred_position_chain_error_format(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "define the position<pos_a> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position</pos_b>.\n"
-        "}\n"
-        "}\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
-        "}\n"
+        "    define the position<pos_a> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</pos_b>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
+        "    }\n"
         "}\n"
     )
     _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
     _ = (tmp_path / "pos_b.def").write_text(
         (
             "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-            "it may only contain dimension points where {\n"
-            "it has the position</pos_c>.\n"
-            "}\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</pos_c>.\n"
+            "    }\n"
             "}\n"
         ),
         encoding="utf-8",
@@ -185,9 +185,9 @@ def test_deferred_position_chain_error_format(
         source.splitlines(), file_name="test.def"
     )
     assert formatted == (
-        'File "test.def", line 9, column 64\n'
-        "create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
-        "                                                               ^\n"
+        'File "test.def", line 9, column 72\n'
+        "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
+        "                                                                       ^\n"
         "'position<my.domain.com:my_lib:/wrong>' is not declared as one of the"
         " 'it has the' requirements in the definition of"
         " 'position<my.domain.com:my_lib:/pos_b>'"
@@ -200,25 +200,25 @@ def test_deferred_action_chain_error_format(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "define the position<pos_a> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the action</act_b>.\n"
-        "}\n"
-        "}\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
-        "}\n"
+        "    define the position<pos_a> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the action</act_b>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
+        "    }\n"
         "}\n"
     )
     _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
     _ = (tmp_path / "act_b.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-            "define the position<pos_c>.\n"
-            "it happens when {\n"
-            "} and it does {\n"
-            "}\n"
+            "    define the position<pos_c>.\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "    }\n"
             "}\n"
         ),
         encoding="utf-8",
@@ -236,9 +236,9 @@ def test_deferred_action_chain_error_format(
         source.splitlines(), file_name="test.def"
     )
     assert formatted == (
-        'File "test.def", line 9, column 62\n'
-        "create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
-        "                                                             ^\n"
+        'File "test.def", line 9, column 70\n'
+        "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
+        "                                                                     ^\n"
         "'position<no_such>' is not defined inside the definition of"
         " 'action<my.domain.com:my_lib:/act_b>'"
     )

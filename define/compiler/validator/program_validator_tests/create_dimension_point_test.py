@@ -18,10 +18,10 @@ def test_short_form_global_reference(tmp_path: Path, monkeypatch: pytest.MonkeyP
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "it happens when {\n"
-            "} and it does {\n"
-            "create a dimension point in position</other>.\n"
-            "}\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in position</other>.\n"
+            "    }\n"
             "}\n"
         ),
         encoding="utf-8",
@@ -41,10 +41,10 @@ def test_short_form_global_reference(tmp_path: Path, monkeypatch: pytest.MonkeyP
 def test_same_fqun_reference_must_use_short_form():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<my.domain.com:my_lib:/other>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<my.domain.com:my_lib:/other>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -55,17 +55,17 @@ def test_same_fqun_reference_must_use_short_form():
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].position.line == 4
-    assert diags[0].position.column == 38
+    assert diags[0].position.column == 46
 
 
 def test_valid_local_name():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "define the position<inner_pos>.\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<inner_pos>.\n"
-        "}\n"
+        "    define the position<inner_pos>.\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<inner_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -79,10 +79,10 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.chdir(tmp_path)
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<other.domain.com:other_lib:/dep>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<other.domain.com:other_lib:/dep>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -94,16 +94,16 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
     assert diags[0].universe == "other.domain.com:other_lib"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert diags[0].position.line == 4
-    assert diags[0].position.column == 38
+    assert diags[0].position.column == 46
 
 
 def test_undefined_local_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<no_such_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<no_such_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -114,17 +114,17 @@ def test_undefined_local_position():
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].position.line == 4
-    assert diags[0].position.column == 38
+    assert diags[0].position.column == 46
 
 
 def test_local_position_defined_after_use():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in position<later_pos>.\n"
-        "define the position<later_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<later_pos>.\n"
+        "        define the position<later_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -135,17 +135,17 @@ def test_local_position_defined_after_use():
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<later_pos>"
     assert diags[0].position.line == 4
-    assert diags[0].position.column == 38
+    assert diags[0].position.column == 46
 
 
 def test_local_position_defined_in_action_statements_before_use():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<stmt_pos>.\n"
-        "create a dimension point in position<stmt_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<stmt_pos>.\n"
+        "        create a dimension point in position<stmt_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -157,10 +157,10 @@ def test_local_position_defined_in_action_statements_before_use():
 def test_single_action_in_position_reference():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "create a dimension point in action<act_other>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in action<act_other>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -171,11 +171,11 @@ def test_single_action_in_position_reference():
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "action<act_other>"
     assert diags[0].position.line == 4
-    assert diags[0].position.column == 36
+    assert diags[0].position.column == 44
     assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
     assert diags[1].local_name == "act_other"
     assert diags[1].position.line == 4
-    assert diags[1].position.column == 36
+    assert diags[1].position.column == 44
     assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[2].position.line == 4
-    assert diags[2].position.column == 29
+    assert diags[2].position.column == 37
