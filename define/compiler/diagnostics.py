@@ -436,6 +436,18 @@ class LocalActionNameDiagnostic(Diagnostic):
 
 
 @dataclass
+class LocalDuplicateDimensionPointDiagnostic(Diagnostic):
+    """Diagnostic for when a dimension point is created in a position that already has one."""
+
+    position_name: str
+    first_creation_line: int
+    message_format: ClassVar[str] = (
+        "a dimension point already exists in '{self.position_name}'; "
+        "first created on line {self.first_creation_line}"
+    )
+
+
+@dataclass
 class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a chain element is not in the first position's constraints."""
 

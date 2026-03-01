@@ -206,6 +206,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
+    "dimension_points/duplicate_local_dimension_point.def": [
+        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+    ],
     "dimension_points/chain_ending_with_action.def": [
         diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,

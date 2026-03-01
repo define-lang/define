@@ -125,6 +125,26 @@ def test_enter_child_scope_sees_parent():
     assert tracker.is_defined(ref) is True
 
 
+def test_is_defined_in_current_scope_parent_not_visible():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.add_local_definition(_make_local_def("parent_pos"))
+
+    tracker.enter_child_scope()
+
+    ref = _make_local_typed_name("parent_pos")
+    assert tracker.is_defined(ref) is True
+    assert tracker.is_defined_in_current_scope(ref) is False
+
+
+def test_is_defined_in_current_scope_child_visible():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.enter_child_scope()
+    tracker.add_local_definition(_make_local_def("child_pos"))
+
+    ref = _make_local_typed_name("child_pos")
+    assert tracker.is_defined_in_current_scope(ref) is True
+
+
 def test_enter_child_scope_adds_to_child_layer():
     tracker = scope_tracker.ScopeTracker(_FQUN)
     tracker.add_local_definition(_make_local_def("parent_pos"))

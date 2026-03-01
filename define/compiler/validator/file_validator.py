@@ -212,6 +212,7 @@ class ProgramAstValidator:
     deferred_chained_names: list[validation_result.DeferredChainElements]
     _seen_in_file: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
+    _local_dimension_point_locations: dict[str, ast.SourcePosition]
 
     def __init__(
         self,
@@ -228,6 +229,7 @@ class ProgramAstValidator:
         self.deferred_chained_names = []
         self._seen_in_file = {}
         self._unknown_fquns = set()
+        self._local_dimension_point_locations = {}
 
     def validate_program(self, program: ast.Program):
         """Validate all definitions in the program."""
@@ -317,6 +319,7 @@ class ProgramAstValidator:
             self._validate_local_position_definition(
                 local_def, enclosing_definition, scope
             )
+        self._local_dimension_point_locations = {}
         scope.enter_child_scope()
         self._validate_action_statements(
             definition_block.action_statements,
@@ -338,7 +341,9 @@ class ProgramAstValidator:
                     )
                 case ast.CreateDimensionPointStatement():
                     self._validate_create_dimension_point(
-                        stmt, enclosing_definition, scope
+                        stmt,
+                        enclosing_definition,
+                        scope,
                     )
 
     def _validate_local_position_definition(
@@ -383,9 +388,34 @@ class ProgramAstValidator:
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
-        self._validate_full_chained_name(
-            stmt.position_reference.chain, enclosing_definition, scope
-        )
+        chain = stmt.position_reference.chain
+        self._validate_full_chained_name(chain, enclosing_definition, scope)
+        self._check_local_position_not_occupied(chain, enclosing_definition, scope)
+
+    def _check_local_position_not_occupied(
+        self,
+        chain: list[ast.TypedName],
+        enclosing_definition: ast.QualityDefinition,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        if len(chain) != 1 or not isinstance(chain[0], ast.LocalTypedNameReference):
+            return
+        first = chain[0]
+        if not scope.is_defined_in_current_scope(first):
+            return
+        fqun = enclosing_definition.typed_name.name_content.fqun
+        key = first.full_typed_name(in_universe=fqun)
+        existing = self._local_dimension_point_locations.get(key)
+        if existing is not None:
+            self.diagnostics.append(
+                diagnostics.LocalDuplicateDimensionPointDiagnostic(
+                    position=first.name_content.position,
+                    position_name=key,
+                    first_creation_line=existing.line,
+                )
+            )
+        else:
+            self._local_dimension_point_locations[key] = first.name_content.position
 
     def _validate_full_chained_name(
         self,

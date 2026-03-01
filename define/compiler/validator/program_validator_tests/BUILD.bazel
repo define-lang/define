@@ -51,6 +51,18 @@ py_test(
 )
 
 py_test(
+    name = "dimension_point_conflict_test",
+    size = "small",
+    srcs = ["dimension_point_conflict_test.py"],
+    pytest_main = True,
+    deps = [
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "duplicate_definitions_test",
     size = "small",
     srcs = ["duplicate_definitions_test.py"],
@@ -258,6 +270,7 @@ pyright_test(
         ":conftest",
         ":create_dimension_point_test",
         ":diagnostic_collection_test",
+        ":dimension_point_conflict_test",
         ":duplicate_definitions_test",
         ":error_messages_test",
         ":file_not_found_test",

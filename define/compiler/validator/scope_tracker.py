@@ -47,6 +47,11 @@ class ScopeTracker:
         key = name.full_typed_name(in_universe=self._enclosing_fqun)
         return key in self._definitions
 
+    def is_defined_in_current_scope(self, name: ast.TypedName) -> bool:
+        """Check if a typed name reference is defined in the current (innermost) scope only."""
+        key = name.full_typed_name(in_universe=self._enclosing_fqun)
+        return key in self._definitions.maps[0]
+
     def definition_has_quality(
         self, parent: ast.TypedName, quality: ast.TypedName
     ) -> bool:
