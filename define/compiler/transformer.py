@@ -107,6 +107,14 @@ class DefineTransformer(
         """Discard the create-dimension-point keyword token."""
         return lark_standalone.Discard
 
+    def MOVE_THE_DIMENSION_POINT_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the move-dimension-point keyword token."""
+        return lark_standalone.Discard
+
+    def TO(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the 'to' keyword token."""
+        return lark_standalone.Discard
+
     def CHAIN_SEPARATOR(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard chain separator tokens."""
         return lark_standalone.Discard
@@ -221,6 +229,17 @@ class DefineTransformer(
         """Transform a create dimension point statement."""
         return ast.CreateDimensionPointStatement(
             position_reference=items[0],
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @lark_standalone.v_args(meta=True)
+    def move_dimension_point_statement(
+        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
+    ) -> ast.MoveDimensionPointStatement:
+        """Transform a move dimension point statement."""
+        return ast.MoveDimensionPointStatement(
+            from_position=items[0],
+            to_position=items[1],
             position=ast.SourcePosition.from_meta(meta),
         )
 

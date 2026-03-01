@@ -489,6 +489,166 @@ def test_mixed_action_statements():
     assert isinstance(stmts[2], ast.CreateDimensionPointStatement)
 
 
+def test_move_dimension_point_with_local_positions():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        move the dimension point in position<source> to position<dest>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.action_statements.statements) == 1
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    assert len(stmt.from_position.chain) == 1
+    from_ref = stmt.from_position.chain[0]
+    assert isinstance(from_ref, ast.LocalTypedNameReference)
+    assert from_ref.name_type == ast.NameType.POSITION
+    assert from_ref.name_content.name == "source"
+    assert len(stmt.to_position.chain) == 1
+    to_ref = stmt.to_position.chain[0]
+    assert isinstance(to_ref, ast.LocalTypedNameReference)
+    assert to_ref.name_type == ast.NameType.POSITION
+    assert to_ref.name_content.name == "dest"
+
+
+def test_move_dimension_point_with_short_global_positions():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        move the dimension point in position</source> to position</dest>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    from_ref = stmt.from_position.chain[0]
+    assert isinstance(from_ref, ast.GlobalTypedNameReference)
+    assert from_ref.name_type == ast.NameType.POSITION
+    assert from_ref.name_content.fqun is None
+    assert from_ref.name_content.path.name == "/source"
+    to_ref = stmt.to_position.chain[0]
+    assert isinstance(to_ref, ast.GlobalTypedNameReference)
+    assert to_ref.name_type == ast.NameType.POSITION
+    assert to_ref.name_content.fqun is None
+    assert to_ref.name_content.path.name == "/dest"
+
+
+def test_move_dimension_point_with_full_fqun_positions():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        move the dimension point in position<mv:authority.com:universe:/source> to position<mv:authority.com:universe:/dest>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    from_ref = stmt.from_position.chain[0]
+    assert isinstance(from_ref, ast.GlobalTypedNameReference)
+    assert from_ref.name_content.fqun is not None
+    assert from_ref.name_content.fqun.canonical == "mv:authority.com:universe"
+    assert from_ref.name_content.path.name == "/source"
+    to_ref = stmt.to_position.chain[0]
+    assert isinstance(to_ref, ast.GlobalTypedNameReference)
+    assert to_ref.name_content.fqun is not None
+    assert to_ref.name_content.fqun.canonical == "mv:authority.com:universe"
+    assert to_ref.name_content.path.name == "/dest"
+
+
+def test_move_dimension_point_with_chained_source():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        move the dimension point in position<src>::action<deposit>::position<inner> to position<dest>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    assert len(stmt.from_position.chain) == 3
+    assert isinstance(stmt.from_position.chain[0], ast.LocalTypedNameReference)
+    assert stmt.from_position.chain[0].name_content.name == "src"
+    assert isinstance(stmt.from_position.chain[1], ast.LocalTypedNameReference)
+    assert stmt.from_position.chain[1].name_type == ast.NameType.ACTION
+    assert stmt.from_position.chain[1].name_content.name == "deposit"
+    assert isinstance(stmt.from_position.chain[2], ast.LocalTypedNameReference)
+    assert stmt.from_position.chain[2].name_content.name == "inner"
+    assert len(stmt.to_position.chain) == 1
+    assert isinstance(stmt.to_position.chain[0], ast.LocalTypedNameReference)
+    assert stmt.to_position.chain[0].name_content.name == "dest"
+
+
+def test_move_dimension_point_with_chained_destination():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        move the dimension point in position<src> to position<dest>::action<deposit>::position<inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    assert len(stmt.from_position.chain) == 1
+    assert isinstance(stmt.from_position.chain[0], ast.LocalTypedNameReference)
+    assert stmt.from_position.chain[0].name_content.name == "src"
+    assert len(stmt.to_position.chain) == 3
+    assert isinstance(stmt.to_position.chain[0], ast.LocalTypedNameReference)
+    assert stmt.to_position.chain[0].name_content.name == "dest"
+    assert isinstance(stmt.to_position.chain[1], ast.LocalTypedNameReference)
+    assert stmt.to_position.chain[1].name_type == ast.NameType.ACTION
+    assert stmt.to_position.chain[1].name_content.name == "deposit"
+    assert isinstance(stmt.to_position.chain[2], ast.LocalTypedNameReference)
+    assert stmt.to_position.chain[2].name_content.name == "inner"
+
+
+def test_mixed_action_statements_with_move():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<run>.\n"
+        + "        move the dimension point in position<source> to position<dest>.\n"
+        + "        define the position<inner_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmts = block.action_statements.statements
+    assert len(stmts) == 3
+    assert isinstance(stmts[0], ast.CreateDimensionPointStatement)
+    assert isinstance(stmts[1], ast.MoveDimensionPointStatement)
+    assert isinstance(stmts[2], ast.LocalPositionDefinition)
+
+
 def test_action_definition_block_with_constrained_local_definition():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"

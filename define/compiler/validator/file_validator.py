@@ -345,6 +345,8 @@ class ProgramAstValidator:
                         enclosing_definition,
                         scope,
                     )
+                case ast.MoveDimensionPointStatement():
+                    pass
 
     def _validate_local_position_definition(
         self,

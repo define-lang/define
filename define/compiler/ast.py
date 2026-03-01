@@ -190,7 +190,19 @@ class CreateDimensionPointStatement(ASTNode):
     position_reference: PositionReference
 
 
-type ActionStatement = LocalPositionDefinition | CreateDimensionPointStatement
+@dataclass
+class MoveDimensionPointStatement(ASTNode):
+    """Represents a 'move the dimension point in ... to' statement."""
+
+    from_position: PositionReference
+    to_position: PositionReference
+
+
+type ActionStatement = (
+    LocalPositionDefinition
+    | CreateDimensionPointStatement
+    | MoveDimensionPointStatement
+)
 
 
 @dataclass
