@@ -4,6 +4,7 @@
 import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -17,6 +18,9 @@ _AUTHORITY_DOMAINS = ["example.com", "define-lang.org", "test.io", "my.domain.co
 _UNIVERSE_NAMES = ["my_lib", "core", "fuzz_test", "std"]
 _PATH_SEGMENTS = ["path", "hello", "sub", "dir", "leaf", "foo", "bar"]
 _LOCAL_NAMES = ["x", "my_pos", "local", "inner", "_tmp", "pos2", "node_1"]
+_CHAIN_LOCALS_FOR_CREATE = ["src_pos", "src_pos2"]
+_ACTION_WITH_INNER_FILE = "action_with_inner.def"
+_INNER_POS_IN_ACTION = "inner_pos"
 _VALID_ROOT_UNIVERSES = [
     "mv:define-lang.org:fuzz_test",
     "mv:define-lang.org:fuzz_root",
@@ -125,19 +129,61 @@ def _create_dimension_point_statement(position_reference: str, *, indent: str) -
 
 
 @st.composite
-def create_dimension_point_references(draw: st.DrawFn) -> str:
-    start = f"position<{draw(global_names())}>"
-    chain_length = draw(st.integers(min_value=0, max_value=2))
-    if chain_length == 0:
-        return start
-
-    segments = [start]
+def _global_chain_valid_references(draw: st.DrawFn) -> str:
+    chain_length = draw(st.integers(min_value=1, max_value=3))
+    segments = [f"position<{draw(global_names())}>"]
     for _ in range(chain_length):
         middle_kind = draw(st.sampled_from(["position", "action"]))
-        middle_name = draw(global_names())
-        segments.append(f"{middle_kind}<{middle_name}>")
-    end = f"position<{draw(global_names())}>"
-    return "::".join([*segments, end])
+        segments.append(f"{middle_kind}<{draw(global_names())}>")
+    segments.append(f"position<{draw(global_names())}>")
+    return "::".join(segments)
+
+
+@st.composite
+def _local_start_chain_references(draw: st.DrawFn) -> str:
+    local_name = draw(st.sampled_from(_LOCAL_NAMES))
+    chain_length = draw(st.integers(min_value=1, max_value=2))
+    segments = [f"position<{local_name}>"]
+    for _ in range(chain_length):
+        middle_kind = draw(st.sampled_from(["position", "action"]))
+        segments.append(f"{middle_kind}<{draw(global_names())}>")
+    segments.append(f"position<{draw(global_names())}>")
+    return "::".join(segments)
+
+
+@st.composite
+def create_dimension_point_references(draw: st.DrawFn) -> str:
+    return cast(
+        "str",
+        draw(
+            st.one_of(
+                global_names().map(lambda n: f"position<{n}>"),
+                st.sampled_from(_LOCAL_NAMES).map(lambda n: f"position<{n}>"),
+                _global_chain_valid_references(),
+                _local_start_chain_references(),
+                global_names().map(lambda n: f"action<{n}>"),
+                st.tuples(global_names(), global_names()).map(
+                    lambda t: f"action<{t[0]}>::position<{t[1]}>"
+                ),
+                st.tuples(global_names(), global_names()).map(
+                    lambda t: f"position<{t[0]}>::action<{t[1]}>"
+                ),
+                st.tuples(global_names(), global_names()).map(
+                    lambda t: f"action<{t[0]}>::action<{t[1]}>"
+                ),
+                st.tuples(global_names(), global_names(), global_names()).map(
+                    lambda t: f"action<{t[0]}>::action<{t[1]}>::position<{t[2]}>"
+                ),
+                st.tuples(
+                    global_names(), global_names(), global_names(), global_names()
+                ).map(
+                    lambda t: (
+                        f"position<{t[0]}>::action<{t[1]}>::action<{t[2]}>::position<{t[3]}>"
+                    )
+                ),
+            )
+        ),
+    )
 
 
 def _action_block_with_name(
@@ -403,6 +449,44 @@ def _valid_local_definition_strategy(
 
 
 @st.composite
+def _valid_create_spec(
+    draw: st.DrawFn,
+    *,
+    local_name: str,
+    indent: str,
+    allow_target_another_test: bool,
+    allow_target_inner_pos: bool,
+) -> tuple[str, str | None]:
+    kinds = ["local_direct"]
+    if allow_target_another_test:
+        kinds.extend(["local_chained", "global_direct"])
+    if allow_target_inner_pos:
+        kinds.append("local_chained_via_action")
+    kind = draw(st.sampled_from(kinds))
+    if kind == "global_direct":
+        return f"position<{_ANOTHER_VALID_PATH}>", None
+    if kind == "local_direct":
+        return (
+            f"position<{local_name}>",
+            _local_position_simple(local_name, indent=indent),
+        )
+    action_path = _definition_path(_ACTION_WITH_INNER_FILE)
+    if kind == "local_chained_via_action":
+        return (
+            f"position<{local_name}>::action<{action_path}>::position<{_INNER_POS_IN_ACTION}>",
+            _local_position_with_requirements(
+                local_name, [("action", action_path)], indent=indent
+            ),
+        )
+    return (
+        f"position<{local_name}>::position<{_ANOTHER_VALID_PATH}>",
+        _local_position_with_requirements(
+            local_name, [("position", _ANOTHER_VALID_PATH)], indent=indent
+        ),
+    )
+
+
+@st.composite
 def valid_sources(draw: st.DrawFn) -> str:
     include_position = draw(st.booleans())
     include_action = draw(st.booleans())
@@ -444,11 +528,37 @@ def valid_sources(draw: st.DrawFn) -> str:
             split_idx = draw(st.integers(min_value=0, max_value=len(local_names)))
             outer_names = local_names[:split_idx]
             inner_names = local_names[split_idx:]
-            outer_locals = [
+            outer_locals: list[str] = []
+            inner_locals: list[str] = []
+            create_count = draw(
+                st.integers(min_value=0, max_value=len(_CHAIN_LOCALS_FOR_CREATE))
+            )
+            another_test_targeted = False
+            inner_pos_targeted = False
+            for i in range(create_count):
+                ref, outer_def = draw(
+                    _valid_create_spec(
+                        local_name=_CHAIN_LOCALS_FOR_CREATE[i],
+                        indent=indent,
+                        allow_target_another_test=not another_test_targeted,
+                        allow_target_inner_pos=not inner_pos_targeted,
+                    )
+                )
+                if outer_def is not None:
+                    outer_locals.append(outer_def)
+                last_segment = ref.split("::")[-1]
+                if _ANOTHER_VALID_PATH in last_segment:
+                    another_test_targeted = True
+                elif _INNER_POS_IN_ACTION in last_segment:
+                    inner_pos_targeted = True
+                inner_locals.append(
+                    _create_dimension_point_statement(ref, indent=indent)
+                )
+            outer_locals += [
                 draw(_valid_local_definition_strategy(local_name, indent))
                 for local_name in outer_names
             ]
-            inner_locals = [
+            inner_locals += [
                 draw(_valid_local_definition_strategy(local_name, indent))
                 for local_name in inner_names
             ]
@@ -868,6 +978,15 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (tmp_path / "another_test.def").write_text(
         _action_simple(_PROJECT_FQUN, "another_test.def")
         + _position_simple(_PROJECT_FQUN, "another_test.def"),
+        encoding="utf-8",
+    )
+    (tmp_path / _ACTION_WITH_INNER_FILE).write_text(
+        _action_with_block(
+            _PROJECT_FQUN,
+            _ACTION_WITH_INNER_FILE,
+            outer_locals=[_local_position_simple(_INNER_POS_IN_ACTION, indent="    ")],
+            inner_locals=[],
+        ),
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
