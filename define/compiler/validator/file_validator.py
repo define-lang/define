@@ -346,7 +346,11 @@ class ProgramAstValidator:
                         scope,
                     )
                 case ast.MoveDimensionPointStatement():
-                    pass
+                    self._validate_move_dimension_point(
+                        stmt,
+                        enclosing_definition,
+                        scope,
+                    )
 
     def _validate_local_position_definition(
         self,
@@ -393,6 +397,19 @@ class ProgramAstValidator:
         chain = stmt.position_reference.chain
         self._validate_full_chained_name(chain, enclosing_definition, scope)
         self._check_local_position_not_occupied(chain, enclosing_definition, scope)
+
+    def _validate_move_dimension_point(
+        self,
+        stmt: ast.MoveDimensionPointStatement,
+        enclosing_definition: ast.QualityDefinition,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        self._validate_full_chained_name(
+            stmt.from_position.chain, enclosing_definition, scope
+        )
+        self._validate_full_chained_name(
+            stmt.to_position.chain, enclosing_definition, scope
+        )
 
     def _check_local_position_not_occupied(
         self,

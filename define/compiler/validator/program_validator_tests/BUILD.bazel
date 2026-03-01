@@ -141,6 +141,19 @@ py_test(
 )
 
 py_test(
+    name = "move_dimension_point_test",
+    size = "small",
+    srcs = ["move_dimension_point_test.py"],
+    pytest_main = True,
+    deps = [
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "name_format_positions_test",
     size = "small",
     srcs = ["name_format_positions_test.py"],
@@ -277,6 +290,7 @@ pyright_test(
         ":fqun_mismatch_test",
         ":global_name_walking_test",
         ":local_name_conflicts_test",
+        ":move_dimension_point_test",
         ":name_format_positions_test",
         ":parallel_test",
         ":parse_and_validate_file_test",

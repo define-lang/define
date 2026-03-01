@@ -219,6 +219,20 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.LocalActionNameDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],
+    "dimension_points/move_chain_ending_with_action.def": [
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "dimension_points/move_single_action_reference.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "dimension_points/move_undefined_local_position.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.UndefinedLocalNameDiagnostic,
+    ],
     "dimension_points/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
@@ -260,6 +274,12 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ChainElementNotInActionDiagnostic,
     ],
     "dimension_points/chain_not_in_constraints": [
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+    ],
+    "dimension_points/move_chain_not_in_action": [
+        diagnostics.ChainElementNotInActionDiagnostic,
+    ],
+    "dimension_points/move_chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
     "sub_root_conflict_load": [

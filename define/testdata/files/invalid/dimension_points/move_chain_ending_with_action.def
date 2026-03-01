@@ -1,0 +1,7 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move_chain_ending_with_action> {
+    define the position<pos_a>.
+    it happens when {
+    } and it does {
+        move the dimension point in position<pos_a>::action<act_b> to position<pos_a>.
+    }
+}

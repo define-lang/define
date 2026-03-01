@@ -974,3 +974,265 @@ class TestCreateDimensionPoint:
         assert diag.parent_name == "action<my.domain.com:my_lib:/a>"
         assert diag.position.line == 9
         assert diag.position.column == 54
+
+
+class TestMoveDimensionPoint:
+    def test_chain_ending_with_action_in_from(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+        (tmp_path / "test.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<pos_a> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_b>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<pos_a>::action</act_b>"
+                " to position<pos_a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "act_b.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+        test_result = next(
+            r for r in results if r.file_path == PurePosixPath("test.def")
+        )
+        assert len(test_result.diagnostics) == 1
+        assert isinstance(
+            test_result.diagnostics[0],
+            diagnostics.PositionReferenceChainEndDiagnostic,
+        )
+
+    def test_chain_ending_with_action_in_to(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+        (tmp_path / "test.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<pos_a> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_b>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<pos_a>"
+                " to position<pos_a>::action</act_b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "act_b.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+        test_result = next(
+            r for r in results if r.file_path == PurePosixPath("test.def")
+        )
+        assert len(test_result.diagnostics) == 1
+        assert isinstance(
+            test_result.diagnostics[0],
+            diagnostics.PositionReferenceChainEndDiagnostic,
+        )
+
+    def test_single_action_in_from_position(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+        (tmp_path / "test.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<to_pos>.\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "        move the dimension point in action</act_x>"
+                " to position<to_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "act_x.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/act_x> {\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+        test_result = next(
+            r for r in results if r.file_path == PurePosixPath("test.def")
+        )
+        assert len(test_result.diagnostics) == 1
+        assert isinstance(
+            test_result.diagnostics[0],
+            diagnostics.PositionReferenceChainEndDiagnostic,
+        )
+
+    def test_single_action_in_to_position(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+        (tmp_path / "test.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<from_pos>.\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<from_pos>"
+                " to action</act_y>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "act_y.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/act_y> {\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+        test_result = next(
+            r for r in results if r.file_path == PurePosixPath("test.def")
+        )
+        assert len(test_result.diagnostics) == 1
+        assert isinstance(
+            test_result.diagnostics[0],
+            diagnostics.PositionReferenceChainEndDiagnostic,
+        )
+
+    def test_valid_chained_through_action(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+        (tmp_path / "test.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<pos_a> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "        create a dimension point in"
+                " position<pos_a>::action</act_middle>::position<inner_pos>.\n"
+                "        move the dimension point in"
+                " position<pos_a>::action</act_middle>::position<inner_pos>"
+                " to position<pos_a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "act_middle.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/act_middle> {\n"
+                "    define the position<inner_pos>.\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+        all_diags = [d for r in results for d in r.diagnostics]
+        assert all_diags == []
+
+    def test_chain_not_in_constraints(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+        (tmp_path / "test.def").write_text(
+            (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<pos_a> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</pos_b>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "    } and it does {\n"
+                "        move the dimension point in"
+                " position<pos_a>::position</pos_b>::position</wrong>"
+                " to position<pos_a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "pos_b.def").write_text(
+            (
+                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</pos_c>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        (tmp_path / "pos_c.def").write_text(
+            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "wrong.def").write_text(
+            "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+        all_diags = [d for r in results for d in r.diagnostics]
+        assert len(all_diags) == 1
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
+        )

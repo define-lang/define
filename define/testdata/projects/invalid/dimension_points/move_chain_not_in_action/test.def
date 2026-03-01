@@ -1,0 +1,11 @@
+define the potential action<mv:define-lang.org:test_move_bad_action:/test> {
+    define the position<pos_a> {
+        it may only contain dimension points where {
+            it has the action</act_b>.
+        }
+    }
+    it happens when {
+    } and it does {
+        move the dimension point in position<pos_a>::action</act_b>::position<no_such> to position<pos_a>.
+    }
+}
