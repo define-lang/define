@@ -99,10 +99,29 @@ states.
 
 ---
 
-## 4. Intra-Action Analysis (Sequential)
+## 4. Two Modes of Analysis
 
-Within a single action body, the compiler runs forward dataflow analysis with
-transfer functions for each statement.
+The compiler uses two distinct modes. The sequential mode handles the common
+case cheaply. The concurrent mode is only activated when async triggers are
+detected.
+
+---
+
+## 5. Mode 1: Sequential Occupancy Tracking (the default)
+
+This is the primary mode. It handles all programs that use only synchronous
+triggering (create → wait until), which is the vast majority.
+
+### How It Works
+
+Walk the action body statement-by-statement, maintaining an occupancy map. When
+a synchronous trigger is encountered (create followed by `wait until`), treat it
+as a **function call**: step into the triggered action's body, track occupancy
+through it, step out when the wait condition is satisfied, continue from the
+statement after `wait until`.
+
+This is just forward dataflow analysis extended across synchronous call
+boundaries. No effect summaries, no conflict sets, no concurrency machinery.
 
 ### Chain Validity
 
@@ -142,42 +161,69 @@ and `position</b>` (both must be Occupied) plus whatever operation applies to
 - Precondition: `state[R] == Occupied`
 - Postcondition: `state[R::P] = Empty` (or post-init state if P has init block)
 
-**`wait until { conditions }`**:
-
-- Splits the action body into two segments
-- After the boundary, states re-derived from `wait until` conditions + effect
-  summaries of what could have changed concurrently
-
 **End of action block**: locally-defined positions with dimension points are
 automatically destroyed in reverse definition order (DLP 31). The tracker
 simulates these implicit destructions.
 
-### Synchronous vs Asynchronous Trigger Classification
+### Synchronous Trigger (function call semantics)
 
-Each trigger point in an action body is classified locally:
+When the compiler encounters `create` followed by `wait until` that depends on
+the triggered action's effects:
 
-- **Synchronous**: `create` (triggering a sub-action) followed immediately by
-  `wait until` that depends on the triggered action's effects. This is the
-  common case (see fibonacci example). No concurrency analysis needed.
-- **Asynchronous**: `create` without a corresponding `wait until`. The triggered
-  action runs concurrently with the remainder of the current action body.
+1. Apply the `create` transfer function (position becomes Occupied, triggering
+   the sub-action)
+2. Step into the triggered action's body with the current occupancy map
+3. Track occupancy through the called action's body (recursively, including any
+   synchronous calls it makes)
+4. When the called action's effects satisfy the `wait until` condition, step out
+5. Apply the `wait until` postcondition and continue in the caller
+
+This handles arbitrarily deep synchronous call chains. The fibonacci example:
+`generate` calls `next` 500 times sequentially. Each call is tracked through and
+back. No concurrency analysis at any point.
+
+### What This Mode Catches
+
+- Create in an already-occupied position
+- Move/destroy from an empty position
+- Invalid intermediate references (empty intermediate in a chain)
+- Occupancy errors inside synchronous calls
+- Cascade effects from destruction
+
+### Cost
+
+O(total statements traversed across all synchronous call chains). Same order as
+existing compilation. Fully parallel per-file for the top-level analysis;
+synchronous calls across files follow the existing compilation order.
 
 ---
 
-## 5. Effect Summaries
+## 6. Mode 2: Concurrent Conflict Checking (on-demand)
 
-Each action produces an effect summary computed bottom-up along the reference
-graph (piggybacking on existing compilation order -- no new bottleneck).
+Activated ONLY when the compiler encounters an **asynchronous trigger** -- a
+`create` that is NOT followed by a `wait until` depending on the triggered
+action. This is the uncommon case.
+
+### Trigger Classification
+
+Each trigger point in an action body is classified locally:
+
+- **Synchronous**: `create` followed immediately by `wait until` that depends on
+  the triggered action's effects → Mode 1 handles it
+- **Asynchronous**: `create` without a corresponding `wait until` → Mode 2
+  activates
+
+### Effect Summaries (computed only when needed)
+
+When Mode 2 activates, the compiler computes effect summaries for the concurrent
+subtrees. Effect summaries are NOT computed for the entire program -- only for
+the actions involved in the specific concurrency.
 
 ```
 ActionEffectSummary:
-  trigger_conditions:   what triggers this action
-  chain_reads:          ALL positions traversed (intermediates + endpoints)
-  writes:               positions modified (creates, fills, vacates)
-  segments:             split by wait-until boundaries
-  cascade_plans:        precomputed destruction cascades
-  sync_triggers:        trigger points classified as synchronous
-  async_triggers:       trigger points classified as asynchronous
+  chain_reads:    ALL positions traversed (intermediates + endpoints)
+  writes:         positions modified (creates, fills, vacates)
+  cascade_plans:  precomputed destruction cascades
 ```
 
 **Chain reads are critical.** A reference to
@@ -187,22 +233,13 @@ depending on the operation. Any concurrent write to an intermediate invalidates
 the entire reference chain.
 
 **Position references are relative.** An action's effects are expressed relative
-to `this dimension point`. At each use site, the compiler instantiates against
-the concrete position.
+to `this dimension point`. At the concurrency root, the compiler instantiates
+against concrete positions.
 
----
+### Concurrency via the Ownership Tree
 
-## 6. Concurrency Analysis via the Ownership Tree
-
-Instead of building a separate trigger graph with global analysis, we use the
-ownership tree directly. Concurrency is always rooted at a specific node in the
-tree.
-
-### Where Concurrency Arises
-
-Concurrency occurs when an action body triggers multiple sub-actions
-asynchronously, or triggers a sub-action and continues doing work without
-waiting. The node in the ownership tree where this happens is the **concurrency
+Concurrency is always rooted at a specific node in the ownership tree -- the
+node whose action body contains the async trigger(s). This is the **concurrency
 root**.
 
 ### Conflict Scope
@@ -229,17 +266,6 @@ For each concurrency root, check the concurrent children's effect summaries:
    that is an intermediate in another sibling's reference chain → paradox
 4. **Causally ordered access**: if the writer's effect triggers the reader, the
    reader sees the post-write state → NOT a paradox
-
-### The Common Case Is Free
-
-Most triggering is synchronous (create → wait until). The fibonacci example
-demonstrates this pattern: `generate` creates a dimension point in `next`'s
-`position<run>`, then immediately `wait until` it's destroyed. This is a
-sequential call. No concurrency analysis needed.
-
-Only the asynchronous case (create without waiting, or multiple creates before a
-wait) requires conflict checking, and even then the scope is bounded by the
-ownership tree's common ancestor.
 
 ---
 
@@ -318,51 +344,68 @@ Position constraints and occupancy tracking reinforce each other:
 
 ## 10. Analysis Architecture
 
-**Phase 1 (per-file, fully parallel)**: Intra-action forward dataflow. Track
-occupancy state statement-by-statement. Classify triggers as sync/async. Produce
-effect summaries including full chain reads. Piggybacks on existing per-file
-validation.
+**For all programs (Mode 1):** Sequential occupancy tracking runs as part of
+existing per-file validation. Walk action bodies, track states, follow
+synchronous calls. Piggybacks on existing compilation order. No new
+infrastructure needed beyond the occupancy map.
 
-**Phase 2 (bottom-up, piggybacks on compilation order)**: Compose effect
-summaries from Phase 1 + dependency summaries. Handle init blocks, cascade
-plans. No new bottleneck -- this is additional O(file size) work per file along
-the existing compilation critical path.
-
-**Phase 3 (per dimension point, fully parallel)**: For each dimension point with
-multiple actions: check sibling actions for cycles (layered termination checker)
-and write conflicts on shared quality requirement positions.
+**Only when async triggers are detected (Mode 2):** Compute effect summaries for
+the concurrent subtrees at the concurrency root. Check for conflicts on shared
+positions. Cycle detection and termination analysis for sibling actions on the
+same dimension point.
 
 No global trigger graph. No global Tarjan's. No global concurrency sets. No
 global causal reachability. The ownership tree structure makes all of those
 unnecessary.
 
+Mode 2 can be implemented incrementally -- ship Mode 1 first (catching
+create-in-occupied, destroy-when-empty, chain validity) and add Mode 2 when
+async patterns appear in real programs.
+
 ---
 
 ## 11. Computational Complexity
 
-| Phase                        | Work                                    | Parallelizable?      |
-| ---------------------------- | --------------------------------------- | -------------------- |
-| Phase 1 (intra-action)       | O(S) total, O(file) per file            | Fully parallel       |
-| Phase 2 (effect summaries)   | O(S) additional on existing compilation | Existing parallelism |
-| Phase 3 (conflict detection) | O(per dimension point)                  | Fully parallel       |
+**Mode 1 (all programs):**
 
-The only new single-threaded work is bounded by the size of individual dimension
-points (their sibling action count and shared position count), not by the total
-program size.
+| Work                            | Cost                        | Parallelizable?           |
+| ------------------------------- | --------------------------- | ------------------------- |
+| Intra-action occupancy tracking | O(S) total                  | Fully parallel per-file   |
+| Synchronous call traversal      | O(call depth × callee size) | Follows compilation order |
 
-Worst case for a single dimension point: O(A² × P) where A = number of sibling
-actions and P = number of shared positions. For typical dimension points with a
-handful of actions, this is constant.
+This is the same order as existing compilation. No new bottleneck.
+
+**Mode 2 (only at async trigger points):**
+
+| Work                            | Cost                           | Parallelizable?      |
+| ------------------------------- | ------------------------------ | -------------------- |
+| Effect summary computation      | O(concurrent subtree size)     | Per concurrency root |
+| Conflict checking               | O(A² × P) per concurrency root | Per concurrency root |
+| Cycle detection (per dim point) | O(sibling actions)             | Per dimension point  |
+
+Where A = number of concurrent siblings, P = number of shared positions. For
+typical programs, A is small (a few async tasks at startup) and P is small (a
+few shared quality requirement positions). Mode 2 is rarely invoked and cheap
+when it is.
 
 ---
 
 ## 12. Resolved Design Decisions
 
+- **Two-mode architecture**: Mode 1 (sequential occupancy tracking) handles the
+  common synchronous case with no concurrency machinery. Mode 2 (concurrent
+  conflict checking) activates only at async trigger points. Mode 1 can ship
+  first; Mode 2 added incrementally.
 - **No separate trigger graph**: trigger relationships are derived from the
   reference graph + quality requirement tree. The ownership tree is the primary
   analysis structure.
 - **Sync/async classification is local**: determined by whether `wait until`
   follows a trigger point. Most triggers are synchronous.
+- **Synchronous triggers are function calls**: the compiler steps into the
+  callee's body, tracks occupancy through it, and steps back out. No effect
+  summaries or conflict sets needed.
+- **Effect summaries computed on-demand**: only for concurrent subtrees at async
+  trigger points, not for the entire program.
 - **Cycles are local**: can only form between sibling actions on the same
   dimension point. Detected per dimension point, not globally.
 - **Chain reads are tracked**: every intermediate position in a chain is an
