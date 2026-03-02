@@ -1236,4 +1236,4 @@ class TestMoveDimensionPoint:
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
         )
-        assert all_diags[0].position.column == 62
+        assert all_diags[0].position.column == 72
