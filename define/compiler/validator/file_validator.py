@@ -40,6 +40,11 @@ SYNTAX_ERROR_TYPES = (
 )
 
 
+def _chain_name(chain: list[ast.TypedName], fqun: ast.Fqun) -> str:
+    """Format a chain of typed names as a :: -separated string."""
+    return "::".join(elem.full_typed_name(in_universe=fqun) for elem in chain)
+
+
 @dataclass(frozen=True)
 class FileValidationContext:
     """Immutable input for validating a single file."""
@@ -416,6 +421,8 @@ class ProgramAstValidator:
             stmt.to_position.chain, enclosing_definition, scope
         )
         fqun = enclosing_definition.typed_name.name_content.fqun
+        if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
+            return
         from_ok = self._check_local_position_occupied(
             tracker, stmt.from_position, scope, fqun
         )
@@ -429,6 +436,51 @@ class ProgramAstValidator:
                 tracker.mark_unknown_state(stmt.from_position)
             if tracker.get_local_position_reference(stmt.to_position, scope):
                 tracker.mark_unknown_state(stmt.to_position)
+
+    def _check_if_from_is_a_prefix_of_to(
+        self,
+        stmt: ast.MoveDimensionPointStatement,
+        fqun: ast.Fqun,
+        scope: scope_tracker.ScopeTracker,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
+    ) -> bool:
+        """Check if the from chain is a prefix of (or identical to) the to chain.
+
+        Returns True if a prefix relationship was detected (and diagnostics emitted).
+        """
+        from_chain = stmt.from_position.chain
+        to_chain = stmt.to_position.chain
+        if len(from_chain) > len(to_chain):
+            return False
+        for from_elem, to_elem in zip(from_chain, to_chain, strict=False):
+            if from_elem.full_typed_name(in_universe=fqun) != to_elem.full_typed_name(
+                in_universe=fqun
+            ):
+                return False
+
+        if len(from_chain) == len(to_chain):
+            self.diagnostics.append(
+                diagnostics.MoveToSamePositionDiagnostic(
+                    position=to_chain[-1].position,
+                    position_name=_chain_name(to_chain, fqun),
+                )
+            )
+        else:
+            divergence = to_chain[len(from_chain)]
+            self.diagnostics.append(
+                diagnostics.MoveIntoDefiningPositionDiagnostic(
+                    position=divergence.position,
+                    from_position=_chain_name(from_chain, fqun),
+                    to_position=_chain_name(to_chain, fqun),
+                )
+            )
+            # TODO: Need to export unknown-state positions in ValidationResult
+            # so we know they also can't be checked elsewhere.
+            if tracker.get_local_position_reference(stmt.from_position, scope):
+                tracker.mark_unknown_state(stmt.from_position)
+            if tracker.get_local_position_reference(stmt.to_position, scope):
+                tracker.mark_unknown_state(stmt.to_position)
+        return True
 
     def _check_local_position_not_occupied(
         self,

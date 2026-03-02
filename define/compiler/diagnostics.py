@@ -459,6 +459,33 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
 
 
 @dataclass
+class MoveToSamePositionDiagnostic(Diagnostic):
+    """Diagnostic for when a move statement's from and to positions are the same."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "source and destination cannot be identical when moving dimension points"
+        " ('{self.position_name}' is the name of both"
+        " the source and destination here)"
+    )
+
+
+@dataclass
+class MoveIntoDefiningPositionDiagnostic(Diagnostic):
+    """Diagnostic for when a move statement moves a dimension point into a position it defines."""
+
+    from_position: str
+    to_position: str
+    message_format: ClassVar[str] = (
+        "cannot move a dimension point\n"
+        "  from: {self.from_position}\n"
+        "    to: {self.to_position}\n"
+        "because the source position defines the destination position"
+        " ('{self.from_position}' is the start of both positions)"
+    )
+
+
+@dataclass
 class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a chain element is not in the first position's constraints."""
 

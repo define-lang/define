@@ -516,3 +516,143 @@ def test_valid_global_to_position(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
+
+
+def test_move_to_same_position():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<a>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert diags[0].position_name == "position<a>"
+
+
+def test_move_to_same_position_does_not_mark_unknown():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<a>.\n"
+        "        create a dimension point in position<a>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+
+
+def test_move_to_chained_prefix_position(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    (tmp_path / "test.def").write_text(
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<local_pos> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</target_pos>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<local_pos>.\n"
+            "        move the dimension point in position<local_pos>"
+            " to position<local_pos>::position</target_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "target_pos.def").write_text(
+        "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    assert len(test_result.diagnostics) == 1
+    assert isinstance(
+        test_result.diagnostics[0], diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
+    assert test_result.diagnostics[0].from_position == "position<local_pos>"
+    assert (
+        test_result.diagnostics[0].to_position
+        == "position<local_pos>::position<my.domain.com:my_lib:/target_pos>"
+    )
+
+
+def test_move_to_chained_prefix_marks_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    (tmp_path / "test.def").write_text(
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<local_pos> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</target_pos>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<local_pos>.\n"
+            "        move the dimension point in position<local_pos>"
+            " to position<local_pos>::position</target_pos>.\n"
+            "        create a dimension point in position<local_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "target_pos.def").write_text(
+        "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    assert len(test_result.diagnostics) == 1
+    assert isinstance(
+        test_result.diagnostics[0], diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
+
+
+def test_move_different_first_element_no_prefix_error():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert diags == []

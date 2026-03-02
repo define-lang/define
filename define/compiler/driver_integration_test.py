@@ -233,6 +233,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "dimension_points/move/from_empty_position.def": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
     ],
+    "dimension_points/move/move_to_same_position.def": [
+        diagnostics.MoveToSamePositionDiagnostic,
+    ],
     "dimension_points/move/repeated_same_direction.def": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
         diagnostics.LocalDuplicateDimensionPointDiagnostic,
@@ -301,6 +304,9 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "dimension_points/move/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
+    ],
+    "dimension_points/move/move_into_defining_position": [
+        diagnostics.MoveIntoDefiningPositionDiagnostic,
     ],
     "sub_root_conflict_load": [
         diagnostics.SubRootAlreadyOccupiedDiagnostic,

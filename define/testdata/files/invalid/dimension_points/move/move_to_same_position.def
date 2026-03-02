@@ -1,0 +1,8 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/move_to_same_position> {
+    it happens when {
+    } and it does {
+        define the position<pos>.
+        create a dimension point in position<pos>.
+        move the dimension point in position<pos> to position<pos>.
+    }
+}

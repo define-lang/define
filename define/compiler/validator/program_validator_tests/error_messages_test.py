@@ -171,8 +171,9 @@ def test_move_from_empty_position_format():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "it happens when {\n"
         "} and it does {\n"
-        "define the position<pos>.\n"
-        "move the dimension point in position<pos> to position<pos>.\n"
+        "define the position<from_pos>.\n"
+        "define the position<to_pos>.\n"
+        "move the dimension point in position<from_pos> to position<to_pos>.\n"
         "}\n"
         "}\n"
     )
@@ -184,10 +185,10 @@ def test_move_from_empty_position_format():
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 5, column 29\n"
-        "move the dimension point in position<pos> to position<pos>.\n"
+        "line 6, column 29\n"
+        "move the dimension point in position<from_pos> to position<to_pos>.\n"
         "                            ^\n"
-        "cannot move a dimension point from 'position<pos>'"
+        "cannot move a dimension point from 'position<from_pos>'"
         " because it does not contain one"
     )
 
@@ -293,4 +294,90 @@ def test_deferred_action_chain_error_format(
         "                                                                     ^\n"
         "'position<no_such>' is not defined inside the definition of"
         " 'action<my.domain.com:my_lib:/act_b>'"
+    )
+
+
+def test_move_to_same_position_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<pos>.\n"
+        "        create a dimension point in position<pos>.\n"
+        "        move the dimension point in position<pos> to position<pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == (
+        "line 6, column 54\n"
+        "        move the dimension point in position<pos> to position<pos>.\n"
+        "                                                     ^\n"
+        "source and destination cannot be identical when moving dimension points"
+        " ('position<pos>' is the name of both"
+        " the source and destination here)"
+    )
+
+
+def test_move_into_defining_position_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<local_pos> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</mid_pos>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<local_pos>.\n"
+        "        move the dimension point in position<local_pos>"
+        " to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
+    _ = (tmp_path / "mid_pos.def").write_text(
+        (
+            "define the potential position<my.domain.com:my_lib:/mid_pos> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</end_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+    )
+    _ = (tmp_path / "end_pos.def").write_text(
+        "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    assert len(test_result.diagnostics) == 1
+    assert isinstance(
+        test_result.diagnostics[0], diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
+    formatted = test_result.diagnostics[0].format(
+        source.splitlines(), file_name="test.def"
+    )
+    assert formatted == (
+        'File "test.def", line 10, column 81\n'
+        "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
+        "                                                                                ^\n"
+        "cannot move a dimension point\n"
+        "  from: position<local_pos>\n"
+        "    to: position<local_pos>::position<my.domain.com:my_lib:/mid_pos>::position<my.domain.com:my_lib:/end_pos>\n"
+        "because the source position defines the destination position"
+        " ('position<local_pos>' is the start of both positions)"
     )
