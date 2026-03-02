@@ -1004,3 +1004,13 @@ dimension point.
 move_dimension_point_statement =
     "move the dimension point in", " ", position_reference, " to ", position_reference, terminator ;
 ```
+
+### Cannot Move a Dimension Point Into a Position It Defines
+
+Proposals:
+
+- [DLP 25: Dimension Points May Not Contain Themselves](../proposals/00025-dimension-points-may-not-contain-themselves.md)
+
+In a Move Dimension Point Statement, it is an error if the `from` position
+reference is a prefix of the `to` position reference (also meaning it's an error
+if they are identical).
