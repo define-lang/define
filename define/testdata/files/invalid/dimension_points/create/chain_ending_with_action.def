@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/chain_ending_with_action> {
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/create/chain_ending_with_action> {
     define the position<pos_a>.
     it happens when {
     } and it does {

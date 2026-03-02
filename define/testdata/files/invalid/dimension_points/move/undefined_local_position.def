@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move_undefined_local_position> {
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/undefined_local_position> {
     it happens when {
     } and it does {
         move the dimension point in position<no_such_pos> to position<also_missing>.

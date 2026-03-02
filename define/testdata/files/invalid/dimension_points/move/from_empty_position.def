@@ -1,0 +1,8 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/from_empty_position> {
+    it happens when {
+    } and it does {
+        define the position<from_pos>.
+        define the position<to_pos>.
+        move the dimension point in position<from_pos> to position<to_pos>.
+    }
+}

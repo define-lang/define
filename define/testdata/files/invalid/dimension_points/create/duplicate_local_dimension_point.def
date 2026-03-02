@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/duplicate_local_dimension_point> {
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/create/duplicate_local_dimension_point> {
     it happens when {
     } and it does {
         define the position<my_pos>.

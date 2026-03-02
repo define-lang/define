@@ -1,6 +1,0 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/undefined_local_position> {
-    it happens when {
-    } and it does {
-        create a dimension point in position<no_such_pos>.
-    }
-}

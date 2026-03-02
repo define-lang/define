@@ -206,37 +206,57 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "dimension_points/duplicate_local_dimension_point.def": [
+    "dimension_points/create/chain_ending_with_action.def": [
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "dimension_points/create/duplicate_local_dimension_point.def": [
         diagnostics.LocalDuplicateDimensionPointDiagnostic,
     ],
-    "dimension_points/chain_ending_with_action.def": [
+    "dimension_points/create/single_action_reference.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "dimension_points/create/undefined_local_position.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+    ],
+    "dimension_points/move/chain_ending_with_action.def": [
         diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],
-    "dimension_points/single_action_reference.def": [
+    "dimension_points/move/dest_occupied_after_move.def": [
+        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+    ],
+    "dimension_points/move/from_empty_position.def": [
+        diagnostics.MoveFromEmptyPositionDiagnostic,
+    ],
+    "dimension_points/move/repeated_same_direction.def": [
+        diagnostics.MoveFromEmptyPositionDiagnostic,
+        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+    ],
+    "dimension_points/move/round_trip_fails.def": [
+        diagnostics.MoveFromEmptyPositionDiagnostic,
+        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+    ],
+    "dimension_points/move/single_action_reference.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],
-    "dimension_points/move_chain_ending_with_action.def": [
-        diagnostics.LocalActionNameDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
-        diagnostics.PositionReferenceChainEndDiagnostic,
+    "dimension_points/move/to_occupied_position.def": [
+        diagnostics.LocalDuplicateDimensionPointDiagnostic,
     ],
-    "dimension_points/move_single_action_reference.def": [
+    "dimension_points/move/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
-        diagnostics.LocalActionNameDiagnostic,
-        diagnostics.PositionReferenceChainEndDiagnostic,
-    ],
-    "dimension_points/move_undefined_local_position.def": [
-        diagnostics.UndefinedLocalNameDiagnostic,
-        diagnostics.UndefinedLocalNameDiagnostic,
-    ],
-    "dimension_points/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
     "syntax/short_form_required/full_form_same_fqun.def": [
+        diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
+    ],
+    "syntax/short_form_required/move_full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
 }
@@ -270,16 +290,16 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
-    "dimension_points/chain_not_in_action": [
+    "dimension_points/create/chain_not_in_action": [
         diagnostics.ChainElementNotInActionDiagnostic,
     ],
-    "dimension_points/chain_not_in_constraints": [
+    "dimension_points/create/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
-    "dimension_points/move_chain_not_in_action": [
+    "dimension_points/move/chain_not_in_action": [
         diagnostics.ChainElementNotInActionDiagnostic,
     ],
-    "dimension_points/move_chain_not_in_constraints": [
+    "dimension_points/move/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
     "sub_root_conflict_load": [

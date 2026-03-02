@@ -1,4 +1,4 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move_single_action_reference> {
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/single_action_reference> {
     define the position<to_pos>.
     it happens when {
     } and it does {

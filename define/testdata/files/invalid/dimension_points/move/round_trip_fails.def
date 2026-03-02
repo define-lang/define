@@ -1,0 +1,11 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/round_trip_fails> {
+    it happens when {
+    } and it does {
+        define the position<pos_a>.
+        define the position<pos_b>.
+        create a dimension point in position<pos_a>.
+        move the dimension point in position<pos_a> to position<pos_b>.
+        move the dimension point in position<pos_b> to position<pos_a>.
+        move the dimension point in position<pos_b> to position<pos_a>.
+    }
+}
