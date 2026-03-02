@@ -471,6 +471,28 @@ class MoveToSamePositionDiagnostic(Diagnostic):
 
 
 @dataclass
+class MoveViolatesConstraintsDiagnostic(Diagnostic):
+    """Diagnostic for when a move's destination constraints are not satisfied."""
+
+    from_position: str
+    to_position: str
+    missing_qualities: tuple[str, ...]
+
+    @property
+    def missing_list(self) -> str:
+        """Format the missing qualities as an indented list."""
+        return "\n  ".join(self.missing_qualities)
+
+    message_format: ClassVar[str] = (
+        "cannot move a dimension point\n"
+        "  from: {self.from_position}\n"
+        "    to: {self.to_position}\n"
+        "because the dimension point being moved does not have the required qualities:\n"
+        "  {self.missing_list}"
+    )
+
+
+@dataclass
 class MoveIntoDefiningPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement moves a dimension point into a position it defines."""
 

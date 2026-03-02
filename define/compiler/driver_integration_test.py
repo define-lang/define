@@ -256,6 +256,12 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
+    "dimension_points/move/violates_dest_constraints.def": [
+        diagnostics.MoveViolatesConstraintsDiagnostic,
+    ],
+    "dimension_points/move/violates_dest_constraints_unconstrained_source.def": [
+        diagnostics.MoveViolatesConstraintsDiagnostic,
+    ],
     "syntax/short_form_required/full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],

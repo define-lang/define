@@ -52,6 +52,11 @@ class ScopeTracker:
         key = name.full_typed_name(in_universe=self._enclosing_fqun)
         return key in self._definitions.maps[0]
 
+    def get_constraint_names(self, name: ast.TypedName) -> frozenset[str]:
+        """Return the constraint names for a position, or empty if unconstrained."""
+        key = name.full_typed_name(in_universe=self._enclosing_fqun)
+        return self._constraint_names.get(key, frozenset())
+
     def definition_has_quality(
         self, parent: ast.TypedName, quality: ast.TypedName
     ) -> bool:

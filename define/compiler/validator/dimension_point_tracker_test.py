@@ -115,7 +115,7 @@ def test_create_and_is_occupied():
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref)
+    tracker.create(ref, frozenset())
 
     assert tracker.is_occupied(ref) is True
 
@@ -132,20 +132,22 @@ def test_get_occupant():
     local_ref = _make_local_ref("my_pos", _POS2)
     ref = _make_position_ref([local_ref])
 
-    tracker.create(ref)
+    tracker.create(ref, frozenset(["position<x>"]))
     occupant = tracker.get_occupant(ref)
 
-    assert occupant is local_ref
+    assert isinstance(occupant, dimension_point_tracker.DimensionPointInfo)
+    assert occupant.creation_position is local_ref
+    assert occupant.qualities == frozenset(["position<x>"])
 
 
 def test_create_already_occupied_raises():
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.create(ref)
+    tracker.create(ref, frozenset())
 
     with pytest.raises(ValueError, match="already occupied"):
-        tracker.create(ref)
+        tracker.create(ref, frozenset())
 
 
 def test_move():
@@ -153,7 +155,7 @@ def test_move():
     from_ref = _make_position_ref([_make_local_ref("pos_a")])
     to_ref = _make_position_ref([_make_local_ref("pos_b")])
 
-    tracker.create(from_ref)
+    tracker.create(from_ref, frozenset())
     tracker.move(from_ref, to_ref)
 
     assert tracker.is_occupied(from_ref) is False
@@ -201,8 +203,38 @@ def test_move_to_occupied_raises():
     from_ref = _make_position_ref([_make_local_ref("pos_a")])
     to_ref = _make_position_ref([_make_local_ref("pos_b")])
 
-    tracker.create(from_ref)
-    tracker.create(to_ref)
+    tracker.create(from_ref, frozenset())
+    tracker.create(to_ref, frozenset())
 
     with pytest.raises(ValueError, match="already occupied"):
         tracker.move(from_ref, to_ref)
+
+
+def test_create_stores_qualities():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref([_make_local_ref("my_pos")])
+
+    tracker.create(ref, frozenset(["position<x>"]))
+
+    assert tracker.get_occupant(ref).qualities == frozenset(["position<x>"])
+
+
+def test_move_preserves_qualities():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    from_ref = _make_position_ref([_make_local_ref("pos_a")])
+    to_ref = _make_position_ref([_make_local_ref("pos_b")])
+    qualities = frozenset(["position<x>", "action<y>"])
+
+    tracker.create(from_ref, qualities)
+    tracker.move(from_ref, to_ref)
+
+    assert tracker.get_occupant(to_ref).qualities == qualities
+
+
+def test_create_empty_qualities():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref([_make_local_ref("my_pos")])
+
+    tracker.create(ref, frozenset())
+
+    assert tracker.get_occupant(ref).qualities == frozenset()

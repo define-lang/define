@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 import typing
+from dataclasses import dataclass
 
 from define.compiler import ast
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Set
+
     from define.compiler.validator import scope_tracker
+
+
+@dataclass(frozen=True)
+class DimensionPointInfo:
+    """Information about a tracked dimension point."""
+
+    creation_position: ast.LocalTypedNameReference
+    qualities: frozenset[str]
 
 
 class LocalDimensionPointTracker:
@@ -22,7 +33,7 @@ class LocalDimensionPointTracker:
     def __init__(self, enclosing_definition: ast.QualityDefinition):
         """Initialize with the enclosing definition's FQUN."""
         self._fqun = enclosing_definition.typed_name.name_content.fqun
-        self._dimension_points: dict[str, ast.LocalTypedNameReference] = {}
+        self._dimension_points: dict[str, DimensionPointInfo] = {}
         self._positions_with_unknown_state: set[str] = set()
 
     def get_local_position_reference(
@@ -57,11 +68,11 @@ class LocalDimensionPointTracker:
         """Return whether a dimension point exists at this position."""
         return self._key_for(ref) in self._dimension_points
 
-    def get_occupant(self, ref: ast.PositionReference) -> ast.LocalTypedNameReference:
-        """Return the reference that created the dimension point at this position."""
+    def get_occupant(self, ref: ast.PositionReference) -> DimensionPointInfo:
+        """Return the info for the dimension point at this position."""
         return self._dimension_points[self._key_for(ref)]
 
-    def create(self, ref: ast.PositionReference):
+    def create(self, ref: ast.PositionReference, qualities: Set[str]):
         """Record a new dimension point at this position.
 
         Raises ValueError if the position is already occupied.
@@ -69,8 +80,9 @@ class LocalDimensionPointTracker:
         key = self._key_for(ref)
         if key in self._dimension_points:
             raise ValueError(f"position {key} is already occupied")
-        self._dimension_points[key] = typing.cast(
-            "ast.LocalTypedNameReference", ref.chain[0]
+        self._dimension_points[key] = DimensionPointInfo(
+            creation_position=typing.cast("ast.LocalTypedNameReference", ref.chain[0]),
+            qualities=frozenset(qualities),
         )
 
     def move(self, from_ref: ast.PositionReference, to_ref: ast.PositionReference):

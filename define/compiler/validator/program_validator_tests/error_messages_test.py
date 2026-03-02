@@ -381,3 +381,65 @@ def test_move_into_defining_position_format(
         "because the source position defines the destination position"
         " ('position<local_pos>' is the start of both positions)"
     )
+
+
+def test_move_violates_constraints_error_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the position</x>.\n"
+        "                it has the action</y>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        move the dimension point in position<from_pos> to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
+    _ = (tmp_path / "x.def").write_text(
+        "define the potential position<my.domain.com:my_lib:/x>.\n",
+        encoding="utf-8",
+    )
+    _ = (tmp_path / "y.def").write_text(
+        (
+            "define the potential action<my.domain.com:my_lib:/y> {\n"
+            "    it happens when {\n"
+            "    } and it does {\n"
+            "    }\n"
+            "}\n"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    constraint_diags = [
+        d
+        for d in all_diags
+        if isinstance(d, diagnostics.MoveViolatesConstraintsDiagnostic)
+    ]
+    assert len(all_diags) == 1
+    assert len(constraint_diags) == 1
+    assert constraint_diags == all_diags
+    formatted = constraint_diags[0].format(source.splitlines(), file_name="test.def")
+    assert formatted == (
+        'File "test.def", line 12, column 59\n'
+        "        move the dimension point in position<from_pos> to position<to_pos>.\n"
+        "                                                          ^\n"
+        "cannot move a dimension point\n"
+        "  from: position<from_pos>\n"
+        "    to: position<to_pos>\n"
+        "because the dimension point being moved does not have the required qualities:\n"
+        "  action<my.domain.com:my_lib:/y>\n"
+        "  position<my.domain.com:my_lib:/x>"
+    )

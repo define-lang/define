@@ -405,7 +405,8 @@ class ProgramAstValidator:
         if self._check_local_position_not_occupied(
             tracker, stmt.position_reference, scope, fqun
         ):
-            tracker.create(stmt.position_reference)
+            qualities = scope.get_constraint_names(chain[0])
+            tracker.create(stmt.position_reference, qualities)
 
     def _validate_move_dimension_point(
         self,
@@ -430,12 +431,42 @@ class ProgramAstValidator:
             tracker, stmt.to_position, scope, fqun
         )
         if from_ok and to_ok:
-            tracker.move(stmt.from_position, stmt.to_position)
+            if self._check_constraints_for_move(stmt, fqun, scope, tracker):
+                tracker.move(stmt.from_position, stmt.to_position)
         else:
             if tracker.get_local_position_reference(stmt.from_position, scope):
                 tracker.mark_unknown_state(stmt.from_position)
             if tracker.get_local_position_reference(stmt.to_position, scope):
                 tracker.mark_unknown_state(stmt.to_position)
+
+    def _check_constraints_for_move(
+        self,
+        stmt: ast.MoveDimensionPointStatement,
+        fqun: ast.Fqun,
+        scope: scope_tracker.ScopeTracker,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
+    ) -> bool:
+        """Check that a move satisfies destination constraints."""
+        # TODO: Check constraints for non-local (chained/global) positions.
+        dp_info = tracker.get_occupant(stmt.from_position)
+        dest_constraints = scope.get_constraint_names(stmt.to_position.chain[0])
+        missing = dest_constraints - dp_info.qualities
+        if not missing:
+            return True
+
+        self.diagnostics.append(
+            diagnostics.MoveViolatesConstraintsDiagnostic(
+                position=stmt.to_position.chain[0].position,
+                from_position=stmt.from_position.chain[0].full_typed_name(
+                    in_universe=fqun
+                ),
+                to_position=stmt.to_position.chain[0].full_typed_name(in_universe=fqun),
+                missing_qualities=tuple(sorted(missing)),
+            )
+        )
+        tracker.mark_unknown_state(stmt.from_position)
+        tracker.mark_unknown_state(stmt.to_position)
+        return False
 
     def _check_if_from_is_a_prefix_of_to(
         self,
@@ -505,7 +536,7 @@ class ProgramAstValidator:
                 diagnostics.LocalDuplicateDimensionPointDiagnostic(
                     position=local_ref.position,
                     position_name=local_ref.full_typed_name(in_universe=fqun),
-                    first_creation_line=existing.position.line,
+                    first_creation_line=existing.creation_position.position.line,
                 )
             )
             return False
