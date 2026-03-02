@@ -1014,3 +1014,20 @@ Proposals:
 In a Move Dimension Point Statement, it is an error if the `from` position
 reference is a prefix of the `to` position reference (also meaning it's an error
 if they are identical).
+
+### Destination Position Constraints Are Enforced During Moves
+
+Proposals:
+
+- [DLP 18: Modular Constraints](../proposals/00018-modular-constraints.md)
+- [DLP 19: Guaranteeing Qualities in Positions](../proposals/00019-guaranteeing-qualities-in-positions.md)
+
+In a Move Dimension Point Statement, all required qualities from the destination
+position's Position Constraint Block must be present on the dimension point
+being moved.
+
+It is an error if the dimension point being moved does not have one or more
+required qualities of the destination position.
+
+This rule must be enforced statically at compile time and must never be a
+runtime check.
