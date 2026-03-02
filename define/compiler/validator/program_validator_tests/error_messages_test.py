@@ -162,7 +162,7 @@ def test_local_duplicate_dimension_point_format():
         "create a dimension point in position<pos>.\n"
         "                            ^\n"
         "a dimension point already exists in 'position<pos>'; "
-        "first created on line 5"
+        "it was put there on line 5"
     )
 
 
