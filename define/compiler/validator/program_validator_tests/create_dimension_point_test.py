@@ -154,6 +154,30 @@ def test_local_position_defined_in_action_statements_before_use():
     assert results[0].diagnostics == []
 
 
+def test_two_actions_with_definition_block_local_positions():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<inner_pos>.\n"
+        "        create a dimension point in position<inner_pos>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<inner_pos>.\n"
+        "        create a dimension point in position<inner_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert all_diags == []
+
+
 def test_single_action_in_position_reference():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"

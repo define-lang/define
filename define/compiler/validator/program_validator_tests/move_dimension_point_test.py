@@ -293,6 +293,102 @@ def test_round_trip_move_fails_second_return():
     assert diags[1].position_name == "position<a>"
 
 
+def test_two_actions_same_name_one_error_one_clean():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<from_pos>"
+    assert all_diags[0].position.line == 6
+    assert all_diags[0].position.column == 37
+
+
+def test_two_actions_same_name_one_occupied_error_one_clean():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        create a dimension point in position<to_pos>.\n"
+        "        move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert all_diags[0].position_name == "position<to_pos>"
+
+
+def test_two_actions_with_move_same_local_names():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert all_diags == []
+
+
 def test_valid_global_to_position(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     (tmp_path / "test.def").write_text(
