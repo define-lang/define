@@ -424,6 +424,11 @@ class ProgramAstValidator:
         )
         if from_ok and to_ok:
             tracker.move(stmt.from_position, stmt.to_position)
+        else:
+            if tracker.get_local_position_reference(stmt.from_position, scope):
+                tracker.mark_unknown_state(stmt.from_position)
+            if tracker.get_local_position_reference(stmt.to_position, scope):
+                tracker.mark_unknown_state(stmt.to_position)
 
     def _check_local_position_not_occupied(
         self,
@@ -439,6 +444,8 @@ class ProgramAstValidator:
         """
         local_ref = tracker.get_local_position_reference(ref, scope)
         if local_ref is None:
+            return False
+        if tracker.has_unknown_state(ref):
             return False
         if tracker.is_occupied(ref):
             existing = tracker.get_occupant(ref)
@@ -466,6 +473,8 @@ class ProgramAstValidator:
         """
         local_ref = tracker.get_local_position_reference(ref, scope)
         if local_ref is None:
+            return False
+        if tracker.has_unknown_state(ref):
             return False
         if not tracker.is_occupied(ref):
             self.diagnostics.append(

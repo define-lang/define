@@ -169,6 +169,33 @@ def test_move_from_empty_raises():
         tracker.move(from_ref, to_ref)
 
 
+def test_mark_unknown_state():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref([_make_local_ref("my_pos")])
+
+    tracker.mark_unknown_state(ref)
+
+    assert tracker.has_unknown_state(ref) is True
+
+
+def test_no_unknown_state_initially():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref([_make_local_ref("my_pos")])
+
+    assert tracker.has_unknown_state(ref) is False
+
+
+def test_unknown_state_does_not_affect_other_keys():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref_a = _make_position_ref([_make_local_ref("pos_a")])
+    ref_b = _make_position_ref([_make_local_ref("pos_b")])
+
+    tracker.mark_unknown_state(ref_a)
+
+    assert tracker.has_unknown_state(ref_a) is True
+    assert tracker.has_unknown_state(ref_b) is False
+
+
 def test_move_to_occupied_raises():
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     from_ref = _make_position_ref([_make_local_ref("pos_a")])

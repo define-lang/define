@@ -23,6 +23,7 @@ class LocalDimensionPointTracker:
         """Initialize with the enclosing definition's FQUN."""
         self._fqun = enclosing_definition.typed_name.name_content.fqun
         self._dimension_points: dict[str, ast.LocalTypedNameReference] = {}
+        self._positions_with_unknown_state: set[str] = set()
 
     def get_local_position_reference(
         self,
@@ -43,6 +44,14 @@ class LocalDimensionPointTracker:
         if not scope.is_defined_in_current_scope(first):
             return None
         return first
+
+    def mark_unknown_state(self, ref: ast.PositionReference):
+        """Mark a position as having unknown occupancy state."""
+        self._positions_with_unknown_state.add(self._key_for(ref))
+
+    def has_unknown_state(self, ref: ast.PositionReference) -> bool:
+        """Return whether a position has unknown occupancy state."""
+        return self._key_for(ref) in self._positions_with_unknown_state
 
     def is_occupied(self, ref: ast.PositionReference) -> bool:
         """Return whether a dimension point exists at this position."""

@@ -389,6 +389,107 @@ def test_two_actions_with_move_same_local_names():
     assert all_diags == []
 
 
+def test_failed_move_marks_both_positions_unknown():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "create a dimension point in position<b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<a>"
+    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[1].position_name == "position<b>"
+
+
+def test_move_to_occupied_marks_both_positions_unknown():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "create a dimension point in position<b>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "create a dimension point in position<b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[0].position_name == "position<b>"
+
+
+def test_both_from_empty_and_to_occupied_marks_unknown():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<b>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "create a dimension point in position<b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<a>"
+    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[1].position_name == "position<b>"
+
+
+def test_unknown_state_does_not_affect_other_positions():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "define the position<c>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "create a dimension point in position<c>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<a>"
+    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[1].position_name == "position<b>"
+
+
 def test_valid_global_to_position(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     (tmp_path / "test.def").write_text(
