@@ -443,7 +443,7 @@ class LocalDuplicateDimensionPointDiagnostic(Diagnostic):
     first_creation_line: int
     message_format: ClassVar[str] = (
         "a dimension point already exists in '{self.position_name}'; "
-        "first created on line {self.first_creation_line}"
+        "it was put there on line {self.first_creation_line}"
     )
 
 
