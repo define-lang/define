@@ -126,11 +126,10 @@ BUILD file generator.
 
 - All Python dependencies are managed via `aspect_rules_py`'s uv extension with
   a single `pypi` hub backed by the root `uv.lock`.
-- Dependencies are declared in per-package `pyproject.toml` files
-  (`define/compiler/pyproject.toml`, `defcl/pyproject.toml`,
-  `tools/pyproject.toml`).
-- To regenerate `uv.lock` after changing any `pyproject.toml`:
-  `bazelisk run @multitool/tools/uv lock`
+- Dependencies are in `pyproject.toml`. The `tools/` directory has its own
+  `pyproject.toml` file.
+- To regenerate or update the uv lock file:
+  `bazelisk run --noshow_progress //:update_lock`
 - Reference Python dependencies in BUILD files as `@pypi//package_name`.
 
 ### Basedpyright Type-Checking
