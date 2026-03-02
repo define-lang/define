@@ -19,6 +19,7 @@ _UNIVERSE_NAMES = ["my_lib", "core", "fuzz_test", "std"]
 _PATH_SEGMENTS = ["path", "hello", "sub", "dir", "leaf", "foo", "bar"]
 _LOCAL_NAMES = ["x", "my_pos", "local", "inner", "_tmp", "pos2", "node_1"]
 _CHAIN_LOCALS_FOR_CREATE = ["src_pos", "src_pos2"]
+_MOVE_POSITION_NAMES = ["mv_a", "mv_b", "mv_c"]
 _ACTION_WITH_INNER_FILE = "action_with_inner.def"
 _INNER_POS_IN_ACTION = "inner_pos"
 _VALID_ROOT_UNIVERSES = [
@@ -126,6 +127,10 @@ def _local_position_with_requirements(
 
 def _create_dimension_point_statement(position_reference: str, *, indent: str) -> str:
     return f"{indent}create a dimension point in {position_reference}.\n"
+
+
+def _move_dimension_point_statement(from_ref: str, to_ref: str, *, indent: str) -> str:
+    return f"{indent}move the dimension point in {from_ref} to {to_ref}.\n"
 
 
 @st.composite
@@ -408,6 +413,13 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         inner_locals.append(
             _create_dimension_point_statement(position_reference, indent=indent)
         )
+    move_count = draw(st.integers(min_value=0, max_value=2))
+    for _ in range(move_count):
+        from_ref = draw(create_dimension_point_references())
+        to_ref = draw(create_dimension_point_references())
+        inner_locals.append(
+            _move_dimension_point_statement(from_ref, to_ref, indent=indent)
+        )
     return _action_block_with_name(
         name,
         outer_locals=outer_locals,
@@ -554,6 +566,24 @@ def valid_sources(draw: st.DrawFn) -> str:
                 inner_locals.append(
                     _create_dimension_point_statement(ref, indent=indent)
                 )
+            move_count = draw(st.integers(min_value=0, max_value=2))
+            if move_count > 0:
+                needed = _MOVE_POSITION_NAMES[: move_count + 1]
+                for pos_name in needed:
+                    outer_locals.append(_local_position_simple(pos_name, indent=indent))
+                inner_locals.append(
+                    _create_dimension_point_statement(
+                        f"position<{needed[0]}>", indent=indent
+                    )
+                )
+                for i in range(move_count):
+                    inner_locals.append(
+                        _move_dimension_point_statement(
+                            f"position<{needed[i]}>",
+                            f"position<{needed[i + 1]}>",
+                            indent=indent,
+                        )
+                    )
             outer_locals += [
                 draw(_valid_local_definition_strategy(local_name, indent))
                 for local_name in outer_names
@@ -646,6 +676,7 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "position",
             "action",
             "create a dimension point in",
+            "move the dimension point in",
             "it happens when",
             "and it does",
         ]
@@ -689,6 +720,10 @@ def mutated_sources(draw: st.DrawFn) -> str:
     if "create a dimension point in " in mutated:
         return mutated.replace(
             "create a dimension point in ", "create a dimension point in", 1
+        )
+    if "move the dimension point in " in mutated:
+        return mutated.replace(
+            "move the dimension point in ", "move the dimension point in", 1
         )
     return mutated
 
@@ -909,6 +944,29 @@ def _build_cross_fqun_action_statements_project(
     )
 
 
+def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
+    root_files = {
+        "test.def": _action_with_block(
+            root_universe,
+            "test.def",
+            outer_locals=[
+                _local_position_simple("from_pos", indent="    "),
+                _local_position_simple("to_pos", indent="    "),
+            ],
+            inner_locals=[
+                _create_dimension_point_statement("position<from_pos>", indent="    "),
+                _move_dimension_point_statement(
+                    "position<from_pos>", "position<to_pos>", indent="    "
+                ),
+            ],
+        ),
+    }
+    return ProjectCase(
+        entrypoint="test.def",
+        roots=(ProjectRootCase("", root_universe, root_files, {}),),
+    )
+
+
 @st.composite
 def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     root_universe = draw(st.sampled_from(_VALID_ROOT_UNIVERSES))
@@ -923,6 +981,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "cross_fqun",
                 "cross_fqun_nested",
                 "cross_fqun_action_statements",
+                "move_local",
             ]
         )
     )
@@ -946,7 +1005,11 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
         return _build_cross_fqun_project(
             root_universe, child_universe, nested_child=True
         )
-    return _build_cross_fqun_action_statements_project(root_universe, child_universe)
+    if project_kind == "cross_fqun_action_statements":
+        return _build_cross_fqun_action_statements_project(
+            root_universe, child_universe
+        )
+    return _build_move_dimension_point_project(root_universe)
 
 
 def _mutate_project_case(
