@@ -3,10 +3,34 @@ load("//tools/lint:format.bzl", "format_test")
 load("//tools/lint:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "dimension_point_tracker",
+    srcs = ["dimension_point_tracker.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":scope_tracker",
+        "//define/compiler:ast",
+    ],
+)
+
+py_test(
+    name = "dimension_point_tracker_test",
+    size = "small",
+    srcs = ["dimension_point_tracker_test.py"],
+    pytest_main = True,
+    deps = [
+        ":dimension_point_tracker",
+        ":scope_tracker",
+        "//define/compiler:ast",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "file_validator",
     srcs = ["file_validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":dimension_point_tracker",
         ":name_validators",
         ":scope_tracker",
         ":stats",
@@ -198,6 +222,8 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":dimension_point_tracker",
+        ":dimension_point_tracker_test",
         ":file_validator",
         ":file_validator_test",
         ":name_validators",

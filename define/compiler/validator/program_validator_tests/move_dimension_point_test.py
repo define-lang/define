@@ -140,6 +140,159 @@ def test_same_fqun_must_use_short_form_in_to():
     assert diags[0].position.column == 68
 
 
+def test_move_from_empty_position():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<from_pos>.\n"
+        "define the position<to_pos>.\n"
+        "move the dimension point in position<from_pos> to position<to_pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<from_pos>"
+
+
+def test_move_to_occupied_position():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<from_pos>.\n"
+        "define the position<to_pos>.\n"
+        "create a dimension point in position<from_pos>.\n"
+        "create a dimension point in position<to_pos>.\n"
+        "move the dimension point in position<from_pos>"
+        " to position<to_pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[0].position_name == "position<to_pos>"
+
+
+def test_move_updates_state_allows_create_in_source():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    assert results[0].diagnostics == []
+
+
+def test_move_updates_state_blocks_create_in_dest():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "create a dimension point in position<b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[0].position_name == "position<b>"
+
+
+def test_double_move():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "define the position<c>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "move the dimension point in position<b> to position<c>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    assert results[0].diagnostics == []
+
+
+def test_repeated_move_same_direction():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<a>"
+    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[1].position_name == "position<b>"
+
+
+def test_round_trip_move_fails_second_return():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<a>.\n"
+        "define the position<b>.\n"
+        "create a dimension point in position<a>.\n"
+        "move the dimension point in position<a> to position<b>.\n"
+        "move the dimension point in position<b> to position<a>.\n"
+        "move the dimension point in position<b> to position<a>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position_name == "position<b>"
+    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[1].position_name == "position<a>"
+
+
 def test_valid_global_to_position(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     (tmp_path / "test.def").write_text(

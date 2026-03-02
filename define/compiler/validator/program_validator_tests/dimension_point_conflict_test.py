@@ -28,7 +28,7 @@ def test_duplicate_local_position():
     assert diags[0].position_name == "position<my_pos>"
     assert diags[0].first_creation_line == 5
     assert diags[0].position.line == 6
-    assert diags[0].position.column == 46
+    assert diags[0].position.column == 37
 
 
 def test_different_local_positions():

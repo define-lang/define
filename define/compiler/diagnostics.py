@@ -448,6 +448,17 @@ class LocalDuplicateDimensionPointDiagnostic(Diagnostic):
 
 
 @dataclass
+class MoveFromEmptyPositionDiagnostic(Diagnostic):
+    """Diagnostic for when a move statement's source position has no dimension point."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "cannot move a dimension point from '{self.position_name}'"
+        " because it does not contain one"
+    )
+
+
+@dataclass
 class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a chain element is not in the first position's constraints."""
 

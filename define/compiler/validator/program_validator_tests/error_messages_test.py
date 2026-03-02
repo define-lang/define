@@ -140,6 +140,58 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     )
 
 
+def test_local_duplicate_dimension_point_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<pos>.\n"
+        "create a dimension point in position<pos>.\n"
+        "create a dimension point in position<pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == (
+        "line 6, column 29\n"
+        "create a dimension point in position<pos>.\n"
+        "                            ^\n"
+        "a dimension point already exists in 'position<pos>'; "
+        "first created on line 5"
+    )
+
+
+def test_move_from_empty_position_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "it happens when {\n"
+        "} and it does {\n"
+        "define the position<pos>.\n"
+        "move the dimension point in position<pos> to position<pos>.\n"
+        "}\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == (
+        "line 5, column 29\n"
+        "move the dimension point in position<pos> to position<pos>.\n"
+        "                            ^\n"
+        "cannot move a dimension point from 'position<pos>'"
+        " because it does not contain one"
+    )
+
+
 def test_deferred_position_chain_error_format(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

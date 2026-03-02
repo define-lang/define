@@ -27,6 +27,7 @@ from define.compiler import (
 )
 from define.compiler.lark import lark_standalone
 from define.compiler.validator import (
+    dimension_point_tracker,
     name_validators,
     scope_tracker,
     stats,
@@ -212,7 +213,6 @@ class ProgramAstValidator:
     deferred_chained_names: list[validation_result.DeferredChainElements]
     _seen_in_file: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
-    _local_dimension_point_locations: dict[str, ast.SourcePosition]
 
     def __init__(
         self,
@@ -229,7 +229,6 @@ class ProgramAstValidator:
         self.deferred_chained_names = []
         self._seen_in_file = {}
         self._unknown_fquns = set()
-        self._local_dimension_point_locations = {}
 
     def validate_program(self, program: ast.Program):
         """Validate all definitions in the program."""
@@ -319,12 +318,15 @@ class ProgramAstValidator:
             self._validate_local_position_definition(
                 local_def, enclosing_definition, scope
             )
-        self._local_dimension_point_locations = {}
+        tracker = dimension_point_tracker.LocalDimensionPointTracker(
+            enclosing_definition
+        )
         scope.enter_child_scope()
         self._validate_action_statements(
             definition_block.action_statements,
             enclosing_definition,
             scope,
+            tracker,
         )
 
     def _validate_action_statements(
@@ -332,6 +334,7 @@ class ProgramAstValidator:
         action_statements: ast.ActionStatementsBlock,
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
         for stmt in action_statements.statements:
             match stmt:
@@ -341,15 +344,11 @@ class ProgramAstValidator:
                     )
                 case ast.CreateDimensionPointStatement():
                     self._validate_create_dimension_point(
-                        stmt,
-                        enclosing_definition,
-                        scope,
+                        stmt, enclosing_definition, scope, tracker
                     )
                 case ast.MoveDimensionPointStatement():
                     self._validate_move_dimension_point(
-                        stmt,
-                        enclosing_definition,
-                        scope,
+                        stmt, enclosing_definition, scope, tracker
                     )
 
     def _validate_local_position_definition(
@@ -393,16 +392,22 @@ class ProgramAstValidator:
         stmt: ast.CreateDimensionPointStatement,
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
         chain = stmt.position_reference.chain
         self._validate_full_chained_name(chain, enclosing_definition, scope)
-        self._check_local_position_not_occupied(chain, enclosing_definition, scope)
+        fqun = enclosing_definition.typed_name.name_content.fqun
+        if self._check_local_position_not_occupied(
+            tracker, stmt.position_reference, scope, fqun
+        ):
+            tracker.create(stmt.position_reference)
 
     def _validate_move_dimension_point(
         self,
         stmt: ast.MoveDimensionPointStatement,
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
         self._validate_full_chained_name(
             stmt.from_position.chain, enclosing_definition, scope
@@ -410,31 +415,67 @@ class ProgramAstValidator:
         self._validate_full_chained_name(
             stmt.to_position.chain, enclosing_definition, scope
         )
+        fqun = enclosing_definition.typed_name.name_content.fqun
+        from_ok = self._check_local_position_occupied(
+            tracker, stmt.from_position, scope, fqun
+        )
+        to_ok = self._check_local_position_not_occupied(
+            tracker, stmt.to_position, scope, fqun
+        )
+        if from_ok and to_ok:
+            tracker.move(stmt.from_position, stmt.to_position)
 
     def _check_local_position_not_occupied(
         self,
-        chain: list[ast.TypedName],
-        enclosing_definition: ast.QualityDefinition,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
+        ref: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ):
-        if len(chain) != 1 or not isinstance(chain[0], ast.LocalTypedNameReference):
-            return
-        first = chain[0]
-        if not scope.is_defined_in_current_scope(first):
-            return
-        fqun = enclosing_definition.typed_name.name_content.fqun
-        key = first.full_typed_name(in_universe=fqun)
-        existing = self._local_dimension_point_locations.get(key)
-        if existing is not None:
+        fqun: ast.Fqun,
+    ) -> bool:
+        """Check that a trackable local position is not already occupied.
+
+        Returns True if the position is trackable and not occupied,
+        False otherwise.
+        """
+        local_ref = tracker.get_local_position_reference(ref, scope)
+        if local_ref is None:
+            return False
+        if tracker.is_occupied(ref):
+            existing = tracker.get_occupant(ref)
             self.diagnostics.append(
                 diagnostics.LocalDuplicateDimensionPointDiagnostic(
-                    position=first.name_content.position,
-                    position_name=key,
-                    first_creation_line=existing.line,
+                    position=local_ref.position,
+                    position_name=local_ref.full_typed_name(in_universe=fqun),
+                    first_creation_line=existing.position.line,
                 )
             )
-        else:
-            self._local_dimension_point_locations[key] = first.name_content.position
+            return False
+        return True
+
+    def _check_local_position_occupied(
+        self,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
+        ref: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+        fqun: ast.Fqun,
+    ) -> bool:
+        """Check that a trackable local position is already occupied.
+
+        Returns True if the position is trackable and occupied,
+        False otherwise.
+        """
+        local_ref = tracker.get_local_position_reference(ref, scope)
+        if local_ref is None:
+            return False
+        if not tracker.is_occupied(ref):
+            self.diagnostics.append(
+                diagnostics.MoveFromEmptyPositionDiagnostic(
+                    position=local_ref.position,
+                    position_name=local_ref.full_typed_name(in_universe=fqun),
+                )
+            )
+            return False
+        return True
 
     def _validate_full_chained_name(
         self,
