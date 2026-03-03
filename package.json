@@ -2,5 +2,8 @@
   "private": true,
   "devDependencies": {
     "basedpyright": "latest"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": []
   }
 }

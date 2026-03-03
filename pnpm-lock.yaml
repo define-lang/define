@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '9.0'
 
 settings:
   autoInstallPeers: true
@@ -20,24 +20,28 @@ importers:
 
 packages:
 
-  /basedpyright@1.38.2:
+  basedpyright@1.38.2:
     resolution: {integrity: sha512-ZNSOWS6p0KVzN4crwIi9JkbVvj9ieQRyKKf9/mR8stI2d+8Q2HqUTrCXmhzp2/Solp/zB7QrA4/LhAlGDSWj9g==}
     engines: {node: '>=14.0.0'}
     hasBin: true
-    optionalDependencies:
-      fsevents: 2.3.3
-    dev: true
 
-  /fsevents@2.3.3:
+  fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
-    requiresBuild: true
-    dev: true
-    optional: true
 
-  /prettier@3.8.1:
+  prettier@3.8.1:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
     hasBin: true
-    dev: true
+
+snapshots:
+
+  basedpyright@1.38.2:
+    optionalDependencies:
+      fsevents: 2.3.3
+
+  fsevents@2.3.3:
+    optional: true
+
+  prettier@3.8.1: {}
