@@ -910,6 +910,24 @@ trigger_conditions_block = "it happens when", block_open, trigger_conditions, ne
 action_statements_block = "and it does", block_open, action_statements_contents, block_close ;
 ```
 
+### Trigger Conditions Blocks
+
+Proposals:
+
+- [DLP 28: Triggering Actions](../proposals/00028-triggering-actions.md)
+
+A Trigger Conditions Block contains one Trigger Condition Statement.
+
+<!-- TODO: Update for multiple statements. -->
+
+The one current Trigger Condition Statement is the Position Presence Statement:
+`the position<name> has a dimension point.`
+
+```ebnf
+trigger_conditions = trigger_condition_statement ;
+trigger_condition_statement = "the", " ", local_or_global_position, " has a dimension point", terminator ;
+```
+
 ### Action Statement Blocks
 
 Proposals:
