@@ -109,11 +109,14 @@ def test_local_name_position():
         source
     )
     diags = results[0].diagnostics
-    ln_diags = [
-        d for d in diags if isinstance(d, diagnostics.InvalidLocalNameFormatDiagnostic)
-    ]
-    assert len(ln_diags) == 1
-    assert ln_diags[0].local_name == "my-pos"
-    assert ln_diags[0].char == "-"
-    assert ln_diags[0].position.line == 2
-    assert ln_diags[0].position.column == 27
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[0].local_name == "my-pos"
+    assert diags[0].char == "-"
+    assert diags[0].position.line == 2
+    assert diags[0].position.column == 27
+    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[1].local_name == "my-pos"
+    assert diags[1].char == "-"
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 24

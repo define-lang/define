@@ -335,6 +335,9 @@ class ProgramAstValidator:
             self._validate_local_position_definition(
                 local_def, enclosing_definition, scope
             )
+        self._validate_trigger_conditions(
+            definition_block.trigger_conditions, enclosing_definition, scope
+        )
         tracker = dimension_point_tracker.LocalDimensionPointTracker(
             enclosing_definition
         )
@@ -345,6 +348,16 @@ class ProgramAstValidator:
             scope,
             tracker,
         )
+
+    def _validate_trigger_conditions(
+        self,
+        trigger_conditions: ast.TriggerConditionsBlock,
+        enclosing_definition: ast.QualityDefinition,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        for condition in trigger_conditions.conditions:
+            chain = condition.position_reference.chain
+            self._validate_full_chained_name(chain, enclosing_definition, scope)
 
     def _validate_action_statements(
         self,

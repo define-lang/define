@@ -250,6 +250,19 @@ py_library(
 )
 
 py_test(
+    name = "trigger_conditions_test",
+    size = "small",
+    srcs = ["trigger_conditions_test.py"],
+    pytest_main = True,
+    deps = [
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "universe_without_authority_test",
     size = "small",
     srcs = ["universe_without_authority_test.py"],
@@ -300,6 +313,7 @@ pyright_test(
         ":program_validator_tests",
         ":reserved_name_positions_test",
         ":test_helpers",
+        ":trigger_conditions_test",
         ":universe_without_authority_test",
     ],
 )
