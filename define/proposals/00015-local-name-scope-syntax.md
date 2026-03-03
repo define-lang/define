@@ -22,10 +22,18 @@ to define new things inside of that definition, like a quality that can define
 triggers, for example) will create one within those curly braces.
 
 The curly brace that starts a scope must be on the same line as the statement
-that creates the scope, exactly one space away from the statement. The ending
-curly brace must be on a line that contains only that curly brace and
-whitespace, aligned with the start of the statement that opened the scope. This
-enables easier parsing even with unofficial parsers (like grep or a regex).
+that creates the scope, exactly one space away from the statement, as the last
+meaningful character on the line (that is, we still allow comments on the line).
+The ending curly brace must be on a line that contains only that curly brace and
+whitespace, aligned with the start of the statement that opened the scope.
+
+Each line within a scope must be indented four spaces further than lines were
+indented in the parent scope. In other words, if the statement opening the block
+started at column 1, lines inside the block must have their first non-space
+character at column 5. Then when we open another block inside of the first
+block, lines in this new block must be have their first non-whitespace character
+at column 9. These indentation rules also apply also to comments inside of the
+block.
 
 For example:
 
@@ -57,6 +65,22 @@ They are the choice that most modern programming languages have chosen due to
 ease of parsing and that they do the best job at creating visually distinct
 boundaries for scopes. In this case, we agree with all of those programming
 languages: there isn't a better choice.
+
+### Whitespace Strictness
+
+We are strict about indentation for multiple reasons.
+
+Most importantly, whitespace strictness guarantees easier parsing with
+unofficial parsers (like grep or a regex). A lot of people trying to fix code
+have been caused a lot of trouble by incorrect indentation where their naive
+"parser" expected correct indentation.
+
+However, as I was working on the Define compiler, one problem I also
+persistently ran into was that AI agents would not correctly indent code. Since
+agents can respond to large amounts of errors very quickly, the simplest
+solution is to tell the agents right away that they did the wrong thing, thus
+ensuring that all Define code that gets checked in anywhere has the same
+formatting.
 
 ### Alternatives Discarded
 

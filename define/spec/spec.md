@@ -683,6 +683,10 @@ The closing `}` must be on a line that contains only whitespace and `}`. The
 leading whitespace before `}` must be identical to the leading whitespace before
 the statement that opened the scope.
 
+If a line is directly contained within a block, its leading whitespace must be
+exactly four spaces longer than the leading whitespace of the statement that
+opened that block. For nested blocks, this rule applies recursively.
+
 ```ebnf
 block_open = " ", "{", newline ;
 block_close = newline, "}", newline ;
