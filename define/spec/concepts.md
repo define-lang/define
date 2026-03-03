@@ -1841,6 +1841,110 @@ Note that these constraints sound very similar to the potential conditions for a
 machine trigger, and in fact, constraints and trigger conditions would likely
 re-use some of the same syntax.
 
+## Values
+
+In all the sections above and below, we talk about "values" without really
+saying what that means. We say that a dimension point can "have a value," but
+what does that mean?
+
+Well, a value is essentially an opinion about a dimension point that gives that
+dimension point some _meaning_.
+
+The letter "K" is a dimension point that represents a particular sound. In
+reality, it's just a bunch of pixels on your screen. Even if we considered it to
+be a single, atomic unit (a single dimension point), it would just be a single
+object with no inherent meaning other than _your opinion_ about what it
+represents. Yes, yes, we have all agreed that in English "K" makes a particular
+sound, so the word "opinion" might feel stretched there, but you could, in fact,
+consider it to mean _anything_. The fact that you consider it to mean "that
+sound" is purely something you personally believe.
+
+The "B" that you are reading right there is not the sound. The sound you hear
+(air particles vibrating in space) is not the insect ("bee"). The insect is real
+and has no meaning.
+
+### Values In a Computer Program
+
+So why do we need to give meaning to dimension points in our universe? Why do we
+need one dimension point to represent something else?
+
+It's because of the purpose of values: **values in a program exist to represent
+things in the physical universe**.
+
+When we write the number `7` in a computer program, we do it because we want the
+computer to set a bunch of bits. When we write a string like `"hello world"`, we
+do it because we want the computer to draw those characters on the screen, send
+them over the network, store them on a disk, etc.
+
+This is also why pointers are so insidious and confusing in a programming
+language---they represent a fact about the _physical universe_ (the memory
+storage location of a value) but they are treated as though they are part of the
+_program's universe_.
+
+It also explains a particular confusion that tends to happen about enums in
+programming languages (a variable that can have a fixed number of states). Like,
+when I want to say that some part of the program can be in a fixed number of
+states, I just want to write something like:
+
+```Python
+class Jobs(enum.Enum):
+    Boss
+    Assistant
+    Worker
+    Customer
+```
+
+But most programming languages make me do something like this:
+
+```proto
+enum Jobs {
+    UNKNOWN: 0
+    BOSS: 1
+    ASSISTANT: 2
+    WORKER: 3
+    CUSTOMER: 4
+}
+```
+
+Why in the world do they do that? Well, the only reason they _need_ to force the
+programmer to do that is when those values have to be somehow used in the
+physical universe (calculated on the CPU, sent over the network, read from a
+config file, etc.). Most programming languages have failed to realize this
+distinction and do not have clear design principles around when values should be
+used vs when inherent constructs of the programming language should be used to
+represent some state or logic of the program.
+
+### Arithmetic Does Not Exist
+
+Okay, hold on to your seats for this one. When trying to puzzle out what a value
+really _is_ in a program, I had a shocking realization: arithmetic, the math
+that we were all taught is the fundamental of calculation, that we were all told
+is the basic activity of a computer, does not, in fact, actually exist in the
+physical universe.
+
+If you study the history of computing in detail, you will discover that in order
+to make a machine "do math," you have to go through _wild contortions_. All the
+way back to the [Pascaline](https://youtu.be/3h71HAJWnVU?si=BIoYK6zaBS-SW6f3)
+(the first mechanical calculator) you have to engage in wild complexity to make
+it _look_ like a machine is "doing arithmetic," when really what it's doing is
+moving objects around in space with defined patterns and then showing you the
+symbols you expected based on those patterns.
+
+Modern computers are no different in this respect. They cannot "do arithmetic,"
+in fact. What they are really doing in the physical universe, when you study how
+logic gates really work, is essentially moving particles around. They _can_
+create complex patterns and routes for particles. That "arithmetic" is happening
+is simply an opinion of the observer.
+
+What this means is that, in all universes, the thing that a value _actually
+represents_ is simply a configuration of dimension points with specific
+positional relationships to each other.
+
+This is helpful to us as designers of programming languages, because it allows
+us to reason through how a language should allow interaction with values---that
+they represent positional state of dimension points, and the reason we use them
+is actually to cause state _changes_ in a physical computer.
+
 ## Similarities and Differences
 
 The principles we have described so far give us some very powerful mechanisms
