@@ -10,9 +10,10 @@ _FQUN = "my.domain.com:my_lib"
 
 
 def _parse(source: str) -> validation_result.ValidationResult:
-    tree = parser.Parser().parse(source).tree
-    assert tree is not None
-    program = transformer.DefineTransformer().transform(tree)
+    parse_result = parser.Parser().parse(source)
+    assert parse_result.diagnostics == []
+    assert parse_result.tree is not None
+    program = transformer.DefineTransformer().transform(parse_result.tree)
     return validation_result.ValidationResult(
         diagnostics=[],
         exception=None,
@@ -27,9 +28,9 @@ def _parse(source: str) -> validation_result.ValidationResult:
 def test_reference_edge_same_universe():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
-        "it may only contain dimension points where {\n"
-        "    it has the position</a>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</a>.\n"
+        "    }\n"
         "}\n"
     )
     pos_def = result.definitions[0]
@@ -46,9 +47,9 @@ def test_reference_edge_same_universe():
 def test_reference_edge_explicit_fqun():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
-        "it may only contain dimension points where {\n"
-        "    it has the position<other.com:other_lib:/b>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<other.com:other_lib:/b>.\n"
+        "    }\n"
         "}\n"
     )
     pos_def = result.definitions[0]
@@ -83,10 +84,10 @@ def test_definitions_by_name_empty():
 def test_position_constraints_with_constraints():
     result = _parse(
         f"define the potential position<{_FQUN}:/a> {{\n"
-        "it may only contain dimension points where {\n"
-        "    it has the position</child>.\n"
-        "    it has the position</other>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</child>.\n"
+        "        it has the position</other>.\n"
+        "    }\n"
         "}\n"
     )
     assert result.global_position_definition_constraints == {
@@ -114,21 +115,21 @@ def test_position_constraints_skips_actions():
 def test_action_local_constraints_with_constraints():
     result = _parse(
         f"define the potential action<{_FQUN}:/act> {{\n"
-        "define the position<pos_a> {\n"
-        "    it may only contain dimension points where {\n"
-        "        it has the position</child>.\n"
+        "    define the position<pos_a> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</child>.\n"
+        "        }\n"
         "    }\n"
-        "}\n"
-        "define the position<pos_b> {\n"
-        "    it may only contain dimension points where {\n"
-        "        it has the position</x>.\n"
-        "        it has the position</y>.\n"
+        "    define the position<pos_b> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</x>.\n"
+        "            it has the position</y>.\n"
+        "        }\n"
         "    }\n"
-        "}\n"
-        "it happens when {\n"
-        "the position<pos_a> has a dimension point.\n"
-        "} and it does {\n"
-        "}\n"
+        "    it happens when {\n"
+        "        the position<pos_a> has a dimension point.\n"
+        "    } and it does {\n"
+        "    }\n"
         "}\n"
     )
     assert result.action_local_position_constraints == {
@@ -147,11 +148,11 @@ def test_action_local_constraints_with_constraints():
 def test_action_local_constraints_no_constraints():
     result = _parse(
         f"define the potential action<{_FQUN}:/act> {{\n"
-        "define the position<pos_a>.\n"
-        "it happens when {\n"
-        "the position<pos_a> has a dimension point.\n"
-        "} and it does {\n"
-        "}\n"
+        "    define the position<pos_a>.\n"
+        "    it happens when {\n"
+        "        the position<pos_a> has a dimension point.\n"
+        "    } and it does {\n"
+        "    }\n"
         "}\n"
     )
     assert result.action_local_position_constraints == {
@@ -169,9 +170,9 @@ def test_action_local_constraints_no_block():
 def test_action_local_constraints_skips_positions():
     result = _parse(
         f"define the potential position<{_FQUN}:/a> {{\n"
-        "it may only contain dimension points where {\n"
-        "    it has the position</child>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</child>.\n"
+        "    }\n"
         "}\n"
     )
     assert result.action_local_position_constraints == {}

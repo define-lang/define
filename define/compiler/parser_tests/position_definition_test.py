@@ -9,27 +9,30 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_position_definition_parses(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path>.\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == []
 
 
 def test_position_definition_with_local_style_name_is_global_terminal(
     p: parser.Parser,
 ) -> None:
-    tree = p.parse("define the potential position<foo>.\n").tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["foo"]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    result = p.parse("define the potential position<foo>.\n")
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == ["foo"]
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == []
 
 
 def test_position_definition_missing_open_angle(p: parser.Parser) -> None:
     result = p.parse("define the potential positionstandard:/path>.\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert str(result.exception.token) == "standard:/path"
     assert result.exception.column == 30
@@ -37,43 +40,46 @@ def test_position_definition_missing_open_angle(p: parser.Parser) -> None:
 
 def test_position_definition_empty_name_content(p: parser.Parser) -> None:
     result = p.parse("define the potential position<>.\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.EmptyName)
     assert str(result.exception.token) == ">"
     assert result.exception.column == 31
 
 
 def test_position_definition_with_constraint_block(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain dimension points where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/child",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == []
 
 
 def test_position_definition_with_multiple_requirements(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain dimension points where {\n"
         + "        it has the position</first>.\n"
         + "        it has the action</second>.\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/first",
         "/second",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == []
 
 
 def test_position_definition_block_requires_constraint_block(p: parser.Parser) -> None:
@@ -136,6 +142,7 @@ def test_position_definition_rejects_multiple_constraint_blocks(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
     assert str(result.exception.token).startswith("it may only contain")
     assert result.exception.line == 5
@@ -154,6 +161,7 @@ def test_second_constraint_block_after_close_on_same_line(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterCloseBrace)
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
     assert str(result.exception.token).startswith("    it may only contain")
@@ -172,6 +180,7 @@ def test_second_constraint_block_on_requirement_line(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterTerminator)
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
     assert str(result.exception.token).startswith("    it may only contain")
@@ -182,7 +191,7 @@ def test_second_constraint_block_on_requirement_line(
 def test_action_definition_block_with_mixed_local_position_forms(
     p: parser.Parser,
 ) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<empty_pos>.\n"
@@ -196,13 +205,14 @@ def test_action_definition_block_with_mixed_local_position_forms(
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/child",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "empty_pos",
         "constrained_pos",
@@ -213,7 +223,7 @@ def test_action_definition_block_with_mixed_local_position_forms(
 def test_action_definition_block_with_multiple_local_block_positions(
     p: parser.Parser,
 ) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<first_pos> {\n"
@@ -231,14 +241,15 @@ def test_action_definition_block_with_multiple_local_block_positions(
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/first_child",
         "/second_child",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "first_pos",
         "second_pos",
@@ -249,7 +260,7 @@ def test_action_definition_block_with_multiple_local_block_positions(
 def test_action_statements_block_with_mixed_local_position_forms(
     p: parser.Parser,
 ) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -263,13 +274,14 @@ def test_action_statements_block_with_mixed_local_position_forms(
         + "        }\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/inner_action",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "empty_inner",
@@ -280,7 +292,7 @@ def test_action_statements_block_with_mixed_local_position_forms(
 def test_action_statements_block_with_multiple_local_block_positions(
     p: parser.Parser,
 ) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -298,14 +310,15 @@ def test_action_statements_block_with_multiple_local_block_positions(
         + "        }\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/first_child",
         "/second_child",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "first_inner",

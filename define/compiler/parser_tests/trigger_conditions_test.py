@@ -9,7 +9,7 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_trigger_condition_with_local_position(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
@@ -17,59 +17,62 @@ def test_trigger_condition_with_local_position(p: parser.Parser) -> None:
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    # TODO: Make every parser test that expects to pass also assert that diagnostics is empty.
-    assert tree is not None
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
 def test_trigger_condition_with_short_global_position(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "        the position</some_pos> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/some_pos",
     ]
 
 
 def test_trigger_condition_with_full_fqun_position(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "        the position<mv:define-lang.org:parser:/some_pos> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "mv:define-lang.org:parser:/some_pos",
     ]
 
 
 def test_trigger_condition_with_action_type(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
         + "        the action<my_act> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_act"]
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["my_act"]
 
 
 def test_trigger_condition_with_comments(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -79,13 +82,14 @@ def test_trigger_condition_with_comments(p: parser.Parser) -> None:
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_trigger_condition_with_blank_lines(p: parser.Parser) -> None:
-    tree = p.parse(
+    result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -95,9 +99,10 @@ def test_trigger_condition_with_blank_lines(p: parser.Parser) -> None:
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    ).tree
-    assert tree is not None
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    )
+    assert result.diagnostics == []
+    assert result.tree is not None
+    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_trigger_block_same_line_no_space(p: parser.Parser) -> None:
@@ -108,6 +113,7 @@ def test_trigger_block_same_line_no_space(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterOpenBrace)
     assert result.exception.token == "} and it does {"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -123,6 +129,7 @@ def test_trigger_block_same_line_with_space(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterOpenBrace)
     assert result.exception.token == " } and it does {"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -137,6 +144,7 @@ def test_trigger_block_closing_brace_same_line(p: parser.Parser) -> None:
         + "    it happens when {}\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.EmptyBlock)
     assert result.exception.token == "}"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -171,6 +179,7 @@ def test_invalid_content_in_trigger_block(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidTriggerConditionsBlock)
     assert result.exception.token == "nonsense"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -188,6 +197,7 @@ def test_missing_terminator_after_trigger_condition(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingTerminator)
     assert result.exception.token == "\n"
     assert result.exception.token.type == "NEWLINE"

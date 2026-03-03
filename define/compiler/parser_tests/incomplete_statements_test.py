@@ -9,6 +9,7 @@ from define.compiler import parser, parser_exceptions
 
 def test_empty_file(p: parser.Parser) -> None:
     result = p.parse("")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedGlobalDefinition)
     assert result.exception.token == ""
     assert result.exception.line == 1
@@ -17,6 +18,7 @@ def test_empty_file(p: parser.Parser) -> None:
 
 def test_file_all_newlines(p: parser.Parser) -> None:
     result = p.parse("\n\n\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedGlobalDefinition)
     assert result.exception.token == ""
     assert result.exception.line == 3
@@ -25,6 +27,7 @@ def test_file_all_newlines(p: parser.Parser) -> None:
 
 def test_define_the_potential_incomplete_global_prefix(p: parser.Parser) -> None:
     result = p.parse("define the potential\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedGlobalDefinition)
     assert result.exception.token == "define the potential"
     assert result.exception.line == 1
@@ -45,6 +48,7 @@ def test_global_position_block_open_without_content(p: parser.Parser) -> None:
 
 def test_global_action_block_open_without_content(p: parser.Parser) -> None:
     result = p.parse("define the potential action<mv:define-lang.org:parser:/path> {\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidActionDefinitionsBlock)
     assert result.exception.token == ""
     assert result.exception.line == 1
@@ -69,6 +73,7 @@ def test_position_required_clause_missing_open_brace(p: parser.Parser) -> None:
         + "it may only contain dimension points where\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
     assert result.exception.token == "\n"
     assert result.exception.line == 2
@@ -79,6 +84,7 @@ def test_action_block_missing_trigger_clause(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n" + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingActionDefinitionSyntax)
     assert result.exception.token == "}"
     assert result.exception.line == 2
@@ -91,6 +97,7 @@ def test_action_trigger_clause_missing_open_brace(p: parser.Parser) -> None:
         + "it happens when\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
     assert result.exception.token == "\n"
     assert result.exception.line == 2
@@ -100,42 +107,45 @@ def test_action_trigger_clause_missing_open_brace(p: parser.Parser) -> None:
 def test_action_missing_and_it_does_clause(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingActionStatementsBlock)
     assert result.exception.token == "\n"
     assert result.exception.line == 5
-    assert result.exception.column == 2
+    assert result.exception.column == 6
 
 
 def test_action_and_it_does_clause_missing_open_brace(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
     assert result.exception.token == "\n"
     assert result.exception.line == 5
-    assert result.exception.column == 14
+    assert result.exception.column == 18
 
 
 def test_action_and_it_does_block_missing_close_brace(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
     assert result.exception.token == ""
     assert result.exception.line == 6
@@ -147,18 +157,19 @@ def test_local_position_keyword_without_name_in_action_definition_block(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "define the position\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    define the position\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert result.exception.token == "\n"
     assert result.exception.line == 3
-    assert result.exception.column == 20
+    assert result.exception.column == 24
 
 
 def test_local_position_keyword_without_name_in_action_statements_block(
@@ -166,22 +177,24 @@ def test_local_position_keyword_without_name_in_action_statements_block(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "define the position\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert result.exception.token == "\n"
     assert result.exception.line == 6
-    assert result.exception.column == 20
+    assert result.exception.column == 28
 
 
 def test_global_position_keyword_without_name(p: parser.Parser) -> None:
     result = p.parse("define the potential position\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert result.exception.token == "\n"
     assert result.exception.line == 1
@@ -191,66 +204,70 @@ def test_global_position_keyword_without_name(p: parser.Parser) -> None:
 def test_position_requirement_missing_name(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "it has the position\n"
-        + "}\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert result.exception.token == "\n"
     assert result.exception.line == 3
-    assert result.exception.column == 20
+    assert result.exception.column == 28
 
 
 def test_position_requirement_missing_name_after_type(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "it has the position.\n"
-        + "}\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position.\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert result.exception.token == "."
     assert result.exception.line == 3
-    assert result.exception.column == 20
+    assert result.exception.column == 28
 
 
 def test_position_requirement_name_starts_and_then_newline(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "it has the position<\n"
-        + "/path>.\n"
-        + "}\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position<\n"
+        + "        /path>.\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.EmptyName)
     assert result.exception.token == "\n"
     assert result.exception.line == 3
-    assert result.exception.column == 21
+    assert result.exception.column == 29
 
 
 def test_position_requirement_missing_space_after_it_has_the(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<example.com:my_lib:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "    }\n"
         + "}\n"
         + "define the potential position<my_lib:/path> {\n"
-        + "it may only contain dimension points where {\n"
-        + "it has theposition<my_lib:/path>.\n"
-        + "}\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has theposition<my_lib:/path>.\n"
+        + "    }\n"
         + "}\n"
         + "define the potential position<my_lib:/path>.\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingWhitespace)
     assert result.exception.token == "position<my_lib:/path"
     assert result.exception.line == 10
-    assert result.exception.column == 11
+    assert result.exception.column == 19
 
 
 def test_create_dimension_point_missing_reference(
@@ -260,17 +277,18 @@ def test_create_dimension_point_missing_reference(
     # as it could be.
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "create a dimension point in.\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in.\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidActionStatementsBlock)
     assert result.exception.line == 6
-    assert result.exception.column == 1
+    assert result.exception.column == 9
 
 
 def test_create_dimension_point_reference_missing_name_after_chain_separator(
@@ -278,18 +296,19 @@ def test_create_dimension_point_reference_missing_name_after_chain_separator(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "create a dimension point in position<foo>::.\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<foo>::.\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
     assert result.exception.line == 6
-    assert result.exception.column == 44
+    assert result.exception.column == 52
 
 
 def test_create_dimension_point_reference_chain_separator_then_newline(
@@ -297,18 +316,19 @@ def test_create_dimension_point_reference_chain_separator_then_newline(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "create a dimension point in position<foo>::\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<foo>::\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "\n"
     assert result.exception.line == 6
-    assert result.exception.column == 44
+    assert result.exception.column == 52
 
 
 def test_create_dimension_point_reference_single_colon_then_newline(
@@ -338,19 +358,20 @@ def test_name_content_forbids_double_colon_in_create_reference(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "create a dimension point in position</foo::bar>.\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position</foo::bar>.\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
     assert result.exception.token == "::"
     assert str(result.exception.name) == "/foo"
     assert result.exception.line == 6
-    assert result.exception.column == 42
+    assert result.exception.column == 50
 
 
 def test_name_chain_invalid_item(
@@ -358,18 +379,19 @@ def test_name_chain_invalid_item(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
-        + "define the position<run>.\n"
-        + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
-        + "} and it does {\n"
-        + "create a dimension point in position<foo>::a\n"
-        + "}\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<foo>::a\n"
+        + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "a"
     assert result.exception.line == 6
-    assert result.exception.column == 44
+    assert result.exception.column == 52
 
 
 def test_move_dimension_point_missing_source_reference(
@@ -385,6 +407,7 @@ def test_move_dimension_point_missing_source_reference(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidActionStatementsBlock)
     assert result.exception.token == "move the dimension point in."
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -405,6 +428,7 @@ def test_move_dimension_point_missing_to_keyword(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
     assert result.exception.token == " position<dest"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -425,6 +449,7 @@ def test_move_dimension_point_missing_destination_reference(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
     assert result.exception.token == " to."
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -445,6 +470,7 @@ def test_move_dimension_point_chain_separator_after_source_then_terminator(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -465,6 +491,7 @@ def test_move_dimension_point_chain_separator_after_source_then_newline(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "\n"
     assert result.exception.token.type == "NEWLINE"
@@ -485,6 +512,7 @@ def test_move_dimension_point_chain_separator_after_destination_then_terminator(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -505,6 +533,7 @@ def test_move_dimension_point_chain_separator_after_destination_then_newline(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "\n"
     assert result.exception.token.type == "NEWLINE"
@@ -525,6 +554,7 @@ def test_move_dimension_point_single_colon_after_source(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
     assert result.exception.token == ":"
     assert result.exception.token.type == "GLOBAL_NAME_CONTENT"
@@ -567,6 +597,7 @@ def test_move_dimension_point_no_space_before_to(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
     assert result.exception.token == "to position<dest"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -587,6 +618,7 @@ def test_move_dimension_point_no_space_after_to(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
     assert result.exception.token == " toposition<dest"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -629,6 +661,7 @@ def test_move_keyword_then_newline(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidActionStatementsBlock)
     assert result.exception.token == "move"
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
@@ -649,6 +682,7 @@ def test_move_dimension_point_in_space_dot(
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"

@@ -9,9 +9,10 @@ _parser = parser.Parser()
 
 
 def _parse_and_transform(source: str) -> ast.Program:
-    tree = _parser.parse(source).tree
-    assert tree is not None
-    return DefineTransformer().transform(tree)
+    result = _parser.parse(source)
+    assert result.diagnostics == []
+    assert result.tree is not None
+    return DefineTransformer().transform(result.tree)
 
 
 def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:

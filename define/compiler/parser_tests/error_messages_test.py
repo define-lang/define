@@ -9,6 +9,7 @@ from define.compiler import parser, parser_exceptions
 
 def test_error_message_without_path(p: parser.Parser) -> None:
     result = p.parse("\ufeffdefine the potential position<standard:/path>.\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
     assert str(result.exception) == (
         "line 1, column 1\n"
@@ -23,6 +24,7 @@ def test_error_message_with_path(p: parser.Parser) -> None:
         "\ufeffdefine the potential position<standard:/path>.\n",
         file_path="test.def",
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
     assert str(result.exception) == (
         'File "test.def", line 1, column 1\n'
@@ -34,6 +36,7 @@ def test_error_message_with_path(p: parser.Parser) -> None:
 
 def test_char_error_message(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path>.\r\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert str(result.exception) == (
         "line 1, column 47\n"
@@ -47,6 +50,7 @@ def test_char_error_message_with_path(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path>.\r\n", file_path="test.def"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert str(result.exception) == (
         'File "test.def", line 1, column 47\n'
@@ -58,6 +62,7 @@ def test_char_error_message_with_path(p: parser.Parser) -> None:
 
 def test_token_error_message(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path>\n")
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingTerminatorOrBrace)
     assert str(result.exception) == (
         "line 1, column 46\n"
@@ -78,6 +83,7 @@ def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> No
         + "    }\n"
         + "}\n"
     )
+    assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
     assert str(result.exception) == (
         "line 3, column 36\n"
