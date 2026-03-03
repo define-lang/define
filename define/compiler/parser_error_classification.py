@@ -127,10 +127,13 @@ def raise_token_error(
         # This happens at least if it's a newline or just a space and a newline.
         raise parser_exceptions.MissingTerminatorOrBrace(e, source, file_path)
 
-    if e.accepts == {"HAS_A_DIMENSION_POINT"}:
-        raise parser_exceptions.MissingConditionOnConditionStatement(
-            e, source, file_path
-        )
+    if e.accepts in (
+        # the position<run>has
+        {"CHAIN_SEPARATOR", "HAS_A_DIMENSION_POINT"},
+        # "the position<run>." (an unfortunate consequence of LALR state merging)
+        {"HAS_A_DIMENSION_POINT"},
+    ):
+        raise parser_exceptions.InvalidHasADimensionPointSyntax(e, source, file_path)
 
     if e.accepts == {"DOT"}:
         raise parser_exceptions.MissingTerminator(e, source, file_path)

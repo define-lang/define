@@ -253,12 +253,11 @@ class DefineTransformer(
 
     @lark_standalone.v_args(meta=True)
     def trigger_condition_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.TypedName]
+        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
     ) -> ast.TriggerConditionStatement:
         """Transform a trigger condition statement."""
-        (typed_name,) = items
         return ast.TriggerConditionStatement(
-            typed_name=typed_name,
+            position_reference=items[0],
             position=ast.SourcePosition.from_meta(meta),
         )
 

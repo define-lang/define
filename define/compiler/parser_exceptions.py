@@ -330,11 +330,14 @@ class MissingCloseBrace(DefineTokenError):
     message_format: ClassVar[str] = "Missing a closing '}}' somewhere in this block."
 
 
-class MissingConditionOnConditionStatement(DefineTokenError):
-    """Forgot the condition text after the name in a trigger condition."""
+class InvalidHasADimensionPointSyntax(DefineTokenError):
+    """Expected ' has a dimension point' or '::' after a position reference in a trigger condition."""
 
     message_format: ClassVar[str] = (
-        "Expected a condition like ' has a dimension point' after the name in a trigger condition."
+        "The syntax for a dimension point presence check looks like:"
+        " the position<foo> has a dimension point."
+        " Expected 'has a dimension point' or a longer chained name"
+        " (a '::' followed by another name) here."
     )
 
 

@@ -239,7 +239,7 @@ class GlobalPathName(ASTNode):
 class TriggerConditionStatement(ASTNode):
     """Represents a trigger condition statement."""
 
-    typed_name: TypedName
+    position_reference: PositionReference
 
 
 @dataclass

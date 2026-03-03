@@ -200,6 +200,7 @@ def _action_block_with_name(
     include_trigger_comment: bool = False,
     include_action_close_comment: bool = False,
     blank_lines_in_blocks: bool = False,
+    trigger_condition_ref: str = "position<run>",
 ) -> str:
     lines = [f"define the potential action<{action_name}> {{"]
     lines.append(f"{indent}define the position<run>.")
@@ -210,7 +211,7 @@ def _action_block_with_name(
     if include_trigger_comment:
         trigger_line += " # trigger comment"
     lines.append(trigger_line)
-    lines.append(f"{indent}{indent}the position<run> has a dimension point.")
+    lines.append(f"{indent}{indent}the {trigger_condition_ref} has a dimension point.")
     if blank_lines_in_blocks:
         lines.append("")
     action_open = f"{indent}}} and it does {{"
@@ -237,6 +238,7 @@ def _action_with_block(
     include_trigger_comment: bool = False,
     include_action_close_comment: bool = False,
     blank_lines_in_blocks: bool = False,
+    trigger_condition_ref: str = "position<run>",
 ) -> str:
     return _action_block_with_name(
         _global_name(universe_name, rel_def_file),
@@ -246,6 +248,7 @@ def _action_with_block(
         include_trigger_comment=include_trigger_comment,
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
+        trigger_condition_ref=trigger_condition_ref,
     )
 
 
@@ -423,6 +426,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         inner_locals.append(
             _move_dimension_point_statement(from_ref, to_ref, indent=inner_indent)
         )
+    trigger_condition_ref = draw(create_dimension_point_references())
     return _action_block_with_name(
         name,
         outer_locals=outer_locals,
@@ -431,6 +435,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         include_trigger_comment=include_trigger_comment,
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
+        trigger_condition_ref=trigger_condition_ref,
     )
 
 
@@ -598,6 +603,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                 draw(_valid_local_definition_strategy(local_name, inner_indent))
                 for local_name in inner_names
             ]
+            trigger_condition_ref = draw(create_dimension_point_references())
             fragments.append(
                 _action_with_block(
                     _PROJECT_FQUN,
@@ -608,6 +614,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                     include_trigger_comment=include_trigger_comment,
                     include_action_close_comment=include_action_close_comment,
                     blank_lines_in_blocks=blank_lines_in_blocks,
+                    trigger_condition_ref=trigger_condition_ref,
                 )
             )
 
