@@ -4,14 +4,15 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
-import pytest
-
 from define.compiler import parser, parser_exceptions
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_position_definition_parses(p: parser.Parser) -> None:
-    tree = p.parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
+    tree = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
     ]
@@ -21,23 +22,24 @@ def test_position_definition_parses(p: parser.Parser) -> None:
 def test_position_definition_with_local_style_name_is_global_terminal(
     p: parser.Parser,
 ) -> None:
-    tree = p.parse("define the potential position<foo>.\n")
+    tree = p.parse("define the potential position<foo>.\n").tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["foo"]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
 
 
 def test_position_definition_missing_open_angle(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
-        p.parse("define the potential positionstandard:/path>.\n")
-    assert str(exc_info.value.token) == "standard:/path"
-    assert exc_info.value.column == 30
+    result = p.parse("define the potential positionstandard:/path>.\n")
+    assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
+    assert str(result.exception.token) == "standard:/path"
+    assert result.exception.column == 30
 
 
 def test_position_definition_empty_name_content(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
-        p.parse("define the potential position<>.\n")
-    assert str(exc_info.value.token) == ">"
-    assert exc_info.value.column == 31
+    result = p.parse("define the potential position<>.\n")
+    assert isinstance(result.exception, parser_exceptions.EmptyName)
+    assert str(result.exception.token) == ">"
+    assert result.exception.column == 31
 
 
 def test_position_definition_with_constraint_block(p: parser.Parser) -> None:
@@ -47,7 +49,8 @@ def test_position_definition_with_constraint_block(p: parser.Parser) -> None:
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/child",
@@ -63,7 +66,8 @@ def test_position_definition_with_multiple_requirements(p: parser.Parser) -> Non
         + "        it has the action</second>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/first",
@@ -73,98 +77,106 @@ def test_position_definition_with_multiple_requirements(p: parser.Parser) -> Non
 
 
 def test_position_definition_block_requires_constraint_block(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
-        p.parse("define the potential position<mv:define-lang.org:parser:/path> {\n}\n")
-    assert str(exc_info.value.token) == "}"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    result = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n}\n"
+    )
+    assert isinstance(
+        result.exception, parser_exceptions.MissingPositionDefinitionContent
+    )
+    assert str(result.exception.token) == "}"
+    assert result.exception.line == 2
+    assert result.exception.column == 1
 
 
 def test_position_constraint_block_requires_requirements(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
-        p.parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert str(exc_info.value.token) == "}"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 5
+    result = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(
+        result.exception, parser_exceptions.MissingPositionConstraintContent
+    )
+    assert str(result.exception.token) == "}"
+    assert result.exception.line == 3
+    assert result.exception.column == 5
 
 
 def test_position_constraint_block_with_invalid_statement_then_more_definitions(
     p: parser.Parser,
 ) -> None:
-    with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
-        p.parse(
-            "define the potential position<my_lib:/path>.\n"
-            + "define the potential position<my_lib:/path> {\n"
-            + "it may only contain dimension points where {\n"
-            + "t has the position<my_lib:/path>.\n"
-            + "}\n"
-            + "}\n"
-            + "define the potential position<my_lib:/path>.\n"
-        )
-    assert str(exc_info.value.token).startswith("t has the")
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 1
+    result = p.parse(
+        "define the potential position<my_lib:/path>.\n"
+        + "define the potential position<my_lib:/path> {\n"
+        + "it may only contain dimension points where {\n"
+        + "t has the position<my_lib:/path>.\n"
+        + "}\n"
+        + "}\n"
+        + "define the potential position<my_lib:/path>.\n"
+    )
+    assert isinstance(
+        result.exception, parser_exceptions.InvalidPositionConstraintBlock
+    )
+    assert str(result.exception.token).startswith("t has the")
+    assert result.exception.line == 4
+    assert result.exception.column == 1
 
 
 def test_position_definition_rejects_multiple_constraint_blocks(
     p: parser.Parser,
 ) -> None:
-    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
-        p.parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
-            + "        it has the position</first>.\n"
-            + "    }\n"
-            + "    it may only contain dimension points where {\n"
-            + "        it has the action</second>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert str(exc_info.value.token).startswith("it may only contain")
-    assert exc_info.value.line == 5
-    assert exc_info.value.column == 5
+    result = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</first>.\n"
+        + "    }\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the action</second>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
+    assert str(result.exception.token).startswith("it may only contain")
+    assert result.exception.line == 5
+    assert result.exception.column == 5
 
 
 def test_second_constraint_block_after_close_on_same_line(
     p: parser.Parser,
 ) -> None:
-    with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
-        p.parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
-            + "        it has the position</first>.\n"
-            + "    }    it may only contain dimension points where {\n"
-            + "        it has the action</second>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert str(exc_info.value.token).startswith("    it may only contain")
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 6
+    result = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</first>.\n"
+        + "    }    it may only contain dimension points where {\n"
+        + "        it has the action</second>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterCloseBrace)
+    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert str(result.exception.token).startswith("    it may only contain")
+    assert result.exception.line == 4
+    assert result.exception.column == 6
 
 
 def test_second_constraint_block_on_requirement_line(
     p: parser.Parser,
 ) -> None:
-    with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
-        p.parse(
-            "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
-            + "        it has the position</first>.    it may only contain dimension points where {\n"
-            + "        it has the action</second>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert str(exc_info.value.token).startswith("    it may only contain")
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 37
+    result = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</first>.    it may only contain dimension points where {\n"
+        + "        it has the action</second>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterTerminator)
+    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert str(result.exception.token).startswith("    it may only contain")
+    assert result.exception.line == 3
+    assert result.exception.column == 37
 
 
 def test_action_definition_block_with_mixed_local_position_forms(
@@ -182,7 +194,8 @@ def test_action_definition_block_with_mixed_local_position_forms(
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/child",
@@ -212,7 +225,8 @@ def test_action_definition_block_with_multiple_local_block_positions(
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/first_child",
@@ -239,7 +253,8 @@ def test_action_statements_block_with_mixed_local_position_forms(
         + "        }\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/inner_action",
@@ -269,7 +284,8 @@ def test_action_statements_block_with_multiple_local_block_positions(
         + "        }\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act",
         "/first_child",

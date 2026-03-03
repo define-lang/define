@@ -18,7 +18,8 @@ def test_action_statements_block_with_move_dimension_point_local_positions(
         + "        move the dimension point in position<source> to position<dest>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
@@ -35,7 +36,8 @@ def test_action_statements_block_with_move_dimension_point_short_global_position
         + "        move the dimension point in position</source> to position</dest>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/source",
@@ -54,7 +56,8 @@ def test_action_statements_block_with_move_dimension_point_full_global_positions
         + "        move the dimension point in position<mv:define-lang.org:parser:/source> to position<mv:define-lang.org:parser:/dest>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "mv:define-lang.org:parser:/source",
@@ -73,7 +76,8 @@ def test_action_statements_block_with_move_dimension_point_chained_source(
         + "        move the dimension point in position<src>::action</deposit>::position<inner> to position<dest>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/deposit",
@@ -95,7 +99,8 @@ def test_action_statements_block_with_move_dimension_point_chained_destination(
         + "        move the dimension point in position<src> to position<dest>::action</deposit>::position<inner>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/deposit",
@@ -117,7 +122,8 @@ def test_action_statements_block_with_move_dimension_point_both_chained(
         + "        move the dimension point in position<src>::action</a1> to position<dest>::action</a2>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/a1",
@@ -137,7 +143,8 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
         + "        move the dimension point in position<run> to position<done>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
@@ -158,7 +165,8 @@ def test_action_statements_block_with_move_dimension_point_mixed_local_and_globa
         + "        move the dimension point in position<local_src> to position</global_dest>.\n"
         + "    }\n"
         + "}\n"
-    )
+    ).tree
+    assert tree is not None
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/global_dest",

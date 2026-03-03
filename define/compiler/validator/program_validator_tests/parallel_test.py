@@ -33,12 +33,12 @@ def _position_with_ref(name: str, ref: str) -> str:
 
 
 def _position_with_refs(name: str, refs: list[str]) -> str:
-    ref_lines = "".join(f"it has the position</{r}>.\n" for r in refs)
+    ref_lines = "".join(f"        it has the position</{r}>.\n" for r in refs)
     return (
         f"define the potential position<my.domain.com:my_lib:/{name}> {{\n"
-        f"it may only contain dimension points where {{\n"
+        f"    it may only contain dimension points where {{\n"
         f"{ref_lines}"
-        f"}}\n"
+        f"    }}\n"
         f"}}\n"
     )
 

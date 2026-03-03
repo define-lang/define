@@ -206,6 +206,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
+    "indentation/action_no_indentation.def": [
+        diagnostics.IncorrectIndentationDiagnostic,
+    ],
     "dimension_points/create/chain_ending_with_action.def": [
         diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,

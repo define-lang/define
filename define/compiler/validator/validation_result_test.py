@@ -10,7 +10,8 @@ _FQUN = "my.domain.com:my_lib"
 
 
 def _parse(source: str) -> validation_result.ValidationResult:
-    tree = parser.Parser().parse(source)
+    tree = parser.Parser().parse(source).tree
+    assert tree is not None
     program = transformer.DefineTransformer().transform(tree)
     return validation_result.ValidationResult(
         diagnostics=[],

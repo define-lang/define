@@ -155,6 +155,28 @@ py_test(
     ],
 )
 
+py_library(
+    name = "indentation_validator",
+    srcs = ["indentation_validator.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":diagnostics",
+    ],
+)
+
+py_test(
+    name = "indentation_validator_test",
+    size = "small",
+    srcs = ["indentation_validator_test.py"],
+    pytest_main = True,
+    deps = [
+        ":diagnostics",
+        ":indentation_validator",
+        "@pypi//pytest",
+    ],
+)
+
 py_binary(
     name = "main",
     srcs = ["main.py"],
@@ -230,6 +252,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":compiler",
+        ":diagnostics",
+        ":indentation_validator",
         ":parser_error_classification",
         ":parser_exceptions",
         "//define/compiler/lark:lark_standalone",
@@ -308,6 +332,8 @@ pyright_test(
         ":driver_run_test",
         ":driver_test",
         ":exceptions",
+        ":indentation_validator",
+        ":indentation_validator_test",
         ":main",
         ":main_test",
         ":name_parser",

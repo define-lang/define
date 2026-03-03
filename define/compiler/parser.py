@@ -1,11 +1,35 @@
 """Parser for Define language statements."""
 
-import os
+from __future__ import annotations
 
-from define.compiler import parser_error_classification
+import typing
+from dataclasses import dataclass, field
+
+from define.compiler import diagnostics as diagnostics_mod
+from define.compiler import (
+    indentation_validator,
+    parser_error_classification,
+    parser_exceptions,
+)
 from define.compiler.lark import lark_standalone
 
+if typing.TYPE_CHECKING:
+    import os
+
 UnexpectedInput = lark_standalone.UnexpectedInput
+
+type ParseException = (
+    parser_exceptions.DefineSyntaxError | lark_standalone.UnexpectedInput
+)
+
+
+@dataclass
+class ParseResult:
+    """Result of parsing Define source code."""
+
+    tree: lark_standalone.Tree[lark_standalone.Token] | None
+    diagnostics: list[diagnostics_mod.Diagnostic] = field(default_factory=list)
+    exception: ParseException | None = None
 
 
 class Parser:
@@ -19,11 +43,31 @@ class Parser:
 
     def parse(
         self, source: str, file_path: str | os.PathLike[str] | None = None
-    ) -> lark_standalone.Tree[lark_standalone.Token]:
-        """Parse Define source code and return a parse tree.
+    ) -> ParseResult:
+        """Parse Define source code and return a ParseResult.
 
         file_path is only used for error messages.
         """
+        stop_before_line: int | None = None
+        exception: ParseException | None = None
+        tree: lark_standalone.Tree[lark_standalone.Token] | None = None
+
+        try:
+            tree = self._do_parse(source, file_path)
+        except lark_standalone.UnexpectedInput as e:
+            stop_before_line = e.line
+            exception = e
+        except parser_exceptions.DefineSyntaxError as e:
+            stop_before_line = e.line
+            exception = e
+
+        diags = indentation_validator.validate_indentation(source, stop_before_line)
+        return ParseResult(tree=tree, diagnostics=diags, exception=exception)
+
+    def _do_parse(
+        self, source: str, file_path: str | os.PathLike[str] | None
+    ) -> lark_standalone.Tree[lark_standalone.Token]:
+        """Run the Lark parser with error classification."""
         try:
             return self._lark.parse(source)
         except lark_standalone.UnexpectedCharacters as e:

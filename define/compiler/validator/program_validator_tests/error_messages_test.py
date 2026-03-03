@@ -100,9 +100,9 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     wrong_child_universe = "mv:define-lang.org:wrong_universe"
     source = (
         f"define the potential position<{parent_universe}:/test> {{\n"
-        "it may only contain dimension points where {\n"
-        f"it has the position<{child_universe}:/target>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        f"        it has the position<{child_universe}:/target>.\n"
+        "    }\n"
         "}\n"
     )
     test_helpers.write_project_config(tmp_path, parent_universe)
@@ -130,9 +130,9 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
         file_name=str(results[0].file_path),
     )
     assert formatted == (
-        'File "test.def", line 3, column 21\n'
-        + "it has the position<mv:define-lang.org:child:/target>.\n"
-        + "                    ^\n"
+        'File "test.def", line 3, column 29\n'
+        + "        it has the position<mv:define-lang.org:child:/target>.\n"
+        + "                            ^\n"
         + "an error occurred while loading the project configuration:\n"
         + "Sub-root at 'lib' is configured as a dependency with universe "
         + "'mv:define-lang.org:child' but the actual project root in that path "
@@ -143,12 +143,12 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
 def test_local_duplicate_dimension_point_format():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<pos>.\n"
-        "create a dimension point in position<pos>.\n"
-        "create a dimension point in position<pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<pos>.\n"
+        "        create a dimension point in position<pos>.\n"
+        "        create a dimension point in position<pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -158,9 +158,9 @@ def test_local_duplicate_dimension_point_format():
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 6, column 29\n"
-        "create a dimension point in position<pos>.\n"
-        "                            ^\n"
+        "line 6, column 37\n"
+        "        create a dimension point in position<pos>.\n"
+        "                                    ^\n"
         "a dimension point already exists in 'position<pos>'; "
         "it was put there on line 5"
     )
@@ -169,12 +169,12 @@ def test_local_duplicate_dimension_point_format():
 def test_move_from_empty_position_format():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<from_pos>.\n"
-        "define the position<to_pos>.\n"
-        "move the dimension point in position<from_pos> to position<to_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        move the dimension point in position<from_pos> to position<to_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -185,9 +185,9 @@ def test_move_from_empty_position_format():
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 6, column 29\n"
-        "move the dimension point in position<from_pos> to position<to_pos>.\n"
-        "                            ^\n"
+        "line 6, column 37\n"
+        "        move the dimension point in position<from_pos> to position<to_pos>.\n"
+        "                                    ^\n"
         "cannot move a dimension point from 'position<from_pos>'"
         " because it does not contain one"
     )

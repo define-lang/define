@@ -16,9 +16,9 @@ from define.compiler.validator.program_validator_tests import test_helpers
 def test_position_constraint_reference_with_invalid_path():
     source = (
         "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position</Bad>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</Bad>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -30,15 +30,15 @@ def test_position_constraint_reference_with_invalid_path():
     assert diags[0].segment == "Bad"
     assert diags[0].char == "B"
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 22
+    assert diags[0].position.column == 30
 
 
 def test_same_fqun_constraint_reference_must_use_short_form():
     source = (
         "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position<my.domain.com:my_lib:/child>.\n"
-        "}\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<my.domain.com:my_lib:/child>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -49,20 +49,20 @@ def test_same_fqun_constraint_reference_must_use_short_form():
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
 
 
 def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
     source = (
         "define the potential action<my.domain.com:my_lib:/act> {\n"
-        "define the position<my_pos> {\n"
-        "it may only contain dimension points where {\n"
-        "it has the position<my.domain.com:my_lib:/child>.\n"
-        "}\n"
-        "}\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "}\n"
+        "    define the position<my_pos> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position<my.domain.com:my_lib:/child>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -73,7 +73,7 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].position.line == 4
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 33
 
 
 def test_referenced_global_name_wrong_type_position(

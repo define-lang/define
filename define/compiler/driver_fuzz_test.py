@@ -347,11 +347,11 @@ def position_definitions(draw: st.DrawFn) -> str:
         requirements.append((child_type, child_name))
     lines = [
         f"define the potential position<{name}> {{",
-        "it may only contain dimension points where {",
+        "    it may only contain dimension points where {",
     ]
     for child_type, child_name in requirements:
-        lines.append(f"it has the {child_type}<{child_name}>.")
-    lines.extend(["}", "}"])
+        lines.append(f"        it has the {child_type}<{child_name}>.")
+    lines.extend(["    }", "}"])
     return _join_lines(lines)
 
 
@@ -364,7 +364,8 @@ def action_definitions_simple(draw: st.DrawFn) -> str:
 @st.composite
 def action_definitions_with_block(draw: st.DrawFn) -> str:
     name = draw(global_names())
-    indent = draw(st.sampled_from(["", "    "]))
+    outer_indent = "    "
+    inner_indent = "        "
     include_trigger_comment = draw(st.booleans())
     include_action_close_comment = draw(st.booleans())
     blank_lines_in_blocks = draw(st.booleans())
@@ -383,7 +384,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
     inner_locals: list[str] = []
     for local_name in outer_names:
         if draw(st.booleans()):
-            outer_locals.append(_local_position_simple(local_name, indent=indent))
+            outer_locals.append(_local_position_simple(local_name, indent=outer_indent))
         else:
             req_type = draw(st.sampled_from(["position", "action"]))
             req_name = draw(global_names())
@@ -391,12 +392,12 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
                 _local_position_with_requirements(
                     local_name,
                     [(req_type, req_name)],
-                    indent=indent,
+                    indent=outer_indent,
                 )
             )
     for local_name in inner_names:
         if draw(st.booleans()):
-            inner_locals.append(_local_position_simple(local_name, indent=indent))
+            inner_locals.append(_local_position_simple(local_name, indent=inner_indent))
         else:
             req_type = draw(st.sampled_from(["position", "action"]))
             req_name = draw(global_names())
@@ -404,27 +405,27 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
                 _local_position_with_requirements(
                     local_name,
                     [(req_type, req_name)],
-                    indent=indent,
+                    indent=inner_indent,
                 )
             )
     create_count = draw(st.integers(min_value=0, max_value=2))
     for _ in range(create_count):
         position_reference = draw(create_dimension_point_references())
         inner_locals.append(
-            _create_dimension_point_statement(position_reference, indent=indent)
+            _create_dimension_point_statement(position_reference, indent=inner_indent)
         )
     move_count = draw(st.integers(min_value=0, max_value=2))
     for _ in range(move_count):
         from_ref = draw(create_dimension_point_references())
         to_ref = draw(create_dimension_point_references())
         inner_locals.append(
-            _move_dimension_point_statement(from_ref, to_ref, indent=indent)
+            _move_dimension_point_statement(from_ref, to_ref, indent=inner_indent)
         )
     return _action_block_with_name(
         name,
         outer_locals=outer_locals,
         inner_locals=inner_locals,
-        indent=indent,
+        indent=outer_indent,
         include_trigger_comment=include_trigger_comment,
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
@@ -525,7 +526,8 @@ def valid_sources(draw: st.DrawFn) -> str:
         if action_kind == "simple":
             fragments.append(f"define the potential action<{_VALID_NAME}>.\n")
         else:
-            indent = draw(st.sampled_from(["", "    "]))
+            outer_indent = "    "
+            inner_indent = "        "
             include_trigger_comment = draw(st.booleans())
             include_action_close_comment = draw(st.booleans())
             blank_lines_in_blocks = draw(st.booleans())
@@ -551,7 +553,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                 ref, outer_def = draw(
                     _valid_create_spec(
                         local_name=_CHAIN_LOCALS_FOR_CREATE[i],
-                        indent=indent,
+                        indent=outer_indent,
                         allow_target_another_test=not another_test_targeted,
                         allow_target_inner_pos=not inner_pos_targeted,
                     )
@@ -564,16 +566,18 @@ def valid_sources(draw: st.DrawFn) -> str:
                 elif _INNER_POS_IN_ACTION in last_segment:
                     inner_pos_targeted = True
                 inner_locals.append(
-                    _create_dimension_point_statement(ref, indent=indent)
+                    _create_dimension_point_statement(ref, indent=inner_indent)
                 )
             move_count = draw(st.integers(min_value=0, max_value=2))
             if move_count > 0:
                 needed = _MOVE_POSITION_NAMES[: move_count + 1]
                 for pos_name in needed:
-                    outer_locals.append(_local_position_simple(pos_name, indent=indent))
+                    outer_locals.append(
+                        _local_position_simple(pos_name, indent=outer_indent)
+                    )
                 inner_locals.append(
                     _create_dimension_point_statement(
-                        f"position<{needed[0]}>", indent=indent
+                        f"position<{needed[0]}>", indent=inner_indent
                     )
                 )
                 for i in range(move_count):
@@ -581,15 +585,15 @@ def valid_sources(draw: st.DrawFn) -> str:
                         _move_dimension_point_statement(
                             f"position<{needed[i]}>",
                             f"position<{needed[i + 1]}>",
-                            indent=indent,
+                            indent=inner_indent,
                         )
                     )
             outer_locals += [
-                draw(_valid_local_definition_strategy(local_name, indent))
+                draw(_valid_local_definition_strategy(local_name, outer_indent))
                 for local_name in outer_names
             ]
             inner_locals += [
-                draw(_valid_local_definition_strategy(local_name, indent))
+                draw(_valid_local_definition_strategy(local_name, inner_indent))
                 for local_name in inner_names
             ]
             fragments.append(
@@ -598,7 +602,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                     "test.def",
                     outer_locals=outer_locals,
                     inner_locals=inner_locals,
-                    indent=indent,
+                    indent=outer_indent,
                     include_trigger_comment=include_trigger_comment,
                     include_action_close_comment=include_action_close_comment,
                     blank_lines_in_blocks=blank_lines_in_blocks,
@@ -793,7 +797,7 @@ def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
                 _local_position_with_requirements(
                     "inner_pos",
                     [("action", "/target")],
-                    indent="    ",
+                    indent="        ",
                 )
             ],
             include_trigger_comment=True,
@@ -915,7 +919,7 @@ def _build_cross_fqun_action_statements_project(
                 _local_position_with_requirements(
                     "inner_pos",
                     [("position", _global_name(child_universe, "target.def"))],
-                    indent="    ",
+                    indent="        ",
                 )
             ],
             blank_lines_in_blocks=True,
@@ -954,9 +958,11 @@ def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
                 _local_position_simple("to_pos", indent="    "),
             ],
             inner_locals=[
-                _create_dimension_point_statement("position<from_pos>", indent="    "),
+                _create_dimension_point_statement(
+                    "position<from_pos>", indent="        "
+                ),
                 _move_dimension_point_statement(
-                    "position<from_pos>", "position<to_pos>", indent="    "
+                    "position<from_pos>", "position<to_pos>", indent="        "
                 ),
             ],
         ),

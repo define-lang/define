@@ -9,7 +9,8 @@ _parser = parser.Parser()
 
 
 def _parse_and_transform(source: str) -> ast.Program:
-    tree = _parser.parse(source)
+    tree = _parser.parse(source).tree
+    assert tree is not None
     return DefineTransformer().transform(tree)
 
 

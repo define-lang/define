@@ -1,5 +1,5 @@
 define the potential position<mv:define-lang.org:test_files:/invalid/syntax/short_form_required/full_form_same_fqun> {
-it may only contain dimension points where {
-it has the position<mv:define-lang.org:test_files:/child>.
-}
+    it may only contain dimension points where {
+        it has the position<mv:define-lang.org:test_files:/child>.
+    }
 }

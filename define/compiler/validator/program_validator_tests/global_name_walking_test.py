@@ -51,9 +51,9 @@ def test_walk_returns_results_in_encounter_order(
         "test.def",
         (
             "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
-            + "it may only contain dimension points where {\n"
-            + "it has the position</middle>.\n"
-            + "}\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</middle>.\n"
+            + "    }\n"
             + "}\n"
         ),
     )
@@ -62,9 +62,9 @@ def test_walk_returns_results_in_encounter_order(
         "middle.def",
         (
             "define the potential position<mv:define-lang.org:walk_order:/middle> {\n"
-            + "it may only contain dimension points where {\n"
-            + "it has the position</leaf>.\n"
-            + "}\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</leaf>.\n"
+            + "    }\n"
             + "}\n"
         ),
     )
@@ -162,9 +162,9 @@ def test_two_file_cycle_emits_diagnostic(
     (tmp_path / "test.def").write_text(
         (
             "define the potential position<mv:define-lang.org:test_walk_cycle:/test> {\n"
-            + "it may only contain dimension points where {\n"
-            + "it has the position</loop>.\n"
-            + "}\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</loop>.\n"
+            + "    }\n"
             + "}\n"
         ),
         encoding="utf-8",
@@ -172,9 +172,9 @@ def test_two_file_cycle_emits_diagnostic(
     (tmp_path / "loop.def").write_text(
         (
             "define the potential position<mv:define-lang.org:test_walk_cycle:/loop> {\n"
-            + "it may only contain dimension points where {\n"
-            + "it has the position</test>.\n"
-            + "}\n"
+            + "    it may only contain dimension points where {\n"
+            + "        it has the position</test>.\n"
+            + "    }\n"
             + "}\n"
         ),
         encoding="utf-8",
@@ -199,7 +199,7 @@ def test_two_file_cycle_emits_diagnostic(
         "position<mv:define-lang.org:test_walk_cycle:/test>",
     ]
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 12
+    assert diags[0].position.column == 20
     assert (
         diags[0].message
         == "circular references between definitions are not allowed in Define:\n"
@@ -433,9 +433,9 @@ def test_sub_root_redeclares_parent_fqun(
         "test.def",
         (
             f"define the potential position<{parent_fqun}:/test> {{\n"
-            + "it may only contain dimension points where {\n"
-            + f"it has the position<{child_fqun}:/target>.\n"
-            + "}\n"
+            + "    it may only contain dimension points where {\n"
+            + f"        it has the position<{child_fqun}:/target>.\n"
+            + "    }\n"
             + "}\n"
         ),
     )
@@ -444,9 +444,9 @@ def test_sub_root_redeclares_parent_fqun(
         "lib/target.def",
         (
             f"define the potential position<{child_fqun}:/target> {{\n"
-            + "it may only contain dimension points where {\n"
-            + f"it has the position<{parent_fqun}:/leaf>.\n"
-            + "}\n"
+            + "    it may only contain dimension points where {\n"
+            + f"        it has the position<{parent_fqun}:/leaf>.\n"
+            + "    }\n"
             + "}\n"
         ),
     )
@@ -465,7 +465,7 @@ def test_sub_root_redeclares_parent_fqun(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.ConfigLoadErrorDiagnostic)
     assert diag.position.line == 3
-    assert diag.position.column == 21
+    assert diag.position.column == 29
     assert isinstance(diag.error, exceptions.DuplicateFqunError)
     assert diag.error.fqun == parent_fqun
     assert diag.error.existing_config == PurePosixPath(".define/project/config.defcl")
@@ -484,9 +484,9 @@ def test_cross_fqun_walks_into_sub_root(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -514,9 +514,9 @@ def test_cross_fqun_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/missing>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/missing>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -530,7 +530,7 @@ def test_cross_fqun_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert diags[0].file_path == "lib/missing.def"
 
 
@@ -544,9 +544,9 @@ def test_cross_fqun_sub_root_missing_config(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -560,7 +560,7 @@ def test_cross_fqun_sub_root_missing_config(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
 
 
@@ -576,10 +576,10 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"it has the position</other>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"        it has the position</other>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -588,9 +588,9 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
         "other.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/other> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/another>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/another>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -602,7 +602,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert all_diags[0].position.line == 3
-    assert all_diags[0].position.column == 21
+    assert all_diags[0].position.column == 29
     assert isinstance(all_diags[0].error, exceptions.NotProjectRootError)
 
 
@@ -617,9 +617,9 @@ def test_cross_fqun_sub_root_fqun_mismatch(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -637,7 +637,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
-    assert diags[0].position.column == 21
+    assert diags[0].position.column == 29
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
     assert diags[0].error.actual_fqun == wrong_universe
@@ -651,10 +651,10 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position</lib/parent_target>.\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position</lib/parent_target>.\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -682,7 +682,7 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     sub_root_diag = results[0].diagnostics[0]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
-    assert sub_root_diag.position.column == 21
+    assert sub_root_diag.position.column == 29
     assert sub_root_diag.universe == _CHILD_UNIVERSE
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
@@ -705,10 +705,10 @@ def test_sub_root_conflict_continues_validation(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position</lib/parent_target>.\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/missing_target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position</lib/parent_target>.\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/missing_target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -732,7 +732,7 @@ def test_sub_root_conflict_continues_validation(
     sub_root_diag = results[0].diagnostics[0]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
-    assert sub_root_diag.position.column == 21
+    assert sub_root_diag.position.column == 29
     assert sub_root_diag.universe == _CHILD_UNIVERSE
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
@@ -740,7 +740,7 @@ def test_sub_root_conflict_continues_validation(
     not_found_diag = results[0].diagnostics[2]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.position.line == 4
-    assert not_found_diag.position.column == 21
+    assert not_found_diag.position.column == 29
     assert not_found_diag.file_path == "lib/missing_target.def"
     assert results[1].file_path == PurePosixPath("lib/parent_target.def")
     assert results[1].exception is None
@@ -755,10 +755,10 @@ def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
-            f"it has the position</lib/parent_target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
+            f"        it has the position</lib/parent_target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -784,7 +784,7 @@ def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     ]
     assert len(path_diags) == 1
     assert path_diags[0].position.line == 4
-    assert path_diags[0].position.column == 21
+    assert path_diags[0].position.column == 29
     assert path_diags[0].other_universe == _CHILD_UNIVERSE
     assert path_diags[0].path.endswith("lib/parent_target.def")
     assert path_diags[0].sub_root_path == "lib"
@@ -800,9 +800,9 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -825,7 +825,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
     assert results[0].diagnostics[0].position.line == 3
-    assert results[0].diagnostics[0].position.column == 21
+    assert results[0].diagnostics[0].position.column == 29
     assert results[0].diagnostics[0].path == "/target"
     assert results[0].diagnostics[0].expected_type == "position"
     assert results[1].file_path == PurePosixPath("lib/target.def")
@@ -848,9 +848,9 @@ def test_cross_fqun_wrong_type_in_sub_root(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -859,9 +859,9 @@ def test_cross_fqun_wrong_type_in_sub_root(
         "lib/target.def",
         (
             f"define the potential action<{_CHILD_UNIVERSE}:/target> {{\n"
-            f"it happens when {{\n"
-            f"}} and it does {{\n"
-            f"}}\n"
+            f"    it happens when {{\n"
+            f"    }} and it does {{\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -878,7 +878,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
     assert results[0].diagnostics[0].position.line == 3
-    assert results[0].diagnostics[0].position.column == 21
+    assert results[0].diagnostics[0].position.column == 29
     assert results[0].diagnostics[0].path == "/target"
     assert results[0].diagnostics[0].expected_type == "position"
     assert results[1].file_path == PurePosixPath("lib/target.def")
@@ -896,9 +896,9 @@ def test_same_fqun_reference_inside_sub_root(
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/entry>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/entry>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -907,9 +907,9 @@ def test_same_fqun_reference_inside_sub_root(
         "lib/entry.def",
         (
             f"define the potential position<{_CHILD_UNIVERSE}:/entry> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position</leaf>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position</leaf>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -946,9 +946,9 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         "test.def",
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{_CHILD_UNIVERSE}:/target>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )
@@ -957,9 +957,9 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         "lib/target.def",
         (
             f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
-            f"it may only contain dimension points where {{\n"
-            f"it has the position<{grandchild_universe}:/leaf>.\n"
-            f"}}\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{grandchild_universe}:/leaf>.\n"
+            f"    }}\n"
             f"}}\n"
         ),
     )

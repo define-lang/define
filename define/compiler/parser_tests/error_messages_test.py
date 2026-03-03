@@ -4,15 +4,13 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
-import pytest
-
 from define.compiler import parser, parser_exceptions
 
 
 def test_error_message_without_path(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        p.parse("\ufeffdefine the potential position<standard:/path>.\n")
-    assert str(exc_info.value) == (
+    result = p.parse("\ufeffdefine the potential position<standard:/path>.\n")
+    assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
+    assert str(result.exception) == (
         "line 1, column 1\n"
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
@@ -21,12 +19,12 @@ def test_error_message_without_path(p: parser.Parser) -> None:
 
 
 def test_error_message_with_path(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        p.parse(
-            "\ufeffdefine the potential position<standard:/path>.\n",
-            file_path="test.def",
-        )
-    assert str(exc_info.value) == (
+    result = p.parse(
+        "\ufeffdefine the potential position<standard:/path>.\n",
+        file_path="test.def",
+    )
+    assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
+    assert str(result.exception) == (
         'File "test.def", line 1, column 1\n'
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
@@ -35,9 +33,9 @@ def test_error_message_with_path(p: parser.Parser) -> None:
 
 
 def test_char_error_message(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        p.parse("define the potential position<standard:/path>.\r\n")
-    assert str(exc_info.value) == (
+    result = p.parse("define the potential position<standard:/path>.\r\n")
+    assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
+    assert str(result.exception) == (
         "line 1, column 47\n"
         " the potential position<standard:/path>.\\r\n"
         "                                        ^\n"
@@ -46,11 +44,11 @@ def test_char_error_message(p: parser.Parser) -> None:
 
 
 def test_char_error_message_with_path(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        p.parse(
-            "define the potential position<standard:/path>.\r\n", file_path="test.def"
-        )
-    assert str(exc_info.value) == (
+    result = p.parse(
+        "define the potential position<standard:/path>.\r\n", file_path="test.def"
+    )
+    assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
+    assert str(result.exception) == (
         'File "test.def", line 1, column 47\n'
         " the potential position<standard:/path>.\\r\n"
         "                                        ^\n"
@@ -59,9 +57,9 @@ def test_char_error_message_with_path(p: parser.Parser) -> None:
 
 
 def test_token_error_message(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
-        p.parse("define the potential position<standard:/path>\n")
-    assert str(exc_info.value) == (
+    result = p.parse("define the potential position<standard:/path>\n")
+    assert isinstance(result.exception, parser_exceptions.MissingTerminatorOrBrace)
+    assert str(result.exception) == (
         "line 1, column 46\n"
         "e the potential position<standard:/path>\n"
         "                                        ^\n"
@@ -70,16 +68,16 @@ def test_token_error_message(p: parser.Parser) -> None:
 
 
 def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> None:
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        p.parse(
-            "define the potential action<mv:define-lang.org:parser:/act> {\n"
-            + "    define the position<local_name.\n"
-            + "    it happens when {\n"
-            + "    } and it does {\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert str(exc_info.value) == (
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<local_name.\n"
+        + "    it happens when {\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
+    assert str(result.exception) == (
         "line 2, column 36\n"
         "    define the position<local_name.\n"
         "                                   ^\n"

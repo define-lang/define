@@ -133,19 +133,26 @@ class FileValidator:
         expected_definition_path: pathlib.PurePosixPath | None,
     ) -> validation_result.ValidationResult:
         """Parse, transform, and validate source text."""
-        try:
-            tree = self._parser.parse(source, file_path=context.full_path)
-        except SYNTAX_ERROR_TYPES as e:
-            tracker.mark_parse_finished()
+        parse_result = self._parser.parse(source, file_path=context.full_path)
+        tracker.mark_parse_finished()
+
+        if parse_result.exception is not None:
+            indentation_diags: list[diagnostics.Diagnostic] = (
+                parse_result.diagnostics if expected_definition_path is not None else []
+            )
             return validation_result.ValidationResult(
-                diagnostics=[],
-                exception=e,
+                diagnostics=indentation_diags,
+                exception=parse_result.exception,
                 source=source,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
             )
-        tracker.mark_parse_finished()
+
+        # tree is guaranteed non-None when exception is None.
+        tree = typing.cast(
+            "lark_standalone.Tree[lark_standalone.Token]", parse_result.tree
+        )
 
         try:
             program = transformer.DefineTransformer().transform(tree)
@@ -166,8 +173,13 @@ class FileValidator:
         fdv = ProgramAstValidator(context, expected_definition_path)
         fdv.validate_program(program)
         tracker.mark_file_validation_finished()
+
+        all_diagnostics = fdv.diagnostics
+        if expected_definition_path is not None:
+            all_diagnostics = parse_result.diagnostics + all_diagnostics
+
         return validation_result.ValidationResult(
-            diagnostics=fdv.diagnostics,
+            diagnostics=all_diagnostics,
             exception=None,
             source=source,
             file_path=context.full_path,

@@ -143,12 +143,12 @@ def test_same_fqun_must_use_short_form_in_to():
 def test_move_from_empty_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<from_pos>.\n"
-        "define the position<to_pos>.\n"
-        "move the dimension point in position<from_pos> to position<to_pos>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        move the dimension point in position<from_pos> to position<to_pos>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -163,15 +163,15 @@ def test_move_from_empty_position():
 def test_move_to_occupied_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<from_pos>.\n"
-        "define the position<to_pos>.\n"
-        "create a dimension point in position<from_pos>.\n"
-        "create a dimension point in position<to_pos>.\n"
-        "move the dimension point in position<from_pos>"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a dimension point in position<from_pos>.\n"
+        "        create a dimension point in position<to_pos>.\n"
+        "        move the dimension point in position<from_pos>"
         " to position<to_pos>.\n"
-        "}\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -186,14 +186,14 @@ def test_move_to_occupied_position():
 def test_move_updates_state_allows_create_in_source():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -205,14 +205,14 @@ def test_move_updates_state_allows_create_in_source():
 def test_move_updates_state_blocks_create_in_dest():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "create a dimension point in position<b>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        create a dimension point in position<b>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -227,15 +227,15 @@ def test_move_updates_state_blocks_create_in_dest():
 def test_double_move():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "define the position<c>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "move the dimension point in position<b> to position<c>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        define the position<c>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        move the dimension point in position<b> to position<c>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -247,14 +247,14 @@ def test_double_move():
 def test_repeated_move_same_direction():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -271,15 +271,15 @@ def test_repeated_move_same_direction():
 def test_round_trip_move_fails_second_return():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "move the dimension point in position<b> to position<a>.\n"
-        "move the dimension point in position<b> to position<a>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        move the dimension point in position<b> to position<a>.\n"
+        "        move the dimension point in position<b> to position<a>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -392,16 +392,16 @@ def test_two_actions_with_move_same_local_names():
 def test_failed_move_marks_both_positions_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "create a dimension point in position<b>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        create a dimension point in position<b>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -418,16 +418,16 @@ def test_failed_move_marks_both_positions_unknown():
 def test_move_to_occupied_marks_both_positions_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "create a dimension point in position<b>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "create a dimension point in position<b>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        create a dimension point in position<b>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        create a dimension point in position<b>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -442,15 +442,15 @@ def test_move_to_occupied_marks_both_positions_unknown():
 def test_both_from_empty_and_to_occupied_marks_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "create a dimension point in position<b>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "create a dimension point in position<a>.\n"
-        "create a dimension point in position<b>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        create a dimension point in position<b>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        create a dimension point in position<b>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
@@ -467,16 +467,16 @@ def test_both_from_empty_and_to_occupied_marks_unknown():
 def test_unknown_state_does_not_affect_other_positions():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "it happens when {\n"
-        "} and it does {\n"
-        "define the position<a>.\n"
-        "define the position<b>.\n"
-        "define the position<c>.\n"
-        "create a dimension point in position<a>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "move the dimension point in position<a> to position<b>.\n"
-        "create a dimension point in position<c>.\n"
-        "}\n"
+        "    it happens when {\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        define the position<c>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        create a dimension point in position<c>.\n"
+        "    }\n"
         "}\n"
     )
     results = program_validator.ProgramValidator().validate_program_non_filesystem(

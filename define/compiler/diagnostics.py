@@ -528,3 +528,15 @@ class ChainElementNotInActionDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "'{self.element_name}' is not defined inside the definition of '{self.parent_name}'"
     )
+
+
+@dataclass
+class IncorrectIndentationDiagnostic(Diagnostic):
+    """Diagnostic for when a line has incorrect indentation."""
+
+    expected_indent: int
+    actual_indent: int
+    message_format: ClassVar[str] = (
+        "expected {self.expected_indent} spaces of indentation on this line,"
+        " but found {self.actual_indent}"
+    )
