@@ -960,6 +960,25 @@ trigger_conditions = trigger_condition_statement ;
 trigger_condition_statement = "the", " ", position_reference, " has a dimension point", terminator ;
 ```
 
+### Action Triggering Semantics
+
+Proposals:
+
+- [DLP 28: Triggering Actions](../proposals/00028-triggering-actions.md)
+
+Actions trigger when their Trigger Conditions Block becomes true.
+
+Actions do not continuously trigger while their conditions remain true. After an
+action triggers, it only triggers again if its Trigger Conditions Block first
+becomes false and then becomes true again.
+
+Trigger conditions are checked only when program state changes in a way that can
+affect those conditions, and only after assignment of the action to a dimension
+point is complete.
+
+Therefore, assigning an action to a dimension point does not trigger the action
+if its trigger conditions are already true at assignment time.
+
 ### Action Statement Blocks
 
 Proposals:
