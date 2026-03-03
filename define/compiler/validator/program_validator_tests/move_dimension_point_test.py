@@ -15,6 +15,7 @@ def test_valid_local_positions():
         "    define the position<from_pos>.\n"
         "    define the position<to_pos>.\n"
         "    it happens when {\n"
+        "        the position<from_pos> has a dimension point.\n"
         "    } and it does {\n"
         "        create a dimension point in position<from_pos>.\n"
         "        move the dimension point in position<from_pos> to position<to_pos>.\n"
@@ -32,6 +33,7 @@ def test_undefined_from_position():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<to_pos>.\n"
         "    it happens when {\n"
+        "        the position<to_pos> has a dimension point.\n"
         "    } and it does {\n"
         "        move the dimension point in position<no_such_pos>"
         " to position<to_pos>.\n"
@@ -45,7 +47,7 @@ def test_undefined_from_position():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
-    assert diags[0].position.line == 5
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 46
 
 
@@ -54,6 +56,7 @@ def test_undefined_to_position():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<from_pos>.\n"
         "    it happens when {\n"
+        "        the position<from_pos> has a dimension point.\n"
         "    } and it does {\n"
         "        move the dimension point in position<from_pos>"
         " to position<no_such_pos>.\n"
@@ -67,14 +70,16 @@ def test_undefined_to_position():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
-    assert diags[0].position.line == 5
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 68
 
 
 def test_both_positions_undefined():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        move the dimension point in position<bad_from>"
         " to position<bad_to>.\n"
@@ -88,11 +93,11 @@ def test_both_positions_undefined():
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<bad_from>"
-    assert diags[0].position.line == 4
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 46
     assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[1].local_name == "position<bad_to>"
-    assert diags[1].position.line == 4
+    assert diags[1].position.line == 6
     assert diags[1].position.column == 68
 
 
@@ -101,6 +106,7 @@ def test_same_fqun_must_use_short_form_in_from():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<to_pos>.\n"
         "    it happens when {\n"
+        "        the position<to_pos> has a dimension point.\n"
         "    } and it does {\n"
         "        move the dimension point in"
         " position<my.domain.com:my_lib:/other> to position<to_pos>.\n"
@@ -114,7 +120,7 @@ def test_same_fqun_must_use_short_form_in_from():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
-    assert diags[0].position.line == 5
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 46
 
 
@@ -123,6 +129,7 @@ def test_same_fqun_must_use_short_form_in_to():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<from_pos>.\n"
         "    it happens when {\n"
+        "        the position<from_pos> has a dimension point.\n"
         "    } and it does {\n"
         "        move the dimension point in position<from_pos>"
         " to position<my.domain.com:my_lib:/other>.\n"
@@ -136,14 +143,16 @@ def test_same_fqun_must_use_short_form_in_to():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
-    assert diags[0].position.line == 5
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 68
 
 
 def test_move_from_empty_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -163,7 +172,9 @@ def test_move_from_empty_position():
 def test_move_to_occupied_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -186,7 +197,9 @@ def test_move_to_occupied_position():
 def test_move_updates_state_allows_create_in_source():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -205,7 +218,9 @@ def test_move_updates_state_allows_create_in_source():
 def test_move_updates_state_blocks_create_in_dest():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -227,7 +242,9 @@ def test_move_updates_state_blocks_create_in_dest():
 def test_double_move():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -247,7 +264,9 @@ def test_double_move():
 def test_repeated_move_same_direction():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -271,7 +290,9 @@ def test_repeated_move_same_direction():
 def test_round_trip_move_fails_second_return():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -296,7 +317,9 @@ def test_round_trip_move_fails_second_return():
 def test_two_actions_same_name_one_error_one_clean():
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -305,7 +328,9 @@ def test_two_actions_same_name_one_error_one_clean():
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -322,14 +347,16 @@ def test_two_actions_same_name_one_error_one_clean():
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<from_pos>"
-    assert all_diags[0].position.line == 6
+    assert all_diags[0].position.line == 8
     assert all_diags[0].position.column == 37
 
 
 def test_two_actions_same_name_one_occupied_error_one_clean():
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -340,7 +367,9 @@ def test_two_actions_same_name_one_occupied_error_one_clean():
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -362,7 +391,9 @@ def test_two_actions_same_name_one_occupied_error_one_clean():
 def test_two_actions_with_move_same_local_names():
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -372,7 +403,9 @@ def test_two_actions_with_move_same_local_names():
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/act_two> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -392,7 +425,9 @@ def test_two_actions_with_move_same_local_names():
 def test_failed_move_marks_both_positions_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -418,7 +453,9 @@ def test_failed_move_marks_both_positions_unknown():
 def test_move_to_occupied_marks_both_positions_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -442,7 +479,9 @@ def test_move_to_occupied_marks_both_positions_unknown():
 def test_both_from_empty_and_to_occupied_marks_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -467,7 +506,9 @@ def test_both_from_empty_and_to_occupied_marks_unknown():
 def test_unknown_state_does_not_affect_other_positions():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -497,6 +538,7 @@ def test_valid_global_to_position(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<local_pos>.\n"
             "    it happens when {\n"
+            "        the position<local_pos> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position<local_pos>.\n"
             "        move the dimension point in position<local_pos>"
@@ -521,7 +563,9 @@ def test_valid_global_to_position(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 def test_move_to_same_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        create a dimension point in position<a>.\n"
@@ -541,7 +585,9 @@ def test_move_to_same_position():
 def test_move_to_same_position_does_not_mark_unknown():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        create a dimension point in position<a>.\n"
@@ -572,6 +618,7 @@ def test_move_to_chained_prefix_position(
             "        }\n"
             "    }\n"
             "    it happens when {\n"
+            "        the position<local_pos> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position<local_pos>.\n"
             "        move the dimension point in position<local_pos>"
@@ -614,6 +661,7 @@ def test_move_to_chained_prefix_marks_unknown(
             "        }\n"
             "    }\n"
             "    it happens when {\n"
+            "        the position<local_pos> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position<local_pos>.\n"
             "        move the dimension point in position<local_pos>"
@@ -642,7 +690,9 @@ def test_move_to_chained_prefix_marks_unknown(
 def test_move_different_first_element_no_prefix_error():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<a>.\n"
         "        define the position<b>.\n"
@@ -673,7 +723,9 @@ def test_move_violates_dest_constraints(
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        define the position<from_pos> {\n"
             "            it may only contain dimension points where {\n"
@@ -724,7 +776,9 @@ def test_move_from_unconstrained_to_constrained(
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        define the position<from_pos>.\n"
             "        define the position<to_pos> {\n"
@@ -770,7 +824,9 @@ def test_move_with_compatible_constraints(
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        define the position<from_pos> {\n"
             "            it may only contain dimension points where {\n"
@@ -818,7 +874,9 @@ def test_move_round_trip_with_constraint_subset(
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        define the position<a> {\n"
             "            it may only contain dimension points where {\n"
@@ -864,7 +922,9 @@ def test_move_violates_constraints_marks_unknown(
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        define the position<from_pos> {\n"
             "            it may only contain dimension points where {\n"
@@ -912,7 +972,9 @@ def test_move_to_unconstrained_position(
     (tmp_path / "test.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        define the position<from_pos> {\n"
             "            it may only contain dimension points where {\n"

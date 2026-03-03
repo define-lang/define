@@ -202,6 +202,7 @@ def _action_block_with_name(
     blank_lines_in_blocks: bool = False,
 ) -> str:
     lines = [f"define the potential action<{action_name}> {{"]
+    lines.append(f"{indent}define the position<run>.")
     for local in outer_locals:
         lines.extend(local.rstrip("\n").splitlines())
 
@@ -209,6 +210,7 @@ def _action_block_with_name(
     if include_trigger_comment:
         trigger_line += " # trigger comment"
     lines.append(trigger_line)
+    lines.append(f"{indent}{indent}the position<run> has a dimension point.")
     if blank_lines_in_blocks:
         lines.append("")
     action_open = f"{indent}}} and it does {{"

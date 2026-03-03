@@ -13,6 +13,7 @@ def test_different_names_no_error():
         "    define the position<alpha>.\n"
         "    define the position<beta>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
@@ -30,6 +31,7 @@ def test_duplicate_name_error():
         "    define the position<alpha>.\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
@@ -53,6 +55,7 @@ def test_three_locals_two_same_one_diagnostic():
         "    define the position<beta>.\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
@@ -76,6 +79,7 @@ def test_three_same_name_two_diagnostics():
         "    define the position<alpha>.\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
@@ -111,6 +115,7 @@ def test_single_local_no_error():
         "define the potential action<my.domain.com:my_lib:/act> {\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
@@ -127,12 +132,14 @@ def test_separate_actions_same_local_name_no_error():
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/act_two> {\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"
@@ -147,7 +154,9 @@ def test_separate_actions_same_local_name_no_error():
 def test_action_statements_local_name_no_error():
     source = (
         "define the potential action<my.domain.com:my_lib:/act> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<alpha>.\n"
         "    }\n"
@@ -163,7 +172,9 @@ def test_action_statements_local_name_no_error():
 def test_action_statements_duplicate_name_error():
     source = (
         "define the potential action<my.domain.com:my_lib:/act> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<alpha>.\n"
         "        define the position<alpha>.\n"
@@ -177,8 +188,8 @@ def test_action_statements_duplicate_name_error():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].local_name == "alpha"
-    assert diags[0].first_definition_line == 4
-    assert diags[0].position.line == 5
+    assert diags[0].first_definition_line == 6
+    assert diags[0].position.line == 7
     assert diags[0].position.column == 29
 
 
@@ -187,6 +198,7 @@ def test_action_statements_name_conflicts_with_parent_scope():
         "define the potential action<my.domain.com:my_lib:/act> {\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<alpha>.\n"
         "    }\n"
@@ -200,7 +212,7 @@ def test_action_statements_name_conflicts_with_parent_scope():
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
-    assert diags[0].position.line == 5
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 29
 
 
@@ -209,6 +221,7 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition():
         "define the potential action<my.domain.com:my_lib:/act> {\n"
         "    define the position<alpha>.\n"
         "    it happens when {\n"
+        "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<alpha>.\n"
         "        define the position<alpha>.\n"
@@ -226,7 +239,7 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition():
     assert diags[1].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[1].first_definition_line == 2
-    assert diags[0].position.line == 5
+    assert diags[0].position.line == 6
     assert diags[0].position.column == 29
-    assert diags[1].position.line == 6
+    assert diags[1].position.line == 7
     assert diags[1].position.column == 29

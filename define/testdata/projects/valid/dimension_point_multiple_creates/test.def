@@ -1,6 +1,8 @@
 define the potential action<mv:define-lang.org:test_dim_multi:/test> {
+    define the position<run>.
     define the position<local_pos>.
     it happens when {
+        the position<run> has a dimension point.
     } and it does {
         create a dimension point in position<local_pos>.
         create a dimension point in position</global_pos>.

@@ -184,6 +184,7 @@ def test_action_definition_block_with_mixed_local_position_forms(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
         + "    define the position<empty_pos>.\n"
         + "    define the position<constrained_pos> {\n"
         + "        it may only contain dimension points where {\n"
@@ -191,6 +192,7 @@ def test_action_definition_block_with_mixed_local_position_forms(
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -201,8 +203,10 @@ def test_action_definition_block_with_mixed_local_position_forms(
         "/child",
     ]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
         "empty_pos",
         "constrained_pos",
+        "run",
     ]
 
 
@@ -211,6 +215,7 @@ def test_action_definition_block_with_multiple_local_block_positions(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
         + "    define the position<first_pos> {\n"
         + "        it may only contain dimension points where {\n"
         + "            it has the position</first_child>.\n"
@@ -222,6 +227,7 @@ def test_action_definition_block_with_multiple_local_block_positions(
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -233,8 +239,10 @@ def test_action_definition_block_with_multiple_local_block_positions(
         "/second_child",
     ]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
         "first_pos",
         "second_pos",
+        "run",
     ]
 
 
@@ -243,7 +251,9 @@ def test_action_statements_block_with_mixed_local_position_forms(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        define the position<empty_inner>.\n"
         + "        define the position<constrained_inner> {\n"
@@ -260,6 +270,8 @@ def test_action_statements_block_with_mixed_local_position_forms(
         "/inner_action",
     ]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
         "empty_inner",
         "constrained_inner",
     ]
@@ -270,7 +282,9 @@ def test_action_statements_block_with_multiple_local_block_positions(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        define the position<first_inner> {\n"
         + "            it may only contain dimension points where {\n"
@@ -292,6 +306,8 @@ def test_action_statements_block_with_multiple_local_block_positions(
         "/second_child",
     ]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
         "first_inner",
         "second_inner",
     ]

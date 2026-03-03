@@ -6,6 +6,7 @@ define the potential action<mv:define-lang.org:test_files:/valid/action_dimensio
         }
     }
     it happens when {
+        the position<local_pos> has a dimension point.
     } and it does {
         create a dimension point in position<local_pos>::position</valid/action_dimension_point_chain>.
     }

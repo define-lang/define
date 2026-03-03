@@ -1,6 +1,7 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/syntax/short_form_required/move_full_form_same_fqun> {
     define the position<from_pos>.
     it happens when {
+        the position<from_pos> has a dimension point.
     } and it does {
         move the dimension point in position<from_pos> to position<mv:define-lang.org:test_files:/child>.
     }

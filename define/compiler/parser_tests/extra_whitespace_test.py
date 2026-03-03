@@ -62,57 +62,65 @@ def test_extra_space_in_local_position_definition_in_action_block(
 ) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "define the position<run>.\n"
         + "define  the position<my_pos>.\n"
         + "it happens when {\n"
+        + "the position<run> has a dimension point.\n"
         + "} and it does {\n"
         + "}\n"
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("define  the position<")
-    assert result.exception.line == 2
+    assert result.exception.line == 3
     assert result.exception.column == 1
 
 
 def test_extra_space_in_trigger_clause_in_action_block(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "define the position<run>.\n"
         + "it happens  when {\n"
+        + "the position<run> has a dimension point.\n"
         + "} and it does {\n"
         + "}\n"
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("it happens  when {")
-    assert result.exception.line == 2
+    assert result.exception.line == 3
     assert result.exception.column == 1
 
 
 def test_extra_space_in_and_it_does_clause_in_action_block(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "define the position<run>.\n"
         + "it happens when {\n"
+        + "the position<run> has a dimension point.\n"
         + "}  and it does {\n"
         + "}\n"
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("  and it does {")
-    assert result.exception.line == 3
+    assert result.exception.line == 5
     assert result.exception.column == 2
 
 
 def test_extra_space_after_and_it_does_before_open_brace(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "define the position<run>.\n"
         + "it happens when {\n"
+        + "the position<run> has a dimension point.\n"
         + "} and it does  {\n"
         + "}\n"
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
     assert str(result.exception.token) == "  {"
-    assert result.exception.line == 3
+    assert result.exception.line == 5
     assert result.exception.column == 14
 
 

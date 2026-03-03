@@ -13,7 +13,9 @@ def test_action_statements_block_with_move_dimension_point_local_positions(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<source> to position<dest>.\n"
         + "    }\n"
@@ -23,7 +25,12 @@ def test_action_statements_block_with_move_dimension_point_local_positions(
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["source", "dest"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "source",
+        "dest",
+    ]
 
 
 def test_action_statements_block_with_move_dimension_point_short_global_positions(
@@ -31,7 +38,9 @@ def test_action_statements_block_with_move_dimension_point_short_global_position
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position</source> to position</dest>.\n"
         + "    }\n"
@@ -43,7 +52,7 @@ def test_action_statements_block_with_move_dimension_point_short_global_position
         "/source",
         "/dest",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_move_dimension_point_full_global_positions(
@@ -51,7 +60,9 @@ def test_action_statements_block_with_move_dimension_point_full_global_positions
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<mv:define-lang.org:parser:/source> to position<mv:define-lang.org:parser:/dest>.\n"
         + "    }\n"
@@ -63,7 +74,7 @@ def test_action_statements_block_with_move_dimension_point_full_global_positions
         "mv:define-lang.org:parser:/source",
         "mv:define-lang.org:parser:/dest",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_move_dimension_point_chained_source(
@@ -71,7 +82,9 @@ def test_action_statements_block_with_move_dimension_point_chained_source(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<src>::action</deposit>::position<inner> to position<dest>.\n"
         + "    }\n"
@@ -83,6 +96,8 @@ def test_action_statements_block_with_move_dimension_point_chained_source(
         "/deposit",
     ]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
         "src",
         "inner",
         "dest",
@@ -94,7 +109,9 @@ def test_action_statements_block_with_move_dimension_point_chained_destination(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<src> to position<dest>::action</deposit>::position<inner>.\n"
         + "    }\n"
@@ -106,6 +123,8 @@ def test_action_statements_block_with_move_dimension_point_chained_destination(
         "/deposit",
     ]
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
         "src",
         "dest",
         "inner",
@@ -117,7 +136,9 @@ def test_action_statements_block_with_move_dimension_point_both_chained(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<src>::action</a1> to position<dest>::action</a2>.\n"
         + "    }\n"
@@ -129,7 +150,12 @@ def test_action_statements_block_with_move_dimension_point_both_chained(
         "/a1",
         "/a2",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["src", "dest"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "src",
+        "dest",
+    ]
 
 
 def test_action_statements_block_with_mixed_create_and_move_statements(
@@ -137,7 +163,9 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position<run>.\n"
         + "        move the dimension point in position<run> to position<done>.\n"
@@ -151,6 +179,8 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
+        "run",
+        "run",
         "done",
     ]
 
@@ -160,7 +190,9 @@ def test_action_statements_block_with_move_dimension_point_mixed_local_and_globa
 ) -> None:
     tree = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<local_src> to position</global_dest>.\n"
         + "    }\n"
@@ -171,4 +203,8 @@ def test_action_statements_block_with_move_dimension_point_mixed_local_and_globa
         "mv:define-lang.org:parser:/my_action",
         "/global_dest",
     ]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["local_src"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "local_src",
+    ]

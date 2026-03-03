@@ -175,13 +175,15 @@ def test_missing_terminator_still_works(p: parser.Parser) -> None:
 def test_missing_outer_block_close_with_inner_block_message(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<standard:/path> {\n"
+        + "define the position<run>.\n"
         + "it happens when {\n"
+        + "the position<run> has a dimension point.\n"
         + "} and it does {\n"
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
     assert str(result.exception) == (
-        "line 4, column 2\n}\n ^\nMissing a closing '}' somewhere in this block."
+        "line 6, column 2\n}\n ^\nMissing a closing '}' somewhere in this block."
     )
 
 

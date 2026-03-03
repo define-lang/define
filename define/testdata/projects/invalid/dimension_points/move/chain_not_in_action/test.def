@@ -5,6 +5,7 @@ define the potential action<mv:define-lang.org:test_move_bad_action:/test> {
         }
     }
     it happens when {
+        the position<pos_a> has a dimension point.
     } and it does {
         move the dimension point in position<pos_a>::action</act_b>::position<no_such> to position<pos_a>.
     }

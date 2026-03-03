@@ -1,6 +1,8 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/create/chain_ending_with_action> {
+    define the position<run>.
     define the position<pos_a>.
     it happens when {
+        the position<run> has a dimension point.
     } and it does {
         create a dimension point in position<pos_a>::action<act_b>.
     }

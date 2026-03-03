@@ -272,6 +272,12 @@ class InvalidPositionConstraintBlock(DefineTokenError):
     message_format: ClassVar[str] = "Invalid syntax in a position constraint block."
 
 
+class InvalidTriggerConditionsBlock(DefineTokenError):
+    """Nonsense in a Trigger Conditions Block."""
+
+    message_format: ClassVar[str] = "Not a valid trigger condition statement."
+
+
 class InvalidPositionDefinitionBlock(DefineTokenError):
     """Write something nonsensical in a Position Definition Block."""
 
@@ -322,6 +328,14 @@ class MissingCloseBrace(DefineTokenError):
     """Forgot to write } at the end of a block."""
 
     message_format: ClassVar[str] = "Missing a closing '}}' somewhere in this block."
+
+
+class MissingConditionOnConditionStatement(DefineTokenError):
+    """Forgot the condition text after the name in a trigger condition."""
+
+    message_format: ClassVar[str] = (
+        "Expected a condition like ' has a dimension point' after the name in a trigger condition."
+    )
 
 
 class MissingNewlineAfterCloseBrace(DefineTokenError):
@@ -395,6 +409,14 @@ class MissingTerminator(DefineTokenError):
     """Forgot ."""
 
     message_format: ClassVar[str] = "This statement must end with a '.'."
+
+
+class MissingTriggerConditionContent(DefineTokenError):
+    """Left out content from a trigger conditions block."""
+
+    message_format: ClassVar[str] = (
+        "Trigger conditions blocks must contain at least one 'the ... has a dimension point.' statement."
+    )
 
 
 class MissingTerminatorOrBrace(DefineTokenError):

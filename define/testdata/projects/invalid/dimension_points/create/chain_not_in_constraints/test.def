@@ -5,6 +5,7 @@ define the potential action<mv:define-lang.org:test_dim_bad_constraint:/test> {
         }
     }
     it happens when {
+        the position<pos_a> has a dimension point.
     } and it does {
         create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.
     }

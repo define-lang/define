@@ -111,6 +111,7 @@ def test_chain_element_validated_without_deferral(
             "        }\n"
             "    }\n"
             "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in"
             " position<pos_a>::position</child>::position</wrong>.\n"
@@ -165,6 +166,7 @@ def test_chain_continuation_validated_without_deferral(
             "        }\n"
             "    }\n"
             "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in"
             " position<pos_a>::position</pos_b>::position</pos_c>::position</pos_d>.\n"
@@ -182,7 +184,7 @@ def test_chain_continuation_validated_without_deferral(
     ]
     diag = test_result.diagnostics[0]
     assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
-    assert diag.position.line == 9
+    assert diag.position.line == 10
     assert diag.position.column == 90
 
 

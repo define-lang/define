@@ -1,6 +1,8 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/single_action_reference> {
+    define the position<run>.
     define the position<to_pos>.
     it happens when {
+        the position<run> has a dimension point.
     } and it does {
         move the dimension point in action<act_other> to position<to_pos>.
     }

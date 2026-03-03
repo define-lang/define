@@ -5,6 +5,7 @@ define the potential action<mv:define-lang.org:test_move_chain_pos:/test> {
         }
     }
     it happens when {
+        the position<pos_a> has a dimension point.
     } and it does {
         create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.
         move the dimension point in position<pos_a>::position</pos_b>::position</pos_c> to position<pos_a>.

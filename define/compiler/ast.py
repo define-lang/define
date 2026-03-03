@@ -236,8 +236,17 @@ class GlobalPathName(ASTNode):
 
 
 @dataclass
+class TriggerConditionStatement(ASTNode):
+    """Represents a trigger condition statement."""
+
+    typed_name: TypedName
+
+
+@dataclass
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
+
+    conditions: list[TriggerConditionStatement]
 
 
 @dataclass

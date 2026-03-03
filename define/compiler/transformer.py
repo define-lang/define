@@ -99,6 +99,14 @@ class DefineTransformer(
         """Discard the trigger-conditions keyword token."""
         return lark_standalone.Discard
 
+    def THE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the trigger-condition 'the' keyword token."""
+        return lark_standalone.Discard
+
+    def HAS_A_DIMENSION_POINT(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the 'has a dimension point' keyword token."""
+        return lark_standalone.Discard
+
     def AND_IT_DOES(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard the action-statements keyword token."""
         return lark_standalone.Discard
@@ -244,11 +252,23 @@ class DefineTransformer(
         )
 
     @lark_standalone.v_args(meta=True)
+    def trigger_condition_statement(
+        self, meta: lark_standalone.Meta, items: list[ast.TypedName]
+    ) -> ast.TriggerConditionStatement:
+        """Transform a trigger condition statement."""
+        (typed_name,) = items
+        return ast.TriggerConditionStatement(
+            typed_name=typed_name,
+            position=ast.SourcePosition.from_meta(meta),
+        )
+
+    @lark_standalone.v_args(meta=True)
     def trigger_conditions_block(
-        self, meta: lark_standalone.Meta, _items: list[object]
+        self, meta: lark_standalone.Meta, items: list[ast.TriggerConditionStatement]
     ) -> ast.TriggerConditionsBlock:
         """Transform a trigger conditions block."""
         return ast.TriggerConditionsBlock(
+            conditions=items,
             position=ast.SourcePosition.from_meta(meta),
         )
 

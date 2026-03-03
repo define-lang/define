@@ -208,7 +208,9 @@ class TestDimensionPointReferenceEdges:
     ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position</alpha>::action</beta>::position</gamma>.\n"
             "    }\n"
@@ -229,6 +231,7 @@ class TestDimensionPointReferenceEdges:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<inner_pos>.\n"
             "    it happens when {\n"
+            "        the position<inner_pos> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position<inner_pos>.\n"
             "    }\n"
@@ -253,6 +256,7 @@ class TestDimensionPointReferenceEdges:
             "        }\n"
             "    }\n"
             "    it happens when {\n"
+            "        the position<my_pos> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position<my_pos>::position</Bad>.\n"
             "    }\n"
@@ -277,7 +281,7 @@ class TestDimensionPointReferenceEdges:
         )
         assert result.diagnostics[1].segment == "Bad"
         assert result.diagnostics[1].char == "B"
-        assert result.diagnostics[1].position.line == 9
+        assert result.diagnostics[1].position.line == 10
         assert result.diagnostics[1].position.column == 65
         assert result.reference_edges == []
         assert result.discovered_files == []

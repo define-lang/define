@@ -1,6 +1,8 @@
 define the potential position<mv:define-lang.org:test_files:/invalid/dimension_points/move/violates_dest_constraints>.
 define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/violates_dest_constraints> {
+    define the position<run>.
     it happens when {
+        the position<run> has a dimension point.
     } and it does {
         define the position<from_pos> {
             it may only contain dimension points where {

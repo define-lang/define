@@ -5,6 +5,7 @@ define the potential action<mv:define-lang.org:test_dim_five_chain:/act_a> {
         }
     }
     it happens when {
+        the position<pos_b> has a dimension point.
     } and it does {
     }
 }

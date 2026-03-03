@@ -143,7 +143,9 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
 def test_local_duplicate_dimension_point_format():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<pos>.\n"
         "        create a dimension point in position<pos>.\n"
@@ -158,18 +160,20 @@ def test_local_duplicate_dimension_point_format():
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 6, column 37\n"
+        "line 8, column 37\n"
         "        create a dimension point in position<pos>.\n"
         "                                    ^\n"
         "a dimension point already exists in 'position<pos>'; "
-        "it was put there on line 5"
+        "it was put there on line 7"
     )
 
 
 def test_move_from_empty_position_format():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos>.\n"
@@ -185,7 +189,7 @@ def test_move_from_empty_position_format():
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 6, column 37\n"
+        "line 8, column 37\n"
         "        move the dimension point in position<from_pos> to position<to_pos>.\n"
         "                                    ^\n"
         "cannot move a dimension point from 'position<from_pos>'"
@@ -205,6 +209,7 @@ def test_deferred_position_chain_error_format(
         "        }\n"
         "    }\n"
         "    it happens when {\n"
+        "        the position<pos_a> has a dimension point.\n"
         "    } and it does {\n"
         "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
         "    }\n"
@@ -238,7 +243,7 @@ def test_deferred_position_chain_error_format(
         source.splitlines(), file_name="test.def"
     )
     assert formatted == (
-        'File "test.def", line 9, column 72\n'
+        'File "test.def", line 10, column 72\n'
         "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
         "                                                                       ^\n"
         "'position<my.domain.com:my_lib:/wrong>' is not declared as one of the"
@@ -259,6 +264,7 @@ def test_deferred_action_chain_error_format(
         "        }\n"
         "    }\n"
         "    it happens when {\n"
+        "        the position<pos_a> has a dimension point.\n"
         "    } and it does {\n"
         "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
         "    }\n"
@@ -270,6 +276,7 @@ def test_deferred_action_chain_error_format(
             "define the potential action<my.domain.com:my_lib:/act_b> {\n"
             "    define the position<pos_c>.\n"
             "    it happens when {\n"
+            "        the position<pos_c> has a dimension point.\n"
             "    } and it does {\n"
             "    }\n"
             "}\n"
@@ -289,7 +296,7 @@ def test_deferred_action_chain_error_format(
         source.splitlines(), file_name="test.def"
     )
     assert formatted == (
-        'File "test.def", line 9, column 70\n'
+        'File "test.def", line 10, column 70\n'
         "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
         "                                                                     ^\n"
         "'position<no_such>' is not defined inside the definition of"
@@ -300,7 +307,9 @@ def test_deferred_action_chain_error_format(
 def test_move_to_same_position_format():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<pos>.\n"
         "        create a dimension point in position<pos>.\n"
@@ -316,7 +325,7 @@ def test_move_to_same_position_format():
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 6, column 54\n"
+        "line 8, column 54\n"
         "        move the dimension point in position<pos> to position<pos>.\n"
         "                                                     ^\n"
         "source and destination cannot be identical when moving dimension points"
@@ -337,6 +346,7 @@ def test_move_into_defining_position_format(
         "        }\n"
         "    }\n"
         "    it happens when {\n"
+        "        the position<local_pos> has a dimension point.\n"
         "    } and it does {\n"
         "        create a dimension point in position<local_pos>.\n"
         "        move the dimension point in position<local_pos>"
@@ -372,7 +382,7 @@ def test_move_into_defining_position_format(
         source.splitlines(), file_name="test.def"
     )
     assert formatted == (
-        'File "test.def", line 10, column 81\n'
+        'File "test.def", line 11, column 81\n'
         "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
         "                                                                                ^\n"
         "cannot move a dimension point\n"
@@ -389,7 +399,9 @@ def test_move_violates_constraints_error_message(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        define the position<from_pos>.\n"
         "        define the position<to_pos> {\n"
@@ -411,7 +423,9 @@ def test_move_violates_constraints_error_message(
     _ = (tmp_path / "y.def").write_text(
         (
             "define the potential action<my.domain.com:my_lib:/y> {\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "    }\n"
             "}\n"
@@ -433,7 +447,7 @@ def test_move_violates_constraints_error_message(
     assert constraint_diags == all_diags
     formatted = constraint_diags[0].format(source.splitlines(), file_name="test.def")
     assert formatted == (
-        'File "test.def", line 12, column 59\n'
+        'File "test.def", line 14, column 59\n'
         "        move the dimension point in position<from_pos> to position<to_pos>.\n"
         "                                                          ^\n"
         "cannot move a dimension point\n"

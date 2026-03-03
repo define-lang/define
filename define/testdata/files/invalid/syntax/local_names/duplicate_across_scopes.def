@@ -1,6 +1,7 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/duplicate_across_scopes> {
     define the position<same_name>.
     it happens when {
+        the position<same_name> has a dimension point.
     } and it does {
         define the position<same_name>.
     }

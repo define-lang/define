@@ -2,6 +2,7 @@ define the potential position<mv:define-lang.org:test_files:/valid/action_and_po
 define the potential action<mv:define-lang.org:test_files:/valid/action_and_position_same_file> {
     define the position<my_pos>.
     it happens when {
+        the position<my_pos> has a dimension point.
     } and it does {
     }
 }

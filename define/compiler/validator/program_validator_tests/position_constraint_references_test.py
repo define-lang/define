@@ -61,6 +61,7 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
         "        }\n"
         "    }\n"
         "    it happens when {\n"
+        "        the position<my_pos> has a dimension point.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"

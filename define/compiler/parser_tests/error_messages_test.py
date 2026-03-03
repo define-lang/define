@@ -70,15 +70,17 @@ def test_token_error_message(p: parser.Parser) -> None:
 def test_error_message_for_indented_code_in_action_block(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
         + "    define the position<local_name.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
     assert str(result.exception) == (
-        "line 2, column 36\n"
+        "line 3, column 36\n"
         "    define the position<local_name.\n"
         "                                   ^\n"
         "Missing '>' on this name: local_name."

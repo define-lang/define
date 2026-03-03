@@ -859,7 +859,9 @@ def test_cross_fqun_wrong_type_in_sub_root(
         "lib/target.def",
         (
             f"define the potential action<{_CHILD_UNIVERSE}:/target> {{\n"
+            f"    define the position<run>.\n"
             f"    it happens when {{\n"
+            f"        the position<run> has a dimension point.\n"
             f"    }} and it does {{\n"
             f"    }}\n"
             f"}}\n"

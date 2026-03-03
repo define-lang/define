@@ -146,7 +146,9 @@ def test_action_definition_terminator_has_no_block():
 def test_action_definition_block_transforms():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -154,7 +156,11 @@ def test_action_definition_block_transforms():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.definition_block is not None
-    assert definition.definition_block.local_definitions == []
+    assert len(definition.definition_block.local_definitions) == 1
+    assert (
+        definition.definition_block.local_definitions[0].typed_name.name_content.name
+        == "run"
+    )
     assert definition.definition_block.trigger_conditions is not None
     assert definition.definition_block.action_statements.statements == []
 
@@ -164,6 +170,7 @@ def test_action_definition_block_with_local_definition():
         "define the potential action<standard:/path> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
+        + "        the position<my_pos> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -184,6 +191,7 @@ def test_action_definition_block_with_multiple_local_definitions():
         + "    define the position<first_pos>.\n"
         + "    define the position<second_pos>.\n"
         + "    it happens when {\n"
+        + "        the position<first_pos> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -205,7 +213,9 @@ def test_action_definition_block_with_multiple_local_definitions():
 def test_action_definition_block_source_positions():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -215,8 +225,8 @@ def test_action_definition_block_source_positions():
     block = definition.definition_block
     assert block is not None
     assert block.position.line == 1
-    assert block.trigger_conditions.position.line == 2
-    assert block.action_statements.position.line == 3
+    assert block.trigger_conditions.position.line == 3
+    assert block.action_statements.position.line == 5
     assert block.action_statements.statements == []
 
 
@@ -225,6 +235,7 @@ def test_action_definition_block_local_definition_source_position():
         "define the potential action<standard:/path> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
+        + "        the position<my_pos> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -241,7 +252,9 @@ def test_action_definition_block_local_definition_source_position():
 def test_action_definition_block_with_action_statement_local_definition():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        define the position<inner_pos>.\n"
         + "    }\n"
@@ -255,14 +268,16 @@ def test_action_definition_block_with_action_statement_local_definition():
     local_def = block.action_statements.statements[0]
     assert isinstance(local_def, ast.LocalPositionDefinition)
     assert local_def.typed_name.name_content.name == "inner_pos"
-    assert local_def.position.line == 4
+    assert local_def.position.line == 6
     assert local_def.position.column == 9
 
 
 def test_action_definition_block_with_multiple_action_statement_local_definitions():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        define the position<first_inner>.\n"
         + "        define the position<second_inner>.\n"
@@ -280,8 +295,8 @@ def test_action_definition_block_with_multiple_action_statement_local_definition
     assert isinstance(second_local_def, ast.LocalPositionDefinition)
     assert first_local_def.typed_name.name_content.name == "first_inner"
     assert second_local_def.typed_name.name_content.name == "second_inner"
-    assert first_local_def.position.line == 4
-    assert second_local_def.position.line == 5
+    assert first_local_def.position.line == 6
+    assert second_local_def.position.line == 7
 
 
 def test_position_definition_with_constraints_block_transforms():
@@ -316,7 +331,9 @@ def test_position_definition_with_constraints_block_transforms():
 def test_create_dimension_point_with_local_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position<run>.\n"
         + "    }\n"
@@ -339,7 +356,9 @@ def test_create_dimension_point_with_local_position():
 def test_create_dimension_point_with_short_global_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position</run>.\n"
         + "    }\n"
@@ -361,7 +380,9 @@ def test_create_dimension_point_with_short_global_position():
 def test_create_dimension_point_with_full_fqun_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position<mv:define-lang.org:parser:/run>.\n"
         + "    }\n"
@@ -389,7 +410,9 @@ def test_create_dimension_point_with_full_fqun_position():
 def test_chained_position_reference_with_local_names():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position<to>::action<deposit>::position<run>.\n"
         + "    }\n"
@@ -417,7 +440,9 @@ def test_chained_position_reference_with_local_names():
 def test_chained_position_reference_with_global_names():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position</to>::action</deposit>::position</run>.\n"
         + "    }\n"
@@ -442,7 +467,9 @@ def test_chained_position_reference_with_global_names():
 def test_chained_position_reference_mixed_types():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in action</start>::position<mid>::action</end>.\n"
         + "    }\n"
@@ -470,7 +497,9 @@ def test_chained_position_reference_mixed_types():
 def test_mixed_action_statements():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        define the position<inner_pos>.\n"
         + "        create a dimension point in position<run>.\n"
@@ -493,7 +522,9 @@ def test_mixed_action_statements():
 def test_move_dimension_point_with_local_positions():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<source> to position<dest>.\n"
         + "    }\n"
@@ -521,7 +552,9 @@ def test_move_dimension_point_with_local_positions():
 def test_move_dimension_point_with_short_global_positions():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position</source> to position</dest>.\n"
         + "    }\n"
@@ -548,7 +581,9 @@ def test_move_dimension_point_with_short_global_positions():
 def test_move_dimension_point_with_full_fqun_positions():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<mv:authority.com:universe:/source> to position<mv:authority.com:universe:/dest>.\n"
         + "    }\n"
@@ -575,7 +610,9 @@ def test_move_dimension_point_with_full_fqun_positions():
 def test_move_dimension_point_with_chained_source():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<src>::action<deposit>::position<inner> to position<dest>.\n"
         + "    }\n"
@@ -603,7 +640,9 @@ def test_move_dimension_point_with_chained_source():
 def test_move_dimension_point_with_chained_destination():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        move the dimension point in position<src> to position<dest>::action<deposit>::position<inner>.\n"
         + "    }\n"
@@ -631,7 +670,9 @@ def test_move_dimension_point_with_chained_destination():
 def test_mixed_action_statements_with_move():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
         + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
         + "    } and it does {\n"
         + "        create a dimension point in position<run>.\n"
         + "        move the dimension point in position<source> to position<dest>.\n"
@@ -659,6 +700,7 @@ def test_action_definition_block_with_constrained_local_definition():
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
+        + "        the position<my_pos> has a dimension point.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -678,3 +720,67 @@ def test_action_definition_block_with_constrained_local_definition():
     assert local_def.position.line == 2
     assert local_def.constraints.position.line == 3
     assert requirement.position.line == 4
+
+
+def test_trigger_condition_statement_transforms_local_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.trigger_conditions.conditions) == 1
+    condition = block.trigger_conditions.conditions[0]
+    assert isinstance(condition, ast.TriggerConditionStatement)
+    assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
+    assert condition.typed_name.name_type == ast.NameType.POSITION
+    assert condition.typed_name.name_content.name == "run"
+
+
+def test_trigger_condition_statement_transforms_global_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "        the position</some_pos> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.trigger_conditions.conditions) == 1
+    condition = block.trigger_conditions.conditions[0]
+    assert isinstance(condition, ast.TriggerConditionStatement)
+    assert isinstance(condition.typed_name, ast.GlobalTypedNameReference)
+    assert condition.typed_name.name_type == ast.NameType.POSITION
+    assert condition.typed_name.name_content.fqun is None
+    assert condition.typed_name.name_content.path.name == "/some_pos"
+
+
+def test_trigger_condition_statement_source_positions():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.trigger_conditions.conditions) == 1
+    condition = block.trigger_conditions.conditions[0]
+    assert condition.position.line == 4
+    assert condition.position.column == 9
