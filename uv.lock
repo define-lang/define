@@ -167,8 +167,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1,!=8.3.0,!=8.3.1" },
-    { name = "protobuf", specifier = ">=5,<7" },
-    { name = "protovalidate" },
+    { name = "protobuf", specifier = ">=5" },
+    { name = "protovalidate", specifier = ">=1.1.2" },
     { name = "pygtrie" },
     { name = "regex" },
 ]
@@ -438,16 +438,16 @@ wheels = [
 
 [[package]]
 name = "protovalidate"
-version = "1.1.1"
+version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cel-python" },
     { name = "google-re2" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/75/55b0e85e8c4247e754015a65a291990f23ae738a5d20992a251637f1cdf8/protovalidate-1.1.1.tar.gz", hash = "sha256:41bc38482bccd75b88294532d44f5b74e6b576359d1302bcadfc231f7622bd23", size = 226213, upload-time = "2026-02-02T13:57:24.244Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/9e/38742fe4006fb6d9101fd416e9bba4213984b7aaa2ae1a99721d2f8770a9/protovalidate-1.1.2.tar.gz", hash = "sha256:33d13b49e56e87c2ef4c8f0cbce4776288141a3c79a1e48fb172444bf4de47bb", size = 222185, upload-time = "2026-03-02T15:15:13.795Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/50/36201b523b6f3eba276b8918f081c698317a62da1da9269f6417b4abd216/protovalidate-1.1.1-py3-none-any.whl", hash = "sha256:1c9daee765824011071ece81924df07a325931790075a3a00c04de7ed7ea9d13", size = 29589, upload-time = "2026-02-02T13:57:22.578Z" },
+    { url = "https://files.pythonhosted.org/packages/35/6d/d199a67b9580d45939419c9f2c7c9d6a898b611a908b12606d997c6ab8be/protovalidate-1.1.2-py3-none-any.whl", hash = "sha256:21d4a5ad68a0d59222411af3c53c6f63d1318381e31c069143811e193f6fcf67", size = 29655, upload-time = "2026-03-02T15:15:12.123Z" },
 ]
 
 [[package]]
