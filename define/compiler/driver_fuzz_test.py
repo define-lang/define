@@ -687,8 +687,13 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "and it does",
         ]
         keyword = draw(st.sampled_from(keywords))
-        if keyword in source:
-            idx = source.index(keyword)
+        indices: list[int] = []
+        start = 0
+        while (pos := source.find(keyword, start)) != -1:
+            indices.append(pos)
+            start = pos + 1
+        if indices:
+            idx = draw(st.sampled_from(indices))
             return source[:idx] + source[idx + len(keyword) :]
 
     if mutation == "swap_adjacent" and len(source) > 1:
@@ -696,20 +701,21 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
         return source[:idx] + source[idx + 1] + source[idx] + source[idx + 2 :]
 
     if mutation == "remove_newline" and "\n" in source:
-        idx = source.index("\n")
+        indices = [i for i, c in enumerate(source) if c == "\n"]
+        idx = draw(st.sampled_from(indices))
         return source[:idx] + source[idx + 1 :]
 
     if mutation == "remove_angle_bracket":
-        for bracket in ["<", ">"]:
-            if bracket in source:
-                idx = source.index(bracket)
-                return source[:idx] + source[idx + 1 :]
+        indices = [i for i, c in enumerate(source) if c in "<>"]
+        if indices:
+            idx = draw(st.sampled_from(indices))
+            return source[:idx] + source[idx + 1 :]
 
     if mutation == "remove_structural_char":
-        for char in [":", ".", "{", "}"]:
-            if char in source:
-                idx = source.index(char)
-                return source[:idx] + source[idx + 1 :]
+        indices = [i for i, c in enumerate(source) if c in ":.{}"]
+        if indices:
+            idx = draw(st.sampled_from(indices))
+            return source[:idx] + source[idx + 1 :]
 
     if mutation == "insert_unicode":
         idx = draw(st.integers(min_value=0, max_value=len(source)))
