@@ -21,6 +21,15 @@ py_binary(
 )
 
 py_binary(
+    name = "git_commit_via_api",
+    srcs = ["git_commit_via_api.py"],
+    deps = [
+        "@pypi//click",
+        "@pypi//pygithub",
+    ],
+)
+
+py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
     deps = ["@pypi//pyyaml"],
@@ -141,6 +150,7 @@ pyright_test(
     deps = [
         ":generate_lark_standalone",
         ":generate_programming_languages",
+        ":git_commit_via_api",
         ":sync_agent_permissions",
         ":update_toolchains",
         ":validate_proposals",
