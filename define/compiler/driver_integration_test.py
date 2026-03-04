@@ -272,6 +272,23 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/short_form_required/move_full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
+    "trigger_conditions/chain_ending_with_action.def": [
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "trigger_conditions/invalid_local_name_format.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.InvalidLocalNameFormatDiagnostic,
+    ],
+    "trigger_conditions/single_action_reference.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
+    ],
+    "trigger_conditions/undefined_local_position.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+    ],
 }
 
 # Key: path relative to PROJECTS_ROOT / "invalid" (as posix string)
@@ -329,6 +346,9 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],
     "syntax/path_mismatch": [diagnostics.PathMismatchDiagnostic],
     "syntax/universe_uppercase": [diagnostics.UniverseNameInvalidCharDiagnostic],
+    "trigger_conditions/chain_not_in_constraints": [
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+    ],
 }
 
 

@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/trigger_conditions/empty_trigger_block> {
+    define the position<run>.
+    it happens when {
+    } and it does {
+    }
+}

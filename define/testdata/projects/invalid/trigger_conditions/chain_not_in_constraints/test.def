@@ -1,0 +1,11 @@
+define the potential action<mv:define-lang.org:test_trigger_bad_constraint:/test> {
+    define the position<pos_a> {
+        it may only contain dimension points where {
+            it has the position</pos_b>.
+        }
+    }
+    it happens when {
+        the position<pos_a>::position</pos_b>::position</wrong> has a dimension point.
+    } and it does {
+    }
+}

@@ -1,0 +1,6 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/trigger_conditions/invalid_local_name_format> {
+    it happens when {
+        the position<BAD> has a dimension point.
+    } and it does {
+    }
+}

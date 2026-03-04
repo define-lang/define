@@ -1,0 +1,7 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/syntax/trigger_conditions/invalid_content> {
+    define the position<run>.
+    it happens when {
+        nonsense
+    } and it does {
+    }
+}
