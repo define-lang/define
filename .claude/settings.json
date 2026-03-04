@@ -45,6 +45,8 @@
       "Bash(git status *)",
       "Bash(git log *)",
       "Bash(gh api repos/*/releases *)",
+      "Bash(gh pr view *)",
+      "Bash(gh issue view *)",
       "Bash(uv add *)",
       "Bash(uv sync *)",
       "Bash(uv help *)",

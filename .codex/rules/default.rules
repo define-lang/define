@@ -81,6 +81,16 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["gh", "pr", "view"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["gh", "issue", "view"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["uv", "add"],
     decision = "allow",
 )

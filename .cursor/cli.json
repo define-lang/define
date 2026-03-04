@@ -28,6 +28,8 @@
       "Shell(git status *)",
       "Shell(git log *)",
       "Shell(gh api repos/*/releases *)",
+      "Shell(gh pr view *)",
+      "Shell(gh issue view *)",
       "Shell(uv add *)",
       "Shell(uv sync *)",
       "Shell(uv help *)",
