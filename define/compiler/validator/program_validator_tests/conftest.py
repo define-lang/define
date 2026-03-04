@@ -15,6 +15,19 @@ type ParseAndValidateFile = Callable[[str | bytes], validation_result.Validation
 _DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")
 
 
+class ValidateProject(Protocol):
+    """Callable that validates a multi-file project and returns results."""
+
+    def __call__(
+        self,
+        files: dict[str, str],
+        *,
+        universe_name: str = ...,
+    ) -> list[validation_result.ValidationResult]:
+        """Validate a project with the given files."""
+        ...
+
+
 class ValidateSourceAsFile(Protocol):
     """Callable that validates source as a file and returns diagnostics."""
 
@@ -32,6 +45,30 @@ class ValidateSourceAsFile(Protocol):
         expected_universe_name: str,
         relative_path: PurePosixPath,
     ) -> list[diagnostics.Diagnostic]: ...
+
+
+@pytest.fixture
+def validate_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> ValidateProject:
+    """Set up a multi-file project in a temp dir and validate it."""
+
+    def _run(
+        files: dict[str, str],
+        *,
+        universe_name: str = "my.domain.com:my_lib",
+    ) -> list[validation_result.ValidationResult]:
+        test_helpers.write_project_config(tmp_path, universe_name)
+        for name, content in files.items():
+            file_path = tmp_path / name
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(content, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+        return program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def")
+        )
+
+    return _run
 
 
 @pytest.fixture

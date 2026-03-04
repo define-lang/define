@@ -10,6 +10,7 @@ import pytest
 from define.compiler import diagnostics, exceptions
 from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_reserved_universe_name_format():
@@ -198,9 +199,8 @@ def test_move_from_empty_position_format():
 
 
 def test_deferred_position_chain_error_format(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<pos_a> {\n"
@@ -215,24 +215,18 @@ def test_deferred_position_chain_error_format(
         "    }\n"
         "}\n"
     )
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    _ = (tmp_path / "pos_b.def").write_text(
-        (
-            "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-            "    it may only contain dimension points where {\n"
-            "        it has the position</pos_c>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    _ = (tmp_path / "wrong.def").write_text(
-        "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = validate_project(
+        {
+            "test.def": source,
+            "pos_b.def": (
+                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</pos_c>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+        }
     )
     test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
     assert len(test_result.diagnostics) == 1
@@ -253,9 +247,8 @@ def test_deferred_position_chain_error_format(
 
 
 def test_deferred_action_chain_error_format(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<pos_a> {\n"
@@ -270,22 +263,19 @@ def test_deferred_action_chain_error_format(
         "    }\n"
         "}\n"
     )
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    _ = (tmp_path / "act_b.def").write_text(
-        (
-            "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-            "    define the position<pos_c>.\n"
-            "    it happens when {\n"
-            "        the position<pos_c> has a dimension point.\n"
-            "    } and it does {\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = validate_project(
+        {
+            "test.def": source,
+            "act_b.def": (
+                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                "    define the position<pos_c>.\n"
+                "    it happens when {\n"
+                "        the position<pos_c> has a dimension point.\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
     )
     test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
     assert len(test_result.diagnostics) == 1
@@ -335,9 +325,8 @@ def test_move_to_same_position_format():
 
 
 def test_move_into_defining_position_format(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<local_pos> {\n"
@@ -354,24 +343,18 @@ def test_move_into_defining_position_format(
         "    }\n"
         "}\n"
     )
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    _ = (tmp_path / "mid_pos.def").write_text(
-        (
-            "define the potential position<my.domain.com:my_lib:/mid_pos> {\n"
-            "    it may only contain dimension points where {\n"
-            "        it has the position</end_pos>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    _ = (tmp_path / "end_pos.def").write_text(
-        "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = validate_project(
+        {
+            "test.def": source,
+            "mid_pos.def": (
+                "define the potential position<my.domain.com:my_lib:/mid_pos> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</end_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "end_pos.def": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
+        }
     )
     test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
     assert len(test_result.diagnostics) == 1
@@ -394,9 +377,8 @@ def test_move_into_defining_position_format(
 
 
 def test_move_violates_constraints_error_message(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -415,26 +397,20 @@ def test_move_violates_constraints_error_message(
         "    }\n"
         "}\n"
     )
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    _ = (tmp_path / "x.def").write_text(
-        "define the potential position<my.domain.com:my_lib:/x>.\n",
-        encoding="utf-8",
-    )
-    _ = (tmp_path / "y.def").write_text(
-        (
-            "define the potential action<my.domain.com:my_lib:/y> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
-            "    } and it does {\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = validate_project(
+        {
+            "test.def": source,
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.def": (
+                "define the potential action<my.domain.com:my_lib:/y> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
     )
     all_diags = [d for r in results for d in r.diagnostics]
     constraint_diags = [

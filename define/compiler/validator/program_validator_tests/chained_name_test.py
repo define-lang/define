@@ -4,13 +4,11 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
-
-import pytest
+from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 class TestCreateDimensionPoint:
@@ -178,42 +176,33 @@ class TestCreateDimensionPoint:
         assert diags[1].position.line == 6
         assert diags[1].position.column == 44
 
-    def test_valid_chain_with_action_in_middle(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                "    define the position<pos_c>.\n"
-                "    it happens when {\n"
-                "        the position<pos_c> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_valid_chain_with_action_in_middle(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pos_c>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_c> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
@@ -281,82 +270,68 @@ class TestCreateDimensionPoint:
         assert diags[1].position.column == 54
 
     def test_chain_second_element_matches_constraint(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</child>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "child.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/child> {\n"
-                "    define the position<pos_end>.\n"
-                "    it happens when {\n"
-                "        the position<pos_end> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</child>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "child.def": (
+                    "define the potential action<my.domain.com:my_lib:/child> {\n"
+                    "    define the position<pos_end>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_end> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
 
     def test_duplicate_definition_preserves_first_constraints(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</child>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<pos_a>.\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "child.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/child> {\n"
-                "    define the position<pos_end>.\n"
-                "    it happens when {\n"
-                "        the position<pos_end> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</child>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    define the position<pos_a>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "child.def": (
+                    "define the potential action<my.domain.com:my_lib:/child> {\n"
+                    "    define the position<pos_end>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_end> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1
@@ -490,89 +465,66 @@ class TestCreateDimensionPoint:
         assert diags[1].position.column == 62
 
     def test_chain_third_element_in_position_constraints(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
 
     def test_chain_third_element_not_in_position_constraints(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            encoding="utf-8",
-        )
-        (tmp_path / "wrong.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1
@@ -585,37 +537,27 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 72
 
     def test_chain_third_element_position_no_constraints(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_b>.\n",
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": "define the potential position<my.domain.com:my_lib:/pos_b>.\n",
+                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1
@@ -627,82 +569,66 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.line == 10
         assert all_diags[0].position.column == 72
 
-    def test_chain_element_inside_action_valid(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                "    define the position<pos_c>.\n"
-                "    it happens when {\n"
-                "        the position<pos_c> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_chain_element_inside_action_valid(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pos_c>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_c> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
 
     def test_chain_element_inside_action_not_found(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                "    define the position<pos_c>.\n"
-                "    it happens when {\n"
-                "        the position<pos_c> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pos_c>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_c> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1
@@ -713,33 +639,26 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 70
 
     def test_chain_element_inside_action_no_block(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            "define the potential action<my.domain.com:my_lib:/act_b>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": "define the potential action<my.domain.com:my_lib:/act_b>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1
@@ -749,110 +668,85 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.line == 10
         assert all_diags[0].position.column == 70
 
-    def test_five_element_alternating_chain(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>::action</act_d>::position<pos_e>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                "    define the position<pos_c> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_d>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_c> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_d.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_d> {\n"
-                "    define the position<pos_e>.\n"
-                "    it happens when {\n"
-                "        the position<pos_e> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_five_element_alternating_chain(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>::action</act_d>::position<pos_e>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pos_c> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_d>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_c> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_d.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_d> {\n"
+                    "    define the position<pos_e>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_e> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
 
     def test_four_element_chain_through_positions(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>::position</pos_d>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_c> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_d>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_d.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>::position</pos_d>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_c.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_c> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_d>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_d.def": "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
@@ -894,54 +788,44 @@ class TestCreateDimensionPoint:
         assert diags[2].position.column == 31
 
     def test_chain_action_cannot_contain_action(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, validate_project: ValidateProject
     ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<x> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</foo>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<x> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in"
-                " position<x>::action</foo>::action</bar>::position<y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "foo.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/foo> {\n"
-                "    define the position<inner>.\n"
-                "    it happens when {\n"
-                "        the position<inner> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "bar.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/bar> {\n"
-                "    define the position<y>.\n"
-                "    it happens when {\n"
-                "        the position<y> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</foo>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in"
+                    " position<x>::action</foo>::action</bar>::position<y>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "foo.def": (
+                    "define the potential action<my.domain.com:my_lib:/foo> {\n"
+                    "    define the position<inner>.\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "bar.def": (
+                    "define the potential action<my.domain.com:my_lib:/bar> {\n"
+                    "    define the position<y>.\n"
+                    "    it happens when {\n"
+                    "        the position<y> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         test_result = next(
             r for r in results if r.file_path == PurePosixPath("test.def")
@@ -956,47 +840,35 @@ class TestCreateDimensionPoint:
         assert diag.position.line == 10
         assert diag.position.column == 64
 
-    def test_chain_action_then_action_short(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<x> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</a>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<x> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in"
-                " position<x>::action</a>::action</b>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "a.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/a> {\n"
-                "    define the position<inner>.\n"
-                "    it happens when {\n"
-                "        the position<inner> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "b.def").write_text(
-            "define the potential action<my.domain.com:my_lib:/b>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_chain_action_then_action_short(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in"
+                    " position<x>::action</a>::action</b>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "a.def": (
+                    "define the potential action<my.domain.com:my_lib:/a> {\n"
+                    "    define the position<inner>.\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "b.def": "define the potential action<my.domain.com:my_lib:/b>.\n",
+            }
         )
         test_result = next(
             r for r in results if r.file_path == PurePosixPath("test.def")
@@ -1018,43 +890,34 @@ class TestCreateDimensionPoint:
 
 
 class TestMoveDimensionPoint:
-    def test_chain_ending_with_action_in_from(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        move the dimension point in position<pos_a>::action</act_b>"
-                " to position<pos_a>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_chain_ending_with_action_in_from(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in position<pos_a>::action</act_b>"
+                    " to position<pos_a>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         test_result = next(
             r for r in results if r.file_path == PurePosixPath("test.def")
@@ -1065,44 +928,35 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_chain_ending_with_action_in_to(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<pos_from>.\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        move the dimension point in position<pos_from>"
-                " to position<pos_a>::action</act_b>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_b.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_b> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_chain_ending_with_action_in_to(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    define the position<pos_from>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in position<pos_from>"
+                    " to position<pos_a>::action</act_b>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         test_result = next(
             r for r in results if r.file_path == PurePosixPath("test.def")
@@ -1113,39 +967,30 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_single_action_in_from_position(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<to_pos>.\n"
-                "    it happens when {\n"
-                "        the position<to_pos> has a dimension point.\n"
-                "    } and it does {\n"
-                "        move the dimension point in action</act_x>"
-                " to position<to_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_x.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_x> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_single_action_in_from_position(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<to_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<to_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in action</act_x>"
+                    " to position<to_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_x.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_x> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         test_result = next(
             r for r in results if r.file_path == PurePosixPath("test.def")
@@ -1156,39 +1001,30 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_single_action_in_to_position(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<from_pos>.\n"
-                "    it happens when {\n"
-                "        the position<from_pos> has a dimension point.\n"
-                "    } and it does {\n"
-                "        move the dimension point in position<from_pos>"
-                " to action</act_y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_y.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_y> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_single_action_in_to_position(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<from_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<from_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in position<from_pos>"
+                    " to action</act_y>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_y.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_y> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         test_result = next(
             r for r in results if r.file_path == PurePosixPath("test.def")
@@ -1199,94 +1035,70 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_valid_chained_through_action(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</act_middle>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        create a dimension point in"
-                " position<pos_a>::action</act_middle>::position<inner_pos>.\n"
-                "        move the dimension point in"
-                " position<pos_a>::action</act_middle>::position<inner_pos>"
-                " to position<pos_a>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "act_middle.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/act_middle> {\n"
-                "    define the position<inner_pos>.\n"
-                "    it happens when {\n"
-                "        the position<inner_pos> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_valid_chained_through_action(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_middle>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in"
+                    " position<pos_a>::action</act_middle>::position<inner_pos>.\n"
+                    "        move the dimension point in"
+                    " position<pos_a>::action</act_middle>::position<inner_pos>"
+                    " to position<pos_a>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_middle.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_middle> {\n"
+                    "    define the position<inner_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<inner_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
 
-    def test_chain_not_in_constraints(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a> has a dimension point.\n"
-                "    } and it does {\n"
-                "        move the dimension point in"
-                " position<pos_a>::position</pos_b>::position</wrong>"
-                " to position<pos_a>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            encoding="utf-8",
-        )
-        (tmp_path / "wrong.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_chain_not_in_constraints(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in"
+                    " position<pos_a>::position</pos_b>::position</wrong>"
+                    " to position<pos_a>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1

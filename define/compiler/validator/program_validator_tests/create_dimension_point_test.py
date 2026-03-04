@@ -4,37 +4,31 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import pytest
 
 from define.compiler import diagnostics
 from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
-def test_short_form_global_reference(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    (tmp_path / "test.def").write_text(
-        (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
-            "    } and it does {\n"
-            "        create a dimension point in position</other>.\n"
-            "    }\n"
-            "}\n"
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "other.def").write_text(
-        "define the potential position<my.domain.com:my_lib:/other>.\n",
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+def test_short_form_global_reference(validate_project: ValidateProject):
+    results = validate_project(
+        {
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position</other>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
+        }
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []

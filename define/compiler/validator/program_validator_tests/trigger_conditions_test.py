@@ -1,11 +1,7 @@
 # pyright: reportUnusedCallResult=false
-from pathlib import Path, PurePosixPath
-
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 class TestTriggerConditionValidation:
@@ -44,26 +40,19 @@ class TestTriggerConditionValidation:
         assert diags[0].position.line == 3
         assert diags[0].position.column == 22
 
-    def test_valid_global_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it happens when {\n"
-                "        the position</other> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "other.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/other>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_valid_global_name(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    it happens when {\n"
+                    "        the position</other> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
@@ -92,31 +81,24 @@ class TestTriggerConditionValidation:
         assert diags[1].position.line == 3
         assert diags[1].position.column == 22
 
-    def test_two_item_chain(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<my_pos> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</inner>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<my_pos>::position</inner> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "inner.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/inner>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_two_item_chain(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<my_pos> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</inner>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<my_pos>::position</inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "inner.def": "define the potential position<my.domain.com:my_lib:/inner>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
@@ -149,88 +131,61 @@ class TestTriggerConditionValidation:
         assert diags[2].position.line == 4
         assert diags[2].position.column == 30
 
-    def test_three_item_chain_valid(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a>::position</pos_b>::position</pos_c> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_three_item_chain_valid(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a>::position</pos_b>::position</pos_c> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert all_diags == []
 
-    def test_three_item_chain_invalid(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ):
-        test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-        (tmp_path / "test.def").write_text(
-            (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<pos_a> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</pos_b>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<pos_a>::position</pos_b>::position</wrong> has a dimension point.\n"
-                "    } and it does {\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_b.def").write_text(
-            (
-                "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the position</pos_c>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            encoding="utf-8",
-        )
-        (tmp_path / "pos_c.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            encoding="utf-8",
-        )
-        (tmp_path / "wrong.def").write_text(
-            "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(
-            PurePosixPath("test.def")
+    def test_three_item_chain_invalid(self, validate_project: ValidateProject):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a>::position</pos_b>::position</wrong> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_b.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</pos_c>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+            }
         )
         all_diags = [d for r in results for d in r.diagnostics]
         assert len(all_diags) == 1

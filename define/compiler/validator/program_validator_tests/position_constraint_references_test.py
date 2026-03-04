@@ -4,13 +4,11 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
-
-import pytest
+from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_position_constraint_reference_with_invalid_path():
@@ -78,28 +76,20 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
 
 
 def test_referenced_global_name_wrong_type_position(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
-    (tmp_path / "target.def").write_text(
-        "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
-        encoding="utf-8",
-    )
-    (tmp_path / "test.def").write_text(
-        (
-            "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
-            + "    it may only contain dimension points where {\n"
-            + "        it has the position</target>.\n"
-            + "    }\n"
-            + "}\n"
-        ),
-        encoding="utf-8",
-    )
-    test_helpers.write_project_config(
-        tmp_path, "mv:define-lang.org:test_walk_wrong_type"
-    )
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = validate_project(
+        {
+            "target.def": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            "test.def": (
+                "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</target>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+        universe_name="mv:define-lang.org:test_walk_wrong_type",
     )
     assert len(results) == 2
     assert results[0].file_path == PurePosixPath("test.def")

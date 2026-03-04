@@ -30,7 +30,7 @@ py_test(
     srcs = ["chained_name_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
@@ -43,6 +43,7 @@ py_test(
     srcs = ["create_dimension_point_test.py"],
     pytest_main = True,
     deps = [
+        ":conftest",
         ":test_helpers",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
@@ -80,6 +81,7 @@ py_test(
     srcs = ["error_messages_test.py"],
     pytest_main = True,
     deps = [
+        ":conftest",
         ":test_helpers",
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
@@ -146,7 +148,7 @@ py_test(
     srcs = ["move_dimension_point_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
@@ -212,7 +214,7 @@ py_test(
     srcs = ["position_constraint_references_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
@@ -255,7 +257,7 @@ py_test(
     srcs = ["trigger_conditions_test.py"],
     pytest_main = True,
     deps = [
-        ":test_helpers",
+        ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
