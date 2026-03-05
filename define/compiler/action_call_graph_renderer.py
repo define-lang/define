@@ -17,6 +17,7 @@ def _sanitize_id(name: str) -> str:
     return _ANGLE_BRACKETS.sub("-", name)
 
 
+# TODO: Hook this renderer into a CLI.
 class Mermaid:
     """Renders an ActionCallGraph as Mermaid diagrams."""
 
