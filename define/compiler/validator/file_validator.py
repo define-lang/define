@@ -627,11 +627,29 @@ class ProgramAstValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         first = chain[0]
+        fqun = enclosing_definition.typed_name.name_content.fqun
+
+        if (
+            len(chain) > 1
+            and isinstance(first, ast.GlobalTypedNameReference)
+            and first.full_typed_name(in_universe=fqun)
+            == enclosing_definition.typed_name.full_typed_name()
+        ):
+            self.diagnostics.append(
+                diagnostics.UnnecessarySelfReferenceDiagnostic(
+                    position=first.position,
+                    definition_name=enclosing_definition.typed_name.full_typed_name(),
+                )
+            )
+            # NOTE: Mutates the AST so downstream validation sees the corrected chain.
+            # Otherwise things like duplicate detection would not correctly trigger.
+            del chain[0]
+            first = chain[0]
+
         first_is_defined = True
         if not scope.is_defined(first):
             first_is_defined = False
             if isinstance(first, ast.LocalTypedNameReference):
-                fqun = enclosing_definition.typed_name.name_content.fqun
                 self.diagnostics.append(
                     diagnostics.UndefinedLocalNameDiagnostic(
                         position=first.name_content.position,

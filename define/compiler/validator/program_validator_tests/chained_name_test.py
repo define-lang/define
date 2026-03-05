@@ -1106,3 +1106,70 @@ class TestMoveDimensionPoint:
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
         )
         assert all_diags[0].position.column == 72
+
+
+class TestUnnecessarySelfReference:
+    def test_self_reference_in_chain(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<inner>.\n"
+            "    it happens when {\n"
+            "        the position<inner> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in action</test>::position<inner>.\n"
+            "    }\n"
+            "}\n"
+        )
+        results = program_validator.ProgramValidator().validate_program_non_filesystem(
+            source
+        )
+        diags = results[0].diagnostics
+        assert len(diags) == 1
+        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
+        assert diags[0].message == (
+            "the reference to 'action<my.domain.com:my_lib:/test>' is not necessary"
+            " because the code is already inside that definition"
+        )
+
+    def test_self_reference_still_validates_remaining_chain(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<inner>.\n"
+            "    it happens when {\n"
+            "        the position<inner> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in action</test>::position<Bad>.\n"
+            "    }\n"
+            "}\n"
+        )
+        results = program_validator.ProgramValidator().validate_program_non_filesystem(
+            source
+        )
+        diags = results[0].diagnostics
+        assert len(diags) == 3
+        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
+        assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert diags[2].local_name == "Bad"
+
+    def test_self_reference_removal_affects_downstream_validation(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<trigger_pos>.\n"
+            "    it happens when {\n"
+            "        the position<trigger_pos> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<inner>.\n"
+            "        create a dimension point in action</test>::position<inner>.\n"
+            "        create a dimension point in position<inner>.\n"
+            "    }\n"
+            "}\n"
+        )
+        results = program_validator.ProgramValidator().validate_program_non_filesystem(
+            source
+        )
+        diags = results[0].diagnostics
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)

@@ -409,6 +409,17 @@ class CircularGlobalReferenceDiagnostic(Diagnostic):
 
 
 @dataclass
+class UnnecessarySelfReferenceDiagnostic(Diagnostic):
+    """Diagnostic for when a definition unnecessarily references itself in a chain."""
+
+    definition_name: str
+    message_format: ClassVar[str] = (
+        "the reference to '{self.definition_name}' is not necessary"
+        " because the code is already inside that definition"
+    )
+
+
+@dataclass
 class PositionReferenceChainEndDiagnostic(Diagnostic):
     """Diagnostic for when a position reference chain ends with an action."""
 
