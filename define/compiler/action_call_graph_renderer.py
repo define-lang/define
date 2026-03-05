@@ -1,0 +1,50 @@
+"""Renders an ActionCallGraph into a human-readable format."""
+
+from __future__ import annotations
+
+import re
+import typing
+
+if typing.TYPE_CHECKING:
+    from define.compiler import action_call_graph
+
+
+_ANGLE_BRACKETS = re.compile(r"[<>]")
+
+
+def _sanitize_id(name: str) -> str:
+    """Replace angle brackets with hyphens for valid Mermaid IDs."""
+    return _ANGLE_BRACKETS.sub("-", name)
+
+
+class Mermaid:
+    """Renders an ActionCallGraph as Mermaid diagrams."""
+
+    _graph: action_call_graph.ActionCallGraph
+
+    def __init__(self, graph: action_call_graph.ActionCallGraph):
+        """Create a Mermaid renderer for the given call graph."""
+        self._graph = graph
+
+    def render_flowchart(self) -> str:
+        """Produce a Mermaid ``flowchart LR`` flowchart from the call graph."""
+        unique_edges: set[tuple[str, str]] = set()
+        for edge in self._graph.all_edges():
+            unique_edges.add((edge.source_action, edge.target_action))
+
+        if not unique_edges:
+            return "flowchart LR\n"
+
+        nodes: set[str] = set()
+        for source, target in unique_edges:
+            nodes.add(source)
+            nodes.add(target)
+
+        lines = ["flowchart LR"]
+        for name in sorted(nodes):
+            node_id = _sanitize_id(name)
+            lines.append(f'    {node_id}["{name}"]')
+        for source, target in sorted(unique_edges):
+            lines.append(f"    {_sanitize_id(source)} --> {_sanitize_id(target)}")
+        lines.append("")
+        return "\n".join(lines)

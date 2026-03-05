@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
 from define.compiler import (
+    action_call_graph,
     ast,
     config,
     constants,
@@ -112,6 +113,7 @@ class ProgramValidator:
 
     _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
+    action_call_graph: action_call_graph.ActionCallGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredEdge]]
     _deferred_chain_validations: dict[
         pathlib.PurePosixPath, list[_DeferredChainValidation]
@@ -122,6 +124,7 @@ class ProgramValidator:
         """Initialize coordinator state for one program validation."""
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
+        self.action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._deferred_chain_validations = {}
         self.config_loading_time_ns = 0
@@ -200,6 +203,7 @@ class ProgramValidator:
         self._submit_discovered_files(result, pool)
         self._process_reference_edges(result.root_prefix, result)
         self._process_deferred_chained_names(result)
+        self.action_call_graph.process_result(result)
         result.stats.global_validation += time.perf_counter_ns() - started_at
         self._resolve_deferred_edges_for(result.file_path)
         self._resolve_deferred_chain_validations_for(result.file_path)

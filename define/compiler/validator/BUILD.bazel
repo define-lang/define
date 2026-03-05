@@ -117,6 +117,7 @@ py_library(
         ":reference_graph",
         ":stats",
         ":validation_result",
+        "//define/compiler:action_call_graph",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler:diagnostics",
@@ -196,10 +197,12 @@ py_test(
     srcs = ["validation_result_test.py"],
     pytest_main = True,
     deps = [
+        ":program_validator",
         ":stats",
         ":validation_result",
         "//define/compiler:parser",
         "//define/compiler:transformer",
+        "//define/compiler/validator/program_validator_tests:test_helpers",
         "@pypi//pytest",
     ],
 )

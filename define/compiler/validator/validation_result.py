@@ -80,6 +80,81 @@ class DeferredChainElements:
         )
 
 
+@dataclass(frozen=True)
+class TriggerPositionInfo:
+    """An action's trigger condition, for cross-action matching."""
+
+    enclosing_typed_name: ast.GlobalTypedNameInDefinition
+    checked_position: list[ast.TypedName]
+
+    @cached_property
+    def checked_position_name_with_prefix(self) -> str:
+        """Return the full chained name of the position the trigger condition is checking, prefixed with the action name."""
+        fqun = self.enclosing_typed_name.name_content.fqun
+        chain_str = "::".join(
+            elem.full_typed_name(in_universe=fqun) for elem in self.checked_position
+        )
+        return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
+
+
+@dataclass(frozen=True)
+class ActionBodyEffect:
+    """A body statement that writes a DP into a position, for cross-action matching."""
+
+    enclosing_typed_name: ast.GlobalTypedNameInDefinition
+    statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
+
+    @property
+    def modified_position(self) -> list[ast.TypedName]:
+        """Return the position chain that this statement writes into."""
+        match self.statement:
+            case ast.CreateDimensionPointStatement():
+                return self.statement.position_reference.chain
+            case ast.MoveDimensionPointStatement():
+                return self.statement.to_position.chain
+
+    @cached_property
+    def _action_boundary(self) -> tuple[int, str] | None:
+        """Find the last action reference in the chain.
+
+        Returns (index, full_typed_name) or None if no action ref exists.
+        """
+        chain = self.modified_position
+        fqun = self.enclosing_typed_name.name_content.fqun
+        for i in range(len(chain) - 1, -1, -1):
+            elem = chain[i]
+            if elem.name_type == ast.NameType.ACTION:
+                return (i, elem.full_typed_name(in_universe=fqun))
+        return None
+
+    @cached_property
+    def target_action_name(self) -> str:
+        """Return the action whose position is being modified.
+
+        When the chain contains an explicit action reference, that action is
+        the target. Otherwise, the enclosing action is the implicit target
+        (the write is to a local position).
+        """
+        if self._action_boundary is not None:
+            return self._action_boundary[1]
+        return self.enclosing_typed_name.full_typed_name()
+
+    @cached_property
+    def affected_position_qualified_chained_name(self) -> str:
+        """Return the globally-unique position key of the position that was affected (got a dimension point)."""
+        chain = self.modified_position
+        fqun = self.enclosing_typed_name.name_content.fqun
+        boundary = self._action_boundary
+        if boundary is None:
+            chain_str = "::".join(
+                elem.full_typed_name(in_universe=fqun) for elem in chain
+            )
+            return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
+        idx = boundary[0]
+        return "::".join(elem.full_typed_name(in_universe=fqun) for elem in chain[idx:])
+
+
+# TODO: Rename This FileValidationResult and create another class for the ProgramValidationResult.
 @dataclass
 class ValidationResult:
     """Validation output for one source file."""
@@ -90,10 +165,14 @@ class ValidationResult:
     file_path: pathlib.PurePosixPath  # Full path: root_prefix / relative file path.
     root_prefix: pathlib.PurePosixPath
     stats: stats.ValidationTimingStats
+    # TODO: There's soooo much stuff here from ProgramAstValidator, maybe
+    # we should put it into its own type.
     definitions: list[ast.QualityDefinition] = field(default_factory=list)
     reference_edges: list[ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
     deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
+    trigger_positions: list[TriggerPositionInfo] = field(default_factory=list)
+    action_body_effects: list[ActionBodyEffect] = field(default_factory=list)
 
     @cached_property
     def definitions_by_name(self) -> dict[str, ast.QualityDefinition]:

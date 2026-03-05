@@ -189,6 +189,8 @@ class FileValidator:
             reference_edges=fdv.reference_edges,
             discovered_files=fdv.discovered_files,
             deferred_chained_names=fdv.deferred_chained_names,
+            trigger_positions=fdv.trigger_positions,
+            action_body_effects=fdv.action_body_effects,
         )
 
     def _load_file(
@@ -228,6 +230,8 @@ class ProgramAstValidator:
     reference_edges: list[validation_result.ReferenceEdge]
     discovered_files: list[validation_result.DiscoveredFile]
     deferred_chained_names: list[validation_result.DeferredChainElements]
+    trigger_positions: list[validation_result.TriggerPositionInfo]
+    action_body_effects: list[validation_result.ActionBodyEffect]
     _seen_in_file: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
 
@@ -244,6 +248,8 @@ class ProgramAstValidator:
         self.reference_edges = []
         self.discovered_files = []
         self.deferred_chained_names = []
+        self.trigger_positions = []
+        self.action_body_effects = []
         self._seen_in_file = {}
         self._unknown_fquns = set()
 
@@ -358,6 +364,12 @@ class ProgramAstValidator:
         for condition in trigger_conditions.conditions:
             chain = condition.position_reference.chain
             self._validate_full_chained_name(chain, enclosing_definition, scope)
+            self.trigger_positions.append(
+                validation_result.TriggerPositionInfo(
+                    enclosing_typed_name=enclosing_definition.typed_name,
+                    checked_position=chain,
+                )
+            )
 
     def _validate_action_statements(
         self,
@@ -432,6 +444,13 @@ class ProgramAstValidator:
         ):
             qualities = scope.get_constraint_names(chain[0])
             tracker.create(stmt.position_reference, qualities)
+        if not tracker.has_unknown_state(stmt.position_reference):
+            self.action_body_effects.append(
+                validation_result.ActionBodyEffect(
+                    enclosing_typed_name=enclosing_definition.typed_name,
+                    statement=stmt,
+                )
+            )
 
     def _validate_move_dimension_point(
         self,
@@ -463,6 +482,13 @@ class ProgramAstValidator:
                 tracker.mark_unknown_state(stmt.from_position)
             if tracker.get_local_position_reference(stmt.to_position, scope):
                 tracker.mark_unknown_state(stmt.to_position)
+        if not tracker.has_unknown_state(stmt.to_position):
+            self.action_body_effects.append(
+                validation_result.ActionBodyEffect(
+                    enclosing_typed_name=enclosing_definition.typed_name,
+                    statement=stmt,
+                )
+            )
 
     def _check_constraints_for_move(
         self,
