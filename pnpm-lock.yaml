@@ -14,11 +14,21 @@ importers:
 
   tools:
     devDependencies:
+      '@a24z/mermaid-parser':
+        specifier: latest
+        version: 1.0.0
       prettier:
         specifier: latest
         version: 3.8.1
 
 packages:
+
+  '@a24z/mermaid-parser@1.0.0':
+    resolution: {integrity: sha512-f5HTsJPVkQKhri6NYB5lAruilNfbvSIu29/htma4AH0tRE4CqftT4Y6hZ7GYPLyrCXcCWVqs/xwNV7sGruTM+w==}
+    engines: {node: '>=18.0.0'}
+
+  argparse@2.0.1:
+    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
   basedpyright@1.38.2:
     resolution: {integrity: sha512-ZNSOWS6p0KVzN4crwIi9JkbVvj9ieQRyKKf9/mR8stI2d+8Q2HqUTrCXmhzp2/Solp/zB7QrA4/LhAlGDSWj9g==}
@@ -30,6 +40,10 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  js-yaml@4.1.1:
+    resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
+    hasBin: true
+
   prettier@3.8.1:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
@@ -37,11 +51,21 @@ packages:
 
 snapshots:
 
+  '@a24z/mermaid-parser@1.0.0':
+    dependencies:
+      js-yaml: 4.1.1
+
+  argparse@2.0.1: {}
+
   basedpyright@1.38.2:
     optionalDependencies:
       fsevents: 2.3.3
 
   fsevents@2.3.3:
     optional: true
+
+  js-yaml@4.1.1:
+    dependencies:
+      argparse: 2.0.1
 
   prettier@3.8.1: {}

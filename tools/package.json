@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
+    "@a24z/mermaid-parser": "latest",
     "prettier": "latest"
   }
 }

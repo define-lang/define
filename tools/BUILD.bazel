@@ -1,3 +1,4 @@
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_test")
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
@@ -52,6 +53,20 @@ py_binary(
     name = "update_toolchains",
     srcs = ["update_toolchains.py"],
     deps = ["@pypi//requests"],
+)
+
+js_binary(
+    name = "validate_mermaid",
+    data = [":node_modules/@a24z/mermaid-parser"],
+    entry_point = "validate_mermaid.mjs",
+    visibility = ["//:__subpackages__"],
+)
+
+js_test(
+    name = "validate_mermaid_test",
+    size = "small",
+    data = [":node_modules/@a24z/mermaid-parser"],
+    entry_point = "validate_mermaid_test.mjs",
 )
 
 native_test(
