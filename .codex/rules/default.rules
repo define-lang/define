@@ -81,6 +81,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["gh", "api", "repos/*/contents/"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["gh", "issue", "view"],
     decision = "allow",
 )

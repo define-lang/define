@@ -28,6 +28,7 @@
       "Shell(git status *)",
       "Shell(git log *)",
       "Shell(gh api repos/*/releases *)",
+      "Shell(gh api repos/*/contents/*)",
       "Shell(gh issue view *)",
       "Shell(gh pr diff *)",
       "Shell(gh pr list *)",
