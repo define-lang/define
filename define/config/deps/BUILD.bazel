@@ -26,6 +26,9 @@ py_proto_library(
 
 format_test(
     name = "format_test",
-    srcs = glob(["*.py"]),
+    srcs = glob(
+        ["*.py"],
+        exclude = ["*_pb2.py"],
+    ),
     python = "@multitool//tools/ruff",
 )

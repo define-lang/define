@@ -171,6 +171,11 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["uv", "run", "tools/setup_local_dev.py"],
+    decision = "allow",
+)
+
+prefix_rule(
     pattern = ["bazelisk"],
     decision = "allow",
 )

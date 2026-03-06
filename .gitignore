@@ -1,3 +1,9 @@
+# Generated files (local dev only, built by tools/setup_local_dev.py)
+*_pb2.py
+*_pb2.pyi
+**/lark/lark_standalone.py
+/buf/
+
 # Bazel
 bazel-*
 .bazelrc.user

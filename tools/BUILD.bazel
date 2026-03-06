@@ -45,6 +45,11 @@ prettier_bin.prettier_binary(
 )
 
 py_binary(
+    name = "setup_local_dev",
+    srcs = ["setup_local_dev.py"],
+)
+
+py_binary(
     name = "sync_agent_permissions",
     srcs = ["sync_agent_permissions.py"],
 )
@@ -166,6 +171,7 @@ pyright_test(
         ":generate_lark_standalone",
         ":generate_programming_languages",
         ":git_commit_via_api",
+        ":setup_local_dev",
         ":sync_agent_permissions",
         ":update_toolchains",
         ":validate_proposals",

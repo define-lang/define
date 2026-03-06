@@ -5,6 +5,14 @@ never existed before.
 
 See [define/spec/spec.md] for the language specification.
 
+## Local Development Setup
+
+- Before running Python locally (via `uv run`), generate the local dev
+  environment: `uv run tools/setup_local_dev.py`
+- This copies Bazel-generated files (lark standalone parsers and protobuf
+  modules) into the source tree so that Python imports resolve outside of Bazel.
+- Re-run this script after changing `.proto` files or `.lark` grammar files.
+
 ## Formatting
 
 - After making a change to any file, reformat by running
