@@ -216,11 +216,8 @@ class FileValidator:
         return source, None
 
 
-class ProgramAstValidator:
-    """Validates definitions within a single file.
-
-    Tracks within-file state: local duplicates, diagnostics, and discovered
-    references. Does NOT access any cross-file shared state.
+class DefinitionAstValidator:
+    """Validates one definition within a single file.
 
     Is mutable and not thread-safe.
     """
@@ -242,8 +239,9 @@ class ProgramAstValidator:
         self,
         context: FileValidationContext,
         expected_definition_path: pathlib.PurePosixPath | None,
+        seen_in_file: dict[str, ast.QualityDefinition],
     ):
-        """Initialize per-file validation state."""
+        """Initialize per-definition validation state from file-level state."""
         self._context = context
         self._expected_definition_path = expected_definition_path
         self.diagnostics = []
@@ -254,15 +252,11 @@ class ProgramAstValidator:
         self.trigger_positions = []
         self.action_body_effects = []
         self.deferred_move_constraint_checks = []
-        self._seen_in_file = {}
+        self._seen_in_file = seen_in_file
         self._unknown_fquns = set()
 
-    def validate_program(self, program: ast.Program):
-        """Validate all definitions in the program."""
-        for definition in program.definitions:
-            self._validate_definition(definition)
-
-    def _validate_definition(self, definition: ast.QualityDefinition):
+    def validate_definition(self, definition: ast.QualityDefinition):
+        """Validate one top-level definition and update aggregate file state."""
         self.diagnostics.extend(
             name_validators.validate_global_name(definition.typed_name.name_content)
         )
@@ -900,3 +894,63 @@ class ProgramAstValidator:
                 position=global_name.position,
             )
         )
+
+
+class ProgramAstValidator:
+    """Validates definitions within a single file.
+
+    Tracks within-file state: local duplicates, diagnostics, and discovered
+    references. Does NOT access any cross-file shared state.
+
+    Is mutable and not thread-safe.
+    """
+
+    _context: FileValidationContext
+    _expected_definition_path: pathlib.PurePosixPath | None
+    diagnostics: list[diagnostics.Diagnostic]
+    definitions: list[ast.QualityDefinition]
+    reference_edges: list[validation_result.ReferenceEdge]
+    discovered_files: list[validation_result.DiscoveredFile]
+    deferred_chained_names: list[validation_result.DeferredChainElements]
+    trigger_positions: list[validation_result.TriggerPositionInfo]
+    action_body_effects: list[validation_result.ActionBodyEffect]
+    deferred_move_constraint_checks: list[validation_result.DeferredMoveConstraintCheck]
+    _seen_in_file: dict[str, ast.QualityDefinition]
+
+    def __init__(
+        self,
+        context: FileValidationContext,
+        expected_definition_path: pathlib.PurePosixPath | None,
+    ):
+        """Initialize per-file validation state."""
+        self._context = context
+        self._expected_definition_path = expected_definition_path
+        self.diagnostics = []
+        self.definitions = []
+        self.reference_edges = []
+        self.discovered_files = []
+        self.deferred_chained_names = []
+        self.trigger_positions = []
+        self.action_body_effects = []
+        self.deferred_move_constraint_checks = []
+        self._seen_in_file = {}
+
+    def validate_program(self, program: ast.Program):
+        """Validate all definitions in the program."""
+        for definition in program.definitions:
+            validator = DefinitionAstValidator(
+                context=self._context,
+                expected_definition_path=self._expected_definition_path,
+                seen_in_file=self._seen_in_file,
+            )
+            validator.validate_definition(definition)
+            self.diagnostics.extend(validator.diagnostics)
+            self.definitions.extend(validator.definitions)
+            self.reference_edges.extend(validator.reference_edges)
+            self.discovered_files.extend(validator.discovered_files)
+            self.deferred_chained_names.extend(validator.deferred_chained_names)
+            self.trigger_positions.extend(validator.trigger_positions)
+            self.action_body_effects.extend(validator.action_body_effects)
+            self.deferred_move_constraint_checks.extend(
+                validator.deferred_move_constraint_checks
+            )
