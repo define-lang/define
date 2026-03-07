@@ -71,6 +71,20 @@ class EmptyFileValidationContext(FileValidationContext):
     sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
 
 
+@dataclass(frozen=True)
+class _ProgramValidationResult:
+    """Aggregated validation output for all definitions in a file."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+    definitions: list[ast.QualityDefinition]
+    reference_edges: list[validation_result.ReferenceEdge]
+    discovered_files: list[validation_result.DiscoveredFile]
+    deferred_chained_names: list[validation_result.DeferredChainElements]
+    trigger_positions: list[validation_result.TriggerPositionInfo]
+    action_body_effects: list[validation_result.ActionBodyEffect]
+    deferred_move_constraint_checks: list[validation_result.DeferredMoveConstraintCheck]
+
+
 class FileValidator:
     """Stateless per-file validator.
 
@@ -172,13 +186,13 @@ class FileValidator:
 
         fdv = ProgramAstValidator(context, expected_definition_path)
         fdv.validate_program(program)
+        program_result = fdv.build_result()
         tracker.mark_file_validation_finished()
 
-        all_diagnostics = fdv.diagnostics
+        all_diagnostics = program_result.diagnostics
         if expected_definition_path is not None:
             all_diagnostics = parse_result.diagnostics + all_diagnostics
 
-        # TODO: It seems like we should actually be returning results per definition processed.
         return validation_result.ValidationResult(
             diagnostics=all_diagnostics,
             exception=None,
@@ -186,13 +200,13 @@ class FileValidator:
             file_path=context.full_path,
             root_prefix=context.root_prefix,
             stats=tracker.build(),
-            definitions=fdv.definitions,
-            reference_edges=fdv.reference_edges,
-            discovered_files=fdv.discovered_files,
-            deferred_chained_names=fdv.deferred_chained_names,
-            trigger_positions=fdv.trigger_positions,
-            action_body_effects=fdv.action_body_effects,
-            deferred_move_constraint_checks=fdv.deferred_move_constraint_checks,
+            definitions=program_result.definitions,
+            reference_edges=program_result.reference_edges,
+            discovered_files=program_result.discovered_files,
+            deferred_chained_names=program_result.deferred_chained_names,
+            trigger_positions=program_result.trigger_positions,
+            action_body_effects=program_result.action_body_effects,
+            deferred_move_constraint_checks=program_result.deferred_move_constraint_checks,
         )
 
     def _load_file(
@@ -224,127 +238,132 @@ class DefinitionAstValidator:
 
     _context: FileValidationContext
     _expected_definition_path: pathlib.PurePosixPath | None
-    diagnostics: list[diagnostics.Diagnostic]
-    definitions: list[ast.QualityDefinition]
-    reference_edges: list[validation_result.ReferenceEdge]
-    discovered_files: list[validation_result.DiscoveredFile]
-    deferred_chained_names: list[validation_result.DeferredChainElements]
-    trigger_positions: list[validation_result.TriggerPositionInfo]
-    action_body_effects: list[validation_result.ActionBodyEffect]
-    deferred_move_constraint_checks: list[validation_result.DeferredMoveConstraintCheck]
+    _diagnostics: list[diagnostics.Diagnostic]
+    _definition: ast.QualityDefinition
+    _reference_edges: list[validation_result.ReferenceEdge]
+    _discovered_files: list[validation_result.DiscoveredFile]
+    _deferred_chained_names: list[validation_result.DeferredChainElements]
+    _trigger_positions: list[validation_result.TriggerPositionInfo]
+    _action_body_effects: list[validation_result.ActionBodyEffect]
+    _deferred_move_constraint_checks: list[
+        validation_result.DeferredMoveConstraintCheck
+    ]
     _seen_in_file: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
 
     def __init__(
         self,
+        definition: ast.QualityDefinition,
         context: FileValidationContext,
         expected_definition_path: pathlib.PurePosixPath | None,
         seen_in_file: dict[str, ast.QualityDefinition],
     ):
         """Initialize per-definition validation state from file-level state."""
+        self._definition = definition
         self._context = context
         self._expected_definition_path = expected_definition_path
-        self.diagnostics = []
-        self.definitions = []
-        self.reference_edges = []
-        self.discovered_files = []
-        self.deferred_chained_names = []
-        self.trigger_positions = []
-        self.action_body_effects = []
-        self.deferred_move_constraint_checks = []
+        self._diagnostics = []
+        self._reference_edges = []
+        self._discovered_files = []
+        self._deferred_chained_names = []
+        self._trigger_positions = []
+        self._action_body_effects = []
+        self._deferred_move_constraint_checks = []
         self._seen_in_file = seen_in_file
         self._unknown_fquns = set()
 
-    def validate_definition(self, definition: ast.QualityDefinition):
-        """Validate one top-level definition and update aggregate file state."""
-        self.diagnostics.extend(
-            name_validators.validate_global_name(definition.typed_name.name_content)
+    def validate_definition(self) -> validation_result.DefinitionValidationResult:
+        """Validate one top-level definition and return its validation result."""
+        self._diagnostics.extend(
+            name_validators.validate_global_name(
+                self._definition.typed_name.name_content
+            )
         )
-        self._validate_path_matches_file(definition)
-        self._validate_fqun_matches_expected(definition)
-        is_duplicate = self._validate_not_duplicate_in_file(definition)
-        if not is_duplicate:
-            self.definitions.append(definition)
+        self._validate_path_matches_file()
+        self._validate_fqun_matches_expected()
+        _ = self._validate_not_duplicate_in_file()
 
         if (
-            isinstance(definition, ast.ActionDefinition)
-            and definition.definition_block is not None
+            isinstance(self._definition, ast.ActionDefinition)
+            and self._definition.definition_block is not None
         ):
-            self._validate_action_definition_block(
-                definition.definition_block,
-                definition,
-            )
-        if isinstance(definition, ast.PositionDefinition) and definition.constraints:
-            self._validate_position_constraints(
-                definition.constraints,
-                definition,
-            )
+            self._validate_action_definition_block(self._definition.definition_block)
+        if (
+            isinstance(self._definition, ast.PositionDefinition)
+            and self._definition.constraints
+        ):
+            self._validate_position_constraints(self._definition.constraints)
+        return self.build_result()
 
-    def _validate_path_matches_file(self, definition: ast.QualityDefinition):
+    def build_result(self) -> validation_result.DefinitionValidationResult:
+        """Build a result object from the validator's private state."""
+        return validation_result.DefinitionValidationResult(
+            definition=self._definition,
+            diagnostics=list(self._diagnostics),
+            reference_edges=list(self._reference_edges),
+            discovered_files=list(self._discovered_files),
+            deferred_chained_names=list(self._deferred_chained_names),
+            trigger_positions=list(self._trigger_positions),
+            action_body_effects=list(self._action_body_effects),
+            deferred_move_constraint_checks=list(self._deferred_move_constraint_checks),
+        )
+
+    def _validate_path_matches_file(self):
         if self._expected_definition_path is None:
             return
-        definition_path = definition.typed_name.name_content.path.name
+        definition_path = self._definition.typed_name.name_content.path.name
         expected_path = "/" + self._expected_definition_path.as_posix()
         if definition_path != expected_path:
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
-                    position=definition.typed_name.name_content.path.position,
+                    position=self._definition.typed_name.name_content.path.position,
                     expected_path=expected_path,
                     actual_path=definition_path,
                 )
             )
 
-    def _validate_fqun_matches_expected(self, definition: ast.QualityDefinition):
+    def _validate_fqun_matches_expected(self):
         expected_fqun = self._context.expected_fqun
         if not expected_fqun:
             return
-        actual = definition.typed_name.name_content.fqun.canonical
+        actual = self._definition.typed_name.name_content.fqun.canonical
         if actual != expected_fqun:
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.FqunMismatchDiagnostic(
-                    position=definition.typed_name.name_content.fqun.position,
+                    position=self._definition.typed_name.name_content.fqun.position,
                     expected=expected_fqun,
                     actual=actual,
                 )
             )
 
-    def _validate_not_duplicate_in_file(
-        self, definition: ast.QualityDefinition
-    ) -> bool:
+    def _validate_not_duplicate_in_file(self) -> bool:
         """Check for within-file duplicates. Returns True if duplicate."""
-        key = definition.typed_name.full_typed_name()
+        key = self._definition.typed_name.full_typed_name()
         if key in self._seen_in_file:
             first_def = self._seen_in_file[key]
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
-                    position=definition.position,
-                    definition_type=definition.typed_name.name_type.value,
-                    path=definition.typed_name.name_content.path.name,
+                    position=self._definition.position,
+                    definition_type=self._definition.typed_name.name_type.value,
+                    path=self._definition.typed_name.name_content.path.name,
                     first_definition_line=first_def.position.line,
                 )
             )
             return True
-        self._seen_in_file[key] = definition
+        self._seen_in_file[key] = self._definition
         return False
 
     def _validate_action_definition_block(
         self,
         definition_block: ast.ActionDefinitionBlock,
-        enclosing_definition: ast.QualityDefinition,
     ):
         scope = scope_tracker.ScopeTracker(
-            enclosing_definition.typed_name.name_content.fqun
+            self._definition.typed_name.name_content.fqun
         )
         for local_def in definition_block.local_definitions:
-            self._validate_local_position_definition(
-                local_def, enclosing_definition, scope
-            )
-        self._validate_trigger_conditions(
-            definition_block.trigger_conditions, enclosing_definition, scope
-        )
-        tracker = dimension_point_tracker.LocalDimensionPointTracker(
-            enclosing_definition
-        )
+            self._validate_local_position_definition(local_def, scope)
+        self._validate_trigger_conditions(definition_block.trigger_conditions, scope)
+        tracker = dimension_point_tracker.LocalDimensionPointTracker(self._definition)
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
         for condition in definition_block.trigger_conditions.conditions:
@@ -356,7 +375,6 @@ class DefinitionAstValidator:
         scope.enter_child_scope()
         self._validate_action_statements(
             definition_block.action_statements,
-            enclosing_definition,
             scope,
             tracker,
         )
@@ -364,16 +382,15 @@ class DefinitionAstValidator:
     def _validate_trigger_conditions(
         self,
         trigger_conditions: ast.TriggerConditionsBlock,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
         for condition in trigger_conditions.conditions:
             chain = condition.position_reference.chain
-            if not self._validate_full_chained_name(chain, enclosing_definition, scope):
+            if not self._validate_full_chained_name(chain, scope):
                 continue
-            self.trigger_positions.append(
+            self._trigger_positions.append(
                 validation_result.TriggerPositionInfo(
-                    enclosing_typed_name=enclosing_definition.typed_name,
+                    enclosing_typed_name=self._definition.typed_name,
                     checked_position=chain,
                 )
             )
@@ -381,44 +398,33 @@ class DefinitionAstValidator:
     def _validate_action_statements(
         self,
         action_statements: ast.ActionStatementsBlock,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
         for stmt in action_statements.statements:
             match stmt:
                 case ast.LocalPositionDefinition():
-                    self._validate_local_position_definition(
-                        stmt, enclosing_definition, scope
-                    )
+                    self._validate_local_position_definition(stmt, scope)
                 case ast.CreateDimensionPointStatement():
-                    self._validate_create_dimension_point(
-                        stmt, enclosing_definition, scope, tracker
-                    )
+                    self._validate_create_dimension_point(stmt, scope, tracker)
                 case ast.MoveDimensionPointStatement():
-                    self._validate_move_dimension_point(
-                        stmt, enclosing_definition, scope, tracker
-                    )
+                    self._validate_move_dimension_point(stmt, scope, tracker)
 
     def _validate_local_position_definition(
         self,
         local_def: ast.LocalPositionDefinition,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
         self._validate_local_name_format_and_conflicts(local_def, scope)
         if local_def.constraints is not None:
-            self._validate_position_constraints(
-                local_def.constraints,
-                enclosing_definition,
-            )
+            self._validate_position_constraints(local_def.constraints)
 
     def _validate_local_name_format_and_conflicts(
         self,
         local_def: ast.LocalPositionDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
-        self.diagnostics.extend(
+        self._diagnostics.extend(
             name_validators.validate_local_name_format(
                 local_def.typed_name.name_content
             )
@@ -426,7 +432,7 @@ class DefinitionAstValidator:
         name = local_def.typed_name.name_content.name
         first_def = scope.get_definition(local_def.typed_name)
         if first_def is not None:
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
                     position=local_def.typed_name.name_content.position,
                     local_name=name,
@@ -439,14 +445,11 @@ class DefinitionAstValidator:
     def _validate_create_dimension_point(
         self,
         stmt: ast.CreateDimensionPointStatement,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
         position = stmt.position_reference
-        if not self._validate_full_chained_name(
-            position.chain, enclosing_definition, scope
-        ):
+        if not self._validate_full_chained_name(position.chain, scope):
             return
 
         if tracker.has_unknown_state(position):
@@ -456,7 +459,7 @@ class DefinitionAstValidator:
         if local_ref is not None:
             if tracker.is_occupied(position):
                 existing = tracker.get_occupant(position)
-                self.diagnostics.append(
+                self._diagnostics.append(
                     diagnostics.LocalDuplicateDimensionPointDiagnostic(
                         position=position.position,
                         position_name=_chain_name(position.chain),
@@ -467,9 +470,9 @@ class DefinitionAstValidator:
             qualities = scope.get_constraint_names(position.chain[0])
             tracker.create(position, qualities)
 
-        self.action_body_effects.append(
+        self._action_body_effects.append(
             validation_result.ActionBodyEffect(
-                enclosing_typed_name=enclosing_definition.typed_name,
+                enclosing_typed_name=self._definition.typed_name,
                 statement=stmt,
             )
         )
@@ -477,28 +480,22 @@ class DefinitionAstValidator:
     def _validate_move_dimension_point(
         self,
         stmt: ast.MoveDimensionPointStatement,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        from_ok = self._validate_full_chained_name(
-            stmt.from_position.chain, enclosing_definition, scope
-        )
-        to_ok = self._validate_full_chained_name(
-            stmt.to_position.chain, enclosing_definition, scope
-        )
-        fqun = enclosing_definition.typed_name.name_content.fqun
+        from_ok = self._validate_full_chained_name(stmt.from_position.chain, scope)
+        to_ok = self._validate_full_chained_name(stmt.to_position.chain, scope)
+        fqun = self._definition.typed_name.name_content.fqun
         if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
             return
         if not (from_ok and to_ok):
             return
 
-        self._execute_move(stmt, enclosing_definition, scope, tracker)
+        self._execute_move(stmt, scope, tracker)
 
     def _execute_move(
         self,
         stmt: ast.MoveDimensionPointStatement,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
@@ -527,7 +524,7 @@ class DefinitionAstValidator:
             to_empty = (not to_local) or to_empty
 
         if not from_occupied:
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.MoveFromEmptyPositionDiagnostic(
                     position=stmt.from_position.position,
                     position_name=_chain_name(stmt.from_position.chain),
@@ -538,7 +535,7 @@ class DefinitionAstValidator:
             occupied_at_line = (
                 occupant.creation_position.position.line if occupant else None
             )
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
                     position=stmt.to_position.position,
                     position_name=_chain_name(stmt.to_position.chain),
@@ -566,9 +563,9 @@ class DefinitionAstValidator:
                 # Chained→local: we know the to qualities locally.
                 to_qualities = scope.get_constraint_names(stmt.to_position.chain[0])
                 tracker.create(stmt.to_position, to_qualities)
-            self.deferred_move_constraint_checks.append(
+            self._deferred_move_constraint_checks.append(
                 validation_result.DeferredMoveConstraintCheck(
-                    enclosing_definition=enclosing_definition,
+                    enclosing_definition=self._definition,
                     statement=stmt,
                     from_qualities=from_qualities,
                     to_qualities=to_qualities,
@@ -576,9 +573,9 @@ class DefinitionAstValidator:
             )
 
         if not tracker.has_unknown_state(stmt.to_position):
-            self.action_body_effects.append(
+            self._action_body_effects.append(
                 validation_result.ActionBodyEffect(
-                    enclosing_typed_name=enclosing_definition.typed_name,
+                    enclosing_typed_name=self._definition.typed_name,
                     statement=stmt,
                 )
             )
@@ -597,7 +594,7 @@ class DefinitionAstValidator:
         if not missing_qualities:
             return True
 
-        self.diagnostics.append(
+        self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
                 position=stmt.to_position.chain[0].position,
                 from_position=_chain_name(stmt.from_position.chain),
@@ -631,7 +628,7 @@ class DefinitionAstValidator:
                 return False
 
         if len(from_chain) == len(to_chain):
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.MoveToSamePositionDiagnostic(
                     position=to_chain[-1].position,
                     position_name=_chain_name(to_chain),
@@ -639,7 +636,7 @@ class DefinitionAstValidator:
             )
         else:
             divergence = to_chain[len(from_chain)]
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
                     position=divergence.position,
                     from_position=_chain_name(from_chain),
@@ -657,7 +654,6 @@ class DefinitionAstValidator:
     def _validate_full_chained_name(
         self,
         chain: list[ast.TypedName],
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ) -> bool:
         """Validate a full chained name reference.
@@ -665,19 +661,19 @@ class DefinitionAstValidator:
         Returns whether the caller may continue processing this reference.
         """
         first = chain[0]
-        fqun = enclosing_definition.typed_name.name_content.fqun
+        fqun = self._definition.typed_name.name_content.fqun
         may_continue = True
 
         if (
             len(chain) > 1
             and isinstance(first, ast.GlobalTypedNameReference)
             and first.full_typed_name(in_universe=fqun)
-            == enclosing_definition.typed_name.full_typed_name()
+            == self._definition.typed_name.full_typed_name()
         ):
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.UnnecessarySelfReferenceDiagnostic(
                     position=first.position,
-                    definition_name=enclosing_definition.typed_name.full_typed_name(),
+                    definition_name=self._definition.typed_name.full_typed_name(),
                 )
             )
             # NOTE: Mutates the AST so downstream validation sees the corrected chain.
@@ -689,7 +685,7 @@ class DefinitionAstValidator:
         if not scope.is_defined(first):
             first_is_defined = False
             if isinstance(first, ast.LocalTypedNameReference):
-                self.diagnostics.append(
+                self._diagnostics.append(
                     diagnostics.UndefinedLocalNameDiagnostic(
                         position=first.name_content.position,
                         local_name=first.full_typed_name(in_universe=fqun),
@@ -700,7 +696,7 @@ class DefinitionAstValidator:
 
         previous_element = None
         for typed_name in chain:
-            self._validate_chained_name_element(typed_name, enclosing_definition)
+            self._validate_chained_name_element(typed_name)
             # Local names in chains may only come right after global action names.
             if (
                 previous_element
@@ -710,7 +706,7 @@ class DefinitionAstValidator:
                     and previous_element.name_type == ast.NameType.ACTION
                 )
             ):
-                self.diagnostics.append(
+                self._diagnostics.append(
                     diagnostics.ChainedLocalNameRequiresActionDiagnostic(
                         position=typed_name.position,
                         local_name=typed_name.full_typed_name(in_universe=fqun),
@@ -730,16 +726,14 @@ class DefinitionAstValidator:
             # position won't be passed out of the function if it's in an Action
             # Statements Block. (If it's in an Action Definition Block, we still
             # _can_ do it now, so we simply should.)
-            self._validate_chain_element_against_constraints(
-                chain[1], chain[0], enclosing_definition, scope
-            )
+            self._validate_chain_element_against_constraints(chain[1], chain[0], scope)
 
         # TODO: In the future when the _first_ element can be a global name, this will
         # be more complex.
         if len(chain) > 2 and isinstance(chain[1], ast.GlobalTypedNameReference):
-            self.deferred_chained_names.append(
+            self._deferred_chained_names.append(
                 validation_result.DeferredChainElements(
-                    enclosing_definition=enclosing_definition,
+                    enclosing_definition=self._definition,
                     parent_element=chain[1],
                     chain_element=chain[2],
                     remaining_chain=chain[3:],
@@ -747,7 +741,7 @@ class DefinitionAstValidator:
             )
 
         if chain[-1].name_type != ast.NameType.POSITION:
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.PositionReferenceChainEndDiagnostic(
                     position=chain[-1].position,
                 )
@@ -758,26 +752,25 @@ class DefinitionAstValidator:
     def _validate_chained_name_element(
         self,
         chain_element: ast.TypedName,
-        enclosing_definition: ast.QualityDefinition,
     ):
         """Validate a single chain element.
 
         Returns whether or not the name was valid.
         """
         name_diagnostics = name_validators.validate_typed_name(
-            chain_element, enclosing_definition
+            chain_element, self._definition
         )
-        self.diagnostics.extend(name_diagnostics)
+        self._diagnostics.extend(name_diagnostics)
         if name_diagnostics:
             return
 
         if isinstance(chain_element, ast.GlobalTypedNameReference):
-            self._process_reference(chain_element, enclosing_definition)
+            self._process_reference(chain_element)
         elif (
             isinstance(chain_element, ast.LocalTypedNameReference)
             and chain_element.name_type == ast.NameType.ACTION
         ):
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
                     position=chain_element.name_content.position,
                     local_name=chain_element.name_content.name,
@@ -788,13 +781,12 @@ class DefinitionAstValidator:
         self,
         chain_element: ast.TypedName,
         parent: ast.TypedName,
-        enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
     ):
         """Check chain_element against parent's constraints. Returns True if valid."""
         if not scope.definition_has_quality(parent, chain_element):
-            fqun = enclosing_definition.typed_name.name_content.fqun
-            self.diagnostics.append(
+            fqun = self._definition.typed_name.name_content.fqun
+            self._diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     position=chain_element.position,
                     element_name=chain_element.full_typed_name(in_universe=fqun),
@@ -805,34 +797,29 @@ class DefinitionAstValidator:
     def _validate_position_constraints(
         self,
         constraints: ast.PositionConstraintBlock,
-        enclosing_definition: ast.QualityDefinition,
     ):
         for requirement in constraints.requirements:
             reference_diagnostics = name_validators.validate_typed_name(
-                requirement.typed_global_name, enclosing_definition
+                requirement.typed_global_name, self._definition
             )
-            self.diagnostics.extend(reference_diagnostics)
+            self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
-            self._process_reference(
-                requirement.typed_global_name,
-                enclosing_definition,
-            )
+            self._process_reference(requirement.typed_global_name)
 
     def _process_reference(
         self,
         typed_global_name: ast.GlobalTypedNameReference,
-        enclosing_definition: ast.QualityDefinition,
     ):
         """Record a reference edge and determine the target file to discover."""
         global_name = typed_global_name.name_content
         edge = validation_result.ReferenceEdge(
-            enclosing_definition=enclosing_definition,
+            enclosing_definition=self._definition,
             global_name_reference=typed_global_name,
         )
         # Process a reference that's inside of this same file.
         if edge.full_typed_name in self._seen_in_file:
-            self.reference_edges.append(edge)
+            self._reference_edges.append(edge)
             return
 
         if global_name.fqun is None:
@@ -841,7 +828,7 @@ class DefinitionAstValidator:
                 edge=edge,
                 global_name=global_name,
                 root_prefix=self._context.root_prefix,
-                expected_fqun=enclosing_definition.typed_name.name_content.fqun,
+                expected_fqun=self._definition.typed_name.name_content.fqun,
             )
             return
 
@@ -862,7 +849,7 @@ class DefinitionAstValidator:
             return
         if fqun_string not in sub_root_mappings:
             self._unknown_fquns.add(fqun_string)
-            self.diagnostics.append(
+            self._diagnostics.append(
                 diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                     position=global_name.fqun.position,
                     universe=fqun_string,
@@ -885,8 +872,8 @@ class DefinitionAstValidator:
         root_prefix: pathlib.PurePosixPath,
         expected_fqun: ast.Fqun,
     ):
-        self.reference_edges.append(edge)
-        self.discovered_files.append(
+        self._reference_edges.append(edge)
+        self._discovered_files.append(
             validation_result.DiscoveredFile(
                 path=global_name.path.file_path(),
                 root_prefix=root_prefix,
@@ -907,14 +894,16 @@ class ProgramAstValidator:
 
     _context: FileValidationContext
     _expected_definition_path: pathlib.PurePosixPath | None
-    diagnostics: list[diagnostics.Diagnostic]
-    definitions: list[ast.QualityDefinition]
-    reference_edges: list[validation_result.ReferenceEdge]
-    discovered_files: list[validation_result.DiscoveredFile]
-    deferred_chained_names: list[validation_result.DeferredChainElements]
-    trigger_positions: list[validation_result.TriggerPositionInfo]
-    action_body_effects: list[validation_result.ActionBodyEffect]
-    deferred_move_constraint_checks: list[validation_result.DeferredMoveConstraintCheck]
+    _diagnostics: list[diagnostics.Diagnostic]
+    _definitions: list[ast.QualityDefinition]
+    _reference_edges: list[validation_result.ReferenceEdge]
+    _discovered_files: list[validation_result.DiscoveredFile]
+    _deferred_chained_names: list[validation_result.DeferredChainElements]
+    _trigger_positions: list[validation_result.TriggerPositionInfo]
+    _action_body_effects: list[validation_result.ActionBodyEffect]
+    _deferred_move_constraint_checks: list[
+        validation_result.DeferredMoveConstraintCheck
+    ]
     _seen_in_file: dict[str, ast.QualityDefinition]
 
     def __init__(
@@ -925,32 +914,49 @@ class ProgramAstValidator:
         """Initialize per-file validation state."""
         self._context = context
         self._expected_definition_path = expected_definition_path
-        self.diagnostics = []
-        self.definitions = []
-        self.reference_edges = []
-        self.discovered_files = []
-        self.deferred_chained_names = []
-        self.trigger_positions = []
-        self.action_body_effects = []
-        self.deferred_move_constraint_checks = []
+        self._diagnostics = []
+        self._definitions = []
+        self._reference_edges = []
+        self._discovered_files = []
+        self._deferred_chained_names = []
+        self._trigger_positions = []
+        self._action_body_effects = []
+        self._deferred_move_constraint_checks = []
         self._seen_in_file = {}
 
     def validate_program(self, program: ast.Program):
         """Validate all definitions in the program."""
         for definition in program.definitions:
+            definition_key = definition.typed_name.full_typed_name()
+            was_seen = definition_key in self._seen_in_file
             validator = DefinitionAstValidator(
+                definition=definition,
                 context=self._context,
                 expected_definition_path=self._expected_definition_path,
                 seen_in_file=self._seen_in_file,
             )
-            validator.validate_definition(definition)
-            self.diagnostics.extend(validator.diagnostics)
-            self.definitions.extend(validator.definitions)
-            self.reference_edges.extend(validator.reference_edges)
-            self.discovered_files.extend(validator.discovered_files)
-            self.deferred_chained_names.extend(validator.deferred_chained_names)
-            self.trigger_positions.extend(validator.trigger_positions)
-            self.action_body_effects.extend(validator.action_body_effects)
-            self.deferred_move_constraint_checks.extend(
-                validator.deferred_move_constraint_checks
+            result = validator.validate_definition()
+            self._diagnostics.extend(result.diagnostics)
+            if not was_seen:
+                self._definitions.append(result.definition)
+            self._reference_edges.extend(result.reference_edges)
+            self._discovered_files.extend(result.discovered_files)
+            self._deferred_chained_names.extend(result.deferred_chained_names)
+            self._trigger_positions.extend(result.trigger_positions)
+            self._action_body_effects.extend(result.action_body_effects)
+            self._deferred_move_constraint_checks.extend(
+                result.deferred_move_constraint_checks
             )
+
+    def build_result(self) -> _ProgramValidationResult:
+        """Build the aggregated result for the full program."""
+        return _ProgramValidationResult(
+            diagnostics=list(self._diagnostics),
+            definitions=list(self._definitions),
+            reference_edges=list(self._reference_edges),
+            discovered_files=list(self._discovered_files),
+            deferred_chained_names=list(self._deferred_chained_names),
+            trigger_positions=list(self._trigger_positions),
+            action_body_effects=list(self._action_body_effects),
+            deferred_move_constraint_checks=list(self._deferred_move_constraint_checks),
+        )

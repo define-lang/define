@@ -170,6 +170,22 @@ class DeferredMoveConstraintCheck:
     to_qualities: Set[str] | None
 
 
+@dataclass
+class DefinitionValidationResult:
+    """Validation output for one definition within a file."""
+
+    definition: ast.QualityDefinition
+    diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+    reference_edges: list[ReferenceEdge] = field(default_factory=list)
+    discovered_files: list[DiscoveredFile] = field(default_factory=list)
+    deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
+    trigger_positions: list[TriggerPositionInfo] = field(default_factory=list)
+    action_body_effects: list[ActionBodyEffect] = field(default_factory=list)
+    deferred_move_constraint_checks: list[DeferredMoveConstraintCheck] = field(
+        default_factory=list
+    )
+
+
 # TODO: Rename This FileValidationResult and create another class for the ProgramValidationResult.
 @dataclass
 class ValidationResult:

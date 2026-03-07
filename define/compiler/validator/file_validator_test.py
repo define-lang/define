@@ -8,8 +8,8 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import diagnostics, exceptions, parser
-from define.compiler.validator import file_validator
+from define.compiler import ast, diagnostics, exceptions, parser, transformer
+from define.compiler.validator import file_validator, validation_result
 
 
 @pytest.fixture
@@ -29,6 +29,13 @@ def _make_context(
         expected_fqun=fqun,
         sub_root_mappings=types.MappingProxyType(sub_root_mappings or {}),
     )
+
+
+def _parse_program(source: str, lark_parser: parser.Parser) -> ast.Program:
+    parse_result = lark_parser.parse(source, file_path=PurePosixPath("/test.def"))
+    assert parse_result.exception is None
+    assert parse_result.tree is not None
+    return transformer.DefineTransformer().transform(parse_result.tree)
 
 
 class TestFileValidatorSuccess:
@@ -115,6 +122,56 @@ class TestFileValidatorDiagnostics:
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
+            diagnostics.DuplicateDefinitionDiagnostic,
+        ]
+
+
+class TestDefinitionAstValidator:
+    def test_validate_definition_returns_result_object(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+        program = _parse_program(source, lark_parser)
+        validator = file_validator.DefinitionAstValidator(
+            definition=program.definitions[0],
+            context=_make_context(tmp_path),
+            expected_definition_path=PurePosixPath("test"),
+            seen_in_file={},
+        )
+
+        result = validator.validate_definition()
+
+        assert isinstance(result, validation_result.DefinitionValidationResult)
+        assert result.definition == program.definitions[0]
+        assert result.diagnostics == []
+
+    def test_duplicate_definition_result_still_carries_definition(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+        )
+        program = _parse_program(source, lark_parser)
+        seen_in_file: dict[str, ast.QualityDefinition] = {}
+
+        first_result = file_validator.DefinitionAstValidator(
+            definition=program.definitions[0],
+            context=_make_context(tmp_path),
+            expected_definition_path=PurePosixPath("test"),
+            seen_in_file=seen_in_file,
+        ).validate_definition()
+        second_result = file_validator.DefinitionAstValidator(
+            definition=program.definitions[1],
+            context=_make_context(tmp_path),
+            expected_definition_path=PurePosixPath("test"),
+            seen_in_file=seen_in_file,
+        ).validate_definition()
+
+        assert first_result.definition == program.definitions[0]
+        assert first_result.diagnostics == []
+        assert second_result.definition == program.definitions[1]
+        assert [type(d) for d in second_result.diagnostics] == [
             diagnostics.DuplicateDefinitionDiagnostic,
         ]
 

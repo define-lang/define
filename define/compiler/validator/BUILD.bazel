@@ -54,9 +54,12 @@ py_test(
     pytest_main = True,
     deps = [
         ":file_validator",
+        ":validation_result",
+        "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler:parser",
+        "//define/compiler:transformer",
         "@pypi//pytest",
     ],
 )
