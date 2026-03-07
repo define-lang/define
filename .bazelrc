@@ -3,6 +3,7 @@ build --verbose_failures
 
 # Only show output from failing tests
 test --test_output=errors
+test --test_summary=terse
 
 # Opt into future Bazel defaults (green-field project)
 common --incompatible_check_testonly_for_output_files
