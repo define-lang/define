@@ -1,8 +1,5 @@
-# pyright: reportUnusedCallResult=false
-from pathlib import PurePosixPath
-
 from define.compiler import action_call_graph, ast
-from define.compiler.validator import stats, validation_result
+from define.compiler.validator import validation_result
 
 
 def _pos() -> ast.SourcePosition:
@@ -84,28 +81,18 @@ def _make_move_stmt(
 def _make_result(
     trigger_positions: list[validation_result.TriggerPositionInfo] | None = None,
     action_body_effects: list[validation_result.ActionBodyEffect] | None = None,
-) -> validation_result.ValidationResult:
-    return validation_result.ValidationResult(
-        exception=None,
-        source="",
-        file_path=PurePosixPath("test.def"),
-        root_prefix=PurePosixPath("."),
-        stats=stats.ValidationTimingStats(),
-        file_diagnostics=[],
-        definition_results=[
-            validation_result.DefinitionValidationResult(
-                definition=ast.PositionDefinition(
-                    name=ast.DefinitionGlobalNameContent(
-                        position=_pos(),
-                        fqun=_fqun(),
-                        path=ast.GlobalPathName(position=_pos(), name="/placeholder"),
-                    ),
-                    position=_pos(),
-                ),
-                trigger_positions=trigger_positions or [],
-                action_body_effects=action_body_effects or [],
-            )
-        ],
+) -> validation_result.DefinitionValidationResult:
+    return validation_result.DefinitionValidationResult(
+        definition=ast.PositionDefinition(
+            name=ast.DefinitionGlobalNameContent(
+                position=_pos(),
+                fqun=_fqun(),
+                path=ast.GlobalPathName(position=_pos(), name="/placeholder"),
+            ),
+            position=_pos(),
+        ),
+        trigger_positions=trigger_positions or [],
+        action_body_effects=action_body_effects or [],
     )
 
 
@@ -136,8 +123,8 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result_a)
-        graph.process_result(result_b)
+        graph.process_definition_result(result_a)
+        graph.process_definition_result(result_b)
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -166,7 +153,7 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result)
+        graph.process_definition_result(result)
         edges = graph.all_edges()
         assert len(edges) == 1
         assert edges[0].source_action == "action<d:u:/act_a>"
@@ -195,10 +182,10 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result_b)
+        graph.process_definition_result(result_b)
         assert graph.all_edges() == []
 
-        graph.process_result(result_a)
+        graph.process_definition_result(result_a)
         edges = graph.all_edges()
         assert len(edges) == 1
         assert edges[0].source_action == "action<d:u:/act_b>"
@@ -224,7 +211,7 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result)
+        graph.process_definition_result(result)
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -257,8 +244,8 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result_triggers)
-        graph.process_result(result_effect)
+        graph.process_definition_result(result_triggers)
+        graph.process_definition_result(result_effect)
 
         edges = graph.all_edges()
         assert len(edges) == 2
@@ -294,8 +281,8 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result_a)
-        graph.process_result(result_effects)
+        graph.process_definition_result(result_a)
+        graph.process_definition_result(result_effects)
 
         all_edges = graph.all_edges()
         assert len(all_edges) == 2
@@ -346,8 +333,8 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result_a)
-        graph.process_result(result_b)
+        graph.process_definition_result(result_a)
+        graph.process_definition_result(result_b)
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -374,5 +361,5 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_result(result)
+        graph.process_definition_result(result)
         assert graph.all_edges() == []

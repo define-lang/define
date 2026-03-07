@@ -31,6 +31,50 @@ def test_valid_local_positions():
     assert results[0].diagnostics == []
 
 
+def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
+    validate_project: ValidateProject,
+):
+    results = validate_project(
+        {
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<from_pos>.\n"
+                "    it happens when {\n"
+                "        the position<from_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<from_pos> to position</dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "dest.def": (
+                "define the potential position<my.domain.com:my_lib:/dest> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</required>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "required.def": (
+                "define the potential action<my.domain.com:my_lib:/required>.\n"
+            ),
+        }
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert all_diags[0].definition_type == "action"
+    assert all_diags[0].path == "/test"
+    assert all_diags[0].first_definition_line == 1
+    assert all_diags[0].position.line == 8
+    assert all_diags[0].position.column == 1
+
+
 def test_undefined_from_position():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"

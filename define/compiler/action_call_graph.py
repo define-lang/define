@@ -32,7 +32,7 @@ class ActionTriggerEdge:
 class ActionCallGraph:
     """Tracks which actions can trigger which other actions.
 
-    Built incrementally as ValidationResults arrive from per-file validation.
+    Built incrementally as definition results arrive from validation.
     """
 
     # Qualified name (prefixed with the action name) of the position a
@@ -57,8 +57,10 @@ class ActionCallGraph:
         self._effects_waiting_for_target = collections.defaultdict(list)
         self._edges = collections.defaultdict(list)
 
-    def process_result(self, result: validation_result.ValidationResult):
-        """Register triggers and effects from a completed file's validation."""
+    def process_definition_result(
+        self, result: validation_result.DefinitionValidationResult
+    ):
+        """Register triggers and effects from a completed definition's validation."""
         self._register_triggers(result.trigger_positions)
         self._register_effects(result.action_body_effects)
 

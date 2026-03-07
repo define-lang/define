@@ -1,4 +1,5 @@
 # pyright: reportUnusedCallResult=false
+from define.compiler import diagnostics
 from define.compiler.validator.program_validator_tests import conftest
 
 
@@ -202,6 +203,51 @@ class TestActionTriggering:
         assert result.all_diagnostics == []
         assert _edge_keys(result) == {(_TEST, _TEST, 8)}
 
+    def test_duplicate_action_does_not_add_trigger_edges(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert len(result.all_diagnostics) == 1
+        assert isinstance(
+            result.all_diagnostics[0], diagnostics.DuplicateDefinitionDiagnostic
+        )
+        assert result.all_diagnostics[0].definition_type == "action"
+        assert result.all_diagnostics[0].path == "/test"
+        assert result.all_diagnostics[0].first_definition_line == 1
+        assert result.all_diagnostics[0].position.line == 8
+        assert result.all_diagnostics[0].position.column == 1
+        assert _edge_keys(result) == set()
+
     def test_trigger_positions_recorded(
         self,
         validate_project_with_graph: conftest.ValidateProjectWithGraph,
@@ -221,8 +267,8 @@ class TestActionTriggering:
         )
         assert result.all_diagnostics == []
         test_result = result.result_for("test.def")
-        assert len(test_result.trigger_positions) == 1
-        tp = test_result.trigger_positions[0]
+        assert len(test_result.definition_results[0].trigger_positions) == 1
+        tp = test_result.definition_results[0].trigger_positions[0]
         assert (
             tp.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
@@ -259,8 +305,8 @@ class TestActionTriggering:
         )
         assert result.all_diagnostics == []
         test_result = result.result_for("test.def")
-        assert len(test_result.action_body_effects) == 1
-        effect = test_result.action_body_effects[0]
+        assert len(test_result.definition_results[0].action_body_effects) == 1
+        effect = test_result.definition_results[0].action_body_effects[0]
         assert (
             effect.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
@@ -330,7 +376,7 @@ class TestActionTriggering:
             },
         )
         test_result = result.result_for("test.def")
-        assert test_result.action_body_effects == []
+        assert test_result.definition_results[0].action_body_effects == []
 
     def test_no_body_effect_when_move_target_has_unknown_state(
         self,
@@ -354,4 +400,4 @@ class TestActionTriggering:
             },
         )
         test_result = result.result_for("test.def")
-        assert test_result.action_body_effects == []
+        assert test_result.definition_results[0].action_body_effects == []

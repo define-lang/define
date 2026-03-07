@@ -38,6 +38,26 @@ def _parse_program(source: str, lark_parser: parser.Parser) -> ast.Program:
     return transformer.DefineTransformer().transform(parse_result.tree)
 
 
+def _reference_edges(
+    result: validation_result.ValidationResult,
+) -> list[validation_result.ReferenceEdge]:
+    return [
+        edge
+        for definition_result in result.definition_results
+        for edge in definition_result.reference_edges
+    ]
+
+
+def _discovered_files(
+    result: validation_result.ValidationResult,
+) -> list[validation_result.DiscoveredFile]:
+    return [
+        discovered
+        for definition_result in result.definition_results
+        for discovered in definition_result.discovered_files
+    ]
+
+
 class TestFileValidatorSuccess:
     def test_valid_position(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
@@ -48,8 +68,10 @@ class TestFileValidatorSuccess:
         assert result.exception is None
         assert result.diagnostics == []
         assert result.source == source
-        assert len(result.definitions) == 1
-        assert result.definitions[0].typed_name.name_type == "position"
+        assert len(result.definition_results) == 1
+        assert (
+            result.definition_results[0].definition.typed_name.name_type == "position"
+        )
 
     def test_valid_action(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential action<my.domain.com:my_lib:/test>.\n"
@@ -59,8 +81,8 @@ class TestFileValidatorSuccess:
 
         assert result.exception is None
         assert result.diagnostics == []
-        assert len(result.definitions) == 1
-        assert result.definitions[0].typed_name.name_type == "action"
+        assert len(result.definition_results) == 1
+        assert result.definition_results[0].definition.typed_name.name_type == "action"
 
 
 class TestFileValidatorErrors:
@@ -69,9 +91,9 @@ class TestFileValidatorErrors:
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
         assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
-        assert result.definitions == []
-        assert result.reference_edges == []
-        assert result.discovered_files == []
+        assert result.definition_results == []
+        assert _reference_edges(result) == []
+        assert _discovered_files(result) == []
 
     def test_syntax_error(self, tmp_path: Path, lark_parser: parser.Parser):
         (tmp_path / "test.def").write_text(
@@ -81,7 +103,7 @@ class TestFileValidatorErrors:
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
         assert result.exception is not None
-        assert result.definitions == []
+        assert result.definition_results == []
 
     def test_encoding_error(self, tmp_path: Path, lark_parser: parser.Parser):
         (tmp_path / "test.def").write_bytes(b"\x80\x81\x82")
@@ -125,8 +147,12 @@ class TestFileValidatorDiagnostics:
             diagnostics.DuplicateDefinitionDiagnostic,
         ]
         assert [
-            definition.typed_name.full_typed_name() for definition in result.definitions
-        ] == ["position<my.domain.com:my_lib:/test>"]
+            definition_result.definition.typed_name.full_typed_name()
+            for definition_result in result.definition_results
+        ] == [
+            "position<my.domain.com:my_lib:/test>",
+            "position<my.domain.com:my_lib:/test>",
+        ]
 
 
 class TestDefinitionAstValidator:
@@ -223,9 +249,9 @@ class TestFileValidatorReferenceDiscovery:
         ctx = _make_context(tmp_path)
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
-        assert len(result.reference_edges) == 1
-        assert len(result.discovered_files) == 1
-        discovered = result.discovered_files[0]
+        assert len(_reference_edges(result)) == 1
+        assert len(_discovered_files(result)) == 1
+        discovered = _discovered_files(result)[0]
         assert discovered.path == PurePosixPath("other.def")
         assert discovered.root_prefix == PurePosixPath(str(tmp_path))
         assert discovered.expected_fqun == "my.domain.com:my_lib"
@@ -249,9 +275,9 @@ class TestFileValidatorReferenceDiscovery:
         )
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
-        assert len(result.reference_edges) == 1
-        assert len(result.discovered_files) == 1
-        discovered = result.discovered_files[0]
+        assert len(_reference_edges(result)) == 1
+        assert len(_discovered_files(result)) == 1
+        discovered = _discovered_files(result)[0]
         assert discovered.path == PurePosixPath("dep.def")
         assert discovered.root_prefix == PurePosixPath(str(tmp_path)) / "deps/other"
         assert discovered.expected_fqun == "other.domain.com:other_lib"
@@ -273,8 +299,8 @@ class TestFileValidatorReferenceDiscovery:
         assert [type(d) for d in result.diagnostics] == [
             diagnostics.ExternalUniverseNotConfiguredDiagnostic,
         ]
-        assert result.reference_edges == []
-        assert result.discovered_files == []
+        assert _reference_edges(result) == []
+        assert _discovered_files(result) == []
 
     def test_multiple_references(self, tmp_path: Path, lark_parser: parser.Parser):
         source = (
@@ -289,8 +315,8 @@ class TestFileValidatorReferenceDiscovery:
         ctx = _make_context(tmp_path)
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
-        assert len(result.reference_edges) == 2
-        assert len(result.discovered_files) == 2
+        assert len(_reference_edges(result)) == 2
+        assert len(_discovered_files(result)) == 2
 
 
 class TestDimensionPointReferenceEdges:
@@ -312,8 +338,8 @@ class TestDimensionPointReferenceEdges:
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
         assert result.diagnostics == []
-        assert len(result.reference_edges) == 3
-        assert len(result.discovered_files) == 3
+        assert len(_reference_edges(result)) == 3
+        assert len(_discovered_files(result)) == 3
 
     def test_local_names_produce_no_edges(
         self, tmp_path: Path, lark_parser: parser.Parser
@@ -334,8 +360,8 @@ class TestDimensionPointReferenceEdges:
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
         assert result.diagnostics == []
-        assert result.reference_edges == []
-        assert result.discovered_files == []
+        assert _reference_edges(result) == []
+        assert _discovered_files(result) == []
 
     def test_invalid_global_name_produces_no_edges(
         self, tmp_path: Path, lark_parser: parser.Parser
@@ -375,8 +401,8 @@ class TestDimensionPointReferenceEdges:
         assert result.diagnostics[1].char == "B"
         assert result.diagnostics[1].position.line == 10
         assert result.diagnostics[1].position.column == 65
-        assert result.reference_edges == []
-        assert result.discovered_files == []
+        assert _reference_edges(result) == []
+        assert _discovered_files(result) == []
 
 
 class TestFileValidatorTimingStats:

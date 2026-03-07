@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import collections
 import typing
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -185,6 +184,45 @@ class DefinitionValidationResult:
         default_factory=list
     )
 
+    @property
+    def position_constraint_names(self) -> frozenset[str]:
+        """Return required qualities when this definition is a global position."""
+        definition = self.definition
+        if not isinstance(definition, ast.PositionDefinition):
+            return frozenset()
+        if definition.constraints is None:
+            return frozenset()
+        fqun = definition.typed_name.name_content.fqun
+        return frozenset(
+            requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            for requirement in definition.constraints.requirements
+        )
+
+    @property
+    def action_local_position_constraint_names(
+        self,
+    ) -> Mapping[str, frozenset[str]]:
+        """Return local position constraints when this definition is an action."""
+        definition = self.definition
+        if not isinstance(definition, ast.ActionDefinition):
+            return {}
+        if definition.definition_block is None:
+            return {}
+        fqun = definition.typed_name.name_content.fqun
+        result: dict[str, frozenset[str]] = {}
+        for local_def in definition.definition_block.local_definitions:
+            local_name = local_def.typed_name.name_content.name
+            if local_name in result:
+                continue
+            if local_def.constraints is None:
+                result[local_name] = frozenset()
+                continue
+            result[local_name] = frozenset(
+                requirement.typed_global_name.full_typed_name(in_universe=fqun)
+                for requirement in local_def.constraints.requirements
+            )
+        return result
+
 
 # TODO: Rename This FileValidationResult and create another class for the ProgramValidationResult.
 @dataclass
@@ -202,12 +240,15 @@ class ValidationResult:
         init=False,
         repr=False,
     )
+    # This preserves source order, including duplicate definitions that were
+    # diagnosed during file validation.
     definition_results: list[DefinitionValidationResult] = field(default_factory=list)
 
     def add_file_diagnostic(self, diagnostic: diagnostics.Diagnostic):
         """Append a non-definition diagnostic after per-definition diagnostics."""
         self._post_definition_diagnostics.append(diagnostic)
 
+    # TODO: Sort this by file position.
     @property
     def diagnostics(self) -> Sequence[diagnostics.Diagnostic]:
         """Return file-level and per-definition diagnostics as a read-only view."""
@@ -220,129 +261,3 @@ class ValidationResult:
             ]
             + list(self._post_definition_diagnostics)
         )
-
-    @property
-    def definitions(self) -> Sequence[ast.QualityDefinition]:
-        """Return one AST definition per full typed name."""
-        definitions: list[ast.QualityDefinition] = []
-        seen_definition_names: set[str] = set()
-        for result in self.definition_results:
-            definition_name = result.definition.typed_name.full_typed_name()
-            if definition_name in seen_definition_names:
-                continue
-            seen_definition_names.add(definition_name)
-            definitions.append(result.definition)
-        return definitions
-
-    @property
-    def reference_edges(self) -> Sequence[ReferenceEdge]:
-        """Return all reference edges from all definition results."""
-        return [
-            edge
-            for result in self.definition_results
-            for edge in result.reference_edges
-        ]
-
-    @property
-    def discovered_files(self) -> Sequence[DiscoveredFile]:
-        """Return all discovered files from all definition results."""
-        return [
-            discovered_file
-            for result in self.definition_results
-            for discovered_file in result.discovered_files
-        ]
-
-    @property
-    def deferred_chained_names(self) -> Sequence[DeferredChainElements]:
-        """Return all deferred chained names from all definition results."""
-        return [
-            deferred_name
-            for result in self.definition_results
-            for deferred_name in result.deferred_chained_names
-        ]
-
-    @property
-    def trigger_positions(self) -> Sequence[TriggerPositionInfo]:
-        """Return all trigger positions from all definition results."""
-        return [
-            trigger_position
-            for result in self.definition_results
-            for trigger_position in result.trigger_positions
-        ]
-
-    @property
-    def action_body_effects(self) -> Sequence[ActionBodyEffect]:
-        """Return all action body effects from all definition results."""
-        return [
-            effect
-            for result in self.definition_results
-            for effect in result.action_body_effects
-        ]
-
-    @property
-    def deferred_move_constraint_checks(
-        self,
-    ) -> Sequence[DeferredMoveConstraintCheck]:
-        """Return all deferred move-constraint checks from all definition results."""
-        return [
-            check
-            for result in self.definition_results
-            for check in result.deferred_move_constraint_checks
-        ]
-
-    @property
-    def definitions_by_name(self) -> Mapping[str, ast.QualityDefinition]:
-        """Map from full typed name to definition."""
-        return {d.typed_name.full_typed_name(): d for d in self.definitions}
-
-    @property
-    def global_position_definition_constraints(
-        self,
-    ) -> Mapping[str, frozenset[str]]:
-        """Map from definition name to the set of its constraint typed names."""
-        result: collections.defaultdict[str, frozenset[str]] = collections.defaultdict(
-            frozenset
-        )
-        for d in self.definitions:
-            if not isinstance(d, ast.PositionDefinition):
-                continue
-            fqun = d.typed_name.name_content.fqun
-            if d.constraints is not None:
-                result[d.typed_name.full_typed_name()] = frozenset(
-                    req.typed_global_name.full_typed_name(in_universe=fqun)
-                    for req in d.constraints.requirements
-                )
-            else:
-                result[d.typed_name.full_typed_name()] = frozenset()
-        return result
-
-    @property
-    def action_local_position_constraints(
-        self,
-    ) -> Mapping[str, Mapping[str, frozenset[str]]]:
-        """Map from action name to its local positions' constraint sets.
-
-        Outer key: action definition full typed name.
-        Inner key: local position name.
-        Inner value: frozenset of constraint typed names for that local position.
-        """
-        result: collections.defaultdict[str, dict[str, frozenset[str]]] = (
-            collections.defaultdict(dict)
-        )
-        for d in self.definitions:
-            if not isinstance(d, ast.ActionDefinition):
-                continue
-            if d.definition_block is None:
-                continue
-            fqun = d.typed_name.name_content.fqun
-            locals_map: dict[str, frozenset[str]] = {}
-            for local_def in d.definition_block.local_definitions:
-                if local_def.constraints is not None:
-                    locals_map[local_def.typed_name.name_content.name] = frozenset(
-                        req.typed_global_name.full_typed_name(in_universe=fqun)
-                        for req in local_def.constraints.requirements
-                    )
-                else:
-                    locals_map[local_def.typed_name.name_content.name] = frozenset()
-            result[d.typed_name.full_typed_name()] = locals_map
-        return result

@@ -127,6 +127,48 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     assert root_result.diagnostics == []
 
 
+def test_duplicate_source_definition_does_not_add_reference_edges(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</other>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "other.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/other> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</test>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert all_diags[0].definition_type == "position"
+    assert all_diags[0].path == "/test"
+    assert all_diags[0].first_definition_line == 1
+    assert all_diags[0].position.line == 2
+    assert all_diags[0].position.column == 1
+
+
 def test_self_cycle_emits_diagnostic(
     parse_and_validate_file: ParseAndValidateFile,
 ):
@@ -676,10 +718,10 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[0].exception is None
     assert [type(d) for d in results[0].diagnostics] == [
-        diagnostics.SubRootAlreadyOccupiedDiagnostic,
         diagnostics.PathInsideOtherUniverseDiagnostic,
+        diagnostics.SubRootAlreadyOccupiedDiagnostic,
     ]
-    sub_root_diag = results[0].diagnostics[0]
+    sub_root_diag = results[0].diagnostics[1]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
     assert sub_root_diag.position.column == 29
@@ -725,11 +767,11 @@ def test_sub_root_conflict_continues_validation(
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[0].exception is None
     assert [type(d) for d in results[0].diagnostics] == [
-        diagnostics.SubRootAlreadyOccupiedDiagnostic,
         diagnostics.PathInsideOtherUniverseDiagnostic,
         diagnostics.ReferencedFileNotFoundDiagnostic,
+        diagnostics.SubRootAlreadyOccupiedDiagnostic,
     ]
-    sub_root_diag = results[0].diagnostics[0]
+    sub_root_diag = results[0].diagnostics[2]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
     assert sub_root_diag.position.column == 29
@@ -737,7 +779,7 @@ def test_sub_root_conflict_continues_validation(
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    not_found_diag = results[0].diagnostics[2]
+    not_found_diag = results[0].diagnostics[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.position.line == 4
     assert not_found_diag.position.column == 29

@@ -418,6 +418,52 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.line == 7
         assert all_diags[0].position.column == 25
 
+    def test_duplicate_source_definition_does_not_add_chain_diagnostics(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</child>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</child>::position<no_such>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "child.def": (
+                    "define the potential action<my.domain.com:my_lib:/child> {\n"
+                    "    define the position<pos_end>.\n"
+                    "    it happens when {\n"
+                    "        the position<pos_end> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
+        )
+        all_diags = [d for r in results for d in r.diagnostics]
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+        assert all_diags[0].definition_type == "action"
+        assert all_diags[0].path == "/test"
+        assert all_diags[0].first_definition_line == 1
+        assert all_diags[0].position.line == 8
+        assert all_diags[0].position.column == 1
+
     def test_chain_second_element_wrong_type_in_constraints(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"

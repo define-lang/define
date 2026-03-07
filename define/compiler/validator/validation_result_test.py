@@ -45,6 +45,18 @@ def _parse(source: str) -> validation_result.ValidationResult:
     )
 
 
+def _first_definition(
+    result: validation_result.ValidationResult,
+) -> ast.QualityDefinition:
+    return result.definition_results[0].definition
+
+
+def _first_definition_result(
+    result: validation_result.ValidationResult,
+) -> validation_result.DefinitionValidationResult:
+    return result.definition_results[0]
+
+
 def test_reference_edge_same_universe():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
@@ -53,7 +65,7 @@ def test_reference_edge_same_universe():
         "    }\n"
         "}\n"
     )
-    pos_def = result.definitions[0]
+    pos_def = _first_definition(result)
     assert isinstance(pos_def, ast.PositionDefinition)
     assert pos_def.constraints is not None
     constraint_ref = pos_def.constraints.requirements[0].typed_global_name
@@ -72,7 +84,7 @@ def test_reference_edge_explicit_fqun():
         "    }\n"
         "}\n"
     )
-    pos_def = result.definitions[0]
+    pos_def = _first_definition(result)
     assert isinstance(pos_def, ast.PositionDefinition)
     assert pos_def.constraints is not None
     constraint_ref = pos_def.constraints.requirements[0].typed_global_name
@@ -81,25 +93,6 @@ def test_reference_edge_explicit_fqun():
         global_name_reference=constraint_ref,
     )
     assert edge.full_typed_name == "position<other.com:other_lib:/b>"
-
-
-def test_definitions_by_name():
-    result = _parse(f"define the potential position<{_FQUN}:/a>.\n")
-    assert list(result.definitions_by_name.keys()) == [f"position<{_FQUN}:/a>"]
-    assert result.definitions_by_name[f"position<{_FQUN}:/a>"] is result.definitions[0]
-
-
-def test_definitions_by_name_empty():
-    result = validation_result.ValidationResult(
-        exception=None,
-        source=None,
-        file_path=PurePosixPath("test.def"),
-        root_prefix=PurePosixPath("."),
-        stats=stats.ValidationTimingStats(),
-        file_diagnostics=[],
-        definition_results=[],
-    )
-    assert result.definitions_by_name == {}
 
 
 def test_position_constraints_with_constraints():
@@ -111,26 +104,22 @@ def test_position_constraints_with_constraints():
         "    }\n"
         "}\n"
     )
-    assert result.global_position_definition_constraints == {
-        f"position<{_FQUN}:/a>": frozenset(
-            {
-                f"position<{_FQUN}:/child>",
-                f"position<{_FQUN}:/other>",
-            }
-        ),
-    }
+    assert _first_definition_result(result).position_constraint_names == frozenset(
+        {
+            f"position<{_FQUN}:/child>",
+            f"position<{_FQUN}:/other>",
+        }
+    )
 
 
 def test_position_constraints_no_constraints():
     result = _parse(f"define the potential position<{_FQUN}:/a>.\n")
-    assert result.global_position_definition_constraints == {
-        f"position<{_FQUN}:/a>": frozenset(),
-    }
+    assert _first_definition_result(result).position_constraint_names == frozenset()
 
 
 def test_position_constraints_skips_actions():
     result = _parse(f"define the potential action<{_FQUN}:/act>.\n")
-    assert result.global_position_definition_constraints == {}
+    assert _first_definition_result(result).position_constraint_names == frozenset()
 
 
 def test_action_local_constraints_with_constraints():
@@ -153,16 +142,14 @@ def test_action_local_constraints_with_constraints():
         "    }\n"
         "}\n"
     )
-    assert result.action_local_position_constraints == {
-        f"action<{_FQUN}:/act>": {
-            "pos_a": frozenset({f"position<{_FQUN}:/child>"}),
-            "pos_b": frozenset(
-                {
-                    f"position<{_FQUN}:/x>",
-                    f"position<{_FQUN}:/y>",
-                }
-            ),
-        },
+    assert _first_definition_result(result).action_local_position_constraint_names == {
+        "pos_a": frozenset({f"position<{_FQUN}:/child>"}),
+        "pos_b": frozenset(
+            {
+                f"position<{_FQUN}:/x>",
+                f"position<{_FQUN}:/y>",
+            }
+        ),
     }
 
 
@@ -176,16 +163,58 @@ def test_action_local_constraints_no_constraints():
         "    }\n"
         "}\n"
     )
-    assert result.action_local_position_constraints == {
-        f"action<{_FQUN}:/act>": {
-            "pos_a": frozenset(),
-        },
+    assert _first_definition_result(result).action_local_position_constraint_names == {
+        "pos_a": frozenset(),
+    }
+
+
+def test_action_local_constraints_ignore_later_duplicate_with_different_constraints():
+    result = _parse(
+        f"define the potential action<{_FQUN}:/act> {{\n"
+        "    define the position<pos_a> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</first>.\n"
+        "        }\n"
+        "    }\n"
+        "    define the position<pos_a> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</second>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<pos_a> has a dimension point.\n"
+        "    } and it does {\n"
+        "    }\n"
+        "}\n"
+    )
+    assert _first_definition_result(result).action_local_position_constraint_names == {
+        "pos_a": frozenset({f"position<{_FQUN}:/first>"}),
+    }
+
+
+def test_action_local_constraints_ignore_later_duplicate_that_adds_constraints():
+    result = _parse(
+        f"define the potential action<{_FQUN}:/act> {{\n"
+        "    define the position<pos_a>.\n"
+        "    define the position<pos_a> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</second>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<pos_a> has a dimension point.\n"
+        "    } and it does {\n"
+        "    }\n"
+        "}\n"
+    )
+    assert _first_definition_result(result).action_local_position_constraint_names == {
+        "pos_a": frozenset(),
     }
 
 
 def test_action_local_constraints_no_block():
     result = _parse(f"define the potential action<{_FQUN}:/act>.\n")
-    assert result.action_local_position_constraints == {}
+    assert _first_definition_result(result).action_local_position_constraint_names == {}
 
 
 def test_action_local_constraints_skips_positions():
@@ -196,7 +225,7 @@ def test_action_local_constraints_skips_positions():
         "    }\n"
         "}\n"
     )
-    assert result.action_local_position_constraints == {}
+    assert _first_definition_result(result).action_local_position_constraint_names == {}
 
 
 class TestTriggerPositionInfo:
@@ -214,9 +243,11 @@ class TestTriggerPositionInfo:
             "    }\n"
             "}\n",
         )
-        assert len(result.trigger_positions) == 1
+        assert len(result.definition_results[0].trigger_positions) == 1
         assert (
-            result.trigger_positions[0].checked_position_name_with_prefix
+            result.definition_results[0]
+            .trigger_positions[0]
+            .checked_position_name_with_prefix
             == f"action<{_FQUN}:/alarm>::position<triggered>"
         )
 
@@ -238,8 +269,8 @@ class TestActionBodyEffect:
             "    }\n"
             "}\n",
         )
-        assert len(result.action_body_effects) == 1
-        effect = result.action_body_effects[0]
+        assert len(result.definition_results[0].action_body_effects) == 1
+        effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.position_reference.chain
         assert effect.target_action_name == f"action<{_FQUN}:/test>"
@@ -264,8 +295,8 @@ class TestActionBodyEffect:
             "    }\n"
             "}\n",
         )
-        assert len(result.action_body_effects) == 1
-        effect = result.action_body_effects[0]
+        assert len(result.definition_results[0].action_body_effects) == 1
+        effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.position_reference.chain
         assert effect.target_action_name == f"action<{_FQUN}:/test>"
@@ -290,8 +321,8 @@ class TestActionBodyEffect:
             "    }\n"
             "}\n",
         )
-        assert len(result.action_body_effects) == 1
-        effect = result.action_body_effects[0]
+        assert len(result.definition_results[0].action_body_effects) == 1
+        effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.MoveDimensionPointStatement)
         assert effect.modified_position is effect.statement.to_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/act>"
@@ -315,8 +346,8 @@ class TestActionBodyEffect:
             "    }\n"
             "}\n",
         )
-        assert len(result.action_body_effects) == 1
-        effect = result.action_body_effects[0]
+        assert len(result.definition_results[0].action_body_effects) == 1
+        effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.position_reference.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"
@@ -345,8 +376,8 @@ class TestActionBodyEffect:
             "    }\n"
             "}\n",
         )
-        assert len(result.action_body_effects) == 1
-        effect = result.action_body_effects[0]
+        assert len(result.definition_results[0].action_body_effects) == 1
+        effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.position_reference.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"

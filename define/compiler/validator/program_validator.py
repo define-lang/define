@@ -40,28 +40,29 @@ def _chain_name(chain: list[ast.TypedName]) -> str:
     return "::".join(elem.source_typed_name for elem in chain)
 
 
+# TODO: Rename to DeferredReferenceEdge.
 @dataclass
 class _DeferredEdge:
-    """An edge waiting for its target file to complete validation."""
+    """An edge waiting for its target definition to become resolvable."""
 
     edge: validation_result.ReferenceEdge
-    source_result: validation_result.ValidationResult
+    source_definition: validation_result.DefinitionValidationResult
 
 
 @dataclass
 class _DeferredChainValidation:
-    """A chain element waiting for its parent's file to complete validation."""
+    """A chain element waiting for its parent definition to become resolvable."""
 
     deferred: validation_result.DeferredChainElements
-    source_result: validation_result.ValidationResult
+    source_definition: validation_result.DefinitionValidationResult
 
 
 @dataclass
 class _DeferredMoveConstraint:
-    """A move constraint check waiting for the 'to' position's file to complete."""
+    """A move constraint check waiting for a required definition."""
 
     check: validation_result.DeferredMoveConstraintCheck
-    source_result: validation_result.ValidationResult
+    source_definition: validation_result.DefinitionValidationResult
 
 
 class _FileWorkPool:
@@ -127,12 +128,12 @@ class ProgramValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     action_call_graph: action_call_graph.ActionCallGraph
-    _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredEdge]]
-    _deferred_chain_validations: dict[
-        pathlib.PurePosixPath, list[_DeferredChainValidation]
-    ]
+    _deferred_edges: dict[str, list[_DeferredEdge]]
+    _deferred_chain_validations: dict[str, list[_DeferredChainValidation]]
+    _expected_definitions_by_file: dict[pathlib.PurePosixPath, set[str]]
     _deferred_move_constraints: dict[str, list[_DeferredMoveConstraint]]
-    _definition_results: dict[str, validation_result.ValidationResult]
+    _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _definition_owners: dict[int, validation_result.ValidationResult]
     config_loading_time_ns: int
 
     def __init__(self):
@@ -144,8 +145,10 @@ class ProgramValidator:
         self.action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._deferred_chain_validations = {}
+        self._expected_definitions_by_file = {}
         self._deferred_move_constraints = {}
         self._definition_results = {}
+        self._definition_owners = {}
         self.config_loading_time_ns = 0
 
     @cached_property
@@ -219,29 +222,47 @@ class ProgramValidator:
     ):
         """Handle a completed file: check edges, submit discovered."""
         started_at = time.perf_counter_ns()
-        self._register_definitions(result)
-        self._submit_discovered_files(result, pool)
-        self._process_reference_edges(result.root_prefix, result)
-        self._process_deferred_chained_names(result)
-        self._process_deferred_move_constraints(result)
-        self.action_call_graph.process_result(result)
+        # We always want to submit discovered files first, to get background
+        # work into the queue ASAP.
+        for definition_result in result.definition_results:
+            self._submit_discovered_files(result, definition_result, pool)
+        for definition_result in result.definition_results:
+            self._process_completed_definition(result, definition_result)
         result.stats.global_validation += time.perf_counter_ns() - started_at
-        self._resolve_deferred_edges_for(result.file_path)
-        self._resolve_deferred_chain_validations_for(result.file_path)
-        self._resolve_deferred_move_constraints_for(result)
+        self._ensure_file_contained_expected_definitions(result)
 
-    def _register_definitions(self, result: validation_result.ValidationResult):
-        """Register all definitions from a completed file in the name registry."""
-        for name in result.definitions_by_name:
-            self._definition_results[name] = result
+    def _process_completed_definition(
+        self,
+        result: validation_result.ValidationResult,
+        definition_result: validation_result.DefinitionValidationResult,
+    ):
+        """Handle one completed definition from a file result."""
+        self._definition_owners[id(definition_result)] = result
+        name = definition_result.definition.typed_name.full_typed_name()
+        # FileValidator preserves duplicate definitions in source order so
+        # the later ones can still return diagnostics. Originally, I tried
+        # to make all the later checks still run on duplicates, but it gets
+        # into too much complexity. We do still load DiscoveredFiles from
+        # duplicates, above, but that's it.
+        if name in self._definition_results:
+            return
+        self._definition_results[name] = definition_result
+        self.action_call_graph.process_definition_result(definition_result)
+        self._validate_incoming_reference_edges(definition_result)
+        self._validate_incoming_chained_names(definition_result)
+        self._validate_incoming_move_constraints(definition_result)
+        self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
+        self._validate_outgoing_chained_names(definition_result)
+        self._validate_outgoing_move_constraints(definition_result)
 
     def _submit_discovered_files(
         self,
         result: validation_result.ValidationResult,
+        definition_result: validation_result.DefinitionValidationResult,
         pool: _FileWorkPool,
     ):
         """Submit discovered files if not already tracked."""
-        for discovered in result.discovered_files:
+        for discovered in definition_result.discovered_files:
             full_path = discovered.root_prefix / discovered.path
             if self._path_tracker.is_tracked(full_path):
                 continue
@@ -280,7 +301,7 @@ class ProgramValidator:
         result: validation_result.ValidationResult,
     ) -> bool:
         """Load project config if necessary, and resolve FQUNs to sub-roots."""
-        if not result.discovered_files:
+        if self._first_discovered_file(result) is None:
             return True
 
         current_fqun, sub_root_mappings = self._load_config_in_non_filesystem_context(
@@ -343,7 +364,9 @@ class ProgramValidator:
         result: validation_result.ValidationResult,
     ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]] | tuple[None, None]:
         """Load root config and map loading errors to non-filesystem diagnostics."""
-        first_discovered = result.discovered_files[0]
+        first_discovered = self._first_discovered_file(result)
+        if first_discovered is None:
+            raise ValueError("expected at least one discovered file")
         try:
             return self._load_root_config(constants.PROJECT_ROOT)
         except exceptions.NotProjectRootError as e:
@@ -366,18 +389,13 @@ class ProgramValidator:
             )
             return (None, None)
 
-    def _process_reference_edges(
+    def _validate_outgoing_reference_edges(
         self,
         enclosing_root: pathlib.PurePosixPath,
-        result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
-        """Try to add edges to the reference graph and validate resolved ones.
-
-        TODO: The wrong-type check could use _definition_results instead of
-        resolving the target file. File-not-found and sub-root checks still
-        need file paths.
-        """
-        for ref_edge in result.reference_edges:
+        """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
+        for ref_edge in source_definition.reference_edges:
             target_file = self._resolve_target_file(
                 ref_edge.global_name_reference.name_content, enclosing_root
             )
@@ -388,7 +406,7 @@ class ProgramValidator:
             target_key = ref_edge.full_typed_name
             detected = self._reference_graph.try_add_edge(source_key, target_key)
             if detected is not None:
-                result.add_file_diagnostic(
+                source_definition.diagnostics.append(
                     diagnostics.CircularGlobalReferenceDiagnostic(
                         position=ref_edge.global_name_reference.position,
                         cycle=detected.path,
@@ -396,22 +414,31 @@ class ProgramValidator:
                 )
                 continue
             if self._check_if_current_universe_path_in_a_subroot(
-                ref_edge, target_file, enclosing_root, result
+                ref_edge, target_file, enclosing_root, source_definition
             ):
                 continue
 
-            #  With the thread pool, files complete in arbitrary order. If files A
-            #  and C both reference file B, and B finishes before A's results are
-            #  processed, then target_result is already available when processing
-            #  A's edges.
+            # With the thread pool, files complete in arbitrary order. If files
+            # A and C both reference file B, and B finishes before A's results
+            # are processed, then target_result is already available when
+            # processing A's edges.
             target_result = self._path_tracker.try_get_result(target_file)
             if target_result is not None:
                 self._validate_reference_against_target(
-                    ref_edge, target_file, target_result, result
+                    ref_edge,
+                    target_file,
+                    target_result,
+                    source_definition,
                 )
             else:
-                self._deferred_edges.setdefault(target_file, []).append(
-                    _DeferredEdge(edge=ref_edge, source_result=result)
+                self._deferred_edges.setdefault(target_key, []).append(
+                    _DeferredEdge(ref_edge, source_definition)
+                )
+                # TODO: We should probably put this into some other abstraction
+                # so we don't have to remember to do this every time.
+                self._defer_definition_until_file_completes(
+                    target_key,
+                    target_file,
                 )
 
     def _resolve_target_file(
@@ -441,7 +468,7 @@ class ProgramValidator:
         edge: validation_result.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
         enclosing_root: pathlib.PurePosixPath,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ) -> bool:
         """Check if a same-universe reference lands inside another universe's sub-root.
 
@@ -455,7 +482,7 @@ class ProgramValidator:
         if actual_root == enclosing_root:
             return False
 
-        source_result.add_file_diagnostic(
+        source_definition.diagnostics.append(
             diagnostics.PathInsideOtherUniverseDiagnostic(
                 position=edge.global_name_reference.name_content.position,
                 path=str(target_file),
@@ -470,7 +497,7 @@ class ProgramValidator:
         edge: validation_result.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
         target_result: validation_result.ValidationResult,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Validate a reference edge against a completed target file's result."""
         started_at = time.perf_counter_ns()
@@ -478,22 +505,22 @@ class ProgramValidator:
             edge=edge,
             target_file=target_file,
             target_result=target_result,
-            source_result=source_result,
+            source_definition=source_definition,
         )
-        source_result.stats.deferred_validation += time.perf_counter_ns() - started_at
+        self._record_deferred_validation_time(source_definition, started_at)
 
     def _do_validate_reference_against_target(
         self,
         edge: validation_result.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
         target_result: validation_result.ValidationResult,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Apply reference-target validation checks without timing side effects."""
         global_name = edge.global_name_reference.name_content
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
-            source_result.add_file_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
                     position=global_name.position,
                     file_path=str(target_file),
@@ -502,8 +529,8 @@ class ProgramValidator:
             self._path_tracker.mark_not_found(target_file)
             return
 
-        if edge.full_typed_name not in target_result.definitions_by_name:
-            source_result.add_file_diagnostic(
+        if edge.full_typed_name not in self._definition_results:
+            source_definition.diagnostics.append(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=global_name.position,
                     path=global_name.path.name,
@@ -511,88 +538,84 @@ class ProgramValidator:
                 )
             )
 
-    def _resolve_deferred_edges_for(self, completed_file: pathlib.PurePosixPath):
-        """Validate deferred edges that were waiting for this file to complete."""
-        deferred = self._deferred_edges.pop(completed_file, [])
-        target_result = self._path_tracker.get_result(completed_file)
-        for deferred_edge in deferred:
+    def _validate_incoming_reference_edges(
+        self, target_definition: validation_result.DefinitionValidationResult
+    ):
+        """Validate deferred edges that were waiting on this definition."""
+        name = target_definition.definition.typed_name.full_typed_name()
+        target_result = self._definition_owners[id(target_definition)]
+        for deferred_edge in self._deferred_edges.pop(name, []):
             self._validate_reference_against_target(
                 deferred_edge.edge,
-                completed_file,
+                target_result.file_path,
                 target_result,
-                deferred_edge.source_result,
+                deferred_edge.source_definition,
             )
 
-    def _process_deferred_chained_names(
+    def _validate_outgoing_chained_names(
         self,
-        result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
-        """Queue or immediately validate deferred chain elements from a result.
-
-        TODO: Use _definition_results to look up parent definitions by name
-        instead of resolving target files, like _get_required_qualities_for_position does.
-        """
-        for deferred in result.deferred_chained_names:
-            target_file = self._resolve_target_file(
-                deferred.parent_element.name_content, result.root_prefix
-            )
-            if target_file is None:
-                continue
-            target_result = self._path_tracker.try_get_result(target_file)
-            # Same race as _process_reference_edges: the target file may have
-            # already completed (e.g. it was discovered by an earlier file)
-            # before we process this result's chain elements.
-            if target_result is not None:
+        """Queue or immediately validate deferred chain elements referenced within this definition."""
+        for deferred in source_definition.deferred_chained_names:
+            # Same race as _validate_outgoing_reference_edges: the parent
+            # definition may already have been registered (for example, because
+            # its file was discovered and completed earlier) before we process
+            # this definition's chain elements.
+            if deferred.parent_full_typed_name in self._definition_results:
                 self._validate_chain_element_against_target(
-                    deferred, target_result, result
+                    deferred,
+                    source_definition,
                 )
             else:
-                self._deferred_chain_validations.setdefault(target_file, []).append(
-                    _DeferredChainValidation(deferred=deferred, source_result=result)
-                )
+                self._deferred_chain_validations.setdefault(
+                    deferred.parent_full_typed_name, []
+                ).append(_DeferredChainValidation(deferred, source_definition))
 
-    def _resolve_deferred_chain_validations_for(
-        self, completed_file: pathlib.PurePosixPath
+    def _validate_incoming_chained_names(
+        self, target_definition: validation_result.DefinitionValidationResult
     ):
-        """Validate deferred chain elements that were waiting for this file."""
-        deferred_list = self._deferred_chain_validations.pop(completed_file, [])
-        target_result = self._path_tracker.get_result(completed_file)
-        for dcv in deferred_list:
+        """Validate deferred chain elements that were waiting for this definition."""
+        name = target_definition.definition.typed_name.full_typed_name()
+        for deferred_validation in self._deferred_chain_validations.pop(name, []):
             self._validate_chain_element_against_target(
-                dcv.deferred, target_result, dcv.source_result
+                deferred_validation.deferred,
+                deferred_validation.source_definition,
             )
 
-    def _process_deferred_move_constraints(
+    def _validate_outgoing_move_constraints(
         self,
-        result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
-        """Queue or immediately validate deferred move constraint checks from a result."""
-        for check in result.deferred_move_constraint_checks:
-            self._try_resolve_move_constraint(check, result)
+        """Queue or immediately validate deferred move constraint checks referenced in this definition."""
+        for check in source_definition.deferred_move_constraint_checks:
+            self._try_resolve_move_constraint(check, source_definition)
 
-    def _resolve_deferred_move_constraints_for(
-        self, result: validation_result.ValidationResult
+    def _validate_incoming_move_constraints(
+        self, target_definition: validation_result.DefinitionValidationResult
     ):
-        """Resolve deferred move constraints waiting for definitions from this file."""
-        for name in result.definitions_by_name:
-            deferred_list = self._deferred_move_constraints.pop(name, [])
-            for dmc in deferred_list:
-                self._try_resolve_move_constraint(dmc.check, dmc.source_result)
+        """Resolve move constraints waiting on this definition."""
+        name = target_definition.definition.typed_name.full_typed_name()
+        for deferred_move_constraint in self._deferred_move_constraints.pop(name, []):
+            self._try_resolve_move_constraint(
+                deferred_move_constraint.check,
+                deferred_move_constraint.source_definition,
+            )
 
     def _try_resolve_move_constraint(
         self,
         check: validation_result.DeferredMoveConstraintCheck,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Try to fully resolve a deferred move constraint check."""
         started_at = time.perf_counter_ns()
-        self._do_try_resolve_move_constraint(check, source_result)
-        source_result.stats.deferred_validation += time.perf_counter_ns() - started_at
+        self._do_try_resolve_move_constraint(check, source_definition)
+        self._record_deferred_validation_time(source_definition, started_at)
 
     def _do_try_resolve_move_constraint(
         self,
         check: validation_result.DeferredMoveConstraintCheck,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Resolve a deferred move constraint check without timing side effects.
 
@@ -626,13 +649,16 @@ class ProgramValidator:
             if wait_for_definition is None:
                 raise ValueError("wait_for_definition should never be None here")
             self._deferred_move_constraints.setdefault(wait_for_definition, []).append(
-                _DeferredMoveConstraint(check=check, source_result=source_result)
+                _DeferredMoveConstraint(
+                    check=check,
+                    source_definition=source_definition,
+                )
             )
             return
 
         missing = check.to_qualities - check.from_qualities
         if missing:
-            source_result.add_file_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.MoveViolatesConstraintsDiagnostic(
                     position=check.statement.to_position.position,
                     from_position=_chain_name(check.statement.from_position.chain),
@@ -670,20 +696,15 @@ class ProgramValidator:
                 raise ValueError("got a local name where a global name was expected")
             lookup_key = parent.full_typed_name(in_universe=fqun)
 
-        result = self._definition_results.get(lookup_key)
-        if result is None:
+        definition_result = self._definition_results.get(lookup_key)
+        if definition_result is None:
             return (None, lookup_key)
 
         if isinstance(last_element, ast.GlobalTypedNameReference):
-            return (
-                result.global_position_definition_constraints.get(
-                    lookup_key, frozenset()
-                ),
-                lookup_key,
-            )
+            return (definition_result.position_constraint_names, lookup_key)
         if not isinstance(last_element, ast.LocalTypedNameReference):
             raise ValueError("got some sort of impossible reference type")
-        locals_map = result.action_local_position_constraints.get(lookup_key, {})
+        locals_map = definition_result.action_local_position_constraint_names
         return (
             locals_map.get(last_element.name_content.name, frozenset()),
             lookup_key,
@@ -692,82 +713,78 @@ class ProgramValidator:
     def _validate_chain_element_against_target(
         self,
         deferred: validation_result.DeferredChainElements,
-        target_result: validation_result.ValidationResult,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
-        """Validate a chain element against a completed target file's result."""
+        """Validate a chain element against a completed target definition."""
         started_at = time.perf_counter_ns()
-        self._do_validate_chain_element_against_target(
-            deferred, target_result, source_result
-        )
-        source_result.stats.deferred_validation += time.perf_counter_ns() - started_at
+        self._do_validate_chain_element_against_target(deferred, source_definition)
+        self._record_deferred_validation_time(source_definition, started_at)
 
     def _do_validate_chain_element_against_target(
         self,
         deferred: validation_result.DeferredChainElements,
-        target_result: validation_result.ValidationResult,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
-        """Validate a chain element against its parent's definition in the target file."""
-        target_def = target_result.definitions_by_name.get(
-            deferred.parent_full_typed_name
-        )
-        if target_def is None:
+        """Validate a chain element against its parent's completed definition."""
+        target_result = self._definition_results.get(deferred.parent_full_typed_name)
+        if target_result is None:
             return
-        match target_def:
+        match target_result.definition:
             case ast.PositionDefinition():
                 self._validate_chain_against_position_def(
-                    deferred, target_result, source_result
+                    deferred,
+                    target_result,
+                    source_definition,
                 )
             case ast.ActionDefinition():
                 self._validate_chain_against_action_def(
-                    deferred, target_result, source_result
+                    deferred,
+                    target_result,
+                    source_definition,
                 )
             case _:
-                raise TypeError(f"Unexpected definition type: {type(target_def)}")
+                raise TypeError(
+                    f"Unexpected definition type: {type(target_result.definition)}"
+                )
 
     def _validate_chain_against_position_def(
         self,
         deferred: validation_result.DeferredChainElements,
-        target_result: validation_result.ValidationResult,
-        source_result: validation_result.ValidationResult,
+        target_result: validation_result.DefinitionValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Validate a chain element against a position definition's constraints."""
         self._check_chain_element_against_constraints(
             deferred.chain_element,
-            target_result.global_position_definition_constraints[
-                deferred.parent_full_typed_name
-            ],
+            target_result.position_constraint_names,
             deferred.parent_full_typed_name,
             deferred.source_fqun,
-            source_result,
+            source_definition,
         )
         self._defer_chain_continuation(
             deferred,
             deferred.chain_element,
             deferred.remaining_chain,
-            source_result,
+            source_definition,
         )
 
     def _validate_chain_against_action_def(
         self,
         deferred: validation_result.DeferredChainElements,
-        target_result: validation_result.ValidationResult,
-        source_result: validation_result.ValidationResult,
+        target_result: validation_result.DefinitionValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Validate a chain element against an action definition's local positions."""
         element = deferred.chain_element
         if not isinstance(element, ast.LocalTypedNameReference):
-            self._emit_not_in_action_diagnostic(deferred, source_result)
+            self._emit_not_in_action_diagnostic(deferred, source_definition)
             return
         if element.name_type != ast.NameType.POSITION:
-            self._emit_not_in_action_diagnostic(deferred, source_result)
+            self._emit_not_in_action_diagnostic(deferred, source_definition)
             return
-        locals_map = target_result.action_local_position_constraints[
-            deferred.parent_full_typed_name
-        ]
+        locals_map = target_result.action_local_position_constraint_names
         if element.name_content.name not in locals_map:
-            self._emit_not_in_action_diagnostic(deferred, source_result)
+            self._emit_not_in_action_diagnostic(deferred, source_definition)
             return
         if not deferred.remaining_chain:
             return
@@ -778,17 +795,22 @@ class ProgramValidator:
             locals_map[element.name_content.name],
             element.full_typed_name(),
             deferred.source_fqun,
-            source_result,
+            source_definition,
         )
-        self._defer_chain_continuation(deferred, next_element, rest, source_result)
+        self._defer_chain_continuation(
+            deferred,
+            next_element,
+            rest,
+            source_definition,
+        )
 
     def _emit_not_in_action_diagnostic(
         self,
         deferred: validation_result.DeferredChainElements,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Emit a diagnostic for a chain element not found in an action definition."""
-        source_result.add_file_diagnostic(
+        source_definition.diagnostics.append(
             diagnostics.ChainElementNotInActionDiagnostic(
                 position=deferred.chain_element.position,
                 element_name=deferred.chain_element.full_typed_name(
@@ -803,35 +825,24 @@ class ProgramValidator:
         deferred: validation_result.DeferredChainElements,
         validated_element: ast.TypedName,
         remaining: list[ast.TypedName],
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
-        """Submit a deferred chain validation, or validate immediately if the target is ready.
-
-        TODO: Use _definition_results to look up the target by name instead of
-        resolving the target file.
-        """
+        """Submit a deferred chain validation, or validate immediately if ready."""
         if not remaining:
             return
         next_deferred = deferred.next_deferred(
             typing.cast("ast.GlobalTypedNameReference", validated_element),
             remaining,
         )
-        target_file = self._resolve_target_file(
-            next_deferred.parent_element.name_content, source_result.root_prefix
-        )
-        if target_file is None:
-            return
-        target_result = self._path_tracker.try_get_result(target_file)
-        if target_result is not None:
+        if next_deferred.parent_full_typed_name in self._definition_results:
             self._validate_chain_element_against_target(
-                next_deferred, target_result, source_result
+                next_deferred,
+                source_definition,
             )
-        else:
-            self._deferred_chain_validations.setdefault(target_file, []).append(
-                _DeferredChainValidation(
-                    deferred=next_deferred, source_result=source_result
-                )
-            )
+            return
+        self._deferred_chain_validations.setdefault(
+            next_deferred.parent_full_typed_name, []
+        ).append(_DeferredChainValidation(next_deferred, source_definition))
 
     def _check_chain_element_against_constraints(
         self,
@@ -839,12 +850,12 @@ class ProgramValidator:
         constraint_names: frozenset[str],
         parent_name: str,
         source_fqun: ast.Fqun,
-        source_result: validation_result.ValidationResult,
+        source_definition: validation_result.DefinitionValidationResult,
     ):
         """Check if a chain element matches any constraint, adding a diagnostic if not."""
         element_name = element.full_typed_name(in_universe=source_fqun)
         if element_name not in constraint_names:
-            source_result.add_file_diagnostic(
+            source_definition.diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     position=element.position,
                     element_name=element_name,
@@ -874,6 +885,58 @@ class ProgramValidator:
                     existing_universe=existing_universe or "",
                 )
             )
+
+    def _ensure_file_contained_expected_definitions(
+        self, completed_result: validation_result.ValidationResult
+    ):
+        """When a file completes, we need to know if it didn't have the definitions we were looking for."""
+        expected_definitions = self._expected_definitions_by_file.pop(
+            completed_result.file_path, set()
+        )
+        for name in expected_definitions:
+            if name in self._definition_results:
+                continue
+            for deferred_edge in self._deferred_edges.pop(name, []):
+                self._validate_reference_against_target(
+                    deferred_edge.edge,
+                    completed_result.file_path,
+                    completed_result,
+                    deferred_edge.source_definition,
+                )
+            # No point in waiting for chain or move validations that are
+            # never going to happen.
+            _ = self._deferred_chain_validations.pop(name, None)
+            _ = self._deferred_move_constraints.pop(name, None)
+
+    def _defer_definition_until_file_completes(
+        self,
+        definition_name: str,
+        target_file: pathlib.PurePosixPath,
+    ):
+        """Record which file completion should wake a deferred definition wait."""
+        self._expected_definitions_by_file.setdefault(target_file, set()).add(
+            definition_name
+        )
+
+    def _first_discovered_file(
+        self,
+        result: validation_result.ValidationResult,
+    ) -> validation_result.DiscoveredFile | None:
+        """Return the first discovered file in definition iteration order."""
+        for definition_result in result.definition_results:
+            if definition_result.discovered_files:
+                return definition_result.discovered_files[0]
+        return None
+
+    def _record_deferred_validation_time(
+        self,
+        definition_result: validation_result.DefinitionValidationResult,
+        started_at: int,
+    ):
+        """Add deferred-validation time to the file that owns a definition."""
+        self._definition_owners[id(definition_result)].stats.deferred_validation += (
+            time.perf_counter_ns() - started_at
+        )
 
     # TODO: This should probably return a Config object.
     def _load_root_config(

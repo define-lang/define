@@ -100,3 +100,46 @@ def test_referenced_global_name_wrong_type_position(
     assert diags[0].expected_type == "position"
     assert diags[0].position.line == 3
     assert diags[0].position.column == 29
+
+
+def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
+    validate_project: ValidateProject,
+):
+    results = validate_project(
+        {
+            "target.def": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            "test.def": (
+                "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</target>.\n"
+                "    }\n"
+                "}\n"
+                "define the potential action<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
+                "    define the position<local> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</target>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<local> has a dimension point.\n"
+                "    } and it does {\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+        universe_name="mv:define-lang.org:test_walk_wrong_type",
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert isinstance(diags[1], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert diags[0].path == "/target"
+    assert diags[0].expected_type == "position"
+    assert diags[0].position.line == 3
+    assert diags[0].position.column == 29
+    assert diags[1].path == "/target"
+    assert diags[1].expected_type == "position"
+    assert diags[1].position.line == 9
+    assert diags[1].position.column == 33
