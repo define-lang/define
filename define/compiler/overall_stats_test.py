@@ -16,7 +16,6 @@ def _make_result(
     queue_wait: int = 0,
 ) -> validation_result.ValidationResult:
     return validation_result.ValidationResult(
-        diagnostics=[],
         exception=None,
         source=None,
         file_path=PurePosixPath(file_path),
@@ -30,6 +29,8 @@ def _make_result(
             deferred_validation=deferred_validation,
             queue_wait=queue_wait,
         ),
+        file_diagnostics=[],
+        definition_results=[],
     )
 
 

@@ -32,13 +32,16 @@ def _parse(source: str) -> validation_result.ValidationResult:
     assert parse_result.tree is not None
     program = transformer.DefineTransformer().transform(parse_result.tree)
     return validation_result.ValidationResult(
-        diagnostics=[],
         exception=None,
         source=source,
         file_path=PurePosixPath("test.def"),
         root_prefix=PurePosixPath("."),
         stats=stats.ValidationTimingStats(),
-        definitions=program.definitions,
+        file_diagnostics=[],
+        definition_results=[
+            validation_result.DefinitionValidationResult(definition=definition)
+            for definition in program.definitions
+        ],
     )
 
 
@@ -88,12 +91,13 @@ def test_definitions_by_name():
 
 def test_definitions_by_name_empty():
     result = validation_result.ValidationResult(
-        diagnostics=[],
         exception=None,
         source=None,
         file_path=PurePosixPath("test.def"),
         root_prefix=PurePosixPath("."),
         stats=stats.ValidationTimingStats(),
+        file_diagnostics=[],
+        definition_results=[],
     )
     assert result.definitions_by_name == {}
 

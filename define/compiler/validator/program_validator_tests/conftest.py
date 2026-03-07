@@ -167,6 +167,6 @@ def validate_source_as_file(
         monkeypatch.chdir(tmp_path)
         results = program_validator.ProgramValidator().validate_program(relative_path)
         assert len(results) == 1
-        return results[0].diagnostics
+        return list(results[0].diagnostics)
 
     return _run

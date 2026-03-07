@@ -106,12 +106,13 @@ class FileValidator:
         tracker.mark_file_loading_finished()
         if load_error is not None:
             return validation_result.ValidationResult(
-                diagnostics=[],
                 exception=load_error,
                 source=None,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
+                file_diagnostics=[],
+                definition_results=[],
             )
         return self._validate_source(
             context=context,
@@ -148,12 +149,13 @@ class FileValidator:
                 parse_result.diagnostics if context.is_filesystem_context else []
             )
             return validation_result.ValidationResult(
-                diagnostics=indentation_diags,
                 exception=parse_result.exception,
                 source=source,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
+                file_diagnostics=indentation_diags,
+                definition_results=[],
             )
 
         # tree is guaranteed non-None when exception is None.
@@ -167,12 +169,13 @@ class FileValidator:
             if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
                 tracker.mark_transform_finished()
                 return validation_result.ValidationResult(
-                    diagnostics=[],
                     exception=e.orig_exc,
                     source=source,
                     file_path=context.full_path,
                     root_prefix=context.root_prefix,
                     stats=tracker.build(),
+                    file_diagnostics=[],
+                    definition_results=[],
                 )
             raise
         tracker.mark_transform_finished()
@@ -191,59 +194,16 @@ class FileValidator:
                 seen_definitions[definition_name] = definition
         tracker.mark_file_validation_finished()
 
-        all_diagnostics = [
-            diagnostic
-            for result in definition_results
-            for diagnostic in result.diagnostics
-        ]
-        if context.is_filesystem_context:
-            all_diagnostics = parse_result.diagnostics + all_diagnostics
-
-        definitions: list[ast.QualityDefinition] = []
-        seen_definition_names: set[str] = set()
-        for result in definition_results:
-            definition_name = result.definition.typed_name.full_typed_name()
-            if definition_name in seen_definition_names:
-                continue
-            seen_definition_names.add(definition_name)
-            definitions.append(result.definition)
-
         return validation_result.ValidationResult(
-            diagnostics=all_diagnostics,
             exception=None,
             source=source,
             file_path=context.full_path,
             root_prefix=context.root_prefix,
             stats=tracker.build(),
-            definitions=definitions,
-            reference_edges=[
-                edge for result in definition_results for edge in result.reference_edges
-            ],
-            discovered_files=[
-                discovered_file
-                for result in definition_results
-                for discovered_file in result.discovered_files
-            ],
-            deferred_chained_names=[
-                deferred_name
-                for result in definition_results
-                for deferred_name in result.deferred_chained_names
-            ],
-            trigger_positions=[
-                trigger_position
-                for result in definition_results
-                for trigger_position in result.trigger_positions
-            ],
-            action_body_effects=[
-                effect
-                for result in definition_results
-                for effect in result.action_body_effects
-            ],
-            deferred_move_constraint_checks=[
-                check
-                for result in definition_results
-                for check in result.deferred_move_constraint_checks
-            ],
+            file_diagnostics=parse_result.diagnostics
+            if context.is_filesystem_context
+            else [],
+            definition_results=definition_results,
         )
 
     def _load_file(

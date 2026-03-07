@@ -258,7 +258,7 @@ class ProgramValidator:
                 )
             except exceptions.ConfigError as e:
                 self._path_tracker.mark_root_failed(discovered.root_prefix)
-                result.diagnostics.append(
+                result.add_file_diagnostic(
                     diagnostics.ConfigLoadErrorDiagnostic(
                         position=discovered.position,
                         error=e,
@@ -303,38 +303,40 @@ class ProgramValidator:
         sub_root_mappings: Mapping[str, pathlib.PurePosixPath],
     ):
         """Resolve discovered files/edges in non-filesystem mode after config load."""
-        resolved_discoveries: list[validation_result.DiscoveredFile] = []
         unknown_fquns: set[str] = set()
-        for discovered in result.discovered_files:
-            sub_root_rel = sub_root_mappings.get(discovered.expected_fqun)
-            if sub_root_rel is None:
-                if discovered.expected_fqun in unknown_fquns:
-                    continue
-                unknown_fquns.add(discovered.expected_fqun)
-                result.diagnostics.append(
-                    diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                        position=discovered.position,
-                        universe=discovered.expected_fqun,
-                        current_universe_name=current_fqun,
+        for definition_result in result.definition_results:
+            resolved_discoveries: list[validation_result.DiscoveredFile] = []
+            for discovered in definition_result.discovered_files:
+                sub_root_rel = sub_root_mappings.get(discovered.expected_fqun)
+                if sub_root_rel is None:
+                    if discovered.expected_fqun in unknown_fquns:
+                        continue
+                    unknown_fquns.add(discovered.expected_fqun)
+                    result.add_file_diagnostic(
+                        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                            position=discovered.position,
+                            universe=discovered.expected_fqun,
+                            current_universe_name=current_fqun,
+                        )
                     )
-                )
-                continue
-            discovered.root_prefix = constants.PROJECT_ROOT / sub_root_rel
-            resolved_discoveries.append(discovered)
-        result.discovered_files = resolved_discoveries
+                    continue
+                discovered.root_prefix = constants.PROJECT_ROOT / sub_root_rel
+                resolved_discoveries.append(discovered)
+            definition_result.discovered_files = resolved_discoveries
 
         # In a filesystem context, we don't return reference edges for
         # unknown sub-roots, so we are keeping that behavior consistent
         # in a non-filesystem context.
-        result.reference_edges = [
-            ref_edge
-            for ref_edge in result.reference_edges
-            if (
-                ref_edge.global_name_reference.name_content.fqun is None
-                or ref_edge.global_name_reference.name_content.fqun.canonical
-                not in unknown_fquns
-            )
-        ]
+        for definition_result in result.definition_results:
+            definition_result.reference_edges = [
+                ref_edge
+                for ref_edge in definition_result.reference_edges
+                if (
+                    ref_edge.global_name_reference.name_content.fqun is None
+                    or ref_edge.global_name_reference.name_content.fqun.canonical
+                    not in unknown_fquns
+                )
+            ]
 
     def _load_config_in_non_filesystem_context(
         self,
@@ -346,7 +348,7 @@ class ProgramValidator:
             return self._load_root_config(constants.PROJECT_ROOT)
         except exceptions.NotProjectRootError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-            result.diagnostics.append(
+            result.add_file_diagnostic(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
                     position=first_discovered.position,
                     universe=first_discovered.expected_fqun,
@@ -356,7 +358,7 @@ class ProgramValidator:
             return (None, None)
         except exceptions.ConfigError as e:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-            result.diagnostics.append(
+            result.add_file_diagnostic(
                 diagnostics.ConfigLoadErrorDiagnostic(
                     position=first_discovered.position,
                     error=e,
@@ -386,7 +388,7 @@ class ProgramValidator:
             target_key = ref_edge.full_typed_name
             detected = self._reference_graph.try_add_edge(source_key, target_key)
             if detected is not None:
-                result.diagnostics.append(
+                result.add_file_diagnostic(
                     diagnostics.CircularGlobalReferenceDiagnostic(
                         position=ref_edge.global_name_reference.position,
                         cycle=detected.path,
@@ -453,7 +455,7 @@ class ProgramValidator:
         if actual_root == enclosing_root:
             return False
 
-        source_result.diagnostics.append(
+        source_result.add_file_diagnostic(
             diagnostics.PathInsideOtherUniverseDiagnostic(
                 position=edge.global_name_reference.name_content.position,
                 path=str(target_file),
@@ -491,7 +493,7 @@ class ProgramValidator:
         global_name = edge.global_name_reference.name_content
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
-            source_result.diagnostics.append(
+            source_result.add_file_diagnostic(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
                     position=global_name.position,
                     file_path=str(target_file),
@@ -501,7 +503,7 @@ class ProgramValidator:
             return
 
         if edge.full_typed_name not in target_result.definitions_by_name:
-            source_result.diagnostics.append(
+            source_result.add_file_diagnostic(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=global_name.position,
                     path=global_name.path.name,
@@ -630,7 +632,7 @@ class ProgramValidator:
 
         missing = check.to_qualities - check.from_qualities
         if missing:
-            source_result.diagnostics.append(
+            source_result.add_file_diagnostic(
                 diagnostics.MoveViolatesConstraintsDiagnostic(
                     position=check.statement.to_position.position,
                     from_position=_chain_name(check.statement.from_position.chain),
@@ -786,7 +788,7 @@ class ProgramValidator:
         source_result: validation_result.ValidationResult,
     ):
         """Emit a diagnostic for a chain element not found in an action definition."""
-        source_result.diagnostics.append(
+        source_result.add_file_diagnostic(
             diagnostics.ChainElementNotInActionDiagnostic(
                 position=deferred.chain_element.position,
                 element_name=deferred.chain_element.full_typed_name(
@@ -842,7 +844,7 @@ class ProgramValidator:
         """Check if a chain element matches any constraint, adding a diagnostic if not."""
         element_name = element.full_typed_name(in_universe=source_fqun)
         if element_name not in constraint_names:
-            source_result.diagnostics.append(
+            source_result.add_file_diagnostic(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     position=element.position,
                     element_name=element_name,
@@ -863,7 +865,7 @@ class ProgramValidator:
             self._path_tracker.first_tracked_file_under(discovered.root_prefix)
         )
         if conflicting_path is not None:
-            source_result.diagnostics.append(
+            source_result.add_file_diagnostic(
                 diagnostics.SubRootAlreadyOccupiedDiagnostic(
                     position=discovered.position,
                     universe=discovered.expected_fqun,
@@ -942,10 +944,11 @@ def _make_config_error_result(
     """Create a ValidationResult for a config loading failure."""
     tracker = stats.ValidationStatsTracker()
     return validation_result.ValidationResult(
-        diagnostics=[],
         exception=error,
         source=None,
         file_path=file_path,
         root_prefix=root_prefix,
         stats=tracker.build(),
+        file_diagnostics=[],
+        definition_results=[],
     )

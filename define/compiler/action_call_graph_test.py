@@ -86,14 +86,26 @@ def _make_result(
     action_body_effects: list[validation_result.ActionBodyEffect] | None = None,
 ) -> validation_result.ValidationResult:
     return validation_result.ValidationResult(
-        diagnostics=[],
         exception=None,
         source="",
         file_path=PurePosixPath("test.def"),
         root_prefix=PurePosixPath("."),
         stats=stats.ValidationTimingStats(),
-        trigger_positions=trigger_positions or [],
-        action_body_effects=action_body_effects or [],
+        file_diagnostics=[],
+        definition_results=[
+            validation_result.DefinitionValidationResult(
+                definition=ast.PositionDefinition(
+                    name=ast.DefinitionGlobalNameContent(
+                        position=_pos(),
+                        fqun=_fqun(),
+                        path=ast.GlobalPathName(position=_pos(), name="/placeholder"),
+                    ),
+                    position=_pos(),
+                ),
+                trigger_positions=trigger_positions or [],
+                action_body_effects=action_body_effects or [],
+            )
+        ],
     )
 
 

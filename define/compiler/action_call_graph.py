@@ -7,6 +7,8 @@ import typing
 from dataclasses import dataclass
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from define.compiler import ast
     from define.compiler.validator import validation_result
 
@@ -65,7 +67,7 @@ class ActionCallGraph:
         return [edge for edges in self._edges.values() for edge in edges]
 
     def _register_triggers(
-        self, trigger_positions: list[validation_result.TriggerPositionInfo]
+        self, trigger_positions: Sequence[validation_result.TriggerPositionInfo]
     ):
         for tp in trigger_positions:
             action_name = tp.enclosing_typed_name.full_typed_name()
@@ -82,7 +84,9 @@ class ActionCallGraph:
             for effect in self._effects_waiting_for_target.pop(action_name, []):
                 self._resolve_effect(effect)
 
-    def _register_effects(self, body_effects: list[validation_result.ActionBodyEffect]):
+    def _register_effects(
+        self, body_effects: Sequence[validation_result.ActionBodyEffect]
+    ):
         for effect in body_effects:
             target = effect.target_action_name
             if self._action_has_triggers(target):

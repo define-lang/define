@@ -16,7 +16,7 @@ from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
-    from collections.abc import Set
+    from collections.abc import Mapping, Sequence, Set
 
     from define.compiler.validator import stats
 
@@ -191,33 +191,114 @@ class DefinitionValidationResult:
 class ValidationResult:
     """Validation output for one source file."""
 
-    diagnostics: list[diagnostics.Diagnostic]
     exception: AnyValidationException | None
     source: str | None
     file_path: pathlib.PurePosixPath  # Full path: root_prefix / relative file path.
     root_prefix: pathlib.PurePosixPath
     stats: stats.ValidationTimingStats
-    # TODO: There's soooo much stuff here from ProgramAstValidator, maybe
-    # we should put it into its own type.
-    definitions: list[ast.QualityDefinition] = field(default_factory=list)
-    reference_edges: list[ReferenceEdge] = field(default_factory=list)
-    discovered_files: list[DiscoveredFile] = field(default_factory=list)
-    deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
-    trigger_positions: list[TriggerPositionInfo] = field(default_factory=list)
-    action_body_effects: list[ActionBodyEffect] = field(default_factory=list)
-    deferred_move_constraint_checks: list[DeferredMoveConstraintCheck] = field(
-        default_factory=list
+    file_diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+    _post_definition_diagnostics: list[diagnostics.Diagnostic] = field(
+        default_factory=list,
+        init=False,
+        repr=False,
     )
+    definition_results: list[DefinitionValidationResult] = field(default_factory=list)
 
-    @cached_property
-    def definitions_by_name(self) -> dict[str, ast.QualityDefinition]:
+    def add_file_diagnostic(self, diagnostic: diagnostics.Diagnostic):
+        """Append a non-definition diagnostic after per-definition diagnostics."""
+        self._post_definition_diagnostics.append(diagnostic)
+
+    @property
+    def diagnostics(self) -> Sequence[diagnostics.Diagnostic]:
+        """Return file-level and per-definition diagnostics as a read-only view."""
+        return (
+            list(self.file_diagnostics)
+            + [
+                diagnostic
+                for result in self.definition_results
+                for diagnostic in result.diagnostics
+            ]
+            + list(self._post_definition_diagnostics)
+        )
+
+    @property
+    def definitions(self) -> Sequence[ast.QualityDefinition]:
+        """Return one AST definition per full typed name."""
+        definitions: list[ast.QualityDefinition] = []
+        seen_definition_names: set[str] = set()
+        for result in self.definition_results:
+            definition_name = result.definition.typed_name.full_typed_name()
+            if definition_name in seen_definition_names:
+                continue
+            seen_definition_names.add(definition_name)
+            definitions.append(result.definition)
+        return definitions
+
+    @property
+    def reference_edges(self) -> Sequence[ReferenceEdge]:
+        """Return all reference edges from all definition results."""
+        return [
+            edge
+            for result in self.definition_results
+            for edge in result.reference_edges
+        ]
+
+    @property
+    def discovered_files(self) -> Sequence[DiscoveredFile]:
+        """Return all discovered files from all definition results."""
+        return [
+            discovered_file
+            for result in self.definition_results
+            for discovered_file in result.discovered_files
+        ]
+
+    @property
+    def deferred_chained_names(self) -> Sequence[DeferredChainElements]:
+        """Return all deferred chained names from all definition results."""
+        return [
+            deferred_name
+            for result in self.definition_results
+            for deferred_name in result.deferred_chained_names
+        ]
+
+    @property
+    def trigger_positions(self) -> Sequence[TriggerPositionInfo]:
+        """Return all trigger positions from all definition results."""
+        return [
+            trigger_position
+            for result in self.definition_results
+            for trigger_position in result.trigger_positions
+        ]
+
+    @property
+    def action_body_effects(self) -> Sequence[ActionBodyEffect]:
+        """Return all action body effects from all definition results."""
+        return [
+            effect
+            for result in self.definition_results
+            for effect in result.action_body_effects
+        ]
+
+    @property
+    def deferred_move_constraint_checks(
+        self,
+    ) -> Sequence[DeferredMoveConstraintCheck]:
+        """Return all deferred move-constraint checks from all definition results."""
+        return [
+            check
+            for result in self.definition_results
+            for check in result.deferred_move_constraint_checks
+        ]
+
+    @property
+    def definitions_by_name(self) -> Mapping[str, ast.QualityDefinition]:
         """Map from full typed name to definition."""
         return {d.typed_name.full_typed_name(): d for d in self.definitions}
 
-    @cached_property
+    @property
     def global_position_definition_constraints(
         self,
-    ) -> collections.defaultdict[str, frozenset[str]]:
+    ) -> Mapping[str, frozenset[str]]:
         """Map from definition name to the set of its constraint typed names."""
         result: collections.defaultdict[str, frozenset[str]] = collections.defaultdict(
             frozenset
@@ -235,10 +316,10 @@ class ValidationResult:
                 result[d.typed_name.full_typed_name()] = frozenset()
         return result
 
-    @cached_property
+    @property
     def action_local_position_constraints(
         self,
-    ) -> collections.defaultdict[str, dict[str, frozenset[str]]]:
+    ) -> Mapping[str, Mapping[str, frozenset[str]]]:
         """Map from action name to its local positions' constraint sets.
 
         Outer key: action definition full typed name.
