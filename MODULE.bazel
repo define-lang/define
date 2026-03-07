@@ -3,7 +3,7 @@ module(
     version = "0.0.1",
 )
 
-register_toolchains("//tools/proto:python_toolchain_toolchain")
+register_toolchains("//tools/bzl:python_toolchain_toolchain")
 
 # --- Core dependencies ---
 

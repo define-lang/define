@@ -1,6 +1,7 @@
-load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
-load("//tools/lint:format.bzl", "format_test")
-load("//tools/lint:pyright.bzl", "pyright_test")
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 exports_files(["grammar.lark"])
 
@@ -23,11 +24,12 @@ py_test(
     size = "small",
     srcs = ["action_call_graph_renderer_test.py"],
     data = ["//tools:validate_mermaid"],
-    env = {"MERMAID_VALIDATOR": "$(location //tools:validate_mermaid)"},
+    env = {"MERMAID_VALIDATOR": "$(rlocationpath //tools:validate_mermaid)"},
     deps = [
         ":action_call_graph",
         ":action_call_graph_renderer",
         "//define/compiler/validator:program_validator",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -40,6 +42,7 @@ py_test(
         ":ast",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
+        "@pypi//pytest",
     ],
 )
 
@@ -58,7 +61,6 @@ py_test(
     name = "ast_test",
     size = "small",
     srcs = ["ast_test.py"],
-    pytest_main = True,
     deps = [
         ":ast",
         "@pypi//pytest",
@@ -96,7 +98,6 @@ py_test(
     name = "config_test",
     size = "small",
     srcs = ["config_test.py"],
-    pytest_main = True,
     deps = [
         ":config",
         ":constants",
@@ -142,7 +143,6 @@ py_test(
     name = "driver_fuzz_test",
     size = "medium",
     srcs = ["driver_fuzz_test.py"],
-    pytest_main = True,
     tags = ["manual"],
     deps = [
         ":driver",
@@ -158,7 +158,6 @@ py_test(
     size = "small",
     srcs = ["driver_integration_test.py"],
     data = ["//define/testdata:testdata_files"],
-    pytest_main = True,
     deps = [
         ":diagnostics",
         ":driver",
@@ -172,7 +171,6 @@ py_test(
     size = "small",
     srcs = ["driver_run_test.py"],
     data = ["//define/testdata:testdata_files"],
-    pytest_main = True,
     deps = [
         ":driver",
         ":overall_stats",
@@ -184,7 +182,6 @@ py_test(
     name = "driver_test",
     size = "small",
     srcs = ["driver_test.py"],
-    pytest_main = True,
     deps = [
         ":diagnostics",
         ":driver",
@@ -208,7 +205,6 @@ py_test(
     name = "indentation_validator_test",
     size = "small",
     srcs = ["indentation_validator_test.py"],
-    pytest_main = True,
     deps = [
         ":diagnostics",
         ":indentation_validator",
@@ -232,7 +228,6 @@ py_test(
     name = "main_test",
     size = "small",
     srcs = ["main_test.py"],
-    pytest_main = True,
     deps = [
         ":driver",
         ":main",
@@ -257,7 +252,6 @@ py_test(
     name = "name_parser_test",
     size = "small",
     srcs = ["name_parser_test.py"],
-    pytest_main = True,
     deps = [
         ":ast",
         ":name_parser",
@@ -277,7 +271,6 @@ py_test(
     name = "overall_stats_test",
     size = "small",
     srcs = ["overall_stats_test.py"],
-    pytest_main = True,
     deps = [
         ":overall_stats",
         "//define/compiler/validator:stats",
@@ -336,7 +329,6 @@ py_test(
     name = "transformer_test",
     size = "small",
     srcs = ["transformer_test.py"],
-    pytest_main = True,
     deps = [
         ":parser",
         ":transformer",

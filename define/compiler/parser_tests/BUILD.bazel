@@ -1,12 +1,12 @@
-load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
-load("//tools/lint:format.bzl", "format_test")
-load("//tools/lint:pyright.bzl", "pyright_test")
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_test(
     name = "action_definition_test",
     size = "small",
     srcs = ["action_definition_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -20,7 +20,6 @@ py_test(
     name = "blocks_test",
     size = "small",
     srcs = ["blocks_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -34,7 +33,6 @@ py_test(
     name = "comments_test",
     size = "small",
     srcs = ["comments_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -54,7 +52,6 @@ py_test(
     name = "error_messages_test",
     size = "small",
     srcs = ["error_messages_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:parser",
@@ -67,7 +64,6 @@ py_test(
     name = "extra_whitespace_test",
     size = "small",
     srcs = ["extra_whitespace_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:parser",
@@ -80,7 +76,6 @@ py_test(
     name = "file_encoding_test",
     size = "small",
     srcs = ["file_encoding_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -94,7 +89,6 @@ py_test(
     name = "incomplete_statements_test",
     size = "small",
     srcs = ["incomplete_statements_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:parser",
@@ -107,7 +101,6 @@ py_test(
     name = "local_name_format_test",
     size = "small",
     srcs = ["local_name_format_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -121,7 +114,6 @@ py_test(
     name = "move_dimension_point_test",
     size = "small",
     srcs = ["move_dimension_point_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -134,7 +126,6 @@ py_test(
     name = "multiple_definitions_test",
     size = "small",
     srcs = ["multiple_definitions_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -152,7 +143,6 @@ py_test(
     name = "position_definition_test",
     size = "small",
     srcs = ["position_definition_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -166,7 +156,6 @@ py_test(
     name = "statement_terminators_test",
     size = "small",
     srcs = ["statement_terminators_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -186,7 +175,6 @@ py_test(
     name = "trigger_conditions_test",
     size = "small",
     srcs = ["trigger_conditions_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -200,7 +188,6 @@ py_test(
     name = "typed_name_references_test",
     size = "small",
     srcs = ["typed_name_references_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",

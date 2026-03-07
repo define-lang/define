@@ -1,0 +1,36 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
+
+bzl_library(
+    name = "format",
+    srcs = ["format.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "linters",
+    srcs = ["linters.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "py_test",
+    srcs = ["py_test.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "pyright",
+    srcs = ["pyright.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["pyright_test_runner.py"])
+
+proto_lang_toolchain(
+    name = "python_toolchain",
+    command_line = "--python_out=%s",
+    progress_message = "Generating Python proto_library %{label}",
+    runtime = "@pypi//protobuf",
+    toolchain_type = "@protobuf//bazel/private:python_toolchain_type",
+)

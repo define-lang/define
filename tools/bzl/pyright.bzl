@@ -1,6 +1,6 @@
 """Basedpyright type-checking test macro."""
 
-load("@aspect_rules_py//py:defs.bzl", "py_test")
+load("@aspect_rules_py//py:defs.bzl", _py_test = "py_test")
 load("@rules_python//python:py_info.bzl", "PyInfo")
 
 # py_proto_library generates .pyi stubs but only puts them in
@@ -117,10 +117,10 @@ def pyright_test(name, pyproject = None, deps = [], srcs = [], **kwargs):
     env = dict(kwargs.pop("env", {}))
     env["FORCE_COLOR"] = "1"
 
-    py_test(
+    _py_test(
         name = name,
-        srcs = ["//tools/lint:pyright_test_runner.py"] + srcs,
-        main = "//tools/lint:pyright_test_runner.py",
+        srcs = ["//tools/bzl:pyright_test_runner.py"] + srcs,
+        main = "//tools/bzl:pyright_test_runner.py",
         args = [
             "$(location //:basedpyright)",
             native.package_name(),

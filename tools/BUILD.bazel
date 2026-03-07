@@ -4,8 +4,8 @@ load("@aspect_rules_py//py:defs.bzl", "py_binary")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
-load("//tools/lint:format.bzl", "format_test")
-load("//tools/lint:pyright.bzl", "pyright_test")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 npm_link_all_packages()
 
@@ -62,6 +62,9 @@ js_binary(
     name = "validate_mermaid",
     data = [":node_modules/@a24z/mermaid-parser"],
     entry_point = "validate_mermaid.mjs",
+    env = {
+        "BAZEL_BINDIR": ".",
+    },
     visibility = ["//:__subpackages__"],
 )
 

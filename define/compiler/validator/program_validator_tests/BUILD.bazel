@@ -1,6 +1,7 @@
-load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
-load("//tools/lint:format.bzl", "format_test")
-load("//tools/lint:pyright.bzl", "pyright_test")
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
     name = "conftest",
@@ -18,7 +19,6 @@ py_test(
     name = "diagnostic_collection_test",
     size = "small",
     srcs = ["diagnostic_collection_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
@@ -29,7 +29,6 @@ py_test(
     name = "action_triggering_test",
     size = "small",
     srcs = ["action_triggering_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "@pypi//pytest",
@@ -40,7 +39,6 @@ py_test(
     name = "chained_name_test",
     size = "small",
     srcs = ["chained_name_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
@@ -53,7 +51,6 @@ py_test(
     name = "create_dimension_point_test",
     size = "small",
     srcs = ["create_dimension_point_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -67,7 +64,6 @@ py_test(
     name = "dimension_point_conflict_test",
     size = "small",
     srcs = ["dimension_point_conflict_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
@@ -79,7 +75,6 @@ py_test(
     name = "duplicate_definitions_test",
     size = "small",
     srcs = ["duplicate_definitions_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
@@ -91,7 +86,6 @@ py_test(
     name = "error_messages_test",
     size = "small",
     srcs = ["error_messages_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -104,7 +98,6 @@ py_test(
     name = "file_not_found_test",
     size = "small",
     srcs = ["file_not_found_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -119,7 +112,6 @@ py_test(
     name = "fqun_mismatch_test",
     size = "small",
     srcs = ["fqun_mismatch_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
@@ -131,7 +123,6 @@ py_test(
     name = "global_name_walking_test",
     size = "small",
     srcs = ["global_name_walking_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -146,7 +137,6 @@ py_test(
     name = "local_name_conflicts_test",
     size = "small",
     srcs = ["local_name_conflicts_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
@@ -158,7 +148,6 @@ py_test(
     name = "move_dimension_point_test",
     size = "small",
     srcs = ["move_dimension_point_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
@@ -171,7 +160,6 @@ py_test(
     name = "name_format_positions_test",
     size = "small",
     srcs = ["name_format_positions_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
@@ -183,7 +171,6 @@ py_test(
     name = "parallel_test",
     size = "small",
     srcs = ["parallel_test.py"],
-    pytest_main = True,
     deps = [
         ":test_helpers",
         "//define/compiler:diagnostics",
@@ -196,7 +183,6 @@ py_test(
     name = "parse_and_validate_file_test",
     size = "small",
     srcs = ["parse_and_validate_file_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         ":test_helpers",
@@ -212,7 +198,6 @@ py_test(
     name = "path_mismatch_test",
     size = "small",
     srcs = ["path_mismatch_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
@@ -224,7 +209,6 @@ py_test(
     name = "position_constraint_references_test",
     size = "small",
     srcs = ["position_constraint_references_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
@@ -237,7 +221,6 @@ py_test(
     name = "program_config_test",
     size = "small",
     srcs = ["program_config_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
@@ -249,7 +232,6 @@ py_test(
     name = "reserved_name_positions_test",
     size = "small",
     srcs = ["reserved_name_positions_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
@@ -267,7 +249,6 @@ py_test(
     name = "trigger_conditions_test",
     size = "small",
     srcs = ["trigger_conditions_test.py"],
-    pytest_main = True,
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
@@ -280,7 +261,6 @@ py_test(
     name = "universe_without_authority_test",
     size = "small",
     srcs = ["universe_without_authority_test.py"],
-    pytest_main = True,
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",

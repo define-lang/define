@@ -1,6 +1,7 @@
-load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
-load("//tools/lint:format.bzl", "format_test")
-load("//tools/lint:pyright.bzl", "pyright_test")
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
 
 exports_files(["grammar.lark"])
 
@@ -31,7 +32,6 @@ py_test(
     size = "small",
     srcs = ["parser_test.py"],
     data = ["//defcl/testdata:testdata_files"],
-    pytest_main = True,
     deps = [
         ":parser",
         "//defcl/testdata/valid/schemas:integers_proto_py",

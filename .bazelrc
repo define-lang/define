@@ -25,5 +25,5 @@ build --@pypi//venv=dev
 build --@protobuf//bazel/toolchains:prefer_prebuilt_protoc
 
 # Ruff linting via aspect_rules_lint
-build --aspects=//tools/lint:linters.bzl%ruff
+build --aspects=//tools/bzl:linters.bzl%ruff
 build --@aspect_rules_lint//lint:fail_on_violation

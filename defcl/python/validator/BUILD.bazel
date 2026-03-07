@@ -1,5 +1,6 @@
-load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
-load("//tools/lint:format.bzl", "format_test")
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
 
 py_library(
     name = "semantics",
@@ -18,7 +19,6 @@ py_test(
     size = "small",
     srcs = ["semantics_test.py"],
     data = ["//defcl/testdata:testdata_files"],
-    pytest_main = True,
     visibility = ["//defcl/python:__pkg__"],
     deps = [
         ":semantics",
@@ -52,7 +52,6 @@ py_test(
     size = "small",
     srcs = ["syntax_test.py"],
     data = ["//defcl/testdata:testdata_files"],
-    pytest_main = True,
     visibility = ["//defcl/python:__pkg__"],
     deps = [
         ":syntax",

@@ -9,12 +9,12 @@ if typing.TYPE_CHECKING:
     from define.compiler import action_call_graph
 
 
-_ANGLE_BRACKETS = re.compile(r"[<>]")
+_INVALID_ID_CHARS = re.compile(r"[^A-Za-z0-9_]")
 
 
 def _sanitize_id(name: str) -> str:
-    """Replace angle brackets with hyphens for valid Mermaid IDs."""
-    return _ANGLE_BRACKETS.sub("-", name)
+    """Replace Mermaid-invalid identifier characters with underscores."""
+    return _INVALID_ID_CHARS.sub("_", name)
 
 
 # TODO: Hook this renderer into a CLI.

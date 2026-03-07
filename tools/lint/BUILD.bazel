@@ -1,3 +1,0 @@
-# Lint definitions for the project.
-
-exports_files(["pyright_test_runner.py"])

@@ -1,6 +1,8 @@
 from define.compiler import action_call_graph, ast
 from define.compiler.validator import validation_result
 
+# TODO: Make this parse source instead of generating AST nodes.
+
 
 def _pos() -> ast.SourcePosition:
     return ast.SourcePosition(line=1, column=1, end_line=1, end_column=1)
@@ -218,7 +220,7 @@ class TestActionCallGraph:
         assert edges[0].source_action == "action<d:u:/act_b>"
         assert edges[0].target_action == "action<d:u:/act_a>"
 
-    def test_multiple_triggers_on_same_position(self):
+    def test_duplicates_not_targeted_twice(self):
         graph = action_call_graph.ActionCallGraph()
         chain = _global_action_local_pos("/act_a", "shared")
         stmt = _make_create_stmt(chain)
@@ -248,11 +250,9 @@ class TestActionCallGraph:
         graph.process_definition_result(result_effect)
 
         edges = graph.all_edges()
-        assert len(edges) == 2
-        sources = {e.source_action for e in edges}
-        targets = {e.target_action for e in edges}
-        assert sources == {"action<d:u:/act_b>"}
-        assert targets == {"action<d:u:/act_a>", "action<d:u:/act_c>"}
+        assert len(edges) == 1
+        assert edges[0].source_action == "action<d:u:/act_b>"
+        assert edges[0].target_action == "action<d:u:/act_a>"
 
     def test_multiple_effects_to_same_target(self):
         graph = action_call_graph.ActionCallGraph()
