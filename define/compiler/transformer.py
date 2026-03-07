@@ -59,10 +59,6 @@ class DefineTransformer(
         """Remove terminator trees from the parse tree."""
         return lark_standalone.Discard
 
-    def block(self, _items: list[object]) -> object:
-        """Remove empty block trees from the parse tree."""
-        return lark_standalone.Discard
-
     def GLOBAL_NAME_CONTENT(  # noqa: N802
         self, token: lark_standalone.Token
     ) -> lark_standalone.Token:
@@ -222,7 +218,7 @@ class DefineTransformer(
 
     @lark_standalone.v_args(meta=True)
     def position_reference(
-        self, meta: lark_standalone.Meta, items: list[ast.TypedName]
+        self, meta: lark_standalone.Meta, items: list[ast.TypedNameReference]
     ) -> ast.PositionReference:
         """Transform a position reference (possibly chained with ::)."""
         return ast.PositionReference(

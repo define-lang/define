@@ -366,3 +366,24 @@ func TestTimeFieldSuffix_InvalidTimestamp(t *testing.T) {
 		},
 	}.Run(t)
 }
+
+func TestRulesIgnoreImportedFiles(t *testing.T) {
+	checktest.CheckTest{
+		Request: &checktest.RequestSpec{
+			Files: &checktest.ProtoFileSpec{
+				DirPaths:  []string{".."},
+				FilePaths: []string{"buf/testdata/import_only/root.proto"},
+			},
+			RuleIDs: []string{
+				"DEFCL_EDITION",
+				"DEFCL_NO_BOOL",
+				"DEFCL_NO_BYTES",
+				"DEFCL_ENUM_IN_MESSAGE",
+				"DEFCL_ENUM_ZERO_UNSPECIFIED",
+				"DEFCL_FIELD_NAME_UNDERSCORE",
+			},
+		},
+		Spec:                spec,
+		ExpectedAnnotations: nil,
+	}.Run(t)
+}

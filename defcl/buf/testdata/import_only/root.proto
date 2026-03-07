@@ -1,0 +1,14 @@
+edition = "2023";
+
+package buf.testdata.import_only;
+
+import "buf/testdata/invalid/bool/bool_field.proto";
+import "buf/testdata/invalid/bytes/bytes_field.proto";
+import "buf/testdata/invalid/edition/proto3.proto";
+import "buf/testdata/invalid/enum_in_message/top_level_enum.proto";
+import "buf/testdata/invalid/enum_zero/wrong_zero_name.proto";
+import "buf/testdata/invalid/field_underscore/underscore_digit.proto";
+
+message Root {
+  string name = 1;
+}

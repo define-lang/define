@@ -73,6 +73,17 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
     _assert_overall_equals_phase_sum(timings)
 
 
+def test_non_filesystem_parse_error_returns_single_result():
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        "defin the potential position<my.domain.com:my_lib:/bad>.\n"
+    )
+
+    assert len(results) == 1
+    result = results[0]
+    assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
+    assert result.diagnostics == []
+
+
 def test_invalid_utf8_populates_exceptions_and_source_is_none(
     parse_and_validate_file: ParseAndValidateFile,
 ):

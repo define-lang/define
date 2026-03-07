@@ -485,7 +485,7 @@ def validate_local_name_format(
 
 
 def validate_typed_name(
-    typed_name: ast.TypedName,
+    typed_name: ast.TypedNameReference,
     enclosing_definition: ast.QualityDefinition,
 ) -> list[diagnostics.Diagnostic]:
     """Validate any typed name reference (global or local)."""
@@ -494,9 +494,7 @@ def validate_typed_name(
         return validate_global_name(
             typed_name.name_content, must_use_short_form=enclosing_fqun
         )
-    if isinstance(typed_name, ast.LocalTypedNameReference):
-        result: list[diagnostics.Diagnostic] = list(
-            validate_local_name_format(typed_name.name_content)
-        )
-        return result
-    return []
+    result: list[diagnostics.Diagnostic] = list(
+        validate_local_name_format(typed_name.name_content)
+    )
+    return result

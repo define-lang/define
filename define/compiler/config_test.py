@@ -82,6 +82,23 @@ class TestProjectConfig:
             "project.universe_name: value is required"
         ]
 
+    def test_syntax_error_string_delegates_to_underlying_parser_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True)
+        (config_dir / "config.defcl").write_text(
+            'project: {\n  universe_name "test.example.com:my_lib"\n}\n'
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(exceptions.ConfigSyntaxError) as exc_info:
+            config.ConfigLoader(constants.PROJECT_ROOT).project_config()
+
+        # This covers ConfigSyntaxError.__str__ preserving the wrapped parser error.
+        assert isinstance(exc_info.value.syntax_error, dcl_exceptions.DclSyntaxError)
+        assert str(exc_info.value) == str(exc_info.value.syntax_error)
+
 
 class TestLocalDepsConfig:
     def _write_local_deps(self, tmp_path: Path, content: str) -> None:

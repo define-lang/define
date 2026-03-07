@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import driver, overall_stats
+from define.compiler import constants, driver, overall_stats
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -20,6 +20,25 @@ PROJECTS_ROOT = TESTDATA_ROOT / "projects"
 
 
 class TestRun:
+    def test_absolute_path_outside_project_root_returns_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        outside_path = tmp_path / "outside.def"
+        monkeypatch.chdir(project_root)
+
+        error_stream = io.StringIO()
+        result = driver.Driver().run(outside_path, error_stream=error_stream)
+
+        assert result == driver.ExitCode.ERROR
+        assert error_stream.getvalue() == (
+            f"Absolute path is outside the project root: {outside_path}\n"
+            f"  Resolved to: {outside_path}\n"
+            f"  Project root: {project_root}\n"
+            f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
+        )
+
     def test_invalid_config_returns_error_and_prints_to_stream(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -46,6 +65,25 @@ class TestRun:
         result = driver.Driver().run(Path("test.def"), error_stream=error_stream)
         assert result == driver.ExitCode.SUCCESS
         assert error_stream.getvalue() == ""
+
+    def test_relative_path_outside_project_root_returns_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        outside_path = tmp_path / "outside.def"
+        monkeypatch.chdir(project_root)
+
+        error_stream = io.StringIO()
+        result = driver.Driver().run(Path("../outside.def"), error_stream=error_stream)
+
+        assert result == driver.ExitCode.ERROR
+        assert error_stream.getvalue() == (
+            "Relative path resolves to outside the project root: ../outside.def\n"
+            f"  Resolved to: {outside_path}\n"
+            f"  Project root: {project_root}\n"
+            f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
+        )
 
     def test_syntax_error_returns_error_and_prints_to_stream(
         self, monkeypatch: pytest.MonkeyPatch

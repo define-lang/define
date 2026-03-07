@@ -55,7 +55,7 @@ def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
     )
 
 
-def _make_position_ref(chain: list[ast.TypedName]) -> ast.PositionReference:
+def _make_position_ref(chain: list[ast.TypedNameReference]) -> ast.PositionReference:
     return ast.PositionReference(chain=chain, position=_POS)
 
 

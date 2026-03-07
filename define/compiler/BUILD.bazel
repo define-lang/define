@@ -115,6 +115,16 @@ py_library(
     ],
 )
 
+py_test(
+    name = "diagnostics_test",
+    size = "small",
+    srcs = ["diagnostics_test.py"],
+    deps = [
+        ":ast",
+        ":diagnostics",
+    ],
+)
+
 py_library(
     name = "exceptions",
     srcs = ["exceptions.py"],
@@ -351,6 +361,7 @@ pyright_test(
         ":config_test",
         ":constants",
         ":diagnostics",
+        ":diagnostics_test",
         ":driver",
         ":driver_fuzz_test",
         ":driver_integration_test",

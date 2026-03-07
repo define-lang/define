@@ -52,6 +52,8 @@ class ConfigLoader:
                 if field_path:
                     messages.append(f"{field_path}: {violation.proto.message}")
                 else:
+                    # TODO: Add a real test for this once the config schema
+                    # can produce a root-level/message-level protovalidate violation.
                     messages.append(violation.proto.message)
             raise exceptions.ConfigValidationError(path, messages) from e
         return result

@@ -32,7 +32,7 @@ def _action_typed_name(
     )
 
 
-def _local_chain(name: str) -> list[ast.TypedName]:
+def _local_chain(name: str) -> list[ast.TypedNameReference]:
     return [
         ast.LocalTypedNameReference(
             position=_pos(),
@@ -42,7 +42,9 @@ def _local_chain(name: str) -> list[ast.TypedName]:
     ]
 
 
-def _global_action_local_pos(action_path: str, pos_name: str) -> list[ast.TypedName]:
+def _global_action_local_pos(
+    action_path: str, pos_name: str
+) -> list[ast.TypedNameReference]:
     return [
         ast.GlobalTypedNameReference(
             position=_pos(),
@@ -62,7 +64,7 @@ def _global_action_local_pos(action_path: str, pos_name: str) -> list[ast.TypedN
 
 
 def _make_create_stmt(
-    chain: list[ast.TypedName],
+    chain: list[ast.TypedNameReference],
 ) -> ast.CreateDimensionPointStatement:
     return ast.CreateDimensionPointStatement(
         position=_pos(),
@@ -71,7 +73,7 @@ def _make_create_stmt(
 
 
 def _make_move_stmt(
-    to_chain: list[ast.TypedName],
+    to_chain: list[ast.TypedNameReference],
 ) -> ast.MoveDimensionPointStatement:
     return ast.MoveDimensionPointStatement(
         position=_pos(),
@@ -293,7 +295,7 @@ class TestActionCallGraph:
 
     def test_local_prefix_before_action_reference(self):
         graph = action_call_graph.ActionCallGraph()
-        chain: list[ast.TypedName] = [
+        chain: list[ast.TypedNameReference] = [
             ast.LocalTypedNameReference(
                 position=_pos(),
                 name_type=ast.NameType.POSITION,

@@ -191,6 +191,9 @@ class LocalTypedNameReference(TypedName):
     name_content: LocalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
+type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
+
+
 @dataclass
 class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
@@ -198,7 +201,7 @@ class PositionReference(ASTNode):
     # TODO: We need a ChainedName class; there are a lot of places that
     # want to calculate the full chained name as a string and it would
     # be better if we just did it here.
-    chain: list[TypedName]
+    chain: list[TypedNameReference]
 
 
 @dataclass

@@ -35,7 +35,7 @@ from define.compiler.validator import (
 )
 
 
-def _chain_name(chain: list[ast.TypedName]) -> str:
+def _chain_name(chain: list[ast.TypedNameReference]) -> str:
     """Format a chain of typed names as written in the source."""
     return "::".join(elem.source_typed_name for elem in chain)
 
@@ -669,7 +669,7 @@ class ProgramValidator:
 
     def _get_required_qualities_for_position(
         self,
-        chain: list[ast.TypedName],
+        chain: list[ast.TypedNameReference],
         fqun: ast.Fqun,
     ) -> tuple[frozenset[str] | None, str]:
         """Resolve the constraint qualities for the last position in a chain.
@@ -702,8 +702,6 @@ class ProgramValidator:
 
         if isinstance(last_element, ast.GlobalTypedNameReference):
             return (definition_result.position_constraint_names, lookup_key)
-        if not isinstance(last_element, ast.LocalTypedNameReference):
-            raise ValueError("got some sort of impossible reference type")
         locals_map = definition_result.action_local_position_constraint_names
         return (
             locals_map.get(last_element.name_content.name, frozenset()),
@@ -823,8 +821,8 @@ class ProgramValidator:
     def _defer_chain_continuation(
         self,
         deferred: validation_result.DeferredChainElements,
-        validated_element: ast.TypedName,
-        remaining: list[ast.TypedName],
+        validated_element: ast.TypedNameReference,
+        remaining: list[ast.TypedNameReference],
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Submit a deferred chain validation, or validate immediately if ready."""
@@ -846,7 +844,7 @@ class ProgramValidator:
 
     def _check_chain_element_against_constraints(
         self,
-        element: ast.TypedName,
+        element: ast.TypedNameReference,
         constraint_names: frozenset[str],
         parent_name: str,
         source_fqun: ast.Fqun,

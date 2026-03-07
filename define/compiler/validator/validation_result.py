@@ -53,8 +53,8 @@ class DeferredChainElements:
 
     enclosing_definition: ast.QualityDefinition
     parent_element: ast.GlobalTypedNameReference
-    chain_element: ast.TypedName
-    remaining_chain: list[ast.TypedName]
+    chain_element: ast.TypedNameReference
+    remaining_chain: list[ast.TypedNameReference]
 
     @property
     def source_fqun(self) -> ast.Fqun:
@@ -69,7 +69,7 @@ class DeferredChainElements:
     def next_deferred(
         self,
         validated_element: ast.GlobalTypedNameReference,
-        remaining: list[ast.TypedName],
+        remaining: list[ast.TypedNameReference],
     ) -> DeferredChainElements:
         """Create the next deferred element after validating one in the chain."""
         return DeferredChainElements(
@@ -85,7 +85,7 @@ class TriggerPositionInfo:
     """An action's trigger condition, for cross-action matching."""
 
     enclosing_typed_name: ast.GlobalTypedNameInDefinition
-    checked_position: list[ast.TypedName]
+    checked_position: list[ast.TypedNameReference]
 
     @cached_property
     def checked_position_name_with_prefix(self) -> str:
@@ -105,7 +105,7 @@ class ActionBodyEffect:
     statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
 
     @property
-    def modified_position(self) -> list[ast.TypedName]:
+    def modified_position(self) -> list[ast.TypedNameReference]:
         """Return the position chain that this statement writes into."""
         match self.statement:
             case ast.CreateDimensionPointStatement():

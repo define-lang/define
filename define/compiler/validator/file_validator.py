@@ -40,7 +40,7 @@ SYNTAX_ERROR_TYPES = (
 )
 
 
-def _chain_name(chain: list[ast.TypedName]) -> str:
+def _chain_name(chain: list[ast.TypedNameReference]) -> str:
     """Format a chain of typed names as written in the source."""
     return "::".join(elem.source_typed_name for elem in chain)
 
@@ -644,7 +644,7 @@ class DefinitionAstValidator:
 
     def _validate_full_chained_name(
         self,
-        chain: list[ast.TypedName],
+        chain: list[ast.TypedNameReference],
         scope: scope_tracker.ScopeTracker,
     ) -> bool:
         """Validate a full chained name reference.
@@ -742,7 +742,7 @@ class DefinitionAstValidator:
 
     def _validate_chained_name_element(
         self,
-        chain_element: ast.TypedName,
+        chain_element: ast.TypedNameReference,
     ):
         """Validate a single chain element.
 
@@ -757,10 +757,7 @@ class DefinitionAstValidator:
 
         if isinstance(chain_element, ast.GlobalTypedNameReference):
             self._process_reference(chain_element)
-        elif (
-            isinstance(chain_element, ast.LocalTypedNameReference)
-            and chain_element.name_type == ast.NameType.ACTION
-        ):
+        elif chain_element.name_type == ast.NameType.ACTION:
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
                     position=chain_element.name_content.position,
@@ -770,8 +767,8 @@ class DefinitionAstValidator:
 
     def _validate_chain_element_against_constraints(
         self,
-        chain_element: ast.TypedName,
-        parent: ast.TypedName,
+        chain_element: ast.TypedNameReference,
+        parent: ast.TypedNameReference,
         scope: scope_tracker.ScopeTracker,
     ):
         """Check chain_element against parent's constraints. Returns True if valid."""
