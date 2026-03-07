@@ -257,8 +257,12 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+default = [
+    { name = "define" },
+]
 dev = [
     { name = "build" },
+    { name = "define" },
     { name = "hypothesis" },
     { name = "lark" },
     { name = "pre-commit" },
@@ -282,8 +286,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
+default = [{ name = "define" }]
 dev = [
     { name = "build" },
+    { name = "define" },
     { name = "hypothesis" },
     { name = "lark" },
     { name = "pre-commit" },

@@ -90,7 +90,12 @@ exclude = [
 ]
 
 [dependency-groups]
+default = [
+    "define",
+]
 dev = [
+    # Keep Bazel's dev venv broad enough for build/test tooling plus runtime deps.
+    "define",
     "build",
     "hypothesis",
     "lark",

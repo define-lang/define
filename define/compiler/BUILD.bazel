@@ -219,6 +219,7 @@ py_test(
 py_binary(
     name = "main",
     srcs = ["main.py"],
+    venv = "default",
     visibility = ["//visibility:public"],
     deps = [
         ":driver",
