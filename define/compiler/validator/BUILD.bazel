@@ -21,7 +21,6 @@ py_test(
         ":dimension_point_tracker",
         ":scope_tracker",
         "//define/compiler:ast",
-        "@pypi//pytest",
     ],
 )
 
@@ -59,7 +58,6 @@ py_test(
         "//define/compiler:exceptions",
         "//define/compiler:parser",
         "//define/compiler:transformer",
-        "@pypi//pytest",
     ],
 )
 
@@ -82,7 +80,6 @@ py_test(
         ":name_validators",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
-        "@pypi//pytest",
     ],
 )
 
@@ -100,7 +97,6 @@ py_test(
     deps = [
         ":path_tracker",
         "@pypi//pygtrie",
-        "@pypi//pytest",
     ],
 )
 
@@ -140,7 +136,6 @@ py_test(
     deps = [
         ":scope_tracker",
         "//define/compiler:ast",
-        "@pypi//pytest",
     ],
 )
 
@@ -154,10 +149,7 @@ py_test(
     name = "reference_graph_test",
     size = "small",
     srcs = ["reference_graph_test.py"],
-    deps = [
-        ":reference_graph",
-        "@pypi//pytest",
-    ],
+    deps = [":reference_graph"],
 )
 
 py_library(
@@ -172,7 +164,6 @@ py_test(
     srcs = ["stats_test.py"],
     deps = [
         ":stats",
-        "@pypi//pytest",
     ],
 )
 
@@ -203,7 +194,6 @@ py_test(
         "//define/compiler:parser",
         "//define/compiler:transformer",
         "//define/compiler/validator/program_validator_tests:test_helpers",
-        "@pypi//pytest",
     ],
 )
 

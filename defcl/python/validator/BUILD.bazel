@@ -32,7 +32,6 @@ py_test(
         "//defcl/testdata/invalid/semantics/schemas:no_brackets_scalar_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:repeated_integer_enum_proto_py",
         "//defcl/testdata/invalid/semantics/schemas:schemas_py",
-        "@pypi//pytest",
     ],
 )
 
@@ -57,7 +56,6 @@ py_test(
         ":syntax",
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
-        "@pypi//pytest",
     ],
 )
 

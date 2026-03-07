@@ -1,0 +1,34 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 1
+  range: 0..100
+  round: down
+  status:
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+    project:
+      default:
+        target: auto
+        threshold: 1%
+
+github_checks:
+  annotations: true
+
+component_management:
+  individual_components:
+    - component_id: defcl
+      name: defcl
+      paths:
+        - defcl/**
+    - component_id: define
+      name: define
+      paths:
+        - define/**
+    - component_id: tools
+      name: tools
+      paths:
+        - tools/**

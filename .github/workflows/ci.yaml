@@ -11,6 +11,31 @@ permissions:
   pull-requests: write
 
 jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-coverage
+          repository-cache: true
+
+      - name: Coverage
+        run: >-
+          bazelisk coverage --noshow_progress //... --combined_report=lcov
+          --instrumentation_filter='^//(define|defcl|tools)[/:]'
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          disable_search: true
+          fail_ci_if_error: true
+          files: bazel-out/_coverage/_coverage_report.dat
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   test:
     strategy:
       matrix:

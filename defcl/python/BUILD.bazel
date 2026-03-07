@@ -40,7 +40,6 @@ py_test(
         "//defcl/testdata/valid/schemas:schemas_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
         "//defcl/testdata/valid/schemas:strings_proto_py",
-        "@pypi//pytest",
     ],
 )
 

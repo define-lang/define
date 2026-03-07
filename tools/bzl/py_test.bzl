@@ -16,6 +16,8 @@ def py_test(name, **kwargs):
     deps = kwargs.pop("deps", [])
     if "@pypi//pytest" not in deps:
         deps = deps + ["@pypi//pytest"]
+    if "@pypi//coverage" not in deps:
+        deps = deps + ["@pypi//coverage"]
 
     _py_test(
         name = name,

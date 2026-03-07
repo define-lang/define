@@ -21,7 +21,6 @@ py_test(
     srcs = ["diagnostic_collection_test.py"],
     deps = [
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -31,7 +30,6 @@ py_test(
     srcs = ["action_triggering_test.py"],
     deps = [
         ":conftest",
-        "@pypi//pytest",
     ],
 )
 
@@ -43,7 +41,6 @@ py_test(
         ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -56,7 +53,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -67,7 +63,6 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -78,7 +73,6 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -90,7 +84,6 @@ py_test(
         ":conftest",
         ":test_helpers",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -104,7 +97,6 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -115,7 +107,6 @@ py_test(
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
-        "@pypi//pytest",
     ],
 )
 
@@ -129,7 +120,6 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -140,7 +130,6 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -152,7 +141,6 @@ py_test(
         ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -163,7 +151,6 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -175,7 +162,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -190,7 +176,6 @@ py_test(
         "//define/compiler:parser_exceptions",
         "//define/compiler/validator:program_validator",
         "//define/compiler/validator:stats",
-        "@pypi//pytest",
     ],
 )
 
@@ -201,7 +186,6 @@ py_test(
     deps = [
         ":conftest",
         "//define/compiler:diagnostics",
-        "@pypi//pytest",
     ],
 )
 
@@ -213,7 +197,6 @@ py_test(
         ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -224,7 +207,6 @@ py_test(
     deps = [
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -235,7 +217,6 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -253,7 +234,6 @@ py_test(
         ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -264,7 +244,6 @@ py_test(
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 

@@ -12,7 +12,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -25,7 +24,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -38,7 +36,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -56,7 +53,6 @@ py_test(
         ":conftest",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -68,7 +64,6 @@ py_test(
         ":conftest",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -81,7 +76,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -93,7 +87,6 @@ py_test(
         ":conftest",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -106,7 +99,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -118,7 +110,6 @@ py_test(
         ":conftest",
         ":test_helpers",
         "//define/compiler:parser",
-        "@pypi//pytest",
     ],
 )
 
@@ -130,7 +121,6 @@ py_test(
         ":conftest",
         ":test_helpers",
         "//define/compiler:parser",
-        "@pypi//pytest",
     ],
 )
 
@@ -148,7 +138,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -161,7 +150,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -180,7 +168,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -193,7 +180,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 

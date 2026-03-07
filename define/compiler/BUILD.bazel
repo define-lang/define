@@ -42,7 +42,6 @@ py_test(
         ":ast",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
-        "@pypi//pytest",
     ],
 )
 
@@ -63,7 +62,6 @@ py_test(
     srcs = ["ast_test.py"],
     deps = [
         ":ast",
-        "@pypi//pytest",
     ],
 )
 
@@ -149,7 +147,6 @@ py_test(
         ":exceptions",
         ":parser_exceptions",
         "@pypi//hypothesis",
-        "@pypi//pytest",
     ],
 )
 
@@ -162,7 +159,6 @@ py_test(
         ":diagnostics",
         ":driver",
         "//define/compiler/validator:validation_result",
-        "@pypi//pytest",
     ],
 )
 
@@ -174,7 +170,6 @@ py_test(
     deps = [
         ":driver",
         ":overall_stats",
-        "@pypi//pytest",
     ],
 )
 
@@ -187,7 +182,6 @@ py_test(
         ":driver",
         ":exceptions",
         ":parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -208,7 +202,6 @@ py_test(
     deps = [
         ":diagnostics",
         ":indentation_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -233,7 +226,6 @@ py_test(
         ":main",
         ":overall_stats",
         "@pypi//click",
-        "@pypi//pytest",
     ],
 )
 
@@ -256,7 +248,6 @@ py_test(
         ":ast",
         ":name_parser",
         ":parser_exceptions",
-        "@pypi//pytest",
     ],
 )
 
@@ -275,7 +266,6 @@ py_test(
         ":overall_stats",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
-        "@pypi//pytest",
     ],
 )
 
@@ -332,7 +322,6 @@ py_test(
     deps = [
         ":parser",
         ":transformer",
-        "@pypi//pytest",
     ],
 )
 

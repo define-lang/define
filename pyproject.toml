@@ -97,6 +97,7 @@ dev = [
     # Keep Bazel's dev venv broad enough for build/test tooling plus runtime deps.
     "define",
     "build",
+    "coverage",
     "hypothesis",
     "lark",
     "pre-commit",

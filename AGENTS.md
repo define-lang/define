@@ -131,8 +131,11 @@ BUILD file generator.
 
 - Build all targets: `bazelisk build --noshow_progress //...`
 - Test all targets: `bazelisk test --noshow_progress //...`
+- Run coverage:
+  `bazelisk coverage --noshow_progress //... --combined_report=lcov --instrumentation_filter='^//(define|defcl|tools)[/:]'`
 - Always run the full test suite (`bazelisk test --noshow_progress //...`) when
   done working, to make sure nothing is broken.
+- Run coverage after writing a lot of tests.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
 
