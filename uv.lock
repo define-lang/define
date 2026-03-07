@@ -8,12 +8,6 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
-[manifest]
-members = [
-    "define",
-    "define-tools",
-]
-
 [[package]]
 name = "build"
 version = "1.4.0"
@@ -266,8 +260,12 @@ dependencies = [
 dev = [
     { name = "build" },
     { name = "hypothesis" },
+    { name = "lark" },
     { name = "pre-commit" },
+    { name = "pygithub" },
     { name = "pytest" },
+    { name = "pyyaml" },
+    { name = "requests" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "types-protobuf" },
@@ -287,42 +285,17 @@ requires-dist = [
 dev = [
     { name = "build" },
     { name = "hypothesis" },
+    { name = "lark" },
     { name = "pre-commit" },
+    { name = "pygithub" },
     { name = "pytest", specifier = ">=6" },
+    { name = "pyyaml" },
+    { name = "requests" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "types-protobuf" },
     { name = "types-pyyaml" },
 ]
-
-[[package]]
-name = "define-tools"
-version = "0.0.1"
-source = { virtual = "tools" }
-dependencies = [
-    { name = "click" },
-    { name = "lark" },
-    { name = "pygithub" },
-    { name = "pyyaml" },
-    { name = "requests" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click" },
-    { name = "lark" },
-    { name = "pygithub" },
-    { name = "pyyaml" },
-    { name = "requests" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=6" }]
 
 [[package]]
 name = "distlib"

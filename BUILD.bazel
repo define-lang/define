@@ -31,7 +31,6 @@ native_binary(
     data = [
         "pyproject.toml",
         "uv.lock",
-        "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
     tags = [
@@ -51,7 +50,6 @@ native_test(
     data = [
         "pyproject.toml",
         "uv.lock",
-        "//tools:pyproject.toml",
         "@multitool//tools/uv",
     ],
     tags = [

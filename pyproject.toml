@@ -13,9 +13,6 @@ dependencies = [
     "regex",
 ]
 
-[tool.uv.workspace]
-members = ["tools"]
-
 [tool.ruff.lint]
 extend-select = [
   "W",  # pycodestyle warnings
@@ -96,8 +93,12 @@ exclude = [
 dev = [
     "build",
     "hypothesis",
+    "lark",
     "pre-commit",
+    "pygithub",
     "pytest>=6",
+    "pyyaml",
+    "requests",
     "ruff",
     "setuptools",
     "types-protobuf",

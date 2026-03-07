@@ -9,8 +9,6 @@ load("//tools/lint:pyright.bzl", "pyright_test")
 
 npm_link_all_packages()
 
-exports_files(["pyproject.toml"])
-
 py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
@@ -166,7 +164,6 @@ format_test(
 # package or any of its sub-packages, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
-    pyproject = "//tools:pyproject.toml",
     deps = [
         ":generate_lark_standalone",
         ":generate_programming_languages",

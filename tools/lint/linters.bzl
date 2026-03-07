@@ -4,8 +4,5 @@ load("@aspect_rules_lint//lint:ruff.bzl", "lint_ruff_aspect")
 
 ruff = lint_ruff_aspect(
     binary = Label("@multitool//tools/ruff"),
-    configs = [
-        Label("//:pyproject.toml"),
-        Label("//tools:pyproject.toml"),
-    ],
+    configs = [Label("//:pyproject.toml")],
 )
