@@ -52,13 +52,18 @@ class FileValidationContext:
     file_path: pathlib.PurePosixPath
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str
-    # If sub_root_mappings is None, we are in a non-filesystem context.
     sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
+    is_filesystem_context: bool = True
 
     @cached_property
     def full_path(self) -> pathlib.PurePosixPath:
         """Return full filesystem path for this validation context."""
         return self.root_prefix / self.file_path
+
+    @cached_property
+    def expected_definition_path(self) -> pathlib.PurePosixPath | None:
+        """Return the expected definition path for filesystem-backed validation."""
+        return self.file_path.with_suffix("")
 
 
 @dataclass(frozen=True)
@@ -69,20 +74,12 @@ class EmptyFileValidationContext(FileValidationContext):
     root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT
     expected_fqun: str = ""
     sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
+    is_filesystem_context: bool = False
 
-
-@dataclass(frozen=True)
-class _ProgramValidationResult:
-    """Aggregated validation output for all definitions in a file."""
-
-    diagnostics: list[diagnostics.Diagnostic]
-    definitions: list[ast.QualityDefinition]
-    reference_edges: list[validation_result.ReferenceEdge]
-    discovered_files: list[validation_result.DiscoveredFile]
-    deferred_chained_names: list[validation_result.DeferredChainElements]
-    trigger_positions: list[validation_result.TriggerPositionInfo]
-    action_body_effects: list[validation_result.ActionBodyEffect]
-    deferred_move_constraint_checks: list[validation_result.DeferredMoveConstraintCheck]
+    @cached_property
+    def expected_definition_path(self) -> pathlib.PurePosixPath | None:
+        """Return no expected definition path for source-only validation."""
+        return None
 
 
 class FileValidator:
@@ -116,12 +113,10 @@ class FileValidator:
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
             )
-        expected_definition_path = context.file_path.with_suffix("")
         return self._validate_source(
             context=context,
             source=source,
             tracker=tracker,
-            expected_definition_path=expected_definition_path,
         )
 
     def validate_source(
@@ -136,7 +131,6 @@ class FileValidator:
             context=context,
             source=source,
             tracker=tracker,
-            expected_definition_path=None,
         )
 
     def _validate_source(
@@ -144,7 +138,6 @@ class FileValidator:
         context: FileValidationContext,
         source: str,
         tracker: stats.ValidationStatsTracker,
-        expected_definition_path: pathlib.PurePosixPath | None,
     ) -> validation_result.ValidationResult:
         """Parse, transform, and validate source text."""
         parse_result = self._parser.parse(source, file_path=context.full_path)
@@ -152,7 +145,7 @@ class FileValidator:
 
         if parse_result.exception is not None:
             indentation_diags: list[diagnostics.Diagnostic] = (
-                parse_result.diagnostics if expected_definition_path is not None else []
+                parse_result.diagnostics if context.is_filesystem_context else []
             )
             return validation_result.ValidationResult(
                 diagnostics=indentation_diags,
@@ -184,14 +177,36 @@ class FileValidator:
             raise
         tracker.mark_transform_finished()
 
-        fdv = ProgramAstValidator(context, expected_definition_path)
-        fdv.validate_program(program)
-        program_result = fdv.build_result()
+        seen_definitions: dict[str, ast.QualityDefinition] = {}
+        definition_results: list[validation_result.DefinitionValidationResult] = []
+        for definition in program.definitions:
+            result = DefinitionAstValidator(
+                definition=definition,
+                context=context,
+                seen_definitions=seen_definitions,
+            ).validate_definition()
+            definition_results.append(result)
+            definition_name = definition.typed_name.full_typed_name()
+            if definition_name not in seen_definitions:
+                seen_definitions[definition_name] = definition
         tracker.mark_file_validation_finished()
 
-        all_diagnostics = program_result.diagnostics
-        if expected_definition_path is not None:
+        all_diagnostics = [
+            diagnostic
+            for result in definition_results
+            for diagnostic in result.diagnostics
+        ]
+        if context.is_filesystem_context:
             all_diagnostics = parse_result.diagnostics + all_diagnostics
+
+        definitions: list[ast.QualityDefinition] = []
+        seen_definition_names: set[str] = set()
+        for result in definition_results:
+            definition_name = result.definition.typed_name.full_typed_name()
+            if definition_name in seen_definition_names:
+                continue
+            seen_definition_names.add(definition_name)
+            definitions.append(result.definition)
 
         return validation_result.ValidationResult(
             diagnostics=all_diagnostics,
@@ -200,13 +215,35 @@ class FileValidator:
             file_path=context.full_path,
             root_prefix=context.root_prefix,
             stats=tracker.build(),
-            definitions=program_result.definitions,
-            reference_edges=program_result.reference_edges,
-            discovered_files=program_result.discovered_files,
-            deferred_chained_names=program_result.deferred_chained_names,
-            trigger_positions=program_result.trigger_positions,
-            action_body_effects=program_result.action_body_effects,
-            deferred_move_constraint_checks=program_result.deferred_move_constraint_checks,
+            definitions=definitions,
+            reference_edges=[
+                edge for result in definition_results for edge in result.reference_edges
+            ],
+            discovered_files=[
+                discovered_file
+                for result in definition_results
+                for discovered_file in result.discovered_files
+            ],
+            deferred_chained_names=[
+                deferred_name
+                for result in definition_results
+                for deferred_name in result.deferred_chained_names
+            ],
+            trigger_positions=[
+                trigger_position
+                for result in definition_results
+                for trigger_position in result.trigger_positions
+            ],
+            action_body_effects=[
+                effect
+                for result in definition_results
+                for effect in result.action_body_effects
+            ],
+            deferred_move_constraint_checks=[
+                check
+                for result in definition_results
+                for check in result.deferred_move_constraint_checks
+            ],
         )
 
     def _load_file(
@@ -237,7 +274,6 @@ class DefinitionAstValidator:
     """
 
     _context: FileValidationContext
-    _expected_definition_path: pathlib.PurePosixPath | None
     _diagnostics: list[diagnostics.Diagnostic]
     _definition: ast.QualityDefinition
     _reference_edges: list[validation_result.ReferenceEdge]
@@ -248,20 +284,18 @@ class DefinitionAstValidator:
     _deferred_move_constraint_checks: list[
         validation_result.DeferredMoveConstraintCheck
     ]
-    _seen_in_file: dict[str, ast.QualityDefinition]
+    _seen_definitions: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
 
     def __init__(
         self,
         definition: ast.QualityDefinition,
         context: FileValidationContext,
-        expected_definition_path: pathlib.PurePosixPath | None,
-        seen_in_file: dict[str, ast.QualityDefinition],
+        seen_definitions: dict[str, ast.QualityDefinition],
     ):
         """Initialize per-definition validation state from file-level state."""
         self._definition = definition
         self._context = context
-        self._expected_definition_path = expected_definition_path
         self._diagnostics = []
         self._reference_edges = []
         self._discovered_files = []
@@ -269,7 +303,7 @@ class DefinitionAstValidator:
         self._trigger_positions = []
         self._action_body_effects = []
         self._deferred_move_constraint_checks = []
-        self._seen_in_file = seen_in_file
+        self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
@@ -281,7 +315,7 @@ class DefinitionAstValidator:
         )
         self._validate_path_matches_file()
         self._validate_fqun_matches_expected()
-        _ = self._validate_not_duplicate_in_file()
+        self._validate_not_duplicate_in_file()
 
         if (
             isinstance(self._definition, ast.ActionDefinition)
@@ -309,10 +343,10 @@ class DefinitionAstValidator:
         )
 
     def _validate_path_matches_file(self):
-        if self._expected_definition_path is None:
+        if self._context.expected_definition_path is None:
             return
         definition_path = self._definition.typed_name.name_content.path.name
-        expected_path = "/" + self._expected_definition_path.as_posix()
+        expected_path = "/" + self._context.expected_definition_path.as_posix()
         if definition_path != expected_path:
             self._diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
@@ -336,11 +370,11 @@ class DefinitionAstValidator:
                 )
             )
 
-    def _validate_not_duplicate_in_file(self) -> bool:
-        """Check for within-file duplicates. Returns True if duplicate."""
+    def _validate_not_duplicate_in_file(self):
+        """Check for within-file duplicates."""
         key = self._definition.typed_name.full_typed_name()
-        if key in self._seen_in_file:
-            first_def = self._seen_in_file[key]
+        if key in self._seen_definitions:
+            first_def = self._seen_definitions[key]
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
                     position=self._definition.position,
@@ -349,9 +383,6 @@ class DefinitionAstValidator:
                     first_definition_line=first_def.position.line,
                 )
             )
-            return True
-        self._seen_in_file[key] = self._definition
-        return False
 
     def _validate_action_definition_block(
         self,
@@ -818,7 +849,10 @@ class DefinitionAstValidator:
             global_name_reference=typed_global_name,
         )
         # Process a reference that's inside of this same file.
-        if edge.full_typed_name in self._seen_in_file:
+        if (
+            edge.full_typed_name in self._seen_definitions
+            or edge.full_typed_name == self._definition.typed_name.full_typed_name()
+        ):
             self._reference_edges.append(edge)
             return
 
@@ -833,7 +867,7 @@ class DefinitionAstValidator:
             return
 
         sub_root_mappings = self._context.sub_root_mappings
-        if sub_root_mappings is None:
+        if not self._context.is_filesystem_context:
             # Process a cross-FQUN reference in a non-filesystem context.
             self._add_edge_and_discovered_file(
                 edge=edge,
@@ -842,6 +876,8 @@ class DefinitionAstValidator:
                 expected_fqun=global_name.fqun,
             )
             return
+        if sub_root_mappings is None:
+            raise ValueError("filesystem contexts must define sub_root_mappings")
 
         # Process a cross-FQUN reference in a filesystem context.
         fqun_string = global_name.fqun.canonical
@@ -880,83 +916,4 @@ class DefinitionAstValidator:
                 expected_fqun=expected_fqun.canonical,
                 position=global_name.position,
             )
-        )
-
-
-class ProgramAstValidator:
-    """Validates definitions within a single file.
-
-    Tracks within-file state: local duplicates, diagnostics, and discovered
-    references. Does NOT access any cross-file shared state.
-
-    Is mutable and not thread-safe.
-    """
-
-    _context: FileValidationContext
-    _expected_definition_path: pathlib.PurePosixPath | None
-    _diagnostics: list[diagnostics.Diagnostic]
-    _definitions: list[ast.QualityDefinition]
-    _reference_edges: list[validation_result.ReferenceEdge]
-    _discovered_files: list[validation_result.DiscoveredFile]
-    _deferred_chained_names: list[validation_result.DeferredChainElements]
-    _trigger_positions: list[validation_result.TriggerPositionInfo]
-    _action_body_effects: list[validation_result.ActionBodyEffect]
-    _deferred_move_constraint_checks: list[
-        validation_result.DeferredMoveConstraintCheck
-    ]
-    _seen_in_file: dict[str, ast.QualityDefinition]
-
-    def __init__(
-        self,
-        context: FileValidationContext,
-        expected_definition_path: pathlib.PurePosixPath | None,
-    ):
-        """Initialize per-file validation state."""
-        self._context = context
-        self._expected_definition_path = expected_definition_path
-        self._diagnostics = []
-        self._definitions = []
-        self._reference_edges = []
-        self._discovered_files = []
-        self._deferred_chained_names = []
-        self._trigger_positions = []
-        self._action_body_effects = []
-        self._deferred_move_constraint_checks = []
-        self._seen_in_file = {}
-
-    def validate_program(self, program: ast.Program):
-        """Validate all definitions in the program."""
-        for definition in program.definitions:
-            definition_key = definition.typed_name.full_typed_name()
-            was_seen = definition_key in self._seen_in_file
-            validator = DefinitionAstValidator(
-                definition=definition,
-                context=self._context,
-                expected_definition_path=self._expected_definition_path,
-                seen_in_file=self._seen_in_file,
-            )
-            result = validator.validate_definition()
-            self._diagnostics.extend(result.diagnostics)
-            if not was_seen:
-                self._definitions.append(result.definition)
-            self._reference_edges.extend(result.reference_edges)
-            self._discovered_files.extend(result.discovered_files)
-            self._deferred_chained_names.extend(result.deferred_chained_names)
-            self._trigger_positions.extend(result.trigger_positions)
-            self._action_body_effects.extend(result.action_body_effects)
-            self._deferred_move_constraint_checks.extend(
-                result.deferred_move_constraint_checks
-            )
-
-    def build_result(self) -> _ProgramValidationResult:
-        """Build the aggregated result for the full program."""
-        return _ProgramValidationResult(
-            diagnostics=list(self._diagnostics),
-            definitions=list(self._definitions),
-            reference_edges=list(self._reference_edges),
-            discovered_files=list(self._discovered_files),
-            deferred_chained_names=list(self._deferred_chained_names),
-            trigger_positions=list(self._trigger_positions),
-            action_body_effects=list(self._action_body_effects),
-            deferred_move_constraint_checks=list(self._deferred_move_constraint_checks),
         )

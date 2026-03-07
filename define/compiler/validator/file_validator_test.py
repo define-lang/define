@@ -124,6 +124,9 @@ class TestFileValidatorDiagnostics:
         assert [type(d) for d in result.diagnostics] == [
             diagnostics.DuplicateDefinitionDiagnostic,
         ]
+        assert [
+            definition.typed_name.full_typed_name() for definition in result.definitions
+        ] == ["position<my.domain.com:my_lib:/test>"]
 
 
 class TestDefinitionAstValidator:
@@ -135,8 +138,7 @@ class TestDefinitionAstValidator:
         validator = file_validator.DefinitionAstValidator(
             definition=program.definitions[0],
             context=_make_context(tmp_path),
-            expected_definition_path=PurePosixPath("test"),
-            seen_in_file={},
+            seen_definitions={},
         )
 
         result = validator.validate_definition()
@@ -153,25 +155,57 @@ class TestDefinitionAstValidator:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         program = _parse_program(source, lark_parser)
-        seen_in_file: dict[str, ast.QualityDefinition] = {}
+        seen_definitions: dict[str, ast.QualityDefinition] = {}
 
         first_result = file_validator.DefinitionAstValidator(
             definition=program.definitions[0],
             context=_make_context(tmp_path),
-            expected_definition_path=PurePosixPath("test"),
-            seen_in_file=seen_in_file,
+            seen_definitions=seen_definitions,
         ).validate_definition()
+        seen_definitions[program.definitions[0].typed_name.full_typed_name()] = (
+            program.definitions[0]
+        )
         second_result = file_validator.DefinitionAstValidator(
             definition=program.definitions[1],
             context=_make_context(tmp_path),
-            expected_definition_path=PurePosixPath("test"),
-            seen_in_file=seen_in_file,
+            seen_definitions=seen_definitions,
         ).validate_definition()
 
         assert first_result.definition == program.definitions[0]
         assert first_result.diagnostics == []
         assert second_result.definition == program.definitions[1]
         assert [type(d) for d in second_result.diagnostics] == [
+            diagnostics.DuplicateDefinitionDiagnostic,
+        ]
+
+    def test_sequential_validation_returns_definition_results(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+        )
+        program = _parse_program(source, lark_parser)
+        seen_definitions: dict[str, ast.QualityDefinition] = {}
+        results: list[validation_result.DefinitionValidationResult] = []
+
+        for definition in program.definitions:
+            result = file_validator.DefinitionAstValidator(
+                definition=definition,
+                context=_make_context(tmp_path),
+                seen_definitions=seen_definitions,
+            ).validate_definition()
+            results.append(result)
+            seen_definitions[definition.typed_name.full_typed_name()] = definition
+
+        assert len(results) == 2
+        assert all(
+            isinstance(result, validation_result.DefinitionValidationResult)
+            for result in results
+        )
+        assert [result.definition for result in results] == list(program.definitions)
+        assert results[0].diagnostics == []
+        assert [type(d) for d in results[1].diagnostics] == [
             diagnostics.DuplicateDefinitionDiagnostic,
         ]
 
