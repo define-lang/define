@@ -117,19 +117,25 @@ class TestTriggerConditionValidation:
             source
         )
         diags = results[0].diagnostics
-        assert len(diags) == 3
+        assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
         assert diags[0].local_name == "act_b"
         assert diags[0].position.line == 4
         assert diags[0].position.column == 37
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].element_name == "action<act_b>"
-        assert diags[1].parent_name == "position<pos_a>"
+        assert isinstance(
+            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[1].local_name == "action<act_b>"
+        assert diags[1].preceding_name == "position<pos_a>"
         assert diags[1].position.line == 4
-        assert diags[1].position.column == 30
-        assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(diags[2], diagnostics.ChainElementNotInConstraintsDiagnostic)
+        assert diags[2].element_name == "action<act_b>"
+        assert diags[2].parent_name == "position<pos_a>"
         assert diags[2].position.line == 4
         assert diags[2].position.column == 30
+        assert isinstance(diags[3], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert diags[3].position.line == 4
+        assert diags[3].position.column == 30
 
     def test_three_item_chain_valid(self, validate_project: ValidateProject):
         results = validate_project(

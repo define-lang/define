@@ -44,15 +44,15 @@ class LocalDimensionPointTracker:
         """Return the local typed name reference if trackable, None otherwise.
 
         A position reference is trackable when it has a single-item chain,
-        that item is a LocalTypedNameReference, and it is defined in the
-        current (innermost) scope.
+        that item is a LocalTypedNameReference, and it is defined in any
+        enclosing scope.
         """
         if len(ref.chain) != 1:
             return None
         first = ref.chain[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return None
-        if not scope.is_defined_in_current_scope(first):
+        if not scope.is_defined(first):
             return None
         return first
 
@@ -85,6 +85,16 @@ class LocalDimensionPointTracker:
             qualities=frozenset(qualities),
         )
 
+    def destroy(self, ref: ast.PositionReference):
+        """Remove a dimension point from this position.
+
+        Raises ValueError if the position is not occupied.
+        """
+        key = self._key_for(ref)
+        if key not in self._dimension_points:
+            raise ValueError(f"position {key} is not occupied")
+        del self._dimension_points[key]
+
     def move(self, from_ref: ast.PositionReference, to_ref: ast.PositionReference):
         """Move a dimension point from one position to another.
 
@@ -97,7 +107,14 @@ class LocalDimensionPointTracker:
         if to_key in self._dimension_points:
             raise ValueError(f"destination position {to_key} is already occupied")
         occupant = self._dimension_points.pop(from_key)
-        self._dimension_points[to_key] = occupant
+        self._dimension_points[to_key] = DimensionPointInfo(
+            creation_position=typing.cast(
+                "ast.LocalTypedNameReference", to_ref.chain[0]
+            ),
+            qualities=occupant.qualities,
+        )
 
     def _key_for(self, ref: ast.PositionReference) -> str:
-        return ref.chain[0].full_typed_name(in_universe=self._fqun)
+        return "::".join(
+            elem.full_typed_name(in_universe=self._fqun) for elem in ref.chain
+        )

@@ -188,9 +188,11 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<my_pos>.\n"
+                    "    define the position<other>.\n"
                     "    it happens when {\n"
                     "        the position<my_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        move the dimension point in position<my_pos> to position<other>.\n"
                     "        create a dimension point in position<my_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -198,7 +200,7 @@ class TestActionTriggering:
             },
         )
         assert result.all_diagnostics == []
-        assert _edge_keys(result) == {(_TEST, _TEST, 6)}
+        assert _edge_keys(result) == {(_TEST, _TEST, 8)}
 
     def test_trigger_positions_recorded(
         self,

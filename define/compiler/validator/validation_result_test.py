@@ -224,12 +224,13 @@ class TestActionBodyEffect:
         result = _validate_single_file(
             tmp_path,
             monkeypatch,
-            f"define the potential action<{_FQUN}:/act> {{\n"
+            f"define the potential action<{_FQUN}:/test> {{\n"
             "    define the position<run>.\n"
+            "    define the position<target>.\n"
             "    it happens when {\n"
             "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<run>.\n"
+            "        create a dimension point in position<target>.\n"
             "    }\n"
             "}\n",
         )
@@ -237,10 +238,36 @@ class TestActionBodyEffect:
         effect = result.action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.position_reference.chain
-        assert effect.target_action_name == f"action<{_FQUN}:/act>"
+        assert effect.target_action_name == f"action<{_FQUN}:/test>"
         assert (
             effect.affected_position_qualified_chained_name
-            == f"action<{_FQUN}:/act>::position<run>"
+            == f"action<{_FQUN}:/test>::position<target>"
+        )
+
+    def test_create_to_statement_local_position(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        result = _validate_single_file(
+            tmp_path,
+            monkeypatch,
+            f"define the potential action<{_FQUN}:/test> {{\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<target>.\n"
+            "        create a dimension point in position<target>.\n"
+            "    }\n"
+            "}\n",
+        )
+        assert len(result.action_body_effects) == 1
+        effect = result.action_body_effects[0]
+        assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
+        assert effect.modified_position is effect.statement.position_reference.chain
+        assert effect.target_action_name == f"action<{_FQUN}:/test>"
+        assert (
+            effect.affected_position_qualified_chained_name
+            == f"action<{_FQUN}:/test>::position<target>"
         )
 
     def test_move_to_local_position(

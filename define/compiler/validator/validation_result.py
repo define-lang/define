@@ -16,6 +16,7 @@ from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
+    from collections.abc import Set
 
     from define.compiler.validator import stats
 
@@ -154,6 +155,21 @@ class ActionBodyEffect:
         return "::".join(elem.full_typed_name(in_universe=fqun) for elem in chain[idx:])
 
 
+@dataclass
+class DeferredMoveConstraintCheck:
+    """A move constraint check deferred because at least one position is a chained name.
+
+    Whichever of from_qualities/to_qualities is None will be resolved by the
+    program validator from the chained position's definition constraints.
+    The check executes once both are resolved.
+    """
+
+    enclosing_definition: ast.QualityDefinition
+    statement: ast.MoveDimensionPointStatement
+    from_qualities: Set[str] | None
+    to_qualities: Set[str] | None
+
+
 # TODO: Rename This FileValidationResult and create another class for the ProgramValidationResult.
 @dataclass
 class ValidationResult:
@@ -173,6 +189,9 @@ class ValidationResult:
     deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
     trigger_positions: list[TriggerPositionInfo] = field(default_factory=list)
     action_body_effects: list[ActionBodyEffect] = field(default_factory=list)
+    deferred_move_constraint_checks: list[DeferredMoveConstraintCheck] = field(
+        default_factory=list
+    )
 
     @cached_property
     def definitions_by_name(self) -> dict[str, ast.QualityDefinition]:

@@ -212,6 +212,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "dimension_points/create/chain_ending_with_action.def": [
         diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],
@@ -228,6 +229,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "dimension_points/move/chain_ending_with_action.def": [
         diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],
@@ -242,11 +244,11 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "dimension_points/move/repeated_same_direction.def": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
-        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+        diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
     "dimension_points/move/round_trip_fails.def": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
-        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+        diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
     "dimension_points/move/single_action_reference.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
@@ -254,7 +256,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "dimension_points/move/to_occupied_position.def": [
-        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+        diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
     "dimension_points/move/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
@@ -274,6 +276,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "trigger_conditions/chain_ending_with_action.def": [
         diagnostics.LocalActionNameDiagnostic,
+        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
     ],

@@ -113,6 +113,11 @@ class NameContent(ASTNode, abc.ABC):
     def full_name(self, in_universe: Fqun | None = None) -> str:
         """Return the full name text, optionally resolved against a universe."""
 
+    @property
+    @abc.abstractmethod
+    def source_name(self) -> str:
+        """Return the name as it appears in the source."""
+
 
 @dataclass
 class LocalNameContent(NameContent):
@@ -123,6 +128,11 @@ class LocalNameContent(NameContent):
     @override
     def full_name(self, in_universe: Fqun | None = None) -> str:
         """Return the local name."""
+        return self.name
+
+    @property
+    @override
+    def source_name(self) -> str:
         return self.name
 
 
@@ -161,6 +171,11 @@ class TypedName(ASTNode):
         """Return canonical typed-name text including effective FQUN and path."""
         return f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
 
+    @property
+    def source_typed_name(self) -> str:
+        """Return typed-name text as it appears in the source."""
+        return f"{self.name_type.value}<{self.name_content.source_name}>"
+
 
 @dataclass
 class GlobalTypedNameReference(TypedName):
@@ -180,6 +195,9 @@ class LocalTypedNameReference(TypedName):
 class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
 
+    # TODO: We need a ChainedName class; there are a lot of places that
+    # want to calculate the full chained name as a string and it would
+    # be better if we just did it here.
     chain: list[TypedName]
 
 
@@ -349,6 +367,13 @@ class GlobalNameContent(NameContent):
         if fqun is None:
             raise ValueError("global name requires an effective FQUN")
         return f"{fqun.canonical}:{self.path.name}"
+
+    @property
+    @override
+    def source_name(self) -> str:
+        if self.fqun is not None:
+            return f"{self.fqun.canonical}:{self.path.name}"
+        return self.path.name
 
 
 @dataclass

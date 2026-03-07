@@ -229,9 +229,10 @@ class TestDimensionPointReferenceEdges:
     ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
             "    define the position<inner_pos>.\n"
             "    it happens when {\n"
-            "        the position<inner_pos> has a dimension point.\n"
+            "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
             "        create a dimension point in position<inner_pos>.\n"
             "    }\n"

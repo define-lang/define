@@ -1,13 +1,15 @@
 define the potential action<mv:define-lang.org:test_move_dim_chain:/test> {
+    define the position<run>.
     define the position<pos_a> {
         it may only contain dimension points where {
             it has the action</act_middle>.
         }
     }
+    define the position<dest>.
     it happens when {
-        the position<pos_a> has a dimension point.
+        the position<run> has a dimension point.
     } and it does {
         create a dimension point in position<pos_a>::action</act_middle>::position<inner_pos>.
-        move the dimension point in position<pos_a>::action</act_middle>::position<inner_pos> to position<pos_a>.
+        move the dimension point in position<pos_a>::action</act_middle>::position<inner_pos> to position<dest>.
     }
 }

@@ -172,12 +172,13 @@ def test_three_actions_dimension_point_isolation():
     assert all_diags == []
 
 
-def test_definition_block_position_not_enforced():
+def test_definition_block_position_enforced():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
         "    define the position<outer_pos>.\n"
         "    it happens when {\n"
-        "        the position<outer_pos> has a dimension point.\n"
+        "        the position<run> has a dimension point.\n"
         "    } and it does {\n"
         "        create a dimension point in position<outer_pos>.\n"
         "        create a dimension point in position<outer_pos>.\n"
@@ -187,4 +188,8 @@ def test_definition_block_position_not_enforced():
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
         source
     )
-    assert results[0].diagnostics == []
+    assert len(results[0].diagnostics) == 1
+    assert isinstance(
+        results[0].diagnostics[0], diagnostics.LocalDuplicateDimensionPointDiagnostic
+    )
+    assert results[0].diagnostics[0].position_name == "position<outer_pos>"

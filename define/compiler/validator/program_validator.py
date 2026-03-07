@@ -35,6 +35,11 @@ from define.compiler.validator import (
 )
 
 
+def _chain_name(chain: list[ast.TypedName]) -> str:
+    """Format a chain of typed names as written in the source."""
+    return "::".join(elem.source_typed_name for elem in chain)
+
+
 @dataclass
 class _DeferredEdge:
     """An edge waiting for its target file to complete validation."""
@@ -48,6 +53,14 @@ class _DeferredChainValidation:
     """A chain element waiting for its parent's file to complete validation."""
 
     deferred: validation_result.DeferredChainElements
+    source_result: validation_result.ValidationResult
+
+
+@dataclass
+class _DeferredMoveConstraint:
+    """A move constraint check waiting for the 'to' position's file to complete."""
+
+    check: validation_result.DeferredMoveConstraintCheck
     source_result: validation_result.ValidationResult
 
 
@@ -118,15 +131,21 @@ class ProgramValidator:
     _deferred_chain_validations: dict[
         pathlib.PurePosixPath, list[_DeferredChainValidation]
     ]
+    _deferred_move_constraints: dict[str, list[_DeferredMoveConstraint]]
+    _definition_results: dict[str, validation_result.ValidationResult]
     config_loading_time_ns: int
 
     def __init__(self):
         """Initialize coordinator state for one program validation."""
+        # TODO: A lot of this is starting to feel like complexity that
+        # should be abstracted behind something larger.
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self.action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._deferred_chain_validations = {}
+        self._deferred_move_constraints = {}
+        self._definition_results = {}
         self.config_loading_time_ns = 0
 
     @cached_property
@@ -200,13 +219,21 @@ class ProgramValidator:
     ):
         """Handle a completed file: check edges, submit discovered."""
         started_at = time.perf_counter_ns()
+        self._register_definitions(result)
         self._submit_discovered_files(result, pool)
         self._process_reference_edges(result.root_prefix, result)
         self._process_deferred_chained_names(result)
+        self._process_deferred_move_constraints(result)
         self.action_call_graph.process_result(result)
         result.stats.global_validation += time.perf_counter_ns() - started_at
         self._resolve_deferred_edges_for(result.file_path)
         self._resolve_deferred_chain_validations_for(result.file_path)
+        self._resolve_deferred_move_constraints_for(result)
+
+    def _register_definitions(self, result: validation_result.ValidationResult):
+        """Register all definitions from a completed file in the name registry."""
+        for name in result.definitions_by_name:
+            self._definition_results[name] = result
 
     def _submit_discovered_files(
         self,
@@ -342,7 +369,12 @@ class ProgramValidator:
         enclosing_root: pathlib.PurePosixPath,
         result: validation_result.ValidationResult,
     ):
-        """Try to add edges to the reference graph and validate resolved ones."""
+        """Try to add edges to the reference graph and validate resolved ones.
+
+        TODO: The wrong-type check could use _definition_results instead of
+        resolving the target file. File-not-found and sub-root checks still
+        need file paths.
+        """
         for ref_edge in result.reference_edges:
             target_file = self._resolve_target_file(
                 ref_edge.global_name_reference.name_content, enclosing_root
@@ -493,7 +525,11 @@ class ProgramValidator:
         self,
         result: validation_result.ValidationResult,
     ):
-        """Queue or immediately validate deferred chain elements from a result."""
+        """Queue or immediately validate deferred chain elements from a result.
+
+        TODO: Use _definition_results to look up parent definitions by name
+        instead of resolving target files, like _get_required_qualities_for_position does.
+        """
         for deferred in result.deferred_chained_names:
             target_file = self._resolve_target_file(
                 deferred.parent_element.name_content, result.root_prefix
@@ -523,6 +559,133 @@ class ProgramValidator:
             self._validate_chain_element_against_target(
                 dcv.deferred, target_result, dcv.source_result
             )
+
+    def _process_deferred_move_constraints(
+        self,
+        result: validation_result.ValidationResult,
+    ):
+        """Queue or immediately validate deferred move constraint checks from a result."""
+        for check in result.deferred_move_constraint_checks:
+            self._try_resolve_move_constraint(check, result)
+
+    def _resolve_deferred_move_constraints_for(
+        self, result: validation_result.ValidationResult
+    ):
+        """Resolve deferred move constraints waiting for definitions from this file."""
+        for name in result.definitions_by_name:
+            deferred_list = self._deferred_move_constraints.pop(name, [])
+            for dmc in deferred_list:
+                self._try_resolve_move_constraint(dmc.check, dmc.source_result)
+
+    def _try_resolve_move_constraint(
+        self,
+        check: validation_result.DeferredMoveConstraintCheck,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Try to fully resolve a deferred move constraint check."""
+        started_at = time.perf_counter_ns()
+        self._do_try_resolve_move_constraint(check, source_result)
+        source_result.stats.deferred_validation += time.perf_counter_ns() - started_at
+
+    def _do_try_resolve_move_constraint(
+        self,
+        check: validation_result.DeferredMoveConstraintCheck,
+        source_result: validation_result.ValidationResult,
+    ):
+        """Resolve a deferred move constraint check without timing side effects.
+
+        Eagerly resolves both sides, caching whatever is available. If either
+        side is still missing, queues the check on one unresolved definition.
+        """
+        fqun = check.enclosing_definition.typed_name.name_content.fqun
+
+        from_typed_name: str | None = None
+        if check.from_qualities is None:
+            qualities, from_typed_name = self._get_required_qualities_for_position(
+                check.statement.from_position.chain,
+                fqun,
+            )
+            if qualities is not None:
+                check.from_qualities = qualities
+
+        to_typed_name: str | None = None
+        if check.to_qualities is None:
+            qualities, to_typed_name = self._get_required_qualities_for_position(
+                check.statement.to_position.chain,
+                fqun,
+            )
+            if qualities is not None:
+                check.to_qualities = qualities
+
+        if check.from_qualities is None or check.to_qualities is None:
+            wait_for_definition = (
+                from_typed_name if check.from_qualities is None else to_typed_name
+            )
+            if wait_for_definition is None:
+                raise ValueError("wait_for_definition should never be None here")
+            self._deferred_move_constraints.setdefault(wait_for_definition, []).append(
+                _DeferredMoveConstraint(check=check, source_result=source_result)
+            )
+            return
+
+        missing = check.to_qualities - check.from_qualities
+        if missing:
+            source_result.diagnostics.append(
+                diagnostics.MoveViolatesConstraintsDiagnostic(
+                    position=check.statement.to_position.position,
+                    from_position=_chain_name(check.statement.from_position.chain),
+                    to_position=_chain_name(check.statement.to_position.chain),
+                    missing_qualities=sorted(missing),
+                )
+            )
+
+    def _get_required_qualities_for_position(
+        self,
+        chain: list[ast.TypedName],
+        fqun: ast.Fqun,
+    ) -> tuple[frozenset[str] | None, str]:
+        """Resolve the constraint qualities for the last position in a chain.
+
+        Returns (qualities, typed_name). qualities is None when the target
+        definition hasn't been registered yet; typed_name is the definition
+        name to wait for.
+        """
+        # TODO: This uses the last chain element's constraints as a proxy for what
+        # qualities a DP has. A DP may actually have more qualities than the last
+        # position requires (from its original creation site), and we lose that
+        # knowledge by only looking at its current location.
+        last_element = chain[-1]
+
+        if isinstance(last_element, ast.GlobalTypedNameReference):
+            lookup_key = last_element.full_typed_name(in_universe=fqun)
+        else:
+            # If the last element is a local reference, then per the
+            # guarantees provided by file_validator, it _must_ be
+            # a chain with more than one item in it, and the parent
+            # must be a globally-named action.
+            parent = chain[-2]
+            if not isinstance(parent, ast.GlobalTypedNameReference):
+                raise ValueError("got a local name where a global name was expected")
+            lookup_key = parent.full_typed_name(in_universe=fqun)
+
+        result = self._definition_results.get(lookup_key)
+        if result is None:
+            return (None, lookup_key)
+
+        if isinstance(last_element, ast.GlobalTypedNameReference):
+            return (
+                result.global_position_definition_constraints.get(
+                    lookup_key, frozenset()
+                ),
+                lookup_key,
+            )
+        if not isinstance(last_element, ast.LocalTypedNameReference):
+            raise ValueError("got some sort of impossible reference type")
+        locals_map = result.action_local_position_constraints.get(lookup_key, {})
+        return (
+            locals_map.get(last_element.name_content.name, frozenset()),
+            lookup_key,
+        )
 
     def _validate_chain_element_against_target(
         self,
@@ -640,7 +803,11 @@ class ProgramValidator:
         remaining: list[ast.TypedName],
         source_result: validation_result.ValidationResult,
     ):
-        """Submit a deferred chain validation, or validate immediately if the target is ready."""
+        """Submit a deferred chain validation, or validate immediately if the target is ready.
+
+        TODO: Use _definition_results to look up the target by name instead of
+        resolving the target file.
+        """
         if not remaining:
             return
         next_deferred = deferred.next_deferred(

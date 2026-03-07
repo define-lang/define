@@ -99,7 +99,7 @@ def test_get_local_position_reference_global_reference():
     assert result is None
 
 
-def test_get_local_position_reference_not_in_current_scope():
+def test_get_local_position_reference_in_parent_scope():
     scope = scope_tracker.ScopeTracker(_FQUN)
     scope.add_local_definition(_make_local_def("parent_pos"))
     scope.enter_child_scope()
@@ -108,7 +108,7 @@ def test_get_local_position_reference_not_in_current_scope():
 
     result = tracker.get_local_position_reference(ref, scope)
 
-    assert result is None
+    assert result is not None
 
 
 def test_create_and_is_occupied():
@@ -148,6 +148,24 @@ def test_create_already_occupied_raises():
 
     with pytest.raises(ValueError, match="already occupied"):
         tracker.create(ref, frozenset())
+
+
+def test_destroy():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref([_make_local_ref("pos_a")])
+
+    tracker.create(ref, frozenset())
+    tracker.destroy(ref)
+
+    assert tracker.is_occupied(ref) is False
+
+
+def test_destroy_from_empty_raises():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref([_make_local_ref("pos_a")])
+
+    with pytest.raises(ValueError, match="not occupied"):
+        tracker.destroy(ref)
 
 
 def test_move():
@@ -229,6 +247,18 @@ def test_move_preserves_qualities():
     tracker.move(from_ref, to_ref)
 
     assert tracker.get_occupant(to_ref).qualities == qualities
+
+
+def test_move_updates_creation_position():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    from_ref = _make_position_ref([_make_local_ref("pos_a")])
+    to_ref = _make_position_ref([_make_local_ref("pos_b")])
+
+    tracker.create(from_ref, frozenset())
+    assert tracker.get_occupant(from_ref).creation_position is from_ref.chain[0]
+
+    tracker.move(from_ref, to_ref)
+    assert tracker.get_occupant(to_ref).creation_position is to_ref.chain[0]
 
 
 def test_create_empty_qualities():

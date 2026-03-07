@@ -210,3 +210,235 @@ def test_wrong_type_detected_without_deferral(
     assert [type(d) for d in checker_result.diagnostics] == [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ]
+
+
+_MOVE_ACTION = (
+    "define the potential action<my.domain.com:my_lib:/test> {\n"
+    "    define the position<run>.\n"
+    "    it happens when {\n"
+    "        the position<run> has a dimension point.\n"
+    "    } and it does {\n"
+    "        define the position<a> {\n"
+    "            it may only contain dimension points where {\n"
+    "                it has the position</x>.\n"
+    "            }\n"
+    "        }\n"
+    "        define the position<b> {\n"
+    "            it may only contain dimension points where {\n"
+    "                it has the position</y>.\n"
+    "            }\n"
+    "        }\n"
+    "        create a dimension point in position<a>.\n"
+    "        move the dimension point in position<a>::position</x> to position<b>::position</y>.\n"
+    "    }\n"
+    "}\n"
+)
+
+
+def _hub_with_refs(ref_lines: list[str]) -> str:
+    lines = "".join(f"        {line}\n" for line in ref_lines)
+    return (
+        f"define the potential position<my.domain.com:my_lib:/hub> {{\n"
+        f"    it may only contain dimension points where {{\n"
+        f"{lines}"
+        f"    }}\n"
+        f"}}\n"
+    )
+
+
+def test_move_both_sides_resolved_immediately(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # hub discovers x, y, z, then test. With max_workers=1, processing order
+    # is: hub → x → y → z → test. When test's deferred move check runs, both
+    # /x and /y are already registered, so both sides resolve immediately.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_def(tmp_path, "x", _simple_position("x"))
+    _write_def(tmp_path, "y", _position_with_ref("y", "z"))
+    _write_def(tmp_path, "z", _simple_position("z"))
+    _write_def(
+        tmp_path,
+        "hub",
+        _hub_with_refs(
+            [
+                "it has the position</x>.",
+                "it has the position</y>.",
+                "it has the position</z>.",
+                "it has the action</test>.",
+            ]
+        ),
+    )
+    _write_def(tmp_path, "test", _MOVE_ACTION)
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].missing_qualities == [
+        "position<my.domain.com:my_lib:/z>",
+    ]
+
+
+def test_move_from_resolved_to_deferred(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # hub discovers x and test, but not y. test discovers y via its move.
+    # Processing order: hub → x → test (discovers y) → y (discovers z) → z.
+    # When test's move check runs: /x is registered (from resolves),
+    # /y is not yet (to queues on /y). When y completes, the deferred
+    # check resolves to.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_def(tmp_path, "x", _simple_position("x"))
+    _write_def(tmp_path, "y", _position_with_ref("y", "z"))
+    _write_def(tmp_path, "z", _simple_position("z"))
+    _write_def(
+        tmp_path,
+        "hub",
+        _hub_with_refs(
+            [
+                "it has the position</x>.",
+                "it has the action</test>.",
+            ]
+        ),
+    )
+    _write_def(tmp_path, "test", _MOVE_ACTION)
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].missing_qualities == [
+        "position<my.domain.com:my_lib:/z>",
+    ]
+
+
+def test_move_from_deferred_to_resolved_on_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # hub discovers y, z, and test, but not x. test discovers x via its move.
+    # Processing order: hub → y → z → test (discovers x) → x.
+    # When test's move check runs: /x is NOT registered (from queues on
+    # /x). When x completes, from resolves and /y is already registered,
+    # so to resolves immediately.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_def(tmp_path, "x", _simple_position("x"))
+    _write_def(tmp_path, "y", _position_with_ref("y", "z"))
+    _write_def(tmp_path, "z", _simple_position("z"))
+    _write_def(
+        tmp_path,
+        "hub",
+        _hub_with_refs(
+            [
+                "it has the position</y>.",
+                "it has the position</z>.",
+                "it has the action</test>.",
+            ]
+        ),
+    )
+    _write_def(tmp_path, "test", _MOVE_ACTION)
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].missing_qualities == [
+        "position<my.domain.com:my_lib:/z>",
+    ]
+
+
+def test_chained_to_chained_move_deferred_both_sides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # test.def is the entry point and discovers x.def and y.def via its
+    # chained move. With max_workers=1, test.def completes before x.def
+    # and y.def, so the deferred move constraint check starts with both
+    # from_qualities=None and to_qualities=None. It queues on x.def first,
+    # then on y.def, exercising the two-phase re-queuing path.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_def(tmp_path, "x", _simple_position("x"))
+    _write_def(tmp_path, "y", _simple_position("y"))
+    _write_def(
+        tmp_path,
+        "test",
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<a> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</x>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<b> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</y>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<a>.\n"
+            "        move the dimension point in position<a>::position</x> to position<b>::position</y>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert all_diags == []
+
+
+def test_chained_to_chained_move_deferred_both_sides_violates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # Same two-phase re-queuing as above, but y.def has a constraint
+    # requiring /z that the DP (resolved from unconstrained /x) doesn't have.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_def(tmp_path, "x", _simple_position("x"))
+    _write_def(tmp_path, "y", _position_with_ref("y", "z"))
+    _write_def(tmp_path, "z", _simple_position("z"))
+    _write_def(
+        tmp_path,
+        "test",
+        (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<a> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</x>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<b> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</y>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<a>.\n"
+            "        move the dimension point in position<a>::position</x> to position<b>::position</y>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    monkeypatch.chdir(tmp_path)
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].from_position == "position<a>::position</x>"
+    assert all_diags[0].to_position == "position<b>::position</y>"
+    assert all_diags[0].missing_qualities == [
+        "position<my.domain.com:my_lib:/z>",
+    ]

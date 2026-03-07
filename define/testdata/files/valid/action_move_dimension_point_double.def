@@ -5,7 +5,6 @@ define the potential action<mv:define-lang.org:test_files:/valid/action_move_dim
     it happens when {
         the position<pos_a> has a dimension point.
     } and it does {
-        create a dimension point in position<pos_a>.
         move the dimension point in position<pos_a> to position<pos_b>.
         move the dimension point in position<pos_b> to position<pos_c>.
     }

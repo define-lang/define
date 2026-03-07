@@ -40,9 +40,9 @@ SYNTAX_ERROR_TYPES = (
 )
 
 
-def _chain_name(chain: list[ast.TypedName], fqun: ast.Fqun) -> str:
-    """Format a chain of typed names as a :: -separated string."""
-    return "::".join(elem.full_typed_name(in_universe=fqun) for elem in chain)
+def _chain_name(chain: list[ast.TypedName]) -> str:
+    """Format a chain of typed names as written in the source."""
+    return "::".join(elem.source_typed_name for elem in chain)
 
 
 @dataclass(frozen=True)
@@ -178,6 +178,7 @@ class FileValidator:
         if expected_definition_path is not None:
             all_diagnostics = parse_result.diagnostics + all_diagnostics
 
+        # TODO: It seems like we should actually be returning results per definition processed.
         return validation_result.ValidationResult(
             diagnostics=all_diagnostics,
             exception=None,
@@ -191,6 +192,7 @@ class FileValidator:
             deferred_chained_names=fdv.deferred_chained_names,
             trigger_positions=fdv.trigger_positions,
             action_body_effects=fdv.action_body_effects,
+            deferred_move_constraint_checks=fdv.deferred_move_constraint_checks,
         )
 
     def _load_file(
@@ -232,6 +234,7 @@ class ProgramAstValidator:
     deferred_chained_names: list[validation_result.DeferredChainElements]
     trigger_positions: list[validation_result.TriggerPositionInfo]
     action_body_effects: list[validation_result.ActionBodyEffect]
+    deferred_move_constraint_checks: list[validation_result.DeferredMoveConstraintCheck]
     _seen_in_file: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
 
@@ -250,6 +253,7 @@ class ProgramAstValidator:
         self.deferred_chained_names = []
         self.trigger_positions = []
         self.action_body_effects = []
+        self.deferred_move_constraint_checks = []
         self._seen_in_file = {}
         self._unknown_fquns = set()
 
@@ -347,6 +351,14 @@ class ProgramAstValidator:
         tracker = dimension_point_tracker.LocalDimensionPointTracker(
             enclosing_definition
         )
+        # Set all positions from the Trigger Conditions Block as having
+        # the state that the Trigger Conditions Block says they have.
+        for condition in definition_block.trigger_conditions.conditions:
+            ref = condition.position_reference
+            local_ref = tracker.get_local_position_reference(ref, scope)
+            if local_ref is not None:
+                qualities = scope.get_constraint_names(ref.chain[0])
+                tracker.create(ref, qualities)
         scope.enter_child_scope()
         self._validate_action_statements(
             definition_block.action_statements,
@@ -363,7 +375,8 @@ class ProgramAstValidator:
     ):
         for condition in trigger_conditions.conditions:
             chain = condition.position_reference.chain
-            self._validate_full_chained_name(chain, enclosing_definition, scope)
+            if not self._validate_full_chained_name(chain, enclosing_definition, scope):
+                continue
             self.trigger_positions.append(
                 validation_result.TriggerPositionInfo(
                     enclosing_typed_name=enclosing_definition.typed_name,
@@ -436,21 +449,36 @@ class ProgramAstValidator:
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        chain = stmt.position_reference.chain
-        self._validate_full_chained_name(chain, enclosing_definition, scope)
-        fqun = enclosing_definition.typed_name.name_content.fqun
-        if self._check_local_position_not_occupied(
-            tracker, stmt.position_reference, scope, fqun
+        position = stmt.position_reference
+        if not self._validate_full_chained_name(
+            position.chain, enclosing_definition, scope
         ):
-            qualities = scope.get_constraint_names(chain[0])
-            tracker.create(stmt.position_reference, qualities)
-        if not tracker.has_unknown_state(stmt.position_reference):
-            self.action_body_effects.append(
-                validation_result.ActionBodyEffect(
-                    enclosing_typed_name=enclosing_definition.typed_name,
-                    statement=stmt,
+            return
+
+        if tracker.has_unknown_state(position):
+            return
+
+        local_ref = tracker.get_local_position_reference(position, scope)
+        if local_ref is not None:
+            if tracker.is_occupied(position):
+                existing = tracker.get_occupant(position)
+                self.diagnostics.append(
+                    diagnostics.LocalDuplicateDimensionPointDiagnostic(
+                        position=position.position,
+                        position_name=_chain_name(position.chain),
+                        first_creation_line=existing.creation_position.position.line,
+                    )
                 )
+                return
+            qualities = scope.get_constraint_names(position.chain[0])
+            tracker.create(position, qualities)
+
+        self.action_body_effects.append(
+            validation_result.ActionBodyEffect(
+                enclosing_typed_name=enclosing_definition.typed_name,
+                statement=stmt,
             )
+        )
 
     def _validate_move_dimension_point(
         self,
@@ -459,29 +487,100 @@ class ProgramAstValidator:
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        self._validate_full_chained_name(
+        from_ok = self._validate_full_chained_name(
             stmt.from_position.chain, enclosing_definition, scope
         )
-        self._validate_full_chained_name(
+        to_ok = self._validate_full_chained_name(
             stmt.to_position.chain, enclosing_definition, scope
         )
         fqun = enclosing_definition.typed_name.name_content.fqun
         if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
             return
-        from_ok = self._check_local_position_occupied(
-            tracker, stmt.from_position, scope, fqun
-        )
-        to_ok = self._check_local_position_not_occupied(
-            tracker, stmt.to_position, scope, fqun
-        )
-        if from_ok and to_ok:
-            if self._check_constraints_for_move(stmt, fqun, scope, tracker):
+        if not (from_ok and to_ok):
+            return
+
+        self._execute_move(stmt, enclosing_definition, scope, tracker)
+
+    def _execute_move(
+        self,
+        stmt: ast.MoveDimensionPointStatement,
+        enclosing_definition: ast.QualityDefinition,
+        scope: scope_tracker.ScopeTracker,
+        tracker: dimension_point_tracker.LocalDimensionPointTracker,
+    ):
+        # First, if either position is in an unknown state, mark both as now having an
+        # unknown state and don't do any more checks.
+        if tracker.has_unknown_state(stmt.from_position) or tracker.has_unknown_state(
+            stmt.to_position
+        ):
+            tracker.mark_unknown_state(stmt.from_position)
+            tracker.mark_unknown_state(stmt.to_position)
+            return
+
+        from_local = tracker.get_local_position_reference(stmt.from_position, scope)
+        to_local = tracker.get_local_position_reference(stmt.to_position, scope)
+
+        from_occupied = tracker.is_occupied(stmt.from_position)
+        to_empty = not tracker.is_occupied(stmt.to_position)
+
+        if not (from_local and to_local):
+            # For now, we are assuming that all external positions are fine to
+            # move into or from, for the sake of simplicity.
+            #
+            # TODO: Need to do occupancy tracking on external positions, or more
+            # realistically, need to have constraints that enforce that state.
+            from_occupied = (not from_local) or from_occupied
+            to_empty = (not to_local) or to_empty
+
+        if not from_occupied:
+            self.diagnostics.append(
+                diagnostics.MoveFromEmptyPositionDiagnostic(
+                    position=stmt.from_position.position,
+                    position_name=_chain_name(stmt.from_position.chain),
+                )
+            )
+        if not to_empty:
+            occupant = tracker.get_occupant(stmt.to_position)
+            occupied_at_line = (
+                occupant.creation_position.position.line if occupant else None
+            )
+            self.diagnostics.append(
+                diagnostics.MoveToOccupiedPositionDiagnostic(
+                    position=stmt.to_position.position,
+                    position_name=_chain_name(stmt.to_position.chain),
+                    occupied_at_line=occupied_at_line,
+                )
+            )
+
+        if not (from_occupied and to_empty):
+            tracker.mark_unknown_state(stmt.from_position)
+            tracker.mark_unknown_state(stmt.to_position)
+            return
+
+        if from_local and to_local:
+            if self._check_constraints_for_move(stmt, scope, tracker):
                 tracker.move(stmt.from_position, stmt.to_position)
         else:
-            if tracker.get_local_position_reference(stmt.from_position, scope):
-                tracker.mark_unknown_state(stmt.from_position)
-            if tracker.get_local_position_reference(stmt.to_position, scope):
-                tracker.mark_unknown_state(stmt.to_position)
+            # Chained→chained: both sides need resolution by program validator.
+            from_qualities = None
+            to_qualities = None
+            if from_local:
+                # Local→chained: we know the from qualities locally.
+                from_qualities = tracker.get_occupant(stmt.from_position).qualities
+                tracker.destroy(stmt.from_position)
+            elif to_local:
+                # Chained→local: we know the to qualities locally.
+                to_qualities = scope.get_constraint_names(stmt.to_position.chain[0])
+                tracker.create(stmt.to_position, to_qualities)
+            self.deferred_move_constraint_checks.append(
+                validation_result.DeferredMoveConstraintCheck(
+                    enclosing_definition=enclosing_definition,
+                    statement=stmt,
+                    from_qualities=from_qualities,
+                    to_qualities=to_qualities,
+                )
+            )
+
         if not tracker.has_unknown_state(stmt.to_position):
             self.action_body_effects.append(
                 validation_result.ActionBodyEffect(
@@ -493,7 +592,6 @@ class ProgramAstValidator:
     def _check_constraints_for_move(
         self,
         stmt: ast.MoveDimensionPointStatement,
-        fqun: ast.Fqun,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ) -> bool:
@@ -501,18 +599,16 @@ class ProgramAstValidator:
         # TODO: Check constraints for non-local (chained/global) positions.
         dp_info = tracker.get_occupant(stmt.from_position)
         dest_constraints = scope.get_constraint_names(stmt.to_position.chain[0])
-        missing = dest_constraints - dp_info.qualities
-        if not missing:
+        missing_qualities = dest_constraints - dp_info.qualities
+        if not missing_qualities:
             return True
 
         self.diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
                 position=stmt.to_position.chain[0].position,
-                from_position=stmt.from_position.chain[0].full_typed_name(
-                    in_universe=fqun
-                ),
-                to_position=stmt.to_position.chain[0].full_typed_name(in_universe=fqun),
-                missing_qualities=tuple(sorted(missing)),
+                from_position=_chain_name(stmt.from_position.chain),
+                to_position=_chain_name(stmt.to_position.chain),
+                missing_qualities=sorted(missing_qualities),
             )
         )
         tracker.mark_unknown_state(stmt.from_position)
@@ -544,7 +640,7 @@ class ProgramAstValidator:
             self.diagnostics.append(
                 diagnostics.MoveToSamePositionDiagnostic(
                     position=to_chain[-1].position,
-                    position_name=_chain_name(to_chain, fqun),
+                    position_name=_chain_name(to_chain),
                 )
             )
         else:
@@ -552,8 +648,8 @@ class ProgramAstValidator:
             self.diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
                     position=divergence.position,
-                    from_position=_chain_name(from_chain, fqun),
-                    to_position=_chain_name(to_chain, fqun),
+                    from_position=_chain_name(from_chain),
+                    to_position=_chain_name(to_chain),
                 )
             )
             # TODO: Need to export unknown-state positions in ValidationResult
@@ -564,70 +660,19 @@ class ProgramAstValidator:
                 tracker.mark_unknown_state(stmt.to_position)
         return True
 
-    def _check_local_position_not_occupied(
-        self,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
-        ref: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-        fqun: ast.Fqun,
-    ) -> bool:
-        """Check that a trackable local position is not already occupied.
-
-        Returns True if the position is trackable and not occupied,
-        False otherwise.
-        """
-        local_ref = tracker.get_local_position_reference(ref, scope)
-        if local_ref is None:
-            return False
-        if tracker.has_unknown_state(ref):
-            return False
-        if tracker.is_occupied(ref):
-            existing = tracker.get_occupant(ref)
-            self.diagnostics.append(
-                diagnostics.LocalDuplicateDimensionPointDiagnostic(
-                    position=local_ref.position,
-                    position_name=local_ref.full_typed_name(in_universe=fqun),
-                    first_creation_line=existing.creation_position.position.line,
-                )
-            )
-            return False
-        return True
-
-    def _check_local_position_occupied(
-        self,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
-        ref: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-        fqun: ast.Fqun,
-    ) -> bool:
-        """Check that a trackable local position is already occupied.
-
-        Returns True if the position is trackable and occupied,
-        False otherwise.
-        """
-        local_ref = tracker.get_local_position_reference(ref, scope)
-        if local_ref is None:
-            return False
-        if tracker.has_unknown_state(ref):
-            return False
-        if not tracker.is_occupied(ref):
-            self.diagnostics.append(
-                diagnostics.MoveFromEmptyPositionDiagnostic(
-                    position=local_ref.position,
-                    position_name=local_ref.full_typed_name(in_universe=fqun),
-                )
-            )
-            return False
-        return True
-
     def _validate_full_chained_name(
         self,
         chain: list[ast.TypedName],
         enclosing_definition: ast.QualityDefinition,
         scope: scope_tracker.ScopeTracker,
-    ):
+    ) -> bool:
+        """Validate a full chained name reference.
+
+        Returns whether the caller may continue processing this reference.
+        """
         first = chain[0]
         fqun = enclosing_definition.typed_name.name_content.fqun
+        may_continue = True
 
         if (
             len(chain) > 1
@@ -656,10 +701,34 @@ class ProgramAstValidator:
                         local_name=first.full_typed_name(in_universe=fqun),
                     )
                 )
+                may_continue = False
             # TODO: Support global names starting positions.
 
+        previous_element = None
         for typed_name in chain:
             self._validate_chained_name_element(typed_name, enclosing_definition)
+            # Local names in chains may only come right after global action names.
+            if (
+                previous_element
+                and isinstance(typed_name, ast.LocalTypedNameReference)
+                and not (
+                    isinstance(previous_element, ast.GlobalTypedNameReference)
+                    and previous_element.name_type == ast.NameType.ACTION
+                )
+            ):
+                self.diagnostics.append(
+                    diagnostics.ChainedLocalNameRequiresActionDiagnostic(
+                        position=typed_name.position,
+                        local_name=typed_name.full_typed_name(in_universe=fqun),
+                        preceding_name=previous_element.full_typed_name(
+                            in_universe=fqun
+                        ),
+                    )
+                )
+                # Don't even try to process this name; it will fail when we try to
+                # resolve it in program_validator.
+                may_continue = False
+            previous_element = typed_name
 
         if len(chain) > 1 and first_is_defined:
             # If the first item is a local position, we have to do the validation
@@ -674,8 +743,6 @@ class ProgramAstValidator:
         # TODO: In the future when the _first_ element can be a global name, this will
         # be more complex.
         if len(chain) > 2 and isinstance(chain[1], ast.GlobalTypedNameReference):
-            # We don't need to check name validation, because this doesn't cause
-            # file I/O. (Only emitting a DiscoveredFile triggers that.)
             self.deferred_chained_names.append(
                 validation_result.DeferredChainElements(
                     enclosing_definition=enclosing_definition,
@@ -691,6 +758,8 @@ class ProgramAstValidator:
                     position=chain[-1].position,
                 )
             )
+
+        return may_continue
 
     def _validate_chained_name_element(
         self,

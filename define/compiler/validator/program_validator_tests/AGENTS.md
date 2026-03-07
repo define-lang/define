@@ -3,5 +3,7 @@
 When adding or updating tests in
 `define/compiler/validator/program_validator_tests/`, follow these rules:
 
-- Never filter diagnostics by type. Always assert on the exact set of
+- Never filter diagnostics by type or by file. Always assert on the exact set of
   diagnostics returned.
+- Never break one line of Define source code across two Python lines, even if it
+  creates a very long Python string.

@@ -1,12 +1,12 @@
 define the potential action<mv:define-lang.org:test_files:/valid/action_move_dimension_point_reuse_source> {
     define the position<pos_a>.
     define the position<pos_b>.
+    define the position<pos_c>.
     it happens when {
         the position<pos_a> has a dimension point.
     } and it does {
-        create a dimension point in position<pos_a>.
         move the dimension point in position<pos_a> to position<pos_b>.
         create a dimension point in position<pos_a>.
-        move the dimension point in position<pos_a> to position<pos_b>.
+        move the dimension point in position<pos_a> to position<pos_c>.
     }
 }

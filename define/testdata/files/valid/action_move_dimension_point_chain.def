@@ -1,13 +1,15 @@
 define the potential position<mv:define-lang.org:test_files:/valid/action_move_dimension_point_chain>.
 define the potential action<mv:define-lang.org:test_files:/valid/action_move_dimension_point_chain> {
-    define the position<local_pos> {
+    define the position<run>.
+    define the position<src> {
         it may only contain dimension points where {
             it has the position</valid/action_move_dimension_point_chain>.
         }
     }
+    define the position<dest>.
     it happens when {
-        the position<local_pos> has a dimension point.
+        the position<run> has a dimension point.
     } and it does {
-        move the dimension point in position<local_pos>::position</valid/action_move_dimension_point_chain> to position<local_pos>.
+        move the dimension point in position<src>::position</valid/action_move_dimension_point_chain> to position<dest>.
     }
 }

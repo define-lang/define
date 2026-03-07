@@ -459,6 +459,27 @@ class LocalDuplicateDimensionPointDiagnostic(Diagnostic):
 
 
 @dataclass
+class MoveToOccupiedPositionDiagnostic(Diagnostic):
+    """Diagnostic for when a move's destination position already contains a dimension point."""
+
+    position_name: str
+    # TODO: Track cross-file moves to always provide this.
+    occupied_at_line: int | None = None
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render the diagnostic message, optionally including the occupied-at line."""
+        base = (
+            f"cannot move a dimension point to '{self.position_name}'"
+            " because it already contains one"
+        )
+        if self.occupied_at_line is not None:
+            return f"{base}; it was put there on line {self.occupied_at_line}"
+        return base
+
+
+@dataclass
 class MoveFromEmptyPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement's source position has no dimension point."""
 
@@ -487,7 +508,7 @@ class MoveViolatesConstraintsDiagnostic(Diagnostic):
 
     from_position: str
     to_position: str
-    missing_qualities: tuple[str, ...]
+    missing_qualities: Sequence[str]
 
     @property
     def missing_list(self) -> str:
@@ -515,6 +536,18 @@ class MoveIntoDefiningPositionDiagnostic(Diagnostic):
         "    to: {self.to_position}\n"
         "because the source position defines the destination position"
         " ('{self.from_position}' is the start of both positions)"
+    )
+
+
+@dataclass
+class ChainedLocalNameRequiresActionDiagnostic(Diagnostic):
+    """Diagnostic for when a local name in a chain is not preceded by a global action."""
+
+    local_name: str
+    preceding_name: str
+    message_format: ClassVar[str] = (
+        "local name '{self.local_name}' in a chain must be preceded by"
+        " a globally-named action, but is preceded by '{self.preceding_name}'"
     )
 
 

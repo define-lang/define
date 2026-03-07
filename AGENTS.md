@@ -82,6 +82,12 @@ See [define/spec/spec.md] for the language specification.
 - Do not write docstrings in tests.
 - When using `unittest.mock`, always use `patch.object` with `autospec=True`
   instead of `patch`.
+- **Never filter diagnostics in test assertions.** Always assert on the complete
+  set of diagnostics returned. Do not use list comprehensions to filter by type
+  or by file and then assert on the filtered list — assert directly on the full
+  list.
+- **Never break one line of Define source code across two Python lines**, even
+  if it creates a very long Python string.
 
 ## Bazel
 
