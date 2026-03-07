@@ -43,7 +43,7 @@ def _chain_name(chain: list[ast.TypedNameReference]) -> str:
 # TODO: Rename to DeferredReferenceEdge.
 @dataclass
 class _DeferredEdge:
-    """An edge waiting for its target definition to become resolvable."""
+    """An edge waiting for its target file to complete validation."""
 
     edge: validation_result.ReferenceEdge
     source_definition: validation_result.DefinitionValidationResult
@@ -128,9 +128,8 @@ class ProgramValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     action_call_graph: action_call_graph.ActionCallGraph
-    _deferred_edges: dict[str, list[_DeferredEdge]]
+    _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredEdge]]
     _deferred_chain_validations: dict[str, list[_DeferredChainValidation]]
-    _expected_definitions_by_file: dict[pathlib.PurePosixPath, set[str]]
     _deferred_move_constraints: dict[str, list[_DeferredMoveConstraint]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _definition_owners: dict[int, validation_result.ValidationResult]
@@ -145,7 +144,6 @@ class ProgramValidator:
         self.action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._deferred_chain_validations = {}
-        self._expected_definitions_by_file = {}
         self._deferred_move_constraints = {}
         self._definition_results = {}
         self._definition_owners = {}
@@ -228,8 +226,11 @@ class ProgramValidator:
             self._submit_discovered_files(result, definition_result, pool)
         for definition_result in result.definition_results:
             self._process_completed_definition(result, definition_result)
+        # Reference edges are file-scoped, but validating them still depends on
+        # this file's definitions already being registered so wrong-type checks
+        # don't race ahead of the completed file's real contents.
+        self._validate_incoming_reference_edges(result.file_path)
         result.stats.global_validation += time.perf_counter_ns() - started_at
-        self._ensure_file_contained_expected_definitions(result)
 
     def _process_completed_definition(
         self,
@@ -248,7 +249,6 @@ class ProgramValidator:
             return
         self._definition_results[name] = definition_result
         self.action_call_graph.process_definition_result(definition_result)
-        self._validate_incoming_reference_edges(definition_result)
         self._validate_incoming_chained_names(definition_result)
         self._validate_incoming_move_constraints(definition_result)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
@@ -431,14 +431,8 @@ class ProgramValidator:
                     source_definition,
                 )
             else:
-                self._deferred_edges.setdefault(target_key, []).append(
+                self._deferred_edges.setdefault(target_file, []).append(
                     _DeferredEdge(ref_edge, source_definition)
-                )
-                # TODO: We should probably put this into some other abstraction
-                # so we don't have to remember to do this every time.
-                self._defer_definition_until_file_completes(
-                    target_key,
-                    target_file,
                 )
 
     def _resolve_target_file(
@@ -538,16 +532,30 @@ class ProgramValidator:
                 )
             )
 
-    def _validate_incoming_reference_edges(
-        self, target_definition: validation_result.DefinitionValidationResult
-    ):
-        """Validate deferred edges that were waiting on this definition."""
-        name = target_definition.definition.typed_name.full_typed_name()
-        target_result = self._definition_owners[id(target_definition)]
-        for deferred_edge in self._deferred_edges.pop(name, []):
+    def _validate_incoming_reference_edges(self, completed_file: pathlib.PurePosixPath):
+        """Validate deferred reference edges waiting on a completed file."""
+        # Reference edges have to wake up by file, not by definition name.
+        #
+        # Two different files can participate in resolution for the same
+        # canonical typed name. One might be the file we actually intended to
+        # load, while another might define the same typed name at a different
+        # path or might be missing entirely. Since _FileWorkPool completes
+        # files in arbitrary order, waking by definition name lets whichever
+        # file finishes first drain all waiters for that name.
+        #
+        # That loses the identity of the file the edge was really waiting on.
+        # A completed "wrong" file can consume work that should have been
+        # resolved when the real target file completed, which makes missing-file
+        # and wrong-file diagnostics depend on completion order. Keying by
+        # completed_file preserves the real dependency: an edge is blocked on
+        # one exact file finishing validation, and only that file gets to
+        # satisfy or fail the deferred edge.
+        deferred = self._deferred_edges.pop(completed_file, [])
+        target_result = self._path_tracker.get_result(completed_file)
+        for deferred_edge in deferred:
             self._validate_reference_against_target(
                 deferred_edge.edge,
-                target_result.file_path,
+                completed_file,
                 target_result,
                 deferred_edge.source_definition,
             )
@@ -883,38 +891,6 @@ class ProgramValidator:
                     existing_universe=existing_universe or "",
                 )
             )
-
-    def _ensure_file_contained_expected_definitions(
-        self, completed_result: validation_result.ValidationResult
-    ):
-        """When a file completes, we need to know if it didn't have the definitions we were looking for."""
-        expected_definitions = self._expected_definitions_by_file.pop(
-            completed_result.file_path, set()
-        )
-        for name in expected_definitions:
-            if name in self._definition_results:
-                continue
-            for deferred_edge in self._deferred_edges.pop(name, []):
-                self._validate_reference_against_target(
-                    deferred_edge.edge,
-                    completed_result.file_path,
-                    completed_result,
-                    deferred_edge.source_definition,
-                )
-            # No point in waiting for chain or move validations that are
-            # never going to happen.
-            _ = self._deferred_chain_validations.pop(name, None)
-            _ = self._deferred_move_constraints.pop(name, None)
-
-    def _defer_definition_until_file_completes(
-        self,
-        definition_name: str,
-        target_file: pathlib.PurePosixPath,
-    ):
-        """Record which file completion should wake a deferred definition wait."""
-        self._expected_definitions_by_file.setdefault(target_file, set()).add(
-            definition_name
-        )
 
     def _first_discovered_file(
         self,

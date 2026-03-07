@@ -3,12 +3,14 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+import time
 from pathlib import Path, PurePosixPath
+from unittest import mock
 
 import pytest
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator import file_validator, program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
 
 _POSITION_WITH_REF = (
@@ -209,6 +211,64 @@ def test_wrong_type_detected_without_deferral(
     )
     assert [type(d) for d in checker_result.diagnostics] == [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    ]
+
+
+def test_reference_edges_resolve_by_file_completion_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    universe = "mv:define-lang.org:test_parent"
+    test_helpers.write_project_config(tmp_path, universe)
+    test_helpers.write_local_deps_config(tmp_path, {universe: "lib"})
+    test_helpers.write_sub_root(tmp_path, "lib", universe)
+    _write_def(
+        tmp_path,
+        "test",
+        (
+            f"define the potential position<{universe}:/test> {{\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position</lib/target>.\n"
+            f"        it has the position</target>.\n"
+            f"    }}\n"
+            f"}}\n"
+        ),
+    )
+    _ = (tmp_path / "lib" / "target.def").write_text(
+        f"define the potential position<{universe}:/target>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    original_validate_file = file_validator.FileValidator.validate_file
+
+    def delayed_validate_file(
+        self: file_validator.FileValidator,
+        context: file_validator.FileValidationContext,
+    ):
+        if context.full_path == PurePosixPath("target.def"):
+            time.sleep(0.05)
+        return original_validate_file(self, context)
+
+    with mock.patch.object(
+        file_validator.FileValidator,
+        "validate_file",
+        autospec=True,
+        side_effect=delayed_validate_file,
+    ):
+        results = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def"),
+            max_workers=2,
+        )
+
+    assert len(results) == 2
+    assert all(result.exception is None for result in results)
+    assert [type(d) for d in results[0].diagnostics] == [
+        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+        diagnostics.ReferencedFileNotFoundDiagnostic,
+    ]
+    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert [type(d) for d in results[1].diagnostics] == [
+        diagnostics.PathMismatchDiagnostic,
     ]
 
 
