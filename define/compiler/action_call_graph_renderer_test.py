@@ -4,7 +4,6 @@ import subprocess
 from pathlib import Path, PurePosixPath
 
 import pytest
-from python.runfiles import Runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from define.compiler import action_call_graph, action_call_graph_renderer
 from define.compiler.validator import program_validator
@@ -23,17 +22,31 @@ def _validate_mermaid(text: str):
     validator = os.environ.get("MERMAID_VALIDATOR")
     if not validator:
         return
-    runfiles = Runfiles.Create()
-    assert runfiles is not None
-    validator_path = runfiles.Rlocation(validator)
-    assert validator_path is not None
+    validator_path = _resolve_runfile_path(validator)
     result = subprocess.run(
-        [validator_path],
+        [str(validator_path)],
         input=text,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, f"Invalid Mermaid syntax:\n{result.stderr}"
+
+
+def _resolve_runfile_path(path: str) -> Path:
+    candidate = Path(path)
+    if candidate.exists():
+        return candidate
+
+    if os.environ.get("RUNFILES_DIR") or os.environ.get("RUNFILES_MANIFEST_FILE"):
+        from python.runfiles import Runfiles  # pyright: ignore[reportMissingTypeStubs]
+
+        runfiles = Runfiles.Create()
+        assert runfiles is not None
+        resolved_path = runfiles.Rlocation(path)
+        assert resolved_path is not None
+        return Path(resolved_path)
+
+    raise FileNotFoundError(f"Could not resolve runfile path: {path}")
 
 
 def _build_graph(
