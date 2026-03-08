@@ -97,6 +97,18 @@ class TestCalculateOverallStats:
         assert overall.avg_queue_wait == 20
         assert overall.max_queue_wait == 30
 
+    def test_avg_queue_wait_truncates(self):
+        results = [
+            _make_result("a.def", queue_wait=10),
+            _make_result("b.def", queue_wait=20),
+            _make_result("c.def", queue_wait=20),
+        ]
+        overall = overall_stats.calculate_overall_stats(
+            results, config_loading_time_ns=0
+        )
+        assert overall.avg_queue_wait == 16
+        assert isinstance(overall.avg_queue_wait, int)
+
     def test_empty_results(self):
         overall = overall_stats.calculate_overall_stats([], config_loading_time_ns=100)
         assert overall.file_count == 0

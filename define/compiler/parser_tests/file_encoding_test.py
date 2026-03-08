@@ -53,11 +53,29 @@ def test_surrogate_character(p: parser.Parser) -> None:
     assert result.exception.column == 1
 
 
+def test_del_character(p: parser.Parser) -> None:
+    result = p.parse("define the potential position<standard:/path>.\n\x7f\n")
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.ControlCharacterError)
+    assert result.exception.char == "\x7f"
+    assert result.exception.line == 2
+    assert result.exception.column == 1
+
+
 def test_invalid_character_error(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path>.\n☃\n")
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidCharacterError)
     assert result.exception.char == "☃"
+    assert result.exception.line == 2
+    assert result.exception.column == 1
+
+
+def test_first_non_ascii_byte(p: parser.Parser) -> None:
+    result = p.parse("define the potential position<standard:/path>.\n\x80\n")
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.InvalidCharacterError)
+    assert result.exception.char == "\x80"
     assert result.exception.line == 2
     assert result.exception.column == 1
 

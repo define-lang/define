@@ -411,7 +411,7 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
     segment_start = 1
     while segment_start < len(path_name):
         slash_index = path_name.find("/", segment_start)
-        segment_end = slash_index if slash_index >= 0 else len(path_name)
+        segment_end = slash_index if slash_index != -1 else len(path_name)
         segment = path_name[segment_start:segment_end]
         if segment == "":
             result.append(
@@ -444,7 +444,7 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
                 )
                 # TODO: Report every invalid character.
                 break
-        if slash_index < 0:
+        if slash_index == -1:
             break
         segment_start = slash_index + 1
     return result

@@ -87,6 +87,14 @@ def test_parse_global_name_reference_short_form():
     assert name.path.name == "/position/path"
 
 
+def test_parse_global_name_reference_leading_colon_treated_as_path():
+    token = _make_name_content_token(":/path", line=1, column=1)
+    name = name_parser.parse_global_name_reference(token)
+
+    assert name.fqun is None
+    assert name.path.name == ":/path"
+
+
 def test_parse_global_name_reference_full_form():
     token = _make_name_content_token(
         "mv:acme.dev:tooling:/action/run",

@@ -136,6 +136,10 @@ class TestAuthorityDomainFormat:
         assert result[0].position.line == 1
         assert result[0].position.column == 10
 
+    def test_two_char_domain_is_valid(self):
+        result = name_validators.validate_authority_format(_authority("ab"))
+        assert not result
+
     def test_trailing_hyphen(self):
         result = name_validators.validate_authority_format(_authority("example.com-"))
         assert len(result) == 1
@@ -227,6 +231,12 @@ class TestAuthorityPathFormat:
         assert result[0].authority == "example.com//repo"
         assert result[0].position.column == 21
 
+    def test_leading_slash_splits_into_empty_domain(self):
+        result = name_validators.validate_authority_format(_authority("/repo"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.AuthorityDomainTooShortDiagnostic)
+        assert result[0].domain == ""
+
 
 class TestUniverseNameFormat:
     def test_valid(self):
@@ -256,6 +266,10 @@ class TestUniverseNameFormat:
         assert result[0].universe_name == "x"
         assert result[0].position.line == 1
         assert result[0].position.column == 10
+
+    def test_two_char_universe_is_valid(self):
+        result = name_validators.validate_universe_name_format(_universe("ab"))
+        assert not result
 
     def test_single_char_invalid(self):
         result = name_validators.validate_universe_name_format(_universe("_"))

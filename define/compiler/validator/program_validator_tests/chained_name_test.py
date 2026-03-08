@@ -1371,3 +1371,22 @@ class TestUnnecessarySelfReference:
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+
+    def test_single_element_self_reference_not_stripped(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<trigger_pos>.\n"
+            "    it happens when {\n"
+            "        the position<trigger_pos> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in action</test>.\n"
+            "    }\n"
+            "}\n"
+        )
+        results = program_validator.ProgramValidator().validate_program_non_filesystem(
+            source
+        )
+        diags = results[0].diagnostics
+        assert len(diags) == 2
+        assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
