@@ -83,6 +83,13 @@ paths_to_mutate = [
     "defcl/python/",
     "define/compiler/",
 ]
+also_copy = [
+    "buf",
+    "defcl/testdata",
+    "define/config",
+    "define/reserved_words",
+    "define/testdata",
+]
 do_not_mutate = [
     "*_test.py",
 ]
