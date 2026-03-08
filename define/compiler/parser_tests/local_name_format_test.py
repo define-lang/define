@@ -153,6 +153,7 @@ def test_local_name_missing_open_angle(p: parser.Parser) -> None:
     assert str(result.exception.token) == "my_pos"
     assert result.exception.line == 3
     assert result.exception.column == 24
+    assert result.exception.name == "my_pos"
 
 
 def test_local_name_empty(p: parser.Parser) -> None:

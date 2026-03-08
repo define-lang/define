@@ -35,7 +35,9 @@ def test_position_definition_missing_open_angle(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
     assert str(result.exception.token) == "standard:/path"
+    assert result.exception.line == 1
     assert result.exception.column == 30
+    assert result.exception.name == "standard:/path"
 
 
 def test_position_definition_empty_name_content(p: parser.Parser) -> None:
@@ -43,6 +45,7 @@ def test_position_definition_empty_name_content(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.EmptyName)
     assert str(result.exception.token) == ">"
+    assert result.exception.line == 1
     assert result.exception.column == 31
 
 

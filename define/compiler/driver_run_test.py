@@ -59,6 +59,31 @@ class TestRun:
             "  - project.universe_name: value is required\n"
         )
 
+    def test_invalid_config_without_error_stream_prints_to_stderr(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        config_dir = tmp_path / ".define" / "project"
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "config.defcl").write_text("project: {}\n")
+        _ = (tmp_path / "test.def").write_text(
+            "define the potential position<x.com:lib:/test>.\n"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = driver.Driver().run(Path("test.def"))
+
+        captured = capsys.readouterr()
+        assert result == driver.ExitCode.ERROR
+        assert captured.out == ""
+        assert captured.err == (
+            'File ".define/project/config.defcl"\n'
+            "Invalid configuration:\n"
+            "  - project.universe_name: value is required\n"
+        )
+
     def test_valid_file_returns_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         error_stream = io.StringIO()

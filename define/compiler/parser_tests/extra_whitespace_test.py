@@ -12,6 +12,7 @@ def test_file_all_spaces(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.TrailingWhitespaceError)
     assert str(result.exception.char) == "   "
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -20,6 +21,7 @@ def test_file_spaces_and_newlines_only(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.TrailingWhitespaceError)
     assert str(result.exception.char) == " "
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -30,6 +32,7 @@ def test_extra_space_after_define_in_position_definition(p: parser.Parser) -> No
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("define  the potential position<")
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -40,6 +43,7 @@ def test_extra_space_after_the_in_position_definition(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("define the  potential position<")
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -52,6 +56,7 @@ def test_extra_space_after_potential_in_position_definition(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("define the potential  position<")
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -60,6 +65,7 @@ def test_extra_space_after_potential_in_action_definition(p: parser.Parser) -> N
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.token.startswith("define the potential  action<")
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -149,3 +155,4 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
     assert result.exception.token.startswith("  </child")
     assert result.exception.line == 3
     assert result.exception.column == 28
+    assert result.exception.name == "  </child"

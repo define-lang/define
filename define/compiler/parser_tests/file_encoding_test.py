@@ -13,6 +13,7 @@ def test_bom_at_start(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
     assert result.exception.char == "\ufeff"
+    assert result.exception.line == 1
     assert result.exception.column == 1
 
 
@@ -21,6 +22,7 @@ def test_crlf_line_endings(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert result.exception.char == "\r"
+    assert result.exception.line == 1
     assert result.exception.column == 47
 
 
@@ -29,6 +31,7 @@ def test_crlf_line_endings_in_comments(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert result.exception.char == "\r"
+    assert result.exception.line == 1
     assert result.exception.column == 12
 
 
@@ -37,6 +40,7 @@ def test_carriage_return_in_comment(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert result.exception.char == "\r"
+    assert result.exception.line == 1
     assert result.exception.column == 15
 
 

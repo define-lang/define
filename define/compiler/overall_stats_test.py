@@ -148,6 +148,39 @@ class TestFormatStatsOverall:
         assert "Global validation:" in breakdown_section
         assert "Deferred validation:" in breakdown_section
 
+    def test_formats_overall_output_exactly(self):
+        results = [
+            _make_result(
+                "test.def",
+                file_loading=2_000_000,
+                parse=5_000_000,
+                transform=3_000_000,
+                file_validation=4_000_000,
+                global_validation=1_500_000,
+                deferred_validation=500_000,
+                queue_wait=250_000,
+            )
+        ]
+        output = _format(results, 1_000_000, overall_stats.StatsMode.OVERALL)
+        assert output == (
+            "--- Compilation Stats ---\n"
+            "\n"
+            "-- Overall --\n"
+            " Files compiled:  1\n"
+            "Overall compile:  16.00 ms\n"
+            " Config loading:  1.00 ms\n"
+            " Avg queue wait:  0.25 ms\n"
+            " Max queue wait:  0.25 ms\n"
+            "\n"
+            "-- Breakdown --\n"
+            "       File loading:  2.00 ms\n"
+            "              Parse:  5.00 ms\n"
+            "          Transform:  3.00 ms\n"
+            "    File validation:  4.00 ms\n"
+            "  Global validation:  1.50 ms\n"
+            "Deferred validation:  0.50 ms\n"
+        )
+
 
 class TestFormatStatsPerFile:
     def test_includes_per_file_section(self):
@@ -178,3 +211,66 @@ class TestFormatStatsPerFile:
         assert "Deferred validation:" in per_file_section
         assert "Queue wait:" in per_file_section
         assert "Overall compile:" in per_file_section
+
+    def test_formats_per_file_output_exactly(self):
+        results = [
+            _make_result(
+                "fast.def",
+                file_loading=1_000_000,
+                parse=2_000_000,
+                transform=500_000,
+                file_validation=500_000,
+                global_validation=250_000,
+                deferred_validation=250_000,
+                queue_wait=125_000,
+            ),
+            _make_result(
+                "slow.def",
+                file_loading=4_000_000,
+                parse=8_000_000,
+                transform=2_000_000,
+                file_validation=3_000_000,
+                global_validation=1_000_000,
+                deferred_validation=500_000,
+                queue_wait=750_000,
+            ),
+        ]
+        output = _format(results, 0, overall_stats.StatsMode.PER_FILE)
+        assert output == (
+            "--- Compilation Stats ---\n"
+            "\n"
+            "-- Overall --\n"
+            " Files compiled:  2\n"
+            "Overall compile:  23.00 ms\n"
+            " Config loading:  0.00 ms\n"
+            " Avg queue wait:  0.44 ms\n"
+            " Max queue wait:  0.75 ms\n"
+            "\n"
+            "-- Breakdown --\n"
+            "       File loading:  5.00 ms\n"
+            "              Parse:  10.00 ms\n"
+            "          Transform:  2.50 ms\n"
+            "    File validation:  3.50 ms\n"
+            "  Global validation:  1.25 ms\n"
+            "Deferred validation:  0.75 ms\n"
+            "\n"
+            "-- Per File (slowest first) --\n"
+            "  slow.def\n"
+            "        Overall compile:  18.50 ms\n"
+            "           File loading:  4.00 ms\n"
+            "                  Parse:  8.00 ms\n"
+            "              Transform:  2.00 ms\n"
+            "        File validation:  3.00 ms\n"
+            "      Global validation:  1.00 ms\n"
+            "    Deferred validation:  0.50 ms\n"
+            "             Queue wait:  0.75 ms\n"
+            "  fast.def\n"
+            "        Overall compile:  4.50 ms\n"
+            "           File loading:  1.00 ms\n"
+            "                  Parse:  2.00 ms\n"
+            "              Transform:  0.50 ms\n"
+            "        File validation:  0.50 ms\n"
+            "      Global validation:  0.25 ms\n"
+            "    Deferred validation:  0.25 ms\n"
+            "             Queue wait:  0.12 ms\n"
+        )

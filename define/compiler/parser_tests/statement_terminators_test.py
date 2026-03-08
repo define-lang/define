@@ -24,6 +24,7 @@ def test_missing_terminator(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingTerminatorOrBrace)
     assert str(result.exception.token) == "\n"
+    assert result.exception.line == 1
     assert result.exception.column == 46
 
 
@@ -32,6 +33,7 @@ def test_missing_newline_after_terminator(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAtEof)
     assert str(result.exception.token) == ""
+    assert result.exception.line == 1
     assert result.exception.column == 46
 
 
@@ -42,7 +44,9 @@ def test_space_before_terminator(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
     assert str(result.exception.token) == "\n"
+    assert result.exception.line == 1
     assert result.exception.column == 67
+    assert result.exception.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
 def test_trailing_space_before_newline(p: parser.Parser) -> None:
@@ -50,6 +54,7 @@ def test_trailing_space_before_newline(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.TrailingWhitespaceError)
     assert result.exception.char == " "
+    assert result.exception.line == 1
     assert result.exception.column == 47
 
 

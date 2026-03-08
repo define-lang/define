@@ -170,6 +170,7 @@ def test_local_position_keyword_without_name_in_action_definition_block(
     assert result.exception.token == "\n"
     assert result.exception.line == 3
     assert result.exception.column == 24
+    assert result.exception.name == "\n"
 
 
 def test_local_position_keyword_without_name_in_action_statements_block(
@@ -190,6 +191,7 @@ def test_local_position_keyword_without_name_in_action_statements_block(
     assert result.exception.token == "\n"
     assert result.exception.line == 6
     assert result.exception.column == 28
+    assert result.exception.name == "\n"
 
 
 def test_global_position_keyword_without_name(p: parser.Parser) -> None:
@@ -199,6 +201,7 @@ def test_global_position_keyword_without_name(p: parser.Parser) -> None:
     assert result.exception.token == "\n"
     assert result.exception.line == 1
     assert result.exception.column == 30
+    assert result.exception.name == "\n"
 
 
 def test_position_requirement_missing_name(p: parser.Parser) -> None:
@@ -214,6 +217,7 @@ def test_position_requirement_missing_name(p: parser.Parser) -> None:
     assert result.exception.token == "\n"
     assert result.exception.line == 3
     assert result.exception.column == 28
+    assert result.exception.name == "\n"
 
 
 def test_position_requirement_missing_name_after_type(p: parser.Parser) -> None:
@@ -229,6 +233,7 @@ def test_position_requirement_missing_name_after_type(p: parser.Parser) -> None:
     assert result.exception.token == "."
     assert result.exception.line == 3
     assert result.exception.column == 28
+    assert result.exception.name == "."
 
 
 def test_position_requirement_name_starts_and_then_newline(p: parser.Parser) -> None:
@@ -369,7 +374,7 @@ def test_name_content_forbids_double_colon_in_create_reference(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
     assert result.exception.token == "::"
-    assert str(result.exception.name) == "/foo"
+    assert result.exception.name == "/foo"
     assert result.exception.line == 6
     assert result.exception.column == 50
 

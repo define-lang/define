@@ -30,9 +30,10 @@ class TestIntegerEnum:
                 integer_enum_pb2.IntegerEnumFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "status"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 5
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "status"
 
     def test_integer_enum_in_repeated_message(self):
         path = _INVALID_SEMANTICS_PATH / "enums" / "repeated_integer_enum.defcl"
@@ -43,9 +44,10 @@ class TestIntegerEnum:
                 repeated_integer_enum_pb2.RepeatedIntegerEnumFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "status"
         assert exc_info.value.line == 4
         assert exc_info.value.column == 11
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "status"
 
     def test_nested_integer_enum_value(self):
         path = _INVALID_SEMANTICS_PATH / "enums" / "nested_integer_enum.defcl"
@@ -56,9 +58,10 @@ class TestIntegerEnum:
                 nested_integer_enum_pb2.NestedIntegerEnumFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "status"
         assert exc_info.value.line == 3
         assert exc_info.value.column == 9
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "status"
 
 
 class TestRepeatedFieldWithoutBrackets:
@@ -73,9 +76,10 @@ class TestRepeatedFieldWithoutBrackets:
                 no_brackets_scalar_pb2.NoBracketsScalarFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "tags"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 5
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "tags"
 
     def test_nested_repeated_message_without_brackets(self):
         path = _INVALID_SEMANTICS_PATH / "repeated" / "nested_no_brackets_message.defcl"
@@ -88,9 +92,10 @@ class TestRepeatedFieldWithoutBrackets:
                 nested_no_brackets_message_pb2.NestedNoBracketsMessageFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "dependencies"
         assert exc_info.value.line == 3
         assert exc_info.value.column == 9
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "dependencies"
 
     def test_nested_repeated_scalar_without_brackets(self):
         path = _INVALID_SEMANTICS_PATH / "repeated" / "nested_no_brackets_scalar.defcl"
@@ -103,9 +108,10 @@ class TestRepeatedFieldWithoutBrackets:
                 nested_no_brackets_scalar_pb2.NestedNoBracketsScalarFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "tags"
         assert exc_info.value.line == 3
         assert exc_info.value.column == 9
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "tags"
 
     def test_repeated_message_without_brackets(self):
         path = _INVALID_SEMANTICS_PATH / "repeated" / "no_brackets_message.defcl"
@@ -118,6 +124,7 @@ class TestRepeatedFieldWithoutBrackets:
                 no_brackets_message_pb2.NoBracketsMessageFile,
                 path_name=path,
             )
-        assert exc_info.value.field_name == "dependencies"
         assert exc_info.value.line == 2
         assert exc_info.value.column == 5
+        assert exc_info.value.path_name == path
+        assert exc_info.value.field_name == "dependencies"

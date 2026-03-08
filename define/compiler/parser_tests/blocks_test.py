@@ -173,6 +173,8 @@ def test_no_space_before_brace(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingWhitespaceBeforeBrace)
     assert str(result.exception.token) == "{"
+    assert result.exception.line == 1
+    assert result.exception.column == 46
 
 
 def test_missing_terminator_still_works(p: parser.Parser) -> None:
@@ -194,6 +196,8 @@ def test_missing_outer_block_close_with_inner_block_message(p: parser.Parser) ->
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
+    assert result.exception.line == 6
+    assert result.exception.column == 6
     assert str(result.exception) == (
         "line 6, column 6\n    }\n     ^\nMissing a closing '}' somewhere in this block."
     )

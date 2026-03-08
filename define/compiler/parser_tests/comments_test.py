@@ -73,6 +73,7 @@ def test_control_character_in_comment(p: parser.Parser) -> None:
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ControlCharacterError)
+    assert result.exception.line == 1
     assert result.exception.char == "\x01"
     assert result.exception.column == 15
 
@@ -81,6 +82,7 @@ def test_comment_with_trailing_whitespace(p: parser.Parser) -> None:
     result = p.parse("# comment with trailing space \n")
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.TrailingWhitespaceError)
+    assert result.exception.line == 1
     assert result.exception.char == " "
     assert result.exception.column == 30
 
@@ -89,6 +91,7 @@ def test_same_line_comment_with_trailing_whitespace(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path>. # comment \n")
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.TrailingWhitespaceError)
+    assert result.exception.line == 1
     assert result.exception.char == " "
     assert result.exception.column == 57
 
