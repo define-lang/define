@@ -14,18 +14,18 @@ class ScopeTracker:
 
     def __init__(self, enclosing_fqun: ast.Fqun):
         """Initialize with the FQUN of the enclosing definition."""
-        self._definitions: ChainMap[str, ast.LocalPositionDefinition] = ChainMap({})
-        self._constraint_names: ChainMap[str, frozenset[str]] = ChainMap({})
+        self._definitions: ChainMap[str, ast.LocalPositionDefinition] = ChainMap()
+        self._constraint_names: ChainMap[str, frozenset[str]] = ChainMap()
         self._enclosing_fqun: ast.Fqun = enclosing_fqun
 
     def enter_child_scope(self):
         """Push a new child scope layer for nested blocks."""
-        self._definitions = self._definitions.new_child({})
-        self._constraint_names = self._constraint_names.new_child({})
+        self._definitions = self._definitions.new_child()
+        self._constraint_names = self._constraint_names.new_child()
 
     def add_local_definition(self, local_def: ast.LocalPositionDefinition):
         """Add a local position definition to scope, pre-computing constraint names."""
-        key = local_def.typed_name.full_typed_name(in_universe=self._enclosing_fqun)
+        key = local_def.typed_name.full_typed_name()
         self._definitions[key] = local_def
         if local_def.constraints is not None:
             self._constraint_names[key] = frozenset(

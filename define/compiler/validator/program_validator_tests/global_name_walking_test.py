@@ -691,6 +691,58 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     assert diags[0].error.actual_fqun == wrong_universe
 
 
+# Covers the "already loaded root" mismatch path in _do_load_root_config,
+# where a root was successfully loaded by a prior reference and a second
+# reference tries to load the same root with a different expected fqun.
+# (test_cross_fqun_sub_root_fqun_mismatch above covers the "fresh load" path.)
+def test_already_loaded_root_fqun_mismatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    second_child = "mv:define-lang.org:second_child"
+    test_helpers.write_project_config(tmp_path, _PARENT_UNIVERSE)
+    test_helpers.write_local_deps_config(
+        tmp_path, {_CHILD_UNIVERSE: "lib", second_child: "lib"}
+    )
+    test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"        it has the position<{second_child}:/other>.\n"
+            f"    }}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "lib/target.def",
+        f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
+    )
+    _write_source(
+        tmp_path,
+        "lib/other.def",
+        f"define the potential position<{_CHILD_UNIVERSE}:/other>.\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
+    )
+    assert len(results) == 2
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 29
+    assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
+    assert diags[0].error.expected_fqun == second_child
+    assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
+    assert results[1].diagnostics == []
+
+
 def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _setup_cross_fqun_project(tmp_path, monkeypatch)
     test_helpers.write_sub_root(tmp_path, "lib", _CHILD_UNIVERSE)

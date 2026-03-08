@@ -129,7 +129,6 @@ class Parser:
         return e.match_examples(
             self._parser.parse,
             _CHAR_ERROR_EXAMPLES,
-            use_accepts=True,
         )
 
     def _classify_token_error(
