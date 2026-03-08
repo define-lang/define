@@ -92,6 +92,9 @@ also_copy = [
 ]
 do_not_mutate = [
     "*_test.py",
+    "*_pb2.py",
+    "defcl/python/lark/lark_standalone.py",
+    "define/compiler/lark/lark_standalone.py",
 ]
 pytest_add_cli_args_test_selection = [
     "defcl/python",
@@ -99,6 +102,7 @@ pytest_add_cli_args_test_selection = [
 ]
 pytest_add_cli_args = [
     "--ignore=define/compiler/driver_fuzz_test.py",
+    "--ignore=define/compiler/driver_integration_test.py",
 ]
 
 [tool.basedpyright]
