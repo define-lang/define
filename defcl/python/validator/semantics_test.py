@@ -128,3 +128,61 @@ class TestRepeatedFieldWithoutBrackets:
         assert exc_info.value.column == 5
         assert exc_info.value.path_name == path
         assert exc_info.value.field_name == "dependencies"
+
+
+class TestErrorMessages:
+    def test_integer_enum_error_with_path(self):
+        path = _INVALID_SEMANTICS_PATH / "enums" / "integer_enum.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.IntegerEnumError) as exc_info:
+            semantics.validate(
+                tree,
+                integer_enum_pb2.IntegerEnumFile,
+                path_name=path,
+            )
+        assert str(exc_info.value) == (
+            f'File "{path}", line 2, column 5\n'
+            "status: Integer enum values are not allowed"
+        )
+
+    def test_integer_enum_error_without_path(self):
+        path = _INVALID_SEMANTICS_PATH / "enums" / "integer_enum.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(exceptions.IntegerEnumError) as exc_info:
+            semantics.validate(
+                tree,
+                integer_enum_pb2.IntegerEnumFile,
+            )
+        assert str(exc_info.value) == (
+            "line 2, column 5\nstatus: Integer enum values are not allowed"
+        )
+
+    def test_repeated_field_error_with_path(self):
+        path = _INVALID_SEMANTICS_PATH / "repeated" / "no_brackets_scalar.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(
+            exceptions.RepeatedFieldWithoutBracketsError,
+        ) as exc_info:
+            semantics.validate(
+                tree,
+                no_brackets_scalar_pb2.NoBracketsScalarFile,
+                path_name=path,
+            )
+        assert str(exc_info.value) == (
+            f'File "{path}", line 2, column 5\n'
+            "tags: Repeated fields must use bracket [] syntax"
+        )
+
+    def test_repeated_field_error_without_path(self):
+        path = _INVALID_SEMANTICS_PATH / "repeated" / "no_brackets_scalar.defcl"
+        tree = _parser.parse_file(path)
+        with pytest.raises(
+            exceptions.RepeatedFieldWithoutBracketsError,
+        ) as exc_info:
+            semantics.validate(
+                tree,
+                no_brackets_scalar_pb2.NoBracketsScalarFile,
+            )
+        assert str(exc_info.value) == (
+            "line 2, column 5\ntags: Repeated fields must use bracket [] syntax"
+        )

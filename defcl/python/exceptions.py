@@ -1,7 +1,7 @@
 """DCL syntax errors."""
 
 import os
-from typing import override
+from typing import ClassVar, override
 
 from defcl.python.lark import lark_standalone
 
@@ -9,7 +9,7 @@ from defcl.python.lark import lark_standalone
 class DclSyntaxError(Exception):
     """Base class for DCL syntax errors."""
 
-    label: str = "Syntax Error"
+    label_format: ClassVar[str] = "Syntax Error"
     context: str
     line: int
     column: int
@@ -28,6 +28,11 @@ class DclSyntaxError(Exception):
         self.line = line
         self.column = column
         self.path_name = path_name
+
+    @property
+    def label(self) -> str:
+        """Render the label from the format template."""
+        return self.label_format.format(self=self)
 
     @override
     def __str__(self) -> str:
@@ -80,104 +85,106 @@ class DclCharError(DclSyntaxError):
 class BooleanNotSupportedError(DclTokenError):
     """Raised when true/false boolean literals are used."""
 
-    label: str = "Boolean literals not supported - use enums instead"
+    label_format: ClassVar[str] = "Boolean literals not supported - use enums instead"
 
 
 class InvalidEnumCaseError(DclTokenError):
     """Raised when enum values are not ALL_CAPS."""
 
-    label: str = "Enum values must be ALL_CAPS"
+    label_format: ClassVar[str] = "Enum values must be ALL_CAPS"
 
 
 class InvalidFieldNameTokenError(DclTokenError):
     """Raised when field names don't follow naming rules (token error)."""
 
-    label: str = "Invalid field name"
+    label_format: ClassVar[str] = "Invalid field name"
 
 
 class InvalidFieldNameError(DclCharError):
     """Raised when field names don't follow naming rules (character error)."""
 
-    label: str = "Invalid field name"
+    label_format: ClassVar[str] = "Invalid field name"
 
 
 class SingleQuotesNotAllowedError(DclCharError):
     """Raised when single quotes are used instead of double quotes."""
 
-    label: str = "Use double quotes for strings"
+    label_format: ClassVar[str] = "Use double quotes for strings"
 
 
 class UnterminatedStringError(DclCharError):
     """Raised when a string contains an unescaped newline."""
 
-    label: str = "Unterminated string - use \\n for newlines"
+    label_format: ClassVar[str] = "Unterminated string - use \\n for newlines"
 
 
 class InvalidNumberFormatError(DclTokenError):
     """Raised when numbers use unsupported formats (token error)."""
 
-    label: str = "Invalid number format"
+    label_format: ClassVar[str] = "Invalid number format"
 
 
 class InvalidNumberFormatCharError(DclCharError):
     """Raised when numbers use unsupported formats (character error)."""
 
-    label: str = "Invalid number format"
+    label_format: ClassVar[str] = "Invalid number format"
 
 
 class MissingColonError(DclTokenError):
     """Raised when colon is missing between field name and value."""
 
-    label: str = "Missing colon after field name"
+    label_format: ClassVar[str] = "Missing colon after field name"
 
 
 class InvalidSeparatorError(DclTokenError):
     """Raised when invalid separators like comma are used (token error)."""
 
-    label: str = "Invalid separator"
+    label_format: ClassVar[str] = "Invalid separator"
 
 
 class InvalidSeparatorCharError(DclCharError):
     """Raised when invalid separators like semicolon are used (character error)."""
 
-    label: str = "Invalid separator"
+    label_format: ClassVar[str] = "Invalid separator"
 
 
 class TabNotAllowedError(DclCharError):
     """Raised when tab characters are used."""
 
-    label: str = "Tabs not allowed - use spaces"
+    label_format: ClassVar[str] = "Tabs not allowed - use spaces"
 
 
 class CarriageReturnNotAllowedError(DclCharError):
     """Raised when carriage return characters are used."""
 
-    label: str = "Carriage returns not allowed - use LF only"
+    label_format: ClassVar[str] = "Carriage returns not allowed - use LF only"
 
 
 class AngleBracketsNotAllowedError(DclCharError):
     """Raised when angle brackets are used instead of curly braces."""
 
-    label: str = "Use curly braces {} for messages"
+    label_format: ClassVar[str] = "Use curly braces {{}} for messages"
 
 
 class ScalarAtToplevelError(DclTokenError):
     """Raised when a scalar value appears at the top level."""
 
-    label: str = "Top-level values must be messages"
+    label_format: ClassVar[str] = "Top-level values must be messages"
 
 
 class ByteOrderMarkError(DclCharError):
     """Raised when a byte order mark is present."""
 
-    label: str = "Byte order mark not allowed"
+    label_format: ClassVar[str] = "Byte order mark not allowed"
 
 
 class IntegerEnumError(DclSyntaxError):
     """Raised when an integer value is used for an enum field."""
 
+    label_format: ClassVar[str] = (
+        "{self.field_name}: Integer enum values are not allowed"
+    )
     field_name: str
-    label: str
 
     def __init__(
         self,
@@ -189,14 +196,15 @@ class IntegerEnumError(DclSyntaxError):
         """Initialize with the field name that has an integer enum value."""
         super().__init__("", line, column, path_name)
         self.field_name = field_name
-        self.label = f"{field_name}: Integer enum values are not allowed"
 
 
 class RepeatedFieldWithoutBracketsError(DclSyntaxError):
     """Raised when a repeated field value does not use bracket syntax."""
 
+    label_format: ClassVar[str] = (
+        "{self.field_name}: Repeated fields must use bracket [] syntax"
+    )
     field_name: str
-    label: str
 
     def __init__(
         self,
@@ -208,13 +216,12 @@ class RepeatedFieldWithoutBracketsError(DclSyntaxError):
         """Initialize with the field name missing bracket syntax."""
         super().__init__("", line, column, path_name)
         self.field_name = field_name
-        self.label = f"{field_name}: Repeated fields must use bracket [] syntax"
 
 
 class MissingTrailingNewlineError(DclSyntaxError):
     """Raised when a file does not end with a newline."""
 
-    label: str = "File does not end with a newline"
+    label_format: ClassVar[str] = "File does not end with a newline"
 
     def __init__(self, path_name: str | os.PathLike[str] | None = None):
         """Initialize with optional file name for error display."""
