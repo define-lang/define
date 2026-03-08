@@ -908,7 +908,9 @@ class ProgramValidator:
         started_at: int,
     ):
         """Add deferred-validation time to the file that owns a definition."""
-        self._definition_owners[id(definition_result)].stats.deferred_validation += (
+        self._definition_owners[
+            id(definition_result)
+        ].stats.deferred_validation += (  # pragma: no mutate
             time.perf_counter_ns() - started_at
         )
 

@@ -234,7 +234,7 @@ class ValidationResult:
     file_path: pathlib.PurePosixPath  # Full path: root_prefix / relative file path.
     root_prefix: pathlib.PurePosixPath
     stats: stats.ValidationTimingStats
-    file_diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+    file_diagnostics: list[diagnostics.Diagnostic]
     _post_definition_diagnostics: list[diagnostics.Diagnostic] = field(
         default_factory=list,
         init=False,
@@ -242,7 +242,7 @@ class ValidationResult:
     )
     # This preserves source order, including duplicate definitions that were
     # diagnosed during file validation.
-    definition_results: list[DefinitionValidationResult] = field(default_factory=list)
+    definition_results: list[DefinitionValidationResult]
 
     def add_file_diagnostic(self, diagnostic: diagnostics.Diagnostic):
         """Append a non-definition diagnostic after per-definition diagnostics."""

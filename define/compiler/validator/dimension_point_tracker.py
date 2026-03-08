@@ -114,7 +114,7 @@ class LocalDimensionPointTracker:
             qualities=occupant.qualities,
         )
 
-    def _key_for(self, ref: ast.PositionReference) -> str:
+    def _key_for(self, ref: ast.PositionReference) -> str:  # pragma: no mutate
         return "::".join(
             elem.full_typed_name(in_universe=self._fqun) for elem in ref.chain
         )

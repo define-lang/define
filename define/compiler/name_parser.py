@@ -79,7 +79,7 @@ def _parse_global_name(token: lark_standalone.Token) -> _ParsedGlobalName:
 def _parse_fqun(token: lark_standalone.Token, text: str) -> ast.Fqun:
     # TODO: Support escaped :
     parts = text.split(":")
-    if len(parts) not in {1, 2, 3} or any(part == "" for part in parts):
+    if len(parts) not in {1, 2, 3}:
         raise parser_exceptions.GlobalNameInvalidFqunFormat(
             token,
             _line(token),

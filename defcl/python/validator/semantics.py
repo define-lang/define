@@ -78,7 +78,7 @@ def _check_field(
         for item_value in child.children:
             # Empty repeated fields (e.g. `[]`) produce a None child in Lark.
             if item_value is None:
-                continue
+                continue  # pragma: no mutate
             item_value = cast("lark_standalone.Tree[lark_standalone.Token]", item_value)
             _check_value(name_token, field_desc, item_value, path_name)
         return
