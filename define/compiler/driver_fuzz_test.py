@@ -603,7 +603,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                 draw(_valid_local_definition_strategy(local_name, inner_indent))
                 for local_name in inner_names
             ]
-            trigger_condition_ref = draw(create_dimension_point_references())
+            trigger_condition_ref = "position<run>"
             fragments.append(
                 _action_with_block(
                     _PROJECT_FQUN,

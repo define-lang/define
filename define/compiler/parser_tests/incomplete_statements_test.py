@@ -648,6 +648,27 @@ def test_move_dimension_point_missing_terminator_after_destination(
     assert result.exception.column == 68
 
 
+def test_move_dimension_point_missing_close_angle_bracket_before_to(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        move the dimension point in position<from_pos to position<to_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
+    assert result.exception.token == "."
+    assert result.exception.token.type == "DOT"
+    assert result.exception.line == 6
+    assert result.exception.column == 74
+
+
 def test_move_keyword_then_newline(
     p: parser.Parser,
 ) -> None:
