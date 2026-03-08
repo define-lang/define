@@ -134,11 +134,54 @@ py_test(
 )
 
 py_test(
+    name = "move_chained_constraint_test",
+    size = "small",
+    srcs = ["move_chained_constraint_test.py"],
+    deps = [
+        ":conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+    ],
+)
+
+py_test(
+    name = "move_cross_fqun_test",
+    size = "small",
+    srcs = ["move_cross_fqun_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "move_dimension_point_test",
     size = "small",
     srcs = ["move_dimension_point_test.py"],
     deps = [
         ":conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+    ],
+)
+
+py_test(
+    name = "move_local_constraint_test",
+    size = "small",
+    srcs = ["move_local_constraint_test.py"],
+    deps = [
+        ":conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "move_state_tracking_test",
+    size = "small",
+    srcs = ["move_state_tracking_test.py"],
+    deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -277,7 +320,11 @@ pyright_test(
         ":fqun_mismatch_test",
         ":global_name_walking_test",
         ":local_name_conflicts_test",
+        ":move_chained_constraint_test",
+        ":move_cross_fqun_test",
         ":move_dimension_point_test",
+        ":move_local_constraint_test",
+        ":move_state_tracking_test",
         ":name_format_positions_test",
         ":parallel_test",
         ":parse_and_validate_file_test",
