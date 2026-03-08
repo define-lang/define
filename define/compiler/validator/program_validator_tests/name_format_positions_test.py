@@ -13,16 +13,14 @@ def test_multiverse_name_position():
         source
     )
     diags = results[0].diagnostics
-    mv_diags = [
-        d
-        for d in diags
-        if isinstance(d, diagnostics.MultiverseNameInvalidCharDiagnostic)
-    ]
-    assert len(mv_diags) == 1
-    assert mv_diags[0].multiverse_name == "_mv"
-    assert mv_diags[0].char == "_"
-    assert mv_diags[0].position.line == 1
-    assert mv_diags[0].position.column == 31
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+    assert diags[0].multiverse_name == "_mv"
+    assert diags[0].char == "_"
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 31
+    assert diags[0].position.end_line == 1
+    assert diags[0].position.end_column == 34
 
 
 def test_authority_domain_position():
@@ -31,34 +29,30 @@ def test_authority_domain_position():
         source
     )
     diags = results[0].diagnostics
-    ad_diags = [
-        d
-        for d in diags
-        if isinstance(d, diagnostics.AuthorityDomainInvalidCharDiagnostic)
-    ]
-    assert len(ad_diags) == 1
-    assert ad_diags[0].domain == "-example.com"
-    assert ad_diags[0].char == "-"
-    assert ad_diags[0].position.line == 1
-    assert ad_diags[0].position.column == 34
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert diags[0].domain == "-example.com"
+    assert diags[0].char == "-"
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 34
+    assert diags[0].position.end_line == 1
+    assert diags[0].position.end_column == 46
 
 
 def test_authority_path_position():
-    source = "define the potential position<mv:example.com/.hidden:my_lib:/path>.\n"
+    source = "define the potential position<mv:my.domain.com/.hidden:my_lib:/path>.\n"
     results = program_validator.ProgramValidator().validate_program_non_filesystem(
         source
     )
     diags = results[0].diagnostics
-    ap_diags = [
-        d
-        for d in diags
-        if isinstance(d, diagnostics.InvalidAuthorityPathSegmentDiagnostic)
-    ]
-    assert len(ap_diags) == 1
-    assert ap_diags[0].segment == ".hidden"
-    assert ap_diags[0].char == "."
-    assert ap_diags[0].position.line == 1
-    assert ap_diags[0].position.column == 46
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
+    assert diags[0].segment == ".hidden"
+    assert diags[0].char == "."
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 48
+    assert diags[0].position.end_line == 1
+    assert diags[0].position.end_column == 55
 
 
 def test_universe_name_position():
@@ -67,14 +61,14 @@ def test_universe_name_position():
         source
     )
     diags = results[0].diagnostics
-    un_diags = [
-        d for d in diags if isinstance(d, diagnostics.UniverseNameInvalidCharDiagnostic)
-    ]
-    assert len(un_diags) == 1
-    assert un_diags[0].universe_name == "_my_lib"
-    assert un_diags[0].char == "_"
-    assert un_diags[0].position.line == 1
-    assert un_diags[0].position.column == 48
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert diags[0].universe_name == "_my_lib"
+    assert diags[0].char == "_"
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 48
+    assert diags[0].position.end_line == 1
+    assert diags[0].position.end_column == 55
 
 
 def test_path_segment_position():
@@ -83,16 +77,14 @@ def test_path_segment_position():
         source
     )
     diags = results[0].diagnostics
-    ps_diags = [
-        d
-        for d in diags
-        if isinstance(d, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    ]
-    assert len(ps_diags) == 1
-    assert ps_diags[0].segment == "2bad"
-    assert ps_diags[0].char == "2"
-    assert ps_diags[0].position.line == 1
-    assert ps_diags[0].position.column == 53
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diags[0].segment == "2bad"
+    assert diags[0].char == "2"
+    assert diags[0].position.line == 1
+    assert diags[0].position.column == 53
+    assert diags[0].position.end_line == 1
+    assert diags[0].position.end_column == 57
 
 
 def test_local_name_position():

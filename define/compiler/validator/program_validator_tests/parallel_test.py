@@ -126,9 +126,13 @@ def test_chain_element_validated_without_deferral(
         PurePosixPath("root.def"), max_workers=1
     )
     test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
-    assert [type(d) for d in test_result.diagnostics] == [
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
-    ]
+    assert len(test_result.diagnostics) == 1
+    diag = test_result.diagnostics[0]
+    assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diag.position.line == 10
+    assert diag.position.column == 72
+    assert diag.element_name == "position<my.domain.com:my_lib:/wrong>"
+    assert diag.parent_name == "position<my.domain.com:my_lib:/child>"
 
 
 def test_chain_continuation_validated_without_deferral(
@@ -181,13 +185,13 @@ def test_chain_continuation_validated_without_deferral(
         PurePosixPath("hub.def"), max_workers=1
     )
     test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
-    assert [type(d) for d in test_result.diagnostics] == [
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
-    ]
+    assert len(test_result.diagnostics) == 1
     diag = test_result.diagnostics[0]
     assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
     assert diag.position.line == 10
     assert diag.position.column == 90
+    assert diag.element_name == "position<my.domain.com:my_lib:/pos_d>"
+    assert diag.parent_name == "position<my.domain.com:my_lib:/pos_c>"
 
 
 def test_wrong_type_detected_without_deferral(
@@ -209,9 +213,13 @@ def test_wrong_type_detected_without_deferral(
     checker_result = next(
         r for r in results if r.file_path == PurePosixPath("checker.def")
     )
-    assert [type(d) for d in checker_result.diagnostics] == [
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
-    ]
+    assert len(checker_result.diagnostics) == 1
+    diag = checker_result.diagnostics[0]
+    assert isinstance(diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert diag.position.line == 3
+    assert diag.position.column == 29
+    assert diag.path == "/target"
+    assert diag.expected_type == "position"
 
 
 def test_reference_edges_resolve_by_file_completion_order(
@@ -262,14 +270,26 @@ def test_reference_edges_resolve_by_file_completion_order(
 
     assert len(results) == 2
     assert all(result.exception is None for result in results)
-    assert [type(d) for d in results[0].diagnostics] == [
-        diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
-        diagnostics.ReferencedFileNotFoundDiagnostic,
-    ]
+    assert len(results[0].diagnostics) == 2
+    diag0 = results[0].diagnostics[0]
+    assert isinstance(diag0, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert diag0.position.line == 3
+    assert diag0.position.column == 29
+    assert diag0.path == "/lib/target"
+    assert diag0.expected_type == "position"
+    diag1 = results[0].diagnostics[1]
+    assert isinstance(diag1, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diag1.position.line == 4
+    assert diag1.position.column == 29
+    assert diag1.file_path == "target.def"
     assert results[1].file_path == PurePosixPath("lib/target.def")
-    assert [type(d) for d in results[1].diagnostics] == [
-        diagnostics.PathMismatchDiagnostic,
-    ]
+    assert len(results[1].diagnostics) == 1
+    diag2 = results[1].diagnostics[0]
+    assert isinstance(diag2, diagnostics.PathMismatchDiagnostic)
+    assert diag2.position.line == 1
+    assert diag2.position.column == 62
+    assert diag2.expected_path == "/lib/target"
+    assert diag2.actual_path == "/target"
 
 
 _MOVE_ACTION = (
@@ -336,6 +356,10 @@ def test_move_both_sides_resolved_immediately(
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 66
+    assert all_diags[0].from_position == "position<a>::position</x>"
+    assert all_diags[0].to_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]
@@ -371,6 +395,10 @@ def test_move_from_resolved_to_deferred(
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 66
+    assert all_diags[0].from_position == "position<a>::position</x>"
+    assert all_diags[0].to_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]
@@ -407,6 +435,10 @@ def test_move_from_deferred_to_resolved_on_retry(
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 66
+    assert all_diags[0].from_position == "position<a>::position</x>"
+    assert all_diags[0].to_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]
@@ -497,6 +529,8 @@ def test_chained_to_chained_move_deferred_both_sides_violates(
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 66
     assert all_diags[0].from_position == "position<a>::position</x>"
     assert all_diags[0].to_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [

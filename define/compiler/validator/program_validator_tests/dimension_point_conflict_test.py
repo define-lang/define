@@ -70,7 +70,14 @@ def test_undefined_position_not_tracked_for_duplicates():
     )
     diags = results[0].diagnostics
     assert len(diags) == 2
-    assert all(isinstance(d, diagnostics.UndefinedLocalNameDiagnostic) for d in diags)
+    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].local_name == "position<no_such_pos>"
+    assert diags[0].position.line == 6
+    assert diags[0].position.column == 46
+    assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[1].local_name == "position<no_such_pos>"
+    assert diags[1].position.line == 7
+    assert diags[1].position.column == 46
 
 
 def test_two_actions_same_local_position_create_no_error():
@@ -193,3 +200,6 @@ def test_definition_block_position_enforced():
         results[0].diagnostics[0], diagnostics.LocalDuplicateDimensionPointDiagnostic
     )
     assert results[0].diagnostics[0].position_name == "position<outer_pos>"
+    assert results[0].diagnostics[0].first_creation_line == 7
+    assert results[0].diagnostics[0].position.line == 8
+    assert results[0].diagnostics[0].position.column == 37

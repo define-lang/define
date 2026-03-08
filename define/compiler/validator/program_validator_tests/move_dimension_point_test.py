@@ -209,6 +209,8 @@ def test_same_fqun_must_use_short_form_in_to(
     assert all_diags[0].position.line == 7
     assert all_diags[0].position.column == 68
     assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[1].position.line == 7
+    assert all_diags[1].position.column == 37
     assert all_diags[1].position_name == "position<from_pos>"
 
 
@@ -231,6 +233,8 @@ def test_move_from_empty_position():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position.line == 8
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<from_pos>"
 
 
@@ -256,7 +260,10 @@ def test_move_to_occupied_position():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[0].position.line == 10
+    assert diags[0].position.column == 59
     assert diags[0].position_name == "position<to_pos>"
+    assert diags[0].occupied_at_line == 9
 
 
 def test_move_updates_state_allows_create_in_source():
@@ -301,7 +308,10 @@ def test_cannot_create_in_position_that_was_moved_into():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[0].position.line == 10
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<b>"
+    assert diags[0].first_creation_line == 9
 
 
 def test_double_move_works():
@@ -347,9 +357,14 @@ def test_same_move_twice_in_a_row():
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position.line == 10
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<a>"
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].position.line == 10
+    assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
+    assert diags[1].occupied_at_line == 9
 
 
 def test_round_trip_move_fails_second_return():
@@ -374,9 +389,14 @@ def test_round_trip_move_fails_second_return():
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position.line == 11
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<b>"
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].position.line == 11
+    assert diags[1].position.column == 52
     assert diags[1].position_name == "position<a>"
+    assert diags[1].occupied_at_line == 10
 
 
 def test_two_actions_same_name_one_empty_error_one_clean():
@@ -446,7 +466,10 @@ def test_two_actions_same_name_one_occupied_error_one_clean():
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].position.line == 10
+    assert all_diags[0].position.column == 59
     assert all_diags[0].position_name == "position<to_pos>"
+    assert all_diags[0].occupied_at_line == 9
 
 
 def test_two_actions_with_move_same_local_names():
@@ -503,6 +526,8 @@ def test_move_from_empty_marks_both_positions_unknown():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position.line == 8
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<a>"
 
 
@@ -529,7 +554,10 @@ def test_move_to_occupied_marks_both_positions_unknown():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[0].position.line == 10
+    assert diags[0].position.column == 52
     assert diags[0].position_name == "position<b>"
+    assert diags[0].occupied_at_line == 9
 
 
 def test_both_from_empty_and_to_occupied_marks_unknown():
@@ -555,9 +583,14 @@ def test_both_from_empty_and_to_occupied_marks_unknown():
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position.line == 9
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<a>"
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].position.line == 9
+    assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
+    assert diags[1].occupied_at_line == 8
 
 
 def test_unknown_state_does_not_affect_other_positions():
@@ -583,9 +616,14 @@ def test_unknown_state_does_not_affect_other_positions():
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].position.line == 11
+    assert diags[0].position.column == 37
     assert diags[0].position_name == "position<a>"
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].position.line == 11
+    assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
+    assert diags[1].occupied_at_line == 10
 
 
 def test_valid_global_to_position(validate_project: ValidateProject):
@@ -627,6 +665,8 @@ def test_move_from_a_position_to_itself():
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert diags[0].position.line == 8
+    assert diags[0].position.column == 52
     assert diags[0].position_name == "position<a>"
 
 
@@ -655,6 +695,8 @@ def test_move_from_a_chained_position_to_itself(validate_project: ValidateProjec
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert all_diags[0].position.line == 12
+    assert all_diags[0].position.column == 79
     assert all_diags[0].position_name == "position<a>::position</x>"
 
 
@@ -678,7 +720,14 @@ def test_move_to_same_position_does_not_mark_unknown():
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert diags[0].position.line == 8
+    assert diags[0].position.column == 52
+    assert diags[0].position_name == "position<a>"
     assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[1].position.line == 9
+    assert diags[1].position.column == 37
+    assert diags[1].position_name == "position<a>"
+    assert diags[1].first_creation_line == 7
 
 
 def test_move_to_chained_prefix_position(validate_project: ValidateProject):
@@ -704,6 +753,8 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert all_diags[0].position.line == 10
+    assert all_diags[0].position.column == 81
     assert all_diags[0].from_position == "position<local_pos>"
     assert all_diags[0].to_position == "position<local_pos>::position</target_pos>"
 
@@ -732,6 +783,10 @@ def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject)
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert all_diags[0].position.line == 10
+    assert all_diags[0].position.column == 81
+    assert all_diags[0].from_position == "position<local_pos>"
+    assert all_diags[0].to_position == "position<local_pos>::position</target_pos>"
 
 
 def test_move_violates_dest_constraints(validate_project: ValidateProject):
@@ -765,6 +820,8 @@ def test_move_violates_dest_constraints(validate_project: ValidateProject):
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 59
     assert all_diags[0].from_position == "position<from_pos>"
     assert all_diags[0].to_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
@@ -798,6 +855,10 @@ def test_move_from_unconstrained_to_constrained(validate_project: ValidateProjec
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 13
+    assert all_diags[0].position.column == 59
+    assert all_diags[0].from_position == "position<from_pos>"
+    assert all_diags[0].to_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/x>",
     ]
@@ -910,6 +971,10 @@ def test_local_move_violates_constraints_marks_unknown(
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 59
+    assert all_diags[0].from_position == "position<from_pos>"
+    assert all_diags[0].to_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/y>",
     ]
@@ -973,6 +1038,10 @@ def test_definition_local_to_statement_local_violates(
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 15
+    assert all_diags[0].position.column == 58
+    assert all_diags[0].from_position == "position<def_pos>"
+    assert all_diags[0].to_position == "position<stmt_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/y>",
     ]

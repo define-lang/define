@@ -233,6 +233,16 @@ def test_deferred_position_chain_error_format(
     assert isinstance(
         test_result.diagnostics[0], diagnostics.ChainElementNotInConstraintsDiagnostic
     )
+    assert test_result.diagnostics[0].position.line == 10
+    assert test_result.diagnostics[0].position.column == 72
+    assert (
+        test_result.diagnostics[0].element_name
+        == "position<my.domain.com:my_lib:/wrong>"
+    )
+    assert (
+        test_result.diagnostics[0].parent_name
+        == "position<my.domain.com:my_lib:/pos_b>"
+    )
     formatted = test_result.diagnostics[0].format(
         source.splitlines(), file_name="test.def"
     )
@@ -281,6 +291,12 @@ def test_deferred_action_chain_error_format(
     assert len(test_result.diagnostics) == 1
     assert isinstance(
         test_result.diagnostics[0], diagnostics.ChainElementNotInActionDiagnostic
+    )
+    assert test_result.diagnostics[0].position.line == 10
+    assert test_result.diagnostics[0].position.column == 70
+    assert test_result.diagnostics[0].element_name == "position<no_such>"
+    assert (
+        test_result.diagnostics[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
     )
     formatted = test_result.diagnostics[0].format(
         source.splitlines(), file_name="test.def"
@@ -360,6 +376,13 @@ def test_move_into_defining_position_format(
     assert isinstance(
         test_result.diagnostics[0], diagnostics.MoveIntoDefiningPositionDiagnostic
     )
+    assert test_result.diagnostics[0].position.line == 10
+    assert test_result.diagnostics[0].position.column == 81
+    assert test_result.diagnostics[0].from_position == "position<local_pos>"
+    assert (
+        test_result.diagnostics[0].to_position
+        == "position<local_pos>::position</mid_pos>::position</end_pos>"
+    )
     formatted = test_result.diagnostics[0].format(
         source.splitlines(), file_name="test.def"
     )
@@ -413,6 +436,15 @@ def test_move_violates_constraints_error_message(
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.line == 14
+    assert all_diags[0].position.column == 59
+    assert all_diags[0].from_position == "position<from_pos>"
+    assert all_diags[0].to_position == "position<to_pos>"
+    assert all_diags[0].missing_qualities == [
+        "action<my.domain.com:my_lib:/y>",
+        "position<my.domain.com:my_lib:/x>",
+    ]
     formatted = all_diags[0].format(source.splitlines(), file_name="test.def")
     assert formatted == (
         'File "test.def", line 14, column 59\n'

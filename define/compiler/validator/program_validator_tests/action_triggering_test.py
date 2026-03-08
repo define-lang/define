@@ -376,6 +376,13 @@ class TestActionTriggering:
             },
         )
         test_result = result.result_for("test.def")
+        assert len(result.all_diagnostics) == 1
+        assert isinstance(
+            result.all_diagnostics[0], diagnostics.MoveFromEmptyPositionDiagnostic
+        )
+        assert result.all_diagnostics[0].position_name == "position<a>"
+        assert result.all_diagnostics[0].position.line == 8
+        assert result.all_diagnostics[0].position.column == 37
         assert test_result.definition_results[0].action_body_effects == []
 
     def test_no_body_effect_when_move_target_has_unknown_state(
@@ -400,4 +407,11 @@ class TestActionTriggering:
             },
         )
         test_result = result.result_for("test.def")
+        assert len(result.all_diagnostics) == 1
+        assert isinstance(
+            result.all_diagnostics[0], diagnostics.MoveFromEmptyPositionDiagnostic
+        )
+        assert result.all_diagnostics[0].position_name == "position<a>"
+        assert result.all_diagnostics[0].position.line == 8
+        assert result.all_diagnostics[0].position.column == 37
         assert test_result.definition_results[0].action_body_effects == []

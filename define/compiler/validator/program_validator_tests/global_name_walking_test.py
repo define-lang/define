@@ -119,12 +119,18 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("root.def"), max_workers=1
     )
-    all_diag_types = [type(d) for r in results for d in r.diagnostics]
-    assert all_diag_types == [
-        diagnostics.PathMismatchDiagnostic,
-    ]
-    root_result = next(r for r in results if r.file_path == PurePosixPath("root.def"))
-    assert root_result.diagnostics == []
+    assert len(results) == 3
+    assert results[0].file_path == PurePosixPath("root.def")
+    assert results[0].diagnostics == []
+    assert results[1].file_path == PurePosixPath("target.def")
+    assert results[1].diagnostics == []
+    assert results[2].file_path == PurePosixPath("dup.def")
+    assert len(results[2].diagnostics) == 1
+    assert isinstance(results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic)
+    assert results[2].diagnostics[0].position.line == 1
+    assert results[2].diagnostics[0].position.column == 52
+    assert results[2].diagnostics[0].expected_path == "/dup"
+    assert results[2].diagnostics[0].actual_path == "/target"
 
 
 def test_duplicate_source_definition_does_not_add_reference_edges(
@@ -717,10 +723,14 @@ def test_sub_root_conflict(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert len(results) == 3
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[0].exception is None
-    assert [type(d) for d in results[0].diagnostics] == [
-        diagnostics.PathInsideOtherUniverseDiagnostic,
-        diagnostics.SubRootAlreadyOccupiedDiagnostic,
-    ]
+    assert len(results[0].diagnostics) == 2
+    path_diag = results[0].diagnostics[0]
+    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert path_diag.position.line == 3
+    assert path_diag.position.column == 29
+    assert path_diag.path.endswith("lib/parent_target.def")
+    assert path_diag.other_universe == _CHILD_UNIVERSE
+    assert path_diag.sub_root_path == "lib"
     sub_root_diag = results[0].diagnostics[1]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
@@ -766,11 +776,14 @@ def test_sub_root_conflict_continues_validation(
     assert len(results) == 2
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[0].exception is None
-    assert [type(d) for d in results[0].diagnostics] == [
-        diagnostics.PathInsideOtherUniverseDiagnostic,
-        diagnostics.ReferencedFileNotFoundDiagnostic,
-        diagnostics.SubRootAlreadyOccupiedDiagnostic,
-    ]
+    assert len(results[0].diagnostics) == 3
+    path_diag = results[0].diagnostics[0]
+    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert path_diag.position.line == 3
+    assert path_diag.position.column == 29
+    assert path_diag.path.endswith("lib/parent_target.def")
+    assert path_diag.other_universe == _CHILD_UNIVERSE
+    assert path_diag.sub_root_path == "lib"
     sub_root_diag = results[0].diagnostics[2]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
@@ -818,18 +831,24 @@ def test_path_inside_other_universe(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     results = program_validator.ProgramValidator().validate_program(
         PurePosixPath("test.def")
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    path_diags = [
-        d
-        for d in all_diags
-        if isinstance(d, diagnostics.PathInsideOtherUniverseDiagnostic)
-    ]
-    assert len(path_diags) == 1
-    assert path_diags[0].position.line == 4
-    assert path_diags[0].position.column == 29
-    assert path_diags[0].other_universe == _CHILD_UNIVERSE
-    assert path_diags[0].path.endswith("lib/parent_target.def")
-    assert path_diags[0].sub_root_path == "lib"
+    assert len(results) == 3
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 1
+    assert isinstance(
+        results[0].diagnostics[0], diagnostics.PathInsideOtherUniverseDiagnostic
+    )
+    assert results[0].diagnostics[0].position.line == 4
+    assert results[0].diagnostics[0].position.column == 29
+    assert results[0].diagnostics[0].path.endswith("lib/parent_target.def")
+    assert results[0].diagnostics[0].other_universe == _CHILD_UNIVERSE
+    assert results[0].diagnostics[0].sub_root_path == "lib"
+    assert results[1].file_path == PurePosixPath("lib/sub_root_target.def")
+    assert results[1].exception is None
+    assert results[1].diagnostics == []
+    assert results[2].file_path == PurePosixPath("lib/parent_target.def")
+    assert results[2].exception is None
+    assert results[2].diagnostics == []
 
 
 def test_cross_fqun_file_wrong_fqun_in_sub_root(
