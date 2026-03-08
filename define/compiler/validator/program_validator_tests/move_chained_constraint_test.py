@@ -642,9 +642,9 @@ def test_move_from_local_local_local_chain():
     )
     assert isinstance(
         results[0].diagnostics[1],
-        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
     )
     assert isinstance(
         results[0].diagnostics[2],
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
+        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )

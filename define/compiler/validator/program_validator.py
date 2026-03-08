@@ -406,7 +406,7 @@ class ProgramValidator:
             target_key = ref_edge.full_typed_name
             detected = self._reference_graph.try_add_edge(source_key, target_key)
             if detected is not None:
-                source_definition.diagnostics.append(
+                source_definition.add_diagnostic(
                     diagnostics.CircularGlobalReferenceDiagnostic(
                         position=ref_edge.global_name_reference.position,
                         cycle=detected.path,
@@ -476,7 +476,7 @@ class ProgramValidator:
         if actual_root == enclosing_root:
             return False
 
-        source_definition.diagnostics.append(
+        source_definition.add_diagnostic(
             diagnostics.PathInsideOtherUniverseDiagnostic(
                 position=edge.global_name_reference.name_content.position,
                 path=str(target_file),
@@ -514,7 +514,7 @@ class ProgramValidator:
         global_name = edge.global_name_reference.name_content
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
-            source_definition.diagnostics.append(
+            source_definition.add_diagnostic(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
                     position=global_name.position,
                     file_path=str(target_file),
@@ -524,7 +524,7 @@ class ProgramValidator:
             return
 
         if edge.full_typed_name not in self._definition_results:
-            source_definition.diagnostics.append(
+            source_definition.add_diagnostic(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=global_name.position,
                     path=global_name.path.name,
@@ -666,7 +666,7 @@ class ProgramValidator:
 
         missing = check.to_qualities - check.from_qualities
         if missing:
-            source_definition.diagnostics.append(
+            source_definition.add_diagnostic(
                 diagnostics.MoveViolatesConstraintsDiagnostic(
                     position=check.statement.to_position.position,
                     from_position=_chain_name(check.statement.from_position.chain),
@@ -816,7 +816,7 @@ class ProgramValidator:
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Emit a diagnostic for a chain element not found in an action definition."""
-        source_definition.diagnostics.append(
+        source_definition.add_diagnostic(
             diagnostics.ChainElementNotInActionDiagnostic(
                 position=deferred.chain_element.position,
                 element_name=deferred.chain_element.full_typed_name(
@@ -861,7 +861,7 @@ class ProgramValidator:
         """Check if a chain element matches any constraint, adding a diagnostic if not."""
         element_name = element.full_typed_name(in_universe=source_fqun)
         if element_name not in constraint_names:
-            source_definition.diagnostics.append(
+            source_definition.add_diagnostic(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     position=element.position,
                     element_name=element_name,

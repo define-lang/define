@@ -38,69 +38,69 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
     "syntax/authority_path_empty_segment/empty_segment.def": [
-        diagnostics.AuthorityPathEmptySegmentDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.AuthorityPathEmptySegmentDiagnostic,
     ],
     "syntax/fqun_format/universe_uppercase.def": [
-        diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.UniverseNameInvalidCharDiagnostic,
     ],
     "syntax/fqun_validation/universe_without_authority.def": [
         diagnostics.UniverseWithoutAuthorityDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
     "syntax/invalid_authority_domain/authority_leading_dot.def": [
-        diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
     "syntax/invalid_authority_domain/authority_leading_hyphen.def": [
-        diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
     "syntax/invalid_authority_domain/authority_single_char.def": [
+        diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainTooShortDiagnostic,
         diagnostics.DotlessAuthorityDomainDiagnostic,
-        diagnostics.FqunMismatchDiagnostic,
     ],
     "syntax/invalid_authority_domain/authority_trailing_dot.def": [
-        diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
     "syntax/invalid_authority_domain/authority_trailing_hyphen.def": [
-        diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
     "syntax/invalid_authority_domain/authority_uppercase.def": [
-        diagnostics.AuthorityDomainInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
     "syntax/invalid_authority_path_segment/authority_path_leading_dot.def": [
-        diagnostics.InvalidAuthorityPathSegmentDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.InvalidAuthorityPathSegmentDiagnostic,
     ],
     "syntax/invalid_global_name_path/hyphen.def": [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
     "syntax/invalid_global_name_path/leading_digit.def": [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
     "syntax/invalid_global_name_path/path_leading_digit.def": [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
     "syntax/invalid_global_name_path/path_uppercase.def": [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
     "syntax/invalid_global_name_path/special_characters.def": [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
     "syntax/invalid_global_name_path/uppercase_letter.def": [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
     "syntax/invalid_multiverse_name/multiverse_leading_underscore.def": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
@@ -112,24 +112,24 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.FqunMismatchDiagnostic,
     ],
     "syntax/invalid_multiverse_name/multiverse_trailing_underscore.def": [
-        diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.MultiverseNameInvalidCharDiagnostic,
     ],
     "syntax/invalid_multiverse_name/multiverse_uppercase.def": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
     "syntax/invalid_universe_name_format/universe_leading_underscore.def": [
-        diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.UniverseNameInvalidCharDiagnostic,
     ],
     "syntax/invalid_universe_name_format/universe_single_char.def": [
-        diagnostics.UniverseNameTooShortDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.UniverseNameTooShortDiagnostic,
     ],
     "syntax/invalid_universe_name_format/universe_trailing_underscore.def": [
-        diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.UniverseNameInvalidCharDiagnostic,
     ],
     "syntax/local_names/duplicate.def": [diagnostics.LocalNameConflictDiagnostic],
     "syntax/local_names/duplicate_across_scopes.def": [
@@ -148,8 +148,8 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "syntax/local_names/uppercase.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
     "syntax/paths/double_slash.def": [
-        diagnostics.GlobalNamePathEmptySegmentDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.GlobalNamePathEmptySegmentDiagnostic,
     ],
     "syntax/paths/empty_path.def": [
         diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
@@ -161,21 +161,21 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "syntax/paths/path_leading_underscore.def": [diagnostics.PathMismatchDiagnostic],
     "syntax/paths/trailing_slash.def": [
-        diagnostics.GlobalNamePathTrailingSlashDiagnostic,
         diagnostics.PathMismatchDiagnostic,
+        diagnostics.GlobalNamePathTrailingSlashDiagnostic,
     ],
     "syntax/reserved_names/reserved_authority_example_com.def": [
-        diagnostics.ReservedAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.ReservedAuthorityDomainDiagnostic,
     ],
     "syntax/reserved_names/reserved_authority_no_dot_local.def": [
         diagnostics.ReservedMultiverseNameDiagnostic,
-        diagnostics.DotlessAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.DotlessAuthorityDomainDiagnostic,
     ],
     "syntax/reserved_names/reserved_authority_no_dot_mv.def": [
-        diagnostics.DotlessAuthorityDomainDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.DotlessAuthorityDomainDiagnostic,
     ],
     "syntax/reserved_names/reserved_multiverse_language.def": [
         diagnostics.ReservedMultiverseNameDiagnostic,
@@ -186,52 +186,52 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.FqunMismatchDiagnostic,
     ],
     "syntax/reserved_names/reserved_universe_case_insensitive.def": [
+        diagnostics.FqunMismatchDiagnostic,
         diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
-        diagnostics.FqunMismatchDiagnostic,
     ],
     "syntax/reserved_names/reserved_universe_common_word.def": [
-        diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.ReservedUniverseNameDiagnostic,
     ],
     "syntax/reserved_names/reserved_universe_define.def": [
-        diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.ReservedUniverseNameDiagnostic,
     ],
     "syntax/reserved_names/reserved_universe_example.def": [
-        diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.ReservedUniverseNameDiagnostic,
     ],
     "syntax/reserved_names/reserved_universe_standard.def": [
-        diagnostics.ReservedUniverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
+        diagnostics.ReservedUniverseNameDiagnostic,
     ],
     "indentation/action_no_indentation.def": [
         diagnostics.IncorrectIndentationDiagnostic,
         diagnostics.IncorrectIndentationDiagnostic,
     ],
     "dimension_points/create/chain_ending_with_action.def": [
-        diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/create/duplicate_local_dimension_point.def": [
         diagnostics.LocalDuplicateDimensionPointDiagnostic,
     ],
     "dimension_points/create/single_action_reference.def": [
+        diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
-        diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "dimension_points/create/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
     "dimension_points/move/chain_ending_with_action.def": [
-        diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/move/dest_occupied_after_move.def": [
         diagnostics.LocalDuplicateDimensionPointDiagnostic,
@@ -251,9 +251,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
     "dimension_points/move/single_action_reference.def": [
+        diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
-        diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "dimension_points/move/to_occupied_position.def": [
         diagnostics.MoveToOccupiedPositionDiagnostic,
@@ -275,19 +275,19 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
     "trigger_conditions/chain_ending_with_action.def": [
-        diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
+        diagnostics.LocalActionNameDiagnostic,
     ],
     "trigger_conditions/invalid_local_name_format.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
     "trigger_conditions/single_action_reference.def": [
+        diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
-        diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "trigger_conditions/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,

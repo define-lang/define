@@ -206,14 +206,14 @@ def test_single_action_in_position_reference():
     )
     diags = results[0].diagnostics
     assert len(diags) == 3
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
-    assert diags[0].local_name == "action<act_other>"
+    assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[0].position.line == 6
-    assert diags[0].position.column == 44
-    assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
-    assert diags[1].local_name == "act_other"
+    assert diags[0].position.column == 37
+    assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[1].local_name == "action<act_other>"
     assert diags[1].position.line == 6
     assert diags[1].position.column == 44
-    assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
+    assert diags[2].local_name == "act_other"
     assert diags[2].position.line == 6
-    assert diags[2].position.column == 37
+    assert diags[2].position.column == 44

@@ -174,7 +174,8 @@ class DefinitionValidationResult:
     """Validation output for one definition within a file."""
 
     definition: ast.QualityDefinition
-    diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+    _diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+
     reference_edges: list[ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
     deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
@@ -183,6 +184,18 @@ class DefinitionValidationResult:
     deferred_move_constraint_checks: list[DeferredMoveConstraintCheck] = field(
         default_factory=list
     )
+
+    def add_diagnostic(self, diagnostic: diagnostics.Diagnostic):
+        """Append a diagnostic to this definition's results."""
+        self._diagnostics.append(diagnostic)
+
+    @property
+    def diagnostics(self) -> list[diagnostics.Diagnostic]:
+        """Return diagnostics sorted by source position (line, then column)."""
+        return sorted(
+            self._diagnostics,
+            key=lambda d: (d.position.line, d.position.column),
+        )
 
     @property
     def position_constraint_names(self) -> frozenset[str]:

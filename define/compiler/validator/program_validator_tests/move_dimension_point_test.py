@@ -194,16 +194,16 @@ def test_same_fqun_must_use_short_form_in_to(
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
-    )
-    assert all_diags[0].fqun == "my.domain.com:my_lib"
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position.line == 7
-    assert all_diags[0].position.column == 68
-    assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.column == 37
+    assert all_diags[0].position_name == "position<from_pos>"
+    assert isinstance(
+        all_diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
+    assert all_diags[1].fqun == "my.domain.com:my_lib"
     assert all_diags[1].position.line == 7
-    assert all_diags[1].position.column == 37
-    assert all_diags[1].position_name == "position<from_pos>"
+    assert all_diags[1].position.column == 68
 
 
 def test_valid_global_to_position(validate_project: ValidateProject):

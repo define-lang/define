@@ -293,7 +293,7 @@ class DefinitionAstValidator:
         """Build a result object from the validator's private state."""
         return validation_result.DefinitionValidationResult(
             definition=self._definition,
-            diagnostics=list(self._diagnostics),
+            _diagnostics=list(self._diagnostics),
             reference_edges=list(self._reference_edges),
             discovered_files=list(self._discovered_files),
             deferred_chained_names=list(self._deferred_chained_names),
