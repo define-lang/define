@@ -91,7 +91,6 @@ pytest_add_cli_args_test_selection = [
     "define/compiler",
 ]
 pytest_add_cli_args = [
-    "--ignore=define/compiler/action_call_graph_renderer_test.py",
     "--ignore=define/compiler/driver_fuzz_test.py",
 ]
 

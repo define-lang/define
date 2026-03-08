@@ -1,0 +1,9 @@
+interface:
+  display_name: "Mutmut Survivors"
+  short_description: "Run mutmut and kill surviving mutants"
+  default_prompt:
+    "Use $mutmut-survivors to inspect survivors in this repo, add tests that
+    kill them, and verify the result."
+
+policy:
+  allow_implicit_invocation: true
