@@ -268,3 +268,14 @@ def test_create_empty_qualities():
     tracker.create(ref, frozenset())
 
     assert tracker.get_occupant(ref).qualities == frozenset()
+
+
+def test_keys_use_double_colon_separator():
+    tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
+    ref_a = _make_position_ref([_make_local_ref("pos_a")])
+    ref_ab = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
+
+    tracker.create(ref_a, frozenset())
+
+    assert tracker.is_occupied(ref_a) is True
+    assert tracker.is_occupied(ref_ab) is False

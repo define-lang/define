@@ -174,3 +174,16 @@ def test_action_name_does_not_match_position():
 
     assert tracker.is_defined(pos_ref) is True
     assert tracker.is_defined(act_ref) is False
+
+
+def test_get_constraint_names_returns_empty_frozenset_for_undefined():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    ref = _make_local_typed_name("no_such")
+    assert tracker.get_constraint_names(ref) == frozenset()
+
+
+def test_get_constraint_names_returns_empty_frozenset_for_unconstrained():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.add_local_definition(_make_local_def("my_pos"))
+    ref = _make_local_typed_name("my_pos")
+    assert tracker.get_constraint_names(ref) == frozenset()

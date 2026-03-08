@@ -47,6 +47,7 @@
       "Shell(uv run ruff *)",
       "Shell(uv run tools/sync_agent_permissions.py)",
       "Shell(uv run tools/setup_local_dev.py)",
+      "Shell(uv run mutmut *)",
       "Shell(bazelisk *)"
     ],
     "deny": [

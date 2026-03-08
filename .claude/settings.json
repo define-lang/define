@@ -64,6 +64,7 @@
       "Bash(uv run ruff *)",
       "Bash(uv run tools/sync_agent_permissions.py)",
       "Bash(uv run tools/setup_local_dev.py)",
+      "Bash(uv run mutmut *)",
       "Bash(bazelisk *)"
     ]
   }

@@ -8,7 +8,14 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import ast, diagnostics, exceptions, parser, transformer
+from define.compiler import (
+    ast,
+    diagnostics,
+    exceptions,
+    parser,
+    parser_exceptions,
+    transformer,
+)
 from define.compiler.validator import file_validator, validation_result
 
 
@@ -110,7 +117,21 @@ class TestFileValidatorErrors:
         ctx = _make_context(tmp_path)
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
-        assert result.exception is not None
+        assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+        assert result.exception.line == 1
+        assert result.exception.column == 1
+        assert result.exception.char == "\\x80"
+
+    def test_encoding_error_multiline(self, tmp_path: Path, lark_parser: parser.Parser):
+        (tmp_path / "test.def").write_bytes(b"first line\nsecond line\nthird\x80rest\n")
+        ctx = _make_context(tmp_path)
+        result = file_validator.FileValidator(lark_parser).validate_file(ctx)
+
+        assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+        assert result.exception.line == 3
+        assert result.exception.column == 6
+        assert result.exception.char == "\\x80"
+        assert result.exception.context.startswith("third")
 
 
 class TestFileValidatorDiagnostics:

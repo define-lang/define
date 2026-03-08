@@ -57,6 +57,7 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
         "//define/compiler:transformer",
     ],
 )

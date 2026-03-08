@@ -93,6 +93,8 @@ also_copy = [
 do_not_mutate = [
     "*_test.py",
     "*_pb2.py",
+    "**/conftest.py",
+    "**/test_helpers.py",
     "defcl/python/lark/lark_standalone.py",
     "define/compiler/lark/lark_standalone.py",
 ]

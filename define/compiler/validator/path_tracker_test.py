@@ -133,7 +133,7 @@ class TestSubRootTracking:
 class TestConflictDetection:
     def test_find_enclosing_root_no_roots_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="no project root registered"):
             tracker.find_enclosing_root(PurePosixPath("foo/bar.def"))
 
     def test_find_enclosing_root_returns_project_root(self):
