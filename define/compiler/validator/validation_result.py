@@ -237,7 +237,6 @@ class DefinitionValidationResult:
         return result
 
 
-# TODO: Rename This FileValidationResult and create another class for the ProgramValidationResult.
 @dataclass
 class ValidationResult:
     """Validation output for one source file."""
@@ -261,7 +260,6 @@ class ValidationResult:
         """Append a non-definition diagnostic after per-definition diagnostics."""
         self._post_definition_diagnostics.append(diagnostic)
 
-    # TODO: Sort this by file position.
     @property
     def diagnostics(self) -> Sequence[diagnostics.Diagnostic]:
         """Return file-level and per-definition diagnostics as a read-only view."""

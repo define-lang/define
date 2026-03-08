@@ -40,9 +40,8 @@ def _chain_name(chain: list[ast.TypedNameReference]) -> str:
     return "::".join(elem.source_typed_name for elem in chain)
 
 
-# TODO: Rename to DeferredReferenceEdge.
 @dataclass
-class _DeferredEdge:
+class _DeferredReferenceEdge:
     """An edge waiting for its target file to complete validation."""
 
     edge: validation_result.ReferenceEdge
@@ -128,7 +127,7 @@ class ProgramValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     action_call_graph: action_call_graph.ActionCallGraph
-    _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredEdge]]
+    _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
     _deferred_chain_validations: dict[str, list[_DeferredChainValidation]]
     _deferred_move_constraints: dict[str, list[_DeferredMoveConstraint]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
@@ -432,7 +431,7 @@ class ProgramValidator:
                 )
             else:
                 self._deferred_edges.setdefault(target_file, []).append(
-                    _DeferredEdge(ref_edge, source_definition)
+                    _DeferredReferenceEdge(ref_edge, source_definition)
                 )
 
     def _resolve_target_file(
