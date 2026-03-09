@@ -41,6 +41,7 @@ class ValidateProject(Protocol):
         files: dict[str, str],
         *,
         universe_name: str = ...,
+        max_workers: int | None = ...,
     ) -> list[validation_result.ValidationResult]:
         """Validate a project with the given files."""
         ...
@@ -83,6 +84,7 @@ def _run_validation(
     monkeypatch: pytest.MonkeyPatch,
     files: dict[str, str],
     universe_name: str,
+    max_workers: int | None = None,
 ) -> ProjectResult:
     test_helpers.write_project_config(tmp_path, universe_name)
     for name, content in files.items():
@@ -91,7 +93,7 @@ def _run_validation(
         file_path.write_text(content, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     pv = program_validator.ProgramValidator()
-    results = pv.validate_program(PurePosixPath("test.def"))
+    results = pv.validate_program(PurePosixPath("test.def"), max_workers=max_workers)
     return ProjectResult(results=results, graph=pv.action_call_graph)
 
 
@@ -105,8 +107,11 @@ def validate_project(
         files: dict[str, str],
         *,
         universe_name: str = "my.domain.com:my_lib",
+        max_workers: int | None = None,
     ) -> list[validation_result.ValidationResult]:
-        return _run_validation(tmp_path, monkeypatch, files, universe_name).results
+        return _run_validation(
+            tmp_path, monkeypatch, files, universe_name, max_workers=max_workers
+        ).results
 
     return _run
 

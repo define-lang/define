@@ -1390,3 +1390,201 @@ class TestUnnecessarySelfReference:
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+
+
+class TestChainActionValidation:
+    def test_local_action_name_after_action_rejected(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</a>::action<bad>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "a.def": (
+                    "define the potential action<my.domain.com:my_lib:/a> {\n"
+                    "    define the position<inner>.\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+            max_workers=1,
+        )
+        assert len(results) == 2
+        assert results[0].file_path == PurePosixPath("test.def")
+        assert results[1].file_path == PurePosixPath("a.def")
+        assert list(results[1].diagnostics) == []
+        assert len(results[0].diagnostics) == 3
+        assert isinstance(
+            results[0].diagnostics[0],
+            diagnostics.PositionReferenceChainEndDiagnostic,
+        )
+        assert results[0].diagnostics[0].position.line == 10
+        assert results[0].diagnostics[0].position.column == 62
+        assert isinstance(
+            results[0].diagnostics[1],
+            diagnostics.ChainElementNotInActionDiagnostic,
+        )
+        assert results[0].diagnostics[1].element_name == "action<bad>"
+        assert (
+            results[0].diagnostics[1].parent_name == "action<my.domain.com:my_lib:/a>"
+        )
+        assert results[0].diagnostics[1].position.line == 10
+        assert results[0].diagnostics[1].position.column == 62
+        assert isinstance(
+            results[0].diagnostics[2], diagnostics.LocalActionNameDiagnostic
+        )
+        assert results[0].diagnostics[2].local_name == "bad"
+
+    def test_chain_through_action_with_constrained_local_position(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</act>::position<inner>::position</wrong>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act.def": (
+                    "define the potential action<my.domain.com:my_lib:/act> {\n"
+                    "    define the position<inner> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</allowed>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "allowed.def": "define the potential position<my.domain.com:my_lib:/allowed>.\n",
+                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+            },
+            max_workers=1,
+        )
+        assert len(results) == 4
+        assert results[0].file_path == PurePosixPath("test.def")
+        assert len(results[0].diagnostics) == 1
+        diag = results[0].diagnostics[0]
+        assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
+        assert diag.element_name == "position<my.domain.com:my_lib:/wrong>"
+        assert diag.parent_name == "position<inner>"
+        assert diag.position.line == 10
+        assert all(len(r.diagnostics) == 0 for r in results[1:])
+
+    def test_chain_through_action_valid_continuation(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</act>::position<inner>::position</deeper>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act.def": (
+                    "define the potential action<my.domain.com:my_lib:/act> {\n"
+                    "    define the position<inner> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</deeper>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "deeper.def": "define the potential position<my.domain.com:my_lib:/deeper>.\n",
+            },
+            max_workers=1,
+        )
+        assert len(results) == 3
+        assert all(len(r.diagnostics) == 0 for r in results)
+
+    def test_deferred_chain_continuation_through_action_produces_error(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</act>::position<inner>::position</target>::position</leaf>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act.def": (
+                    "define the potential action<my.domain.com:my_lib:/act> {\n"
+                    "    define the position<inner> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</target>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "target.def": (
+                    "define the potential position<my.domain.com:my_lib:/target> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</allowed_leaf>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "leaf.def": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
+                "allowed_leaf.def": "define the potential position<my.domain.com:my_lib:/allowed_leaf>.\n",
+            },
+            max_workers=1,
+        )
+        assert len(results) == 5
+        assert results[0].file_path == PurePosixPath("test.def")
+        assert len(results[0].diagnostics) == 1
+        diag = results[0].diagnostics[0]
+        assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
+        assert diag.element_name == "position<my.domain.com:my_lib:/leaf>"
+        assert diag.parent_name == "position<my.domain.com:my_lib:/target>"
+        assert all(len(r.diagnostics) == 0 for r in results[1:])
