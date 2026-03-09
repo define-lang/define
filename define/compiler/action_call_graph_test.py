@@ -32,39 +32,45 @@ def _action_typed_name(
     )
 
 
-def _local_chain(name: str) -> list[ast.TypedNameReference]:
-    return [
-        ast.LocalTypedNameReference(
-            position=_pos(),
-            name_type=ast.NameType.POSITION,
-            name_content=ast.LocalNameContent(position=_pos(), name=name),
-        )
-    ]
+def _chained_name(elements: list[ast.TypedNameReference]) -> ast.ChainedName:
+    return ast.ChainedName(typed_names=elements, position=_pos())
 
 
-def _global_action_local_pos(
-    action_path: str, pos_name: str
-) -> list[ast.TypedNameReference]:
-    return [
-        ast.GlobalTypedNameReference(
-            position=_pos(),
-            name_type=ast.NameType.ACTION,
-            name_content=ast.ReferenceGlobalNameContent(
+def _local_chain(name: str) -> ast.ChainedName:
+    return _chained_name(
+        [
+            ast.LocalTypedNameReference(
                 position=_pos(),
-                fqun=None,
-                path=ast.GlobalPathName(position=_pos(), name=action_path),
+                name_type=ast.NameType.POSITION,
+                name_content=ast.LocalNameContent(position=_pos(), name=name),
+            )
+        ]
+    )
+
+
+def _global_action_local_pos(action_path: str, pos_name: str) -> ast.ChainedName:
+    return _chained_name(
+        [
+            ast.GlobalTypedNameReference(
+                position=_pos(),
+                name_type=ast.NameType.ACTION,
+                name_content=ast.ReferenceGlobalNameContent(
+                    position=_pos(),
+                    fqun=None,
+                    path=ast.GlobalPathName(position=_pos(), name=action_path),
+                ),
             ),
-        ),
-        ast.LocalTypedNameReference(
-            position=_pos(),
-            name_type=ast.NameType.POSITION,
-            name_content=ast.LocalNameContent(position=_pos(), name=pos_name),
-        ),
-    ]
+            ast.LocalTypedNameReference(
+                position=_pos(),
+                name_type=ast.NameType.POSITION,
+                name_content=ast.LocalNameContent(position=_pos(), name=pos_name),
+            ),
+        ]
+    )
 
 
 def _make_create_stmt(
-    chain: list[ast.TypedNameReference],
+    chain: ast.ChainedName,
 ) -> ast.CreateDimensionPointStatement:
     return ast.CreateDimensionPointStatement(
         position=_pos(),
@@ -73,11 +79,11 @@ def _make_create_stmt(
 
 
 def _make_move_stmt(
-    to_chain: list[ast.TypedNameReference],
+    to_chain: ast.ChainedName,
 ) -> ast.MoveDimensionPointStatement:
     return ast.MoveDimensionPointStatement(
         position=_pos(),
-        from_position=ast.PositionReference(position=_pos(), chain=[]),
+        from_position=ast.PositionReference(position=_pos(), chain=_chained_name([])),
         to_position=ast.PositionReference(position=_pos(), chain=to_chain),
     )
 
@@ -295,27 +301,29 @@ class TestActionCallGraph:
 
     def test_local_prefix_before_action_reference(self):
         graph = action_call_graph.ActionCallGraph()
-        chain: list[ast.TypedNameReference] = [
-            ast.LocalTypedNameReference(
-                position=_pos(),
-                name_type=ast.NameType.POSITION,
-                name_content=ast.LocalNameContent(position=_pos(), name="x"),
-            ),
-            ast.GlobalTypedNameReference(
-                position=_pos(),
-                name_type=ast.NameType.ACTION,
-                name_content=ast.ReferenceGlobalNameContent(
+        chain = _chained_name(
+            [
+                ast.LocalTypedNameReference(
                     position=_pos(),
-                    fqun=None,
-                    path=ast.GlobalPathName(position=_pos(), name="/act_a"),
+                    name_type=ast.NameType.POSITION,
+                    name_content=ast.LocalNameContent(position=_pos(), name="x"),
                 ),
-            ),
-            ast.LocalTypedNameReference(
-                position=_pos(),
-                name_type=ast.NameType.POSITION,
-                name_content=ast.LocalNameContent(position=_pos(), name="my_pos"),
-            ),
-        ]
+                ast.GlobalTypedNameReference(
+                    position=_pos(),
+                    name_type=ast.NameType.ACTION,
+                    name_content=ast.ReferenceGlobalNameContent(
+                        position=_pos(),
+                        fqun=None,
+                        path=ast.GlobalPathName(position=_pos(), name="/act_a"),
+                    ),
+                ),
+                ast.LocalTypedNameReference(
+                    position=_pos(),
+                    name_type=ast.NameType.POSITION,
+                    name_content=ast.LocalNameContent(position=_pos(), name="my_pos"),
+                ),
+            ]
+        )
         stmt = _make_create_stmt(chain)
 
         result_a = _make_result(

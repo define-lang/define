@@ -195,13 +195,28 @@ type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
 @dataclass
+class ChainedName(ASTNode):
+    """A chain of typed name references joined by ::."""
+
+    typed_names: list[TypedNameReference]
+
+    def canonical_chained_name(self, in_universe: Fqun | None = None) -> str:
+        """Return the canonical chained name string."""
+        return "::".join(
+            elem.full_typed_name(in_universe=in_universe) for elem in self.typed_names
+        )
+
+    @property
+    def source_chained_name(self) -> str:
+        """Return chained name text as it appears in the source."""
+        return "::".join(elem.source_typed_name for elem in self.typed_names)
+
+
+@dataclass
 class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
 
-    # TODO: We need a ChainedName class; there are a lot of places that
-    # want to calculate the full chained name as a string and it would
-    # be better if we just did it here.
-    chain: list[TypedNameReference]
+    chain: ChainedName
 
 
 @dataclass

@@ -55,8 +55,13 @@ def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
     )
 
 
-def _make_position_ref(chain: list[ast.TypedNameReference]) -> ast.PositionReference:
-    return ast.PositionReference(chain=chain, position=_POS)
+def _make_position_ref(
+    elements: list[ast.TypedNameReference],
+) -> ast.PositionReference:
+    return ast.PositionReference(
+        chain=ast.ChainedName(typed_names=elements, position=_POS),
+        position=_POS,
+    )
 
 
 def _make_scope_with_def(name: str) -> scope_tracker.ScopeTracker:
@@ -255,10 +260,13 @@ def test_move_updates_creation_position():
     to_ref = _make_position_ref([_make_local_ref("pos_b")])
 
     tracker.create(from_ref, frozenset())
-    assert tracker.get_occupant(from_ref).creation_position is from_ref.chain[0]
+    assert (
+        tracker.get_occupant(from_ref).creation_position
+        is from_ref.chain.typed_names[0]
+    )
 
     tracker.move(from_ref, to_ref)
-    assert tracker.get_occupant(to_ref).creation_position is to_ref.chain[0]
+    assert tracker.get_occupant(to_ref).creation_position is to_ref.chain.typed_names[0]
 
 
 def test_create_empty_qualities():

@@ -54,7 +54,7 @@ class DeferredChainElements:
     enclosing_definition: ast.QualityDefinition
     parent_element: ast.GlobalTypedNameReference
     chain_element: ast.TypedNameReference
-    remaining_chain: list[ast.TypedNameReference]
+    remaining_chain: ast.ChainedName
 
     @property
     def source_fqun(self) -> ast.Fqun:
@@ -69,14 +69,16 @@ class DeferredChainElements:
     def next_deferred(
         self,
         validated_element: ast.GlobalTypedNameReference,
-        remaining: list[ast.TypedNameReference],
+        remaining: ast.ChainedName,
     ) -> DeferredChainElements:
         """Create the next deferred element after validating one in the chain."""
+        chain_element = remaining.typed_names[0]
+        del remaining.typed_names[0]
         return DeferredChainElements(
             enclosing_definition=self.enclosing_definition,
             parent_element=validated_element,
-            chain_element=remaining[0],
-            remaining_chain=remaining[1:],
+            chain_element=chain_element,
+            remaining_chain=remaining,
         )
 
 
@@ -85,15 +87,13 @@ class TriggerPositionInfo:
     """An action's trigger condition, for cross-action matching."""
 
     enclosing_typed_name: ast.GlobalTypedNameInDefinition
-    checked_position: list[ast.TypedNameReference]
+    checked_position: ast.ChainedName
 
     @cached_property
     def checked_position_name_with_prefix(self) -> str:
         """Return the full chained name of the position the trigger condition is checking, prefixed with the action name."""
         fqun = self.enclosing_typed_name.name_content.fqun
-        chain_str = "::".join(
-            elem.full_typed_name(in_universe=fqun) for elem in self.checked_position
-        )
+        chain_str = self.checked_position.canonical_chained_name(in_universe=fqun)
         return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
 
 
@@ -105,7 +105,7 @@ class ActionBodyEffect:
     statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
 
     @property
-    def modified_position(self) -> list[ast.TypedNameReference]:
+    def modified_position(self) -> ast.ChainedName:
         """Return the position chain that this statement writes into."""
         match self.statement:
             case ast.CreateDimensionPointStatement():
@@ -119,10 +119,9 @@ class ActionBodyEffect:
 
         Returns (index, full_typed_name) or None if no action ref exists.
         """
-        chain = self.modified_position
         fqun = self.enclosing_typed_name.name_content.fqun
-        for i in range(len(chain) - 1, -1, -1):
-            elem = chain[i]
+        for i in range(len(self.modified_position.typed_names) - 1, -1, -1):
+            elem = self.modified_position.typed_names[i]
             if elem.name_type == ast.NameType.ACTION:
                 return (i, elem.full_typed_name(in_universe=fqun))
         return None
@@ -142,16 +141,16 @@ class ActionBodyEffect:
     @cached_property
     def affected_position_qualified_chained_name(self) -> str:
         """Return the globally-unique position key of the position that was affected (got a dimension point)."""
-        chain = self.modified_position
         fqun = self.enclosing_typed_name.name_content.fqun
         boundary = self._action_boundary
         if boundary is None:
-            chain_str = "::".join(
-                elem.full_typed_name(in_universe=fqun) for elem in chain
-            )
+            chain_str = self.modified_position.canonical_chained_name(in_universe=fqun)
             return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
         idx = boundary[0]
-        return "::".join(elem.full_typed_name(in_universe=fqun) for elem in chain[idx:])
+        return "::".join(
+            elem.full_typed_name(in_universe=fqun)
+            for elem in self.modified_position.typed_names[idx:]
+        )
 
 
 @dataclass

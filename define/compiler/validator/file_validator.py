@@ -40,11 +40,6 @@ SYNTAX_ERROR_TYPES = (
 )
 
 
-def _chain_name(chain: list[ast.TypedNameReference]) -> str:
-    """Format a chain of typed names as written in the source."""
-    return "::".join(elem.source_typed_name for elem in chain)
-
-
 @dataclass(frozen=True)
 class FileValidationContext:
     """Immutable input for validating a single file."""
@@ -361,7 +356,7 @@ class DefinitionAstValidator:
             ref = condition.position_reference
             local_ref = tracker.get_local_position_reference(ref, scope)
             if local_ref is not None:
-                qualities = scope.get_constraint_names(ref.chain[0])
+                qualities = scope.get_constraint_names(ref.chain.typed_names[0])
                 tracker.create(ref, qualities)
         scope.enter_child_scope()
         self._validate_action_statements(
@@ -453,12 +448,12 @@ class DefinitionAstValidator:
                 self._diagnostics.append(
                     diagnostics.LocalDuplicateDimensionPointDiagnostic(
                         position=position.position,
-                        position_name=_chain_name(position.chain),
+                        position_name=position.chain.source_chained_name,
                         first_creation_line=existing.creation_position.position.line,
                     )
                 )
                 return
-            qualities = scope.get_constraint_names(position.chain[0])
+            qualities = scope.get_constraint_names(position.chain.typed_names[0])
             tracker.create(position, qualities)
 
         self._action_body_effects.append(
@@ -518,7 +513,7 @@ class DefinitionAstValidator:
             self._diagnostics.append(
                 diagnostics.MoveFromEmptyPositionDiagnostic(
                     position=stmt.from_position.position,
-                    position_name=_chain_name(stmt.from_position.chain),
+                    position_name=stmt.from_position.chain.source_chained_name,
                 )
             )
         if not to_empty:
@@ -529,7 +524,7 @@ class DefinitionAstValidator:
             self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
                     position=stmt.to_position.position,
-                    position_name=_chain_name(stmt.to_position.chain),
+                    position_name=stmt.to_position.chain.source_chained_name,
                     occupied_at_line=occupied_at_line,
                 )
             )
@@ -552,7 +547,9 @@ class DefinitionAstValidator:
                 tracker.destroy(stmt.from_position)
             elif to_local:
                 # Chained→local: we know the to qualities locally.
-                to_qualities = scope.get_constraint_names(stmt.to_position.chain[0])
+                to_qualities = scope.get_constraint_names(
+                    stmt.to_position.chain.typed_names[0]
+                )
                 tracker.create(stmt.to_position, to_qualities)
             self._deferred_move_constraint_checks.append(
                 validation_result.DeferredMoveConstraintCheck(
@@ -580,16 +577,18 @@ class DefinitionAstValidator:
         """Check that a move satisfies destination constraints."""
         # TODO: Check constraints for non-local (chained/global) positions.
         dp_info = tracker.get_occupant(stmt.from_position)
-        dest_constraints = scope.get_constraint_names(stmt.to_position.chain[0])
+        dest_constraints = scope.get_constraint_names(
+            stmt.to_position.chain.typed_names[0]
+        )
         missing_qualities = dest_constraints - dp_info.qualities
         if not missing_qualities:
             return True
 
         self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
-                position=stmt.to_position.chain[0].position,
-                from_position=_chain_name(stmt.from_position.chain),
-                to_position=_chain_name(stmt.to_position.chain),
+                position=stmt.to_position.chain.typed_names[0].position,
+                from_position=stmt.from_position.chain.source_chained_name,
+                to_position=stmt.to_position.chain.source_chained_name,
                 missing_qualities=sorted(missing_qualities),
             )
         )
@@ -610,28 +609,30 @@ class DefinitionAstValidator:
         """
         from_chain = stmt.from_position.chain
         to_chain = stmt.to_position.chain
-        if len(from_chain) > len(to_chain):
+        if len(from_chain.typed_names) > len(to_chain.typed_names):
             return False
-        for from_elem, to_elem in zip(from_chain, to_chain, strict=False):
-            if from_elem.full_typed_name(in_universe=fqun) != to_elem.full_typed_name(
+        for from_name, to_name in zip(
+            from_chain.typed_names, to_chain.typed_names, strict=False
+        ):
+            if from_name.full_typed_name(in_universe=fqun) != to_name.full_typed_name(
                 in_universe=fqun
             ):
                 return False
 
-        if len(from_chain) == len(to_chain):
+        if len(from_chain.typed_names) == len(to_chain.typed_names):
             self._diagnostics.append(
                 diagnostics.MoveToSamePositionDiagnostic(
-                    position=to_chain[-1].position,
-                    position_name=_chain_name(to_chain),
+                    position=to_chain.typed_names[-1].position,
+                    position_name=to_chain.source_chained_name,
                 )
             )
         else:
-            divergence = to_chain[len(from_chain)]
+            divergence = to_chain.typed_names[len(from_chain.typed_names)]
             self._diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
                     position=divergence.position,
-                    from_position=_chain_name(from_chain),
-                    to_position=_chain_name(to_chain),
+                    from_position=from_chain.source_chained_name,
+                    to_position=to_chain.source_chained_name,
                 )
             )
             # TODO: Need to export unknown-state positions in ValidationResult
@@ -644,19 +645,19 @@ class DefinitionAstValidator:
 
     def _validate_full_chained_name(
         self,
-        chain: list[ast.TypedNameReference],
+        chain: ast.ChainedName,
         scope: scope_tracker.ScopeTracker,
     ) -> bool:
         """Validate a full chained name reference.
 
         Returns whether the caller may continue processing this reference.
         """
-        first = chain[0]
+        first = chain.typed_names[0]
         fqun = self._definition.typed_name.name_content.fqun
         may_continue = True
 
         if (
-            len(chain) > 1
+            len(chain.typed_names) > 1
             and isinstance(first, ast.GlobalTypedNameReference)
             and first.full_typed_name(in_universe=fqun)
             == self._definition.typed_name.full_typed_name()
@@ -669,8 +670,8 @@ class DefinitionAstValidator:
             )
             # NOTE: Mutates the AST so downstream validation sees the corrected chain.
             # Otherwise things like duplicate detection would not correctly trigger.
-            del chain[0]
-            first = chain[0]
+            del chain.typed_names[0]
+            first = chain.typed_names[0]
 
         first_is_defined = True
         if not scope.is_defined(first):
@@ -686,7 +687,7 @@ class DefinitionAstValidator:
             # TODO: Support global names starting positions.
 
         previous_element = None
-        for typed_name in chain:
+        for typed_name in chain.typed_names:
             self._validate_chained_name_element(typed_name)
             # Local names in chains may only come right after global action names.
             if (
@@ -711,30 +712,37 @@ class DefinitionAstValidator:
                 may_continue = False
             previous_element = typed_name
 
-        if len(chain) > 1 and first_is_defined:
+        if len(chain.typed_names) > 1 and first_is_defined:
             # If the first item is a local position, we have to do the validation
             # of the second item immediately, because the constraint of the local
             # position won't be passed out of the function if it's in an Action
             # Statements Block. (If it's in an Action Definition Block, we still
             # _can_ do it now, so we simply should.)
-            self._validate_chain_element_against_constraints(chain[1], chain[0], scope)
+            self._validate_chain_element_against_constraints(
+                chain.typed_names[1], chain.typed_names[0], scope
+            )
 
         # TODO: In the future when the _first_ element can be a global name, this will
         # be more complex.
-        if len(chain) > 2 and isinstance(chain[1], ast.GlobalTypedNameReference):
+        if len(chain.typed_names) > 2 and isinstance(
+            chain.typed_names[1], ast.GlobalTypedNameReference
+        ):
             self._deferred_chained_names.append(
                 validation_result.DeferredChainElements(
                     enclosing_definition=self._definition,
-                    parent_element=chain[1],
-                    chain_element=chain[2],
-                    remaining_chain=chain[3:],
+                    parent_element=chain.typed_names[1],
+                    chain_element=chain.typed_names[2],
+                    remaining_chain=ast.ChainedName(
+                        typed_names=chain.typed_names[3:],
+                        position=chain.position,
+                    ),
                 )
             )
 
-        if chain[-1].name_type != ast.NameType.POSITION:
+        if chain.typed_names[-1].name_type != ast.NameType.POSITION:
             self._diagnostics.append(
                 diagnostics.PositionReferenceChainEndDiagnostic(
-                    position=chain[-1].position,
+                    position=chain.typed_names[-1].position,
                 )
             )
 

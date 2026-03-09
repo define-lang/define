@@ -273,8 +273,10 @@ class TestActionTriggering:
             tp.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
         )
-        assert len(tp.checked_position) == 1
-        assert tp.checked_position[0].full_typed_name() == "position<my_pos>"
+        assert len(tp.checked_position.typed_names) == 1
+        assert (
+            tp.checked_position.typed_names[0].full_typed_name() == "position<my_pos>"
+        )
 
     def test_action_body_effects_recorded(
         self,
@@ -311,13 +313,15 @@ class TestActionTriggering:
             effect.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
         )
-        assert len(effect.modified_position) == 2
+        assert len(effect.modified_position.typed_names) == 2
         fqun = effect.enclosing_typed_name.name_content.fqun
         assert (
-            effect.modified_position[0].full_typed_name(in_universe=fqun)
+            effect.modified_position.typed_names[0].full_typed_name(in_universe=fqun)
             == "action<my.domain.com:my_lib:/other>"
         )
-        assert effect.modified_position[1].full_typed_name() == "position<pos>"
+        assert (
+            effect.modified_position.typed_names[1].full_typed_name() == "position<pos>"
+        )
 
     def test_local_prefix_before_action_trigger(
         self,

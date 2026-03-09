@@ -35,11 +35,6 @@ from define.compiler.validator import (
 )
 
 
-def _chain_name(chain: list[ast.TypedNameReference]) -> str:
-    """Format a chain of typed names as written in the source."""
-    return "::".join(elem.source_typed_name for elem in chain)
-
-
 @dataclass
 class _DeferredReferenceEdge:
     """An edge waiting for its target file to complete validation."""
@@ -668,15 +663,15 @@ class ProgramValidator:
             source_definition.add_diagnostic(
                 diagnostics.MoveViolatesConstraintsDiagnostic(
                     position=check.statement.to_position.position,
-                    from_position=_chain_name(check.statement.from_position.chain),
-                    to_position=_chain_name(check.statement.to_position.chain),
+                    from_position=check.statement.from_position.chain.source_chained_name,
+                    to_position=check.statement.to_position.chain.source_chained_name,
                     missing_qualities=sorted(missing),
                 )
             )
 
     def _get_required_qualities_for_position(
         self,
-        chain: list[ast.TypedNameReference],
+        chain: ast.ChainedName,
         fqun: ast.Fqun,
     ) -> tuple[frozenset[str] | None, str]:
         """Resolve the constraint qualities for the last position in a chain.
@@ -689,7 +684,7 @@ class ProgramValidator:
         # qualities a DP has. A DP may actually have more qualities than the last
         # position requires (from its original creation site), and we lose that
         # knowledge by only looking at its current location.
-        last_element = chain[-1]
+        last_element = chain.typed_names[-1]
 
         if isinstance(last_element, ast.GlobalTypedNameReference):
             lookup_key = last_element.full_typed_name(in_universe=fqun)
@@ -698,7 +693,7 @@ class ProgramValidator:
             # guarantees provided by file_validator, it _must_ be
             # a chain with more than one item in it, and the parent
             # must be a globally-named action.
-            parent = chain[-2]
+            parent = chain.typed_names[-2]
             if not isinstance(parent, ast.GlobalTypedNameReference):
                 raise ValueError("got a local name where a global name was expected")
             lookup_key = parent.full_typed_name(in_universe=fqun)
@@ -791,10 +786,10 @@ class ProgramValidator:
         if element.name_content.name not in locals_map:
             self._emit_not_in_action_diagnostic(deferred, source_definition)
             return
-        if not deferred.remaining_chain:
+        if not deferred.remaining_chain.typed_names:
             return
-        next_element = deferred.remaining_chain[0]
-        rest = deferred.remaining_chain[1:]
+        next_element = deferred.remaining_chain.typed_names[0]
+        del deferred.remaining_chain.typed_names[0]
         self._check_chain_element_against_constraints(
             next_element,
             locals_map[element.name_content.name],
@@ -805,7 +800,7 @@ class ProgramValidator:
         self._defer_chain_continuation(
             deferred,
             next_element,
-            rest,
+            deferred.remaining_chain,
             source_definition,
         )
 
@@ -829,11 +824,11 @@ class ProgramValidator:
         self,
         deferred: validation_result.DeferredChainElements,
         validated_element: ast.TypedNameReference,
-        remaining: list[ast.TypedNameReference],
+        remaining: ast.ChainedName,
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Submit a deferred chain validation, or validate immediately if ready."""
-        if not remaining:
+        if not remaining.typed_names:
             return
         next_deferred = deferred.next_deferred(
             typing.cast("ast.GlobalTypedNameReference", validated_element),

@@ -47,9 +47,9 @@ class LocalDimensionPointTracker:
         that item is a LocalTypedNameReference, and it is defined in any
         enclosing scope.
         """
-        if len(ref.chain) != 1:
+        if len(ref.chain.typed_names) != 1:
             return None
-        first = ref.chain[0]
+        first = ref.chain.typed_names[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return None
         if not scope.is_defined(first):
@@ -58,30 +58,36 @@ class LocalDimensionPointTracker:
 
     def mark_unknown_state(self, ref: ast.PositionReference):
         """Mark a position as having unknown occupancy state."""
-        self._positions_with_unknown_state.add(self._key_for(ref))
+        key = ref.chain.canonical_chained_name(in_universe=self._fqun)
+        self._positions_with_unknown_state.add(key)
 
     def has_unknown_state(self, ref: ast.PositionReference) -> bool:
         """Return whether a position has unknown occupancy state."""
-        return self._key_for(ref) in self._positions_with_unknown_state
+        key = ref.chain.canonical_chained_name(in_universe=self._fqun)
+        return key in self._positions_with_unknown_state
 
     def is_occupied(self, ref: ast.PositionReference) -> bool:
         """Return whether a dimension point exists at this position."""
-        return self._key_for(ref) in self._dimension_points
+        key = ref.chain.canonical_chained_name(in_universe=self._fqun)
+        return key in self._dimension_points
 
     def get_occupant(self, ref: ast.PositionReference) -> DimensionPointInfo:
         """Return the info for the dimension point at this position."""
-        return self._dimension_points[self._key_for(ref)]
+        key = ref.chain.canonical_chained_name(in_universe=self._fqun)
+        return self._dimension_points[key]
 
     def create(self, ref: ast.PositionReference, qualities: Set[str]):
         """Record a new dimension point at this position.
 
         Raises ValueError if the position is already occupied.
         """
-        key = self._key_for(ref)
+        key = ref.chain.canonical_chained_name(in_universe=self._fqun)
         if key in self._dimension_points:
             raise ValueError(f"position {key} is already occupied")
         self._dimension_points[key] = DimensionPointInfo(
-            creation_position=typing.cast("ast.LocalTypedNameReference", ref.chain[0]),
+            creation_position=typing.cast(
+                "ast.LocalTypedNameReference", ref.chain.typed_names[0]
+            ),
             qualities=frozenset(qualities),
         )
 
@@ -90,7 +96,7 @@ class LocalDimensionPointTracker:
 
         Raises ValueError if the position is not occupied.
         """
-        key = self._key_for(ref)
+        key = ref.chain.canonical_chained_name(in_universe=self._fqun)
         if key not in self._dimension_points:
             raise ValueError(f"position {key} is not occupied")
         del self._dimension_points[key]
@@ -100,8 +106,8 @@ class LocalDimensionPointTracker:
 
         Raises ValueError if from is not occupied or to is already occupied.
         """
-        from_key = self._key_for(from_ref)
-        to_key = self._key_for(to_ref)
+        from_key = from_ref.chain.canonical_chained_name(in_universe=self._fqun)
+        to_key = to_ref.chain.canonical_chained_name(in_universe=self._fqun)
         if from_key not in self._dimension_points:
             raise ValueError(f"source position {from_key} is not occupied")
         if to_key in self._dimension_points:
@@ -109,12 +115,7 @@ class LocalDimensionPointTracker:
         occupant = self._dimension_points.pop(from_key)
         self._dimension_points[to_key] = DimensionPointInfo(
             creation_position=typing.cast(
-                "ast.LocalTypedNameReference", to_ref.chain[0]
+                "ast.LocalTypedNameReference", to_ref.chain.typed_names[0]
             ),
             qualities=occupant.qualities,
-        )
-
-    def _key_for(self, ref: ast.PositionReference) -> str:  # pragma: no mutate
-        return "::".join(
-            elem.full_typed_name(in_universe=self._fqun) for elem in ref.chain
         )
