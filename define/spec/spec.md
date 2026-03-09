@@ -894,14 +894,67 @@ Proposals:
 - [DLP 23: Dimension Points Define Other Positions](../proposals/00023-dimension-points-define-other-positions.md)
 - [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
 
-Potential positions have the same syntax as local positions, except they are
-defined with `define the potential` and they have a global name instead of a
-local name.
+Potential positions are defined with `define the potential` followed by a space
+and a global position name.
+
+The syntax inside the block (called a Potential Position Definition Block) is
+identical to the syntax for a local position, except that it allows for an extra
+member: the Position Initialization Block, which must be the final block or
+statement in the Potential Position Definition Block.
 
 ```ebnf
 global_position_name = "position", "<", global_name, ">" ;
-position_definition = "define the potential", " ", global_position_name, local_position_definition_end ;
+position_definition = "define the potential", " ", global_position_name, position_definition_end ;
+position_definition_end = terminator | potential_position_definition_block ;
+potential_position_definition_block =
+    block_open,
+    ( position_constraint_block, [ position_initialization_block ] | position_initialization_block ),
+    block_close ;
 ```
+
+### Position Initialization
+
+Proposals:
+
+- [DLP 32: Position Initialization](../proposals/00032-position-initialization.md)
+
+A Position Initialization Block starts with `after it is assigned` and then
+opens a block. The block creates a new local scope.
+
+A Position Initialization Block may contain zero or more action statements.
+Except as described below, its syntax is identical to an Action Statements
+Block.
+
+```ebnf
+position_initialization_block =
+    "after it is assigned",
+    block_open,
+    { action_statement },
+    block_close ;
+```
+
+#### This Position
+
+Inside a Position Initialization Block only, `this position` may be used
+anywhere a position reference would otherwise be allowed. It refers to the
+position currently being initialized.
+
+#### Position Initialization Timing
+
+Position initialization occurs synchronously immediately after the position is
+assigned as a quality to a dimension point. It does not wait for all qualities
+on the dimension point to be assigned, but triggers immediately after
+assignment.
+
+If the compiler can determine it is safe to do so, it may re-order the execution
+of position initialization blocks or move them to a different point of the
+program, as long as the program's properties expressed in code are preserved.
+
+#### Actions Triggered by Initialization
+
+Actions triggered by statements in a Position Initialization Block still trigger
+asynchronously. A Position Initialization Block that needs such an action to
+complete must use `wait until`.
 
 ## Defining Potential Actions
 
@@ -974,10 +1027,8 @@ becomes false and then becomes true again.
 
 Trigger conditions are checked only when program state changes in a way that can
 affect those conditions, and only after assignment of the action to a dimension
-point is complete.
-
-Therefore, assigning an action to a dimension point does not trigger the action
-if its trigger conditions are already true at assignment time.
+point is complete. Thus, an action does not trigger on assignment if its trigger
+conditions are already true at assignment time.
 
 ### Action Statement Blocks
 
@@ -1023,6 +1074,32 @@ It is an error if the referenced position already contains a dimension point.
 create_dimension_point_statement =
     "create a dimension point in", " ", position_reference, terminator ;
 ```
+
+### Atomic Creation
+
+Proposals:
+
+- [DLP 20: Atomic Creation](../proposals/00020-atomic-creation.md)
+
+If a Create Dimension Point Statement targets a position with a Position
+Constraint Block, the created dimension point is automatically assigned all
+required qualities from that block as part of the creation.
+
+#### Quality Assignment Sequence For Atomic Creation
+
+During atomic creation, qualities are assigned in the same order as their
+Position Requirement Statements appear in the Position Constraint Block.
+
+The semantics of creating a dimension point in a constrained position are
+equivalent to creating the dimension point in an unconstrained anonymous
+position, assigning the required qualities in order, and then moving the
+dimension point into the referenced position. In other words, the destination
+position's constraints are enforced only after all required quality assignments
+for that creation are complete.
+
+The compiler may choose to re-order quality assignments or perform them
+concurrently if doing so is guaranteed to produce the same result as assigning
+them in sequence.
 
 ## Moving Dimension Points
 
