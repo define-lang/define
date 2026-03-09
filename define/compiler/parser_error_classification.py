@@ -87,11 +87,8 @@ def raise_token_error(
         raise parser_exceptions.MissingOpenAngleBracket(e, source, file_path, e.token)
 
     # This is just <> or < with nothing after it, while expecting a name.
-    if (
-        ("GLOBAL_NAME_CONTENT" in e.accepts or "LOCAL_NAME_CONTENT" in e.accepts)
-        and (e.token == ">" or e.token.type in ("NEWLINE", "$END"))
-        and e.token_history
-        and e.token_history[-1] == "<"
+    if ("GLOBAL_NAME_CONTENT" in e.accepts or "LOCAL_NAME_CONTENT" in e.accepts) and (
+        e.token == ">" or e.token.type in ("NEWLINE", "$END")
     ):
         raise parser_exceptions.EmptyName(e, source, file_path)
 

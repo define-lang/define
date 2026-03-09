@@ -49,6 +49,15 @@ def test_position_definition_empty_name_content(p: parser.Parser) -> None:
     assert result.exception.column == 31
 
 
+def test_position_definition_empty_name_at_eof(p: parser.Parser) -> None:
+    result = p.parse("define the potential position<")
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.EmptyName)
+    assert result.exception.token.type == "$END"
+    assert result.exception.line == 1
+    assert result.exception.column == 30
+
+
 def test_position_definition_with_constraint_block(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
