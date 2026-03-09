@@ -1,6 +1,9 @@
+# pyright: reportUnusedCallResult=false
 from pathlib import Path
 
-from defcl.python import parser
+import pytest
+
+from defcl.python import exceptions, parser
 from defcl.testdata.valid.schemas import (
     integers_pb2,
     nested_messages_pb2,
@@ -62,3 +65,38 @@ class TestParseValidFiles:
             repeated_messages_pb2.RepeatedMessagesFile,
         )
         assert len(result.project.dependencies) == 2
+
+
+class TestPathNamePropagation:
+    _parser: parser.Parser = parser.Parser()
+
+    def test_syntax_error_includes_path_name(self):
+        with pytest.raises(exceptions.BooleanNotSupportedError) as exc_info:
+            self._parser.parse(
+                "a: {\n    b: true\n}\n",
+                single_toplevel_pb2.SingleToplevelFile,
+                path_name="my/config.defcl",
+            )
+        assert str(exc_info.value).startswith('File "my/config.defcl"')
+
+    def test_semantic_error_includes_path_name(self):
+        with pytest.raises(exceptions.RepeatedFieldWithoutBracketsError) as exc_info:
+            self._parser.parse(
+                'project: {\n    dependencies: {\n        universe: "x"\n    }\n}\n',
+                repeated_messages_pb2.RepeatedMessagesFile,
+                path_name="my/config.defcl",
+            )
+        assert str(exc_info.value).startswith('File "my/config.defcl"')
+
+    def test_parse_file_includes_path_in_error(self):
+        with pytest.raises(exceptions.MissingTrailingNewlineError) as exc_info:
+            self._parser.parse_file(
+                _TESTDATA_PATH
+                / ".."
+                / "invalid"
+                / "syntax"
+                / "file_format"
+                / "no_trailing_newline.defcl",
+                single_toplevel_pb2.SingleToplevelFile,
+            )
+        assert 'no_trailing_newline.defcl"' in str(exc_info.value)

@@ -33,6 +33,7 @@ py_test(
     srcs = ["parser_test.py"],
     data = ["//defcl/testdata:testdata_files"],
     deps = [
+        ":exceptions",
         ":parser",
         "//defcl/testdata/valid/schemas:integers_proto_py",
         "//defcl/testdata/valid/schemas:nested_messages_proto_py",
@@ -40,6 +41,7 @@ py_test(
         "//defcl/testdata/valid/schemas:schemas_py",
         "//defcl/testdata/valid/schemas:single_toplevel_proto_py",
         "//defcl/testdata/valid/schemas:strings_proto_py",
+        "@pypi//pytest",
     ],
 )
 
