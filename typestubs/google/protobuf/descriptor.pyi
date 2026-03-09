@@ -32,3 +32,6 @@ class FieldDescriptor:
     type: int
     label: int
     message_type: Descriptor | None
+
+    @property
+    def is_repeated(self) -> bool: ...

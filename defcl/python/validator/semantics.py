@@ -65,7 +65,7 @@ def _check_field(
     """Check a field's value against its descriptor, including repeated syntax."""
     child = value_tree.children[0]
 
-    if field_desc.label == descriptor.FieldDescriptor.LABEL_REPEATED:
+    if field_desc.is_repeated:
         if not (
             isinstance(child, lark_standalone.Tree) and child.data == "repeated_value"
         ):
