@@ -2,6 +2,7 @@
 
 from define.compiler import diagnostics
 from define.compiler.validator import program_validator
+from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_move_from_empty_position():
@@ -414,3 +415,68 @@ def test_unknown_state_does_not_affect_other_positions():
     assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
     assert diags[1].occupied_at_line == 10
+
+
+def test_single_unknown_position_marks_both_unknown():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<a>.\n"
+        "        define the position<b>.\n"
+        "        define the position<c>.\n"
+        "        create a dimension point in position<a>.\n"
+        "        create a dimension point in position<b>.\n"
+        "        move the dimension point in position<a> to position<b>.\n"
+        "        move the dimension point in position<a> to position<c>.\n"
+        "        create a dimension point in position<c>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[0].position.line == 11
+    assert diags[0].position.column == 52
+    assert diags[0].position_name == "position<b>"
+    assert diags[0].occupied_at_line == 10
+
+
+def test_move_from_chained_to_occupied_local_position(
+    validate_project: ValidateProject,
+):
+    results = validate_project(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest>.\n"
+                "        create a dimension point in position<src>.\n"
+                "        create a dimension point in position<dest>.\n"
+                "        move the dimension point in position<src>::position</x> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = [d for r in results for d in r.diagnostics]
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].position.line == 14
+    assert all_diags[0].position.column == 68
+    assert all_diags[0].position_name == "position<dest>"
+    assert all_diags[0].occupied_at_line == 13

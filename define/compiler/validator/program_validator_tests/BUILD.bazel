@@ -197,6 +197,7 @@ py_test(
     size = "small",
     srcs = ["move_state_tracking_test.py"],
     deps = [
+        ":conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
