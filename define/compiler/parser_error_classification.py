@@ -45,26 +45,6 @@ def _is_space_followed_only_by_whitespace(source: str, line: int, column: int) -
     return not error_line[column:].strip()
 
 
-def classify_char_error(
-    e: lark_standalone.UnexpectedCharacters,
-    source: str,
-) -> type[parser_exceptions.DefineCharError] | None:
-    """Classify a character rejected by the lexer in a syntax position."""
-    char_class = _classify_invalid_char(e.char)
-    if char_class is not None:
-        return char_class
-
-    if e.char in {":", "/"} and "MORETHAN" in e.allowed:
-        return parser_exceptions.InvalidCharacterError
-
-    if e.char == " " and _is_space_followed_only_by_whitespace(
-        source, e.line, e.column
-    ):
-        return parser_exceptions.TrailingWhitespaceError
-
-    return None
-
-
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,

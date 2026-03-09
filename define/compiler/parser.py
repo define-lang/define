@@ -70,11 +70,6 @@ class Parser:
         """Run the Lark parser with error classification."""
         try:
             return self._lark.parse(source)
-        except lark_standalone.UnexpectedCharacters as e:
-            exc_class = parser_error_classification.classify_char_error(e, source)
-            if exc_class is not None:
-                raise exc_class.from_lark_exception(e, source, e.char, file_path) from e
-            raise
         except lark_standalone.UnexpectedToken as e:
             parser_error_classification.raise_token_error(e, source, file_path)
             raise
