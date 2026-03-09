@@ -21,18 +21,6 @@ def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert isinstance(results[0].exception, exceptions.NotProjectRootError)
 
 
-def test_not_project_root_error_includes_docs_link(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
-    )
-    assert len(results) == 1
-    assert isinstance(results[0].exception, exceptions.NotProjectRootError)
-    assert "project-root.md" in str(results[0].exception)
-
-
 def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)

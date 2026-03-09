@@ -83,6 +83,7 @@ py_test(
     deps = [
         ":conftest",
         ":test_helpers",
+        "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
     ],
 )

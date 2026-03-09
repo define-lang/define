@@ -1,7 +1,6 @@
 """Exceptions raised by the Define compiler."""
 
 from pathlib import Path, PurePosixPath
-from typing import override
 
 from defcl.python import exceptions as dcl_exceptions
 from define.compiler import constants
@@ -106,10 +105,6 @@ class ConfigSyntaxError(ConfigError):
         """Initialize with the underlying syntax error."""
         self.syntax_error = syntax_error
         super().__init__(str(syntax_error))
-
-    @override
-    def __str__(self) -> str:
-        return str(self.syntax_error)
 
 
 class ConfigValidationError(ConfigError):
