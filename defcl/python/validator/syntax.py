@@ -145,7 +145,6 @@ class Parser:
         return e.match_examples(
             self._parser.parse,
             _TOKEN_ERROR_EXAMPLES,
-            use_accepts=True,
         )
 
     def parse(

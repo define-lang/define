@@ -394,6 +394,47 @@ class TestInvalidNumbers:
         assert exc_info.value.line == 2
         assert exc_info.value.column == 14
 
+    def test_type_suffix_d(self):
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
+            _parser.parse("a: {\n    b: 1.5d\n}\n")
+        assert exc_info.value.token.type == "RBRACE"
+        assert exc_info.value.line == 3
+        assert exc_info.value.column == 1
+
+    def test_type_suffix_l(self):
+        with pytest.raises(exceptions.InvalidNumberFormatError) as exc_info:
+            _parser.parse("a: {\n    b: 1.5l\n}\n")
+        assert exc_info.value.token.type == "RBRACE"
+        assert exc_info.value.line == 3
+        assert exc_info.value.column == 1
+
+    def test_extra_decimal_after_float(self):
+        with pytest.raises(exceptions.InvalidNumberFormatCharError) as exc_info:
+            _parser.parse("a: {\n    b: 3.14.5\n}\n")
+        assert exc_info.value.char == "."
+        assert exc_info.value.line == 2
+        assert exc_info.value.column == 12
+
+    def test_field_named_f_missing_colon(self):
+        with pytest.raises(exceptions.MissingColonError) as exc_info:
+            _parser.parse('a: {\n    f "x"\n}\n')
+        assert exc_info.value.token.type == "STRING"
+        assert exc_info.value.line == 2
+        assert exc_info.value.column == 7
+
+    def test_bare_e_suffix_is_not_number_format(self):
+        with pytest.raises(exceptions.InvalidEnumCaseError):
+            _parser.parse("a: {\n    b: 1.5e\n}\n")
+
+
+class TestCharErrorMatchExamples:
+    def test_at_sign_classified_via_match_examples(self):
+        with pytest.raises(exceptions.DclCharError) as exc_info:
+            _parser.parse("a: {\n    b: @\n}\n")
+        assert exc_info.value.char == "@"
+        assert exc_info.value.line == 2
+        assert exc_info.value.column == 8
+
 
 class TestInvalidSeparators:
     def test_comma_separator(self):
