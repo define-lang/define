@@ -141,6 +141,7 @@ def test_global_name_definition_requires_fqun():
         parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     ) as error:
         name_parser.parse_global_name_definition(token)
+    assert error.value.context == "/path/only"
     assert error.value.line == 1
     assert error.value.column == 30
 

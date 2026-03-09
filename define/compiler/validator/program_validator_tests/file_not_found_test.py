@@ -13,6 +13,7 @@ from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
 from define.compiler.validator.program_validator_tests.conftest import (
     ParseAndValidateFile,
+    ValidateProject,
 )
 
 
@@ -45,6 +46,85 @@ def test_referenced_file_not_found(
     assert diag.file_path == "missing.def"
     assert diag.position.line == 3
     assert diag.position.column == 29
+
+
+def test_non_filesystem_cross_universe_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    child_universe = "mv:define-lang.org:child_lib"
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
+    test_helpers.write_sub_root(tmp_path, "lib", child_universe)
+    (tmp_path / "lib" / "target.def").write_text(
+        f"define the potential position<{child_universe}:/target>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain dimension points where {\n"
+        f"        it has the position<{child_universe}:/target>.\n"
+        f"        it has the position<{child_universe}:/missing>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    assert len(results) == 2
+    assert str(results[0].file_path) == "<string>"
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 1
+    diag = results[0].diagnostics[0]
+    assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diag.file_path == "lib/missing.def"
+    assert diag.position.line == 4
+    assert diag.position.column == 29
+    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert results[1].exception is None
+    assert results[1].diagnostics == []
+
+
+# TODO: Both files get ReferencedFileNotFoundDiagnostic for the same missing
+# file. Ideally we would only emit it once.
+def test_referenced_file_not_found_via_already_completed_target(
+    validate_project: ValidateProject,
+):
+    results = validate_project(
+        {
+            "test.def": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</missing>.\n"
+                "        it has the position</target>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "target.def": (
+                "define the potential position<my.domain.com:my_lib:/target> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</missing>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+        max_workers=1,
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 1
+    assert isinstance(
+        results[0].diagnostics[0], diagnostics.ReferencedFileNotFoundDiagnostic
+    )
+    assert results[0].diagnostics[0].file_path == "missing.def"
+    assert results[1].file_path == PurePosixPath("target.def")
+    assert results[1].exception is None
+    assert len(results[1].diagnostics) == 1
+    assert isinstance(
+        results[1].diagnostics[0], diagnostics.ReferencedFileNotFoundDiagnostic
+    )
+    assert results[1].diagnostics[0].file_path == "missing.def"
 
 
 def test_referenced_file_not_found_for_two_definitions_in_same_file(

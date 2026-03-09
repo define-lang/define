@@ -365,6 +365,57 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
     assert results[2].diagnostics == []
 
 
+def test_path_inside_other_universe_skips_further_validation(
+    validate_project: ValidateProject,
+):
+    results = validate_project(
+        {
+            "test.def": (
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain dimension points where {{\n"
+                f"        it has the position<{_CHILD_UNIVERSE}:/child_action>.\n"
+                f"        it has the position</lib/child_action>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib/child_action.def": (
+                f"define the potential action<{_CHILD_UNIVERSE}:/child_action> {{\n"
+                f"    define the position<run>.\n"
+                f"    it happens when {{\n"
+                f"        the position<run> has a dimension point.\n"
+                f"    }} and it does {{\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+        },
+        universe_name=_PARENT_UNIVERSE,
+        local_deps={_CHILD_UNIVERSE: "lib"},
+        sub_roots={"lib": _CHILD_UNIVERSE},
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].exception is None
+    assert len(results[0].diagnostics) == 2
+    wrong_type_diag = results[0].diagnostics[0]
+    assert isinstance(
+        wrong_type_diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic
+    )
+    assert wrong_type_diag.position.line == 3
+    assert wrong_type_diag.position.column == 29
+    assert wrong_type_diag.path == "/child_action"
+    assert wrong_type_diag.expected_type == "position"
+    path_diag = results[0].diagnostics[1]
+    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert path_diag.position.line == 4
+    assert path_diag.position.column == 29
+    assert path_diag.path.endswith("lib/child_action.def")
+    assert path_diag.other_universe == _CHILD_UNIVERSE
+    assert path_diag.sub_root_path == "lib"
+    assert results[1].file_path == PurePosixPath("lib/child_action.def")
+    assert results[1].exception is None
+    assert results[1].diagnostics == []
+
+
 def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProject):
     wrong_fqun = "mv:define-lang.org:totally_wrong"
     results = validate_project(

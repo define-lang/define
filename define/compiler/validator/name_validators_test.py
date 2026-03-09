@@ -609,6 +609,15 @@ class TestValidateFqun:
         ]
         assert len(reserved) == 1
 
+    def test_custom_multiverse_dotless_authority_allowed(self):
+        fqun = _fqun(
+            "my_lib",
+            authority=_authority("myhost"),
+            multiverse=_multiverse("custom"),
+        )
+        result = name_validators.validate_fqun(fqun)
+        assert not result
+
     def test_collects_all_diagnostics(self):
         fqun = _fqun(
             "standard",
