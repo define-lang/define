@@ -163,9 +163,6 @@ def raise_token_error(
     if e.accepts == {"NAME_TYPE"}:
         raise parser_exceptions.ExpectedNameType(e, source, file_path)
 
-    if e.accepts == {"NAME_TYPE", "THIS_POSITION"}:
-        raise parser_exceptions.ExpectedNameTypeOrThisPosition(e, source, file_path)
-
     # TODO: After changing the priority of the *_NAME_CONTENT terminals, I think
     # we could do better here.
     if e.accepts in ({"CHAIN_SEPARATOR", "TO"}, {"TO"}):

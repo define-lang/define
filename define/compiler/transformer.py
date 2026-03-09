@@ -127,10 +127,6 @@ class DefineTransformer(
         """Discard the init-block keyword token."""
         return lark_standalone.Discard
 
-    def THIS_POSITION(self, token: lark_standalone.Token) -> lark_standalone.Token:  # noqa: N802
-        """Pass through the 'this position' token."""
-        return token
-
     def SPACE_AND_OPEN_BRACE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard opening braces."""
         return lark_standalone.Discard

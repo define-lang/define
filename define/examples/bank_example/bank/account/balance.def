@@ -4,7 +4,7 @@ define the potential position<define-lang.org:bank:/account/balance> {
         it has the constraint</non_negative>.
     }
     after it is assigned {
-        create a dimension point in this position.
-        set the value in this position to 0.
+        create a dimension point in position</account/balance>.
+        set the value in position</account/balance> to 0.
     }
 }

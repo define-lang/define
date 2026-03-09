@@ -729,9 +729,7 @@ def test_move_dimension_point_in_space_dot(
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(
-        result.exception, parser_exceptions.ExpectedNameTypeOrThisPosition
-    )
+    assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
     assert result.exception.token.type == "DOT"
     assert result.exception.line == 6

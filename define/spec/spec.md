@@ -934,11 +934,10 @@ position_initialization_block =
     block_close ;
 ```
 
-#### This Position
+#### Referencing the Current Position
 
-Inside a Position Initialization Block only, `this position` may be used
-anywhere a position reference would otherwise be allowed. It refers to the
-position currently being initialized.
+Inside a Position Initialization Block, the position being initialized can be
+referenced and affected using its global short name.
 
 #### Position Initialization Timing
 

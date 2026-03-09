@@ -39,11 +39,11 @@ after it is assigned {
 The syntax within the Position Assignment Block is identical to the allowed
 syntax in an Action Statements Block, with additions as noted in this proposal.
 
-### This Position
+### Referencing the Current Position
 
-Inside of a Position Assignment Block _only_, the words `this position` may be
-used anywhere a position name would otherwise be allowed. It refers to this
-position (the one being initialized).
+Inside a Position Assignment Block, the position being initialized can be
+referenced using normal position reference syntax (e.g., `position</path>`) even
+though it is not done being defined.
 
 ### Restrictions
 
@@ -90,7 +90,7 @@ define the potential position<mv:example.com:playground:/ball> {
         it has the position</color>.
     }
     after it is assigned {
-        create a dimension point in this position.
+        create a dimension point in position</ball>.
     }
 }
 ```
@@ -107,8 +107,8 @@ define the potential position<mv:example.com:game:/health> {
         it has a value that is a integer. # Imaginary syntax.
     }
     after it is assigned {
-        create a dimension point in this position.
-        set the value in this position to 100. # Imaginary syntax
+        create a dimension point in position</health>.
+        set the value in position</health> to 100. # Imaginary syntax
     }
 }
 
@@ -116,7 +116,7 @@ define the potential position<mv:example.com:game:/character> {
     this dimension point must have the position</health>.
 
     after it is assigned {
-        create a dimension point in this position.
+        create a dimension point in position</character>.
         # At this point, position</health> has already been assigned to this dimension
         # point (due to the dependency), and its initialization has already completed.
         # So position</health> already contains a dimension point with value 100.
@@ -165,7 +165,7 @@ define the potential position<mv:example.com:system:/status> {
     this dimension point must have the action</on_ready>.
 
     after it is assigned {
-        create a dimension point in this position.
+        create a dimension point in position</status>.
         # This creates a dimension point that will trigger the </on_ready> action.
         # However, the action fires ASYNCHRONOUSLY, so it will not complete before
         # this initialization block finishes.
@@ -266,6 +266,16 @@ In most situations, those are the same thing, because assignment happens during
 dimension point creation, on constrained positions. However, quality assignment
 can also happen outside of that context, and that quality still needs to be in
 the same state as if it had been assigned during creation.
+
+### Why Not a Syntax Like "This Position?"
+
+Originally this proposal described a syntax for referencing the current position
+via the string `this position`. However, it became very awkward to implement in
+the compiler, because it was the only time we referenced a name without the
+format `type<name>`. It created an inconsistency, and I also realized that it
+would create a special case when you were just string-searching for every place
+the position was referenced. So I chose to keep the language internally
+consistent by using `position</my/name>` instead.
 
 ## Forward Compatibility
 

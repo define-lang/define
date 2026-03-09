@@ -381,29 +381,32 @@ def test_init_block_with_create_statement(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in this position.\n"
+        + "        create a dimension point in position</path>.\n"
         + "    }\n"
         + "}\n"
     )
     assert result.diagnostics == []
     assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "THIS_POSITION") == ["this position"]
+    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+        "standard:/path",
+        "/path",
+    ]
 
 
 def test_init_block_with_move_statement(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        move the dimension point in position</source> to this position.\n"
+        + "        move the dimension point in position</source> to position</path>.\n"
         + "    }\n"
         + "}\n"
     )
     assert result.diagnostics == []
     assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "THIS_POSITION") == ["this position"]
     assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "standard:/path",
         "/source",
+        "/path",
     ]
 
 
@@ -420,24 +423,11 @@ def test_init_block_with_local_position_definition(p: parser.Parser) -> None:
     assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["inner"]
 
 
-def test_init_block_with_this_position_in_create(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential position<standard:/path> {\n"
-        + "    after it is assigned {\n"
-        + "        create a dimension point in this position.\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "THIS_POSITION") == ["this position"]
-
-
 def test_init_block_with_multiple_statements(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in this position.\n"
+        + "        create a dimension point in position</path>.\n"
         + "        move the dimension point in position</source> to position</dest>.\n"
         + "        define the position<inner>.\n"
         + "    }\n"
@@ -445,9 +435,9 @@ def test_init_block_with_multiple_statements(p: parser.Parser) -> None:
     )
     assert result.diagnostics == []
     assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "THIS_POSITION") == ["this position"]
     assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
         "standard:/path",
+        "/path",
         "/source",
         "/dest",
     ]
@@ -471,7 +461,7 @@ def test_init_block_with_comments_and_blank_lines(p: parser.Parser) -> None:
         + "    after it is assigned {\n"
         + "        # a comment\n"
         + "\n"
-        + "        create a dimension point in this position.\n"
+        + "        create a dimension point in position</path>.\n"
         + "\n"
         + "    }\n"
         + "}\n"
@@ -484,7 +474,7 @@ def test_init_block_before_constraint_block_fails(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in this position.\n"
+        + "        create a dimension point in position</path>.\n"
         + "    }\n"
         + "    it may only contain dimension points where {\n"
         + "        it has the position</child>.\n"
@@ -498,10 +488,10 @@ def test_multiple_init_blocks_fails(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in this position.\n"
+        + "        create a dimension point in position</path>.\n"
         + "    }\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in this position.\n"
+        + "        create a dimension point in position</path>.\n"
         + "    }\n"
         + "}\n"
     )

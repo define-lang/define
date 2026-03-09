@@ -227,12 +227,6 @@ class ExpectedNameType(DefineTokenError):
     message_format: ClassVar[str] = "Expected 'position' or 'action'."
 
 
-class ExpectedNameTypeOrThisPosition(DefineTokenError):
-    """Expected a typed reference kind or 'this position'."""
-
-    message_format: ClassVar[str] = "Expected 'position', 'action', or 'this position'."
-
-
 class ExtraWhitespace(DefineTokenError):
     """When you write two spaces where you should have written one."""
 

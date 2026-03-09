@@ -28,7 +28,6 @@ HAS_A_DIMENSION_POINT: " has a dimension point"
 TO: " to "
 CHAIN_SEPARATOR: "::"
 AFTER_IT_IS_ASSIGNED: "after it is assigned"
-THIS_POSITION: "this position"
 
 # General
 
@@ -79,7 +78,7 @@ position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_conten
 
 # Dimension Point Statement Syntax
 
-position_reference: THIS_POSITION | typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
+position_reference: typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
 create_dimension_point_statement: CREATE_A_DIMENSION_POINT_IN position_reference terminator
 move_dimension_point_statement: MOVE_THE_DIMENSION_POINT_IN position_reference TO position_reference terminator
 

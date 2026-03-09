@@ -4,7 +4,7 @@ define the potential position<define-lang.org:fibonacci:/sequence/current> {
         it has the constraint</non_negative>.
     }
     after it is assigned {
-        create a dimension point in this position.
-        set the value in this position to 1.
+        create a dimension point in position</sequence/current>.
+        set the value in position</sequence/current> to 1.
     }
 }
