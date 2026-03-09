@@ -123,6 +123,14 @@ class DefineTransformer(
         """Discard chain separator tokens."""
         return lark_standalone.Discard
 
+    def AFTER_IT_IS_ASSIGNED(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the init-block keyword token."""
+        return lark_standalone.Discard
+
+    def THIS_POSITION(self, token: lark_standalone.Token) -> lark_standalone.Token:  # noqa: N802
+        """Pass through the 'this position' token."""
+        return token
+
     def SPACE_AND_OPEN_BRACE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard opening braces."""
         return lark_standalone.Discard
@@ -157,6 +165,19 @@ class DefineTransformer(
     ) -> ast.PositionConstraintBlock:
         """Unwrap a local position definition block."""
         return items[0]
+
+    def potential_position_definition_block(
+        self, items: list[object]
+    ) -> ast.PositionConstraintBlock | object:
+        """Unwrap a potential position definition block, extracting the constraint block."""
+        for item in items:
+            if isinstance(item, ast.PositionConstraintBlock):
+                return item
+        return lark_standalone.Discard
+
+    def position_initialization_block(self, _items: list[object]) -> object:
+        """Discard position initialization blocks (not yet transformed to AST)."""
+        return lark_standalone.Discard
 
     @lark_standalone.v_args(meta=True)
     def position_constraint_block(

@@ -921,14 +921,15 @@ Proposals:
 A Position Initialization Block starts with `after it is assigned` and then
 opens a block. The block creates a new local scope.
 
-A Position Initialization Block may contain zero or more action statements.
-Except as described below, its syntax is identical to an Action Statements
-Block.
+A Position Initialization Block may contain one or more action statements.
+Except as described below, the action statements have the same syntax as in an
+Action Statements Block. An empty Position Initialization Block is not allowed.
 
 ```ebnf
 position_initialization_block =
     "after it is assigned",
     block_open,
+    action_statement,
     { action_statement },
     block_close ;
 ```

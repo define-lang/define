@@ -39,7 +39,7 @@ def test_global_position_block_open_without_content(p: parser.Parser) -> None:
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
     )
     assert isinstance(
-        result.exception, parser_exceptions.InvalidPositionDefinitionBlock
+        result.exception, parser_exceptions.InvalidPotentialPositionDefinitionBlock
     )
     assert result.exception.token == ""
     assert result.exception.line == 1
@@ -60,7 +60,7 @@ def test_position_block_missing_required_clause(p: parser.Parser) -> None:
         "define the potential position<mv:define-lang.org:parser:/path> {\n" + "}\n"
     )
     assert isinstance(
-        result.exception, parser_exceptions.MissingPositionDefinitionContent
+        result.exception, parser_exceptions.MissingPotentialPositionDefinitionContent
     )
     assert result.exception.token == "}"
     assert result.exception.line == 2
@@ -709,7 +709,9 @@ def test_move_dimension_point_in_space_dot(
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
+    assert isinstance(
+        result.exception, parser_exceptions.ExpectedNameTypeOrThisPosition
+    )
     assert result.exception.token == "."
     assert result.exception.token.type == "LOCAL_NAME_CONTENT"
     assert result.exception.line == 6

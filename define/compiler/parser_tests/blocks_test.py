@@ -11,7 +11,7 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 def test_empty_block_on_position(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path> {\n}\n")
     assert isinstance(
-        result.exception, parser_exceptions.MissingPositionDefinitionContent
+        result.exception, parser_exceptions.MissingPotentialPositionDefinitionContent
     )
     assert str(result.exception.token) == "}"
     assert result.exception.line == 2
@@ -154,7 +154,7 @@ def test_mixed_block_and_terminator(p: parser.Parser) -> None:
 def test_missing_block_close(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path> {\n")
     assert isinstance(
-        result.exception, parser_exceptions.InvalidPositionDefinitionBlock
+        result.exception, parser_exceptions.InvalidPotentialPositionDefinitionBlock
     )
     assert result.exception.line == 1
     assert result.exception.column == 48

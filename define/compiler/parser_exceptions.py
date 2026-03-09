@@ -227,6 +227,12 @@ class ExpectedNameType(DefineTokenError):
     message_format: ClassVar[str] = "Expected 'position' or 'action'."
 
 
+class ExpectedNameTypeOrThisPosition(DefineTokenError):
+    """Expected a typed reference kind or 'this position'."""
+
+    message_format: ClassVar[str] = "Expected 'position', 'action', or 'this position'."
+
+
 class ExtraWhitespace(DefineTokenError):
     """When you write two spaces where you should have written one."""
 
@@ -406,6 +412,23 @@ class MissingPositionDefinitionContent(DefineTokenError):
         "Position definition blocks must contain at least a 'it may only contain the dimension points where' block."
         + " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
     )
+
+
+class MissingPotentialPositionDefinitionContent(DefineTokenError):
+    """Left out mandatory content from a potential position definition block."""
+
+    message_format: ClassVar[str] = (
+        "Potential position definition blocks must contain an"
+        " 'it may only contain dimension points where' block"
+        " and/or an 'after it is assigned' block."
+        " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
+    )
+
+
+class InvalidPotentialPositionDefinitionBlock(DefineTokenError):
+    """Write something nonsensical in a Potential Position Definition Block."""
+
+    message_format: ClassVar[str] = "Invalid syntax in a potential position definition."
 
 
 class MissingTerminator(DefineTokenError):

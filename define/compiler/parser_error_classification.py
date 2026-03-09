@@ -164,6 +164,9 @@ def raise_token_error(
     if e.accepts == {"NAME_TYPE"}:
         raise parser_exceptions.ExpectedNameType(e, source, file_path)
 
+    if e.accepts == {"NAME_TYPE", "THIS_POSITION"}:
+        raise parser_exceptions.ExpectedNameTypeOrThisPosition(e, source, file_path)
+
     if e.accepts in ({"CHAIN_SEPARATOR", "TO"}, {"TO"}):
         raise parser_exceptions.InvalidMoveStatementSyntax(e, source, file_path)
 
@@ -216,6 +219,18 @@ def raise_token_error(
     # This check must happen after the IT_HAPPENS_WHEN check above.
     if "DEFINE_THE_POSITION" in e.accepts:
         raise parser_exceptions.InvalidActionStatementsBlock(e, source, file_path)
+
+    # We are in a potential position definition block (global, not local).
+    # This must come before the local position definition block check below,
+    # because AFTER_IT_IS_ASSIGNED distinguishes the potential block from local.
+    if "AFTER_IT_IS_ASSIGNED" in e.accepts:
+        if e.token == "}":
+            raise parser_exceptions.MissingPotentialPositionDefinitionContent(
+                e, source, file_path
+            )
+        raise parser_exceptions.InvalidPotentialPositionDefinitionBlock(
+            e, source, file_path
+        )
 
     # We are in a position definition block.
     if "IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE" in e.accepts:

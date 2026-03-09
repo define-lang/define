@@ -7,6 +7,12 @@ GLOBAL_NAME_CONTENT: /(?:[^:>\n]|:(?!:))+/
 # and global names are accepted. We also have to prioritize it over
 # GLOBAL_NAME_CONTENT because otherwise GLOBAL_NAME_CONTENT would
 # always match.
+# TODO: Both name content terminals should ideally have negative priorities
+# so that keyword string terminals always win over them. Currently
+# LOCAL_NAME_CONTENT's priority 2 causes it to beat keywords in error
+# scenarios (e.g. "it may only contain..." gets lexed as LOCAL_NAME_CONTENT
+# instead of IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE). Fixing this
+# requires updating many error classification tests.
 LOCAL_NAME_CONTENT.2: /(?![^>\n]*[:\/])[^>\n]+/
 
 # Syntax Terminals
@@ -24,6 +30,8 @@ THE: "the "
 HAS_A_DIMENSION_POINT: " has a dimension point"
 TO: " to "
 CHAIN_SEPARATOR: "::"
+AFTER_IT_IS_ASSIGNED: "after it is assigned"
+THIS_POSITION: "this position"
 
 # General
 
@@ -65,11 +73,16 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 # Potential Position Definition Syntax
 
-position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content position_definition_terminator_or_block
+_action_statements: (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement)*
+# TODO: The validator should reject empty init blocks and empty action
+# statements blocks in action definitions.
+position_initialization_block: AFTER_IT_IS_ASSIGNED _block_open _action_statements _block_close
+potential_position_definition_block: _block_open NEWLINE* (position_constraint_block NEWLINE* [position_initialization_block NEWLINE*] | position_initialization_block NEWLINE*) _block_close
+position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content (terminator | potential_position_definition_block)
 
 # Dimension Point Statement Syntax
 
-position_reference: typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
+position_reference: THIS_POSITION | typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
 create_dimension_point_statement: CREATE_A_DIMENSION_POINT_IN position_reference terminator
 move_dimension_point_statement: MOVE_THE_DIMENSION_POINT_IN position_reference TO position_reference terminator
 
@@ -80,7 +93,7 @@ action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content (t
 local_position_definition: DEFINE_THE_POSITION local_name_content position_definition_terminator_or_block
 trigger_condition_statement: THE position_reference HAS_A_DIMENSION_POINT terminator
 trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* trigger_condition_statement NEWLINE* "}"
-action_statements_block: AND_IT_DOES _block_open (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement)* _block_close
+action_statements_block: AND_IT_DOES _block_open _action_statements _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
 action_definition_block: _block_open (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* _block_close
 
