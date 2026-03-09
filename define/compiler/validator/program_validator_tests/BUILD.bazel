@@ -45,6 +45,19 @@ py_test(
 )
 
 py_test(
+    name = "cross_fqun_walking_test",
+    size = "small",
+    srcs = ["cross_fqun_walking_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:diagnostics",
+        "//define/compiler:exceptions",
+        "//define/compiler/validator:program_validator",
+    ],
+)
+
+py_test(
     name = "create_dimension_point_test",
     size = "small",
     srcs = ["create_dimension_point_test.py"],
@@ -313,6 +326,7 @@ pyright_test(
         ":chained_name_test",
         ":conftest",
         ":create_dimension_point_test",
+        ":cross_fqun_walking_test",
         ":diagnostic_collection_test",
         ":dimension_point_conflict_test",
         ":duplicate_definitions_test",

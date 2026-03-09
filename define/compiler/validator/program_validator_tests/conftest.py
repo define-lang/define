@@ -42,6 +42,9 @@ class ValidateProject(Protocol):
         *,
         universe_name: str = ...,
         max_workers: int | None = ...,
+        local_deps: dict[str, str] | None = ...,
+        sub_roots: dict[str, str] | None = ...,
+        entry_file: str = ...,
     ) -> list[validation_result.ValidationResult]:
         """Validate a project with the given files."""
         ...
@@ -85,15 +88,25 @@ def _run_validation(
     files: dict[str, str],
     universe_name: str,
     max_workers: int | None = None,
+    local_deps: dict[str, str] | None = None,
+    sub_roots: dict[str, str] | None = None,
+    entry_file: str = "test.def",
 ) -> ProjectResult:
     test_helpers.write_project_config(tmp_path, universe_name)
+    if local_deps is not None:
+        test_helpers.write_local_deps_config(tmp_path, local_deps)
+        for dep_path in local_deps.values():
+            (tmp_path / dep_path).mkdir(parents=True, exist_ok=True)
+    if sub_roots is not None:
+        for sub_root_path, sub_universe in sub_roots.items():
+            test_helpers.write_sub_root(tmp_path, sub_root_path, sub_universe)
     for name, content in files.items():
         file_path = tmp_path / name
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     pv = program_validator.ProgramValidator()
-    results = pv.validate_program(PurePosixPath("test.def"), max_workers=max_workers)
+    results = pv.validate_program(PurePosixPath(entry_file), max_workers=max_workers)
     return ProjectResult(results=results, graph=pv.action_call_graph)
 
 
@@ -108,9 +121,19 @@ def validate_project(
         *,
         universe_name: str = "my.domain.com:my_lib",
         max_workers: int | None = None,
+        local_deps: dict[str, str] | None = None,
+        sub_roots: dict[str, str] | None = None,
+        entry_file: str = "test.def",
     ) -> list[validation_result.ValidationResult]:
         return _run_validation(
-            tmp_path, monkeypatch, files, universe_name, max_workers=max_workers
+            tmp_path,
+            monkeypatch,
+            files,
+            universe_name,
+            max_workers=max_workers,
+            local_deps=local_deps,
+            sub_roots=sub_roots,
+            entry_file=entry_file,
         ).results
 
     return _run
