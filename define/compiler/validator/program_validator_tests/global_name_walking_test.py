@@ -689,6 +689,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
     assert diags[0].error.actual_fqun == wrong_universe
+    assert diags[0].error.sub_root_path == "lib"
 
 
 # Covers the "already loaded root" mismatch path in _do_load_root_config,
@@ -740,6 +741,7 @@ def test_already_loaded_root_fqun_mismatch(
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == second_child
     assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
+    assert diags[0].error.sub_root_path == "lib"
     assert results[1].diagnostics == []
 
 

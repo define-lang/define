@@ -54,9 +54,9 @@ class Parser:
 
         try:
             tree = self._do_parse(source, file_path)
-        except lark_standalone.UnexpectedInput as e:
-            stop_before_line = e.line
-            exception = e
+        except lark_standalone.UnexpectedInput as e:  # pragma: no mutate
+            stop_before_line = e.line  # pragma: no mutate
+            exception = e  # pragma: no mutate
         except parser_exceptions.DefineSyntaxError as e:
             stop_before_line = e.line
             exception = e

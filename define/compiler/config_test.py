@@ -267,6 +267,7 @@ class TestLocalDepsConfig:
         assert exc_info.value.violation_messages == [
             'deps.local: duplicate universe_name "mv:define-lang.org:lib"'
         ]
+        assert exc_info.value.config_path == Path(".define/deps/local.defcl")
 
     def test_error_message_format(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -352,6 +353,7 @@ class TestSubRoot:
         assert exc_info.value.config_path == Path(
             "subroot/.define/project/config.defcl"
         )
+        assert exc_info.value.root == "subroot"
 
     def test_project_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         self._write_project_config(

@@ -98,6 +98,7 @@ class TestFileValidatorErrors:
         result = file_validator.FileValidator(lark_parser).validate_file(ctx)
 
         assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
+        assert result.exception.filesystem_path == Path(tmp_path / "nonexistent.def")
         assert result.definition_results == []
         assert _reference_edges(result) == []
         assert _discovered_files(result) == []

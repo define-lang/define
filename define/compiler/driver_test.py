@@ -77,6 +77,7 @@ class TestPathResolution:
         with pytest.raises(exceptions.AbsolutePathError) as exc_info:
             d.validate_program(source_file)
         assert exc_info.value.input_path == source_file
+        assert exc_info.value.resolved_path == source_file
         assert exc_info.value.project_root == project
 
     def test_relative_path_with_dotdot_is_resolved(
