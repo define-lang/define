@@ -1,19 +1,13 @@
 %import common.LF -> NEWLINE
 
 # Name Terminals
-GLOBAL_NAME_CONTENT: /(?:[^:>\n]|:(?!:))+/
+GLOBAL_NAME_CONTENT.-2: /(?:[^:>\n]|:(?!:))+/
 # We have to make LOCAL_NAME_CONTENT exclude : and / in order to
 # successfully differentiate it in circumstances where both local
-# and global names are accepted. We also have to prioritize it over
-# GLOBAL_NAME_CONTENT because otherwise GLOBAL_NAME_CONTENT would
-# always match.
-# TODO: Both name content terminals should ideally have negative priorities
-# so that keyword string terminals always win over them. Currently
-# LOCAL_NAME_CONTENT's priority 2 causes it to beat keywords in error
-# scenarios (e.g. "it may only contain..." gets lexed as LOCAL_NAME_CONTENT
-# instead of IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE). Fixing this
-# requires updating many error classification tests.
-LOCAL_NAME_CONTENT.2: /(?![^>\n]*[:\/])[^>\n]+/
+# and global names are accepted. We also have to give it higher priority
+# than GLOBAL_NAME_CONTENT so it wins when both match. Both are negative
+# so keyword string terminals (priority 0) always win over them.
+LOCAL_NAME_CONTENT.-1: /(?![^>\n]*[:\/])[^>\n]+/
 
 # Syntax Terminals
 DEFINE_THE_POSITION: "define the position"
@@ -28,6 +22,9 @@ CREATE_A_DIMENSION_POINT_IN: "create a dimension point in "
 MOVE_THE_DIMENSION_POINT_IN: "move the dimension point in "
 THE: "the "
 HAS_A_DIMENSION_POINT: " has a dimension point"
+# TODO: Removing the spaces from this terminal and putting them in the grammar
+# rules might produce better errors now that *_NAME_CONTENT terminals have
+# negative priority.
 TO: " to "
 CHAIN_SEPARATOR: "::"
 AFTER_IT_IS_ASSIGNED: "after it is assigned"

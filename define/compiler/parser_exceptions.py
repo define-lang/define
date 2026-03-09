@@ -242,11 +242,12 @@ class ExtraWhitespace(DefineTokenError):
     )
 
 
-class GlobalDefinitionInLocalContext(DefineTokenError):
-    """Trying to do 'define the potential' where you should just do 'define the'."""
+class GlobalPositionDefinitionInLocalContext(DefineTokenError):
+    """Wrote 'define the potential position' where only 'define the position' is accepted."""
 
     message_format: ClassVar[str] = (
-        "Global definition not allowed in a local scope. Write 'define the' instead of 'define the potential'."
+        "Global position definition not allowed here."
+        " Write 'define the position' instead of 'define the potential position'."
     )
 
 

@@ -416,9 +416,10 @@ def test_global_position_definition_not_allowed_in_action_definition_block(
         + "}\n"
     )
     assert isinstance(
-        result.exception, parser_exceptions.GlobalDefinitionInLocalContext
+        result.exception, parser_exceptions.GlobalPositionDefinitionInLocalContext
     )
-    assert str(result.exception.token).startswith("define the potential position<")
+    assert str(result.exception.token) == "define the potential position"
+    assert result.exception.token.type == "DEFINE_THE_POTENTIAL_POSITION"
     assert result.exception.line == 2
     assert result.exception.column == 5
 
@@ -437,9 +438,10 @@ def test_global_position_definition_not_allowed_in_action_statements_block(
         + "}\n"
     )
     assert isinstance(
-        result.exception, parser_exceptions.GlobalDefinitionInLocalContext
+        result.exception, parser_exceptions.GlobalPositionDefinitionInLocalContext
     )
-    assert str(result.exception.token).startswith("define the potential position<")
+    assert str(result.exception.token) == "define the potential position"
+    assert result.exception.token.type == "DEFINE_THE_POTENTIAL_POSITION"
     assert result.exception.line == 6
     assert result.exception.column == 9
 
@@ -513,7 +515,7 @@ def test_action_block_missing_newline_after_outer_open_brace(p: parser.Parser) -
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterOpenBrace)
-    assert str(result.exception.token) == " it happens when {"
+    assert str(result.exception.token) == " "
     assert result.exception.line == 1
     assert result.exception.column == 63
 

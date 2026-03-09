@@ -157,9 +157,9 @@ def test_trigger_block_same_line_no_space(p: parser.Parser) -> None:
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterOpenBrace)
-    assert result.exception.token == "} and it does {"
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert isinstance(result.exception, parser_exceptions.EmptyBlock)
+    assert result.exception.token == "}"
+    assert result.exception.token.type == "RBRACE"
     assert result.exception.line == 3
     assert result.exception.column == 22
 
@@ -174,8 +174,8 @@ def test_trigger_block_same_line_with_space(p: parser.Parser) -> None:
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterOpenBrace)
-    assert result.exception.token == " } and it does {"
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token == " "
+    assert result.exception.token.type == "SPACE"
     assert result.exception.line == 3
     assert result.exception.column == 22
 
@@ -190,7 +190,7 @@ def test_trigger_block_closing_brace_same_line(p: parser.Parser) -> None:
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.EmptyBlock)
     assert result.exception.token == "}"
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token.type == "RBRACE"
     assert result.exception.line == 3
     assert result.exception.column == 22
 

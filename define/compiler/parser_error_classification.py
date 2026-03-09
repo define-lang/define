@@ -119,6 +119,8 @@ def raise_token_error(
         raise parser_exceptions.MissingTerminator(e, source, file_path)
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE"}:
+        if e.token == " ":
+            raise parser_exceptions.ExtraWhitespace(e, source, file_path)
         raise parser_exceptions.MissingOpenBrace(e, source, file_path)
 
     if e.accepts == {"SPACE"}:
@@ -157,7 +159,7 @@ def raise_token_error(
 
     if e.accepts == {"AND_IT_DOES"}:
         # This catches the case where you put too many spaces before "and it does"
-        if "  " in e.token and "and it does" in e.token:
+        if e.token == " ":
             raise parser_exceptions.ExtraWhitespace(e, source, file_path)
         raise parser_exceptions.MissingActionStatementsBlock(e, source, file_path)
 
@@ -167,6 +169,8 @@ def raise_token_error(
     if e.accepts == {"NAME_TYPE", "THIS_POSITION"}:
         raise parser_exceptions.ExpectedNameTypeOrThisPosition(e, source, file_path)
 
+    # TODO: After changing the priority of the *_NAME_CONTENT terminals, I think
+    # we could do better here.
     if e.accepts in ({"CHAIN_SEPARATOR", "TO"}, {"TO"}):
         raise parser_exceptions.InvalidMoveStatementSyntax(e, source, file_path)
 
@@ -180,10 +184,13 @@ def raise_token_error(
 
     # This has to be here, because otherwise the "IT_HAPPENS_WHEN" will match
     # when this happens inside an Action Definition Block.
-    if "DEFINE_THE_POSITION" in e.accepts and e.token.startswith(
-        "define the potential "
+    if (
+        "DEFINE_THE_POSITION" in e.accepts
+        and e.token.type == "DEFINE_THE_POTENTIAL_POSITION"
     ):
-        raise parser_exceptions.GlobalDefinitionInLocalContext(e, source, file_path)
+        raise parser_exceptions.GlobalPositionDefinitionInLocalContext(
+            e, source, file_path
+        )
 
     #######################
     ## Generic Fallbacks ##

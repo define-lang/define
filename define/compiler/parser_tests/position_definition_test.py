@@ -169,8 +169,8 @@ def test_second_constraint_block_after_close_on_same_line(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterCloseBrace)
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
-    assert str(result.exception.token).startswith("    it may only contain")
+    assert result.exception.token.type == "SPACE"
+    assert str(result.exception.token) == " "
     assert result.exception.line == 4
     assert result.exception.column == 6
 
@@ -188,8 +188,8 @@ def test_second_constraint_block_on_requirement_line(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingNewlineAfterTerminator)
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
-    assert str(result.exception.token).startswith("    it may only contain")
+    assert result.exception.token.type == "SPACE"
+    assert str(result.exception.token) == " "
     assert result.exception.line == 3
     assert result.exception.column == 37
 

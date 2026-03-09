@@ -11,7 +11,7 @@ def test_file_all_spaces(p: parser.Parser) -> None:
     result = p.parse("   ")
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.TrailingWhitespaceError)
-    assert str(result.exception.char) == "   "
+    assert str(result.exception.char) == " "
     assert result.exception.line == 1
     assert result.exception.column == 1
 
@@ -118,7 +118,7 @@ def test_extra_space_in_and_it_does_clause_in_action_block(p: parser.Parser) -> 
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
-    assert result.exception.token.startswith("  and it does {")
+    assert str(result.exception.token) == " "
     assert result.exception.line == 5
     assert result.exception.column == 6
 
@@ -134,8 +134,8 @@ def test_extra_space_after_and_it_does_before_open_brace(p: parser.Parser) -> No
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
-    assert str(result.exception.token) == "  {"
+    assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
+    assert str(result.exception.token) == " "
     assert result.exception.line == 5
     assert result.exception.column == 18
 
@@ -152,7 +152,8 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
-    assert result.exception.token.startswith("  </child")
+    assert str(result.exception.token) == " "
+    assert result.exception.token.type == "SPACE"
     assert result.exception.line == 3
     assert result.exception.column == 28
-    assert result.exception.name == "  </child"
+    assert result.exception.name == " "

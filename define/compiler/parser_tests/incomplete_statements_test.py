@@ -236,6 +236,25 @@ def test_position_requirement_missing_name_after_type(p: parser.Parser) -> None:
     assert result.exception.name == "."
 
 
+def test_position_requirement_missing_name_after_type_with_space(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position .\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
+    assert result.exception.token == " "
+    assert result.exception.token.type == "SPACE"
+    assert result.exception.line == 3
+    assert result.exception.column == 28
+    assert result.exception.name == " "
+
+
 def test_position_requirement_name_starts_and_then_newline(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -270,7 +289,8 @@ def test_position_requirement_missing_space_after_it_has_the(p: parser.Parser) -
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.MissingWhitespace)
-    assert result.exception.token == "position<my_lib:/path"
+    assert result.exception.token == "position"
+    assert result.exception.token.type == "NAME_TYPE"
     assert result.exception.line == 10
     assert result.exception.column == 19
 
@@ -435,8 +455,8 @@ def test_move_dimension_point_missing_to_keyword(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
-    assert result.exception.token == " position<dest"
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token == " "
+    assert result.exception.token.type == "SPACE"
     assert result.exception.line == 6
     assert result.exception.column == 50
 
@@ -456,8 +476,8 @@ def test_move_dimension_point_missing_destination_reference(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
-    assert result.exception.token == " to."
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token == " "
+    assert result.exception.token.type == "SPACE"
     assert result.exception.line == 6
     assert result.exception.column == 50
 
@@ -478,7 +498,7 @@ def test_move_dimension_point_chain_separator_after_source_then_terminator(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token.type == "DOT"
     assert result.exception.line == 6
     assert result.exception.column == 52
 
@@ -520,7 +540,7 @@ def test_move_dimension_point_chain_separator_after_destination_then_terminator(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
     assert result.exception.token == "."
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token.type == "DOT"
     assert result.exception.line == 6
     assert result.exception.column == 70
 
@@ -625,8 +645,8 @@ def test_move_dimension_point_no_space_after_to(
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
-    assert result.exception.token == " toposition<dest"
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token == " "
+    assert result.exception.token.type == "SPACE"
     assert result.exception.line == 6
     assert result.exception.column == 50
 
@@ -713,6 +733,6 @@ def test_move_dimension_point_in_space_dot(
         result.exception, parser_exceptions.ExpectedNameTypeOrThisPosition
     )
     assert result.exception.token == "."
-    assert result.exception.token.type == "LOCAL_NAME_CONTENT"
+    assert result.exception.token.type == "DOT"
     assert result.exception.line == 6
     assert result.exception.column == 37
