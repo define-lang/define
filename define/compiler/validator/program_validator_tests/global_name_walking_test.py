@@ -1095,3 +1095,213 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert results[0].file_path == PurePosixPath("test.def")
     assert results[1].file_path == PurePosixPath("lib/target.def")
     assert results[2].file_path == PurePosixPath("lib/inner/leaf.def")
+
+
+def test_already_tracked_discovery_does_not_skip_remaining_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</middle>.\n"
+            "        it has the position</shared>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "middle.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/middle> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</shared>.\n"
+            "        it has the position</leaf>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "shared.def",
+        "define the potential position<my.domain.com:my_lib:/shared>.\n",
+    )
+    _write_source(
+        tmp_path,
+        "leaf.def",
+        "define the potential position<my.domain.com:my_lib:/leaf>.\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
+    )
+    assert len(results) == 4
+    assert [r.file_path for r in results] == [
+        PurePosixPath("test.def"),
+        PurePosixPath("middle.def"),
+        PurePosixPath("shared.def"),
+        PurePosixPath("leaf.def"),
+    ]
+    assert all(r.diagnostics == [] for r in results)
+
+
+def test_failed_root_discovery_does_not_skip_remaining_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target_a>.\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target_b>.\n"
+            f"        it has the position</local>.\n"
+            f"    }}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "local.def",
+        f"define the potential position<{_PARENT_UNIVERSE}:/local>.\n",
+    )
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].position.line == 3
+    assert diags[0].position.column == 29
+    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert results[1].file_path == PurePosixPath("local.def")
+    assert results[1].diagnostics == []
+
+
+def test_failed_root_edge_does_not_skip_remaining_edge_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _setup_cross_fqun_project(tmp_path, monkeypatch)
+    (tmp_path / "lib").mkdir(parents=True, exist_ok=True)
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+            f"    it may only contain dimension points where {{\n"
+            f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
+            f"        it has the position</wrong_type>.\n"
+            f"    }}\n"
+            f"}}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "wrong_type.def",
+        f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type>.\n",
+    )
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert diags[0].path == "/wrong_type"
+    assert diags[0].expected_type == "position"
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 29
+    assert isinstance(diags[1], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[1].position.line == 3
+    assert diags[1].position.column == 29
+    assert isinstance(diags[1].error, exceptions.NotProjectRootError)
+    assert results[1].file_path == PurePosixPath("wrong_type.def")
+    assert results[1].diagnostics == []
+
+
+def test_circular_reference_does_not_skip_remaining_edge_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    _write_source(
+        tmp_path,
+        "test.def",
+        (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</test>.\n"
+            "        it has the position</wrong_type>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    )
+    _write_source(
+        tmp_path,
+        "wrong_type.def",
+        "define the potential action<my.domain.com:my_lib:/wrong_type>.\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    results = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].cycle == [
+        "position<my.domain.com:my_lib:/test>",
+        "position<my.domain.com:my_lib:/test>",
+    ]
+    assert diags[0].position.line == 3
+    assert diags[0].position.column == 20
+    assert isinstance(diags[1], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
+    assert diags[1].path == "/wrong_type"
+    assert diags[1].expected_type == "position"
+    assert diags[1].position.line == 4
+    assert diags[1].position.column == 29
+    assert results[1].file_path == PurePosixPath("wrong_type.def")
+    assert results[1].diagnostics == []
+
+
+def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<unknown.com:lib_a:/target_a>.\n"
+        "        it has the position<unknown.com:lib_a:/target_b>.\n"
+        "        it has the position<unknown.com:lib_b:/target_c>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].universe == "unknown.com:lib_a"
+    assert diags[0].position.line == 3
+    assert diags[0].position.column == 29
+    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].universe == "unknown.com:lib_b"
+    assert diags[1].position.line == 5
+    assert diags[1].position.column == 29

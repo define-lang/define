@@ -75,6 +75,35 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
     assert diags[0].position.column == 33
 
 
+def test_invalid_constraint_does_not_skip_remaining_constraints(
+    validate_project: ValidateProject,
+):
+    results = validate_project(
+        {
+            "test.def": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</Bad>.\n"
+                "        it has the position</valid>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "valid.def": "define the potential position<my.domain.com:my_lib:/valid>.\n",
+        }
+    )
+    assert len(results) == 2
+    assert results[0].file_path == PurePosixPath("test.def")
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diags[0].segment == "Bad"
+    assert diags[0].char == "B"
+    assert diags[0].position.line == 3
+    assert diags[0].position.column == 30
+    assert results[1].file_path == PurePosixPath("valid.def")
+    assert results[1].diagnostics == []
+
+
 def test_referenced_global_name_wrong_type_position(
     validate_project: ValidateProject,
 ):
