@@ -306,6 +306,53 @@ class TestCreateDimensionPoint:
         assert diags[4].position.line == 4
         assert diags[4].position.column == 31
 
+    def test_chain_second_element_global_not_in_constraints(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</correct>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</wrong>::position<end>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "correct.def": (
+                    "define the potential action<my.domain.com:my_lib:/correct> {\n"
+                    "    define the position<end>.\n"
+                    "    it happens when {\n"
+                    "        the position<end> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "wrong.def": (
+                    "define the potential action<my.domain.com:my_lib:/wrong> {\n"
+                    "    define the position<end>.\n"
+                    "    it happens when {\n"
+                    "        the position<end> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = [d for r in results for d in r.diagnostics]
+        assert len(all_diags) == 1
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
+        )
+        assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
+        assert all_diags[0].parent_name == "position<x>"
+
     def test_chain_second_element_position_has_no_constraints(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -603,6 +650,32 @@ class TestCreateDimensionPoint:
         assert diags[4].universe == "my.domain.com:my_lib"
         assert diags[4].position.line == 4
         assert diags[4].position.column == 31
+
+    def test_chained_local_after_short_form_global_position(
+        self, validate_project: ValidateProject
+    ):
+        results = validate_project(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position</other>::position<local>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
+            },
+        )
+        all_diags = [d for r in results for d in r.diagnostics]
+        assert len(all_diags) == 1
+        assert isinstance(
+            all_diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert all_diags[0].local_name == "position<local>"
+        assert all_diags[0].preceding_name == "position<my.domain.com:my_lib:/other>"
 
     def test_undefined_local_position_in_chain(self):
         source = (
