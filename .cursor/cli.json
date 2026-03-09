@@ -34,6 +34,7 @@
       "Shell(gh pr list *)",
       "Shell(gh pr view *)",
       "Shell(gh search *)",
+      "Shell(gh run view *)",
       "Shell(uv add *)",
       "Shell(uv sync *)",
       "Shell(uv help *)",
