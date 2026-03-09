@@ -163,6 +163,7 @@ py_test(
     size = "small",
     srcs = ["move_cross_fqun_test.py"],
     deps = [
+        ":conftest",
         ":test_helpers",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
