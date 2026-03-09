@@ -53,6 +53,24 @@ def test_surrogate_character(p: parser.Parser) -> None:
     assert result.exception.column == 1
 
 
+def test_surrogate_range_start_boundary(p: parser.Parser) -> None:
+    result = p.parse("define the potential position<standard:/path>.\n\ud800\n")
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+    assert result.exception.char == "\ud800"
+    assert result.exception.line == 2
+    assert result.exception.column == 1
+
+
+def test_surrogate_range_end_boundary(p: parser.Parser) -> None:
+    result = p.parse("define the potential position<standard:/path>.\n\udfff\n")
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
+    assert result.exception.char == "\udfff"
+    assert result.exception.line == 2
+    assert result.exception.column == 1
+
+
 def test_del_character(p: parser.Parser) -> None:
     result = p.parse("define the potential position<standard:/path>.\n\x7f\n")
     assert result.diagnostics == []
