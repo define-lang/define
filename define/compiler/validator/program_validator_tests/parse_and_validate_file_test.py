@@ -148,6 +148,8 @@ def test_config_error_sets_later_phases_to_zero(
     result = results[0]
 
     assert isinstance(result.exception, exceptions.ConfigError)
+    assert result.file_path == PurePosixPath("test.def")
+    assert result.root_prefix == PurePosixPath(".")
 
     timings = result.stats
 
