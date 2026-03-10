@@ -31,4 +31,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           git diff --quiet MODULE.bazel.lock && exit 0
-          uv run --package define-tools python tools/git_commit_via_api.py "Update MODULE.bazel.lock" MODULE.bazel.lock
+          uv run python tools/git_commit_via_api.py "Update MODULE.bazel.lock" MODULE.bazel.lock
