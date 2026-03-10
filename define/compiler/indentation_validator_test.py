@@ -123,6 +123,24 @@ class TestValidIndentation:
 
 
 class TestInvalidIndentation:
+    def test_error_after_blank_line(self):
+        source = (
+            "define the potential action<standard:/path> {\n"
+            "    define the position<run>.\n"
+            "\n"
+            "it happens when {\n"
+            "}\n"
+            "}\n"
+        )
+        diags = indentation_validator.validate_indentation(source)
+        assert len(diags) == 1
+        d0 = diags[0]
+        assert isinstance(d0, diagnostics.IncorrectIndentationDiagnostic)
+        assert d0.position.line == 4
+        assert d0.position.column == 1
+        assert d0.expected_indent == 4
+        assert d0.actual_indent == 0
+
     def test_content_not_indented_in_block(self):
         source = (
             "define the potential action<standard:/path> {\n"
