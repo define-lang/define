@@ -70,6 +70,26 @@ def test_parse_global_name_definition_three_part_fqun():
     assert name.path.name == "/do/work"
 
 
+def test_parse_global_name_definition_two_part_fqun():
+    token = _make_name_content_token(
+        "my.domain.com:my_lib:/some/path",
+        line=1,
+        column=5,
+    )
+    name = name_parser.parse_global_name_definition(token)
+    fqun = _require_fqun(name)
+
+    assert fqun.authority is not None
+    assert fqun.authority.name == "my.domain.com"
+    assert fqun.authority.position.column == 5
+    assert fqun.authority.position.end_column == 18
+    assert fqun.universe.name == "my_lib"
+    assert fqun.universe.position.column == 19
+    assert fqun.universe.position.end_column == 25
+    assert fqun.multiverse is None
+    assert name.path.name == "/some/path"
+
+
 def test_parse_global_name_definition_single_char_universe():
     token = _make_name_content_token("x:/path", line=1, column=1)
     name = name_parser.parse_global_name_definition(token)
