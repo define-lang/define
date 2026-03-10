@@ -100,6 +100,52 @@ def _position_with_requirements(
     return _join_lines(lines)
 
 
+def _position_with_init_block(
+    universe_name: str,
+    rel_def_file: str,
+    init_statements: list[str],
+    requirements: list[tuple[str, str]] | None = None,
+    *,
+    indent: str = "    ",
+) -> str:
+    name = _global_name(universe_name, rel_def_file)
+    if requirements is None:
+        lines = [
+            f"define the potential position<{name}> {{",
+            f"{indent}after it is assigned {{",
+        ]
+        for stmt in init_statements:
+            lines.extend(stmt.rstrip("\n").splitlines())
+        lines.extend(
+            [
+                f"{indent}}}",
+                "}",
+            ]
+        )
+        return _join_lines(lines)
+    lines = [
+        f"define the potential position<{name}> {{",
+        f"{indent}it may only contain dimension points where {{",
+    ]
+    for req_type, req_name in requirements:
+        lines.append(f"{indent * 2}it has the {req_type}<{req_name}>.")
+    lines.extend(
+        [
+            f"{indent}}}",
+            f"{indent}after it is assigned {{",
+        ]
+    )
+    for stmt in init_statements:
+        lines.extend(stmt.rstrip("\n").splitlines())
+    lines.extend(
+        [
+            f"{indent}}}",
+            "}",
+        ]
+    )
+    return _join_lines(lines)
+
+
 def _local_position_simple(name: str, *, indent: str) -> str:
     return f"{indent}define the position<{name}>.\n"
 
@@ -341,9 +387,57 @@ def global_names(draw: st.DrawFn) -> str:
 @st.composite
 def position_definitions(draw: st.DrawFn) -> str:
     name = draw(global_names())
-    definition_kind = draw(st.sampled_from(["position_simple", "position"]))
+    definition_kind = draw(
+        st.sampled_from(
+            [
+                "position_simple",
+                "position",
+                "position_init",
+                "position_constrained_init",
+            ]
+        )
+    )
     if definition_kind == "position_simple":
         return f"define the potential position<{name}>.\n"
+    if definition_kind in ("position_init", "position_constrained_init"):
+        inner_indent = "        "
+        num_stmts = draw(st.integers(min_value=1, max_value=2))
+        init_stmts: list[str] = []
+        for _ in range(num_stmts):
+            ref = draw(create_dimension_point_references())
+            init_stmts.append(
+                _create_dimension_point_statement(ref, indent=inner_indent)
+            )
+        if definition_kind == "position_constrained_init":
+            num_reqs = draw(st.integers(min_value=1, max_value=3))
+            reqs: list[tuple[str, str]] = []
+            for _ in range(num_reqs):
+                reqs.append(
+                    (
+                        draw(st.sampled_from(["position", "action"])),
+                        draw(global_names()),
+                    )
+                )
+            lines = [
+                f"define the potential position<{name}> {{",
+                "    it may only contain dimension points where {",
+            ]
+            for req_type, req_name in reqs:
+                lines.append(f"        it has the {req_type}<{req_name}>.")
+            lines.append("    }")
+            lines.append("    after it is assigned {")
+            for stmt in init_stmts:
+                lines.extend(stmt.rstrip("\n").splitlines())
+            lines.extend(["    }", "}"])
+            return _join_lines(lines)
+        lines = [
+            f"define the potential position<{name}> {{",
+            "    after it is assigned {",
+        ]
+        for stmt in init_stmts:
+            lines.extend(stmt.rstrip("\n").splitlines())
+        lines.extend(["    }", "}"])
+        return _join_lines(lines)
     num_requirements = draw(st.integers(min_value=1, max_value=3))
     requirements: list[tuple[str, str]] = []
     for _ in range(num_requirements):
@@ -515,9 +609,83 @@ def valid_sources(draw: st.DrawFn) -> str:
 
     fragments: list[str] = []
     if include_position:
-        position_kind = draw(st.sampled_from(["simple", "constrained"]))
+        position_kind = draw(
+            st.sampled_from(
+                ["simple", "constrained", "init_only", "constrained_with_init"]
+            )
+        )
         if position_kind == "simple":
             fragments.append(f"define the potential position<{_VALID_NAME}>.\n")
+        elif position_kind == "init_only":
+            inner_indent = "        "
+            init_stmts: list[str] = []
+            use_self_ref = draw(st.booleans())
+            if use_self_ref:
+                init_stmts.append(
+                    _create_dimension_point_statement(
+                        "position</test>", indent=inner_indent
+                    )
+                )
+            num_local = draw(st.integers(min_value=0, max_value=2))
+            for i in range(num_local):
+                local_name = _LOCAL_NAMES[i]
+                init_stmts.append(
+                    _local_position_simple(local_name, indent=inner_indent)
+                )
+                init_stmts.append(
+                    _create_dimension_point_statement(
+                        f"position<{local_name}>", indent=inner_indent
+                    )
+                )
+            if not init_stmts:
+                init_stmts.append(
+                    _create_dimension_point_statement(
+                        "position</test>", indent=inner_indent
+                    )
+                )
+            fragments.append(
+                _position_with_init_block(
+                    _PROJECT_FQUN,
+                    "test.def",
+                    init_stmts,
+                )
+            )
+        elif position_kind == "constrained_with_init":
+            inner_indent = "        "
+            requirements = draw(_valid_reference_options())
+            init_stmts_c: list[str] = []
+            use_self_ref_c = draw(st.booleans())
+            if use_self_ref_c:
+                init_stmts_c.append(
+                    _create_dimension_point_statement(
+                        "position</test>", indent=inner_indent
+                    )
+                )
+            num_local_c = draw(st.integers(min_value=0, max_value=2))
+            for i in range(num_local_c):
+                local_name = _LOCAL_NAMES[i]
+                init_stmts_c.append(
+                    _local_position_simple(local_name, indent=inner_indent)
+                )
+                init_stmts_c.append(
+                    _create_dimension_point_statement(
+                        f"position<{local_name}>", indent=inner_indent
+                    )
+                )
+            if not init_stmts_c:
+                init_stmts_c.append(
+                    _create_dimension_point_statement(
+                        "position</test>", indent=inner_indent
+                    )
+                )
+            fragments.append(
+                _position_with_init_block(
+                    _PROJECT_FQUN,
+                    "test.def",
+                    init_stmts_c,
+                    requirements,
+                )
+            )
         else:
             requirements = draw(_valid_reference_options())
             fragments.append(
@@ -603,6 +771,16 @@ def valid_sources(draw: st.DrawFn) -> str:
                 draw(_valid_local_definition_strategy(local_name, inner_indent))
                 for local_name in inner_names
             ]
+            if not inner_locals:
+                fallback_name = "fallback_pos"
+                outer_locals.append(
+                    _local_position_simple(fallback_name, indent=outer_indent)
+                )
+                inner_locals.append(
+                    _create_dimension_point_statement(
+                        f"position<{fallback_name}>", indent=inner_indent
+                    )
+                )
             trigger_condition_ref = "position<run>"
             fragments.append(
                 _action_with_block(
@@ -692,6 +870,7 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "move the dimension point in",
             "it happens when",
             "and it does",
+            "after it is assigned",
         ]
         keyword = draw(st.sampled_from(keywords))
         indices: list[int] = []
@@ -988,6 +1167,27 @@ def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
     )
 
 
+def _build_position_init_self_reference_project(
+    root_universe: str,
+) -> ProjectCase:
+    other_path = _definition_path("other.def")
+    root_files = {
+        "test.def": _position_with_init_block(
+            root_universe,
+            "test.def",
+            [
+                _create_dimension_point_statement("position</test>", indent="        "),
+            ],
+            [("position", other_path)],
+        ),
+        "other.def": _position_simple(root_universe, "other.def"),
+    }
+    return ProjectCase(
+        entrypoint="test.def",
+        roots=(ProjectRootCase("", root_universe, root_files, {}),),
+    )
+
+
 @st.composite
 def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     root_universe = draw(st.sampled_from(_VALID_ROOT_UNIVERSES))
@@ -1003,6 +1203,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "cross_fqun_nested",
                 "cross_fqun_action_statements",
                 "move_local",
+                "position_init_self_reference",
             ]
         )
     )
@@ -1030,7 +1231,9 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
         return _build_cross_fqun_action_statements_project(
             root_universe, child_universe
         )
-    return _build_move_dimension_point_project(root_universe)
+    if project_kind == "move_local":
+        return _build_move_dimension_point_project(root_universe)
+    return _build_position_init_self_reference_project(root_universe)
 
 
 def _mutate_project_case(
@@ -1069,7 +1272,11 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             _PROJECT_FQUN,
             _ACTION_WITH_INNER_FILE,
             outer_locals=[_local_position_simple(_INNER_POS_IN_ACTION, indent="    ")],
-            inner_locals=[],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    f"position<{_INNER_POS_IN_ACTION}>", indent="        "
+                ),
+            ],
         ),
         encoding="utf-8",
     )
