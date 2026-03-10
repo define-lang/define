@@ -83,9 +83,12 @@ _ACTION_A = (
 _ACTION_B_TRIGGERED = (
     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
     "    define the position<pp>.\n"
+    "    define the position<do_nothing>.\n"
     "    it happens when {\n"
     "        the position<pp> has a dimension point.\n"
     "    } and it does {\n"
+    "        define the position<placeholder>.\n"
+    "        create a dimension point in position<placeholder>.\n"
     "    }\n"
     "}\n"
 )
@@ -167,6 +170,8 @@ class TestRenderMermaid:
             "    it happens when {\n"
             "        the position<pp> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<placeholder>.\n"
+            "        create a dimension point in position<placeholder>.\n"
             "    }\n"
             "}\n"
         )
@@ -208,6 +213,8 @@ class TestRenderMermaid:
             "    it happens when {\n"
             "        the position<pp> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<placeholder>.\n"
+            "        create a dimension point in position<placeholder>.\n"
             "    }\n"
             "}\n"
         )

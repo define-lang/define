@@ -4,5 +4,7 @@ define the potential action<mv:define-lang.org:test_files:/invalid/trigger_condi
     it happens when {
         the position<pos_a>::action<act_b> has a dimension point.
     } and it does {
+        define the position<_noop>.
+        create a dimension point in position<_noop>.
     }
 }

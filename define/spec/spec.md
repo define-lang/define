@@ -1036,7 +1036,8 @@ Proposals:
 
 - [DLP 30: Action Statement Blocks](../proposals/00030-action-statement-blocks.md)
 
-An Action Statements Block may contain zero or more action statements.
+An Action Statements Block must contain one or more action statements. An empty
+Action Statements Block is not allowed.
 
 Action statements are:
 
@@ -1048,7 +1049,7 @@ Action statements are:
 - `wait until` statements
 
 ```ebnf
-action_statements_contents = { action_statement } ;
+action_statements_contents = action_statement, { action_statement } ;
 action_statement =
     local_position_definition
     | create_dimension_point_statement

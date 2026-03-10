@@ -61,6 +61,8 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
         "    it happens when {\n"
         "        the position<my_pos> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -152,6 +154,8 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
                 "    it happens when {\n"
                 "        the position<local> has a dimension point.\n"
                 "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),

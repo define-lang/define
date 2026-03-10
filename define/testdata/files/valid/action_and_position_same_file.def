@@ -4,5 +4,7 @@ define the potential action<mv:define-lang.org:test_files:/valid/action_and_posi
     it happens when {
         the position<my_pos> has a dimension point.
     } and it does {
+        define the position<_noop>.
+        create a dimension point in position<_noop>.
     }
 }

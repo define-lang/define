@@ -575,6 +575,24 @@ class ChainElementNotInActionDiagnostic(Diagnostic):
 
 
 @dataclass
+class EmptyActionStatementsBlockDiagnostic(Diagnostic):
+    """Diagnostic for when an action statements block contains no statements."""
+
+    message_format: ClassVar[str] = (
+        "action statements block must contain at least one action statement"
+    )
+
+
+@dataclass
+class EmptyPositionInitBlockDiagnostic(Diagnostic):
+    """Diagnostic for when a position initialization block contains no statements."""
+
+    message_format: ClassVar[str] = (
+        "position initialization block must contain at least one action statement"
+    )
+
+
+@dataclass
 class IncorrectIndentationDiagnostic(Diagnostic):
     """Diagnostic for when a line has incorrect indentation."""
 

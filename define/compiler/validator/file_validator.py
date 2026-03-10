@@ -277,11 +277,18 @@ class DefinitionAstValidator:
             and self._definition.definition_block is not None
         ):
             self._validate_action_definition_block(self._definition.definition_block)
-        if (
-            isinstance(self._definition, ast.PositionDefinition)
-            and self._definition.constraints
-        ):
-            self._validate_position_constraints(self._definition.constraints)
+        if isinstance(self._definition, ast.PositionDefinition):
+            if (
+                self._definition.initialization is not None
+                and not self._definition.initialization.statements
+            ):
+                self._diagnostics.append(
+                    diagnostics.EmptyPositionInitBlockDiagnostic(
+                        position=self._definition.initialization.position,
+                    )
+                )
+            if self._definition.constraints:
+                self._validate_position_constraints(self._definition.constraints)
         return self.build_result()
 
     def build_result(self) -> validation_result.DefinitionValidationResult:
@@ -343,6 +350,12 @@ class DefinitionAstValidator:
         self,
         definition_block: ast.ActionDefinitionBlock,
     ):
+        if not definition_block.action_statements.statements:
+            self._diagnostics.append(
+                diagnostics.EmptyActionStatementsBlockDiagnostic(
+                    position=definition_block.action_statements.position,
+                )
+            )
         scope = scope_tracker.ScopeTracker(
             self._definition.typed_name.name_content.fqun
         )

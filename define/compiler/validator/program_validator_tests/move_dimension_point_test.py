@@ -34,6 +34,8 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
                 "    }\n"
                 "}\n"
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -63,7 +65,7 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
     assert all_diags[0].definition_type == "action"
     assert all_diags[0].path == "/test"
     assert all_diags[0].first_definition_line == 1
-    assert all_diags[0].position.line == 8
+    assert all_diags[0].position.line == 10
     assert all_diags[0].position.column == 1
 
 

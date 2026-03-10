@@ -15,6 +15,8 @@ def test_different_names_no_error():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -33,6 +35,8 @@ def test_duplicate_name_error():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -57,6 +61,8 @@ def test_three_locals_two_same_one_diagnostic():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -81,6 +87,8 @@ def test_three_same_name_two_diagnostics():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -117,6 +125,8 @@ def test_single_local_no_error():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -134,6 +144,8 @@ def test_separate_actions_same_local_name_no_error():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/act_two> {\n"
@@ -141,6 +153,8 @@ def test_separate_actions_same_local_name_no_error():
         "    it happens when {\n"
         "        the position<alpha> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )

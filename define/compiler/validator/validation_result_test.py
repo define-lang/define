@@ -139,6 +139,8 @@ def test_action_local_constraints_with_constraints():
         "    it happens when {\n"
         "        the position<pos_a> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -160,6 +162,8 @@ def test_action_local_constraints_no_constraints():
         "    it happens when {\n"
         "        the position<pos_a> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -184,6 +188,8 @@ def test_action_local_constraints_ignore_later_duplicate_with_different_constrai
         "    it happens when {\n"
         "        the position<pos_a> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -204,6 +210,8 @@ def test_action_local_constraints_ignore_later_duplicate_that_adds_constraints()
         "    it happens when {\n"
         "        the position<pos_a> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -240,6 +248,8 @@ class TestTriggerPositionInfo:
             "    it happens when {\n"
             "        the position<triggered> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
             "    }\n"
             "}\n",
         )

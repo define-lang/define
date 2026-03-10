@@ -282,6 +282,8 @@ def test_deferred_action_chain_error_format(
                 "    it happens when {\n"
                 "        the position<pos_c> has a dimension point.\n"
                 "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -429,6 +431,8 @@ def test_move_violates_constraints_error_message(
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),

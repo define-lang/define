@@ -248,6 +248,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_c> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -331,6 +333,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<end> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -340,6 +344,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<end> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -418,6 +424,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_end> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -452,6 +460,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_end> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -476,6 +486,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -497,6 +509,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_end> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -508,7 +522,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].definition_type == "action"
         assert all_diags[0].path == "/test"
         assert all_diags[0].first_definition_line == 1
-        assert all_diags[0].position.line == 8
+        assert all_diags[0].position.line == 10
         assert all_diags[0].position.column == 1
 
     def test_chain_second_element_wrong_type_in_constraints(self):
@@ -844,6 +858,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_c> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -877,6 +893,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_c> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -947,6 +965,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_c> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -956,6 +976,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<pos_e> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1079,6 +1101,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1088,6 +1112,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<y> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1130,6 +1156,8 @@ class TestCreateDimensionPoint:
                     "    it happens when {\n"
                     "        the position<inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1181,6 +1209,8 @@ class TestMoveDimensionPoint:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1220,6 +1250,8 @@ class TestMoveDimensionPoint:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1255,6 +1287,8 @@ class TestMoveDimensionPoint:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1289,6 +1323,8 @@ class TestMoveDimensionPoint:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1331,6 +1367,8 @@ class TestMoveDimensionPoint:
                     "    it happens when {\n"
                     "        the position<inner_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1491,6 +1529,8 @@ class TestChainActionValidation:
                     "    it happens when {\n"
                     "        the position<inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1552,6 +1592,8 @@ class TestChainActionValidation:
                     "    it happens when {\n"
                     "        the position<inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1599,6 +1641,8 @@ class TestChainActionValidation:
                     "    it happens when {\n"
                     "        the position<inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -1638,6 +1682,8 @@ class TestChainActionValidation:
                     "    it happens when {\n"
                     "        the position<inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),

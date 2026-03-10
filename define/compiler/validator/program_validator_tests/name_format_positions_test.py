@@ -94,6 +94,8 @@ def test_local_name_position():
         "    it happens when {\n"
         "        the position<my-pos> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )

@@ -384,6 +384,8 @@ def test_path_inside_other_universe_skips_further_validation(
                 f"    it happens when {{\n"
                 f"        the position<run> has a dimension point.\n"
                 f"    }} and it does {{\n"
+                f"        define the position<_noop>.\n"
+                f"        create a dimension point in position<_noop>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -471,6 +473,8 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
                 f"    it happens when {{\n"
                 f"        the position<run> has a dimension point.\n"
                 f"    }} and it does {{\n"
+                f"        define the position<_noop>.\n"
+                f"        create a dimension point in position<_noop>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),

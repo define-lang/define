@@ -70,8 +70,6 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 # Potential Position Definition Syntax
 
 _action_statements: (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement)*
-# TODO: The validator should reject empty init blocks and empty action
-# statements blocks in action definitions.
 position_initialization_block: AFTER_IT_IS_ASSIGNED _block_open _action_statements _block_close
 potential_position_definition_block: _block_open NEWLINE* (position_constraint_block NEWLINE* [position_initialization_block NEWLINE*] | position_initialization_block NEWLINE*) _block_close
 position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content (terminator | potential_position_definition_block)

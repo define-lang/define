@@ -9,5 +9,7 @@ define the potential action<mv:define-lang.org:test_files:/valid/action_local_po
     it happens when {
         the position<run> has a dimension point.
     } and it does {
+        define the position<_noop>.
+        create a dimension point in position<_noop>.
     }
 }

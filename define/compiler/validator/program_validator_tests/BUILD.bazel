@@ -25,6 +25,16 @@ py_test(
 )
 
 py_test(
+    name = "action_statements_block_test",
+    size = "small",
+    srcs = ["action_statements_block_test.py"],
+    deps = [
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+    ],
+)
+
+py_test(
     name = "action_triggering_test",
     size = "small",
     srcs = ["action_triggering_test.py"],
@@ -324,6 +334,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_statements_block_test",
         ":action_triggering_test",
         ":chained_name_test",
         ":conftest",

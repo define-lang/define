@@ -3,5 +3,7 @@ define the potential action<mv:define-lang.org:test_move_dim_chain:/act_middle> 
     it happens when {
         the position<inner_pos> has a dimension point.
     } and it does {
+        define the position<_noop>.
+        create a dimension point in position<_noop>.
     }
 }

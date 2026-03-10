@@ -39,6 +39,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -71,6 +73,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -102,6 +106,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<actual_trigger> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -132,6 +138,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -172,6 +180,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_c> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -215,6 +225,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -232,6 +244,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -244,7 +258,7 @@ class TestActionTriggering:
         assert result.all_diagnostics[0].definition_type == "action"
         assert result.all_diagnostics[0].path == "/test"
         assert result.all_diagnostics[0].first_definition_line == 1
-        assert result.all_diagnostics[0].position.line == 8
+        assert result.all_diagnostics[0].position.line == 10
         assert result.all_diagnostics[0].position.column == 1
         assert _edge_keys(result) == set()
 
@@ -260,6 +274,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<my_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -300,6 +316,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -350,6 +368,8 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_pos> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),

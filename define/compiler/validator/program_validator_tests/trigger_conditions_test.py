@@ -12,6 +12,8 @@ class TestTriggerConditionValidation:
             "    it happens when {\n"
             "        the position<my_pos> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -27,6 +29,8 @@ class TestTriggerConditionValidation:
             "    it happens when {\n"
             "        the position<unknown> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -48,6 +52,8 @@ class TestTriggerConditionValidation:
                     "    it happens when {\n"
                     "        the position</other> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -63,6 +69,8 @@ class TestTriggerConditionValidation:
             "    it happens when {\n"
             "        the position<BAD> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -94,6 +102,8 @@ class TestTriggerConditionValidation:
                     "    it happens when {\n"
                     "        the position<my_pos>::position</inner> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -110,6 +120,8 @@ class TestTriggerConditionValidation:
             "    it happens when {\n"
             "        the position<pos_a>::action<act_b> has a dimension point.\n"
             "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -150,6 +162,8 @@ class TestTriggerConditionValidation:
                     "    it happens when {\n"
                     "        the position<pos_a>::position</pos_b>::position</pos_c> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -179,6 +193,8 @@ class TestTriggerConditionValidation:
                     "    it happens when {\n"
                     "        the position<pos_a>::position</pos_b>::position</wrong> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),

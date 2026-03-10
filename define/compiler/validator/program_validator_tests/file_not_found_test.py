@@ -146,6 +146,8 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
         "    it happens when {\n"
         "        the position<local> has a dimension point.\n"
         "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
