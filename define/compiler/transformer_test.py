@@ -833,3 +833,147 @@ def test_trigger_condition_statement_source_positions():
     condition = block.trigger_conditions.conditions[0]
     assert condition.position.line == 4
     assert condition.position.column == 9
+
+
+def test_position_definition_with_init_block_only():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "        create a dimension point in position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.constraints is None
+    assert definition.initialization is not None
+    assert len(definition.initialization.statements) == 1
+    stmt = definition.initialization.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+
+
+def test_position_definition_with_constraints_and_init_block():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "    after it is assigned {\n"
+        + "        create a dimension point in position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.constraints is not None
+    assert len(definition.constraints.requirements) == 1
+    assert definition.initialization is not None
+    assert len(definition.initialization.statements) == 1
+    stmt = definition.initialization.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+
+
+def test_init_block_with_create_statement():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "        create a dimension point in position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.initialization is not None
+    stmt = definition.initialization.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    ref = stmt.position_reference.chain.typed_names[0]
+    assert isinstance(ref, ast.GlobalTypedNameReference)
+    assert ref.name_content.path.name == "/other"
+
+
+def test_init_block_with_move_statement():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "        move the dimension point in position</source> to position</dest>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.initialization is not None
+    stmt = definition.initialization.statements[0]
+    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    from_ref = stmt.from_position.chain.typed_names[0]
+    assert isinstance(from_ref, ast.GlobalTypedNameReference)
+    assert from_ref.name_content.path.name == "/source"
+    to_ref = stmt.to_position.chain.typed_names[0]
+    assert isinstance(to_ref, ast.GlobalTypedNameReference)
+    assert to_ref.name_content.path.name == "/dest"
+
+
+def test_init_block_with_local_position_definition():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "        define the position<inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.initialization is not None
+    stmt = definition.initialization.statements[0]
+    assert isinstance(stmt, ast.LocalPositionDefinition)
+    assert stmt.typed_name.name_content.name == "inner"
+
+
+def test_init_block_with_multiple_statements():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "        create a dimension point in position</path>.\n"
+        + "        move the dimension point in position</source> to position</dest>.\n"
+        + "        define the position<inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.initialization is not None
+    stmts = definition.initialization.statements
+    assert len(stmts) == 3
+    assert isinstance(stmts[0], ast.CreateDimensionPointStatement)
+    assert isinstance(stmts[1], ast.MoveDimensionPointStatement)
+    assert isinstance(stmts[2], ast.LocalPositionDefinition)
+
+
+def test_empty_init_block():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.initialization is not None
+    assert definition.initialization.statements == []
+
+
+def test_init_block_source_positions():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    after it is assigned {\n"
+        + "        create a dimension point in position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.initialization is not None
+    assert definition.initialization.position.line == 2
+    stmt = definition.initialization.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert stmt.position.line == 3
+    assert stmt.position.column == 9

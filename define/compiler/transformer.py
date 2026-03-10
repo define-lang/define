@@ -25,16 +25,29 @@ class DefineTransformer(
     def position_definition(
         self,
         meta: lark_standalone.Meta,
-        items: list[ast.DefinitionGlobalNameContent | ast.PositionConstraintBlock],
+        items: list[
+            ast.DefinitionGlobalNameContent
+            | list[ast.PositionConstraintBlock | ast.PositionInitBlock]
+        ],
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
         name = cast("ast.DefinitionGlobalNameContent", items[0])
-        constraints = (
-            cast("ast.PositionConstraintBlock", items[1]) if len(items) > 1 else None
-        )
+        constraints: ast.PositionConstraintBlock | None = None
+        initialization: ast.PositionInitBlock | None = None
+        if len(items) > 1:
+            block_contents = cast(
+                "list[ast.PositionConstraintBlock | ast.PositionInitBlock]",
+                items[1],
+            )
+            for item in block_contents:
+                if isinstance(item, ast.PositionConstraintBlock):
+                    constraints = item
+                else:
+                    initialization = item
         return ast.PositionDefinition(
             name=name,
             constraints=constraints,
+            initialization=initialization,
             position=ast.SourcePosition.from_meta(meta),
         )
 
@@ -163,17 +176,22 @@ class DefineTransformer(
         return items[0]
 
     def potential_position_definition_block(
-        self, items: list[object]
-    ) -> ast.PositionConstraintBlock | object:
-        """Unwrap a potential position definition block, extracting the constraint block."""
-        for item in items:
-            if isinstance(item, ast.PositionConstraintBlock):
-                return item
-        return lark_standalone.Discard
+        self, items: list[ast.PositionConstraintBlock | ast.PositionInitBlock]
+    ) -> list[ast.PositionConstraintBlock | ast.PositionInitBlock]:
+        """Pass through constraint and init blocks from a potential position definition."""
+        return items
 
-    def position_initialization_block(self, _items: list[object]) -> object:
-        """Discard position initialization blocks (not yet transformed to AST)."""
-        return lark_standalone.Discard
+    @lark_standalone.v_args(meta=True)
+    def position_initialization_block(
+        self,
+        meta: lark_standalone.Meta,
+        items: list[ast.ActionStatement],
+    ) -> ast.PositionInitBlock:
+        """Transform a position init block."""
+        return ast.PositionInitBlock(
+            statements=items,
+            position=ast.SourcePosition.from_meta(meta),
+        )
 
     @lark_standalone.v_args(meta=True)
     def position_constraint_block(

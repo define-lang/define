@@ -85,6 +85,7 @@ class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
     constraints: PositionConstraintBlock | None
+    initialization: PositionInitBlock | None
 
     def __init__(
         self,
@@ -92,6 +93,7 @@ class PositionDefinition(QualityDefinition):
         name: DefinitionGlobalNameContent,
         position: SourcePosition,
         constraints: PositionConstraintBlock | None = None,
+        initialization: PositionInitBlock | None = None,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
         super().__init__(
@@ -103,6 +105,7 @@ class PositionDefinition(QualityDefinition):
             position=position,
         )
         self.constraints = constraints
+        self.initialization = initialization
 
 
 @dataclass
@@ -290,6 +293,11 @@ class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
 
     statements: list[ActionStatement]
+
+
+@dataclass
+class PositionInitBlock(ActionStatementsBlock):
+    """Represents a position init block."""
 
 
 @dataclass
