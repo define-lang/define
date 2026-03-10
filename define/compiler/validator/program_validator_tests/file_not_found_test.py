@@ -81,6 +81,7 @@ def test_non_filesystem_cross_universe_reference(
     assert diag.position.line == 4
     assert diag.position.column == 29
     assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert results[1].root_prefix == PurePosixPath("lib")
     assert results[1].exception is None
     assert results[1].diagnostics == []
 

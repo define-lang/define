@@ -335,7 +335,7 @@ class ProgramValidator:
                         )
                     )
                     continue
-                discovered.root_prefix = constants.PROJECT_ROOT / sub_root_rel
+                discovered.root_prefix = discovered.root_prefix / sub_root_rel
                 resolved_discoveries.append(discovered)
             definition_result.discovered_files = resolved_discoveries
 
