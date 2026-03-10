@@ -94,6 +94,15 @@ _ACTION_B_TRIGGERED = (
 )
 
 
+_POS_COLOR_SOURCE = (
+    "define the potential position<my.domain.com:my_lib:/color> {\n"
+    "    after it is assigned {\n"
+    "        create a dimension point in action</act_b>::position<pp>.\n"
+    "    }\n"
+    "}\n"
+)
+
+
 class TestRenderMermaid:
     def test_empty_graph(self):
         graph = action_call_graph.ActionCallGraph()
@@ -234,5 +243,26 @@ class TestRenderMermaid:
             '    action_test_org_other_lib__bar_["action<test.org:other_lib:/bar>"]\n'
             '    action_test_org_other_lib__foo_["action<test.org:other_lib:/foo>"]\n'
             "    action_test_org_other_lib__foo_ --> action_test_org_other_lib__bar_\n"
+        )
+        _validate_mermaid(result)
+
+    def test_position_init_source_renders_different_shape(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        graph = _build_graph(
+            {
+                "color.def": _POS_COLOR_SOURCE,
+                "act_b.def": _ACTION_B_TRIGGERED,
+            },
+            tmp_path,
+            monkeypatch,
+        )
+
+        result = action_call_graph_renderer.Mermaid(graph).render_flowchart()
+        assert result == (
+            "flowchart LR\n"
+            '    action_my_domain_com_my_lib__act_b_["action<my.domain.com:my_lib:/act_b>"]\n'
+            '    position_my_domain_com_my_lib__color_(["position<my.domain.com:my_lib:/color>"])\n'
+            "    position_my_domain_com_my_lib__color_ --> action_my_domain_com_my_lib__act_b_\n"
         )
         _validate_mermaid(result)

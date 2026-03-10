@@ -44,7 +44,10 @@ class Mermaid:
         lines = ["flowchart LR"]
         for name in sorted(nodes):
             node_id = _sanitize_id(name)
-            lines.append(f'    {node_id}["{name}"]')
+            if name.startswith("position<"):
+                lines.append(f'    {node_id}(["{name}"])')
+            else:
+                lines.append(f'    {node_id}["{name}"]')
         for source, target in sorted(unique_edges):
             lines.append(f"    {_sanitize_id(source)} --> {_sanitize_id(target)}")
         lines.append("")

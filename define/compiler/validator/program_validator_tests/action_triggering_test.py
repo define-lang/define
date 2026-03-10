@@ -14,6 +14,7 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
 _ACT_C = "action<my.domain.com:my_lib:/act_c>"
+_POS_TEST = "position<my.domain.com:my_lib:/test>"
 
 
 class TestActionTriggering:
@@ -439,3 +440,160 @@ class TestActionTriggering:
         assert result.all_diagnostics[0].position.line == 8
         assert result.all_diagnostics[0].position.column == 37
         assert test_result.definition_results[0].action_body_effects == []
+
+
+_OTHER_ACTION = (
+    "define the potential action<my.domain.com:my_lib:/other> {\n"
+    "    define the position<trigger_pos>.\n"
+    "    it happens when {\n"
+    "        the position<trigger_pos> has a dimension point.\n"
+    "    } and it does {\n"
+    "        define the position<_noop>.\n"
+    "        create a dimension point in position<_noop>.\n"
+    "    }\n"
+    "}\n"
+)
+
+
+class TestPositionInitTriggering:
+    def test_position_init_create_triggers_action(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    after it is assigned {\n"
+                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": _OTHER_ACTION,
+            },
+        )
+        assert result.all_diagnostics == []
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 3)}
+
+    def test_position_init_move_triggers_action(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    after it is assigned {\n"
+                    "        define the position<tmp>.\n"
+                    "        create a dimension point in position<tmp>.\n"
+                    "        move the dimension point in position<tmp> to action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": _OTHER_ACTION,
+            },
+        )
+        assert result.all_diagnostics == []
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 5)}
+
+    def test_position_init_self_reference_no_trigger_edge(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    after it is assigned {\n"
+                    "        create a dimension point in position</test>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert result.all_diagnostics == []
+        assert _edge_keys(result) == set()
+
+    def test_position_init_no_edge_when_non_trigger_position(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    after it is assigned {\n"
+                    "        create a dimension point in action</other>::position<non_trigger>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<non_trigger>.\n"
+                    "    define the position<actual_trigger>.\n"
+                    "    it happens when {\n"
+                    "        the position<actual_trigger> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert result.all_diagnostics == []
+        assert _edge_keys(result) == set()
+
+    def test_position_init_and_action_both_trigger_same_target(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    after it is assigned {\n"
+                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": _OTHER_ACTION,
+            },
+        )
+        assert result.all_diagnostics == []
+        assert _edge_keys(result) == {
+            (_POS_TEST, _OTHER, 3),
+            (_TEST, _OTHER, 11),
+        }
+
+    def test_position_init_chained_through_self_triggers_action(
+        self,
+        validate_project_with_graph: conftest.ValidateProjectWithGraph,
+    ):
+        result = validate_project_with_graph(
+            {
+                "test.def": (
+                    "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the action</other>.\n"
+                    "    }\n"
+                    "    after it is assigned {\n"
+                    "        define the position<local>.\n"
+                    "        create a dimension point in position<local>.\n"
+                    "        move the dimension point in position<local> to position</test>::action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": _OTHER_ACTION,
+            },
+        )
+        assert result.all_diagnostics == []
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 8)}
