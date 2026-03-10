@@ -100,3 +100,19 @@ class TestPathNamePropagation:
                 single_toplevel_pb2.SingleToplevelFile,
             )
         assert 'no_trailing_newline.defcl"' in str(exc_info.value)
+
+
+class TestParseFile:
+    _parser: parser.Parser = parser.Parser()
+
+    def test_reads_utf8_from_file(self, tmp_path: Path):
+        path = tmp_path / "utf8.defcl"
+        path.write_bytes(b'project: {\n    universe_name: "caf\xc3\xa9"\n}\n')
+        result = self._parser.parse_file(path, single_toplevel_pb2.SingleToplevelFile)
+        assert result.project.universe_name == "café"
+
+    def test_preserves_carriage_return_from_file(self, tmp_path: Path):
+        path = tmp_path / "crlf.defcl"
+        path.write_bytes(b'project: {\r\n    universe_name: "example"\r\n}\r\n')
+        with pytest.raises(exceptions.CarriageReturnNotAllowedError):
+            self._parser.parse_file(path, single_toplevel_pb2.SingleToplevelFile)

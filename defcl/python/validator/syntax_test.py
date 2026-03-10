@@ -562,3 +562,17 @@ class TestErrorMessages:
         with pytest.raises(exceptions.MissingTrailingNewlineError) as exc_info:
             _parser.parse('project: {\n    name: "test"\n}')
         assert str(exc_info.value) == "File does not end with a newline"
+
+
+class TestParseFile:
+    def test_reads_utf8_from_file(self, tmp_path: Path):
+        path = tmp_path / "utf8.defcl"
+        path.write_bytes(b'a: {\n    b: "caf\xc3\xa9"\n}\n')
+        tree = _parser.parse_file(path)
+        assert _get_tokens_by_type(tree, "STRING") == ['"café"']
+
+    def test_preserves_carriage_return_from_file(self, tmp_path: Path):
+        path = tmp_path / "crlf.defcl"
+        path.write_bytes(b'a: {\r\n    b: "x"\r\n}\r\n')
+        with pytest.raises(exceptions.CarriageReturnNotAllowedError):
+            _parser.parse_file(path)
