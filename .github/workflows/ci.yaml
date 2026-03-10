@@ -72,6 +72,9 @@ jobs:
       - name: Format
         run: bazelisk run --noshow_progress //tools:format.check
 
+      - name: Build buf plugin
+        run: bazelisk build --noshow_progress //defcl/buf
+
       - uses: bufbuild/buf-action@v1
         with:
           breaking: false
