@@ -163,6 +163,9 @@ class LocalPositionDefinition(ASTNode):
         self.constraints = constraints
 
 
+type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
+
+
 @dataclass
 class TypedName(ASTNode):
     """Represents a typed name (local or global)."""

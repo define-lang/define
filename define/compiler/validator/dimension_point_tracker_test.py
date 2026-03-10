@@ -67,7 +67,7 @@ def _make_position_ref(
 def _make_scope_with_def(name: str) -> scope_tracker.ScopeTracker:
     scope = scope_tracker.ScopeTracker(_FQUN)
     scope.enter_child_scope()
-    scope.add_local_definition(_make_local_def(name))
+    scope.add_definition(_make_local_def(name))
     return scope
 
 
@@ -106,7 +106,7 @@ def test_get_local_position_reference_global_reference():
 
 def test_get_local_position_reference_in_parent_scope():
     scope = scope_tracker.ScopeTracker(_FQUN)
-    scope.add_local_definition(_make_local_def("parent_pos"))
+    scope.add_definition(_make_local_def("parent_pos"))
     scope.enter_child_scope()
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("parent_pos")])

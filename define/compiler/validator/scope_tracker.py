@@ -14,7 +14,7 @@ class ScopeTracker:
 
     def __init__(self, enclosing_fqun: ast.Fqun):
         """Initialize with the FQUN of the enclosing definition."""
-        self._definitions: ChainMap[str, ast.LocalPositionDefinition] = ChainMap()
+        self._definitions: ChainMap[str, ast.AnyPositionDefinition] = ChainMap()
         self._constraint_names: ChainMap[str, frozenset[str]] = ChainMap()
         self._enclosing_fqun: ast.Fqun = enclosing_fqun
 
@@ -23,24 +23,22 @@ class ScopeTracker:
         self._definitions = self._definitions.new_child()
         self._constraint_names = self._constraint_names.new_child()
 
-    def add_local_definition(self, local_def: ast.LocalPositionDefinition):
-        """Add a local position definition to scope, pre-computing constraint names."""
-        key = local_def.typed_name.full_typed_name()
-        self._definitions[key] = local_def
-        if local_def.constraints is not None:
+    def add_definition(self, definition: ast.AnyPositionDefinition):
+        """Add a position definition to scope, pre-computing constraint names."""
+        key = definition.typed_name.full_typed_name()
+        self._definitions[key] = definition
+        if definition.constraints is not None:
             self._constraint_names[key] = frozenset(
                 req.typed_global_name.full_typed_name(in_universe=self._enclosing_fqun)
-                for req in local_def.constraints.requirements
+                for req in definition.constraints.requirements
             )
         else:
             self._constraint_names[key] = frozenset()
 
-    def get_definition(
-        self, typed_name: ast.TypedName
-    ) -> ast.LocalPositionDefinition | None:
-        """Return the definition for a typed name, or None if not defined."""
+    def defined_on_line(self, typed_name: ast.TypedName) -> int:
+        """Return the line where a typed name was defined."""
         key = typed_name.full_typed_name(in_universe=self._enclosing_fqun)
-        return self._definitions.get(key)
+        return self._definitions[key].position.line
 
     def is_defined(self, name: ast.TypedName) -> bool:
         """Check if a typed name reference is defined in scope."""

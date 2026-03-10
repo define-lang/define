@@ -278,24 +278,15 @@ class DefinitionAstValidator:
         ):
             self._validate_action_definition_block(self._definition.definition_block)
         if isinstance(self._definition, ast.PositionDefinition):
-            if self._definition.initialization is not None:
-                scope = scope_tracker.ScopeTracker(
-                    self._definition.typed_name.name_content.fqun
-                )
-                tracker = dimension_point_tracker.LocalDimensionPointTracker(
-                    self._definition
-                )
-                self._validate_action_statements(
-                    self._definition.initialization, scope, tracker
-                )
-            if self._definition.constraints:
-                self._validate_position_constraints(self._definition.constraints)
+            self._validate_global_position_definition_block(self._definition)
         return self.build_result()
 
     def build_result(self) -> validation_result.DefinitionValidationResult:
         """Build a result object from the validator's private state."""
         return validation_result.DefinitionValidationResult(
             definition=self._definition,
+            # TODO: This does a bunch of copying that it doesn't need to,
+            # because DefinitionAstValidator is an implementation detail.
             _diagnostics=list(self._diagnostics),
             reference_edges=list(self._reference_edges),
             discovered_files=list(self._discovered_files),
@@ -373,6 +364,23 @@ class DefinitionAstValidator:
             tracker,
         )
 
+    def _validate_global_position_definition_block(
+        self,
+        definition: ast.PositionDefinition,
+    ):
+        if definition.initialization is not None:
+            scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
+            scope.add_definition(definition)
+            tracker = dimension_point_tracker.LocalDimensionPointTracker(definition)
+            self._validate_action_statements(
+                definition.initialization,
+                scope,
+                tracker,
+                allow_self_reference=True,
+            )
+        if definition.constraints:
+            self._validate_position_constraints(definition.constraints)
+
     def _validate_trigger_conditions(
         self,
         trigger_conditions: ast.TriggerConditionsBlock,
@@ -394,6 +402,8 @@ class DefinitionAstValidator:
         action_statements: ast.ActionStatementsBlock,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
+        *,
+        allow_self_reference: bool = False,
     ):
         if not action_statements.statements:
             if isinstance(action_statements, ast.PositionInitBlock):
@@ -413,9 +423,13 @@ class DefinitionAstValidator:
                 case ast.LocalPositionDefinition():
                     self._validate_local_position_definition(stmt, scope)
                 case ast.CreateDimensionPointStatement():
-                    self._validate_create_dimension_point(stmt, scope, tracker)
+                    self._validate_create_dimension_point(
+                        stmt, scope, tracker, allow_self_reference=allow_self_reference
+                    )
                 case ast.MoveDimensionPointStatement():
-                    self._validate_move_dimension_point(stmt, scope, tracker)
+                    self._validate_move_dimension_point(
+                        stmt, scope, tracker, allow_self_reference=allow_self_reference
+                    )
 
     def _validate_local_position_definition(
         self,
@@ -437,26 +451,29 @@ class DefinitionAstValidator:
             )
         )
         name = local_def.typed_name.name_content.name
-        first_def = scope.get_definition(local_def.typed_name)
-        if first_def is not None:
+        if scope.is_defined(local_def.typed_name):
             self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
                     position=local_def.typed_name.name_content.position,
                     local_name=name,
-                    first_definition_line=first_def.typed_name.name_content.position.line,
+                    first_definition_line=scope.defined_on_line(local_def.typed_name),
                 )
             )
             return
-        scope.add_local_definition(local_def)
+        scope.add_definition(local_def)
 
     def _validate_create_dimension_point(
         self,
         stmt: ast.CreateDimensionPointStatement,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
+        *,
+        allow_self_reference: bool = False,
     ):
         position = stmt.position_reference
-        if not self._validate_full_chained_name(position.chain, scope):
+        if not self._validate_full_chained_name(
+            position.chain, scope, allow_self_reference=allow_self_reference
+        ):
             return
 
         if tracker.has_unknown_state(position):
@@ -489,9 +506,15 @@ class DefinitionAstValidator:
         stmt: ast.MoveDimensionPointStatement,
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
+        *,
+        allow_self_reference: bool = False,
     ):
-        from_ok = self._validate_full_chained_name(stmt.from_position.chain, scope)
-        to_ok = self._validate_full_chained_name(stmt.to_position.chain, scope)
+        from_ok = self._validate_full_chained_name(
+            stmt.from_position.chain, scope, allow_self_reference=allow_self_reference
+        )
+        to_ok = self._validate_full_chained_name(
+            stmt.to_position.chain, scope, allow_self_reference=allow_self_reference
+        )
         fqun = self._definition.typed_name.name_content.fqun
         if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
             return
@@ -668,6 +691,8 @@ class DefinitionAstValidator:
         self,
         chain: ast.ChainedName,
         scope: scope_tracker.ScopeTracker,
+        *,
+        allow_self_reference: bool = False,
     ) -> bool:
         """Validate a full chained name reference.
 
@@ -677,12 +702,13 @@ class DefinitionAstValidator:
         fqun = self._definition.typed_name.name_content.fqun
         may_continue = True
 
-        if (
+        is_chained_self_reference = (
             len(chain.typed_names) > 1
             and isinstance(first, ast.GlobalTypedNameReference)
             and first.full_typed_name(in_universe=fqun)
             == self._definition.typed_name.full_typed_name()
-        ):
+        )
+        if is_chained_self_reference and not allow_self_reference:
             self._diagnostics.append(
                 diagnostics.UnnecessarySelfReferenceDiagnostic(
                     position=first.position,
@@ -709,7 +735,9 @@ class DefinitionAstValidator:
 
         previous_element = None
         for typed_name in chain.typed_names:
-            self._validate_chained_name_element(typed_name)
+            self._validate_chained_name_element(
+                typed_name, allow_self_reference=allow_self_reference
+            )
             # Local names in chains may only come right after global action names.
             if (
                 previous_element
@@ -772,6 +800,8 @@ class DefinitionAstValidator:
     def _validate_chained_name_element(
         self,
         chain_element: ast.TypedNameReference,
+        *,
+        allow_self_reference: bool = False,
     ):
         """Validate a single chain element.
 
@@ -785,7 +815,9 @@ class DefinitionAstValidator:
             return
 
         if isinstance(chain_element, ast.GlobalTypedNameReference):
-            self._process_reference(chain_element)
+            self._process_reference(
+                chain_element, allow_self_reference=allow_self_reference
+            )
         elif chain_element.name_type == ast.NameType.ACTION:
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
@@ -827,6 +859,8 @@ class DefinitionAstValidator:
     def _process_reference(
         self,
         typed_global_name: ast.GlobalTypedNameReference,
+        *,
+        allow_self_reference: bool = False,
     ):
         """Record a reference edge and determine the target file to discover."""
         global_name = typed_global_name.name_content
@@ -834,11 +868,16 @@ class DefinitionAstValidator:
             enclosing_definition=self._definition,
             global_name_reference=typed_global_name,
         )
+
+        # In Position Initialization Blocks, self-references don't cause us
+        # to do file loads. They are not actually external references.
+        is_self_reference = (
+            edge.full_typed_name == self._definition.typed_name.full_typed_name()
+        )
+        if is_self_reference and allow_self_reference:
+            return
         # Process a reference that's inside of this same file.
-        if (
-            edge.full_typed_name in self._seen_definitions
-            or edge.full_typed_name == self._definition.typed_name.full_typed_name()
-        ):
+        if edge.full_typed_name in self._seen_definitions or is_self_reference:
             self._reference_edges.append(edge)
             return
 

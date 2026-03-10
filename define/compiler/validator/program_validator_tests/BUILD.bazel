@@ -270,6 +270,17 @@ py_test(
 )
 
 py_test(
+    name = "position_init_self_reference_test",
+    size = "small",
+    srcs = ["position_init_self_reference_test.py"],
+    deps = [
+        ":conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:program_validator",
+    ],
+)
+
+py_test(
     name = "program_config_test",
     size = "small",
     srcs = ["program_config_test.py"],
@@ -358,6 +369,7 @@ pyright_test(
         ":parse_and_validate_file_test",
         ":path_mismatch_test",
         ":position_constraint_references_test",
+        ":position_init_self_reference_test",
         ":program_config_test",
         ":program_validator_tests",
         ":reserved_name_positions_test",
