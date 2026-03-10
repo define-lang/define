@@ -278,14 +278,15 @@ class DefinitionAstValidator:
         ):
             self._validate_action_definition_block(self._definition.definition_block)
         if isinstance(self._definition, ast.PositionDefinition):
-            if (
-                self._definition.initialization is not None
-                and not self._definition.initialization.statements
-            ):
-                self._diagnostics.append(
-                    diagnostics.EmptyPositionInitBlockDiagnostic(
-                        position=self._definition.initialization.position,
-                    )
+            if self._definition.initialization is not None:
+                scope = scope_tracker.ScopeTracker(
+                    self._definition.typed_name.name_content.fqun
+                )
+                tracker = dimension_point_tracker.LocalDimensionPointTracker(
+                    self._definition
+                )
+                self._validate_action_statements(
+                    self._definition.initialization, scope, tracker
                 )
             if self._definition.constraints:
                 self._validate_position_constraints(self._definition.constraints)
@@ -350,12 +351,6 @@ class DefinitionAstValidator:
         self,
         definition_block: ast.ActionDefinitionBlock,
     ):
-        if not definition_block.action_statements.statements:
-            self._diagnostics.append(
-                diagnostics.EmptyActionStatementsBlockDiagnostic(
-                    position=definition_block.action_statements.position,
-                )
-            )
         scope = scope_tracker.ScopeTracker(
             self._definition.typed_name.name_content.fqun
         )
@@ -400,6 +395,19 @@ class DefinitionAstValidator:
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
+        if not action_statements.statements:
+            if isinstance(action_statements, ast.PositionInitBlock):
+                self._diagnostics.append(
+                    diagnostics.EmptyPositionInitBlockDiagnostic(
+                        position=action_statements.position,
+                    )
+                )
+            else:
+                self._diagnostics.append(
+                    diagnostics.EmptyActionStatementsBlockDiagnostic(
+                        position=action_statements.position,
+                    )
+                )
         for stmt in action_statements.statements:
             match stmt:
                 case ast.LocalPositionDefinition():
