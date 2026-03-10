@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:test_pos_init_self_ref:/test> {
+    after it is assigned {
+        create a dimension point in position</test>.
+    }
+}

@@ -1,0 +1,10 @@
+define the potential position<mv:define-lang.org:test_pos_init_mixed_ref:/test> {
+    it may only contain dimension points where {
+        it has the position</other>.
+    }
+    after it is assigned {
+        define the position<local>.
+        create a dimension point in position<local>.
+        create a dimension point in position</test>.
+    }
+}

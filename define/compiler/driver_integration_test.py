@@ -27,7 +27,7 @@ TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
 PROJECTS_ROOT = TESTDATA_ROOT / "projects"
 
-VALID_FILES = sorted((FILES_ROOT / "valid").glob("*.def"))
+VALID_FILES = sorted((FILES_ROOT / "valid").rglob("*.def"))
 INVALID_FILES = sorted((FILES_ROOT / "invalid").rglob("*.def"))
 
 # Key: path relative to FILES_ROOT / "invalid" (as posix string)
@@ -292,6 +292,19 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "trigger_conditions/undefined_local_position.def": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
+    "position_init/empty_init_block.def": [
+        diagnostics.EmptyPositionInitBlockDiagnostic,
+    ],
+    "position_init/undefined_local_in_init.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+    ],
+    "position_init/duplicate_create_in_init.def": [
+        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+    ],
+    "position_init/undefined_local_move_in_init.def": [
+        diagnostics.UndefinedLocalNameDiagnostic,
+        diagnostics.UndefinedLocalNameDiagnostic,
+    ],
 }
 
 # Key: path relative to PROJECTS_ROOT / "invalid" (as posix string)
@@ -352,6 +365,15 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "trigger_conditions/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
+    "position_init/self_reference_in_constraints": [
+        diagnostics.CircularGlobalReferenceDiagnostic,
+    ],
+    "position_init/move_violates_constraints": [
+        diagnostics.MoveViolatesConstraintsDiagnostic,
+    ],
+    "position_init/chain_not_in_constraints": [
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
+    ],
 }
 
 
@@ -406,7 +428,7 @@ def _type_sort_key(t: type[diagnostics.Diagnostic]) -> str:
 @pytest.mark.parametrize(
     "def_file",
     [f.relative_to(FILES_ROOT) for f in VALID_FILES],
-    ids=[f.name for f in VALID_FILES],
+    ids=[f.relative_to(FILES_ROOT / "valid").as_posix() for f in VALID_FILES],
 )
 def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
