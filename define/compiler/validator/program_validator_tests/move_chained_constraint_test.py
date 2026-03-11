@@ -1,8 +1,8 @@
 # pyright: reportUnusedCallResult=false
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateProject
 from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_move_to_chained_dest_violates_constraints(validate_project: ValidateProject):

@@ -6,7 +6,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.validator.program_validator_tests.conftest import (
+from define.compiler.conftest import (
     ValidateSourceAsFile,
 )
 

@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateProject
 from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
-from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_short_form_global_reference(validate_project: ValidateProject):

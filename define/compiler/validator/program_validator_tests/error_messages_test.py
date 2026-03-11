@@ -8,9 +8,9 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import diagnostics, exceptions
+from define.compiler.conftest import ValidateProject
 from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
-from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_reserved_universe_name_format():

@@ -72,6 +72,20 @@ py_library(
 )
 
 py_library(
+    name = "conftest",
+    testonly = True,
+    srcs = ["conftest.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":diagnostics",
+        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/program_validator_tests:test_helpers",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "constants",
     srcs = ["constants.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -142,6 +156,7 @@ py_library(
     deps = [
         ":exceptions",
         ":overall_stats",
+        "//define/compiler/codegen:generator",
         "//define/compiler/validator:program_validator",
         "//define/compiler/validator:validation_result",
     ],
@@ -359,6 +374,7 @@ pyright_test(
         ":compiler",
         ":config",
         ":config_test",
+        ":conftest",
         ":constants",
         ":diagnostics",
         ":diagnostics_test",

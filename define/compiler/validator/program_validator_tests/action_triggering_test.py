@@ -1,7 +1,6 @@
 # pyright: reportUnusedCallResult=false
-from define.compiler import diagnostics
+from define.compiler import conftest, diagnostics
 from define.compiler.validator import validation_result
-from define.compiler.validator.program_validator_tests import conftest
 
 
 def _edge_keys(

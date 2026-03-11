@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
 from define.compiler import diagnostics
-from define.compiler.validator.program_validator_tests.conftest import ValidateProject
+from define.compiler.conftest import ValidateProject
 
 
 def test_move_violates_dest_constraints(validate_project: ValidateProject):

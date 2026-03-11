@@ -1,5 +1,5 @@
 # pyright: reportUnusedCallResult=false
-"""Shared validator fixtures for program_validator_tests."""
+"""Shared test fixtures for the Define compiler."""
 
 from collections.abc import Callable
 from pathlib import Path, PurePosixPath

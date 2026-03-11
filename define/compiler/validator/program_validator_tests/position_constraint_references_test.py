@@ -7,8 +7,8 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
+from define.compiler.conftest import ValidateProject
 from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests.conftest import ValidateProject
 
 
 def test_position_constraint_reference_with_invalid_path():

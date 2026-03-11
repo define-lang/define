@@ -9,12 +9,12 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import diagnostics, exceptions
-from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests import test_helpers
-from define.compiler.validator.program_validator_tests.conftest import (
+from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
+from define.compiler.validator import program_validator
+from define.compiler.validator.program_validator_tests import test_helpers
 
 
 def test_nested_file_path(validate_project: ValidateProject):

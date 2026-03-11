@@ -594,6 +594,15 @@ class EmptyPositionInitBlockDiagnostic(Diagnostic):
 
 
 @dataclass
+class EntryPointNotPositionDiagnostic(Diagnostic):
+    """Diagnostic for when the program entry point is not a position."""
+
+    message_format: ClassVar[str] = (
+        "the entry point of a Define program must be a position"
+    )
+
+
+@dataclass
 class IncorrectIndentationDiagnostic(Diagnostic):
     """Diagnostic for when a line has incorrect indentation."""
 

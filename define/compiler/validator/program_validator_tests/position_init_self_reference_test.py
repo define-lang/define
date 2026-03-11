@@ -3,11 +3,11 @@
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
-from define.compiler.validator.program_validator_tests.conftest import (
+from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
+from define.compiler.validator import program_validator
 
 
 def test_create_in_self():

@@ -3,18 +3,6 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-py_library(
-    name = "conftest",
-    srcs = ["conftest.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:action_call_graph",
-        "//define/compiler/validator:program_validator",
-        "//define/compiler/validator:validation_result",
-        "@pypi//pytest",
-    ],
-)
-
 py_test(
     name = "diagnostic_collection_test",
     size = "small",
@@ -39,7 +27,7 @@ py_test(
     size = "small",
     srcs = ["action_triggering_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
     ],
 )
 
@@ -48,7 +36,7 @@ py_test(
     size = "small",
     srcs = ["chained_name_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -59,8 +47,8 @@ py_test(
     size = "small",
     srcs = ["cross_fqun_walking_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
@@ -72,8 +60,8 @@ py_test(
     size = "small",
     srcs = ["create_dimension_point_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -104,8 +92,8 @@ py_test(
     size = "small",
     srcs = ["error_messages_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
     ],
@@ -116,8 +104,8 @@ py_test(
     size = "small",
     srcs = ["file_not_found_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
@@ -129,7 +117,7 @@ py_test(
     size = "small",
     srcs = ["fqun_mismatch_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
     ],
 )
@@ -139,8 +127,8 @@ py_test(
     size = "small",
     srcs = ["global_name_walking_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/validator:program_validator",
@@ -162,7 +150,7 @@ py_test(
     size = "small",
     srcs = ["move_chained_constraint_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -173,8 +161,8 @@ py_test(
     size = "small",
     srcs = ["move_cross_fqun_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
         "@pypi//pytest",
@@ -186,7 +174,7 @@ py_test(
     size = "small",
     srcs = ["move_dimension_point_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -197,7 +185,7 @@ py_test(
     size = "small",
     srcs = ["move_local_constraint_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
     ],
 )
@@ -207,7 +195,7 @@ py_test(
     size = "small",
     srcs = ["move_state_tracking_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -239,8 +227,8 @@ py_test(
     size = "small",
     srcs = ["parse_and_validate_file_test.py"],
     deps = [
-        ":conftest",
         ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:exceptions",
         "//define/compiler:parser_exceptions",
         "//define/compiler/validator:program_validator",
@@ -253,7 +241,7 @@ py_test(
     size = "small",
     srcs = ["path_mismatch_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
     ],
 )
@@ -263,7 +251,7 @@ py_test(
     size = "small",
     srcs = ["position_constraint_references_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -274,7 +262,7 @@ py_test(
     size = "small",
     srcs = ["position_init_self_reference_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -303,7 +291,7 @@ py_test(
 py_library(
     name = "test_helpers",
     srcs = ["test_helpers.py"],
-    visibility = ["//define/compiler/validator:__pkg__"],
+    visibility = ["//define/compiler:__subpackages__"],
 )
 
 py_test(
@@ -311,7 +299,7 @@ py_test(
     size = "small",
     srcs = ["trigger_conditions_test.py"],
     deps = [
-        ":conftest",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:program_validator",
     ],
@@ -348,7 +336,6 @@ pyright_test(
         ":action_statements_block_test",
         ":action_triggering_test",
         ":chained_name_test",
-        ":conftest",
         ":create_dimension_point_test",
         ":cross_fqun_walking_test",
         ":diagnostic_collection_test",
@@ -376,5 +363,6 @@ pyright_test(
         ":test_helpers",
         ":trigger_conditions_test",
         ":universe_without_authority_test",
+        "//define/compiler:conftest",
     ],
 )
