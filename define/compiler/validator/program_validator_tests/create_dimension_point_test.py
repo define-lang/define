@@ -15,7 +15,7 @@ from define.compiler.validator.program_validator_tests.conftest import ValidateP
 
 
 def test_short_form_global_reference(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -30,8 +30,7 @@ def test_short_form_global_reference(validate_project: ValidateProject):
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_same_fqun_reference_must_use_short_form():
@@ -45,12 +44,10 @@ def test_same_fqun_reference_must_use_short_form():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
@@ -70,12 +67,10 @@ def test_valid_local_name():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert results[0].diagnostics == []
+    assert not result.has_errors()
 
 
 def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -91,12 +86,10 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].universe == "other.domain.com:other_lib"
@@ -116,12 +109,10 @@ def test_undefined_local_position():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
@@ -141,12 +132,10 @@ def test_local_position_defined_after_use():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<later_pos>"
@@ -166,12 +155,10 @@ def test_local_position_defined_in_action_statements_before_use():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert results[0].diagnostics == []
+    assert not result.has_errors()
 
 
 def test_two_actions_with_definition_block_local_positions():
@@ -195,13 +182,10 @@ def test_two_actions_with_definition_block_local_positions():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_single_action_in_position_reference():
@@ -215,12 +199,10 @@ def test_single_action_in_position_reference():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[0].position.line == 6

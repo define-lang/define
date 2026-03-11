@@ -52,14 +52,11 @@ def test_fan_out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     for name in leaf_names:
         _write_def(tmp_path, name, _simple_position(name))
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("root.def"), max_workers=4)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("root.def"), max_workers=4
     )
-    assert len(results) == 11
-    assert all(r.exception is None for r in results)
-    assert all(r.diagnostics == [] for r in results)
+    assert len(result.file_results) == 11
+    assert not result.has_errors()
 
 
 def test_deep_chain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -69,14 +66,11 @@ def test_deep_chain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         _write_def(tmp_path, name, _position_with_ref(name, chain[i + 1]))
     _write_def(tmp_path, chain[-1], _simple_position(chain[-1]))
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("a.def"), max_workers=4)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("a.def"), max_workers=4
     )
-    assert len(results) == 5
-    assert all(r.exception is None for r in results)
-    assert all(r.diagnostics == [] for r in results)
+    assert len(result.file_results) == 5
+    assert not result.has_errors()
 
 
 def test_diamond_dependency(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -86,14 +80,11 @@ def test_diamond_dependency(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _write_def(tmp_path, "right", _position_with_ref("right", "bottom"))
     _write_def(tmp_path, "bottom", _simple_position("bottom"))
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("top.def"), max_workers=4)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("top.def"), max_workers=4
     )
-    assert len(results) == 4
-    assert all(r.exception is None for r in results)
-    assert all(r.diagnostics == [] for r in results)
+    assert len(result.file_results) == 4
+    assert not result.has_errors()
 
 
 def test_chain_element_validated_without_deferral(
@@ -128,12 +119,12 @@ def test_chain_element_validated_without_deferral(
         ),
     )
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("root.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("root.def"), max_workers=1
     )
-    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    test_result = next(
+        r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+    )
     assert len(test_result.diagnostics) == 1
     diag = test_result.diagnostics[0]
     assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
@@ -189,12 +180,12 @@ def test_chain_continuation_validated_without_deferral(
         ),
     )
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("hub.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
     )
-    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    test_result = next(
+        r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+    )
     assert len(test_result.diagnostics) == 1
     diag = test_result.diagnostics[0]
     assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
@@ -217,13 +208,11 @@ def test_wrong_type_detected_without_deferral(
     )
     _write_def(tmp_path, "checker", _position_with_ref("checker", "target"))
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("root.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("root.def"), max_workers=1
     )
     checker_result = next(
-        r for r in results if r.file_path == PurePosixPath("checker.def")
+        r for r in result.file_results if r.file_path == PurePosixPath("checker.def")
     )
     assert len(checker_result.diagnostics) == 1
     diag = checker_result.diagnostics[0]
@@ -275,32 +264,28 @@ def test_reference_edges_resolve_by_file_completion_order(
         autospec=True,
         side_effect=delayed_validate_file,
     ):
-        results = (
-            program_validator.ProgramValidator()
-            .validate_program(
-                PurePosixPath("test.def"),
-                max_workers=2,
-            )
-            .file_results
+        result = program_validator.ProgramValidator().validate_program(
+            PurePosixPath("test.def"),
+            max_workers=2,
         )
 
-    assert len(results) == 2
-    assert all(result.exception is None for result in results)
-    assert len(results[0].diagnostics) == 2
-    diag0 = results[0].diagnostics[0]
+    assert len(result.file_results) == 2
+    assert all(r.exception is None for r in result.file_results)
+    assert len(result.file_results[0].diagnostics) == 2
+    diag0 = result.file_results[0].diagnostics[0]
     assert isinstance(diag0, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert diag0.position.line == 3
     assert diag0.position.column == 29
     assert diag0.path == "/lib/target"
     assert diag0.expected_type == "position"
-    diag1 = results[0].diagnostics[1]
+    diag1 = result.file_results[0].diagnostics[1]
     assert isinstance(diag1, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag1.position.line == 4
     assert diag1.position.column == 29
     assert diag1.file_path == "target.def"
-    assert results[1].file_path == PurePosixPath("lib/target.def")
-    assert len(results[1].diagnostics) == 1
-    diag2 = results[1].diagnostics[0]
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert len(result.file_results[1].diagnostics) == 1
+    diag2 = result.file_results[1].diagnostics[0]
     assert isinstance(diag2, diagnostics.PathMismatchDiagnostic)
     assert diag2.position.line == 1
     assert diag2.position.column == 62
@@ -366,12 +351,10 @@ def test_move_both_sides_resolved_immediately(
     )
     _write_def(tmp_path, "test", _MOVE_ACTION)
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("hub.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
@@ -407,12 +390,10 @@ def test_move_from_resolved_to_deferred(
     )
     _write_def(tmp_path, "test", _MOVE_ACTION)
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("hub.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
@@ -449,12 +430,10 @@ def test_move_from_deferred_to_resolved_on_retry(
     )
     _write_def(tmp_path, "test", _MOVE_ACTION)
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("hub.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("hub.def"), max_workers=1
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
@@ -503,13 +482,10 @@ def test_chained_to_chained_move_deferred_both_sides(
         ),
     )
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("test.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_chained_to_chained_move_deferred_both_sides_violates(
@@ -547,12 +523,10 @@ def test_chained_to_chained_move_deferred_both_sides_violates(
         ),
     )
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("test.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17

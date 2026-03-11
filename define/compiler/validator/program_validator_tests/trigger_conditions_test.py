@@ -49,7 +49,7 @@ class TestTriggerConditionValidation:
         assert diags[0].position.column == 22
 
     def test_valid_global_name(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -64,8 +64,7 @@ class TestTriggerConditionValidation:
                 "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_invalid_local_name_format(self):
         source = (
@@ -96,7 +95,7 @@ class TestTriggerConditionValidation:
         assert diags[1].position.column == 22
 
     def test_two_item_chain(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -116,8 +115,7 @@ class TestTriggerConditionValidation:
                 "inner.def": "define the potential position<my.domain.com:my_lib:/inner>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_chain_ending_with_action(self):
         source = (
@@ -158,7 +156,7 @@ class TestTriggerConditionValidation:
         assert diags[3].position.column == 37
 
     def test_three_item_chain_valid(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -185,11 +183,10 @@ class TestTriggerConditionValidation:
                 "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_three_item_chain_invalid(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -217,7 +214,7 @@ class TestTriggerConditionValidation:
                 "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic

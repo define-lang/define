@@ -64,8 +64,7 @@ def _build_graph(
     monkeypatch.chdir(tmp_path)
     entry_point = PurePosixPath(next(iter(files)))
     program_result = pv.validate_program(entry_point)
-    assert all(result.exception is None for result in program_result.file_results)
-    assert all(not result.diagnostics for result in program_result.file_results)
+    assert not program_result.has_errors()
     return program_result.action_call_graph
 
 

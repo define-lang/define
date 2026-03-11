@@ -238,7 +238,7 @@ class TestCreateDimensionPoint:
         assert diags[2].position.column == 50
 
     def test_valid_chain_with_action_in_middle(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -267,8 +267,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_chain_second_element_not_in_constraints(self):
         source = (
@@ -325,7 +324,7 @@ class TestCreateDimensionPoint:
     def test_chain_second_element_global_not_in_constraints(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -365,7 +364,7 @@ class TestCreateDimensionPoint:
                 ),
             },
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -418,7 +417,7 @@ class TestCreateDimensionPoint:
     def test_chain_second_element_matches_constraint(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -447,13 +446,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_duplicate_definition_preserves_first_constraints(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -483,7 +481,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert all_diags[0].local_name == "pos_a"
@@ -494,7 +492,7 @@ class TestCreateDimensionPoint:
     def test_duplicate_source_definition_does_not_add_chain_diagnostics(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -532,7 +530,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
         assert all_diags[0].definition_type == "action"
@@ -690,7 +688,7 @@ class TestCreateDimensionPoint:
     def test_chained_local_after_short_form_global_position(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -705,7 +703,7 @@ class TestCreateDimensionPoint:
                 "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             },
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
@@ -757,7 +755,7 @@ class TestCreateDimensionPoint:
     def test_chain_third_element_in_position_constraints(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -783,13 +781,12 @@ class TestCreateDimensionPoint:
                 "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_chain_third_element_not_in_position_constraints(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -816,7 +813,7 @@ class TestCreateDimensionPoint:
                 "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -829,7 +826,7 @@ class TestCreateDimensionPoint:
     def test_chain_third_element_position_no_constraints(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -849,7 +846,7 @@ class TestCreateDimensionPoint:
                 "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -860,7 +857,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 72
 
     def test_chain_element_inside_action_valid(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -889,13 +886,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_chain_element_inside_action_not_found(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -924,7 +920,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
         assert all_diags[0].element_name == "position<no_such>"
@@ -935,7 +931,7 @@ class TestCreateDimensionPoint:
     def test_chain_element_inside_action_no_block(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -954,7 +950,7 @@ class TestCreateDimensionPoint:
                 "act_b.def": "define the potential action<my.domain.com:my_lib:/act_b>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
         assert all_diags[0].element_name == "position<pos_c>"
@@ -963,7 +959,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 70
 
     def test_five_element_alternating_chain(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1007,13 +1003,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_four_element_chain_through_positions(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1046,8 +1041,7 @@ class TestCreateDimensionPoint:
                 "pos_d.def": "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_chain_third_element_skipped_when_second_fails(self):
         source = (
@@ -1104,7 +1098,7 @@ class TestCreateDimensionPoint:
     def test_chain_action_cannot_contain_action(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1146,7 +1140,7 @@ class TestCreateDimensionPoint:
             }
         )
         test_result = next(
-            r for r in results if r.file_path == PurePosixPath("test.def")
+            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.ChainElementNotInActionDiagnostic,
@@ -1159,7 +1153,7 @@ class TestCreateDimensionPoint:
         assert diag.position.column == 64
 
     def test_chain_action_then_action_short(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1191,7 +1185,7 @@ class TestCreateDimensionPoint:
             }
         )
         test_result = next(
-            r for r in results if r.file_path == PurePosixPath("test.def")
+            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.PositionReferenceChainEndDiagnostic,
@@ -1211,7 +1205,7 @@ class TestCreateDimensionPoint:
 
 class TestMoveDimensionPoint:
     def test_chain_ending_with_action_in_from(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1243,7 +1237,7 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in results if r.file_path == PurePosixPath("test.def")
+            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1252,7 +1246,7 @@ class TestMoveDimensionPoint:
         )
 
     def test_chain_ending_with_action_in_to(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1284,7 +1278,7 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in results if r.file_path == PurePosixPath("test.def")
+            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1293,7 +1287,7 @@ class TestMoveDimensionPoint:
         )
 
     def test_single_action_in_from_position(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1321,7 +1315,7 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in results if r.file_path == PurePosixPath("test.def")
+            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1330,7 +1324,7 @@ class TestMoveDimensionPoint:
         )
 
     def test_single_action_in_to_position(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1357,7 +1351,7 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in results if r.file_path == PurePosixPath("test.def")
+            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1366,7 +1360,7 @@ class TestMoveDimensionPoint:
         )
 
     def test_valid_chained_through_action(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1400,11 +1394,10 @@ class TestMoveDimensionPoint:
                 ),
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
-        assert all_diags == []
+        assert not result.has_errors()
 
     def test_chain_not_in_constraints(self, validate_project: ValidateProject):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1434,7 +1427,7 @@ class TestMoveDimensionPoint:
                 "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
-        all_diags = [d for r in results for d in r.diagnostics]
+        all_diags = result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -1541,7 +1534,7 @@ class TestChainActionValidation:
     def test_local_action_name_after_action_rejected(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1571,36 +1564,37 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(results) == 2
-        assert results[0].file_path == PurePosixPath("test.def")
-        assert results[1].file_path == PurePosixPath("a.def")
-        assert list(results[1].diagnostics) == []
-        assert len(results[0].diagnostics) == 3
+        assert len(result.file_results) == 2
+        assert result.file_results[0].file_path == PurePosixPath("test.def")
+        assert result.file_results[1].file_path == PurePosixPath("a.def")
+        assert list(result.file_results[1].diagnostics) == []
+        assert len(result.file_results[0].diagnostics) == 3
         assert isinstance(
-            results[0].diagnostics[0],
+            result.file_results[0].diagnostics[0],
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
-        assert results[0].diagnostics[0].position.line == 10
-        assert results[0].diagnostics[0].position.column == 62
+        assert result.file_results[0].diagnostics[0].position.line == 10
+        assert result.file_results[0].diagnostics[0].position.column == 62
         assert isinstance(
-            results[0].diagnostics[1],
+            result.file_results[0].diagnostics[1],
             diagnostics.ChainElementNotInActionDiagnostic,
         )
-        assert results[0].diagnostics[1].element_name == "action<bad>"
+        assert result.file_results[0].diagnostics[1].element_name == "action<bad>"
         assert (
-            results[0].diagnostics[1].parent_name == "action<my.domain.com:my_lib:/a>"
+            result.file_results[0].diagnostics[1].parent_name
+            == "action<my.domain.com:my_lib:/a>"
         )
-        assert results[0].diagnostics[1].position.line == 10
-        assert results[0].diagnostics[1].position.column == 62
+        assert result.file_results[0].diagnostics[1].position.line == 10
+        assert result.file_results[0].diagnostics[1].position.column == 62
         assert isinstance(
-            results[0].diagnostics[2], diagnostics.LocalActionNameDiagnostic
+            result.file_results[0].diagnostics[2], diagnostics.LocalActionNameDiagnostic
         )
-        assert results[0].diagnostics[2].local_name == "bad"
+        assert result.file_results[0].diagnostics[2].local_name == "bad"
 
     def test_chain_through_action_with_constrained_local_position(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1636,20 +1630,20 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(results) == 4
-        assert results[0].file_path == PurePosixPath("test.def")
-        assert len(results[0].diagnostics) == 1
-        diag = results[0].diagnostics[0]
+        assert len(result.file_results) == 4
+        assert result.file_results[0].file_path == PurePosixPath("test.def")
+        assert len(result.file_results[0].diagnostics) == 1
+        diag = result.file_results[0].diagnostics[0]
         assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
         assert diag.element_name == "position<my.domain.com:my_lib:/wrong>"
         assert diag.parent_name == "position<inner>"
         assert diag.position.line == 10
-        assert all(len(r.diagnostics) == 0 for r in results[1:])
+        assert all(len(r.diagnostics) == 0 for r in result.file_results[1:])
 
     def test_chain_through_action_valid_continuation(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1684,13 +1678,13 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(results) == 3
-        assert all(len(r.diagnostics) == 0 for r in results)
+        assert len(result.file_results) == 3
+        assert all(len(r.diagnostics) == 0 for r in result.file_results)
 
     def test_deferred_chain_continuation_through_action_produces_error(
         self, validate_project: ValidateProject
     ):
-        results = validate_project(
+        result = validate_project(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1733,11 +1727,11 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(results) == 5
-        assert results[0].file_path == PurePosixPath("test.def")
-        assert len(results[0].diagnostics) == 1
-        diag = results[0].diagnostics[0]
+        assert len(result.file_results) == 5
+        assert result.file_results[0].file_path == PurePosixPath("test.def")
+        assert len(result.file_results[0].diagnostics) == 1
+        diag = result.file_results[0].diagnostics[0]
         assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
         assert diag.element_name == "position<my.domain.com:my_lib:/leaf>"
         assert diag.parent_name == "position<my.domain.com:my_lib:/target>"
-        assert all(len(r.diagnostics) == 0 for r in results[1:])
+        assert all(len(r.diagnostics) == 0 for r in result.file_results[1:])

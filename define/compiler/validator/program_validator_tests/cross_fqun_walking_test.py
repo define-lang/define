@@ -53,12 +53,10 @@ def test_sub_root_redeclares_parent_fqun(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("test.def"), max_workers=1)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def"), max_workers=1
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.ConfigLoadErrorDiagnostic)
@@ -73,7 +71,7 @@ def test_sub_root_redeclares_parent_fqun(
 
 
 def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -88,15 +86,14 @@ def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 2
-    assert all(r.exception is None for r in results)
-    assert all(r.diagnostics == [] for r in results)
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert len(result.file_results) == 2
+    assert not result.has_errors()
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
 
 
 def test_cross_fqun_file_not_found(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -110,9 +107,9 @@ def test_cross_fqun_file_not_found(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 1
-    assert results[0].exception is None
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 1
+    assert result.file_results[0].exception is None
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].position.line == 3
@@ -121,7 +118,7 @@ def test_cross_fqun_file_not_found(validate_project: ValidateProject):
 
 
 def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -134,9 +131,9 @@ def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
-    assert len(results) == 1
-    assert results[0].exception is None
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 1
+    assert result.file_results[0].exception is None
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
@@ -147,7 +144,7 @@ def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
 def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -168,7 +165,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert all_diags[0].position.line == 3
@@ -178,7 +175,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
 
 def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
     wrong_universe = "mv:define-lang.org:wrong_universe"
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -193,8 +190,8 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": wrong_universe},
     )
-    assert len(results) == 1
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
@@ -207,7 +204,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
 
 def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
     second_child = "mv:define-lang.org:second_child"
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -225,8 +222,8 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
         max_workers=1,
     )
-    assert len(results) == 2
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 2
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 4
@@ -235,11 +232,11 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
     assert diags[0].error.expected_fqun == second_child
     assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
     assert diags[0].error.sub_root_path == "lib"
-    assert results[1].diagnostics == []
+    assert result.file_results[1].diagnostics == []
 
 
 def test_sub_root_conflict(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -256,18 +253,18 @@ def test_sub_root_conflict(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 3
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 2
-    path_diag = results[0].diagnostics[0]
+    assert len(result.file_results) == 3
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 2
+    path_diag = result.file_results[0].diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.position.line == 3
     assert path_diag.position.column == 29
     assert path_diag.path.endswith("lib/parent_target.def")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    sub_root_diag = results[0].diagnostics[1]
+    sub_root_diag = result.file_results[0].diagnostics[1]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
     assert sub_root_diag.position.column == 29
@@ -275,16 +272,16 @@ def test_sub_root_conflict(validate_project: ValidateProject):
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    assert results[1].file_path == PurePosixPath("lib/parent_target.def")
-    assert results[1].exception is None
-    assert results[1].diagnostics == []
-    assert results[2].file_path == PurePosixPath("lib/sub_root_target.def")
-    assert results[2].exception is None
-    assert results[2].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
+    assert result.file_results[2].file_path == PurePosixPath("lib/sub_root_target.def")
+    assert result.file_results[2].exception is None
+    assert result.file_results[2].diagnostics == []
 
 
 def test_sub_root_conflict_continues_validation(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -300,18 +297,18 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 3
-    path_diag = results[0].diagnostics[0]
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 3
+    path_diag = result.file_results[0].diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.position.line == 3
     assert path_diag.position.column == 29
     assert path_diag.path.endswith("lib/parent_target.def")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    sub_root_diag = results[0].diagnostics[2]
+    sub_root_diag = result.file_results[0].diagnostics[2]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
     assert sub_root_diag.position.line == 4
     assert sub_root_diag.position.column == 29
@@ -319,18 +316,18 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    not_found_diag = results[0].diagnostics[1]
+    not_found_diag = result.file_results[0].diagnostics[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.position.line == 4
     assert not_found_diag.position.column == 29
     assert not_found_diag.file_path == "lib/missing_target.def"
-    assert results[1].file_path == PurePosixPath("lib/parent_target.def")
-    assert results[1].exception is None
-    assert results[1].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
 
 
 def test_path_inside_other_universe(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -347,30 +344,31 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 3
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 1
+    assert len(result.file_results) == 3
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
-        results[0].diagnostics[0], diagnostics.PathInsideOtherUniverseDiagnostic
+        result.file_results[0].diagnostics[0],
+        diagnostics.PathInsideOtherUniverseDiagnostic,
     )
-    assert results[0].diagnostics[0].position.line == 4
-    assert results[0].diagnostics[0].position.column == 29
-    assert results[0].diagnostics[0].path.endswith("lib/parent_target.def")
-    assert results[0].diagnostics[0].other_universe == _CHILD_UNIVERSE
-    assert results[0].diagnostics[0].sub_root_path == "lib"
-    assert results[1].file_path == PurePosixPath("lib/sub_root_target.def")
-    assert results[1].exception is None
-    assert results[1].diagnostics == []
-    assert results[2].file_path == PurePosixPath("lib/parent_target.def")
-    assert results[2].exception is None
-    assert results[2].diagnostics == []
+    assert result.file_results[0].diagnostics[0].position.line == 4
+    assert result.file_results[0].diagnostics[0].position.column == 29
+    assert result.file_results[0].diagnostics[0].path.endswith("lib/parent_target.def")
+    assert result.file_results[0].diagnostics[0].other_universe == _CHILD_UNIVERSE
+    assert result.file_results[0].diagnostics[0].sub_root_path == "lib"
+    assert result.file_results[1].file_path == PurePosixPath("lib/sub_root_target.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
+    assert result.file_results[2].file_path == PurePosixPath("lib/parent_target.def")
+    assert result.file_results[2].exception is None
+    assert result.file_results[2].diagnostics == []
 
 
 def test_path_inside_other_universe_skips_further_validation(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -396,11 +394,11 @@ def test_path_inside_other_universe_skips_further_validation(
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 2
-    wrong_type_diag = results[0].diagnostics[0]
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 2
+    wrong_type_diag = result.file_results[0].diagnostics[0]
     assert isinstance(
         wrong_type_diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic
     )
@@ -408,21 +406,21 @@ def test_path_inside_other_universe_skips_further_validation(
     assert wrong_type_diag.position.column == 29
     assert wrong_type_diag.path == "/child_action"
     assert wrong_type_diag.expected_type == "position"
-    path_diag = results[0].diagnostics[1]
+    path_diag = result.file_results[0].diagnostics[1]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.position.line == 4
     assert path_diag.position.column == 29
     assert path_diag.path.endswith("lib/child_action.def")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    assert results[1].file_path == PurePosixPath("lib/child_action.def")
-    assert results[1].exception is None
-    assert results[1].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("lib/child_action.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
 
 
 def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProject):
     wrong_fqun = "mv:define-lang.org:totally_wrong"
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -437,30 +435,32 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 1
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
-        results[0].diagnostics[0],
+        result.file_results[0].diagnostics[0],
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
-    assert results[0].diagnostics[0].position.line == 3
-    assert results[0].diagnostics[0].position.column == 29
-    assert results[0].diagnostics[0].path == "/target"
-    assert results[0].diagnostics[0].expected_type == "position"
-    assert results[1].file_path == PurePosixPath("lib/target.def")
-    assert results[1].exception is None
-    assert len(results[1].diagnostics) == 1
-    assert isinstance(results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic)
-    assert results[1].diagnostics[0].position.line == 1
-    assert results[1].diagnostics[0].position.column == 31
-    assert results[1].diagnostics[0].expected == _CHILD_UNIVERSE
-    assert results[1].diagnostics[0].actual == wrong_fqun
+    assert result.file_results[0].diagnostics[0].position.line == 3
+    assert result.file_results[0].diagnostics[0].position.column == 29
+    assert result.file_results[0].diagnostics[0].path == "/target"
+    assert result.file_results[0].diagnostics[0].expected_type == "position"
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[1].exception is None
+    assert len(result.file_results[1].diagnostics) == 1
+    assert isinstance(
+        result.file_results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic
+    )
+    assert result.file_results[1].diagnostics[0].position.line == 1
+    assert result.file_results[1].diagnostics[0].position.column == 31
+    assert result.file_results[1].diagnostics[0].expected == _CHILD_UNIVERSE
+    assert result.file_results[1].diagnostics[0].actual == wrong_fqun
 
 
 def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -485,25 +485,25 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 1
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
-        results[0].diagnostics[0],
+        result.file_results[0].diagnostics[0],
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
-    assert results[0].diagnostics[0].position.line == 3
-    assert results[0].diagnostics[0].position.column == 29
-    assert results[0].diagnostics[0].path == "/target"
-    assert results[0].diagnostics[0].expected_type == "position"
-    assert results[1].file_path == PurePosixPath("lib/target.def")
-    assert results[1].exception is None
-    assert results[1].diagnostics == []
+    assert result.file_results[0].diagnostics[0].position.line == 3
+    assert result.file_results[0].diagnostics[0].position.column == 29
+    assert result.file_results[0].diagnostics[0].path == "/target"
+    assert result.file_results[0].diagnostics[0].expected_type == "position"
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
 
 
 def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -525,12 +525,11 @@ def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
-    assert len(results) == 3
-    assert all(r.exception is None for r in results)
-    assert all(r.diagnostics == [] for r in results)
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[1].file_path == PurePosixPath("lib/entry.def")
-    assert results[2].file_path == PurePosixPath("lib/leaf.def")
+    assert len(result.file_results) == 3
+    assert not result.has_errors()
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/entry.def")
+    assert result.file_results[2].file_path == PurePosixPath("lib/leaf.def")
 
 
 def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -569,23 +568,20 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         encoding="utf-8",
     )
 
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("test.def"))
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("test.def")
     )
-    assert len(results) == 3
-    assert all(r.exception is None for r in results)
-    assert all(r.diagnostics == [] for r in results)
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[1].file_path == PurePosixPath("lib/target.def")
-    assert results[2].file_path == PurePosixPath("lib/inner/leaf.def")
+    assert len(result.file_results) == 3
+    assert not result.has_errors()
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[2].file_path == PurePosixPath("lib/inner/leaf.def")
 
 
 def test_failed_root_discovery_does_not_skip_remaining_files(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -601,22 +597,22 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].position.line == 3
     assert diags[0].position.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
-    assert results[1].file_path == PurePosixPath("local.def")
-    assert results[1].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("local.def")
+    assert result.file_results[1].diagnostics == []
 
 
 def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
@@ -631,9 +627,9 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert diags[0].path == "/wrong_type"
@@ -644,5 +640,5 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert diags[1].position.line == 3
     assert diags[1].position.column == 29
     assert isinstance(diags[1].error, exceptions.NotProjectRootError)
-    assert results[1].file_path == PurePosixPath("wrong_type.def")
-    assert results[1].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
+    assert result.file_results[1].diagnostics == []

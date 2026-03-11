@@ -20,14 +20,14 @@ from define.compiler.validator.program_validator_tests.conftest import (
 def test_entrypoint_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("nonexistent.def"))
-        .file_results
+    result = program_validator.ProgramValidator().validate_program(
+        PurePosixPath("nonexistent.def")
     )
-    assert len(results) == 1
-    assert isinstance(results[0].exception, exceptions.SourceFileNotFoundError)
-    assert results[0].diagnostics == []
+    assert len(result.file_results) == 1
+    assert isinstance(
+        result.file_results[0].exception, exceptions.SourceFileNotFoundError
+    )
+    assert result.file_results[0].diagnostics == []
 
 
 def test_referenced_file_not_found(
@@ -70,24 +70,22 @@ def test_non_filesystem_cross_universe_reference(
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert len(results) == 2
-    assert str(results[0].file_path) == "<string>"
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 1
-    diag = results[0].diagnostics[0]
+    assert len(result.file_results) == 2
+    assert str(result.file_results[0].file_path) == "<string>"
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 1
+    diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.file_path == "lib/missing.def"
     assert diag.position.line == 4
     assert diag.position.column == 29
-    assert results[1].file_path == PurePosixPath("lib/target.def")
-    assert results[1].root_prefix == PurePosixPath("lib")
-    assert results[1].exception is None
-    assert results[1].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[1].root_prefix == PurePosixPath("lib")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
 
 
 # TODO: Both files get ReferencedFileNotFoundDiagnostic for the same missing
@@ -95,7 +93,7 @@ def test_non_filesystem_cross_universe_reference(
 def test_referenced_file_not_found_via_already_completed_target(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
@@ -115,21 +113,23 @@ def test_referenced_file_not_found_via_already_completed_target(
         },
         max_workers=1,
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert len(results[0].diagnostics) == 1
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
-        results[0].diagnostics[0], diagnostics.ReferencedFileNotFoundDiagnostic
+        result.file_results[0].diagnostics[0],
+        diagnostics.ReferencedFileNotFoundDiagnostic,
     )
-    assert results[0].diagnostics[0].file_path == "missing.def"
-    assert results[1].file_path == PurePosixPath("target.def")
-    assert results[1].exception is None
-    assert len(results[1].diagnostics) == 1
+    assert result.file_results[0].diagnostics[0].file_path == "missing.def"
+    assert result.file_results[1].file_path == PurePosixPath("target.def")
+    assert result.file_results[1].exception is None
+    assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
-        results[1].diagnostics[0], diagnostics.ReferencedFileNotFoundDiagnostic
+        result.file_results[1].diagnostics[0],
+        diagnostics.ReferencedFileNotFoundDiagnostic,
     )
-    assert results[1].diagnostics[0].file_path == "missing.def"
+    assert result.file_results[1].diagnostics[0].file_path == "missing.def"
 
 
 def test_referenced_file_not_found_for_two_definitions_in_same_file(

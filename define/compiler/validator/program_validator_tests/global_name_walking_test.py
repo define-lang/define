@@ -18,22 +18,20 @@ from define.compiler.validator.program_validator_tests.conftest import (
 
 
 def test_nested_file_path(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "sub/dir/leaf.def": "define the potential position<test.example.com:my_lib:/sub/dir/leaf>.\n",
         },
         universe_name="test.example.com:my_lib",
         entry_file="sub/dir/leaf.def",
     )
-    assert len(results) == 1
-    result = results[0]
-    assert result.exception is None
-    assert result.diagnostics == []
-    assert result.file_path == PurePosixPath("sub/dir/leaf.def")
+    assert len(result.file_results) == 1
+    assert not result.has_errors()
+    assert result.file_results[0].file_path == PurePosixPath("sub/dir/leaf.def")
 
 
 def test_walk_returns_results_in_encounter_order(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
@@ -53,7 +51,7 @@ def test_walk_returns_results_in_encounter_order(validate_project: ValidateProje
         },
         universe_name="mv:define-lang.org:walk_order",
     )
-    assert [result.file_path for result in results] == [
+    assert [r.file_path for r in result.file_results] == [
         PurePosixPath("test.def"),
         PurePosixPath("middle.def"),
         PurePosixPath("leaf.def"),
@@ -63,7 +61,7 @@ def test_walk_returns_results_in_encounter_order(validate_project: ValidateProje
 def test_duplicate_does_not_corrupt_reference_resolution(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "root.def": (
                 "define the potential position<my.domain.com:my_lib:/root> {\n"
@@ -82,24 +80,26 @@ def test_duplicate_does_not_corrupt_reference_resolution(
         entry_file="root.def",
         max_workers=1,
     )
-    assert len(results) == 3
-    assert results[0].file_path == PurePosixPath("root.def")
-    assert results[0].diagnostics == []
-    assert results[1].file_path == PurePosixPath("target.def")
-    assert results[1].diagnostics == []
-    assert results[2].file_path == PurePosixPath("dup.def")
-    assert len(results[2].diagnostics) == 1
-    assert isinstance(results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic)
-    assert results[2].diagnostics[0].position.line == 1
-    assert results[2].diagnostics[0].position.column == 52
-    assert results[2].diagnostics[0].expected_path == "/dup"
-    assert results[2].diagnostics[0].actual_path == "/target"
+    assert len(result.file_results) == 3
+    assert result.file_results[0].file_path == PurePosixPath("root.def")
+    assert result.file_results[0].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("target.def")
+    assert result.file_results[1].diagnostics == []
+    assert result.file_results[2].file_path == PurePosixPath("dup.def")
+    assert len(result.file_results[2].diagnostics) == 1
+    assert isinstance(
+        result.file_results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic
+    )
+    assert result.file_results[2].diagnostics[0].position.line == 1
+    assert result.file_results[2].diagnostics[0].position.column == 52
+    assert result.file_results[2].diagnostics[0].expected_path == "/dup"
+    assert result.file_results[2].diagnostics[0].actual_path == "/target"
 
 
 def test_duplicate_source_definition_does_not_add_reference_edges(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<my.domain.com:my_lib:/test>.\n"
@@ -118,7 +118,7 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
             ),
         },
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert all_diags[0].definition_type == "position"
@@ -158,7 +158,7 @@ def test_self_cycle_emits_diagnostic(
 
 
 def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/test> {\n"
@@ -177,13 +177,13 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
         },
         universe_name="mv:define-lang.org:test_walk_cycle",
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    assert results[0].exception is None
-    assert results[0].diagnostics == []
-    assert results[1].file_path == PurePosixPath("loop.def")
-    assert results[1].exception is None
-    diags = results[1].diagnostics
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    assert result.file_results[0].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("loop.def")
+    assert result.file_results[1].exception is None
+    diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].cycle == [
@@ -367,7 +367,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
 def test_unknown_universe_across_files_reported_per_file(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
@@ -386,7 +386,7 @@ def test_unknown_universe_across_files_reported_per_file(
             ),
         },
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 2
     for diag in all_diags:
         assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -399,7 +399,7 @@ def test_unknown_universe_across_files_reported_per_file(
 def test_already_tracked_discovery_does_not_skip_remaining_files(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
@@ -422,20 +422,20 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
         },
         max_workers=1,
     )
-    assert len(results) == 4
-    assert [r.file_path for r in results] == [
+    assert len(result.file_results) == 4
+    assert [r.file_path for r in result.file_results] == [
         PurePosixPath("test.def"),
         PurePosixPath("middle.def"),
         PurePosixPath("shared.def"),
         PurePosixPath("leaf.def"),
     ]
-    assert all(r.diagnostics == [] for r in results)
+    assert not result.has_errors()
 
 
 def test_circular_reference_does_not_skip_remaining_edge_validation(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
@@ -448,9 +448,9 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
             "wrong_type.def": "define the potential action<my.domain.com:my_lib:/wrong_type>.\n",
         },
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].cycle == [
@@ -464,8 +464,8 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[1].expected_type == "position"
     assert diags[1].position.line == 4
     assert diags[1].position.column == 29
-    assert results[1].file_path == PurePosixPath("wrong_type.def")
-    assert results[1].diagnostics == []
+    assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
+    assert result.file_results[1].diagnostics == []
 
 
 def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(

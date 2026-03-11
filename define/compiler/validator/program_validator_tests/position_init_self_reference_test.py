@@ -28,7 +28,7 @@ def test_create_in_self():
 
 
 def test_create_in_self_with_constraints(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -43,8 +43,7 @@ def test_create_in_self_with_constraints(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_local_to_self():
@@ -86,7 +85,7 @@ def test_move_from_self_to_local():
 
 
 def test_move_to_self_violates_constraints(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -103,7 +102,7 @@ def test_move_to_self_violates_constraints(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 8
@@ -116,7 +115,7 @@ def test_move_to_self_violates_constraints(validate_project: ValidateProject):
 
 
 def test_move_from_self_violates_constraints(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -134,7 +133,7 @@ def test_move_from_self_violates_constraints(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 9
@@ -147,7 +146,7 @@ def test_move_from_self_violates_constraints(validate_project: ValidateProject):
 
 
 def test_self_reference_mixed_with_other_reference(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.def": (
@@ -160,14 +159,13 @@ def test_self_reference_mixed_with_other_reference(validate_project: ValidatePro
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_chained_name_starting_with_self_two_items_valid(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.def": (
@@ -182,14 +180,13 @@ def test_chained_name_starting_with_self_two_items_valid(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_chained_name_starting_with_self_two_items_invalid_global(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.def": (
@@ -201,7 +198,7 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
     assert all_diags[0].position.line == 3
@@ -240,7 +237,7 @@ def test_chained_name_starting_with_self_two_items_invalid_local():
 def test_chained_name_starting_with_self_three_items_valid(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -265,14 +262,13 @@ def test_chained_name_starting_with_self_three_items_valid(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_chained_name_starting_with_self_three_items_invalid(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -297,9 +293,9 @@ def test_chained_name_starting_with_self_three_items_invalid(
             ),
         }
     )
-    assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
-    test_diags = results[0].diagnostics
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    test_diags = result.file_results[0].diagnostics
     assert len(test_diags) == 1
     assert isinstance(test_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
     assert test_diags[0].position.line == 6

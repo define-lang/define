@@ -2,13 +2,12 @@
 """Shared validator fixtures for program_validator_tests."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Protocol, overload
 
 import pytest
 
-from define.compiler import action_call_graph, diagnostics
+from define.compiler import diagnostics
 from define.compiler.validator import program_validator, validation_result
 from define.compiler.validator.program_validator_tests import test_helpers
 
@@ -16,19 +15,6 @@ type ParseAndValidateFile = Callable[
     [str | bytes], validation_result.FileValidationResult
 ]
 _DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")
-
-
-@dataclass
-class ProjectResult:
-    """Validation results and call graph from a multi-file project."""
-
-    results: list[validation_result.FileValidationResult]
-    graph: action_call_graph.ActionCallGraph
-
-    @property
-    def all_diagnostics(self) -> list[object]:
-        """All diagnostics from all file results."""
-        return [d for r in self.results for d in r.diagnostics]
 
 
 class ValidateProject(Protocol):
@@ -43,7 +29,7 @@ class ValidateProject(Protocol):
         local_deps: dict[str, str] | None = ...,
         sub_roots: dict[str, str] | None = ...,
         entry_file: str = ...,
-    ) -> list[validation_result.FileValidationResult]:
+    ) -> validation_result.ProgramValidationResult:
         """Validate a project with the given files."""
         ...
 
@@ -56,7 +42,7 @@ class ValidateProjectWithGraph(Protocol):
         files: dict[str, str],
         *,
         universe_name: str = ...,
-    ) -> ProjectResult:
+    ) -> validation_result.ProgramValidationResult:
         """Validate a project with the given files."""
         ...
 
@@ -89,7 +75,7 @@ def _run_validation(
     local_deps: dict[str, str] | None = None,
     sub_roots: dict[str, str] | None = None,
     entry_file: str = "test.def",
-) -> ProjectResult:
+) -> validation_result.ProgramValidationResult:
     test_helpers.write_project_config(tmp_path, universe_name)
     if local_deps is not None:
         test_helpers.write_local_deps_config(tmp_path, local_deps)
@@ -104,12 +90,7 @@ def _run_validation(
         file_path.write_text(content, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     pv = program_validator.ProgramValidator()
-    program_result = pv.validate_program(
-        PurePosixPath(entry_file), max_workers=max_workers
-    )
-    return ProjectResult(
-        results=program_result.file_results, graph=program_result.action_call_graph
-    )
+    return pv.validate_program(PurePosixPath(entry_file), max_workers=max_workers)
 
 
 @pytest.fixture
@@ -126,7 +107,7 @@ def validate_project(
         local_deps: dict[str, str] | None = None,
         sub_roots: dict[str, str] | None = None,
         entry_file: str = "test.def",
-    ) -> list[validation_result.FileValidationResult]:
+    ) -> validation_result.ProgramValidationResult:
         return _run_validation(
             tmp_path,
             monkeypatch,
@@ -136,7 +117,7 @@ def validate_project(
             local_deps=local_deps,
             sub_roots=sub_roots,
             entry_file=entry_file,
-        ).results
+        )
 
     return _run
 
@@ -151,7 +132,7 @@ def validate_project_with_graph(
         files: dict[str, str],
         *,
         universe_name: str = "my.domain.com:my_lib",
-    ) -> ProjectResult:
+    ) -> validation_result.ProgramValidationResult:
         return _run_validation(tmp_path, monkeypatch, files, universe_name)
 
     return _run

@@ -18,12 +18,10 @@ def test_move_from_empty_position():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].position.line == 8
@@ -47,12 +45,10 @@ def test_move_to_occupied_position():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].position.line == 10
@@ -76,12 +72,10 @@ def test_move_updates_state_allows_create_in_source():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert results[0].diagnostics == []
+    assert not result.has_errors()
 
 
 def test_cannot_create_in_position_that_was_moved_into():
@@ -99,12 +93,10 @@ def test_cannot_create_in_position_that_was_moved_into():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
     assert diags[0].position.line == 10
@@ -129,12 +121,10 @@ def test_double_move_works():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert results[0].diagnostics == []
+    assert not result.has_errors()
 
 
 def test_same_move_twice_in_a_row():
@@ -152,12 +142,10 @@ def test_same_move_twice_in_a_row():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].position.line == 10
@@ -186,12 +174,10 @@ def test_round_trip_move_fails_second_return():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].position.line == 11
@@ -228,12 +214,10 @@ def test_two_actions_same_name_one_empty_error_one_clean():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<from_pos>"
@@ -267,12 +251,10 @@ def test_two_actions_same_name_one_occupied_error_one_clean():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].position.line == 10
@@ -306,13 +288,10 @@ def test_two_actions_with_move_same_local_names():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_empty_marks_both_positions_unknown():
@@ -331,12 +310,10 @@ def test_move_from_empty_marks_both_positions_unknown():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].position.line == 8
@@ -361,12 +338,10 @@ def test_move_to_occupied_marks_both_positions_unknown():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].position.line == 10
@@ -392,12 +367,10 @@ def test_both_from_empty_and_to_occupied_marks_unknown():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].position.line == 9
@@ -427,12 +400,10 @@ def test_unknown_state_does_not_affect_other_positions():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].position.line == 11
@@ -463,12 +434,10 @@ def test_single_unknown_position_marks_both_unknown():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].position.line == 11
@@ -480,7 +449,7 @@ def test_single_unknown_position_marks_both_unknown():
 def test_move_from_chained_to_occupied_local_position(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -503,7 +472,7 @@ def test_move_from_chained_to_occupied_local_position(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].position.line == 14

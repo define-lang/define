@@ -229,7 +229,7 @@ def test_deferred_position_chain_error_format(
         "    }\n"
         "}\n"
     )
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": source,
             "pos_b.def": (
@@ -242,7 +242,9 @@ def test_deferred_position_chain_error_format(
             "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
         }
     )
-    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    test_result = next(
+        r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+    )
     assert len(test_result.diagnostics) == 1
     assert isinstance(
         test_result.diagnostics[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -287,7 +289,7 @@ def test_deferred_action_chain_error_format(
         "    }\n"
         "}\n"
     )
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": source,
             "act_b.def": (
@@ -303,7 +305,9 @@ def test_deferred_action_chain_error_format(
             ),
         }
     )
-    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    test_result = next(
+        r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+    )
     assert len(test_result.diagnostics) == 1
     assert isinstance(
         test_result.diagnostics[0], diagnostics.ChainElementNotInActionDiagnostic
@@ -376,7 +380,7 @@ def test_move_into_defining_position_format(
         "    }\n"
         "}\n"
     )
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": source,
             "mid_pos.def": (
@@ -389,7 +393,9 @@ def test_move_into_defining_position_format(
             "end_pos.def": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
         }
     )
-    test_result = next(r for r in results if r.file_path == PurePosixPath("test.def"))
+    test_result = next(
+        r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+    )
     assert len(test_result.diagnostics) == 1
     assert isinstance(
         test_result.diagnostics[0], diagnostics.MoveIntoDefiningPositionDiagnostic
@@ -437,7 +443,7 @@ def test_move_violates_constraints_error_message(
         "    }\n"
         "}\n"
     )
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": source,
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -454,7 +460,7 @@ def test_move_violates_constraints_error_message(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 14

@@ -28,7 +28,7 @@ def test_valid_local_positions():
 def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -61,7 +61,7 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert all_diags[0].definition_type == "action"
@@ -153,7 +153,7 @@ def test_both_positions_undefined():
 def test_same_fqun_must_use_short_form_in_from(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": (
                 "define the potential position<my.domain.com:my_lib:/other>.\n"
@@ -171,7 +171,7 @@ def test_same_fqun_must_use_short_form_in_from(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
@@ -184,7 +184,7 @@ def test_same_fqun_must_use_short_form_in_from(
 def test_same_fqun_must_use_short_form_in_to(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "other.def": (
                 "define the potential position<my.domain.com:my_lib:/other>.\n"
@@ -202,7 +202,7 @@ def test_same_fqun_must_use_short_form_in_to(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position.line == 7
@@ -217,7 +217,7 @@ def test_same_fqun_must_use_short_form_in_to(
 
 
 def test_valid_global_to_position(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -232,8 +232,7 @@ def test_valid_global_to_position(validate_project: ValidateProject):
             "global_pos.def": "define the potential position<my.domain.com:my_lib:/global_pos>.\n",
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_a_position_to_itself():
@@ -263,7 +262,7 @@ def test_move_from_a_position_to_itself():
 
 
 def test_move_from_a_chained_position_to_itself(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -284,7 +283,7 @@ def test_move_from_a_chained_position_to_itself(validate_project: ValidateProjec
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].position.line == 12
@@ -325,7 +324,7 @@ def test_move_to_same_position_does_not_mark_unknown():
 
 
 def test_move_to_chained_prefix_position(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -344,7 +343,7 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
             "target_pos.def": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].position.line == 10
@@ -354,7 +353,7 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
 
 
 def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -374,7 +373,7 @@ def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject)
             "target_pos.def": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].position.line == 10

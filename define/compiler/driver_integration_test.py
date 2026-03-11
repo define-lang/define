@@ -21,7 +21,6 @@ from pathlib import Path
 import pytest
 
 from define.compiler import diagnostics, driver, parser_exceptions
-from define.compiler.validator import validation_result
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -412,15 +411,6 @@ def project_entrypoint(project_dir: Path) -> Path:
     return Path("test.def")
 
 
-def _all_diagnostics(
-    results: list[validation_result.FileValidationResult],
-) -> list[diagnostics.Diagnostic]:
-    diags: list[diagnostics.Diagnostic] = []
-    for result in results:
-        diags.extend(result.diagnostics)
-    return diags
-
-
 def _type_sort_key(t: type[diagnostics.Diagnostic]) -> str:
     return t.__name__
 
@@ -434,9 +424,8 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
 
-    results = driver.Driver().validate_program(def_file).result.file_results
-    assert all(not result.diagnostics for result in results)
-    assert all(result.exception is None for result in results)
+    driver_result = driver.Driver().validate_program(def_file)
+    assert not driver_result.result.has_errors()
 
 
 @pytest.mark.parametrize(
@@ -452,19 +441,17 @@ def test_invalid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     expected_types = EXPECTED_FILE_DIAGNOSTICS.get(rel_key)
     if expected_types is not None:
-        results = d.validate_program(def_file).result.file_results
-        assert all(result.exception is None for result in results)
-        all_diags = _all_diagnostics(results)
+        program_result = d.validate_program(def_file).result
+        assert not program_result.all_exceptions
+        all_diags = program_result.all_diagnostics
         assert [type(diag) for diag in all_diags] == expected_types, (
             f"For {rel_key}: expected {[t.__name__ for t in expected_types]}, "
             f"got {[type(d).__name__ for d in all_diags]}"
         )
     else:
-        results = d.validate_program(def_file).result.file_results
-        assert not _all_diagnostics(results)
-        exceptions_seen = [
-            result.exception for result in results if result.exception is not None
-        ]
+        program_result = d.validate_program(def_file).result
+        assert not program_result.all_diagnostics
+        exceptions_seen = program_result.all_exceptions
         assert exceptions_seen, "Expected at least one exception"
         assert all(
             isinstance(e, parser_exceptions.DefineSyntaxError) for e in exceptions_seen
@@ -481,9 +468,8 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
     d = driver.Driver()
 
     entry_point = project_entrypoint(project_dir)
-    results = d.validate_program(entry_point).result.file_results
-    assert all(result.exception is None for result in results)
-    assert all(not result.diagnostics for result in results)
+    driver_result = d.validate_program(entry_point)
+    assert not driver_result.result.has_errors()
 
 
 @pytest.mark.parametrize(
@@ -499,9 +485,9 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     entry_point = project_entrypoint(project_dir)
     rel_key = project_dir.relative_to(PROJECTS_ROOT / "invalid").as_posix()
-    results = d.validate_program(entry_point).result.file_results
-    assert all(result.exception is None for result in results)
-    all_diags = _all_diagnostics(results)
+    program_result = d.validate_program(entry_point).result
+    assert not program_result.all_exceptions
+    all_diags = program_result.all_diagnostics
     expected_types = EXPECTED_PROJECT_DIAGNOSTICS.get(rel_key)
     if expected_types is None:
         pytest.fail(

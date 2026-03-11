@@ -338,7 +338,7 @@ def test_cross_fqun_chained_to_local_violates(
 def test_cross_fqun_move_to_chained_action_local_satisfies(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
             "lib/act.def": (
@@ -377,14 +377,13 @@ def test_cross_fqun_move_to_chained_action_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_cross_fqun_move_to_chained_action_local_violates(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
             "lib/act.def": (
@@ -419,7 +418,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -430,7 +429,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
 def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
             "lib/act.def": (
@@ -470,7 +469,7 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
     assert all_diags[0].element_name == "position<no_such>"

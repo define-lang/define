@@ -6,7 +6,7 @@ from define.compiler.validator.program_validator_tests.conftest import ValidateP
 
 
 def test_move_to_chained_dest_violates_constraints(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -37,7 +37,7 @@ def test_move_to_chained_dest_violates_constraints(validate_project: ValidatePro
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -46,7 +46,7 @@ def test_move_to_chained_dest_violates_constraints(validate_project: ValidatePro
 
 
 def test_move_to_chained_dest_satisfies_constraints(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -79,12 +79,11 @@ def test_move_to_chained_dest_satisfies_constraints(validate_project: ValidatePr
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_to_chained_dest_unconstrained(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
             "test.def": (
@@ -106,14 +105,13 @@ def test_move_to_chained_dest_unconstrained(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_chained_to_local_violates_constraints(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
@@ -146,7 +144,7 @@ def test_move_from_chained_to_local_violates_constraints(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -157,7 +155,7 @@ def test_move_from_chained_to_local_violates_constraints(
 def test_move_from_chained_to_local_satisfies_constraints(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "q.def": "define the potential position<my.domain.com:my_lib:/q>.\n",
             "x.def": (
@@ -197,14 +195,13 @@ def test_move_from_chained_to_local_satisfies_constraints(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_unconstrained_local_to_chained_constrained(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -233,7 +230,7 @@ def test_move_from_unconstrained_local_to_chained_constrained(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -242,7 +239,7 @@ def test_move_from_unconstrained_local_to_chained_constrained(
 
 
 def test_definition_local_to_chained_violates(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -270,7 +267,7 @@ def test_definition_local_to_chained_violates(validate_project: ValidateProject)
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -279,7 +276,7 @@ def test_definition_local_to_chained_violates(validate_project: ValidateProject)
 
 
 def test_definition_local_to_chained_satisfies(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -310,12 +307,11 @@ def test_definition_local_to_chained_satisfies(validate_project: ValidateProject
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_chained_to_definition_local_violates(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
@@ -348,7 +344,7 @@ def test_chained_to_definition_local_violates(validate_project: ValidateProject)
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -357,7 +353,7 @@ def test_chained_to_definition_local_violates(validate_project: ValidateProject)
 
 
 def test_chained_to_definition_local_satisfies(validate_project: ValidateProject):
-    results = validate_project(
+    result = validate_project(
         {
             "q.def": "define the potential position<my.domain.com:my_lib:/q>.\n",
             "x.def": (
@@ -397,14 +393,13 @@ def test_chained_to_definition_local_satisfies(validate_project: ValidateProject
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_multi_element_chain_to_unconstrained_local(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -433,14 +428,13 @@ def test_move_from_multi_element_chain_to_unconstrained_local(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_from_multi_element_chain_to_constrained_local(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -480,14 +474,13 @@ def test_move_from_multi_element_chain_to_constrained_local(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_three_element_chain_to_three_element_chain_satisfies(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -527,14 +520,13 @@ def test_move_three_element_chain_to_three_element_chain_satisfies(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_move_three_element_chain_to_three_element_chain_violates(
     validate_project: ValidateProject,
 ):
-    results = validate_project(
+    result = validate_project(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -581,7 +573,7 @@ def test_move_three_element_chain_to_three_element_chain_violates(
             ),
         }
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].from_position == "position<a>::position</x>::position</y>"

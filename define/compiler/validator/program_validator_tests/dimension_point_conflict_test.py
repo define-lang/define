@@ -21,12 +21,10 @@ def test_duplicate_local_position():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
     assert diags[0].position_name == "position<my_pos>"
@@ -49,12 +47,10 @@ def test_different_local_positions():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert results[0].diagnostics == []
+    assert not result.has_errors()
 
 
 def test_undefined_position_not_tracked_for_duplicates():
@@ -69,12 +65,10 @@ def test_undefined_position_not_tracked_for_duplicates():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    diags = results[0].diagnostics
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
@@ -107,13 +101,10 @@ def test_two_actions_same_local_position_create_no_error():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_two_actions_same_name_one_duplicate_one_clean():
@@ -138,12 +129,10 @@ def test_two_actions_same_name_one_duplicate_one_clean():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
+    all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
     assert all_diags[0].position_name == "position<my_pos>"
@@ -182,13 +171,10 @@ def test_three_actions_dimension_point_isolation():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    all_diags = [d for r in results for d in r.diagnostics]
-    assert all_diags == []
+    assert not result.has_errors()
 
 
 def test_definition_block_position_enforced():
@@ -204,16 +190,13 @@ def test_definition_block_position_enforced():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    result = program_validator.ProgramValidator().validate_program_non_filesystem(
+        source
     )
-    assert len(results[0].diagnostics) == 1
-    assert isinstance(
-        results[0].diagnostics[0], diagnostics.LocalDuplicateDimensionPointDiagnostic
-    )
-    assert results[0].diagnostics[0].position_name == "position<outer_pos>"
-    assert results[0].diagnostics[0].first_creation_line == 7
-    assert results[0].diagnostics[0].position.line == 8
-    assert results[0].diagnostics[0].position.column == 37
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert diags[0].position_name == "position<outer_pos>"
+    assert diags[0].first_creation_line == 7
+    assert diags[0].position.line == 8
+    assert diags[0].position.column == 37

@@ -39,8 +39,7 @@ class TestPathFormats:
         assert len(driver_result.result.file_results) == 1
         result = driver_result.result.file_results[0]
 
-        assert result.diagnostics == []
-        assert result.exception is None
+        assert not driver_result.result.has_errors()
         assert str(result.file_path) == "sub/test.def"
 
 
@@ -58,8 +57,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(source_file)
         assert len(driver_result.result.file_results) == 1
-        assert driver_result.result.file_results[0].exception is None
-        assert driver_result.result.file_results[0].diagnostics == []
+        assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "hello.def"
         )
@@ -96,8 +94,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(Path("sub/../hello.def"))
         assert len(driver_result.result.file_results) == 1
-        assert driver_result.result.file_results[0].exception is None
-        assert driver_result.result.file_results[0].diagnostics == []
+        assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "hello.def"
         )
@@ -120,8 +117,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(Path("link/hello.def"))
         assert len(driver_result.result.file_results) == 1
-        assert driver_result.result.file_results[0].exception is None
-        assert driver_result.result.file_results[0].diagnostics == []
+        assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "link/hello.def"
         )
@@ -158,8 +154,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(Path("link/../hello.def"))
         assert len(driver_result.result.file_results) == 1
-        assert driver_result.result.file_results[0].exception is None
-        assert driver_result.result.file_results[0].diagnostics == []
+        assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "real/hello.def"
         )

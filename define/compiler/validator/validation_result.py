@@ -224,3 +224,7 @@ class ProgramValidationResult:
     def all_exceptions(self) -> list[AnyValidationException]:
         """All exceptions from all file results."""
         return [r.exception for r in self.file_results if r.exception is not None]
+
+    def has_errors(self) -> bool:
+        """Whether any file had exceptions or diagnostics."""
+        return bool(self.all_exceptions or self.all_diagnostics)
