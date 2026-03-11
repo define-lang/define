@@ -161,11 +161,8 @@ py_test(
     size = "small",
     srcs = ["move_cross_fqun_test.py"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
-        "@pypi//pytest",
     ],
 )
 
@@ -216,9 +213,9 @@ py_test(
     size = "small",
     srcs = ["parallel_test.py"],
     deps = [
-        ":test_helpers",
+        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator:file_validator",
     ],
 )
 

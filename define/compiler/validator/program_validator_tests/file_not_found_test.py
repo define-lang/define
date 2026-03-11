@@ -17,12 +17,8 @@ from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
 
 
-def test_entrypoint_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    result = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("nonexistent.def")
-    )
+def test_entrypoint_file_not_found(validate_project: ValidateProject):
+    result = validate_project({}, entry_file="nonexistent.def")
     assert len(result.file_results) == 1
     assert isinstance(
         result.file_results[0].exception, exceptions.SourceFileNotFoundError

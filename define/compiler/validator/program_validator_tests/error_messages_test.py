@@ -31,23 +31,17 @@ def test_reserved_universe_name_format():
     )
 
 
-def test_path_mismatch_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_path_mismatch_format(validate_project: ValidateProject):
     source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
-    source_path = tmp_path / "foo" / "bar.def"
-    _ = source_path.parent.mkdir(parents=True, exist_ok=True)
-    _ = source_path.write_text(source, encoding="utf-8")
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("foo/bar.def"))
-        .file_results
+    result = validate_project(
+        {"foo/bar.def": source},
+        entry_file="foo/bar.def",
     )
-    assert len(results) == 1
-    diags = results[0].diagnostics
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(
-        source.splitlines(), file_name=str(results[0].file_path)
+        source.splitlines(), file_name=str(result.file_results[0].file_path)
     )
     assert formatted == (
         'File "foo/bar.def", line 1, column 52\n'
@@ -102,7 +96,7 @@ def test_duplicate_definition_format_with_non_filesystem_file_name():
 
 
 def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
     parent_universe = "mv:define-lang.org:parent"
     child_universe = "mv:define-lang.org:child"
@@ -114,21 +108,16 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
         "    }\n"
         "}\n"
     )
-    test_helpers.write_project_config(tmp_path, parent_universe)
-    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
-    test_helpers.write_sub_root(tmp_path, "lib", wrong_child_universe)
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    _ = (tmp_path / "lib" / "target.def").write_text(
-        f"define the potential position<{wrong_child_universe}:/target>.\n",
-        encoding="utf-8",
+    result = validate_project(
+        {
+            "test.def": source,
+            "lib/target.def": f"define the potential position<{wrong_child_universe}:/target>.\n",
+        },
+        universe_name=parent_universe,
+        local_deps={child_universe: "lib"},
+        sub_roots={"lib": wrong_child_universe},
     )
-    monkeypatch.chdir(tmp_path)
-
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("test.def"))
-        .file_results
-    )
+    results = result.file_results
     assert len(results) == 1
     assert results[0].exception is None
     diags = results[0].diagnostics
@@ -505,7 +494,7 @@ def test_not_project_root_error_message_for_project_root(
 
 
 def test_not_project_root_error_message_for_subroot(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
     parent_universe = "mv:define-lang.org:parent"
     child_universe = "mv:define-lang.org:child"
@@ -516,17 +505,13 @@ def test_not_project_root_error_message_for_subroot(
         "    }\n"
         "}\n"
     )
-    test_helpers.write_project_config(tmp_path, parent_universe)
-    test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
-    (tmp_path / "lib").mkdir()
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("test.def"), max_workers=1)
-        .file_results
+    result = validate_project(
+        {"test.def": source},
+        universe_name=parent_universe,
+        local_deps={child_universe: "lib"},
+        max_workers=1,
     )
+    results = result.file_results
     assert len(results) == 1
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -593,15 +578,10 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
 
 
 def test_source_file_not_found_error_message(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    validate_project: ValidateProject,
 ):
-    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramValidator()
-        .validate_program(PurePosixPath("nonexistent.def"))
-        .file_results
-    )
+    result = validate_project({}, entry_file="nonexistent.def")
+    results = result.file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, exceptions.SourceFileNotFoundError)
