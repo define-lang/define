@@ -12,8 +12,10 @@ def test_no_duplicates_ok():
         "define the potential position<my.domain.com:my_lib:/first>.\n"
         "define the potential position<my.domain.com:my_lib:/second>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 0
@@ -24,8 +26,10 @@ def test_duplicate_position_error():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -42,8 +46,10 @@ def test_duplicate_action_error():
         "define the potential action<my.domain.com:my_lib:/same>.\n"
         "define the potential action<my.domain.com:my_lib:/same>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -60,8 +66,10 @@ def test_same_path_different_types_ok():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential action<my.domain.com:my_lib:/same>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 0
@@ -73,8 +81,10 @@ def test_three_duplicates_two_errors():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 2

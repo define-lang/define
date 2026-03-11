@@ -1298,7 +1298,7 @@ def _materialize_project_case(tmp_path: Path, project_case: ProjectCase) -> None
 
 
 def _assert_results_are_clean(
-    results: list[validation_result.ValidationResult], source_hint: str
+    results: list[validation_result.FileValidationResult], source_hint: str
 ) -> None:
     diagnostics_seen = [diag for result in results for diag in result.diagnostics]
     exceptions_seen = [
@@ -1318,7 +1318,7 @@ def _assert_results_are_clean(
 
 
 def _assert_only_parser_syntax_exceptions(
-    results: list[validation_result.ValidationResult], source_hint: str
+    results: list[validation_result.FileValidationResult], source_hint: str
 ) -> None:
     allowed_exceptions = (
         parser_exceptions.DefineSyntaxError,
@@ -1367,7 +1367,7 @@ def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
     file_path = fuzz_project / "test.def"
     file_path.write_text(source, encoding="utf-8")
     d = driver.Driver()
-    results = d.validate_program(Path("test.def")).results
+    results = d.validate_program(Path("test.def")).result.file_results
     _assert_results_are_clean(results, _escape_content(source))
 
 
@@ -1386,7 +1386,7 @@ def test_valid_projects_validate_cleanly(
 
     d = driver.Driver()
     debug_source = _project_case_debug_text(project_case)
-    results = d.validate_program(Path(project_case.entrypoint)).results
+    results = d.validate_program(Path(project_case.entrypoint)).result.file_results
     _assert_results_are_clean(results, debug_source)
 
 
@@ -1400,7 +1400,7 @@ def test_valid_projects_validate_cleanly(
 def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     (fuzz_project / "test.def").write_text(source, encoding="utf-8")
     d = driver.Driver()
-    results = d.validate_program(Path("test.def")).results
+    results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, _escape_content(source))
 
 
@@ -1417,7 +1417,7 @@ def test_mutated_projects_no_unclassified_errors(
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
     d = driver.Driver()
-    results = d.validate_program(Path(project_case.entrypoint)).results
+    results = d.validate_program(Path(project_case.entrypoint)).result.file_results
     _assert_only_parser_syntax_exceptions(
         results, _project_case_debug_text(project_case)
     )
@@ -1434,5 +1434,5 @@ def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
     file_path = fuzz_project / "test.def"
     file_path.write_bytes(data)
     d = driver.Driver()
-    results = d.validate_program(Path("test.def")).results
+    results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(data))

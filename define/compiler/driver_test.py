@@ -36,8 +36,8 @@ class TestPathFormats:
 
         d = driver.Driver()
         driver_result = d.validate_program(Path(PureWindowsPath("sub\\test.def")))
-        assert len(driver_result.results) == 1
-        result = driver_result.results[0]
+        assert len(driver_result.result.file_results) == 1
+        result = driver_result.result.file_results[0]
 
         assert result.diagnostics == []
         assert result.exception is None
@@ -57,10 +57,12 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         driver_result = driver.Driver().validate_program(source_file)
-        assert len(driver_result.results) == 1
-        assert driver_result.results[0].exception is None
-        assert driver_result.results[0].diagnostics == []
-        assert driver_result.results[0].file_path == PurePosixPath("hello.def")
+        assert len(driver_result.result.file_results) == 1
+        assert driver_result.result.file_results[0].exception is None
+        assert driver_result.result.file_results[0].diagnostics == []
+        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+            "hello.def"
+        )
 
     def test_absolute_path_outside_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -93,10 +95,12 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         driver_result = driver.Driver().validate_program(Path("sub/../hello.def"))
-        assert len(driver_result.results) == 1
-        assert driver_result.results[0].exception is None
-        assert driver_result.results[0].diagnostics == []
-        assert driver_result.results[0].file_path == PurePosixPath("hello.def")
+        assert len(driver_result.result.file_results) == 1
+        assert driver_result.result.file_results[0].exception is None
+        assert driver_result.result.file_results[0].diagnostics == []
+        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+            "hello.def"
+        )
 
     def test_symlink_to_outside_without_dotdot_is_allowed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -115,10 +119,12 @@ class TestPathResolution:
         monkeypatch.chdir(project)
 
         driver_result = driver.Driver().validate_program(Path("link/hello.def"))
-        assert len(driver_result.results) == 1
-        assert driver_result.results[0].exception is None
-        assert driver_result.results[0].diagnostics == []
-        assert driver_result.results[0].file_path == PurePosixPath("link/hello.def")
+        assert len(driver_result.result.file_results) == 1
+        assert driver_result.result.file_results[0].exception is None
+        assert driver_result.result.file_results[0].diagnostics == []
+        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+            "link/hello.def"
+        )
 
     def test_symlink_with_dotdot_escaping_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -151,10 +157,12 @@ class TestPathResolution:
         monkeypatch.chdir(tmp_path)
 
         driver_result = driver.Driver().validate_program(Path("link/../hello.def"))
-        assert len(driver_result.results) == 1
-        assert driver_result.results[0].exception is None
-        assert driver_result.results[0].diagnostics == []
-        assert driver_result.results[0].file_path == PurePosixPath("real/hello.def")
+        assert len(driver_result.result.file_results) == 1
+        assert driver_result.result.file_results[0].exception is None
+        assert driver_result.result.file_results[0].diagnostics == []
+        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+            "real/hello.def"
+        )
 
     def test_path_escaping_project_root_is_rejected(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

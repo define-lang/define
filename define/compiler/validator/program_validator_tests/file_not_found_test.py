@@ -20,8 +20,10 @@ from define.compiler.validator.program_validator_tests.conftest import (
 def test_entrypoint_file_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("nonexistent.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("nonexistent.def"))
+        .file_results
     )
     assert len(results) == 1
     assert isinstance(results[0].exception, exceptions.SourceFileNotFoundError)
@@ -68,8 +70,10 @@ def test_non_filesystem_cross_universe_reference(
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert len(results) == 2
     assert str(results[0].file_path) == "<string>"

@@ -45,8 +45,10 @@ def test_same_fqun_reference_must_use_short_form():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -68,8 +70,10 @@ def test_valid_local_name():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert results[0].diagnostics == []
 
@@ -87,8 +91,10 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -110,8 +116,10 @@ def test_undefined_local_position():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -133,8 +141,10 @@ def test_local_position_defined_after_use():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -156,8 +166,10 @@ def test_local_position_defined_in_action_statements_before_use():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert results[0].diagnostics == []
 
@@ -183,8 +195,10 @@ def test_two_actions_with_definition_block_local_positions():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
@@ -201,8 +215,10 @@ def test_single_action_in_position_reference():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 3

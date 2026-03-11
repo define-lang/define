@@ -10,8 +10,10 @@ def test_empty_position_init_block():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -27,8 +29,10 @@ def test_valid_create_in_position_init_block():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert diags == []
@@ -42,8 +46,10 @@ def test_undefined_local_position_in_position_init_block():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -60,8 +66,10 @@ def test_empty_action_statements_block():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1

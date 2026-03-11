@@ -12,7 +12,9 @@ from define.compiler import action_call_graph, diagnostics
 from define.compiler.validator import program_validator, validation_result
 from define.compiler.validator.program_validator_tests import test_helpers
 
-type ParseAndValidateFile = Callable[[str | bytes], validation_result.ValidationResult]
+type ParseAndValidateFile = Callable[
+    [str | bytes], validation_result.FileValidationResult
+]
 _DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")
 
 
@@ -20,17 +22,13 @@ _DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")
 class ProjectResult:
     """Validation results and call graph from a multi-file project."""
 
-    results: list[validation_result.ValidationResult]
+    results: list[validation_result.FileValidationResult]
     graph: action_call_graph.ActionCallGraph
 
     @property
     def all_diagnostics(self) -> list[object]:
         """All diagnostics from all file results."""
         return [d for r in self.results for d in r.diagnostics]
-
-    def result_for(self, suffix: str) -> validation_result.ValidationResult:
-        """Return the result whose file path ends with the given suffix."""
-        return next(r for r in self.results if str(r.file_path).endswith(suffix))
 
 
 class ValidateProject(Protocol):
@@ -45,7 +43,7 @@ class ValidateProject(Protocol):
         local_deps: dict[str, str] | None = ...,
         sub_roots: dict[str, str] | None = ...,
         entry_file: str = ...,
-    ) -> list[validation_result.ValidationResult]:
+    ) -> list[validation_result.FileValidationResult]:
         """Validate a project with the given files."""
         ...
 
@@ -106,8 +104,12 @@ def _run_validation(
         file_path.write_text(content, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     pv = program_validator.ProgramValidator()
-    results = pv.validate_program(PurePosixPath(entry_file), max_workers=max_workers)
-    return ProjectResult(results=results, graph=pv.action_call_graph)
+    program_result = pv.validate_program(
+        PurePosixPath(entry_file), max_workers=max_workers
+    )
+    return ProjectResult(
+        results=program_result.file_results, graph=program_result.action_call_graph
+    )
 
 
 @pytest.fixture
@@ -124,7 +126,7 @@ def validate_project(
         local_deps: dict[str, str] | None = None,
         sub_roots: dict[str, str] | None = None,
         entry_file: str = "test.def",
-    ) -> list[validation_result.ValidationResult]:
+    ) -> list[validation_result.FileValidationResult]:
         return _run_validation(
             tmp_path,
             monkeypatch,
@@ -161,7 +163,7 @@ def parse_and_validate_file(
 ) -> ParseAndValidateFile:
     """Parse and validate a single source string as a file in a temp project."""
 
-    def _run(source: str | bytes) -> validation_result.ValidationResult:
+    def _run(source: str | bytes) -> validation_result.FileValidationResult:
         relative_path = PurePosixPath("test.def")
         source_path = tmp_path / relative_path
         test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
@@ -170,7 +172,11 @@ def parse_and_validate_file(
         else:
             source_path.write_bytes(source)
         monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(relative_path)
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program(relative_path)
+            .file_results
+        )
         assert len(results) == 1
         return results[0]
 
@@ -193,7 +199,11 @@ def validate_source_as_file(
         source_path.write_text(source, encoding="utf-8")
         test_helpers.write_project_config(tmp_path, expected_universe_name)
         monkeypatch.chdir(tmp_path)
-        results = program_validator.ProgramValidator().validate_program(relative_path)
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program(relative_path)
+            .file_results
+        )
         assert len(results) == 1
         return list(results[0].diagnostics)
 

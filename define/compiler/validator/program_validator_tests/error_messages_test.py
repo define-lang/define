@@ -15,8 +15,10 @@ from define.compiler.validator.program_validator_tests.conftest import ValidateP
 
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -36,8 +38,10 @@ def test_path_mismatch_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _ = source_path.write_text(source, encoding="utf-8")
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("foo/bar.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("foo/bar.def"))
+        .file_results
     )
     assert len(results) == 1
     diags = results[0].diagnostics
@@ -58,8 +62,10 @@ def test_duplicate_definition_format():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -78,8 +84,10 @@ def test_duplicate_definition_format_with_non_filesystem_file_name():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -116,8 +124,10 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 1
     assert results[0].exception is None
@@ -154,8 +164,10 @@ def test_local_duplicate_dimension_point_format():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -182,8 +194,10 @@ def test_move_from_empty_position_format():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -325,8 +339,10 @@ def test_move_to_same_position_format():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -467,8 +483,10 @@ def test_not_project_root_error_message_for_project_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 1
     error = results[0].exception
@@ -498,8 +516,10 @@ def test_not_project_root_error_message_for_subroot(
     _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def"), max_workers=1
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"), max_workers=1)
+        .file_results
     )
     assert len(results) == 1
     diags = results[0].diagnostics
@@ -546,8 +566,10 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def"), max_workers=1
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"), max_workers=1)
+        .file_results
     )
     assert len(results) == 2
     assert results[0].file_path == PurePosixPath("test.def")
@@ -569,8 +591,10 @@ def test_source_file_not_found_error_message(
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("nonexistent.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("nonexistent.def"))
+        .file_results
     )
     assert len(results) == 1
     error = results[0].exception
@@ -589,8 +613,10 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 1
     error = results[0].exception
@@ -609,8 +635,10 @@ def test_config_validation_error_message(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 1
     error = results[0].exception

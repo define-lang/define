@@ -9,8 +9,10 @@ from define.compiler.validator import program_validator
 
 def test_multiverse_name_position():
     source = "define the potential position<_mv:my.domain.com:my_lib:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -25,8 +27,10 @@ def test_multiverse_name_position():
 
 def test_authority_domain_position():
     source = "define the potential position<mv:-example.com:my_lib:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -41,8 +45,10 @@ def test_authority_domain_position():
 
 def test_authority_path_position():
     source = "define the potential position<mv:my.domain.com/.hidden:my_lib:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -57,8 +63,10 @@ def test_authority_path_position():
 
 def test_universe_name_position():
     source = "define the potential position<mv:my.domain.com:_my_lib:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -73,8 +81,10 @@ def test_universe_name_position():
 
 def test_path_segment_position():
     source = "define the potential position<my.domain.com:my_lib:/2bad>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -99,8 +109,10 @@ def test_local_name_position():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 2

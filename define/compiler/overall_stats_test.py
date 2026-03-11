@@ -14,8 +14,8 @@ def _make_result(
     global_validation: int = 0,
     deferred_validation: int = 0,
     queue_wait: int = 0,
-) -> validation_result.ValidationResult:
-    return validation_result.ValidationResult(
+) -> validation_result.FileValidationResult:
+    return validation_result.FileValidationResult(
         exception=None,
         source=None,
         file_path=PurePosixPath(file_path),
@@ -118,7 +118,7 @@ class TestCalculateOverallStats:
 
 
 def _format(
-    results: list[validation_result.ValidationResult],
+    results: list[validation_result.FileValidationResult],
     config_loading_time_ns: int,
     mode: overall_stats.StatsMode,
 ) -> str:

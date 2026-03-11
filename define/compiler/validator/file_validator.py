@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
 from define.compiler import (
+    action_call_graph,
     ast,
     constants,
     diagnostics,
@@ -81,7 +82,7 @@ class FileValidator:
     """Stateless per-file validator.
 
     Processes one file: reads from disk, parses, transforms, and validates
-    local rules. Produces a ValidationResult with discovered files and
+    local rules. Produces a FileValidationResult with discovered files and
     reference edges for the coordinator to process.
     """
 
@@ -93,14 +94,14 @@ class FileValidator:
 
     def validate_file(
         self, context: FileValidationContext
-    ) -> validation_result.ValidationResult:
+    ) -> validation_result.FileValidationResult:
         """Validate a single file and return the result."""
         tracker = stats.ValidationStatsTracker()
 
         source, load_error = self._load_file(context.full_path)
         tracker.mark_file_loading_finished()
         if load_error is not None:
-            return validation_result.ValidationResult(
+            return validation_result.FileValidationResult(
                 exception=load_error,
                 source=None,
                 file_path=context.full_path,
@@ -118,7 +119,7 @@ class FileValidator:
     def validate_source(
         self,
         source: str,
-    ) -> validation_result.ValidationResult:
+    ) -> validation_result.FileValidationResult:
         """Validate source text without loading from the filesystem."""
         context = EmptyFileValidationContext()
         tracker = stats.ValidationStatsTracker()
@@ -134,7 +135,7 @@ class FileValidator:
         context: FileValidationContext,
         source: str,
         tracker: stats.ValidationStatsTracker,
-    ) -> validation_result.ValidationResult:
+    ) -> validation_result.FileValidationResult:
         """Parse, transform, and validate source text."""
         parse_result = self._parser.parse(source, file_path=context.full_path)
         tracker.mark_parse_finished()
@@ -143,7 +144,7 @@ class FileValidator:
             indentation_diags: list[diagnostics.Diagnostic] = (
                 parse_result.diagnostics if context.is_filesystem_context else []
             )
-            return validation_result.ValidationResult(
+            return validation_result.FileValidationResult(
                 exception=parse_result.exception,
                 source=source,
                 file_path=context.full_path,
@@ -163,7 +164,7 @@ class FileValidator:
         except lark_standalone.VisitError as e:
             if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
                 tracker.mark_transform_finished()
-                return validation_result.ValidationResult(
+                return validation_result.FileValidationResult(
                     exception=e.orig_exc,
                     source=source,
                     file_path=context.full_path,
@@ -189,7 +190,7 @@ class FileValidator:
                 seen_definitions[definition_name] = definition
         tracker.mark_file_validation_finished()
 
-        return validation_result.ValidationResult(
+        return validation_result.FileValidationResult(
             exception=None,
             source=source,
             file_path=context.full_path,
@@ -234,8 +235,8 @@ class DefinitionAstValidator:
     _reference_edges: list[validation_result.ReferenceEdge]
     _discovered_files: list[validation_result.DiscoveredFile]
     _deferred_chained_names: list[validation_result.DeferredChainElements]
-    _trigger_positions: list[validation_result.TriggerPositionInfo]
-    _action_body_effects: list[validation_result.ActionBodyEffect]
+    _trigger_positions: list[action_call_graph.TriggerPositionInfo]
+    _action_body_effects: list[action_call_graph.ActionBodyEffect]
     _deferred_move_constraint_checks: list[
         validation_result.DeferredMoveConstraintCheck
     ]
@@ -391,7 +392,7 @@ class DefinitionAstValidator:
             if not self._validate_full_chained_name(chain, scope):
                 continue
             self._trigger_positions.append(
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=self._definition.typed_name,
                     checked_position=chain,
                 )
@@ -495,7 +496,7 @@ class DefinitionAstValidator:
             tracker.create(position, qualities)
 
         self._action_body_effects.append(
-            validation_result.ActionBodyEffect(
+            action_call_graph.ActionBodyEffect(
                 enclosing_typed_name=self._definition.typed_name,
                 statement=stmt,
             )
@@ -606,7 +607,7 @@ class DefinitionAstValidator:
 
         if not tracker.has_unknown_state(stmt.to_position):
             self._action_body_effects.append(
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=self._definition.typed_name,
                     statement=stmt,
                 )
@@ -679,7 +680,7 @@ class DefinitionAstValidator:
                     to_position=to_chain.source_chained_name,
                 )
             )
-            # TODO: Need to export unknown-state positions in ValidationResult
+            # TODO: Need to export unknown-state positions in FileValidationResult
             # so we know they also can't be checked elsewhere.
             if tracker.get_local_position_reference(stmt.from_position, scope):
                 tracker.mark_unknown_state(stmt.from_position)

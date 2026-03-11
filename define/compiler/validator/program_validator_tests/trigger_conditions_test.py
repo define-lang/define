@@ -17,8 +17,10 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert diags == []
@@ -34,8 +36,10 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 1
@@ -74,8 +78,10 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 2
@@ -125,8 +131,10 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 4

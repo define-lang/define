@@ -215,8 +215,10 @@ def test_external_universe_no_project_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        _EXTERNAL_UNIVERSE_SOURCE
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -234,8 +236,10 @@ def test_external_universe_without_local_deps(
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        _EXTERNAL_UNIVERSE_SOURCE
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -254,8 +258,10 @@ def test_external_universe_not_in_local_deps(
         tmp_path, {"some.other.com:some_lib": "vendor/some_lib"}
     )
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        _EXTERNAL_UNIVERSE_SOURCE
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -282,8 +288,10 @@ def test_external_universe_invalid_local_deps(
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        _EXTERNAL_UNIVERSE_SOURCE
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -302,8 +310,10 @@ def test_external_universe_configured_but_no_sub_root_config(
     )
     (tmp_path / "vendor" / "other").mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        _EXTERNAL_UNIVERSE_SOURCE
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -472,8 +482,10 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 2

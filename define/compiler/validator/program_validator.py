@@ -63,7 +63,7 @@ class _FileWorkPool:
     """Manages a thread pool for parallel file validation."""
 
     _max_workers: int | None
-    _submitted: list[Future[validation_result.ValidationResult]]
+    _submitted: list[Future[validation_result.FileValidationResult]]
     _executor: ThreadPoolExecutor
     _fv: file_validator.FileValidator
 
@@ -88,7 +88,7 @@ class _FileWorkPool:
         """Submit a file for validation. Starts immediately on a worker thread."""
         submitted_at = time.perf_counter_ns()
 
-        def _validate() -> validation_result.ValidationResult:
+        def _validate() -> validation_result.FileValidationResult:
             started_at = time.perf_counter_ns()
             result = self._fv.validate_file(context)
             result.stats.queue_wait = started_at - submitted_at
@@ -97,7 +97,7 @@ class _FileWorkPool:
         future = self._executor.submit(_validate)
         self._submitted.append(future)
 
-    def wait_for_next(self) -> validation_result.ValidationResult:
+    def wait_for_next(self) -> validation_result.FileValidationResult:
         """Block until the next file completes."""
         for completed in as_completed(self._submitted):
             self._submitted.remove(completed)
@@ -119,15 +119,15 @@ class ProgramValidator:
     config_loading_time_ns stores program-level config loading time.
     """
 
-    _path_tracker: path_tracker.PathTracker[validation_result.ValidationResult]
+    _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
-    action_call_graph: action_call_graph.ActionCallGraph
+    _action_call_graph: action_call_graph.ActionCallGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
     _deferred_chain_validations: dict[str, list[_DeferredChainValidation]]
     _deferred_move_constraints: dict[str, list[_DeferredMoveConstraint]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
-    _definition_owners: dict[int, validation_result.ValidationResult]
-    config_loading_time_ns: int
+    _definition_owners: dict[int, validation_result.FileValidationResult]
+    _config_loading_time_ns: int
 
     def __init__(self):
         """Initialize coordinator state for one program validation."""
@@ -135,13 +135,13 @@ class ProgramValidator:
         # should be abstracted behind something larger.
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
-        self.action_call_graph = action_call_graph.ActionCallGraph()
+        self._action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._deferred_chain_validations = {}
         self._deferred_move_constraints = {}
         self._definition_results = {}
         self._definition_owners = {}
-        self.config_loading_time_ns = 0
+        self._config_loading_time_ns = 0
 
     @cached_property
     def _parser(self) -> parser.Parser:
@@ -154,13 +154,15 @@ class ProgramValidator:
         self,
         path: pathlib.PurePosixPath,
         max_workers: int | None = None,
-    ) -> list[validation_result.ValidationResult]:
+    ) -> validation_result.ProgramValidationResult:
         """Validate a program starting from the given file path."""
         root_prefix = constants.PROJECT_ROOT
         try:
             fqun, sub_root_mappings = self._load_root_config(root_prefix)
         except exceptions.ConfigError as e:
-            return [_make_config_error_result(root_prefix / path, root_prefix, e)]
+            return self._build_program_result(
+                [_make_config_error_result(root_prefix / path, root_prefix, e)]
+            )
 
         initial_context = file_validator.FileValidationContext(
             file_path=path,
@@ -174,28 +176,39 @@ class ProgramValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        return self._path_tracker.completed_results()
+        return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
         self,
         source: str,
         max_workers: int | None = None,
-    ) -> list[validation_result.ValidationResult]:
+    ) -> validation_result.ProgramValidationResult:
         """Validate a program from source text, loading config only when needed."""
         result = file_validator.FileValidator(self._parser).validate_source(source)
         if result.exception is not None:
-            return [result]
+            return self._build_program_result([result])
 
         self._path_tracker.mark_in_progress(result.file_path)
         self._path_tracker.set_result(result.file_path, result)
 
         if not self._resolve_non_filesystem_discovered_files(result):
-            return self._path_tracker.completed_results()
+            return self._build_program_result(self._path_tracker.completed_results())
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
             self._run_pool_loop(pool)
-        return self._path_tracker.completed_results()
+        return self._build_program_result(self._path_tracker.completed_results())
+
+    def _build_program_result(
+        self,
+        file_results: list[validation_result.FileValidationResult],
+    ) -> validation_result.ProgramValidationResult:
+        """Wrap file results into a ProgramValidationResult."""
+        return validation_result.ProgramValidationResult(
+            file_results=file_results,
+            action_call_graph=self._action_call_graph,
+            config_loading_time_ns=self._config_loading_time_ns,
+        )
 
     def _run_pool_loop(
         self,
@@ -209,7 +222,7 @@ class ProgramValidator:
 
     def _process_completed_result(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
         pool: _FileWorkPool,
     ):
         """Handle a completed file: check edges, submit discovered."""
@@ -228,7 +241,7 @@ class ProgramValidator:
 
     def _process_completed_definition(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
         definition_result: validation_result.DefinitionValidationResult,
     ):
         """Handle one completed definition from a file result."""
@@ -242,7 +255,9 @@ class ProgramValidator:
         if name in self._definition_results:
             return
         self._definition_results[name] = definition_result
-        self.action_call_graph.process_definition_result(definition_result)
+        self._action_call_graph.process_definition_result(
+            definition_result.trigger_positions, definition_result.action_body_effects
+        )
         self._validate_incoming_chained_names(definition_result)
         self._validate_incoming_move_constraints(definition_result)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
@@ -251,7 +266,7 @@ class ProgramValidator:
 
     def _submit_discovered_files(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
         definition_result: validation_result.DefinitionValidationResult,
         pool: _FileWorkPool,
     ):
@@ -292,7 +307,7 @@ class ProgramValidator:
 
     def _resolve_non_filesystem_discovered_files(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
     ) -> bool:
         """Load project config if necessary, and resolve FQUNs to sub-roots."""
         if self._first_discovered_file(result) is None:
@@ -313,7 +328,7 @@ class ProgramValidator:
 
     def _resolve_non_filesystem_discovered_files_with_config(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
         current_fqun: str,
         sub_root_mappings: Mapping[str, pathlib.PurePosixPath],
     ):
@@ -355,7 +370,7 @@ class ProgramValidator:
 
     def _load_config_in_non_filesystem_context(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
     ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]] | tuple[None, None]:
         """Load root config and map loading errors to non-filesystem diagnostics."""
         first_discovered = self._first_discovered_file(result)
@@ -484,7 +499,7 @@ class ProgramValidator:
         self,
         edge: validation_result.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
-        target_result: validation_result.ValidationResult,
+        target_result: validation_result.FileValidationResult,
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Validate a reference edge against a completed target file's result."""
@@ -501,7 +516,7 @@ class ProgramValidator:
         self,
         edge: validation_result.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
-        target_result: validation_result.ValidationResult,
+        target_result: validation_result.FileValidationResult,
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Apply reference-target validation checks without timing side effects."""
@@ -866,7 +881,7 @@ class ProgramValidator:
     def _check_existing_root_conflicts_for_first_subroot_load(
         self,
         discovered: validation_result.DiscoveredFile,
-        source_result: validation_result.ValidationResult,
+        source_result: validation_result.FileValidationResult,
     ):
         """Check SubRootAlreadyOccupied for discovered files entering a new sub-root."""
         if self._path_tracker.project_root_loaded(discovered.root_prefix):
@@ -888,7 +903,7 @@ class ProgramValidator:
 
     def _first_discovered_file(
         self,
-        result: validation_result.ValidationResult,
+        result: validation_result.FileValidationResult,
     ) -> validation_result.DiscoveredFile | None:
         """Return the first discovered file in definition iteration order."""
         for definition_result in result.definition_results:
@@ -922,7 +937,7 @@ class ProgramValidator:
         try:
             return self._do_load_root_config(root_prefix, expected_fqun)
         finally:
-            self.config_loading_time_ns += time.perf_counter_ns() - started_at
+            self._config_loading_time_ns += time.perf_counter_ns() - started_at
 
     def _do_load_root_config(
         self,
@@ -973,10 +988,10 @@ def _make_config_error_result(
     file_path: pathlib.PurePosixPath,
     root_prefix: pathlib.PurePosixPath,
     error: exceptions.ConfigError,
-) -> validation_result.ValidationResult:
-    """Create a ValidationResult for a config loading failure."""
+) -> validation_result.FileValidationResult:
+    """Create a FileValidationResult for a config loading failure."""
     tracker = stats.ValidationStatsTracker()
-    return validation_result.ValidationResult(
+    return validation_result.FileValidationResult(
         exception=error,
         source=None,
         file_path=file_path,

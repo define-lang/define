@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 from define.compiler import (
+    action_call_graph,
     ast,
     diagnostics,
     exceptions,
@@ -82,77 +83,6 @@ class DeferredChainElements:
         )
 
 
-@dataclass(frozen=True)
-class TriggerPositionInfo:
-    """An action's trigger condition, for cross-action matching."""
-
-    enclosing_typed_name: ast.GlobalTypedNameInDefinition
-    checked_position: ast.ChainedName
-
-    @cached_property
-    def checked_position_name_with_prefix(self) -> str:
-        """Return the full chained name of the position the trigger condition is checking, prefixed with the action name."""
-        fqun = self.enclosing_typed_name.name_content.fqun
-        chain_str = self.checked_position.canonical_chained_name(in_universe=fqun)
-        return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
-
-
-@dataclass(frozen=True)
-class ActionBodyEffect:
-    """A body statement that writes a DP into a position, for cross-action matching."""
-
-    enclosing_typed_name: ast.GlobalTypedNameInDefinition
-    statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
-
-    @property
-    def modified_position(self) -> ast.ChainedName:
-        """Return the position chain that this statement writes into."""
-        match self.statement:
-            case ast.CreateDimensionPointStatement():
-                return self.statement.position_reference.chain
-            case ast.MoveDimensionPointStatement():
-                return self.statement.to_position.chain
-
-    @cached_property
-    def _action_boundary(self) -> tuple[int, str] | None:
-        """Find the last action reference in the chain.
-
-        Returns (index, full_typed_name) or None if no action ref exists.
-        """
-        fqun = self.enclosing_typed_name.name_content.fqun
-        for i in range(len(self.modified_position.typed_names) - 1, -1, -1):
-            elem = self.modified_position.typed_names[i]
-            if elem.name_type == ast.NameType.ACTION:
-                return (i, elem.full_typed_name(in_universe=fqun))
-        return None
-
-    @cached_property
-    def target_action_name(self) -> str:
-        """Return the action whose position is being modified.
-
-        When the chain contains an explicit action reference, that action is
-        the target. Otherwise, the enclosing action is the implicit target
-        (the write is to a local position).
-        """
-        if self._action_boundary is not None:
-            return self._action_boundary[1]
-        return self.enclosing_typed_name.full_typed_name()
-
-    @cached_property
-    def affected_position_qualified_chained_name(self) -> str:
-        """Return the globally-unique position key of the position that was affected (got a dimension point)."""
-        fqun = self.enclosing_typed_name.name_content.fqun
-        boundary = self._action_boundary
-        if boundary is None:
-            chain_str = self.modified_position.canonical_chained_name(in_universe=fqun)
-            return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
-        idx = boundary[0]
-        return "::".join(
-            elem.full_typed_name(in_universe=fqun)
-            for elem in self.modified_position.typed_names[idx:]
-        )
-
-
 @dataclass
 class DeferredMoveConstraintCheck:
     """A move constraint check deferred because at least one position is a chained name.
@@ -178,8 +108,12 @@ class DefinitionValidationResult:
     reference_edges: list[ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
     deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
-    trigger_positions: list[TriggerPositionInfo] = field(default_factory=list)
-    action_body_effects: list[ActionBodyEffect] = field(default_factory=list)
+    trigger_positions: list[action_call_graph.TriggerPositionInfo] = field(
+        default_factory=list
+    )
+    action_body_effects: list[action_call_graph.ActionBodyEffect] = field(
+        default_factory=list
+    )
     deferred_move_constraint_checks: list[DeferredMoveConstraintCheck] = field(
         default_factory=list
     )
@@ -237,7 +171,7 @@ class DefinitionValidationResult:
 
 
 @dataclass
-class ValidationResult:
+class FileValidationResult:
     """Validation output for one source file."""
 
     exception: AnyValidationException | None
@@ -271,3 +205,22 @@ class ValidationResult:
             ]
             + list(self._post_definition_diagnostics)
         )
+
+
+@dataclass
+class ProgramValidationResult:
+    """Full result of validating a Define program."""
+
+    file_results: list[FileValidationResult]
+    action_call_graph: action_call_graph.ActionCallGraph
+    config_loading_time_ns: int
+
+    @property
+    def all_diagnostics(self) -> list[diagnostics.Diagnostic]:
+        """All diagnostics from all file results."""
+        return [d for r in self.file_results for d in r.diagnostics]
+
+    @property
+    def all_exceptions(self) -> list[AnyValidationException]:
+        """All exceptions from all file results."""
+        return [r.exception for r in self.file_results if r.exception is not None]

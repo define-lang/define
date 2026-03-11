@@ -9,8 +9,10 @@ from define.compiler.validator import program_validator
 
 def test_standard_without_authority_ok():
     source = "define the potential position<standard:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -22,8 +24,10 @@ def test_standard_without_authority_ok():
 
 def test_non_standard_without_authority_error():
     source = "define the potential position<my_universe:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -35,8 +39,10 @@ def test_non_standard_without_authority_error():
 
 def test_with_authority_ok():
     source = "define the potential position<my.domain.com:my_universe:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 0
@@ -44,8 +50,10 @@ def test_with_authority_ok():
 
 def test_case_insensitive_standard():
     source = "define the potential position<STANDARD:/path>.\n"
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 2

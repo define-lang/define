@@ -14,8 +14,10 @@ from define.compiler.validator import program_validator
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 1
     assert isinstance(results[0].exception, exceptions.NotProjectRootError)
@@ -30,8 +32,10 @@ def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.Monke
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 1
     assert isinstance(results[0].exception, exceptions.ConfigValidationError)

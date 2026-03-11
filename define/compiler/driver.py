@@ -32,7 +32,7 @@ class ExitCode(enum.IntEnum):
 class DriverResult:
     """Full result of a compilation run."""
 
-    results: list[validation_result.ValidationResult]
+    result: validation_result.ProgramValidationResult
     overall_stats: overall_stats.OverallStats
 
 
@@ -43,11 +43,11 @@ class Driver:
         """Compile a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
         pv = program_validator.ProgramValidator()
-        results = pv.validate_program(path=resolved_path)
+        program_result = pv.validate_program(path=resolved_path)
         return DriverResult(
-            results=results,
+            result=program_result,
             overall_stats=overall_stats.calculate_overall_stats(
-                results, pv.config_loading_time_ns
+                program_result.file_results, program_result.config_loading_time_ns
             ),
         )
 
@@ -104,7 +104,7 @@ class Driver:
             return ExitCode.ERROR
 
         had_errors = False
-        for result in driver_result.results:
+        for result in driver_result.result.file_results:
             if result.exception is not None:
                 print(str(result.exception), file=error_stream)
                 had_errors = True
@@ -122,7 +122,7 @@ class Driver:
         if stats_stream is not None:
             stats_output = overall_stats.format_stats(
                 driver_result.overall_stats,
-                driver_result.results,
+                driver_result.result.file_results,
                 stats_mode,
             )
             print(stats_output, file=stats_stream, end="")

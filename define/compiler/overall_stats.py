@@ -37,7 +37,7 @@ class OverallStats:
 
 
 def calculate_overall_stats(
-    results: Sequence[validation_result.ValidationResult],
+    results: Sequence[validation_result.FileValidationResult],
     config_loading_time_ns: int,
 ) -> OverallStats:
     """Sum per-file stats into program-level totals."""
@@ -118,7 +118,7 @@ def _format_breakdown_section(stats: OverallStats) -> str:
 
 
 def _format_per_file_section(
-    results: Sequence[validation_result.ValidationResult],
+    results: Sequence[validation_result.FileValidationResult],
 ) -> str:
     """Format the Per File section, sorted slowest first."""
     sorted_results = sorted(
@@ -146,7 +146,7 @@ def _format_per_file_section(
 
 def format_stats(
     stats: OverallStats,
-    results: Sequence[validation_result.ValidationResult],
+    results: Sequence[validation_result.FileValidationResult],
     mode: StatsMode,
 ) -> str:
     """Format timing stats for the given mode."""

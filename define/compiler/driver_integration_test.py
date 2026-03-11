@@ -413,7 +413,7 @@ def project_entrypoint(project_dir: Path) -> Path:
 
 
 def _all_diagnostics(
-    results: list[validation_result.ValidationResult],
+    results: list[validation_result.FileValidationResult],
 ) -> list[diagnostics.Diagnostic]:
     diags: list[diagnostics.Diagnostic] = []
     for result in results:
@@ -434,7 +434,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
 
-    results = driver.Driver().validate_program(def_file).results
+    results = driver.Driver().validate_program(def_file).result.file_results
     assert all(not result.diagnostics for result in results)
     assert all(result.exception is None for result in results)
 
@@ -452,7 +452,7 @@ def test_invalid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     expected_types = EXPECTED_FILE_DIAGNOSTICS.get(rel_key)
     if expected_types is not None:
-        results = d.validate_program(def_file).results
+        results = d.validate_program(def_file).result.file_results
         assert all(result.exception is None for result in results)
         all_diags = _all_diagnostics(results)
         assert [type(diag) for diag in all_diags] == expected_types, (
@@ -460,7 +460,7 @@ def test_invalid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
             f"got {[type(d).__name__ for d in all_diags]}"
         )
     else:
-        results = d.validate_program(def_file).results
+        results = d.validate_program(def_file).result.file_results
         assert not _all_diagnostics(results)
         exceptions_seen = [
             result.exception for result in results if result.exception is not None
@@ -481,7 +481,7 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
     d = driver.Driver()
 
     entry_point = project_entrypoint(project_dir)
-    results = d.validate_program(entry_point).results
+    results = d.validate_program(entry_point).result.file_results
     assert all(result.exception is None for result in results)
     assert all(not result.diagnostics for result in results)
 
@@ -499,7 +499,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     entry_point = project_entrypoint(project_dir)
     rel_key = project_dir.relative_to(PROJECTS_ROOT / "invalid").as_posix()
-    results = d.validate_program(entry_point).results
+    results = d.validate_program(entry_point).result.file_results
     assert all(result.exception is None for result in results)
     all_diags = _all_diagnostics(results)
     expected_types = EXPECTED_PROJECT_DIAGNOSTICS.get(rel_key)

@@ -12,8 +12,10 @@ def test_multiple_diagnostics_collected():
         "define the potential position<standard:/first>.\n"
         "define the potential position<standard:/second>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 2
@@ -32,8 +34,10 @@ def test_diagnostics_in_source_order():
         "define the potential position<standard:/first>.\n"
         "define the potential position<standard:/second>.\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)

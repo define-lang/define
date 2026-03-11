@@ -21,8 +21,10 @@ def test_duplicate_local_position():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
@@ -47,8 +49,10 @@ def test_different_local_positions():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert results[0].diagnostics == []
 
@@ -65,8 +69,10 @@ def test_undefined_position_not_tracked_for_duplicates():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     diags = results[0].diagnostics
     assert len(diags) == 2
@@ -101,8 +107,10 @@ def test_two_actions_same_local_position_create_no_error():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
@@ -130,8 +138,10 @@ def test_two_actions_same_name_one_duplicate_one_clean():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
@@ -172,8 +182,10 @@ def test_three_actions_dimension_point_isolation():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
@@ -192,8 +204,10 @@ def test_definition_block_position_enforced():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert len(results[0].diagnostics) == 1
     assert isinstance(

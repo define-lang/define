@@ -74,8 +74,12 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
 
 
 def test_non_filesystem_parse_error_returns_single_result():
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        "defin the potential position<my.domain.com:my_lib:/bad>.\n"
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(
+            "defin the potential position<my.domain.com:my_lib:/bad>.\n"
+        )
+        .file_results
     )
 
     assert len(results) == 1
@@ -143,7 +147,11 @@ def test_config_error_sets_later_phases_to_zero(
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(relative_path)
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(relative_path)
+        .file_results
+    )
     assert len(results) == 1
     result = results[0]
 
@@ -167,7 +175,11 @@ def test_file_not_found_sets_later_phases_to_zero(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     relative_path = PurePosixPath("nonexistent.def")
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(relative_path)
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(relative_path)
+        .file_results
+    )
     assert len(results) == 1
     result = results[0]
 
@@ -196,9 +208,9 @@ def test_config_loading_time_ns_tracks_successful_root_load(
     monkeypatch.chdir(tmp_path)
 
     validator = program_validator.ProgramValidator()
-    validator.validate_program(relative_path)
+    program_result = validator.validate_program(relative_path)
 
-    assert validator.config_loading_time_ns > 0
+    assert program_result.config_loading_time_ns > 0
 
 
 def test_config_loading_time_ns_tracks_failing_root_load(
@@ -213,6 +225,6 @@ def test_config_loading_time_ns_tracks_failing_root_load(
     monkeypatch.chdir(tmp_path)
 
     validator = program_validator.ProgramValidator()
-    validator.validate_program(relative_path)
+    program_result = validator.validate_program(relative_path)
 
-    assert validator.config_loading_time_ns > 0
+    assert program_result.config_loading_time_ns > 0

@@ -44,7 +44,7 @@ class PathTracker[T]:
     - Tracking paths that were referenced but could not be loaded.
     - Mapping sub_root paths to universe info for prefix-based lookups.
 
-    Type parameter T is the result type stored per path (e.g. ValidationResult).
+    Type parameter T is the result type stored per path (e.g. FileValidationResult).
     """
 
     def __init__(self):

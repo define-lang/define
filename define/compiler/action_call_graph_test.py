@@ -89,8 +89,8 @@ def _make_move_stmt(
 
 
 def _make_result(
-    trigger_positions: list[validation_result.TriggerPositionInfo] | None = None,
-    action_body_effects: list[validation_result.ActionBodyEffect] | None = None,
+    trigger_positions: list[action_call_graph.TriggerPositionInfo] | None = None,
+    action_body_effects: list[action_call_graph.ActionBodyEffect] | None = None,
 ) -> validation_result.DefinitionValidationResult:
     return validation_result.DefinitionValidationResult(
         definition=ast.PositionDefinition(
@@ -118,7 +118,7 @@ class TestActionCallGraph:
 
         result_a = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("my_pos"),
                 )
@@ -126,15 +126,19 @@ class TestActionCallGraph:
         )
         result_b = _make_result(
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt,
                 )
             ],
         )
 
-        graph.process_definition_result(result_a)
-        graph.process_definition_result(result_b)
+        graph.process_definition_result(
+            result_a.trigger_positions, result_a.action_body_effects
+        )
+        graph.process_definition_result(
+            result_b.trigger_positions, result_b.action_body_effects
+        )
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -150,20 +154,22 @@ class TestActionCallGraph:
 
         result = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=typed_name,
                     checked_position=chain,
                 )
             ],
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=typed_name,
                     statement=stmt,
                 )
             ],
         )
 
-        graph.process_definition_result(result)
+        graph.process_definition_result(
+            result.trigger_positions, result.action_body_effects
+        )
         edges = graph.all_edges()
         assert len(edges) == 1
         assert edges[0].source_action == "action<d:u:/act_a>"
@@ -177,7 +183,7 @@ class TestActionCallGraph:
         # Register effect first, before trigger.
         result_b = _make_result(
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt,
                 )
@@ -185,17 +191,21 @@ class TestActionCallGraph:
         )
         result_a = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("my_pos"),
                 )
             ],
         )
 
-        graph.process_definition_result(result_b)
+        graph.process_definition_result(
+            result_b.trigger_positions, result_b.action_body_effects
+        )
         assert graph.all_edges() == []
 
-        graph.process_definition_result(result_a)
+        graph.process_definition_result(
+            result_a.trigger_positions, result_a.action_body_effects
+        )
         edges = graph.all_edges()
         assert len(edges) == 1
         assert edges[0].source_action == "action<d:u:/act_b>"
@@ -208,20 +218,22 @@ class TestActionCallGraph:
 
         result = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("my_pos"),
                 )
             ],
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt,
                 )
             ],
         )
 
-        graph.process_definition_result(result)
+        graph.process_definition_result(
+            result.trigger_positions, result.action_body_effects
+        )
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -235,11 +247,11 @@ class TestActionCallGraph:
 
         result_triggers = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("shared"),
                 ),
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_c"),
                     checked_position=_local_chain("shared"),
                 ),
@@ -247,15 +259,19 @@ class TestActionCallGraph:
         )
         result_effect = _make_result(
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt,
                 )
             ],
         )
 
-        graph.process_definition_result(result_triggers)
-        graph.process_definition_result(result_effect)
+        graph.process_definition_result(
+            result_triggers.trigger_positions, result_triggers.action_body_effects
+        )
+        graph.process_definition_result(
+            result_effect.trigger_positions, result_effect.action_body_effects
+        )
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -270,7 +286,7 @@ class TestActionCallGraph:
 
         result_a = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("my_pos"),
                 )
@@ -278,19 +294,23 @@ class TestActionCallGraph:
         )
         result_effects = _make_result(
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt_b,
                 ),
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_c"),
                     statement=stmt_c,
                 ),
             ],
         )
 
-        graph.process_definition_result(result_a)
-        graph.process_definition_result(result_effects)
+        graph.process_definition_result(
+            result_a.trigger_positions, result_a.action_body_effects
+        )
+        graph.process_definition_result(
+            result_effects.trigger_positions, result_effects.action_body_effects
+        )
 
         all_edges = graph.all_edges()
         assert len(all_edges) == 2
@@ -328,7 +348,7 @@ class TestActionCallGraph:
 
         result_a = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("my_pos"),
                 )
@@ -336,15 +356,19 @@ class TestActionCallGraph:
         )
         result_b = _make_result(
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt,
                 )
             ],
         )
 
-        graph.process_definition_result(result_a)
-        graph.process_definition_result(result_b)
+        graph.process_definition_result(
+            result_a.trigger_positions, result_a.action_body_effects
+        )
+        graph.process_definition_result(
+            result_b.trigger_positions, result_b.action_body_effects
+        )
 
         edges = graph.all_edges()
         assert len(edges) == 1
@@ -358,18 +382,20 @@ class TestActionCallGraph:
 
         result = _make_result(
             trigger_positions=[
-                validation_result.TriggerPositionInfo(
+                action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=_action_typed_name("/act_a"),
                     checked_position=_local_chain("trigger_pos"),
                 )
             ],
             action_body_effects=[
-                validation_result.ActionBodyEffect(
+                action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=_action_typed_name("/act_b"),
                     statement=stmt,
                 )
             ],
         )
 
-        graph.process_definition_result(result)
+        graph.process_definition_result(
+            result.trigger_positions, result.action_body_effects
+        )
         assert graph.all_edges() == []

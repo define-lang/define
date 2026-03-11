@@ -46,7 +46,7 @@ def _parse_program(source: str, lark_parser: parser.Parser) -> ast.Program:
 
 
 def _reference_edges(
-    result: validation_result.ValidationResult,
+    result: validation_result.FileValidationResult,
 ) -> list[validation_result.ReferenceEdge]:
     return [
         edge
@@ -56,7 +56,7 @@ def _reference_edges(
 
 
 def _discovered_files(
-    result: validation_result.ValidationResult,
+    result: validation_result.FileValidationResult,
 ) -> list[validation_result.DiscoveredFile]:
     return [
         discovered

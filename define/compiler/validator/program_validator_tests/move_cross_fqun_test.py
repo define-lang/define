@@ -60,8 +60,10 @@ def test_cross_fqun_local_to_local_satisfies(
             f"}}\n"
         ),
     )
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
@@ -106,8 +108,10 @@ def test_cross_fqun_local_to_local_violates(
             f"}}\n"
         ),
     )
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
@@ -162,8 +166,10 @@ def test_cross_fqun_local_to_chained_satisfies(
             f"}}\n"
         ),
     )
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
@@ -210,8 +216,10 @@ def test_cross_fqun_local_to_chained_violates(
             f"}}\n"
         ),
     )
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
@@ -266,8 +274,10 @@ def test_cross_fqun_chained_to_local_satisfies(
             f"}}\n"
         ),
     )
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert all_diags == []
@@ -312,8 +322,10 @@ def test_cross_fqun_chained_to_local_violates(
             f"}}\n"
         ),
     )
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1

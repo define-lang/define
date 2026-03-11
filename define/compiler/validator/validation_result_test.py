@@ -16,22 +16,26 @@ def _validate_single_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     source: str,
-) -> validation_result.ValidationResult:
+) -> validation_result.FileValidationResult:
     relative_path = PurePosixPath("test.def")
     (tmp_path / relative_path).write_text(source, encoding="utf-8")
     test_helpers.write_project_config(tmp_path, _FQUN)
     monkeypatch.chdir(tmp_path)
-    results = program_validator.ProgramValidator().validate_program(relative_path)
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(relative_path)
+        .file_results
+    )
     assert len(results) == 1
     return results[0]
 
 
-def _parse(source: str) -> validation_result.ValidationResult:
+def _parse(source: str) -> validation_result.FileValidationResult:
     parse_result = parser.Parser().parse(source)
     assert parse_result.diagnostics == []
     assert parse_result.tree is not None
     program = transformer.DefineTransformer().transform(parse_result.tree)
-    return validation_result.ValidationResult(
+    return validation_result.FileValidationResult(
         exception=None,
         source=source,
         file_path=PurePosixPath("test.def"),
@@ -46,13 +50,13 @@ def _parse(source: str) -> validation_result.ValidationResult:
 
 
 def _first_definition(
-    result: validation_result.ValidationResult,
+    result: validation_result.FileValidationResult,
 ) -> ast.QualityDefinition:
     return result.definition_results[0].definition
 
 
 def _first_definition_result(
-    result: validation_result.ValidationResult,
+    result: validation_result.FileValidationResult,
 ) -> validation_result.DefinitionValidationResult:
     return result.definition_results[0]
 

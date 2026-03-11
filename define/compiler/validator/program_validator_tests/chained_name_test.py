@@ -23,8 +23,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -57,8 +59,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 6
@@ -103,8 +107,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -139,8 +145,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -171,8 +179,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -203,8 +213,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -273,8 +285,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 5
@@ -370,8 +384,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -540,8 +556,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 5
@@ -586,8 +604,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -629,8 +649,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 5
@@ -702,8 +724,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 4
@@ -1040,8 +1064,10 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 5
@@ -1429,8 +1455,10 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 1
@@ -1452,8 +1480,10 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 3
@@ -1475,8 +1505,10 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 2
@@ -1494,8 +1526,10 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = program_validator.ProgramValidator().validate_program_non_filesystem(
-            source
+        results = (
+            program_validator.ProgramValidator()
+            .validate_program_non_filesystem(source)
+            .file_results
         )
         diags = results[0].diagnostics
         assert len(diags) == 2

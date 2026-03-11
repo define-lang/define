@@ -53,8 +53,10 @@ def test_sub_root_redeclares_parent_fqun(
     )
     monkeypatch.chdir(tmp_path)
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def"), max_workers=1
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"), max_workers=1)
+        .file_results
     )
     all_diags = [d for r in results for d in r.diagnostics]
     assert len(all_diags) == 1
@@ -567,8 +569,10 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         encoding="utf-8",
     )
 
-    results = program_validator.ProgramValidator().validate_program(
-        PurePosixPath("test.def")
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program(PurePosixPath("test.def"))
+        .file_results
     )
     assert len(results) == 3
     assert all(r.exception is None for r in results)

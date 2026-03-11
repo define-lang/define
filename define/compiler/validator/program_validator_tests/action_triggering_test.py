@@ -283,9 +283,14 @@ class TestActionTriggering:
             },
         )
         assert result.all_diagnostics == []
-        test_result = result.result_for("test.def")
-        assert len(test_result.definition_results[0].trigger_positions) == 1
-        tp = test_result.definition_results[0].trigger_positions[0]
+        all_trigger_positions = [
+            tp
+            for r in result.results
+            for dr in r.definition_results
+            for tp in dr.trigger_positions
+        ]
+        assert len(all_trigger_positions) == 1
+        tp = all_trigger_positions[0]
         assert (
             tp.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
@@ -325,21 +330,37 @@ class TestActionTriggering:
             },
         )
         assert result.all_diagnostics == []
-        test_result = result.result_for("test.def")
-        assert len(test_result.definition_results[0].action_body_effects) == 1
-        effect = test_result.definition_results[0].action_body_effects[0]
-        assert (
-            effect.enclosing_typed_name.full_typed_name()
+        all_body_effects = [
+            effect
+            for r in result.results
+            for dr in r.definition_results
+            for effect in dr.action_body_effects
+        ]
+        assert len(all_body_effects) == 2
+        effect_names = {
+            e.enclosing_typed_name.full_typed_name() for e in all_body_effects
+        }
+        assert effect_names == {
+            "action<my.domain.com:my_lib:/test>",
+            "action<my.domain.com:my_lib:/other>",
+        }
+        test_effect = next(
+            e
+            for e in all_body_effects
+            if e.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
         )
-        assert len(effect.modified_position.typed_names) == 2
-        fqun = effect.enclosing_typed_name.name_content.fqun
+        assert len(test_effect.modified_position.typed_names) == 2
+        fqun = test_effect.enclosing_typed_name.name_content.fqun
         assert (
-            effect.modified_position.typed_names[0].full_typed_name(in_universe=fqun)
+            test_effect.modified_position.typed_names[0].full_typed_name(
+                in_universe=fqun
+            )
             == "action<my.domain.com:my_lib:/other>"
         )
         assert (
-            effect.modified_position.typed_names[1].full_typed_name() == "position<pos>"
+            test_effect.modified_position.typed_names[1].full_typed_name()
+            == "position<pos>"
         )
 
     def test_local_prefix_before_action_trigger(
@@ -400,7 +421,6 @@ class TestActionTriggering:
                 ),
             },
         )
-        test_result = result.result_for("test.def")
         assert len(result.all_diagnostics) == 1
         assert isinstance(
             result.all_diagnostics[0], diagnostics.MoveFromEmptyPositionDiagnostic
@@ -408,7 +428,13 @@ class TestActionTriggering:
         assert result.all_diagnostics[0].position_name == "position<a>"
         assert result.all_diagnostics[0].position.line == 8
         assert result.all_diagnostics[0].position.column == 37
-        assert test_result.definition_results[0].action_body_effects == []
+        all_body_effects = [
+            effect
+            for r in result.results
+            for dr in r.definition_results
+            for effect in dr.action_body_effects
+        ]
+        assert all_body_effects == []
 
     def test_no_body_effect_when_move_target_has_unknown_state(
         self,
@@ -431,7 +457,6 @@ class TestActionTriggering:
                 ),
             },
         )
-        test_result = result.result_for("test.def")
         assert len(result.all_diagnostics) == 1
         assert isinstance(
             result.all_diagnostics[0], diagnostics.MoveFromEmptyPositionDiagnostic
@@ -439,7 +464,13 @@ class TestActionTriggering:
         assert result.all_diagnostics[0].position_name == "position<a>"
         assert result.all_diagnostics[0].position.line == 8
         assert result.all_diagnostics[0].position.column == 37
-        assert test_result.definition_results[0].action_body_effects == []
+        all_body_effects = [
+            effect
+            for r in result.results
+            for dr in r.definition_results
+            for effect in dr.action_body_effects
+        ]
+        assert all_body_effects == []
 
 
 _OTHER_ACTION = (

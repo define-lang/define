@@ -604,8 +604,10 @@ def test_move_from_local_local_chain():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert len(results[0].diagnostics) == 2
     assert isinstance(
@@ -632,8 +634,10 @@ def test_move_from_local_local_local_chain():
         "    }\n"
         "}\n"
     )
-    results = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    results = (
+        program_validator.ProgramValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
     )
     assert len(results[0].diagnostics) == 3
     assert isinstance(
