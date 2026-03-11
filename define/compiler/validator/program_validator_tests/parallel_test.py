@@ -1,9 +1,10 @@
+# pyright: reportUnusedCallResult=false
 """Parallel validation tests.
 
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-import time
+import threading
 from pathlib import PurePosixPath
 from unittest import mock
 
@@ -221,23 +222,31 @@ def test_wrong_type_detected_without_deferral(
 def test_reference_edges_resolve_by_file_completion_order(
     validate_project: ValidateProject,
 ):
+    # With max_workers=2, test.def and lib/target.def run concurrently.
+    # We force lib/target.def to complete after test.def so that
+    # test.def's pending reference edges get resolved by the file
+    # completion callback rather than being available immediately.
     universe = "mv:define-lang.org:test_parent"
 
     original_validate_file = file_validator.FileValidator.validate_file
+    test_completed = threading.Event()
 
-    def delayed_validate_file(
+    def ordered_validate_file(
         self: file_validator.FileValidator,
         context: file_validator.FileValidationContext,
     ):
         if context.full_path == PurePosixPath("target.def"):
-            time.sleep(0.05)
-        return original_validate_file(self, context)
+            test_completed.wait()
+        result = original_validate_file(self, context)
+        if context.full_path == PurePosixPath("test.def"):
+            test_completed.set()
+        return result
 
     with mock.patch.object(
         file_validator.FileValidator,
         "validate_file",
         autospec=True,
-        side_effect=delayed_validate_file,
+        side_effect=ordered_validate_file,
     ):
         result = validate_project(
             {
