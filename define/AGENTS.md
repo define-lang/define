@@ -25,25 +25,43 @@ tests of a programming language called "Define."
 
 ```mermaid
 flowchart LR
-    Grammar["grammar.lark"] --> Parser["parser.py"]
-    ParseErrors["parser_exceptions.py"] --> Parser
-    ParserErrorClassification["parser_error_classification.py"] --> Parser
-    Parser --> Transformer["transformer.py"]
-    AST["ast.py"] --> Transformer
-    Transformer --> FileValidator["validator/file_validator.py"]
-    NameValidators["validator/name_validators.py"] --> FileValidator
-    Stats["validator/stats.py"] --> FileValidator
-    ValidationResult["validator/validation_result.py"] --> FileValidator
-    FileValidator --> ProgramValidator["validator/program_validator.py"]
-    PathTracker["validator/path_tracker.py"] --> ProgramValidator
-    ReferenceGraph["validator/reference_graph.py"] --> ProgramValidator
-    ProgramValidator --> Driver["driver.py"]
+    subgraph Parsing
+        Grammar["grammar.lark"] --> Parser["parser.py"]
+        ParseErrors["parser_exceptions.py"] --> Parser
+        ErrorClassification["parser_error_classification.py"] --> Parser
+        Parser --> Transformer["transformer.py"]
+        AST["ast.py"] --> Transformer
+        NameParser["name_parser.py"] --> Transformer
+    end
 
-    Config["config.py"] --> ProgramValidator
-    Diagnostics["diagnostics.py"] --> Driver
-    Exceptions["exceptions.py"] --> Driver
+    subgraph Validation
+        Transformer --> FileValidator["validator/file_validator.py"]
+        NameValidators["validator/name_validators.py"] --> FileValidator
+        ScopeTracker["validator/scope_tracker.py"] --> FileValidator
+        DPTracker["validator/dimension_point_tracker.py"] --> FileValidator
+        IndentValidator["indentation_validator.py"] --> FileValidator
+        FileValidator --> ProgramValidator["validator/program_validator.py"]
+        PathTracker["validator/path_tracker.py"] --> ProgramValidator
+        ReferenceGraph["validator/reference_graph.py"] --> ProgramValidator
+        ActionCallGraph["action_call_graph.py"] --> ProgramValidator
+        Config["config.py"] --> ProgramValidator
+    end
 
-    Driver --> Main["main.py"]
+    subgraph CodeGen["Code Generation"]
+        ProgramValidator --> CodeGenerator["codegen/generator.py"]
+        CodeGenerator --> PythonGenerator["codegen/literal/python/generator.py"]
+        Template["codegen/literal/templates/python/main.txt"] --> PythonGenerator
+    end
+
+    subgraph CLI
+        CodeGenerator --> Driver["driver.py"]
+        ProgramValidator --> Driver
+        Diagnostics["diagnostics.py"] --> Driver
+        Exceptions["exceptions.py"] --> Driver
+        Driver --> Main["main.py"]
+    end
+
+    PythonGenerator -.->|generated code imports| Runtime["runtime/literal.py"]
 ```
 
 ## Grammar
@@ -95,6 +113,14 @@ flowchart LR
 - When a fuzz test failure reveals a bug, add a targeted unit test for the
   affected component (parser, transformer, or validator) that reproduces the
   specific issue before fixing it.
+
+## Code Generation
+
+- Generator code is in `compiler/codegen/`, with the Python-specific generator
+  in `compiler/codegen/literal/python/generator.py`.
+- Integration test cases for the generator live in `compiler/codegen/testdata/`.
+- After changing the code generator or any testdata, regenerate the expected
+  outputs: `bazelisk run --noshow_progress //tools:regenerate_codegen_testdata`
 
 ## Implementation Sequence
 
