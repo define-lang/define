@@ -1,0 +1,40 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "generator",
+    srcs = ["generator.py"],
+    data = ["//define/compiler/codegen/literal/templates"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "python",
+    srcs = ["__init__.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
+# package, you must also add it to the deps list below.
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":generator",
+        ":python",
+    ],
+)

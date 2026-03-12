@@ -1,5 +1,5 @@
 # pyright: reportUnusedCallResult=false
-"""Tests for the code generator."""
+"""Tests for the top-level code generator."""
 
 from define.compiler import diagnostics
 from define.compiler.codegen import generator
@@ -27,8 +27,9 @@ class TestCodeGenerator:
             {"test.def": "define the potential action<my.domain.com:my_lib:/test>.\n"},
         )
 
-        generator.CodeGenerator().generate(program_result)
+        result = generator.CodeGenerator().generate(program_result)
 
+        assert result is None
         file_diagnostics = program_result.file_results[0].diagnostics
         assert len(file_diagnostics) == 1
         assert isinstance(
@@ -42,11 +43,11 @@ class TestCodeGenerator:
     ):
         program_result = validate_project(
             {
-                "test.def": "define the potential position<my.domain.com:my_lib:/test>.\n",
-                "act.def": "define the potential action<my.domain.com:my_lib:/act>.\n",
+                "test.def": "define the potential position<my.domain.com:my_lib:/test>.\n"
+                + "define the potential action<my.domain.com:my_lib:/test>.\n",
             },
         )
 
-        generator.CodeGenerator().generate(program_result)
-
-        assert program_result.file_results[0].diagnostics == []
+        assert not program_result.has_errors()
+        result = generator.CodeGenerator().generate(program_result)
+        assert result is not None

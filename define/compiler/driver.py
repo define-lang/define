@@ -42,6 +42,7 @@ class DriverResult:
 
     result: validation_result.ProgramValidationResult
     overall_stats: overall_stats.OverallStats
+    generated_code: str | None = None
 
 
 class Driver:
@@ -65,7 +66,7 @@ class Driver:
         if driver_result.result.has_errors():
             return driver_result
         codegen = generator.CodeGenerator()
-        codegen.generate(driver_result.result)
+        driver_result.generated_code = codegen.generate(driver_result.result)
         return driver_result
 
     @staticmethod
@@ -100,6 +101,7 @@ class Driver:
         path: Path,
         mode: DriverMode = DriverMode.VALIDATE,
         error_stream: TextIO | None = None,
+        code_output_stream: TextIO | None = None,
         stats_stream: TextIO | None = None,
         stats_mode: overall_stats.StatsMode = overall_stats.StatsMode.OVERALL,
     ) -> ExitCode:
@@ -110,12 +112,16 @@ class Driver:
             mode: Whether to only validate or also compile.
             error_stream: Where to write error messages (syntax errors, diagnostics).
                 Defaults to sys.stderr.
+            code_output_stream: Where to write generated code in compile mode.
+                Defaults to sys.stdout.
             stats_stream: Where to write timing statistics.
                 If None, no stats are printed.
             stats_mode: Level of detail for stats output.
         """
         if error_stream is None:
             error_stream = sys.stderr
+        if code_output_stream is None:
+            code_output_stream = sys.stdout
         try:
             if mode == DriverMode.COMPILE:
                 driver_result = self.compile_program(path)
@@ -140,6 +146,9 @@ class Driver:
                 for diagnostic in result.diagnostics:
                     print(diagnostic.format(source_lines, file_name), file=error_stream)
                 had_errors = True
+
+        if not had_errors and driver_result.generated_code is not None:
+            print(driver_result.generated_code, file=code_output_stream, end="")
 
         if stats_stream is not None:
             stats_output = overall_stats.format_stats(

@@ -1,0 +1,24 @@
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+filegroup(
+    name = "testdata_files",
+    srcs = glob(["**/*"]),
+    visibility = ["//define/compiler/codegen:__pkg__"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["**/*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    srcs = glob(["**/*.py"]),
+    deps = ["//define/runtime:literal"],
+)

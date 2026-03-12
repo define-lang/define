@@ -67,6 +67,13 @@ known-first-party = ["define", "defcl", "tools"]
 "define/compiler/ast.py" = [
     "A005", # Module intentionally named ast for AST definitions.
 ]
+"**/codegen/testdata/**/*.py" = [
+    "D100", # Generated code doesn't need module docstrings.
+    "D101", # Generated code doesn't need class docstrings.
+    "D102", # Generated code doesn't need method docstrings.
+    "D103", # Generated code doesn't need function docstrings.
+    "D107", # Generated code doesn't need __init__ docstrings.
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"

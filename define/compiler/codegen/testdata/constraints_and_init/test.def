@@ -1,0 +1,8 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain dimension points where {
+        it has the action</start>.
+    }
+    after it is assigned {
+        create a dimension point in position</test>.
+    }
+}
