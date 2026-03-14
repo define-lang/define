@@ -14,12 +14,14 @@ py_library(
 py_library(
     name = "generator",
     srcs = ["generator.py"],
-    data = ["//define/compiler/codegen/literal/templates"],
+    data = glob(["*.j2"]),
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":action_statements",
         ":position_definition",
         "//define/compiler:ast",
         "//define/compiler/validator:validation_result",
+        "@pypi//jinja2",
     ],
 )
 

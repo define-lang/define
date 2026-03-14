@@ -1,4 +1,4 @@
-"""Python code generator for position definitions."""
+"""Python code generator data for position definitions."""
 
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
@@ -17,58 +17,42 @@ def _path_to_class_name(path: PurePosixPath) -> str:
 
 
 @dataclass
-class PositionDefinitionResult:
-    """Result of generating a position definition class."""
+class PositionDefinitionContext:
+    """Template context for rendering a position definition class."""
 
     class_name: str
-    class_body: str
-    typing_imports: list[str] = field(default_factory=list)
+    typed_name: str
+    has_init: bool
+    statements: list[action_statements.StatementData] = field(default_factory=list)
 
 
 class PositionDefinitionGenerator:
-    """Generates Python code for a position definition class."""
+    """Extracts template context from a position definition."""
 
     _definition: ast.PositionDefinition
 
     def __init__(self, definition: ast.PositionDefinition):
-        """Initialize with the position definition to generate code for."""
+        """Initialize with the position definition to extract data from."""
         self._definition = definition
 
-    def generate(self) -> PositionDefinitionResult:
-        """Generate the position definition class body."""
-        typing_imports = ["ClassVar"]
-
-        class_vars = self._generate_class_vars()
-        after_assigned = self._generate_after_assigned()
-        if after_assigned:
-            typing_imports.append("override")
+    def generate(self) -> PositionDefinitionContext:
+        """Generate template context for the position definition."""
+        has_init = self._definition.initialization is not None
+        statements: list[action_statements.StatementData] = []
+        if self._definition.initialization is not None:
+            block_gen = action_statements.ActionStatementsBlockGenerator(
+                self._definition.initialization,
+                self._definition.typed_name,
+            )
+            statements = block_gen.generate()
 
         class_name = _path_to_class_name(
             self._definition.typed_name.name_content.path.relative_path
         )
 
-        return PositionDefinitionResult(
+        return PositionDefinitionContext(
             class_name=class_name,
-            class_body=class_vars + after_assigned,
-            typing_imports=typing_imports,
+            typed_name=self._definition.typed_name.full_typed_name(),
+            has_init=has_init,
+            statements=statements,
         )
-
-    def _generate_class_vars(self) -> str:
-        typed_name = self._definition.typed_name.full_typed_name()
-        return f'    _typed_name: ClassVar[str] = "{typed_name}"'
-
-    def _generate_after_assigned(self) -> str:
-        if self._definition.initialization is None:
-            return ""
-        block_gen = action_statements.ActionStatementsBlockGenerator(
-            self._definition.initialization,
-            self._definition.typed_name,
-        )
-        lines: list[str] = [
-            "",
-            "",
-            "    @override",
-            "    def after_assigned(self):",
-            block_gen.generate(),
-        ]
-        return "\n".join(lines)

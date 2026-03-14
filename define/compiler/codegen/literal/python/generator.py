@@ -3,7 +3,10 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from jinja2 import Environment, FileSystemLoader
+
 from define.compiler.codegen.literal.python import (
+    action_statements,
     position_definition,
 )
 from define.compiler.validator import validation_result
@@ -11,8 +14,14 @@ from define.compiler.validator import validation_result
 if TYPE_CHECKING:
     from define.compiler import ast
 
-_TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "python"
-_MAIN_TEMPLATE = (_TEMPLATES_DIR / "main.txt").read_text()
+_TEMPLATES_DIR = Path(__file__).parent
+_ENV = Environment(  # noqa: S701 - generating Python code, not HTML
+    loader=FileSystemLoader(str(_TEMPLATES_DIR)),
+    trim_blocks=True,
+    lstrip_blocks=True,
+    keep_trailing_newline=True,
+)
+_MAIN_TEMPLATE = _ENV.get_template("main.j2")
 
 
 class PythonLiteralCodeGenerator:
@@ -23,12 +32,12 @@ class PythonLiteralCodeGenerator:
     ) -> str:
         """Generate Python code for the entry point position."""
         definition = cast("ast.PositionDefinition", entry_point_result.definition)
-        result = position_definition.PositionDefinitionGenerator(definition).generate()
+        context = position_definition.PositionDefinitionGenerator(definition).generate()
 
-        typing_import = f"\nfrom typing import {', '.join(result.typing_imports)}\n"
-
-        return _MAIN_TEMPLATE.format(
-            typing_import=typing_import,
-            class_name=result.class_name,
-            class_body=result.class_body,
+        return _MAIN_TEMPLATE.render(
+            class_name=context.class_name,
+            typed_name=context.typed_name,
+            has_init=context.has_init,
+            statements=context.statements,
+            StatementKind=action_statements.StatementKind,
         )

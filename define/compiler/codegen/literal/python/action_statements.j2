@@ -1,0 +1,17 @@
+{% macro pos(expr) -%}
+{{ expr.start }}
+{%- for e in expr.chain_elements -%}
+.dimension_point.get_position(
+            "{{ e }}"
+        )
+{%- endfor %}
+{%- endmacro %}
+{% for stmt in statements %}
+{% if stmt.kind == StatementKind.LOCAL_POSITION %}
+        {{ stmt.local_name }} = literal.LocalPosition("{{ stmt.local_name }}")
+{% elif stmt.kind == StatementKind.CREATE_DIMENSION_POINT %}
+        {{ pos(stmt.position) }}.create_dimension_point()
+{% elif stmt.kind == StatementKind.MOVE_DIMENSION_POINT %}
+        {{ pos(stmt.position) }}.move_dimension_point_to({{ pos(stmt.to_position) }})
+{% endif %}
+{% endfor %}

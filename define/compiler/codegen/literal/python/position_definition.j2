@@ -1,0 +1,8 @@
+class {{ class_name }}(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "{{ typed_name }}"
+{% if has_init %}
+
+    @override
+    def after_assigned(self):
+{% include "action_statements.j2" %}
+{% endif %}

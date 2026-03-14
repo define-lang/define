@@ -1,5 +1,0 @@
-filegroup(
-    name = "templates",
-    srcs = glob(["**/*.txt"]),
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-)

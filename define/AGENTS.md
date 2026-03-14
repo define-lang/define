@@ -50,7 +50,7 @@ flowchart LR
     subgraph CodeGen["Code Generation"]
         ProgramValidator --> CodeGenerator["codegen/generator.py"]
         CodeGenerator --> PythonGenerator["codegen/literal/python/generator.py"]
-        Template["codegen/literal/templates/python/main.txt"] --> PythonGenerator
+        Template["codegen/literal/python/*.j2"] --> PythonGenerator
     end
 
     subgraph CLI
