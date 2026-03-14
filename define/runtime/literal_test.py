@@ -28,6 +28,19 @@ class TestDimensionPoint:
 
         assert dp._qualities["quality_pos"] is pos
 
+    def test_get_position_returns_stored_quality(self):
+        dp = literal.DimensionPoint()
+        pos = literal.LocalPosition("quality_pos")
+        dp.assign_quality(pos)
+
+        assert dp.get_position("quality_pos") is pos
+
+    def test_get_position_raises_on_missing_name(self):
+        dp = literal.DimensionPoint()
+
+        with pytest.raises(KeyError):
+            _ = dp.get_position("nonexistent")
+
 
 class TestGlobalPosition:
     def test_name_from_class_var(self):
@@ -115,6 +128,18 @@ class TestLocalPosition:
         pos = literal.LocalPosition("test")
 
         assert not pos.has_dimension_point
+
+    def test_dimension_point_returns_point(self):
+        pos = literal.LocalPosition("test")
+        pos.create_dimension_point()
+
+        assert pos.dimension_point is pos._dimension_point
+
+    def test_dimension_point_raises_when_none(self):
+        pos = literal.LocalPosition("test")
+
+        with pytest.raises(literal.NoDimensionPointError):
+            pos.dimension_point  # noqa: B018
 
     def test_constraints_stored(self):
         class ConstraintPosition(literal.GlobalPosition):

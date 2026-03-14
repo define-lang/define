@@ -45,6 +45,10 @@ class DimensionPoint:
         self._qualities[quality_position.name] = quality_position
         quality_position.after_assigned()
 
+    def get_position(self, name: str) -> Position:
+        """Return the quality position stored under the given name."""
+        return self._qualities[name]
+
 
 class Position(ABC):
     """Abstract base class for positions that can contain a dimension point."""
@@ -66,6 +70,13 @@ class Position(ABC):
     def has_dimension_point(self) -> bool:
         """Return whether this position contains a dimension point."""
         return self._dimension_point is not None
+
+    @property
+    def dimension_point(self) -> DimensionPoint:
+        """Return the dimension point, raising NoDimensionPointError if none exists."""
+        if self._dimension_point is None:
+            raise NoDimensionPointError(self.name)
+        return self._dimension_point
 
     def create_dimension_point(self):
         """Create a dimension point in this position. Raises if one exists."""
