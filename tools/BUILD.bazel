@@ -10,6 +10,13 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 npm_link_all_packages()
 
 py_binary(
+    name = "compile_jinja_templates",
+    srcs = ["compile_jinja_templates.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//define/compiler/codegen/literal/python:template_env"],
+)
+
+py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
     visibility = ["//:__subpackages__"],
@@ -32,6 +39,13 @@ py_binary(
     name = "generate_programming_languages",
     srcs = ["generate_programming_languages.py"],
     deps = ["@pypi//pyyaml"],
+)
+
+py_binary(
+    name = "j2lint_runner",
+    srcs = ["j2lint_runner.py"],
+    visibility = ["//visibility:public"],
+    deps = ["@pypi//j2lint"],
 )
 
 py_binary(
@@ -174,9 +188,11 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":compile_jinja_templates",
         ":generate_lark_standalone",
         ":generate_programming_languages",
         ":git_commit_via_api",
+        ":j2lint_runner",
         ":regenerate_codegen_testdata",
         ":setup_local_dev",
         ":sync_agent_permissions",

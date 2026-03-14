@@ -139,6 +139,7 @@ dev = [
     "build",
     "coverage",
     "hypothesis",
+    "j2lint",
     "lark",
     "mutmut",
     "pre-commit",

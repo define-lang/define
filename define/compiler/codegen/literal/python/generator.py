@@ -3,11 +3,10 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from jinja2 import Environment, FileSystemLoader
-
 from define.compiler.codegen.literal.python import (
     action_statements,
     position_definition,
+    template_env,
 )
 from define.compiler.validator import validation_result
 
@@ -15,12 +14,8 @@ if TYPE_CHECKING:
     from define.compiler import ast
 
 _TEMPLATES_DIR = Path(__file__).parent
-_ENV = Environment(  # noqa: S701 - generating Python code, not HTML
-    loader=FileSystemLoader(str(_TEMPLATES_DIR)),
-    trim_blocks=True,
-    lstrip_blocks=True,
-    keep_trailing_newline=True,
-)
+_COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"
+_ENV = template_env.create_environment(_TEMPLATES_DIR, _COMPILED_DIR)
 _MAIN_TEMPLATE = _ENV.get_template("main.j2")
 
 

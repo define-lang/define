@@ -8,6 +8,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "jinja2",
+    srcs = ["jinja2.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
     name = "linters",
     srcs = ["linters.bzl"],
     visibility = ["//visibility:public"],
