@@ -1,6 +1,7 @@
 """Basedpyright type-checking test macro."""
 
 load("@aspect_rules_py//py:defs.bzl", _py_test = "py_test")
+load("@aspect_rules_py//py/private:py_binary.bzl", "py_base")  # buildifier: disable=bzl-visibility
 load("@rules_python//python:py_info.bzl", "PyInfo")
 
 # aspect_rules_py doesn't propagate transitive_pyi_files through py_test
@@ -69,7 +70,16 @@ _pyright_deps = rule(
             providers = [PyInfo],
             aspects = [_pyi_collector_aspect],
         ),
+        # These are only necessary to make the Python transition work. This is a fragile hack.
+        "python_version": attr.string(),
+        "venv": attr.string(),
     },
+    # We have to force this rule to go through a Python transition. Otherwise,
+    # it triggers a very strange case when we have to resolve dependencies
+    # that are in cfg = "exec" where it tries to resolve a chain in the
+    # target platform that can't resolve.
+    cfg = py_base.cfg,
+    toolchains = py_base.toolchains,
 )
 
 def pyright_test(name, deps = [], srcs = [], **kwargs):
