@@ -10,6 +10,14 @@ _TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "python"
 _MAIN_TEMPLATE = (_TEMPLATES_DIR / "main.txt").read_text()
 
 
+def _path_to_class_name(path: str) -> str:
+    """Convert a position path to a PascalCase class name."""
+    segments = path.strip("/").split("/")
+    return "".join(
+        part.capitalize() for segment in segments for part in segment.split("_")
+    )
+
+
 class PythonLiteralCodeGenerator:
     """Generates literal Python code for a validated Define entry point."""
 
@@ -19,82 +27,48 @@ class PythonLiteralCodeGenerator:
         """Generate Python code for the entry point position."""
         definition = cast("ast.PositionDefinition", entry_point_result.definition)
 
-        fqun = definition.typed_name.name_content.fqun
         full_name = definition.typed_name.name_content.full_name()
+        path = definition.typed_name.name_content.path.name
+        class_name = _path_to_class_name(path)
 
-        super_init = self._generate_super_init(full_name, definition, fqun)
-        after_assigned = self._generate_after_assigned(definition, fqun)
-        typing_import = "\nfrom typing import override\n" if after_assigned else ""
+        class_vars = self._generate_class_vars(full_name)
+        after_assigned = self._generate_after_assigned(definition)
+        typing_names = ["ClassVar"]
+        if after_assigned:
+            typing_names.append("override")
+        typing_import = f"\nfrom typing import {', '.join(typing_names)}\n"
 
         return _MAIN_TEMPLATE.format(
             typing_import=typing_import,
-            super_init=super_init,
+            class_name=class_name,
+            class_vars=class_vars,
             after_assigned=after_assigned,
         )
 
-    def _generate_super_init(
-        self,
-        full_name: str,
-        definition: ast.PositionDefinition,
-        fqun: ast.Fqun,
-    ) -> str:
-        constraints = self._get_constraints(definition, fqun)
-        if not constraints:
-            return f'        super().__init__("{full_name}")'
-        constraint_strs = ", ".join(f'"{c}"' for c in constraints)
-        return (
-            f"        super().__init__(\n"
-            f'            "{full_name}",\n'
-            f"            constraints=[{constraint_strs}],\n"
-            f"        )"
-        )
+    def _generate_class_vars(self, full_name: str) -> str:
+        return f'    _typed_name: ClassVar[str] = "position<{full_name}>"'
 
-    def _generate_after_assigned(
-        self, definition: ast.PositionDefinition, fqun: ast.Fqun
-    ) -> str:
+    def _generate_after_assigned(self, definition: ast.PositionDefinition) -> str:
         if definition.initialization is None:
             return ""
         lines: list[str] = ["", "", "    @override", "    def after_assigned(self):"]
         for stmt in definition.initialization.statements:
-            lines.append(self._generate_statement(stmt, fqun))
+            lines.append(self._generate_statement(stmt))
         return "\n".join(lines)
 
-    def _get_constraints(
-        self, definition: ast.PositionDefinition, fqun: ast.Fqun
-    ) -> list[str]:
-        if definition.constraints is None:
-            return []
-        return [
-            req.typed_global_name.full_typed_name(in_universe=fqun)
-            for req in definition.constraints.requirements
-        ]
-
-    def _generate_statement(
-        self,
-        stmt: ast.ActionStatement,
-        fqun: ast.Fqun,
-    ) -> str:
+    def _generate_statement(self, stmt: ast.ActionStatement) -> str:
         if isinstance(stmt, ast.LocalPositionDefinition):
-            return self._generate_local_position(stmt, fqun)
+            return self._generate_local_position(stmt)
         if isinstance(stmt, ast.CreateDimensionPointStatement):
             var = self._position_ref_to_var(stmt.position_reference)
-            return f"        _ = {var}.create_dimension_point()"
+            return f"        {var}.create_dimension_point()"
         from_var = self._position_ref_to_var(stmt.from_position)
         to_var = self._position_ref_to_var(stmt.to_position)
         return f"        {from_var}.move_dimension_point_to({to_var})"
 
-    def _generate_local_position(
-        self, stmt: ast.LocalPositionDefinition, fqun: ast.Fqun
-    ) -> str:
+    def _generate_local_position(self, stmt: ast.LocalPositionDefinition) -> str:
         local_name = stmt.typed_name.name_content.name
-        if stmt.constraints is not None:
-            constraints = [
-                req.typed_global_name.full_typed_name(in_universe=fqun)
-                for req in stmt.constraints.requirements
-            ]
-            constraint_strs = ", ".join(f'"{c}"' for c in constraints)
-            return f'        {local_name} = literal.Position("{local_name}", constraints=[{constraint_strs}])'
-        return f'        {local_name} = literal.Position("{local_name}")'
+        return f'        {local_name} = literal.LocalPosition("{local_name}")'
 
     def _position_ref_to_var(self, ref: ast.PositionReference) -> str:
         typed_name = ref.chain.typed_names[0]

@@ -3,13 +3,12 @@
 from define.runtime import literal
 
 
-class EntryPoint(literal.Position):
-    def __init__(self):
-{super_init}{after_assigned}
+class {class_name}(literal.GlobalPosition):
+{class_vars}{after_assigned}
 
 
 def main():
-    literal.start(EntryPoint())
+    literal.start({class_name}())
 
 
 if __name__ == "__main__":

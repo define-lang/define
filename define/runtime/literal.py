@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from abc import ABC, abstractmethod
+from typing import ClassVar, override
 
 
 class DefineRuntimeError(Exception):
@@ -45,43 +46,89 @@ class DimensionPoint:
         quality_position.after_assigned()
 
 
-class Position:
-    """A position that can contain a dimension point."""
+class Position(ABC):
+    """Abstract base class for positions that can contain a dimension point."""
 
-    def __init__(self, name: str, constraints: list[str] | None = None):
-        """Initialize a position with the given name and optional constraints."""
-        self._name: str = name
-        self._constraints: list[str] = constraints or []
+    def __init__(self):
+        """Initialize with no dimension point."""
         self._dimension_point: DimensionPoint | None = None
 
     @property
+    @abstractmethod
     def name(self) -> str:
         """Return the name of this position."""
-        return self._name
+
+    @abstractmethod
+    def _get_constraints(self) -> list[type[GlobalPosition]]:
+        """Return the constraint types for this position."""
 
     @property
     def has_dimension_point(self) -> bool:
         """Return whether this position contains a dimension point."""
         return self._dimension_point is not None
 
-    def create_dimension_point(self) -> DimensionPoint:
+    def create_dimension_point(self):
         """Create a dimension point in this position. Raises if one exists."""
         if self._dimension_point is not None:
-            raise DimensionPointExistsError(self._name)
+            raise DimensionPointExistsError(self.name)
         self._dimension_point = DimensionPoint()
-        return self._dimension_point
+        for constraint_type in self._get_constraints():
+            self._dimension_point.assign_quality(constraint_type())
 
-    def after_assigned(self):
+    def after_assigned(self):  # noqa: B027
         """Run when this position is assigned as a quality. Override in subclasses."""
 
     def move_dimension_point_to(self, destination: Position):
         """Move the dimension point from this position to destination."""
         if self._dimension_point is None:
-            raise NoDimensionPointError(self._name)
+            raise NoDimensionPointError(self.name)
         if destination._dimension_point is not None:
-            raise DimensionPointExistsError(destination._name)
+            raise DimensionPointExistsError(destination.name)
         destination._dimension_point = self._dimension_point
         self._dimension_point = None
+
+
+class GlobalPosition(Position):
+    """A globally-defined position with a class-level typed name and constraints."""
+
+    _typed_name: ClassVar[str]
+    constraints: ClassVar[list[type[GlobalPosition]]] = []
+
+    @property
+    @override
+    def name(self) -> str:
+        """Return the typed name of this position."""
+        return type(self)._typed_name
+
+    @override
+    def _get_constraints(self) -> list[type[GlobalPosition]]:
+        """Return the constraint types from the class variable."""
+        return type(self).constraints
+
+
+class LocalPosition(Position):
+    """A locally-defined position with a runtime name and optional constraints."""
+
+    def __init__(
+        self,
+        name: str,
+        constraints: list[type[GlobalPosition]] | None = None,
+    ):
+        """Initialize a local position with the given name and optional constraints."""
+        super().__init__()
+        self._name: str = name
+        self._constraints: list[type[GlobalPosition]] = constraints or []
+
+    @property
+    @override
+    def name(self) -> str:
+        """Return the name of this position."""
+        return self._name
+
+    @override
+    def _get_constraints(self) -> list[type[GlobalPosition]]:
+        """Return the constraint types for this position."""
+        return self._constraints
 
 
 def start(entry_point: Position):
