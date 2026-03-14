@@ -1,4 +1,7 @@
-"""Regenerate expected output files for code generation testdata."""
+"""Regenerate expected output files for code generation testdata.
+
+Run this script with: bazelisk run --noshow_progress //tools:regenerate_codegen_testdata
+"""
 
 import contextlib
 import sys

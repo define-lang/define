@@ -138,6 +138,8 @@ BUILD file generator.
 - Run coverage after writing a lot of tests.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
+- After changing the code generator or any codegen testdata, regenerate expected
+  outputs: `bazelisk run --noshow_progress //tools:regenerate_codegen_testdata`
 
 ### Python Dependencies
 

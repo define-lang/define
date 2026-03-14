@@ -61,7 +61,8 @@ class PositionDefinitionGenerator:
         if self._definition.initialization is None:
             return ""
         block_gen = action_statements.ActionStatementsBlockGenerator(
-            self._definition.initialization
+            self._definition.initialization,
+            self._definition.typed_name,
         )
         lines: list[str] = [
             "",
