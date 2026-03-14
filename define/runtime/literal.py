@@ -148,5 +148,5 @@ def start(entry_point: Position):
     Creates a dimension point (the view point) and assigns the entry point
     position as a quality, which triggers entry_point.after_assigned().
     """
-    dp = DimensionPoint()
-    dp.assign_quality(entry_point)
+    view_point = DimensionPoint()
+    view_point.assign_quality(entry_point)
