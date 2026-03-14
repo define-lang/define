@@ -41,6 +41,9 @@ _EXAMPLES_VALID_PROJECTS = 400
 _EXAMPLES_MUTATED_SINGLE = 800
 _EXAMPLES_MUTATED_PROJECTS = 400
 _EXAMPLES_RANDOM_BYTES = 400
+_EXAMPLES_RANDOM_LOCAL_NAMES = 400
+_EXAMPLES_RANDOM_GLOBAL_NAMES_RAW = 400
+_EXAMPLES_RANDOM_GLOBAL_NAMES_STRUCTURED = 400
 
 
 def _escape_content(text: str) -> str:
@@ -1356,6 +1359,254 @@ def _project_case_debug_text(project_case: ProjectCase) -> str:
     return "\n".join(lines)
 
 
+_NAME_MARKER = "\x00NAME_MARKER\x00"
+
+
+def _splice_name_bytes(template: str, name_bytes: bytes) -> bytes:
+    before, after = template.split(_NAME_MARKER, 1)
+    return before.encode() + name_bytes + after.encode()
+
+
+@st.composite
+def _random_name_bytes(draw: st.DrawFn) -> bytes:
+    data = draw(st.binary(min_size=1, max_size=80))
+    filtered = bytes(b for b in data if b not in (ord(">"), ord("\n"), ord("\r")))
+    if not filtered:
+        return b"x"
+    return filtered
+
+
+@st.composite
+def _random_name_section_bytes(draw: st.DrawFn) -> bytes:
+    data = draw(st.binary(min_size=1, max_size=20))
+    filtered = bytes(
+        b for b in data if b not in (ord(">"), ord("\n"), ord("\r"), ord(":"))
+    )
+    return filtered or b"x"
+
+
+@st.composite
+def _random_path_segment_bytes(draw: st.DrawFn) -> bytes:
+    data = draw(st.binary(min_size=1, max_size=20))
+    filtered = bytes(
+        b for b in data if b not in (ord(">"), ord("\n"), ord("\r"), ord(":"), ord("/"))
+    )
+    return filtered or b"x"
+
+
+_GLOBAL_NAME_CONTEXTS = [
+    "position_def",
+    "action_def",
+    "position_req",
+    "action_req",
+    "create_ref",
+    "move_from_ref",
+    "move_to_ref",
+    "trigger_ref",
+]
+
+
+def _global_name_context_template(context: str) -> str:
+    if context == "position_def":
+        return f"define the potential position<{_NAME_MARKER}>.\n"
+    if context == "action_def":
+        return f"define the potential action<{_NAME_MARKER}>.\n"
+    if context == "position_req":
+        return _position_with_requirements(
+            _PROJECT_FQUN, "test.def", [("position", _NAME_MARKER)]
+        )
+    if context == "action_req":
+        return _position_with_requirements(
+            _PROJECT_FQUN, "test.def", [("action", _NAME_MARKER)]
+        )
+    if context == "create_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    f"position<{_NAME_MARKER}>", indent="        "
+                )
+            ],
+        )
+    if context == "move_from_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[
+                _local_position_simple("from_pos", indent="    "),
+                _local_position_simple("to_pos", indent="    "),
+            ],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    "position<from_pos>", indent="        "
+                ),
+                _move_dimension_point_statement(
+                    f"position<{_NAME_MARKER}>",
+                    "position<to_pos>",
+                    indent="        ",
+                ),
+            ],
+        )
+    if context == "move_to_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[
+                _local_position_simple("from_pos", indent="    "),
+            ],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    "position<from_pos>", indent="        "
+                ),
+                _move_dimension_point_statement(
+                    "position<from_pos>",
+                    f"position<{_NAME_MARKER}>",
+                    indent="        ",
+                ),
+            ],
+        )
+    return _action_block_with_name(
+        _global_name(_PROJECT_FQUN, "test.def"),
+        outer_locals=[],
+        inner_locals=[
+            _create_dimension_point_statement("position<run>", indent="        ")
+        ],
+        trigger_condition_ref=f"position<{_NAME_MARKER}>",
+    )
+
+
+_LOCAL_NAME_CONTEXTS = [
+    "local_def_simple",
+    "local_def_constrained",
+    "create_ref",
+    "move_from_ref",
+    "move_to_ref",
+    "trigger_ref",
+]
+
+
+def _local_name_context_template(context: str) -> str:
+    if context == "local_def_simple":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[f"    define the position<{_NAME_MARKER}>.\n"],
+            inner_locals=[
+                _create_dimension_point_statement("position<run>", indent="        ")
+            ],
+        )
+    if context == "local_def_constrained":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[
+                _local_position_with_requirements(
+                    _NAME_MARKER,
+                    [("position", _ANOTHER_VALID_PATH)],
+                    indent="    ",
+                )
+            ],
+            inner_locals=[
+                _create_dimension_point_statement("position<run>", indent="        ")
+            ],
+        )
+    if context == "create_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    f"position<{_NAME_MARKER}>", indent="        "
+                )
+            ],
+        )
+    if context == "move_from_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[
+                _local_position_simple("from_pos", indent="    "),
+                _local_position_simple("to_pos", indent="    "),
+            ],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    "position<from_pos>", indent="        "
+                ),
+                _move_dimension_point_statement(
+                    f"position<{_NAME_MARKER}>",
+                    "position<to_pos>",
+                    indent="        ",
+                ),
+            ],
+        )
+    if context == "move_to_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.def",
+            outer_locals=[
+                _local_position_simple("from_pos", indent="    "),
+            ],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    "position<from_pos>", indent="        "
+                ),
+                _move_dimension_point_statement(
+                    "position<from_pos>",
+                    f"position<{_NAME_MARKER}>",
+                    indent="        ",
+                ),
+            ],
+        )
+    return _action_block_with_name(
+        _global_name(_PROJECT_FQUN, "test.def"),
+        outer_locals=[],
+        inner_locals=[
+            _create_dimension_point_statement("position<run>", indent="        ")
+        ],
+        trigger_condition_ref=f"position<{_NAME_MARKER}>",
+    )
+
+
+@st.composite
+def _structured_random_global_name_bytes(draw: st.DrawFn) -> bytes:
+    form = draw(
+        st.sampled_from(
+            ["path_only", "universe_path", "authority_universe_path", "full"]
+        )
+    )
+    num_segments = draw(st.integers(min_value=1, max_value=3))
+    path_segments = [draw(_random_path_segment_bytes()) for _ in range(num_segments)]
+    path = b"/" + b"/".join(path_segments)
+    if form == "path_only":
+        return path
+    universe = draw(
+        st.one_of(
+            st.sampled_from(_UNIVERSE_NAMES).map(str.encode),
+            _random_name_section_bytes(),
+        )
+    )
+    if form == "universe_path":
+        return universe + b":" + path
+    authority = draw(
+        st.one_of(
+            st.sampled_from(_AUTHORITY_DOMAINS).map(str.encode),
+            _random_name_section_bytes(),
+        )
+    )
+    if form == "authority_universe_path":
+        return authority + b":" + universe + b":" + path
+    multiverse = draw(
+        st.one_of(
+            st.sampled_from(_MULTIVERSE_NAMES).map(str.encode),
+            _random_name_section_bytes(),
+        )
+    )
+    return multiverse + b":" + authority + b":" + universe + b":" + path
+
+
 @settings(
     deadline=None,
     database=None,
@@ -1436,3 +1687,63 @@ def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
     d = driver.Driver()
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(data))
+
+
+@settings(
+    deadline=None,
+    database=None,
+    max_examples=_EXAMPLES_RANDOM_LOCAL_NAMES,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+@given(
+    name_bytes=_random_name_bytes(),
+    context=st.sampled_from(_LOCAL_NAME_CONTEXTS),
+)
+def test_random_local_name_bytes_no_unclassified_errors(
+    fuzz_project: Path, name_bytes: bytes, context: str
+):
+    template = _local_name_context_template(context)
+    (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
+    d = driver.Driver()
+    results = d.validate_program(Path("test.def")).result.file_results
+    _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
+
+
+@settings(
+    deadline=None,
+    database=None,
+    max_examples=_EXAMPLES_RANDOM_GLOBAL_NAMES_RAW,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+@given(
+    name_bytes=_random_name_bytes(),
+    context=st.sampled_from(_GLOBAL_NAME_CONTEXTS),
+)
+def test_random_global_name_raw_bytes_no_unclassified_errors(
+    fuzz_project: Path, name_bytes: bytes, context: str
+):
+    template = _global_name_context_template(context)
+    (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
+    d = driver.Driver()
+    results = d.validate_program(Path("test.def")).result.file_results
+    _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
+
+
+@settings(
+    deadline=None,
+    database=None,
+    max_examples=_EXAMPLES_RANDOM_GLOBAL_NAMES_STRUCTURED,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+@given(
+    name_bytes=_structured_random_global_name_bytes(),
+    context=st.sampled_from(_GLOBAL_NAME_CONTEXTS),
+)
+def test_random_global_name_structured_bytes_no_unclassified_errors(
+    fuzz_project: Path, name_bytes: bytes, context: str
+):
+    template = _global_name_context_template(context)
+    (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
+    d = driver.Driver()
+    results = d.validate_program(Path("test.def")).result.file_results
+    _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
