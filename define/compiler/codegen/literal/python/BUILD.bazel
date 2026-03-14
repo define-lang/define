@@ -3,13 +3,33 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "action_statements",
+    srcs = ["action_statements.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "generator",
     srcs = ["generator.py"],
     data = ["//define/compiler/codegen/literal/templates"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":position_definition",
         "//define/compiler:ast",
         "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "position_definition",
+    srcs = ["position_definition.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":action_statements",
+        "//define/compiler:ast",
     ],
 )
 
@@ -34,7 +54,9 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_statements",
         ":generator",
+        ":position_definition",
         ":python",
     ],
 )

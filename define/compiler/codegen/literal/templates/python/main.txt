@@ -4,7 +4,7 @@ from define.runtime import literal
 
 
 class {class_name}(literal.GlobalPosition):
-{class_vars}{after_assigned}
+{class_body}
 
 
 def main():
