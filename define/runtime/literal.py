@@ -102,6 +102,7 @@ class Position(Quality, ABC):
                 self._dimension_point.assign_action(constraint)
             else:
                 self._dimension_point.assign_position(constraint)
+        self._after_dimension_point_arrived()
 
     def move_dimension_point_to(self, destination: Position):
         """Move the dimension point from this position to destination."""
@@ -111,6 +112,10 @@ class Position(Quality, ABC):
             raise DimensionPointExistsError(destination.name)
         destination._dimension_point = self._dimension_point
         self._dimension_point = None
+        destination._after_dimension_point_arrived()
+
+    def _after_dimension_point_arrived(self):
+        """Run after a dimension point arrives. Override in subclasses."""
 
 
 class GlobalPosition(Position):
@@ -164,14 +169,63 @@ class Action(Quality):
 
     _typed_name: ClassVar[str]
 
+    def __init__(
+        self,
+        interface_positions: list[InterfacePosition] | None = None,
+        trigger_position_name: str | None = None,
+    ):
+        """Initialize with optional interface positions and trigger position name."""
+        self._interface_positions: dict[str, InterfacePosition] = {
+            pos.name: pos for pos in (interface_positions or [])
+        }
+        self._trigger_position_name: str | None = trigger_position_name
+
     @property
     @override
     def name(self) -> str:
         """Return the typed name of this action."""
         return type(self)._typed_name
 
+    def get_interface_position(self, name: str) -> InterfacePosition:
+        """Return the interface position with the given name."""
+        return self._interface_positions[name]
+
+    @property
+    def should_execute(self) -> bool:
+        """Return whether the trigger position has a dimension point."""
+        if self._trigger_position_name is None:
+            return False
+        return self._interface_positions[
+            self._trigger_position_name
+        ].has_dimension_point
+
+    def execute(self):
+        """Execute the action body. Override in subclasses."""
+
 
 Constraint = type[GlobalPosition] | type[Action]
+
+
+class InterfacePosition(LocalPosition):
+    """A position that serves as an interface for an action's trigger condition."""
+
+    def __init__(
+        self,
+        name: str,
+        constraints: list[Constraint] | None = None,
+    ):
+        """Initialize an interface position with the given name and optional constraints."""
+        super().__init__(name, constraints)
+        self._trigger_action: Action | None = None
+
+    def set_is_trigger_for(self, action: Action):
+        """Mark this position as a trigger condition for the given action."""
+        self._trigger_action = action
+
+    @override
+    def _after_dimension_point_arrived(self):
+        if self._trigger_action is not None and self._trigger_action.should_execute:
+            self._trigger_action.execute()
 
 
 def start(entry_point: GlobalPosition):

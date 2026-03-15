@@ -245,6 +245,152 @@ class TestAction:
 
         assert action.name == "action<test.com:lib:/thing>"
 
+    def test_should_execute_defaults_to_false(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        action = MyAction()
+
+        assert not action.should_execute
+
+    def test_execute_defaults_to_noop(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        action = MyAction()
+
+        action.execute()
+
+    def test_get_interface_position(self):
+        pos = literal.InterfacePosition("position</iface>")
+
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        action = MyAction(
+            interface_positions=[pos],
+            trigger_position_name="position</iface>",
+        )
+
+        assert action.get_interface_position("position</iface>") is pos
+
+    def test_should_execute_checks_trigger_position(self):
+        pos = literal.InterfacePosition("position</trigger_pos>")
+
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        action = MyAction(
+            interface_positions=[pos],
+            trigger_position_name="position</trigger_pos>",
+        )
+
+        assert not action.should_execute
+        pos.create_dimension_point()
+        assert action.should_execute
+
+
+class TestActionTriggering:
+    def test_create_triggers_action(self):
+        executed: list[str] = []
+
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+            def __init__(self):
+                pos = literal.InterfacePosition("position</trigger_pos>")
+                pos.set_is_trigger_for(self)
+                super().__init__(
+                    interface_positions=[pos],
+                    trigger_position_name="position</trigger_pos>",
+                )
+
+            @override
+            def execute(self):
+                executed.append("triggered")
+
+        action = MyAction()
+        action.get_interface_position("position</trigger_pos>").create_dimension_point()
+
+        assert executed == ["triggered"]
+
+    def test_move_triggers_action(self):
+        executed: list[str] = []
+
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+            def __init__(self):
+                pos = literal.InterfacePosition("position</trigger_pos>")
+                pos.set_is_trigger_for(self)
+                super().__init__(
+                    interface_positions=[pos],
+                    trigger_position_name="position</trigger_pos>",
+                )
+
+            @override
+            def execute(self):
+                executed.append("triggered")
+
+        action = MyAction()
+        source = literal.LocalPosition("position</source>")
+        source.create_dimension_point()
+        source.move_dimension_point_to(
+            action.get_interface_position("position</trigger_pos>")
+        )
+
+        assert executed == ["triggered"]
+
+    def test_no_trigger_when_no_trigger_position(self):
+        executed: list[str] = []
+
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+            @override
+            def execute(self):
+                executed.append("triggered")
+
+        pos = literal.InterfacePosition("position</trigger_pos>")
+        action = MyAction(interface_positions=[pos])
+        pos.set_is_trigger_for(action)
+        pos.create_dimension_point()
+
+        assert executed == []
+
+    def test_interface_position_without_trigger_works_normally(self):
+        pos = literal.InterfacePosition("position</test>")
+        pos.create_dimension_point()
+
+        assert pos.has_dimension_point
+
+    def test_retrigger_after_move_away_and_back(self):
+        executed: list[str] = []
+
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+            def __init__(self):
+                pos = literal.InterfacePosition("position</trigger_pos>")
+                pos.set_is_trigger_for(self)
+                super().__init__(
+                    interface_positions=[pos],
+                    trigger_position_name="position</trigger_pos>",
+                )
+
+            @override
+            def execute(self):
+                executed.append("triggered")
+
+        action = MyAction()
+        trigger = action.get_interface_position("position</trigger_pos>")
+        trigger.create_dimension_point()
+        other = literal.LocalPosition("position</other>")
+        trigger.move_dimension_point_to(other)
+        other.move_dimension_point_to(trigger)
+
+        assert executed == ["triggered", "triggered"]
+
 
 class TestDimensionPointActions:
     def test_assign_action_stores_action(self):
