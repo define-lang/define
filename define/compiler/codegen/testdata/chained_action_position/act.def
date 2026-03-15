@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/act> {
+    define the position<trigger_pos> {
+        it may only contain dimension points where {
+            it has the position</inner>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a dimension point.
+    } and it does {
+        define the position<result>.
+        create a dimension point in position<result>.
+    }
+}
