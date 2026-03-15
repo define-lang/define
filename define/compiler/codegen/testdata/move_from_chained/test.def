@@ -1,0 +1,20 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain dimension points where {
+        it has the action</act>.
+    }
+    after it is assigned {
+        create a dimension point in position</test>.
+        create a dimension point in position</test>::action</act>::position<chain_src_a>.
+        create a dimension point in position</test>::action</act>::position<chain_src_a>::position</mid_src_a>.
+        create a dimension point in position</test>::action</act>::position<chain_src_a>::position</mid_src_a>::position</end_src_a>.
+        create a dimension point in position</test>::action</act>::position<chain_src_b>.
+        create a dimension point in position</test>::action</act>::position<chain_src_b>::position</mid_src_b>.
+        create a dimension point in position</test>::action</act>::position<chain_src_b>::position</mid_src_b>::position</end_src_b>.
+        create a dimension point in position</test>::action</act>::position<chain_src_c>.
+        create a dimension point in position</test>::action</act>::position<chain_src_c>::position</mid_src_c>.
+        create a dimension point in position</test>::action</act>::position<chain_src_c>::position</mid_src_c>::position</end_src_c>.
+        create a dimension point in position</test>::action</act>::position<chain_dest>.
+        create a dimension point in position</test>::action</act>::position<chain_dest>::position</mid_dest>.
+        create a dimension point in position</test>::action</act>::position<trigger>.
+    }
+}

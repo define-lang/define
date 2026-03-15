@@ -54,15 +54,18 @@ class ActionStatementsBlockGenerator:
 
     _block: ast.ActionStatementsBlock
     _defining_typed_name: ast.GlobalTypedNameInDefinition
+    _interface_position_names: set[str]
 
     def __init__(
         self,
         block: ast.ActionStatementsBlock,
         defining_typed_name: ast.GlobalTypedNameInDefinition,
+        interface_position_names: set[str] | None = None,
     ):
         """Initialize with the action statements block to generate data for."""
         self._block = block
         self._defining_typed_name = defining_typed_name
+        self._interface_position_names = interface_position_names or set()
 
     def generate(self) -> list[StatementData]:
         """Generate template data for all statements in the block."""
@@ -92,10 +95,21 @@ class ActionStatementsBlockGenerator:
         chain = ref.chain
         first = chain.typed_names[0]
         if isinstance(first, ast.LocalTypedNameReference):
-            start = first.name_content.name
+            if first.source_typed_name in self._interface_position_names:
+                start = "self"
+                chain_elements: list[ChainElement] = [
+                    ChainElement(
+                        accessor=ChainAccessor.POSITION_FROM_ACTION,
+                        typed_name=first.source_typed_name,
+                    )
+                ]
+            else:
+                start = first.name_content.name
+                chain_elements = []
         else:
+            # This is a self-reference, which only happens in a position init block.
             start = "self"
-        chain_elements: list[ChainElement] = []
+            chain_elements = []
         for i, elem in enumerate(chain.typed_names[1:]):
             prev = chain.typed_names[i]
             chain_elements.append(

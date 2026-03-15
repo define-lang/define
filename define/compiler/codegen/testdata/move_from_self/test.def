@@ -1,0 +1,17 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    after it is assigned {
+        define the position<local_dest>.
+        define the position<chain_start> {
+            it may only contain dimension points where {
+                it has the position</mid>.
+            }
+        }
+        create a dimension point in position</test>.
+        create a dimension point in position<chain_start>.
+        create a dimension point in position<chain_start>::position</mid>.
+        move the dimension point in position</test> to position<local_dest>.
+        move the dimension point in position<local_dest> to position</test>.
+        move the dimension point in position</test> to position<chain_start>::position</mid>::position</end>.
+        move the dimension point in position<chain_start>::position</mid>::position</end> to position</test>.
+    }
+}

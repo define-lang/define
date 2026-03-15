@@ -54,9 +54,15 @@ class ActionDefinitionGenerator:
             .source_typed_name
         )
 
+        interface_position_names = {
+            local_def.typed_name.source_typed_name
+            for local_def in block.local_definitions
+        }
+
         block_gen = action_statements.ActionStatementsBlockGenerator(
             block.action_statements,
             self._definition.typed_name,
+            interface_position_names=interface_position_names,
         )
 
         return ActionDefinitionContext(

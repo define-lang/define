@@ -1,0 +1,23 @@
+define the potential action<my.domain.com:my_lib:/act> {
+    define the position<trigger>.
+    define the position<src_a>.
+    define the position<src_b>.
+    define the position<src_c>.
+    define the position<iface_dest>.
+    define the position<chain_dest> {
+        it may only contain dimension points where {
+            it has the position</mid_dest>.
+        }
+    }
+    it happens when {
+        the position<trigger> has a dimension point.
+    } and it does {
+        define the position<local_dest>.
+        create a dimension point in position<src_a>.
+        create a dimension point in position<src_b>.
+        create a dimension point in position<src_c>.
+        move the dimension point in position<src_a> to position<local_dest>.
+        move the dimension point in position<src_b> to position<iface_dest>.
+        move the dimension point in position<src_c> to position<chain_dest>::position</mid_dest>::position</end_dest>.
+    }
+}

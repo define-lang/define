@@ -1,18 +1,18 @@
-{% macro pos(expr) -%}
+{% macro pos(expr, extra_indent="") -%}
 {{ expr.start }}
 {%- for e in expr.chain_elements -%}
 {% if e.accessor == ChainAccessor.POSITION_FROM_POSITION -%}
 .dimension_point.get_position(
-            "{{ e.typed_name }}"
-        )
+{{ extra_indent }}            "{{ e.typed_name }}"
+{{ extra_indent }}        )
 {%- elif e.accessor == ChainAccessor.ACTION_FROM_POSITION -%}
 .dimension_point.get_action(
-            "{{ e.typed_name }}"
-        )
+{{ extra_indent }}            "{{ e.typed_name }}"
+{{ extra_indent }}        )
 {%- elif e.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
 .get_interface_position(
-            "{{ e.typed_name }}"
-        )
+{{ extra_indent }}            "{{ e.typed_name }}"
+{{ extra_indent }}        )
 {%- endif %}
 {%- endfor %}
 {%- endmacro %}
@@ -22,6 +22,12 @@
 {% elif stmt.kind == StatementKind.CREATE_DIMENSION_POINT %}
         {{ pos(stmt.position) }}.create_dimension_point()
 {% elif stmt.kind == StatementKind.MOVE_DIMENSION_POINT %}
+{% if stmt.to_position.chain_elements %}
+        {{ pos(stmt.position) }}.move_dimension_point_to(
+            {{ pos(stmt.to_position, "    ") }}
+        )
+{% else %}
         {{ pos(stmt.position) }}.move_dimension_point_to({{ pos(stmt.to_position) }})
+{% endif %}
 {% endif %}
 {% endfor %}
