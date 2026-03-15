@@ -1,9 +1,17 @@
 {% macro pos(expr) -%}
 {{ expr.start }}
 {%- for e in expr.chain_elements -%}
+{% if e.accessor == ChainAccessor.POSITION_FROM_POSITION -%}
 .dimension_point.get_position(
-            "{{ e }}"
+            "{{ e.typed_name }}"
         )
+{%- elif e.accessor == ChainAccessor.ACTION_FROM_POSITION -%}
+.dimension_point.get_action(
+            "{{ e.typed_name }}"
+        )
+{%- elif e.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
+.get_interface_position("{{ e.typed_name }}")
+{%- endif %}
 {%- endfor %}
 {%- endmacro %}
 {% for stmt in statements %}

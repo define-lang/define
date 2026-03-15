@@ -14,12 +14,28 @@ class StatementKind(enum.Enum):
     MOVE_DIMENSION_POINT = enum.auto()
 
 
+class ChainAccessor(enum.Enum):
+    """How to access a chain element from the previous element."""
+
+    POSITION_FROM_POSITION = enum.auto()
+    ACTION_FROM_POSITION = enum.auto()
+    POSITION_FROM_ACTION = enum.auto()
+
+
+@dataclass
+class ChainElement:
+    """A single element in a position reference chain."""
+
+    accessor: ChainAccessor
+    typed_name: str
+
+
 @dataclass
 class PositionExpr:
     """A position expression for use in templates."""
 
     start: str
-    chain_elements: list[str] = field(default_factory=list)
+    chain_elements: list[ChainElement] = field(default_factory=list)
 
 
 @dataclass
@@ -79,7 +95,23 @@ class ActionStatementsBlockGenerator:
             start = first.name_content.name
         else:
             start = "self"
-        chain_elements = [
-            elem.full_typed_name(in_universe=fqun) for elem in chain.typed_names[1:]
-        ]
+        chain_elements: list[ChainElement] = []
+        for i, elem in enumerate(chain.typed_names[1:]):
+            prev = chain.typed_names[i]
+            chain_elements.append(
+                ChainElement(
+                    accessor=_chain_accessor(prev.name_type, elem.name_type),
+                    typed_name=elem.full_typed_name(in_universe=fqun),
+                )
+            )
         return PositionExpr(start=start, chain_elements=chain_elements)
+
+
+def _chain_accessor(
+    prev_type: ast.NameType, current_type: ast.NameType
+) -> ChainAccessor:
+    if prev_type == ast.NameType.ACTION:
+        return ChainAccessor.POSITION_FROM_ACTION
+    if current_type == ast.NameType.ACTION:
+        return ChainAccessor.ACTION_FROM_POSITION
+    return ChainAccessor.POSITION_FROM_POSITION

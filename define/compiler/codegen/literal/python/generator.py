@@ -51,4 +51,5 @@ class PythonLiteralCodeGenerator:
             statements=pos_context.statements,
             actions=action_contexts,
             StatementKind=action_statements.StatementKind,
+            ChainAccessor=action_statements.ChainAccessor,
         )
