@@ -1,19 +1,12 @@
 """Python code generator data for position definitions."""
 
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
     action_statements,
+    naming,
 )
-
-
-def _path_to_class_name(path: PurePosixPath) -> str:
-    """Convert a position path to a PascalCase class name."""
-    return "".join(
-        part.capitalize() for segment in path.parts for part in segment.split("_")
-    )
 
 
 @dataclass
@@ -46,7 +39,7 @@ class PositionDefinitionGenerator:
             )
             statements = block_gen.generate()
 
-        class_name = _path_to_class_name(
+        class_name = naming.path_to_class_name(
             self._definition.typed_name.name_content.path.relative_path
         )
 

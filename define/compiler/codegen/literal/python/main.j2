@@ -4,6 +4,11 @@ from typing import ClassVar{{ ", override" if has_init }}
 
 from define.runtime import literal
 
+{% for action in actions %}
+
+{% include "action_definition.j2" %}
+
+{% endfor %}
 
 {% include "position_definition.j2" %}
 

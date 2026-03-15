@@ -4,6 +4,16 @@ load("//tools/bzl:jinja2.bzl", "jinja_templates")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "action_definition",
+    srcs = ["action_definition.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":naming",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "action_statements",
     srcs = ["action_statements.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
@@ -18,6 +28,7 @@ py_library(
     data = [":templates"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":action_definition",
         ":action_statements",
         ":position_definition",
         ":template_env",
@@ -27,11 +38,18 @@ py_library(
 )
 
 py_library(
+    name = "naming",
+    srcs = ["naming.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+)
+
+py_library(
     name = "position_definition",
     srcs = ["position_definition.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":action_statements",
+        ":naming",
         "//define/compiler:ast",
     ],
 )
@@ -72,8 +90,10 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_definition",
         ":action_statements",
         ":generator",
+        ":naming",
         ":position_definition",
         ":python",
         ":template_env",

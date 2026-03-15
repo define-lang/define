@@ -38,5 +38,12 @@ class CodeGenerator:
             )
             return None
 
+        action_results = [
+            r
+            for file_result in program_result.file_results
+            for r in file_result.definition_results
+            if isinstance(r.definition, ast.ActionDefinition)
+        ]
+
         python_gen = python_generator.PythonLiteralCodeGenerator()
-        return python_gen.generate_entry_point(entry_point_result)
+        return python_gen.generate_entry_point(entry_point_result, action_results)
