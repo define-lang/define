@@ -298,10 +298,10 @@ class TestActionTriggering:
             _typed_name: ClassVar[str] = "action<test>"
 
             def __init__(self):
-                pos = literal.InterfacePosition("position</trigger_pos>")
-                pos.set_is_trigger_for(self)
                 super().__init__(
-                    interface_positions=[pos],
+                    interface_positions=[
+                        literal.InterfacePosition("position</trigger_pos>"),
+                    ],
                     trigger_position_name="position</trigger_pos>",
                 )
 
@@ -321,10 +321,10 @@ class TestActionTriggering:
             _typed_name: ClassVar[str] = "action<test>"
 
             def __init__(self):
-                pos = literal.InterfacePosition("position</trigger_pos>")
-                pos.set_is_trigger_for(self)
                 super().__init__(
-                    interface_positions=[pos],
+                    interface_positions=[
+                        literal.InterfacePosition("position</trigger_pos>"),
+                    ],
                     trigger_position_name="position</trigger_pos>",
                 )
 
@@ -371,10 +371,10 @@ class TestActionTriggering:
             _typed_name: ClassVar[str] = "action<test>"
 
             def __init__(self):
-                pos = literal.InterfacePosition("position</trigger_pos>")
-                pos.set_is_trigger_for(self)
                 super().__init__(
-                    interface_positions=[pos],
+                    interface_positions=[
+                        literal.InterfacePosition("position</trigger_pos>"),
+                    ],
                     trigger_position_name="position</trigger_pos>",
                 )
 

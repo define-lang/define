@@ -179,6 +179,10 @@ class Action(Quality):
             pos.name: pos for pos in (interface_positions or [])
         }
         self._trigger_position_name: str | None = trigger_position_name
+        if self._trigger_position_name is not None:
+            self._interface_positions[self._trigger_position_name].set_is_trigger_for(
+                self
+            )
 
     @property
     @override

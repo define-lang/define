@@ -27,7 +27,8 @@ class StatementData:
     """Template-friendly representation of an action statement."""
 
     kind: StatementKind
-    local_name: str | None = None
+    local_var_name: str | None = None
+    local_typed_name: str | None = None
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
 
@@ -55,7 +56,8 @@ class ActionStatementsBlockGenerator:
         if isinstance(stmt, ast.LocalPositionDefinition):
             return StatementData(
                 kind=StatementKind.LOCAL_POSITION,
-                local_name=stmt.typed_name.name_content.name,
+                local_var_name=stmt.typed_name.name_content.name,
+                local_typed_name=stmt.typed_name.source_typed_name,
             )
         if isinstance(stmt, ast.CreateDimensionPointStatement):
             return StatementData(

@@ -41,10 +41,13 @@ class PythonLiteralCodeGenerator:
                 action_definition.ActionDefinitionGenerator(action_def).generate()
             )
 
+        has_action_body = any(ctx.has_body for ctx in action_contexts)
+
         return _MAIN_TEMPLATE.render(
             class_name=pos_context.class_name,
             typed_name=pos_context.typed_name,
             has_init=pos_context.has_init,
+            has_action_body=has_action_body,
             statements=pos_context.statements,
             actions=action_contexts,
             StatementKind=action_statements.StatementKind,

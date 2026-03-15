@@ -8,7 +8,7 @@
 {%- endmacro %}
 {% for stmt in statements %}
 {% if stmt.kind == StatementKind.LOCAL_POSITION %}
-        {{ stmt.local_name }} = literal.LocalPosition("{{ stmt.local_name }}")
+        {{ stmt.local_var_name }} = literal.LocalPosition("{{ stmt.local_typed_name }}")
 {% elif stmt.kind == StatementKind.CREATE_DIMENSION_POINT %}
         {{ pos(stmt.position) }}.create_dimension_point()
 {% elif stmt.kind == StatementKind.MOVE_DIMENSION_POINT %}

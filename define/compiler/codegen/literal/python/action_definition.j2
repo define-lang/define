@@ -1,2 +1,19 @@
 class {{ action.class_name }}(literal.Action):
     _typed_name: ClassVar[str] = "{{ action.typed_name }}"
+{% if action.has_body %}
+
+    def __init__(self):
+        super().__init__(
+            interface_positions=[
+{% for iface_name in action.interface_positions %}
+                literal.InterfacePosition("{{ iface_name }}"),
+{% endfor %}
+            ],
+            trigger_position_name="{{ action.trigger_position_name }}",
+        )
+
+    @override
+    def execute(self):
+{% set statements = action.body_statements %}
+{% include "action_statements.j2" %}
+{% endif %}

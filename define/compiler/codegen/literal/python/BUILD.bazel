@@ -8,6 +8,7 @@ py_library(
     srcs = ["action_definition.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":action_statements",
         ":naming",
         "//define/compiler:ast",
     ],

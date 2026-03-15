@@ -10,8 +10,8 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        a = literal.LocalPosition("a")
-        b = literal.LocalPosition("b")
+        a = literal.LocalPosition("position<a>")
+        b = literal.LocalPosition("position<b>")
         a.create_dimension_point()
         a.move_dimension_point_to(b)
 
