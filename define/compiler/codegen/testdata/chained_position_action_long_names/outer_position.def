@@ -1,0 +1,5 @@
+define the potential position<my.domain.com:my_library_collection:/outer_position> {
+    it may only contain dimension points where {
+        it has the action</perform_operation>.
+    }
+}

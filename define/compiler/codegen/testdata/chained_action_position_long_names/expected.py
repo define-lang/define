@@ -5,15 +5,15 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 
-class Act(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
+class PerformOperation(literal.Action):
+    _typed_name: ClassVar[str] = "action<my.domain.com:my_library_collection:/perform_operation>"
 
     def __init__(self):
         super().__init__(
             interface_positions=[
-                literal.InterfacePosition("position<trigger_pos>"),
+                literal.InterfacePosition("position<operation_trigger>"),
             ],
-            trigger_position_name="position<trigger_pos>",
+            trigger_position_name="position<operation_trigger>",
         )
 
     @override
@@ -23,22 +23,22 @@ class Act(literal.Action):
 
 
 class Test(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/test>"
 
     @override
     def after_assigned(self):
         self.create_dimension_point()
         self.dimension_point.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            "action<my.domain.com:my_library_collection:/perform_operation>"
         ).get_interface_position(
-            "position<trigger_pos>"
+            "position<operation_trigger>"
         ).create_dimension_point()
         self.dimension_point.get_action(
-            "action<my.domain.com:my_lib:/act>"
+            "action<my.domain.com:my_library_collection:/perform_operation>"
         ).get_interface_position(
-            "position<trigger_pos>"
+            "position<operation_trigger>"
         ).dimension_point.get_position(
-            "position<my.domain.com:my_lib:/inner>"
+            "position<my.domain.com:my_library_collection:/inner_position>"
         ).create_dimension_point()
 
 

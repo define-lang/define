@@ -77,6 +77,12 @@ known-first-party = ["define", "defcl", "tools"]
     "D107", # Generated code doesn't need __init__ docstrings.
 ]
 
+[tool.ruff]
+force-exclude = true
+
+[tool.ruff.format]
+exclude = ["**/codegen/testdata/**/expected.py"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 

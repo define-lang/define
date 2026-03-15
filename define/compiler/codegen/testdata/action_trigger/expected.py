@@ -30,7 +30,9 @@ class Test(literal.GlobalPosition):
         self.create_dimension_point()
         self.dimension_point.get_action(
             "action<my.domain.com:my_lib:/do_thing>"
-        ).get_interface_position("position<trigger_pos>").create_dimension_point()
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).create_dimension_point()
 
 
 def main():

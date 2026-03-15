@@ -1,0 +1,9 @@
+define the potential action<a.b:cd:/b> {
+    define the position<t>.
+    it happens when {
+        the position<t> has a dimension point.
+    } and it does {
+        define the position<r>.
+        create a dimension point in position<r>.
+    }
+}

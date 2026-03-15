@@ -10,7 +10,9 @@
             "{{ e.typed_name }}"
         )
 {%- elif e.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
-.get_interface_position("{{ e.typed_name }}")
+.get_interface_position(
+            "{{ e.typed_name }}"
+        )
 {%- endif %}
 {%- endfor %}
 {%- endmacro %}
