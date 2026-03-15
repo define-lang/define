@@ -103,9 +103,6 @@ class Position(Quality, ABC):
             else:
                 self._dimension_point.assign_position(constraint)
 
-    def after_assigned(self):
-        """Run when this position is assigned as a quality. Override in subclasses."""
-
     def move_dimension_point_to(self, destination: Position):
         """Move the dimension point from this position to destination."""
         if self._dimension_point is None:
@@ -132,6 +129,9 @@ class GlobalPosition(Position):
     def _get_constraints(self) -> list[Constraint]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
+
+    def after_assigned(self):
+        """Run when this position is assigned as a quality. Override in subclasses."""
 
 
 class LocalPosition(Position):
