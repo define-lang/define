@@ -7,6 +7,7 @@ Simply adding a new directory to testdata/ will cause a new test to be
 generated here.
 """
 
+import difflib
 from pathlib import Path
 
 import pytest
@@ -37,4 +38,14 @@ def test_generates_expected_output(
     monkeypatch.chdir(test_case_dir)
     result = driver.Driver().compile_program(Path("test.def"))
 
-    assert result.generated_code == expected
+    assert result.generated_code is not None
+    if result.generated_code != expected:
+        diff = "".join(
+            difflib.unified_diff(
+                expected.splitlines(keepends=True),
+                result.generated_code.splitlines(keepends=True),
+                fromfile="expected.py",
+                tofile="generated",
+            )
+        )
+        pytest.fail(diff)
