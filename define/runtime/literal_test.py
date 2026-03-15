@@ -7,33 +7,41 @@ from define.runtime import literal
 
 
 class TestDimensionPoint:
-    def test_assign_quality_triggers_after_assigned(self):
+    def test_assign_position_triggers_after_assigned(self):
         triggered: list[str] = []
 
-        class TrackingPosition(literal.LocalPosition):
+        class TrackingPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test_pos>"
+
             @override
             def after_assigned(self):
                 triggered.append(self.name)
 
         dp = literal.DimensionPoint()
-        pos = TrackingPosition("test_pos")
-        dp.assign_quality(pos)
+        pos = TrackingPosition()
+        dp.assign_position(pos)
 
-        assert triggered == ["test_pos"]
+        assert triggered == ["position<test_pos>"]
 
-    def test_assign_quality_stores_quality(self):
+    def test_assign_position_stores_position(self):
+        class MyPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<quality_pos>"
+
         dp = literal.DimensionPoint()
-        pos = literal.LocalPosition("quality_pos")
-        dp.assign_quality(pos)
+        pos = MyPosition()
+        dp.assign_position(pos)
 
-        assert dp._qualities["quality_pos"] is pos
+        assert dp._positions["position<quality_pos>"] is pos
 
-    def test_get_position_returns_stored_quality(self):
+    def test_get_position_returns_stored_position(self):
+        class MyPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<quality_pos>"
+
         dp = literal.DimensionPoint()
-        pos = literal.LocalPosition("quality_pos")
-        dp.assign_quality(pos)
+        pos = MyPosition()
+        dp.assign_position(pos)
 
-        assert dp.get_position("quality_pos") is pos
+        assert dp.get_position("position<quality_pos>") is pos
 
     def test_get_position_raises_on_missing_name(self):
         dp = literal.DimensionPoint()
@@ -85,7 +93,7 @@ class TestGlobalPosition:
 
         class MyPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[list[type[literal.GlobalPosition]]] = [
+            constraints: ClassVar[list[literal.Constraint]] = [
                 ConstraintPosition,
             ]
 
@@ -93,7 +101,23 @@ class TestGlobalPosition:
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
-        assert "position<constraint>" in pos._dimension_point._qualities
+        assert "position<constraint>" in pos._dimension_point._positions
+
+    def test_create_dimension_point_assigns_action_constraints(self):
+        class ConstraintAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<constraint>"
+
+        class MyPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test>"
+            constraints: ClassVar[list[literal.Constraint]] = [
+                ConstraintAction,
+            ]
+
+        pos = MyPosition()
+        pos.create_dimension_point()
+
+        assert pos._dimension_point is not None
+        assert "action<constraint>" in pos._dimension_point._actions
 
     def test_after_assigned_default_does_nothing(self):
         class MyPosition(literal.GlobalPosition):
@@ -162,7 +186,7 @@ class TestLocalPosition:
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
-        assert "position<constraint>" in pos._dimension_point._qualities
+        assert "position<constraint>" in pos._dimension_point._positions
 
 
 class TestMovePosition:
@@ -210,3 +234,41 @@ class TestStart:
         literal.start(entry)
 
         assert triggered == ["position<entry>"]
+
+
+class TestAction:
+    def test_name_from_class_var(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test.com:lib:/thing>"
+
+        action = MyAction()
+
+        assert action.name == "action<test.com:lib:/thing>"
+
+
+class TestDimensionPointActions:
+    def test_assign_action_stores_action(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        dp = literal.DimensionPoint()
+        action = MyAction()
+        dp.assign_action(action)
+
+        assert dp._actions["action<test>"] is action
+
+    def test_get_action_returns_stored_action(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        dp = literal.DimensionPoint()
+        action = MyAction()
+        dp.assign_action(action)
+
+        assert dp.get_action("action<test>") is action
+
+    def test_get_action_raises_on_missing_name(self):
+        dp = literal.DimensionPoint()
+
+        with pytest.raises(KeyError):
+            _ = dp.get_action("nonexistent")

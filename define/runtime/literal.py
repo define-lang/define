@@ -33,37 +33,50 @@ class NoDimensionPointError(DefineRuntimeError):
     )
 
 
+class Quality(ABC):
+    """Abstract base class for all qualities (positions and actions)."""
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Return the name of this quality."""
+
+
 class DimensionPoint:
     """A dimension point in the Define universe."""
 
     def __init__(self):
-        """Initialize with an empty qualities dictionary."""
-        self._qualities: dict[str, Position] = {}
+        """Initialize with empty positions and actions dictionaries."""
+        self._positions: dict[str, GlobalPosition] = {}
+        self._actions: dict[str, Action] = {}
 
-    def assign_quality(self, quality_position: Position):
-        """Assign a quality to this dimension point, triggering after_assigned."""
-        self._qualities[quality_position.name] = quality_position
-        quality_position.after_assigned()
+    def assign_position(self, position: GlobalPosition):
+        """Assign a position to this dimension point, triggering after_assigned."""
+        self._positions[position.name] = position
+        position.after_assigned()
 
-    def get_position(self, name: str) -> Position:
-        """Return the quality position stored under the given name."""
-        return self._qualities[name]
+    def assign_action(self, action: Action):
+        """Assign an action to this dimension point."""
+        self._actions[action.name] = action
+
+    def get_position(self, name: str) -> GlobalPosition:
+        """Return the position stored under the given name."""
+        return self._positions[name]
+
+    def get_action(self, name: str) -> Action:
+        """Return the action stored under the given name."""
+        return self._actions[name]
 
 
-class Position(ABC):
+class Position(Quality, ABC):
     """Abstract base class for positions that can contain a dimension point."""
 
     def __init__(self):
         """Initialize with no dimension point."""
         self._dimension_point: DimensionPoint | None = None
 
-    @property
     @abstractmethod
-    def name(self) -> str:
-        """Return the name of this position."""
-
-    @abstractmethod
-    def _get_constraints(self) -> list[type[GlobalPosition]]:
+    def _get_constraints(self) -> list[Constraint]:
         """Return the constraint types for this position."""
 
     @property
@@ -84,9 +97,13 @@ class Position(ABC):
             raise DimensionPointExistsError(self.name)
         self._dimension_point = DimensionPoint()
         for constraint_type in self._get_constraints():
-            self._dimension_point.assign_quality(constraint_type())
+            constraint = constraint_type()
+            if isinstance(constraint, Action):
+                self._dimension_point.assign_action(constraint)
+            else:
+                self._dimension_point.assign_position(constraint)
 
-    def after_assigned(self):  # noqa: B027
+    def after_assigned(self):
         """Run when this position is assigned as a quality. Override in subclasses."""
 
     def move_dimension_point_to(self, destination: Position):
@@ -103,7 +120,7 @@ class GlobalPosition(Position):
     """A globally-defined position with a class-level typed name and constraints."""
 
     _typed_name: ClassVar[str]
-    constraints: ClassVar[list[type[GlobalPosition]]] = []
+    constraints: ClassVar[list[Constraint]] = []
 
     @property
     @override
@@ -112,7 +129,7 @@ class GlobalPosition(Position):
         return type(self)._typed_name
 
     @override
-    def _get_constraints(self) -> list[type[GlobalPosition]]:
+    def _get_constraints(self) -> list[Constraint]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
 
@@ -123,12 +140,12 @@ class LocalPosition(Position):
     def __init__(
         self,
         name: str,
-        constraints: list[type[GlobalPosition]] | None = None,
+        constraints: list[Constraint] | None = None,
     ):
         """Initialize a local position with the given name and optional constraints."""
         super().__init__()
         self._name: str = name
-        self._constraints: list[type[GlobalPosition]] = constraints or []
+        self._constraints: list[Constraint] = constraints or []
 
     @property
     @override
@@ -137,16 +154,31 @@ class LocalPosition(Position):
         return self._name
 
     @override
-    def _get_constraints(self) -> list[type[GlobalPosition]]:
+    def _get_constraints(self) -> list[Constraint]:
         """Return the constraint types for this position."""
         return self._constraints
 
 
-def start(entry_point: Position):
+class Action(Quality):
+    """A globally-defined action with a class-level typed name."""
+
+    _typed_name: ClassVar[str]
+
+    @property
+    @override
+    def name(self) -> str:
+        """Return the typed name of this action."""
+        return type(self)._typed_name
+
+
+Constraint = type[GlobalPosition] | type[Action]
+
+
+def start(entry_point: GlobalPosition):
     """Execute the Define program startup sequence.
 
     Creates a dimension point (the view point) and assigns the entry point
     position as a quality, which triggers entry_point.after_assigned().
     """
     view_point = DimensionPoint()
-    view_point.assign_quality(entry_point)
+    view_point.assign_position(entry_point)
