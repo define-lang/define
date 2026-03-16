@@ -11,7 +11,12 @@ class Act(literal.Action):
     def __init__(self):
         super().__init__(
             interface_positions=[
-                literal.InterfacePosition("position<trigger_pos>"),
+                literal.InterfacePosition(
+                    "position<trigger_pos>",
+                    constraints=[
+                        Inner,
+                    ],
+                ),
             ],
             trigger_position_name="position<trigger_pos>",
         )

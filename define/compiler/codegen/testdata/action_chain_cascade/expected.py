@@ -29,7 +29,12 @@ class ReactA(literal.Action):
         super().__init__(
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
-                literal.InterfacePosition("position<result>"),
+                literal.InterfacePosition(
+                    "position<result>",
+                    constraints=[
+                        Final,
+                    ],
+                ),
             ],
             trigger_position_name="position<trigger>",
         )
@@ -64,7 +69,13 @@ class KickOff(literal.Action):
         super().__init__(
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
-                literal.InterfacePosition("position<output>"),
+                literal.InterfacePosition(
+                    "position<output>",
+                    constraints=[
+                        ReactA,
+                        ReactB,
+                    ],
+                ),
             ],
             trigger_position_name="position<trigger>",
         )

@@ -5,8 +5,19 @@ class {{ action.class_name }}(literal.Action):
     def __init__(self):
         super().__init__(
             interface_positions=[
-{% for iface_name in action.interface_positions %}
-                literal.InterfacePosition("{{ iface_name }}"),
+{% for iface in action.interface_positions %}
+{% if iface.constraint_class_names %}
+                literal.InterfacePosition(
+                    "{{ iface.typed_name }}",
+                    constraints=[
+{% for name in iface.constraint_class_names %}
+                        {{ name }},
+{% endfor %}
+                    ],
+                ),
+{% else %}
+                literal.InterfacePosition("{{ iface.typed_name }}"),
+{% endif %}
 {% endfor %}
             ],
             trigger_position_name="{{ action.trigger_position_name }}",

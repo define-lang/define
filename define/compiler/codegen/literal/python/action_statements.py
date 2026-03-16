@@ -4,6 +4,7 @@ import enum
 from dataclasses import dataclass, field
 
 from define.compiler import ast
+from define.compiler.codegen.literal.python import naming
 
 
 class StatementKind(enum.Enum):
@@ -45,6 +46,7 @@ class StatementData:
     kind: StatementKind
     local_var_name: str | None = None
     local_typed_name: str | None = None
+    constraint_class_names: list[str] = field(default_factory=list)
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
 
@@ -77,6 +79,9 @@ class ActionStatementsBlockGenerator:
                 kind=StatementKind.LOCAL_POSITION,
                 local_var_name=stmt.typed_name.name_content.name,
                 local_typed_name=stmt.typed_name.source_typed_name,
+                constraint_class_names=naming.constraints_to_class_names(
+                    stmt.constraints
+                ),
             )
         if isinstance(stmt, ast.CreateDimensionPointStatement):
             return StatementData(

@@ -42,6 +42,9 @@ py_library(
     name = "naming",
     srcs = ["naming.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+    ],
 )
 
 py_library(

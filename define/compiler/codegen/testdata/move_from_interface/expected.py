@@ -16,7 +16,12 @@ class Act(literal.Action):
                 literal.InterfacePosition("position<src_b>"),
                 literal.InterfacePosition("position<src_c>"),
                 literal.InterfacePosition("position<iface_dest>"),
-                literal.InterfacePosition("position<chain_dest>"),
+                literal.InterfacePosition(
+                    "position<chain_dest>",
+                    constraints=[
+                        MidDest,
+                    ],
+                ),
             ],
             trigger_position_name="position<trigger>",
         )

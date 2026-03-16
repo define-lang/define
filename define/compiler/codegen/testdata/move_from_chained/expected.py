@@ -12,11 +12,31 @@ class Act(literal.Action):
         super().__init__(
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
-                literal.InterfacePosition("position<chain_src_a>"),
-                literal.InterfacePosition("position<chain_src_b>"),
-                literal.InterfacePosition("position<chain_src_c>"),
+                literal.InterfacePosition(
+                    "position<chain_src_a>",
+                    constraints=[
+                        MidSrcA,
+                    ],
+                ),
+                literal.InterfacePosition(
+                    "position<chain_src_b>",
+                    constraints=[
+                        MidSrcB,
+                    ],
+                ),
+                literal.InterfacePosition(
+                    "position<chain_src_c>",
+                    constraints=[
+                        MidSrcC,
+                    ],
+                ),
                 literal.InterfacePosition("position<iface_dest>"),
-                literal.InterfacePosition("position<chain_dest>"),
+                literal.InterfacePosition(
+                    "position<chain_dest>",
+                    constraints=[
+                        MidDest,
+                    ],
+                ),
             ],
             trigger_position_name="position<trigger>",
         )

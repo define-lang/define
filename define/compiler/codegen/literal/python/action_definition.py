@@ -10,13 +10,21 @@ from define.compiler.codegen.literal.python import (
 
 
 @dataclass
+class InterfacePositionContext:
+    """Template context for an interface position in an action definition."""
+
+    typed_name: str
+    constraint_class_names: list[str] = field(default_factory=list)
+
+
+@dataclass
 class ActionDefinitionContext:
     """Template context for rendering an action definition class."""
 
     class_name: str
     typed_name: str
     has_body: bool = False
-    interface_positions: list[str] = field(default_factory=list)
+    interface_positions: list[InterfacePositionContext] = field(default_factory=list)
     trigger_position_name: str = ""
     body_statements: list[action_statements.StatementData] = field(default_factory=list)
 
@@ -44,7 +52,12 @@ class ActionDefinitionGenerator:
             )
 
         interface_positions = [
-            local_def.typed_name.source_typed_name
+            InterfacePositionContext(
+                typed_name=local_def.typed_name.source_typed_name,
+                constraint_class_names=naming.constraints_to_class_names(
+                    local_def.constraints
+                ),
+            )
             for local_def in block.local_definitions
         ]
 

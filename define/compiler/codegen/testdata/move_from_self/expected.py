@@ -22,7 +22,12 @@ class Test(literal.GlobalPosition):
     @override
     def after_assigned(self):
         local_dest = literal.LocalPosition("position<local_dest>")
-        chain_start = literal.LocalPosition("position<chain_start>")
+        chain_start = literal.LocalPosition(
+            "position<chain_start>",
+            constraints=[
+                Mid,
+            ],
+        )
         self.create_dimension_point()
         chain_start.create_dimension_point()
         chain_start.dimension_point.get_position(

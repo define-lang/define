@@ -28,7 +28,12 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        a = literal.LocalPosition("position<a>")
+        a = literal.LocalPosition(
+            "position<a>",
+            constraints=[
+                B,
+            ],
+        )
         a.create_dimension_point()
         a.dimension_point.get_position(
             "position<my.domain.com:my_lib:/b>"

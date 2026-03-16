@@ -13,7 +13,12 @@ class Act(literal.Action):
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition("position<iface_dest>"),
-                literal.InterfacePosition("position<chain_dest>"),
+                literal.InterfacePosition(
+                    "position<chain_dest>",
+                    constraints=[
+                        MidDest,
+                    ],
+                ),
             ],
             trigger_position_name="position<trigger>",
         )
@@ -25,7 +30,12 @@ class Act(literal.Action):
         src_c = literal.LocalPosition("position<src_c>")
         src_d = literal.LocalPosition("position<src_d>")
         local_dest = literal.LocalPosition("position<local_dest>")
-        local_chain_dest = literal.LocalPosition("position<local_chain_dest>")
+        local_chain_dest = literal.LocalPosition(
+            "position<local_chain_dest>",
+            constraints=[
+                MidLocal,
+            ],
+        )
         src_a.create_dimension_point()
         src_b.create_dimension_point()
         src_c.create_dimension_point()

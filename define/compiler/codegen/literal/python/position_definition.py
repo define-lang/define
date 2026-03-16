@@ -32,14 +32,9 @@ class PositionDefinitionGenerator:
     def generate(self) -> PositionDefinitionContext:
         """Generate template context for the position definition."""
         has_init = self._definition.initialization is not None
-        constraint_class_names: list[str] = []
-        if self._definition.constraints is not None:
-            constraint_class_names = [
-                naming.path_to_class_name(
-                    req.typed_global_name.name_content.path.relative_path
-                )
-                for req in self._definition.constraints.requirements
-            ]
+        constraint_class_names = naming.constraints_to_class_names(
+            self._definition.constraints
+        )
 
         statements: list[action_statements.StatementData] = []
         if self._definition.initialization is not None:
