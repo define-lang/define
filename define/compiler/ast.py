@@ -59,8 +59,6 @@ class SourcePosition:
         )
 
 
-# TODO: Clean up other places that construct SourcePosition(1, 1, 1, 1)
-# to use START_OF_FILE_POSITION instead.
 START_OF_FILE_POSITION: Final = SourcePosition(
     line=1, column=1, end_line=1, end_column=1
 )

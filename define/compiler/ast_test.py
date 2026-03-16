@@ -6,7 +6,7 @@ import pytest
 
 from define.compiler import ast
 
-_POS = ast.SourcePosition(line=1, column=1, end_line=1, end_column=1)
+_POS = ast.START_OF_FILE_POSITION
 
 
 def _make_fqun(
