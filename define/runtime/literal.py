@@ -33,6 +33,20 @@ class NoDimensionPointError(DefineRuntimeError):
     )
 
 
+class UnsatisfiedConstraintError(DefineRuntimeError):
+    """Raised when moving a dimension point to a position whose constraints are not met."""
+
+    message_format: ClassVar[str] = (
+        "Cannot move dimension point to '{self.position_name}':"
+        " unsatisfied constraint '{self.constraint_name}'."
+    )
+
+    def __init__(self, position_name: str, constraint_name: str):
+        """Initialize with the destination position name and unsatisfied constraint name."""
+        self.constraint_name: str = constraint_name
+        super().__init__(position_name)
+
+
 class Quality(ABC):
     """Abstract base class for all qualities (positions and actions)."""
 
@@ -66,6 +80,14 @@ class DimensionPoint:
     def get_action(self, name: str) -> Action:
         """Return the action stored under the given name."""
         return self._actions[name]
+
+    @property
+    def quality_types(self) -> frozenset[Constraint]:
+        """Return the set of constraint types satisfied by this dimension point."""
+        return frozenset(
+            {type(p) for p in self._positions.values()}
+            | {type(a) for a in self._actions.values()}
+        )
 
 
 class Position(Quality, ABC):
@@ -110,6 +132,12 @@ class Position(Quality, ABC):
             raise NoDimensionPointError(self.name)
         if destination._dimension_point is not None:
             raise DimensionPointExistsError(destination.name)
+        quality_types = self._dimension_point.quality_types
+        for constraint_type in destination._get_constraints():
+            if constraint_type not in quality_types:
+                raise UnsatisfiedConstraintError(
+                    destination.name, constraint_type().name
+                )
         destination._dimension_point = self._dimension_point
         self._dimension_point = None
         destination._after_dimension_point_arrived()

@@ -89,7 +89,7 @@ class TestGlobalPosition:
 
     def test_create_dimension_point_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<constraint>"
+            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         class MyPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test>"
@@ -101,11 +101,11 @@ class TestGlobalPosition:
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
-        assert "position<constraint>" in pos._dimension_point._positions
+        assert "position<test.com:lib:/constraint>" in pos._dimension_point._positions
 
     def test_create_dimension_point_assigns_action_constraints(self):
         class ConstraintAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<constraint>"
+            _typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
 
         class MyPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test>"
@@ -117,7 +117,7 @@ class TestGlobalPosition:
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
-        assert "action<constraint>" in pos._dimension_point._actions
+        assert "action<test.com:lib:/constraint>" in pos._dimension_point._actions
 
     def test_after_assigned_default_does_nothing(self):
         class MyPosition(literal.GlobalPosition):
@@ -180,13 +180,13 @@ class TestLocalPosition:
 
     def test_create_dimension_point_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<constraint>"
+            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         pos = literal.LocalPosition("test", constraints=[ConstraintPosition])
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
-        assert "position<constraint>" in pos._dimension_point._positions
+        assert "position<test.com:lib:/constraint>" in pos._dimension_point._positions
 
 
 class TestMovePosition:
@@ -217,6 +217,61 @@ class TestMovePosition:
         with pytest.raises(literal.DimensionPointExistsError) as exc_info:
             source.move_dimension_point_to(dest)
         assert exc_info.value.position_name == "dest"
+
+    def test_move_with_satisfied_constraints_succeeds(self):
+        class ConstraintPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+
+        source = literal.LocalPosition(
+            "position<source>", constraints=[ConstraintPosition]
+        )
+        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintPosition])
+        source.create_dimension_point()
+
+        source.move_dimension_point_to(dest)
+
+        assert not source.has_dimension_point
+        assert dest.has_dimension_point
+
+    def test_move_with_unsatisfied_position_constraint_raises(self):
+        class ConstraintPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+
+        source = literal.LocalPosition("position<source>")
+        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintPosition])
+        source.create_dimension_point()
+
+        with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
+            source.move_dimension_point_to(dest)
+        assert exc_info.value.position_name == "position<dest>"
+        assert exc_info.value.constraint_name == "position<test.com:lib:/constraint>"
+
+    def test_move_with_unsatisfied_action_constraint_raises(self):
+        class ConstraintAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
+
+        source = literal.LocalPosition("position<source>")
+        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintAction])
+        source.create_dimension_point()
+
+        with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
+            source.move_dimension_point_to(dest)
+        assert exc_info.value.position_name == "position<dest>"
+        assert exc_info.value.constraint_name == "action<test.com:lib:/constraint>"
+
+    def test_move_constraint_check_does_not_transfer_on_failure(self):
+        class ConstraintPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+
+        source = literal.LocalPosition("position<source>")
+        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintPosition])
+        source.create_dimension_point()
+
+        with pytest.raises(literal.UnsatisfiedConstraintError):
+            source.move_dimension_point_to(dest)
+
+        assert source.has_dimension_point
+        assert not dest.has_dimension_point
 
 
 class TestStart:
