@@ -28,6 +28,9 @@ class InnerPosition(literal.GlobalPosition):
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/test>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        PerformOperation,
+    ]
 
     @override
     def after_assigned(self):

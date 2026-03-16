@@ -11,14 +11,23 @@ class C(literal.GlobalPosition):
 
 class B(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/b>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        C,
+    ]
 
 
 class A(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/a>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        B,
+    ]
 
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        A,
+    ]
 
     @override
     def after_assigned(self):

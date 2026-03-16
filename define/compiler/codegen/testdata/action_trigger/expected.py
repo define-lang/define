@@ -24,6 +24,9 @@ class DoThing(literal.Action):
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        DoThing,
+    ]
 
     @override
     def after_assigned(self):

@@ -16,6 +16,7 @@ class PositionDefinitionContext:
     class_name: str
     typed_name: str
     has_init: bool
+    constraint_class_names: list[str] = field(default_factory=list)
     statements: list[action_statements.StatementData] = field(default_factory=list)
 
 
@@ -31,6 +32,15 @@ class PositionDefinitionGenerator:
     def generate(self) -> PositionDefinitionContext:
         """Generate template context for the position definition."""
         has_init = self._definition.initialization is not None
+        constraint_class_names: list[str] = []
+        if self._definition.constraints is not None:
+            constraint_class_names = [
+                naming.path_to_class_name(
+                    req.typed_global_name.name_content.path.relative_path
+                )
+                for req in self._definition.constraints.requirements
+            ]
+
         statements: list[action_statements.StatementData] = []
         if self._definition.initialization is not None:
             block_gen = action_statements.ActionStatementsBlockGenerator(
@@ -47,5 +57,6 @@ class PositionDefinitionGenerator:
             class_name=class_name,
             typed_name=self._definition.typed_name.full_typed_name(),
             has_init=has_init,
+            constraint_class_names=constraint_class_names,
             statements=statements,
         )

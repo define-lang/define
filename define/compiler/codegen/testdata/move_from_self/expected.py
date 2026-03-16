@@ -11,6 +11,9 @@ class End(literal.GlobalPosition):
 
 class Mid(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        End,
+    ]
 
 
 class Test(literal.GlobalPosition):

@@ -1,5 +1,12 @@
 class {{ pos.class_name }}(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "{{ pos.typed_name }}"
+{% if pos.constraint_class_names %}
+    constraints: ClassVar[list[literal.Constraint]] = [
+{% for name in pos.constraint_class_names %}
+        {{ name }},
+{% endfor %}
+    ]
+{% endif %}
 {% if pos.has_init %}
 
     @override

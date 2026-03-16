@@ -64,6 +64,9 @@ class EndDest(literal.GlobalPosition):
 
 class MidDest(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_dest>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        EndDest,
+    ]
 
 
 class EndLocal(literal.GlobalPosition):
@@ -72,10 +75,16 @@ class EndLocal(literal.GlobalPosition):
 
 class MidLocal(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_local>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        EndLocal,
+    ]
 
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        Act,
+    ]
 
     @override
     def after_assigned(self):

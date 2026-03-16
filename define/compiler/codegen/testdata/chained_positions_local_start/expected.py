@@ -11,10 +11,16 @@ class D(literal.GlobalPosition):
 
 class C(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/c>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        D,
+    ]
 
 
 class B(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/b>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        C,
+    ]
 
 
 class Test(literal.GlobalPosition):

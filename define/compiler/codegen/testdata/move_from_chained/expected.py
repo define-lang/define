@@ -65,6 +65,9 @@ class EndSrcA(literal.GlobalPosition):
 
 class MidSrcA(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_a>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        EndSrcA,
+    ]
 
 
 class EndSrcB(literal.GlobalPosition):
@@ -73,6 +76,9 @@ class EndSrcB(literal.GlobalPosition):
 
 class MidSrcB(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_b>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        EndSrcB,
+    ]
 
 
 class EndSrcC(literal.GlobalPosition):
@@ -81,6 +87,9 @@ class EndSrcC(literal.GlobalPosition):
 
 class MidSrcC(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_c>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        EndSrcC,
+    ]
 
 
 class EndDest(literal.GlobalPosition):
@@ -89,10 +98,16 @@ class EndDest(literal.GlobalPosition):
 
 class MidDest(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_dest>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        EndDest,
+    ]
 
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    constraints: ClassVar[list[literal.Constraint]] = [
+        Act,
+    ]
 
     @override
     def after_assigned(self):
