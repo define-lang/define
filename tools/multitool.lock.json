@@ -1,80 +1,36 @@
 {
   "$schema": "https://raw.githubusercontent.com/theoremlp/rules_multitool/main/lockfile.schema.json",
-  "multitool": {
-    "binaries": [
-      {
-        "kind": "archive",
-        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-aarch64-unknown-linux-gnu.tar.xz",
-        "file": "multitool-aarch64-unknown-linux-gnu/multitool",
-        "sha256": "693b66def2d8dacdfcb5a011b7c32a8e89a13bdc031db8dc40c0759a38253103",
-        "os": "linux",
-        "cpu": "arm64"
-      },
-      {
-        "kind": "archive",
-        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-x86_64-unknown-linux-gnu.tar.xz",
-        "file": "multitool-x86_64-unknown-linux-gnu/multitool",
-        "sha256": "34dc5968dad458a4050ebde58e484ebb7c624a119e4031347683eeb80922e6df",
-        "os": "linux",
-        "cpu": "x86_64"
-      },
-      {
-        "kind": "archive",
-        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-aarch64-apple-darwin.tar.xz",
-        "file": "multitool-aarch64-apple-darwin/multitool",
-        "sha256": "8f5e0cd033b0fcc128c762f8d527110433523da378619cecf40e91c1df5c0686",
-        "os": "macos",
-        "cpu": "arm64"
-      },
-      {
-        "kind": "archive",
-        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-x86_64-apple-darwin.tar.xz",
-        "file": "multitool-x86_64-apple-darwin/multitool",
-        "sha256": "abde3bbbd49a09d33048e1f55cc9a8aa5dd61a13493a0b1bd5ffc2c56e5bf837",
-        "os": "macos",
-        "cpu": "x86_64"
-      },
-      {
-        "kind": "archive",
-        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-x86_64-pc-windows-msvc.zip",
-        "file": "multitool.exe",
-        "sha256": "df058283b8d23fd56f8accee3ad218faef20d5bd81735c2615626aeca46d2158",
-        "os": "windows",
-        "cpu": "x86_64"
-      }
-    ]
-  },
   "buf": {
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.65.0/buf-Linux-aarch64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Linux-aarch64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "53b4854a5ce61e02915e134370ad9c85f85cc3c906cbc464dddba5c450dee1ff",
+        "sha256": "157806788e82216d4ea6010a9d21e61130225d0d61c37904a4fad675fe446d94",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.65.0/buf-Linux-x86_64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Linux-x86_64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "15dfd76f882f6648aa3b9fcd23eaa149826cc9000a35bc89ced50ddca689e890",
+        "sha256": "9ad6fcfb208646476f020ee84eaea0563fe94debe9337763d404f267b6d85d03",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.65.0/buf-Darwin-arm64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Darwin-arm64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "86e233aa35a1763dd00fd7651c0b0cb0067395260c337bb064b68c4c85a46e38",
+        "sha256": "e5e3a80dc1bc3dd374ecfcbc250c731a05dbb01d382117d3d420bca7875d9977",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.65.0/buf-Darwin-x86_64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Darwin-x86_64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "c70d364478f61cd444455f03cfc44b503afd4cb0a47be045bad4553f117fbf7c",
+        "sha256": "fd055cd83595039b9d05cf587b5460281b4a7ff0b86f7584cccba17ec1860e88",
         "os": "macos",
         "cpu": "x86_64"
       }
@@ -119,45 +75,89 @@
       }
     ]
   },
+  "multitool": {
+    "binaries": [
+      {
+        "kind": "archive",
+        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-aarch64-unknown-linux-gnu.tar.xz",
+        "file": "multitool-aarch64-unknown-linux-gnu/multitool",
+        "sha256": "693b66def2d8dacdfcb5a011b7c32a8e89a13bdc031db8dc40c0759a38253103",
+        "os": "linux",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-x86_64-unknown-linux-gnu.tar.xz",
+        "file": "multitool-x86_64-unknown-linux-gnu/multitool",
+        "sha256": "34dc5968dad458a4050ebde58e484ebb7c624a119e4031347683eeb80922e6df",
+        "os": "linux",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-aarch64-apple-darwin.tar.xz",
+        "file": "multitool-aarch64-apple-darwin/multitool",
+        "sha256": "8f5e0cd033b0fcc128c762f8d527110433523da378619cecf40e91c1df5c0686",
+        "os": "macos",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-x86_64-apple-darwin.tar.xz",
+        "file": "multitool-x86_64-apple-darwin/multitool",
+        "sha256": "abde3bbbd49a09d33048e1f55cc9a8aa5dd61a13493a0b1bd5ffc2c56e5bf837",
+        "os": "macos",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/bazel-contrib/multitool/releases/download/v0.9.0/multitool-x86_64-pc-windows-msvc.zip",
+        "file": "multitool.exe",
+        "sha256": "df058283b8d23fd56f8accee3ad218faef20d5bd81735c2615626aeca46d2158",
+        "os": "windows",
+        "cpu": "x86_64"
+      }
+    ]
+  },
   "ruff": {
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.1/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-aarch64-unknown-linux-musl.tar.gz",
         "file": "ruff-aarch64-unknown-linux-musl/ruff",
-        "sha256": "05a41b8b7c068633b27e8f9149c70154ac2090e61d48e5ea9983de769593d29c",
+        "sha256": "750164384c78e208b5e5bf764916f23270844c6a6ea0057dec1f7951bce02fca",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.1/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-x86_64-unknown-linux-musl.tar.gz",
         "file": "ruff-x86_64-unknown-linux-musl/ruff",
-        "sha256": "c8d04b4f6ce053809d98d1ef99f897c52e6204708bb157551ede7fbab505fea2",
+        "sha256": "7ca0d590da2274429e8033cdaae1d923229ad19b2df7d8c2c3b94451527ab45c",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.1/ruff-aarch64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-aarch64-apple-darwin.tar.gz",
         "file": "ruff-aarch64-apple-darwin/ruff",
-        "sha256": "196f6d4bd380f4a03f9d2d3bcfe17b991145a110f5fc9f5999521cd5e5335e1c",
+        "sha256": "e90a351ddc2e5e411168b5cbfc7d694231e793948d0a29aa82618ea6f17225f1",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.1/ruff-x86_64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-x86_64-apple-darwin.tar.gz",
         "file": "ruff-x86_64-apple-darwin/ruff",
-        "sha256": "55fd4437b4b6b0c75793525c980bb1d49d9723044edbdd7dcc962cb595d26d51",
+        "sha256": "aef752bd803e58a732651d7ecd8434288f2ce7f252e415ecfa5b4a1518aea218",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.1/ruff-x86_64-pc-windows-msvc.zip",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-x86_64-pc-windows-msvc.zip",
         "file": "ruff.exe",
-        "sha256": "4bd4d5bb5b3c3fa44a4c3d4748dc03f9fbd53808ff2d3adda75e50b1ec1374e2",
+        "sha256": "34548ff94a9f52c96c75672d34eee6068a4bf4fdcb3ca12d10e9f4b8abedad96",
         "os": "windows",
         "cpu": "x86_64"
       }
@@ -167,49 +167,49 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.4/uv-aarch64-unknown-linux-musl.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-aarch64-unknown-linux-musl.tar.gz",
         "file": "uv-aarch64-unknown-linux-musl/uv",
-        "sha256": "82fc461031dafb130af761e7dbec1bcc51b826c2e664f5bf8bc4e4f8330320cd",
+        "sha256": "d08c08b82cdcaf2bd3d928ffe844d3558dda53f90066db6ef9174157cc763252",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.4/uv-x86_64-unknown-linux-gnu.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-x86_64-unknown-linux-gnu.tar.gz",
         "file": "uv-x86_64-unknown-linux-gnu/uv",
-        "sha256": "6b52a47358deea1c5e173278bf46b2b489747a59ae31f2a4362ed5c6c1c269f7",
+        "sha256": "3e1027f26ce8c7e4c32e2277a7fed2cb410f2f1f9320d3df97653d40e21f415b",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.4/uv-aarch64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-aarch64-apple-darwin.tar.gz",
         "file": "uv-aarch64-apple-darwin/uv",
-        "sha256": "a6852e4dc565c8fedcf5adcdf09fca7caf5347739bed512bd95b15dada36db51",
+        "sha256": "8a09f0ef51ee7f7170731b4cb8bde5bf9ba6da5304f49a7df6cdab42a1f37b5d",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.4/uv-x86_64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-x86_64-apple-darwin.tar.gz",
         "file": "uv-x86_64-apple-darwin/uv",
-        "sha256": "df6dd1c3ebeab4369a098c516c15c233c62bf789a40a4864b30dad1d38d7604e",
+        "sha256": "dd18420591d625f9b4ca2b57a7a6fe3cce43910f02e02d90e47a4101428de14a",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.4/uv-aarch64-pc-windows-msvc.zip",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-aarch64-pc-windows-msvc.zip",
         "file": "uv.exe",
-        "sha256": "77f859cfc26181bdfb94087ce42336d9e2d9e0700bc42f6668445cde517198ce",
+        "sha256": "2c6fe113f14574bc27f085751c68d3485589fcc3c3c64ed85dd1eecc2f87cffc",
         "os": "windows",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.4/uv-x86_64-pc-windows-msvc.zip",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-x86_64-pc-windows-msvc.zip",
         "file": "uv.exe",
-        "sha256": "0f0e22d7507633bfb38d9b42fb6a0341f1f74b8e80b070a31231c354812432a3",
+        "sha256": "d31a30f1dfb96e630a08d5a9b3f3f551254b7ed6e9b7e495f46a4232661c7252",
         "os": "windows",
         "cpu": "x86_64"
       }
