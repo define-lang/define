@@ -1,49 +1,54 @@
 """Code generator for the Define compiler."""
 
+from dataclasses import dataclass, field
+
 from define.compiler import ast, diagnostics
 from define.compiler.codegen.literal.python import generator as python_generator
-from define.compiler.validator import validation_result
+from define.compiler.validator import reference_graph
+
+
+@dataclass
+class GenerationResult:
+    """Result of code generation."""
+
+    code: str | None = None
+    diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
 
 
 class CodeGenerator:
     """Generates code for Define programs."""
 
     def generate(
-        self, program_result: validation_result.ProgramValidationResult
-    ) -> str | None:
+        self,
+        graph: reference_graph.ReferenceGraph,
+        entry_file_definitions: list[ast.QualityDefinition],
+    ) -> GenerationResult:
         """Generate code for a validated Define program.
 
-        Returns generated code on success, or None if entry point
-        validation fails (diagnostics are added to the result).
+        Finds the entry point (a PositionDefinition) among the given
+        definitions. Returns a GenerationResult with generated code on
+        success, or diagnostics if entry point validation fails.
 
-        Expects a ProgramValidationResult with no errors. Has undefined
-        behavior (including potentially crashing) if passed in a
-        ProgramValidationResult with errors.
+        Expects a ReferenceGraph from a ProgramValidationResult with no
+        errors. Has undefined behavior (including potentially crashing)
+        if the graph comes from a validation with errors.
         """
-        first_result = program_result.file_results[0]
-        entry_point_result = None
-        for def_result in first_result.definition_results:
-            if isinstance(def_result.definition, ast.PositionDefinition):
-                entry_point_result = def_result
+        entry_point = None
+        for definition in entry_file_definitions:
+            if isinstance(definition, ast.PositionDefinition):
+                entry_point = definition
 
-        if not entry_point_result:
-            if first_result.definition_results:
-                position = first_result.definition_results[0].definition.position
+        if entry_point is None:
+            if entry_file_definitions:
+                position = entry_file_definitions[0].position
             else:
-                position = ast.SourcePosition(
-                    line=1, column=1, end_line=1, end_column=1
-                )
-            first_result.add_file_diagnostic(
-                diagnostics.EntryPointNotPositionDiagnostic(position=position)
+                position = ast.START_OF_FILE_POSITION
+            return GenerationResult(
+                diagnostics=[
+                    diagnostics.EntryPointNotPositionDiagnostic(position=position)
+                ]
             )
-            return None
-
-        action_results = [
-            r
-            for file_result in program_result.file_results
-            for r in file_result.definition_results
-            if isinstance(r.definition, ast.ActionDefinition)
-        ]
 
         python_gen = python_generator.PythonLiteralCodeGenerator()
-        return python_gen.generate_entry_point(entry_point_result, action_results)
+        code = python_gen.generate(graph, entry_point)
+        return GenerationResult(code=code)

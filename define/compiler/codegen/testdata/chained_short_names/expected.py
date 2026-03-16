@@ -22,6 +22,10 @@ class B(literal.Action):
         r.create_dimension_point()
 
 
+class A(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<a.b:cd:/a>"
+
+
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<a.b:cd:/test>"
 

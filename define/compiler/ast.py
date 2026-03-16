@@ -6,7 +6,7 @@ import abc
 import enum
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Self, override
+from typing import TYPE_CHECKING, Final, Self, override
 
 from define.compiler import constants
 
@@ -57,6 +57,13 @@ class SourcePosition:
             end_line=token.end_line,
             end_column=token.end_column,
         )
+
+
+# TODO: Clean up other places that construct SourcePosition(1, 1, 1, 1)
+# to use START_OF_FILE_POSITION instead.
+START_OF_FILE_POSITION: Final = SourcePosition(
+    line=1, column=1, end_line=1, end_column=1
+)
 
 
 @dataclass

@@ -1,8 +1,10 @@
-class {{ class_name }}(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "{{ typed_name }}"
-{% if has_init %}
+class {{ pos.class_name }}(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "{{ pos.typed_name }}"
+{% if pos.has_init %}
 
     @override
     def after_assigned(self):
+{% with statements=pos.statements %}
 {% include "action_statements.j2" %}
+{% endwith %}
 {% endif %}

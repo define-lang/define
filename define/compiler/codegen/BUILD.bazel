@@ -16,7 +16,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/codegen/literal/python:generator",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:reference_graph",
     ],
 )
 
@@ -38,6 +38,7 @@ py_test(
         ":generator",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:validation_result",
     ],
 )
 

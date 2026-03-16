@@ -34,7 +34,7 @@ py_library(
         ":position_definition",
         ":template_env",
         "//define/compiler:ast",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:reference_graph",
     ],
 )
 

@@ -16,7 +16,7 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
-from define.compiler.validator import file_validator, validation_result
+from define.compiler.validator import file_validator, reference_graph, validation_result
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def _parse_program(source: str, lark_parser: parser.Parser) -> ast.Program:
 
 def _reference_edges(
     result: validation_result.FileValidationResult,
-) -> list[validation_result.ReferenceEdge]:
+) -> list[reference_graph.ReferenceEdge]:
     return [
         edge
         for definition_result in result.definition_results

@@ -31,6 +31,7 @@ py_library(
     deps = [
         ":dimension_point_tracker",
         ":name_validators",
+        ":reference_graph",
         ":scope_tracker",
         ":stats",
         ":validation_result",
@@ -53,6 +54,7 @@ py_test(
     srcs = ["file_validator_test.py"],
     deps = [
         ":file_validator",
+        ":reference_graph",
         ":validation_result",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -146,13 +148,20 @@ py_library(
     name = "reference_graph",
     srcs = ["reference_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "@pypi//networkx",
+    ],
 )
 
 py_test(
     name = "reference_graph_test",
     size = "small",
     srcs = ["reference_graph_test.py"],
-    deps = [":reference_graph"],
+    deps = [
+        ":reference_graph",
+        "//define/compiler:ast",
+    ],
 )
 
 py_library(
@@ -178,6 +187,7 @@ py_library(
         "//define/compiler:__subpackages__",
     ],
     deps = [
+        ":reference_graph",
         ":stats",
         "//define/compiler:action_call_graph",
         "//define/compiler:ast",
@@ -193,6 +203,7 @@ py_test(
     srcs = ["validation_result_test.py"],
     deps = [
         ":program_validator",
+        ":reference_graph",
         ":stats",
         ":validation_result",
         "//define/compiler:parser",

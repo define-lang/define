@@ -39,7 +39,7 @@ from define.compiler.validator import (
 class _DeferredReferenceEdge:
     """An edge waiting for its target file to complete validation."""
 
-    edge: validation_result.ReferenceEdge
+    edge: reference_graph.ReferenceEdge
     source_definition: validation_result.DefinitionValidationResult
 
 
@@ -208,6 +208,7 @@ class ProgramValidator:
             file_results=file_results,
             action_call_graph=self._action_call_graph,
             config_loading_time_ns=self._config_loading_time_ns,
+            reference_graph=self._reference_graph,
         )
 
     def _run_pool_loop(
@@ -255,6 +256,7 @@ class ProgramValidator:
         if name in self._definition_results:
             return
         self._definition_results[name] = definition_result
+        self._reference_graph.add_definition(definition_result.definition)
         self._action_call_graph.process_definition_result(
             definition_result.trigger_positions, definition_result.action_body_effects
         )
@@ -411,9 +413,7 @@ class ProgramValidator:
             if target_file is None:
                 continue
 
-            source_key = ref_edge.enclosing_definition.typed_name.full_typed_name()
-            target_key = ref_edge.full_typed_name
-            detected = self._reference_graph.try_add_edge(source_key, target_key)
+            detected = self._reference_graph.try_add_edge(ref_edge)
             if detected is not None:
                 source_definition.add_diagnostic(
                     diagnostics.CircularGlobalReferenceDiagnostic(
@@ -468,7 +468,7 @@ class ProgramValidator:
 
     def _check_if_current_universe_path_in_a_subroot(
         self,
-        edge: validation_result.ReferenceEdge,
+        edge: reference_graph.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
         enclosing_root: pathlib.PurePosixPath,
         source_definition: validation_result.DefinitionValidationResult,
@@ -497,7 +497,7 @@ class ProgramValidator:
 
     def _validate_reference_against_target(
         self,
-        edge: validation_result.ReferenceEdge,
+        edge: reference_graph.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
         target_result: validation_result.FileValidationResult,
         source_definition: validation_result.DefinitionValidationResult,
@@ -514,7 +514,7 @@ class ProgramValidator:
 
     def _do_validate_reference_against_target(
         self,
-        edge: validation_result.ReferenceEdge,
+        edge: reference_graph.ReferenceEdge,
         target_file: pathlib.PurePosixPath,
         target_result: validation_result.FileValidationResult,
         source_definition: validation_result.DefinitionValidationResult,
@@ -532,7 +532,7 @@ class ProgramValidator:
             self._path_tracker.mark_not_found(target_file)
             return
 
-        if edge.full_typed_name not in self._definition_results:
+        if edge.target_full_typed_name not in self._definition_results:
             source_definition.add_diagnostic(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     position=global_name.position,

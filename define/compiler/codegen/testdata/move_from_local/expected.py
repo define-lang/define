@@ -58,6 +58,22 @@ class Act(literal.Action):
         )
 
 
+class EndDest(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_dest>"
+
+
+class MidDest(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_dest>"
+
+
+class EndLocal(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_local>"
+
+
+class MidLocal(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_local>"
+
+
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
 

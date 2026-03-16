@@ -22,6 +22,10 @@ class PerformOperation(literal.Action):
         result.create_dimension_point()
 
 
+class OuterPosition(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/outer_position>"
+
+
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/test>"
 

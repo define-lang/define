@@ -5,6 +5,14 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 
+class End(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end>"
+
+
+class Mid(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid>"
+
+
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
 

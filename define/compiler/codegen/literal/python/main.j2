@@ -9,12 +9,14 @@ from define.runtime import literal
 {% include "action_definition.j2" %}
 
 {% endfor %}
+{% for pos in positions %}
 
 {% include "position_definition.j2" %}
 
+{% endfor %}
 
 def main():
-    literal.start({{ class_name }}())
+    literal.start({{ entry_point_class_name }}())
 
 
 if __name__ == "__main__":

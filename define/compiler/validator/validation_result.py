@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
     import pathlib
     from collections.abc import Mapping, Sequence, Set
 
-    from define.compiler.validator import stats
+    from define.compiler.validator import reference_graph, stats
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
@@ -31,21 +31,6 @@ class DiscoveredFile:
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str
     position: ast.SourcePosition
-
-
-@dataclass(frozen=True)
-class ReferenceEdge:
-    """A reference from one definition to a global name in another file."""
-
-    enclosing_definition: ast.QualityDefinition
-    global_name_reference: ast.GlobalTypedNameReference
-
-    @cached_property
-    def full_typed_name(self) -> str:
-        """Return the fully qualified typed-name key for this edge target."""
-        return self.global_name_reference.full_typed_name(
-            in_universe=self.enclosing_definition.typed_name.name_content.fqun
-        )
 
 
 @dataclass(frozen=True)
@@ -105,7 +90,7 @@ class DefinitionValidationResult:
     definition: ast.QualityDefinition
     _diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
 
-    reference_edges: list[ReferenceEdge] = field(default_factory=list)
+    reference_edges: list[reference_graph.ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
     deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
     trigger_positions: list[action_call_graph.TriggerPositionInfo] = field(
@@ -214,6 +199,7 @@ class ProgramValidationResult:
     file_results: list[FileValidationResult]
     action_call_graph: action_call_graph.ActionCallGraph
     config_loading_time_ns: int
+    reference_graph: reference_graph.ReferenceGraph
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:

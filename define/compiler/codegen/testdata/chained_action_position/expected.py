@@ -22,6 +22,10 @@ class Act(literal.Action):
         result.create_dimension_point()
 
 
+class Inner(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/inner>"
+
+
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
 

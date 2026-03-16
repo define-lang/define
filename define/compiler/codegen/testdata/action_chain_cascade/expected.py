@@ -5,22 +5,21 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 
-class KickOff(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/kick_off>"
+class Final(literal.Action):
+    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/final>"
 
     def __init__(self):
         super().__init__(
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
-                literal.InterfacePosition("position<output>"),
             ],
             trigger_position_name="position<trigger>",
         )
 
     @override
     def execute(self):
-        done = literal.LocalPosition("position<done>")
-        done.create_dimension_point()
+        complete = literal.LocalPosition("position<complete>")
+        complete.create_dimension_point()
 
 
 class ReactA(literal.Action):
@@ -58,21 +57,22 @@ class ReactB(literal.Action):
         local_result.create_dimension_point()
 
 
-class Final(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/final>"
+class KickOff(literal.Action):
+    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/kick_off>"
 
     def __init__(self):
         super().__init__(
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
+                literal.InterfacePosition("position<output>"),
             ],
             trigger_position_name="position<trigger>",
         )
 
     @override
     def execute(self):
-        complete = literal.LocalPosition("position<complete>")
-        complete.create_dimension_point()
+        done = literal.LocalPosition("position<done>")
+        done.create_dimension_point()
 
 
 class Test(literal.GlobalPosition):

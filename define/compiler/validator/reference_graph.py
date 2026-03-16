@@ -1,9 +1,38 @@
-"""Incremental cycle detection for global name references."""
+"""Directed graph of definition references, backed by networkx."""
 
 from __future__ import annotations
 
-from collections import deque
+import typing
 from dataclasses import dataclass
+from functools import cached_property
+from typing import cast
+
+import networkx as nx
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from define.compiler import ast
+
+
+@dataclass(frozen=True)
+class ReferenceEdge:
+    """A reference from one definition to a global name in another file."""
+
+    enclosing_definition: ast.QualityDefinition
+    global_name_reference: ast.GlobalTypedNameReference
+
+    @cached_property
+    def target_full_typed_name(self) -> str:
+        """Return the fully qualified typed-name key for this edge target."""
+        return self.global_name_reference.full_typed_name(
+            in_universe=self.enclosing_definition.typed_name.name_content.fqun
+        )
+
+    @property
+    def source_full_typed_name(self) -> str:
+        """Return the fully qualified typed-name key for the edge source."""
+        return self.enclosing_definition.typed_name.full_typed_name()
 
 
 @dataclass(frozen=True)
@@ -19,56 +48,50 @@ class ReferenceGraph:
     Maintains a DAG of typed definition keys. When a new edge would close
     a cycle, it is rejected and the cycle path is returned. Edges that
     don't close a cycle are added to the graph.
+
+    Each node stores its ``QualityDefinition`` as a node attribute.
     """
 
     def __init__(self):
         """Initialize an empty reference graph."""
-        self._adjacency: dict[str, list[str]] = {}
+        self._graph: nx.DiGraph[str] = nx.DiGraph()
 
-    def try_add_edge(self, source: str, target: str) -> DetectedCycle | None:
+    def add_definition(self, definition: ast.QualityDefinition):
+        """Register a definition as a node in the graph."""
+        self._graph.add_node(
+            definition.typed_name.full_typed_name(), definition=definition
+        )
+
+    def try_add_edge(self, edge: ReferenceEdge) -> DetectedCycle | None:
         """Try to add an edge. Returns the detected cycle if it would close one.
 
         If the edge doesn't close a cycle, it is added to the graph and
-        None is returned.
+        None is returned. The source node's definition is stored as a
+        node attribute.
         """
-        cycle = self._find_path(target, source)
-        if cycle is not None:
-            return DetectedCycle(path=[*cycle, target])
-        self._adjacency.setdefault(source, []).append(target)
+        source = edge.source_full_typed_name
+        target = edge.target_full_typed_name
+        if source == target:
+            return DetectedCycle(path=[source, target])
+        # A brand-new target node has no outgoing edges, so it can't
+        # create a path back to source — skip the cycle check.
+        if target not in self._graph:
+            self._graph.add_node(target)
+        elif nx.has_path(self._graph, target, source):
+            cycle_path = nx.shortest_path(self._graph, target, source)  # pyright: ignore[reportUnknownMemberType]
+            return DetectedCycle(path=[*cycle_path, target])
+        _ = self._graph.add_edge(source, target)
         return None
 
-    def _find_path(self, start: str, end: str) -> list[str] | None:
-        """Return a path from start to end (inclusive), or None if unreachable.
+    def dfs_postorder_from(
+        self, root: ast.QualityDefinition
+    ) -> Iterator[ast.QualityDefinition]:
+        """Yield definitions in DFS post-order from root.
 
-        Uses BFS to find the shortest path. Instead of copying the full path
-        at every queue step, we record each node's predecessor in a dict and
-        reconstruct the path only when we actually reach ``end``.
+        Leaf nodes are yielded first, root last.
         """
-        # Self-loop: the node trivially reaches itself.
-        if start == end:
-            return [start]
-        # If start has no outgoing edges it can't reach anything.
-        if start not in self._adjacency:
-            return None
-        # parent[node] = the node we came from. Doubles as the visited set:
-        # a node is visited iff it is a key in parent.
-        parent: dict[str, str] = {start: start}
-        queue: deque[str] = deque([start])
-        while queue:
-            node = queue.popleft()
-            for neighbor in self._adjacency.get(node, []):
-                if neighbor == end:
-                    # Found the target — walk the parent chain backwards
-                    # to reconstruct start → ... → end.
-                    path = [end]
-                    cur = node
-                    while cur != start:
-                        path.append(cur)
-                        cur = parent[cur]
-                    path.append(start)
-                    path.reverse()
-                    return path
-                if neighbor not in parent:
-                    parent[neighbor] = node
-                    queue.append(neighbor)
-        return None
+        root_key = root.typed_name.full_typed_name()
+        for node_key in nx.dfs_postorder_nodes(self._graph, root_key):
+            yield cast(
+                "ast.QualityDefinition", self._graph.nodes[node_key]["definition"]
+            )

@@ -65,8 +65,16 @@ class Driver:
         driver_result = self.validate_program(path)
         if driver_result.result.has_errors():
             return driver_result
+        program_result = driver_result.result
+        first_file = program_result.file_results[0]
+        entry_file_definitions = [r.definition for r in first_file.definition_results]
         codegen = generator.CodeGenerator()
-        driver_result.generated_code = codegen.generate(driver_result.result)
+        gen_result = codegen.generate(
+            program_result.reference_graph, entry_file_definitions
+        )
+        for diagnostic in gen_result.diagnostics:
+            first_file.add_file_diagnostic(diagnostic)
+        driver_result.generated_code = gen_result.code
         return driver_result
 
     @staticmethod

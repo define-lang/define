@@ -6,7 +6,12 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import ast, parser, transformer
-from define.compiler.validator import program_validator, stats, validation_result
+from define.compiler.validator import (
+    program_validator,
+    reference_graph,
+    stats,
+    validation_result,
+)
 from define.compiler.validator.program_validator_tests import test_helpers
 
 _FQUN = "my.domain.com:my_lib"
@@ -73,11 +78,11 @@ def test_reference_edge_same_universe():
     assert isinstance(pos_def, ast.PositionDefinition)
     assert pos_def.constraints is not None
     constraint_ref = pos_def.constraints.requirements[0].typed_global_name
-    edge = validation_result.ReferenceEdge(
+    edge = reference_graph.ReferenceEdge(
         enclosing_definition=pos_def,
         global_name_reference=constraint_ref,
     )
-    assert edge.full_typed_name == f"position<{_FQUN}:/a>"
+    assert edge.target_full_typed_name == f"position<{_FQUN}:/a>"
 
 
 def test_reference_edge_explicit_fqun():
@@ -92,11 +97,11 @@ def test_reference_edge_explicit_fqun():
     assert isinstance(pos_def, ast.PositionDefinition)
     assert pos_def.constraints is not None
     constraint_ref = pos_def.constraints.requirements[0].typed_global_name
-    edge = validation_result.ReferenceEdge(
+    edge = reference_graph.ReferenceEdge(
         enclosing_definition=pos_def,
         global_name_reference=constraint_ref,
     )
-    assert edge.full_typed_name == "position<other.com:other_lib:/b>"
+    assert edge.target_full_typed_name == "position<other.com:other_lib:/b>"
 
 
 def test_position_constraints_with_constraints():

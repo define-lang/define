@@ -30,6 +30,7 @@ from define.compiler.lark import lark_standalone
 from define.compiler.validator import (
     dimension_point_tracker,
     name_validators,
+    reference_graph,
     scope_tracker,
     stats,
     validation_result,
@@ -232,7 +233,7 @@ class DefinitionAstValidator:
     _context: FileValidationContext
     _diagnostics: list[diagnostics.Diagnostic]
     _definition: ast.QualityDefinition
-    _reference_edges: list[validation_result.ReferenceEdge]
+    _reference_edges: list[reference_graph.ReferenceEdge]
     _discovered_files: list[validation_result.DiscoveredFile]
     _deferred_chained_names: list[validation_result.DeferredChainElements]
     _trigger_positions: list[action_call_graph.TriggerPositionInfo]
@@ -865,7 +866,7 @@ class DefinitionAstValidator:
     ):
         """Record a reference edge and determine the target file to discover."""
         global_name = typed_global_name.name_content
-        edge = validation_result.ReferenceEdge(
+        edge = reference_graph.ReferenceEdge(
             enclosing_definition=self._definition,
             global_name_reference=typed_global_name,
         )
@@ -873,12 +874,12 @@ class DefinitionAstValidator:
         # In Position Initialization Blocks, self-references don't cause us
         # to do file loads. They are not actually external references.
         is_self_reference = (
-            edge.full_typed_name == self._definition.typed_name.full_typed_name()
+            edge.target_full_typed_name == self._definition.typed_name.full_typed_name()
         )
         if is_self_reference and allow_self_reference:
             return
         # Process a reference that's inside of this same file.
-        if edge.full_typed_name in self._seen_definitions or is_self_reference:
+        if edge.target_full_typed_name in self._seen_definitions or is_self_reference:
             self._reference_edges.append(edge)
             return
 
@@ -929,7 +930,7 @@ class DefinitionAstValidator:
 
     def _add_edge_and_discovered_file(
         self,
-        edge: validation_result.ReferenceEdge,
+        edge: reference_graph.ReferenceEdge,
         global_name: ast.ReferenceGlobalNameContent,
         root_prefix: pathlib.PurePosixPath,
         expected_fqun: ast.Fqun,

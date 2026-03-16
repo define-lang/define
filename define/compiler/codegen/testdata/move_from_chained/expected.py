@@ -59,6 +59,38 @@ class Act(literal.Action):
         )
 
 
+class EndSrcA(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_src_a>"
+
+
+class MidSrcA(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_a>"
+
+
+class EndSrcB(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_src_b>"
+
+
+class MidSrcB(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_b>"
+
+
+class EndSrcC(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_src_c>"
+
+
+class MidSrcC(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_c>"
+
+
+class EndDest(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_dest>"
+
+
+class MidDest(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_dest>"
+
+
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
 
