@@ -35,6 +35,7 @@ apkbuild
 apl
 apollo_guidance_computer
 apolloguidancecomputer
+apples
 applescript
 arc
 arexx
@@ -127,6 +128,7 @@ capcds
 carbon
 carto
 cartocss
+cask
 cds
 ceylon
 cfc
@@ -221,6 +223,7 @@ dylan
 e
 earthfile
 earthly
+eask
 ec
 ecl
 eclipse
@@ -424,6 +427,7 @@ linear_programming
 linearprogramming
 linker_script
 linkerscript
+liquidsoap
 lisp
 litcoffee
 literate_agda
@@ -468,6 +472,7 @@ mcfunction
 mercury
 meson
 metal
+metta
 mf
 minid
 minizinc
@@ -621,6 +626,8 @@ puppet
 purebasic
 purescript
 pwsh
+py
+py3
 pycon
 pyret
 pyrex
@@ -760,6 +767,7 @@ turing
 txl
 typ
 typescript
+typescriptreact
 typespec
 typst
 unified_parallel_c
