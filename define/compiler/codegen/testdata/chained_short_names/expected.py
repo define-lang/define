@@ -40,6 +40,9 @@ class Test(literal.GlobalPosition):
         self.create_dimension_point()
         self.dimension_point.get_position(
             "position<a.b:cd:/a>"
+        ).create_dimension_point()
+        self.dimension_point.get_position(
+            "position<a.b:cd:/a>"
         ).dimension_point.get_action(
             "action<a.b:cd:/b>"
         ).get_interface_position(

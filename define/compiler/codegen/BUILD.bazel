@@ -27,6 +27,7 @@ py_test(
     data = ["//define/compiler/codegen/testdata:testdata_files"],
     deps = [
         "//define/compiler:driver",
+        "//define/runtime:literal",
     ],
 )
 

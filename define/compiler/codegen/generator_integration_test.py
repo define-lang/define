@@ -8,6 +8,7 @@ generated here.
 """
 
 import difflib
+import runpy
 from pathlib import Path
 
 import pytest
@@ -49,3 +50,12 @@ def test_generates_expected_output(
             )
         )
         pytest.fail(diff)
+
+
+@pytest.mark.parametrize(
+    "test_case_dir",
+    _TEST_CASES,
+    ids=[d.name for d in _TEST_CASES],
+)
+def test_expected_output_runs(test_case_dir: Path):
+    runpy.run_path(str(test_case_dir / "expected.py"), run_name="__main__")
