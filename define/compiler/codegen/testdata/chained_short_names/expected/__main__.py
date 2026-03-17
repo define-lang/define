@@ -2,11 +2,11 @@
 
 from define.runtime import literal
 
-import a_b.cd.test
+import local.a_b.cd.test
 
 
 def main():
-    literal.start(a_b.cd.test.Test())
+    literal.start(local.a_b.cd.test.Test())
 
 
 if __name__ == "__main__":

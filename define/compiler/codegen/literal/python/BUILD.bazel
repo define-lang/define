@@ -48,6 +48,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:constants",
     ],
 )
 

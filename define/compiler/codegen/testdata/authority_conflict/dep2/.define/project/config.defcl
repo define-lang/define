@@ -1,0 +1,3 @@
+project: {
+  universe_name: "mv:a.b.c:the_lib"
+}

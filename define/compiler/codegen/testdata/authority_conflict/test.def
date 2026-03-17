@@ -1,0 +1,8 @@
+define the potential position<a.b.c:the_lib:/test> {
+    it may only contain dimension points where {
+        it has the action</do_thing>.
+        it has the action<a-b.c:the_lib:/do_thing>.
+        it has the action<mv:a.b.c:the_lib:/do_thing>.
+        it has the action<a.b/c:the_lib:/do_thing>.
+    }
+}

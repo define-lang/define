@@ -5,7 +5,7 @@ from __future__ import annotations
 import string
 from pathlib import Path
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast, constants, diagnostics
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent / "reserved_words"
 
@@ -32,7 +32,7 @@ _RESERVED_UNIVERSE_NAMES_EXPLICIT: frozenset[str] = frozenset(
         "authority",
         "define",
         "fqun",
-        "local",
+        constants.DEFAULT_MULTIVERSE,
         "multiverse",
         "mv",
         "name",
@@ -243,8 +243,13 @@ def validate_authority_reserved(
             )
         ]
 
-    effective_multiverse = multiverse.name if multiverse else "local"
-    if effective_multiverse in ("mv", "local") and "." not in lowered_domain:
+    effective_multiverse = (
+        multiverse.name if multiverse else constants.DEFAULT_MULTIVERSE
+    )
+    if (
+        effective_multiverse in ("mv", constants.DEFAULT_MULTIVERSE)
+        and "." not in lowered_domain
+    ):
         return [
             diagnostics.DotlessAuthorityDomainDiagnostic(
                 position=authority.position,

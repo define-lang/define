@@ -84,3 +84,46 @@ def test_local_name_double_conflict_reverse_order():
     second = local.convert("self")
     assert first == "self_"
     assert second == "self__"
+
+
+def test_authority_segment_simple():
+    converter = naming.NameConverter()
+    assert converter.authority_segment("my.domain.com") == "my_domain_com"
+
+
+def test_authority_segment_with_path():
+    converter = naming.NameConverter()
+    assert converter.authority_segment("my.domain.com/org") == "my_domain_com_org"
+
+
+def test_authority_segment_cached():
+    converter = naming.NameConverter()
+    first = converter.authority_segment("my.domain.com")
+    second = converter.authority_segment("my.domain.com")
+    assert first == second == "my_domain_com"
+
+
+def test_authority_segment_conflict():
+    converter = naming.NameConverter()
+    first = converter.authority_segment("my.domain.com")
+    second = converter.authority_segment("my-domain-com")
+    assert first == "my_domain_com"
+    assert second == "my_domain_com_"
+
+
+def test_authority_segment_conflict_with_hyphen_and_tilde():
+    converter = naming.NameConverter()
+    first = converter.authority_segment("a.b")
+    second = converter.authority_segment("a-b")
+    third = converter.authority_segment("a~b")
+    assert first == "a_b"
+    assert second == "a_b_"
+    assert third == "a_b__"
+
+
+def test_authority_segment_conflict_with_slash():
+    converter = naming.NameConverter()
+    first = converter.authority_segment("a.b/c")
+    second = converter.authority_segment("a-b/c")
+    assert first == "a_b_c"
+    assert second == "a_b_c_"

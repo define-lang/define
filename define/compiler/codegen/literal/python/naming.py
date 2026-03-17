@@ -8,12 +8,14 @@ import typing
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
+from define.compiler import constants
+
 if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 _PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
 
-_AUTHORITY_CHAR_TABLE = str.maketrans(".-~", "___")
+_AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
 
 
 @dataclass
@@ -53,19 +55,6 @@ _LOCAL_VAR_EXTRA_RESERVED: frozenset[str] = frozenset(
 )
 
 
-def _module_name_parts(fqun: ast.Fqun, path: ast.GlobalPathName) -> list[str]:
-    """Compute module name segments from an FQUN and definition path."""
-    parts: list[str] = []
-    if fqun.multiverse is not None:
-        parts.append(fqun.multiverse.name)
-    if fqun.authority is not None:
-        for segment in fqun.authority.name.split("/"):
-            parts.append(_authority_to_module_segment(segment))
-    parts.append(fqun.universe.name)
-    parts.extend(path.relative_path.parts)
-    return parts
-
-
 def _path_to_pascal(path: PurePosixPath) -> str:
     """Convert a definition path to a PascalCase class name."""
     return "".join(
@@ -99,11 +88,15 @@ class NameConverter:
 
     _class_names: dict[PurePosixPath, str]
     _used_class_names: set[str]
+    _authority_names: dict[str, str]
+    _used_authority_names: set[str]
 
     def __init__(self):
-        """Initialize with an empty class name cache."""
+        """Initialize with empty name caches."""
         self._class_names = {}
         self._used_class_names = set()
+        self._authority_names = {}
+        self._used_authority_names = set()
 
     def class_name(self, path: PurePosixPath) -> str:
         """Convert a definition path to a safe PascalCase class name.
@@ -118,6 +111,35 @@ class NameConverter:
         self._used_class_names.add(safe)
         return safe
 
+    def authority_segment(self, authority: str) -> str:
+        """Convert an authority string to a unique Python module segment.
+
+        Results are cached so the same authority always returns the same name.
+        Conflicts are resolved by appending underscores.
+        """
+        if authority in self._authority_names:
+            return self._authority_names[authority]
+        raw = _authority_to_module_segment(authority)
+        safe = raw
+        while safe in self._used_authority_names:
+            safe += "_"
+        self._authority_names[authority] = safe
+        self._used_authority_names.add(safe)
+        return safe
+
+    def _module_name_parts(self, fqun: ast.Fqun, path: ast.GlobalPathName) -> list[str]:
+        """Compute module name segments from an FQUN and definition path."""
+        parts: list[str] = []
+        if fqun.multiverse is not None:
+            parts.append(fqun.multiverse.name)
+        else:
+            parts.append(constants.DEFAULT_MULTIVERSE)
+        if fqun.authority is not None:
+            parts.append(self.authority_segment(fqun.authority.name))
+        parts.append(fqun.universe.name)
+        parts.extend(path.relative_path.parts)
+        return parts
+
     def module_name(self, name_content: ast.GlobalNameContent) -> str:
         """Compute the dotted Python module name for a global name.
 
@@ -126,7 +148,7 @@ class NameConverter:
         fqun = name_content.fqun
         if fqun is None:
             raise ValueError("name_content.fqun must not be None")
-        parts = _module_name_parts(fqun, name_content.path)
+        parts = self._module_name_parts(fqun, name_content.path)
         return ".".join(parts)
 
     def constraints_to_refs(
@@ -142,7 +164,7 @@ class NameConverter:
             name_content = req.typed_global_name.name_content
             cls_name = self.class_name(name_content.path.relative_path)
             fqun = name_content.fqun or enclosing_fqun
-            module_name = ".".join(_module_name_parts(fqun, name_content.path))
+            module_name = ".".join(self._module_name_parts(fqun, name_content.path))
             refs.append(ClassReference(class_name=cls_name, module_name=module_name))
         return refs
 
