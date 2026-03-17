@@ -10,6 +10,7 @@ py_library(
     deps = [
         ":action_statements",
         ":naming",
+        ":template_context",
         "//define/compiler:ast",
     ],
 )
@@ -20,6 +21,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
+        ":template_context",
         "//define/compiler:ast",
     ],
 )
@@ -31,9 +33,9 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":action_definition",
-        ":action_statements",
         ":naming",
         ":position_definition",
+        ":template_context",
         ":template_env",
         "//define/compiler:ast",
         "//define/compiler/validator:reference_graph",
@@ -63,6 +65,7 @@ py_library(
     deps = [
         ":action_statements",
         ":naming",
+        ":template_context",
         "//define/compiler:ast",
     ],
 )
@@ -71,6 +74,15 @@ py_library(
     name = "python",
     srcs = ["__init__.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
+)
+
+py_library(
+    name = "template_context",
+    srcs = ["template_context.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":naming",
+    ],
 )
 
 py_library(
@@ -110,6 +122,7 @@ pyright_test(
         ":naming_test",
         ":position_definition",
         ":python",
+        ":template_context",
         ":template_env",
     ],
 )

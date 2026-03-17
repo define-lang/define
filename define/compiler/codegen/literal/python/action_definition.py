@@ -1,32 +1,11 @@
-"""Python code generator data for action definitions."""
-
-from dataclasses import dataclass, field
+"""Python code generator for action definitions."""
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
     action_statements,
     naming,
+    template_context,
 )
-
-
-@dataclass
-class InterfacePositionContext:
-    """Template context for an interface position in an action definition."""
-
-    typed_name: str
-    constraint_class_names: list[str] = field(default_factory=list)
-
-
-@dataclass
-class ActionDefinitionContext:
-    """Template context for rendering an action definition class."""
-
-    class_name: str
-    typed_name: str
-    has_body: bool = False
-    interface_positions: list[InterfacePositionContext] = field(default_factory=list)
-    trigger_position_name: str = ""
-    body_statements: list[action_statements.StatementData] = field(default_factory=list)
 
 
 class ActionDefinitionGenerator:
@@ -44,24 +23,27 @@ class ActionDefinitionGenerator:
         self._definition = definition
         self._converter = converter
 
-    def generate(self) -> ActionDefinitionContext:
+    def generate(self) -> template_context.ActionDefinitionContext:
         """Generate template context for the action definition."""
-        class_name = self._converter.class_name(
-            self._definition.typed_name.name_content.path.relative_path
-        )
+        name_content = self._definition.typed_name.name_content
+        enclosing_fqun = name_content.fqun
+        class_name = self._converter.class_name(name_content.path.relative_path)
+        module_name = self._converter.module_name(name_content)
 
         block = self._definition.definition_block
         if block is None:
-            return ActionDefinitionContext(
+            return template_context.ActionDefinitionContext(
                 class_name=class_name,
                 typed_name=self._definition.typed_name.full_typed_name(),
+                module_name=module_name,
             )
 
         interface_positions = [
-            InterfacePositionContext(
+            template_context.InterfacePositionContext(
                 typed_name=local_def.typed_name.source_typed_name,
-                constraint_class_names=self._converter.constraints_to_class_names(
-                    local_def.constraints
+                constraint_refs=self._converter.constraints_to_refs(
+                    local_def.constraints,
+                    enclosing_fqun,
                 ),
             )
             for local_def in block.local_definitions
@@ -85,9 +67,10 @@ class ActionDefinitionGenerator:
             interface_position_names=interface_position_names,
         )
 
-        return ActionDefinitionContext(
+        return template_context.ActionDefinitionContext(
             class_name=class_name,
             typed_name=self._definition.typed_name.full_typed_name(),
+            module_name=module_name,
             has_body=True,
             interface_positions=interface_positions,
             trigger_position_name=trigger_position_name,

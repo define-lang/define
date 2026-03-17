@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import click.testing
 
-from define.compiler import driver, main, overall_stats
+from define.compiler import constants, driver, main, overall_stats
 
 _USAGE_ERROR = 2
 _runner = click.testing.CliRunner()
@@ -120,3 +120,19 @@ class TestCompileSubcommand:
         call_kwargs = mock_run.call_args
         assert call_kwargs.kwargs["stats_mode"] == overall_stats.StatsMode.OVERALL
         assert call_kwargs.kwargs["stats_stream"] is not None
+
+    @patch.object(
+        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
+    )
+    def test_default_output_dir(self, mock_run: MagicMock):
+        _runner.invoke(main.main, ["compile", "test.def"])
+        call_kwargs = mock_run.call_args
+        assert call_kwargs.kwargs["output_dir"] == constants.DEFAULT_OUTPUT_DIR
+
+    @patch.object(
+        driver.Driver, "run", autospec=True, return_value=driver.ExitCode.SUCCESS
+    )
+    def test_custom_output_dir(self, mock_run: MagicMock):
+        _runner.invoke(main.main, ["compile", "test.def", "--out", "my/output"])
+        call_kwargs = mock_run.call_args
+        assert call_kwargs.kwargs["output_dir"] == Path("my/output")

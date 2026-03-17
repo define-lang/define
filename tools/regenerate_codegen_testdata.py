@@ -4,6 +4,7 @@ Run this script with: bazelisk run --noshow_progress //tools:regenerate_codegen_
 """
 
 import contextlib
+import shutil
 import sys
 from pathlib import Path
 
@@ -18,8 +19,11 @@ def _regenerate_case(case_dir: Path) -> bool:
     if not (case_dir / "test.def").exists():
         return True
 
+    expected_dir = case_dir / "expected"
+    if expected_dir.exists():
+        shutil.rmtree(expected_dir)
     with contextlib.chdir(case_dir):
-        result = driver.Driver().compile_program(Path("test.def"))
+        result = driver.Driver().compile_program(Path("test.def"), expected_dir)
         if result.result.has_errors():
             print(f"  {case_dir.name}: FAILED")
             for exc in result.result.all_exceptions:
@@ -27,11 +31,6 @@ def _regenerate_case(case_dir: Path) -> bool:
             for diag in result.result.all_diagnostics:
                 print(f"    {diag}")
             return False
-        if result.generated_code is None:
-            print(f"  {case_dir.name}: FAILED (no code generated)")
-            return False
-
-    _ = (case_dir / "expected.py").write_text(result.generated_code)
     print(f"  {case_dir.name}: OK")
     return True
 

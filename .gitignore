@@ -6,6 +6,9 @@
 
 # Bazel
 bazel-*
+
+# Define compiler output
+define-out/
 .bazelrc.user
 
 experimental/

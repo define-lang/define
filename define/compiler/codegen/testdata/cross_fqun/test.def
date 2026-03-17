@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:parent_lib:/test> {
+    it may only contain dimension points where {
+        it has the action</do_thing>.
+        it has the action<my.domain.com:child_lib:/do_thing>.
+    }
+}

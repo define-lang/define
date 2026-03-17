@@ -7,10 +7,10 @@ from pathlib import Path
 
 import click
 
-from define.compiler import driver, overall_stats
+from define.compiler import constants, driver, overall_stats
 
-type _CommandFunction = Callable[[click.Context, Path, str | None], None]
-type _ClickWrappedFunction = Callable[[Path, str | None], None]
+type _CommandFunction = Callable[..., None]
+type _ClickWrappedFunction = Callable[..., None]
 
 
 def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
@@ -25,8 +25,8 @@ def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
     )
     @click.pass_context
     @functools.wraps(f)
-    def wrapper(ctx: click.Context, file: Path, stats: str | None):
-        f(ctx, file, stats)
+    def wrapper(ctx: click.Context, file: Path, stats: str | None, **kwargs: object):
+        f(ctx, file, stats, **kwargs)
 
     return wrapper
 
@@ -39,7 +39,13 @@ def main(ctx: click.Context):
         click.echo(ctx.get_help())
 
 
-def _run(ctx: click.Context, file: Path, stats: str | None, mode: driver.DriverMode):
+def _run(
+    ctx: click.Context,
+    file: Path,
+    stats: str | None,
+    mode: driver.DriverMode,
+    output_dir: Path | None = None,
+):
     d = driver.Driver()
     stats_mode = overall_stats.StatsMode(stats) if stats else None
     stats_stream = sys.stdout if stats_mode is not None else None
@@ -49,6 +55,7 @@ def _run(ctx: click.Context, file: Path, stats: str | None, mode: driver.DriverM
         error_stream=sys.stderr,
         stats_stream=stats_stream,
         stats_mode=stats_mode or overall_stats.StatsMode.OVERALL,
+        output_dir=output_dir,
     )
     ctx.exit(code)
 
@@ -62,9 +69,16 @@ def validate(ctx: click.Context, file: Path, stats: str | None):
 
 @main.command("compile")
 @_common_options
-def compile_cmd(ctx: click.Context, file: Path, stats: str | None):
+@click.option(
+    "--out",
+    type=click.Path(path_type=Path),
+    default=constants.DEFAULT_OUTPUT_DIR,
+    show_default=True,
+    help="Directory to write generated files into.",
+)
+def compile_cmd(ctx: click.Context, file: Path, stats: str | None, out: Path):
     """Compile a Define source file."""
-    _run(ctx, file, stats, driver.DriverMode.COMPILE)
+    _run(ctx, file, stats, driver.DriverMode.COMPILE, output_dir=out)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "my.domain.com:child_lib"
+      path: "lib"
+    }
+  ]
+}

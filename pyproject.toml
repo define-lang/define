@@ -55,7 +55,8 @@ known-first-party = ["define", "defcl", "tools"]
 "define/compiler/**/*.py" = [
     "S105", # Stop complaining about assigning things to "token"
 ]
-"**/codegen/testdata/**/expected.py" = [
+"**/codegen/testdata/**/expected/**/*.py" = [
+    "I001", # Import ordering depends on isort first-party config of the target project.
     "N801", # Generated code may produce non-CapWords class names.
 ]
 "**/*_test.py" = [
@@ -86,7 +87,7 @@ known-first-party = ["define", "defcl", "tools"]
 force-exclude = true
 
 [tool.ruff.format]
-exclude = ["**/codegen/testdata/**/expected.py"]
+exclude = ["**/codegen/testdata/**/expected/**/*.py"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
@@ -139,6 +140,11 @@ exclude = [
     "defcl/python/lark",
     "define/compiler/lark",
 ]
+
+[[tool.basedpyright.executionEnvironments]]
+root = "define/compiler/codegen/testdata"
+extraPaths = ["."]
+reportImplicitRelativeImport = false
 
 [dependency-groups]
 default = [

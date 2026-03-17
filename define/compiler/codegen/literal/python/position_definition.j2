@@ -1,17 +1,20 @@
-class {{ pos.class_name }}(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "{{ pos.typed_name }}"
-{% if pos.constraint_class_names %}
+{% include "file_header.j2" %}
+
+
+class {{ definition.class_name }}(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "{{ definition.typed_name }}"
+{% if definition.constraint_refs %}
     constraints: ClassVar[list[literal.Constraint]] = [
-{% for name in pos.constraint_class_names %}
-        {{ name }},
+{% for ref in definition.constraint_refs %}
+        {{ ref.module_name }}.{{ ref.class_name }},
 {% endfor %}
     ]
 {% endif %}
-{% if pos.has_init %}
+{% if definition.has_init %}
 
     @override
     def after_assigned(self):
-{% with statements=pos.statements %}
+{% with statements=definition.statements %}
 {% include "action_statements.j2" %}
 {% endwith %}
 {% endif %}

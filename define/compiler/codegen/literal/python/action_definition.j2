@@ -1,17 +1,20 @@
-class {{ action.class_name }}(literal.Action):
-    _typed_name: ClassVar[str] = "{{ action.typed_name }}"
-{% if action.has_body %}
+{% include "file_header.j2" %}
+
+
+class {{ definition.class_name }}(literal.Action):
+    _typed_name: ClassVar[str] = "{{ definition.typed_name }}"
+{% if definition.has_body %}
 
     def __init__(self):
         super().__init__(
             interface_positions=[
-{% for iface in action.interface_positions %}
-{% if iface.constraint_class_names %}
+{% for iface in definition.interface_positions %}
+{% if iface.constraint_refs %}
                 literal.InterfacePosition(
                     "{{ iface.typed_name }}",
                     constraints=[
-{% for name in iface.constraint_class_names %}
-                        {{ name }},
+{% for ref in iface.constraint_refs %}
+                        {{ ref.module_name }}.{{ ref.class_name }},
 {% endfor %}
                     ],
                 ),
@@ -20,11 +23,11 @@ class {{ action.class_name }}(literal.Action):
 {% endif %}
 {% endfor %}
             ],
-            trigger_position_name="{{ action.trigger_position_name }}",
+            trigger_position_name="{{ definition.trigger_position_name }}",
         )
 
     @override
     def execute(self):
-{% set statements = action.body_statements %}
+{% set statements = definition.body_statements %}
 {% include "action_statements.j2" %}
 {% endif %}

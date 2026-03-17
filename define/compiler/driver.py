@@ -42,7 +42,6 @@ class DriverResult:
 
     result: validation_result.ProgramValidationResult
     overall_stats: overall_stats.OverallStats
-    generated_code: str | None = None
 
 
 class Driver:
@@ -60,7 +59,7 @@ class Driver:
             ),
         )
 
-    def compile_program(self, path: Path) -> DriverResult:
+    def compile_program(self, path: Path, output_dir: Path) -> DriverResult:
         """Validate and then run code generation on a source file."""
         driver_result = self.validate_program(path)
         if driver_result.result.has_errors():
@@ -69,12 +68,11 @@ class Driver:
         first_file = program_result.file_results[0]
         entry_file_definitions = [r.definition for r in first_file.definition_results]
         codegen = generator.CodeGenerator()
-        gen_result = codegen.generate(
-            program_result.reference_graph, entry_file_definitions
+        gen_diagnostics = codegen.generate(
+            program_result.reference_graph, entry_file_definitions, output_dir
         )
-        for diagnostic in gen_result.diagnostics:
+        for diagnostic in gen_diagnostics:
             first_file.add_file_diagnostic(diagnostic)
-        driver_result.generated_code = gen_result.code
         return driver_result
 
     @staticmethod
@@ -109,9 +107,9 @@ class Driver:
         path: Path,
         mode: DriverMode = DriverMode.VALIDATE,
         error_stream: TextIO | None = None,
-        code_output_stream: TextIO | None = None,
         stats_stream: TextIO | None = None,
         stats_mode: overall_stats.StatsMode = overall_stats.StatsMode.OVERALL,
+        output_dir: Path | None = None,
     ) -> ExitCode:
         """Validate (and optionally compile) a Define source file.
 
@@ -120,19 +118,19 @@ class Driver:
             mode: Whether to only validate or also compile.
             error_stream: Where to write error messages (syntax errors, diagnostics).
                 Defaults to sys.stderr.
-            code_output_stream: Where to write generated code in compile mode.
-                Defaults to sys.stdout.
             stats_stream: Where to write timing statistics.
                 If None, no stats are printed.
             stats_mode: Level of detail for stats output.
+            output_dir: Directory to write generated files into in compile mode.
+                Required when mode is COMPILE.
         """
         if error_stream is None:
             error_stream = sys.stderr
-        if code_output_stream is None:
-            code_output_stream = sys.stdout
         try:
             if mode == DriverMode.COMPILE:
-                driver_result = self.compile_program(path)
+                if output_dir is None:
+                    raise ValueError("output_dir is required when mode is COMPILE")
+                driver_result = self.compile_program(path, output_dir)
             else:
                 driver_result = self.validate_program(path)
         except exceptions.DefineError as e:
@@ -154,9 +152,6 @@ class Driver:
                 for diagnostic in result.diagnostics:
                     print(diagnostic.format(source_lines, file_name), file=error_stream)
                 had_errors = True
-
-        if not had_errors and driver_result.generated_code is not None:
-            print(driver_result.generated_code, file=code_output_stream, end="")
 
         if stats_stream is not None:
             stats_output = overall_stats.format_stats(

@@ -5,13 +5,34 @@ from __future__ import annotations
 import builtins
 import keyword
 import typing
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
 
 if typing.TYPE_CHECKING:
-    from pathlib import PurePosixPath
-
     from define.compiler import ast
 
 _PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
+
+_AUTHORITY_CHAR_TABLE = str.maketrans(".-~", "___")
+
+
+@dataclass
+class ClassReference:
+    """A reference to a generated class, including its module location."""
+
+    class_name: str
+    module_name: str
+
+
+def _authority_to_module_segment(name: str) -> str:
+    """Convert an authority name segment to a valid Python module segment."""
+    return name.translate(_AUTHORITY_CHAR_TABLE)
+
+
+def file_path_for_module(module_name: str) -> Path:
+    """Convert a dotted module name to an __init__.py file path."""
+    return Path(*module_name.split(".")) / "__init__.py"
+
 
 # Names used at module scope in generated Python code.
 _CLASS_EXTRA_RESERVED: frozenset[str] = frozenset(
@@ -30,6 +51,19 @@ _LOCAL_VAR_EXTRA_RESERVED: frozenset[str] = frozenset(
         "self",
     }
 )
+
+
+def _module_name_parts(fqun: ast.Fqun, path: ast.GlobalPathName) -> list[str]:
+    """Compute module name segments from an FQUN and definition path."""
+    parts: list[str] = []
+    if fqun.multiverse is not None:
+        parts.append(fqun.multiverse.name)
+    if fqun.authority is not None:
+        for segment in fqun.authority.name.split("/"):
+            parts.append(_authority_to_module_segment(segment))
+    parts.append(fqun.universe.name)
+    parts.extend(path.relative_path.parts)
+    return parts
 
 
 def _path_to_pascal(path: PurePosixPath) -> str:
@@ -84,17 +118,33 @@ class NameConverter:
         self._used_class_names.add(safe)
         return safe
 
-    def constraints_to_class_names(
+    def module_name(self, name_content: ast.GlobalNameContent) -> str:
+        """Compute the dotted Python module name for a global name.
+
+        The name_content must have a non-None fqun.
+        """
+        fqun = name_content.fqun
+        if fqun is None:
+            raise ValueError("name_content.fqun must not be None")
+        parts = _module_name_parts(fqun, name_content.path)
+        return ".".join(parts)
+
+    def constraints_to_refs(
         self,
         constraints: ast.PositionConstraintBlock | None,
-    ) -> list[str]:
-        """Extract safe PascalCase class names from a position constraint block."""
+        enclosing_fqun: ast.Fqun,
+    ) -> list[ClassReference]:
+        """Extract class references from a position constraint block."""
         if constraints is None:
             return []
-        return [
-            self.class_name(req.typed_global_name.name_content.path.relative_path)
-            for req in constraints.requirements
-        ]
+        refs: list[ClassReference] = []
+        for req in constraints.requirements:
+            name_content = req.typed_global_name.name_content
+            cls_name = self.class_name(name_content.path.relative_path)
+            fqun = name_content.fqun or enclosing_fqun
+            module_name = ".".join(_module_name_parts(fqun, name_content.path))
+            refs.append(ClassReference(class_name=cls_name, module_name=module_name))
+        return refs
 
 
 class LocalNameConverter:
