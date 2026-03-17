@@ -32,15 +32,21 @@ class ActionDefinitionContext:
 class ActionDefinitionGenerator:
     """Extracts template context from an action definition."""
 
+    _converter: naming.NameConverter
     _definition: ast.ActionDefinition
 
-    def __init__(self, definition: ast.ActionDefinition):
+    def __init__(
+        self,
+        definition: ast.ActionDefinition,
+        converter: naming.NameConverter,
+    ):
         """Initialize with the action definition to extract data from."""
         self._definition = definition
+        self._converter = converter
 
     def generate(self) -> ActionDefinitionContext:
         """Generate template context for the action definition."""
-        class_name = naming.path_to_class_name(
+        class_name = self._converter.class_name(
             self._definition.typed_name.name_content.path.relative_path
         )
 
@@ -54,7 +60,7 @@ class ActionDefinitionGenerator:
         interface_positions = [
             InterfacePositionContext(
                 typed_name=local_def.typed_name.source_typed_name,
-                constraint_class_names=naming.constraints_to_class_names(
+                constraint_class_names=self._converter.constraints_to_class_names(
                     local_def.constraints
                 ),
             )
@@ -75,6 +81,7 @@ class ActionDefinitionGenerator:
         block_gen = action_statements.ActionStatementsBlockGenerator(
             block.action_statements,
             self._definition.typed_name,
+            self._converter,
             interface_position_names=interface_position_names,
         )
 

@@ -6,6 +6,7 @@ from define.compiler import ast
 from define.compiler.codegen.literal.python import (
     action_definition,
     action_statements,
+    naming,
     position_definition,
     template_env,
 )
@@ -26,18 +27,21 @@ class PythonLiteralCodeGenerator:
         entry_point: ast.PositionDefinition,
     ) -> str:
         """Generate Python code for the entry point position and its actions."""
+        converter = naming.NameConverter()
         action_contexts: list[action_definition.ActionDefinitionContext] = []
         position_contexts: list[position_definition.PositionDefinitionContext] = []
 
         for definition in graph.dfs_postorder_from(entry_point):
             if isinstance(definition, ast.ActionDefinition):
                 action_contexts.append(
-                    action_definition.ActionDefinitionGenerator(definition).generate()
+                    action_definition.ActionDefinitionGenerator(
+                        definition, converter
+                    ).generate()
                 )
             elif isinstance(definition, ast.PositionDefinition):
                 position_contexts.append(
                     position_definition.PositionDefinitionGenerator(
-                        definition
+                        definition, converter
                     ).generate()
                 )
 

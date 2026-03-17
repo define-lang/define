@@ -55,6 +55,9 @@ known-first-party = ["define", "defcl", "tools"]
 "define/compiler/**/*.py" = [
     "S105", # Stop complaining about assigning things to "token"
 ]
+"**/codegen/testdata/**/expected.py" = [
+    "N801", # Generated code may produce non-CapWords class names.
+]
 "**/*_test.py" = [
     "S101", # Allow assert statements.
     "D100", # Don't require docstrings on test modules.

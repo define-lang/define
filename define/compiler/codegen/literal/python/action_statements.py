@@ -55,19 +55,24 @@ class ActionStatementsBlockGenerator:
     """Extracts template data from an action statements block."""
 
     _block: ast.ActionStatementsBlock
+    _converter: naming.NameConverter
     _defining_typed_name: ast.GlobalTypedNameInDefinition
     _interface_position_names: set[str]
+    _local_names: naming.LocalNameConverter
 
     def __init__(
         self,
         block: ast.ActionStatementsBlock,
         defining_typed_name: ast.GlobalTypedNameInDefinition,
+        converter: naming.NameConverter,
         interface_position_names: set[str] | None = None,
     ):
         """Initialize with the action statements block to generate data for."""
         self._block = block
+        self._converter = converter
         self._defining_typed_name = defining_typed_name
         self._interface_position_names = interface_position_names or set()
+        self._local_names = naming.LocalNameConverter()
 
     def generate(self) -> list[StatementData]:
         """Generate template data for all statements in the block."""
@@ -77,9 +82,11 @@ class ActionStatementsBlockGenerator:
         if isinstance(stmt, ast.LocalPositionDefinition):
             return StatementData(
                 kind=StatementKind.LOCAL_POSITION,
-                local_var_name=stmt.typed_name.name_content.name,
+                local_var_name=self._local_names.convert(
+                    stmt.typed_name.name_content.name
+                ),
                 local_typed_name=stmt.typed_name.source_typed_name,
-                constraint_class_names=naming.constraints_to_class_names(
+                constraint_class_names=self._converter.constraints_to_class_names(
                     stmt.constraints
                 ),
             )
@@ -109,7 +116,7 @@ class ActionStatementsBlockGenerator:
                     )
                 ]
             else:
-                start = first.name_content.name
+                start = self._local_names.convert(first.name_content.name)
                 chain_elements = []
         else:
             # This is a self-reference, which only happens in a position init block.

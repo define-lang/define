@@ -1,4 +1,4 @@
-load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@aspect_rules_py//py:defs.bzl", "py_library", "py_test")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:jinja2.bzl", "jinja_templates")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -19,6 +19,7 @@ py_library(
     srcs = ["action_statements.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":naming",
         "//define/compiler:ast",
     ],
 )
@@ -31,6 +32,7 @@ py_library(
     deps = [
         ":action_definition",
         ":action_statements",
+        ":naming",
         ":position_definition",
         ":template_env",
         "//define/compiler:ast",
@@ -45,6 +47,13 @@ py_library(
     deps = [
         "//define/compiler:ast",
     ],
+)
+
+py_test(
+    name = "naming_test",
+    size = "small",
+    srcs = ["naming_test.py"],
+    deps = [":naming"],
 )
 
 py_library(
@@ -98,6 +107,7 @@ pyright_test(
         ":action_statements",
         ":generator",
         ":naming",
+        ":naming_test",
         ":position_definition",
         ":python",
         ":template_env",

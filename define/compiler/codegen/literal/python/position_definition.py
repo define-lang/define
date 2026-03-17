@@ -23,16 +23,22 @@ class PositionDefinitionContext:
 class PositionDefinitionGenerator:
     """Extracts template context from a position definition."""
 
+    _converter: naming.NameConverter
     _definition: ast.PositionDefinition
 
-    def __init__(self, definition: ast.PositionDefinition):
+    def __init__(
+        self,
+        definition: ast.PositionDefinition,
+        converter: naming.NameConverter,
+    ):
         """Initialize with the position definition to extract data from."""
         self._definition = definition
+        self._converter = converter
 
     def generate(self) -> PositionDefinitionContext:
         """Generate template context for the position definition."""
         has_init = self._definition.initialization is not None
-        constraint_class_names = naming.constraints_to_class_names(
+        constraint_class_names = self._converter.constraints_to_class_names(
             self._definition.constraints
         )
 
@@ -41,10 +47,11 @@ class PositionDefinitionGenerator:
             block_gen = action_statements.ActionStatementsBlockGenerator(
                 self._definition.initialization,
                 self._definition.typed_name,
+                self._converter,
             )
             statements = block_gen.generate()
 
-        class_name = naming.path_to_class_name(
+        class_name = self._converter.class_name(
             self._definition.typed_name.name_content.path.relative_path
         )
 

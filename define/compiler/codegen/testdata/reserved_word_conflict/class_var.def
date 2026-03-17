@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/class_var> {
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a dimension point.
+    } and it does {
+        define the position<self>.
+        define the position<self_>.
+        define the position<literal>.
+        define the position<super>.
+        define the position<type>.
+        define the position<typing>.
+        create a dimension point in position<self>.
+        create a dimension point in position<self_>.
+        create a dimension point in position<literal>.
+        create a dimension point in position<super>.
+        create a dimension point in position<type>.
+        create a dimension point in position<typing>.
+    }
+}
