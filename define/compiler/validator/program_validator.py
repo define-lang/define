@@ -27,6 +27,7 @@ from define.compiler import (
     parser,
 )
 from define.compiler.validator import (
+    dimension_point_flow_validator,
     file_validator,
     path_tracker,
     reference_graph,
@@ -48,14 +49,6 @@ class _DeferredChainValidation:
     """A chain element waiting for its parent definition to become resolvable."""
 
     deferred: validation_result.DeferredChainElements
-    source_definition: validation_result.DefinitionValidationResult
-
-
-@dataclass
-class _DeferredMoveConstraint:
-    """A move constraint check waiting for a required definition."""
-
-    check: validation_result.DeferredMoveConstraintCheck
     source_definition: validation_result.DefinitionValidationResult
 
 
@@ -124,7 +117,6 @@ class ProgramValidator:
     _action_call_graph: action_call_graph.ActionCallGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
     _deferred_chain_validations: dict[str, list[_DeferredChainValidation]]
-    _deferred_move_constraints: dict[str, list[_DeferredMoveConstraint]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _definition_owners: dict[int, validation_result.FileValidationResult]
     _config_loading_time_ns: int
@@ -138,7 +130,6 @@ class ProgramValidator:
         self._action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._deferred_chain_validations = {}
-        self._deferred_move_constraints = {}
         self._definition_results = {}
         self._definition_owners = {}
         self._config_loading_time_ns = 0
@@ -176,6 +167,7 @@ class ProgramValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
+        self._resolve_deferred_move_constraints()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
@@ -197,6 +189,7 @@ class ProgramValidator:
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
             self._run_pool_loop(pool)
+        self._resolve_deferred_move_constraints()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def _build_program_result(
@@ -261,10 +254,8 @@ class ProgramValidator:
             definition_result.trigger_positions, definition_result.action_body_effects
         )
         self._validate_incoming_chained_names(definition_result)
-        self._validate_incoming_move_constraints(definition_result)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
         self._validate_outgoing_chained_names(definition_result)
-        self._validate_outgoing_move_constraints(definition_result)
 
     def _submit_discovered_files(
         self,
@@ -600,130 +591,19 @@ class ProgramValidator:
                 deferred_validation.source_definition,
             )
 
-    def _validate_outgoing_move_constraints(
-        self,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Queue or immediately validate deferred move constraint checks referenced in this definition."""
-        for check in source_definition.deferred_move_constraint_checks:
-            self._try_resolve_move_constraint(check, source_definition)
+    def _resolve_deferred_move_constraints(self):
+        """Phase B: resolve all deferred move constraints after all files are validated."""
+        deferred_checks: list[validation_result.DeferredMoveConstraintCheck] = []
+        for definition_result in self._definition_results.values():
+            deferred_checks.extend(definition_result.deferred_move_constraint_checks)
 
-    def _validate_incoming_move_constraints(
-        self, target_definition: validation_result.DefinitionValidationResult
-    ):
-        """Resolve move constraints waiting on this definition."""
-        name = target_definition.definition.typed_name.full_typed_name()
-        for deferred_move_constraint in self._deferred_move_constraints.pop(name, []):
-            self._try_resolve_move_constraint(
-                deferred_move_constraint.check,
-                deferred_move_constraint.source_definition,
-            )
-
-    def _try_resolve_move_constraint(
-        self,
-        check: validation_result.DeferredMoveConstraintCheck,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Try to fully resolve a deferred move constraint check."""
-        started_at = time.perf_counter_ns()
-        self._do_try_resolve_move_constraint(check, source_definition)
-        self._record_deferred_validation_time(source_definition, started_at)
-
-    def _do_try_resolve_move_constraint(
-        self,
-        check: validation_result.DeferredMoveConstraintCheck,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Resolve a deferred move constraint check without timing side effects.
-
-        Eagerly resolves both sides, caching whatever is available. If either
-        side is still missing, queues the check on one unresolved definition.
-        """
-        fqun = check.enclosing_definition.typed_name.name_content.fqun
-
-        from_typed_name: str | None = None
-        if check.from_qualities is None:
-            qualities, from_typed_name = self._get_required_qualities_for_position(
-                check.statement.source_position.chain,
-                fqun,
-            )
-            if qualities is not None:
-                check.from_qualities = qualities
-
-        to_typed_name: str | None = None
-        if check.to_qualities is None:
-            qualities, to_typed_name = self._get_required_qualities_for_position(
-                check.statement.target_position.chain,
-                fqun,
-            )
-            if qualities is not None:
-                check.to_qualities = qualities
-
-        if check.from_qualities is None or check.to_qualities is None:
-            wait_for_definition = (
-                from_typed_name if check.from_qualities is None else to_typed_name
-            )
-            if wait_for_definition is None:
-                raise ValueError("wait_for_definition should never be None here")
-            self._deferred_move_constraints.setdefault(wait_for_definition, []).append(
-                _DeferredMoveConstraint(
-                    check=check,
-                    source_definition=source_definition,
-                )
-            )
-            return
-
-        missing = check.to_qualities - check.from_qualities
-        if missing:
-            source_definition.add_diagnostic(
-                diagnostics.MoveViolatesConstraintsDiagnostic(
-                    position=check.statement.target_position.position,
-                    source_position=check.statement.source_position.chain.source_chained_name,
-                    target_position=check.statement.target_position.chain.source_chained_name,
-                    missing_qualities=sorted(missing),
-                )
-            )
-
-    def _get_required_qualities_for_position(
-        self,
-        chain: ast.ChainedName,
-        fqun: ast.Fqun,
-    ) -> tuple[frozenset[str] | None, str]:
-        """Resolve the constraint qualities for the last position in a chain.
-
-        Returns (qualities, typed_name). qualities is None when the target
-        definition hasn't been registered yet; typed_name is the definition
-        name to wait for.
-        """
-        # TODO: This uses the last chain element's constraints as a proxy for what
-        # qualities a DP has. A DP may actually have more qualities than the last
-        # position requires (from its original creation site), and we lose that
-        # knowledge by only looking at its current location.
-        last_element = chain.typed_names[-1]
-
-        if isinstance(last_element, ast.GlobalTypedNameReference):
-            lookup_key = last_element.full_typed_name(in_universe=fqun)
-        else:
-            # If the last element is a local reference, then per the
-            # guarantees provided by file_validator, it _must_ be
-            # a chain with more than one item in it, and the parent
-            # must be a globally-named action.
-            parent = chain.typed_names[-2]
-            if not isinstance(parent, ast.GlobalTypedNameReference):
-                raise ValueError("got a local name where a global name was expected")
-            lookup_key = parent.full_typed_name(in_universe=fqun)
-
-        definition_result = self._definition_results.get(lookup_key)
-        if definition_result is None:
-            return (None, lookup_key)
-
-        if isinstance(last_element, ast.GlobalTypedNameReference):
-            return (definition_result.position_constraint_names, lookup_key)
-        locals_map = definition_result.action_local_position_constraint_names
-        return (
-            locals_map.get(last_element.name_content.name, frozenset()),
-            lookup_key,
+        analyzer = dimension_point_flow_validator.DimensionPointFlowValidator(
+            self._definition_results
         )
+        results = analyzer.resolve_deferred_checks(deferred_checks)
+        for enclosing_definition, diagnostic in results:
+            name = enclosing_definition.typed_name.full_typed_name()
+            self._definition_results[name].add_diagnostic(diagnostic)
 
     def _validate_chain_element_against_target(
         self,
