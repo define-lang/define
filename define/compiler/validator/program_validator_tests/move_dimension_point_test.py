@@ -348,8 +348,8 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].position.line == 10
     assert all_diags[0].position.column == 81
-    assert all_diags[0].from_position == "position<local_pos>"
-    assert all_diags[0].to_position == "position<local_pos>::position</target_pos>"
+    assert all_diags[0].source_position == "position<local_pos>"
+    assert all_diags[0].target_position == "position<local_pos>::position</target_pos>"
 
 
 def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject):
@@ -378,5 +378,5 @@ def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject)
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].position.line == 10
     assert all_diags[0].position.column == 81
-    assert all_diags[0].from_position == "position<local_pos>"
-    assert all_diags[0].to_position == "position<local_pos>::position</target_pos>"
+    assert all_diags[0].source_position == "position<local_pos>"
+    assert all_diags[0].target_position == "position<local_pos>::position</target_pos>"

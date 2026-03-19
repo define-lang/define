@@ -644,7 +644,7 @@ class ProgramValidator:
         from_typed_name: str | None = None
         if check.from_qualities is None:
             qualities, from_typed_name = self._get_required_qualities_for_position(
-                check.statement.from_position.chain,
+                check.statement.source_position.chain,
                 fqun,
             )
             if qualities is not None:
@@ -653,7 +653,7 @@ class ProgramValidator:
         to_typed_name: str | None = None
         if check.to_qualities is None:
             qualities, to_typed_name = self._get_required_qualities_for_position(
-                check.statement.to_position.chain,
+                check.statement.target_position.chain,
                 fqun,
             )
             if qualities is not None:
@@ -677,9 +677,9 @@ class ProgramValidator:
         if missing:
             source_definition.add_diagnostic(
                 diagnostics.MoveViolatesConstraintsDiagnostic(
-                    position=check.statement.to_position.position,
-                    from_position=check.statement.from_position.chain.source_chained_name,
-                    to_position=check.statement.to_position.chain.source_chained_name,
+                    position=check.statement.target_position.position,
+                    source_position=check.statement.source_position.chain.source_chained_name,
+                    target_position=check.statement.target_position.chain.source_chained_name,
                     missing_qualities=sorted(missing),
                 )
             )

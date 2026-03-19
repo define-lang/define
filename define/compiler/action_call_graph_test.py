@@ -74,7 +74,7 @@ def _make_create_stmt(
 ) -> ast.CreateDimensionPointStatement:
     return ast.CreateDimensionPointStatement(
         position=_pos(),
-        position_reference=ast.PositionReference(position=_pos(), chain=chain),
+        target_position=ast.PositionReference(position=_pos(), chain=chain),
     )
 
 
@@ -83,8 +83,8 @@ def _make_move_stmt(
 ) -> ast.MoveDimensionPointStatement:
     return ast.MoveDimensionPointStatement(
         position=_pos(),
-        from_position=ast.PositionReference(position=_pos(), chain=_chained_name([])),
-        to_position=ast.PositionReference(position=_pos(), chain=to_chain),
+        target_position=ast.PositionReference(position=_pos(), chain=to_chain),
+        source_position=ast.PositionReference(position=_pos(), chain=_chained_name([])),
     )
 
 

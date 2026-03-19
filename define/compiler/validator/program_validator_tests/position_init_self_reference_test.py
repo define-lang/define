@@ -107,8 +107,8 @@ def test_move_to_self_violates_constraints(validate_project: ValidateProject):
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 8
     assert all_diags[0].position.column == 56
-    assert all_diags[0].from_position == "position<local>"
-    assert all_diags[0].to_position == "position</test>"
+    assert all_diags[0].source_position == "position<local>"
+    assert all_diags[0].target_position == "position</test>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/x>",
     ]
@@ -138,8 +138,8 @@ def test_move_from_self_violates_constraints(validate_project: ValidateProject):
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 9
     assert all_diags[0].position.column == 56
-    assert all_diags[0].from_position == "position</test>"
-    assert all_diags[0].to_position == "position<local>"
+    assert all_diags[0].source_position == "position</test>"
+    assert all_diags[0].target_position == "position<local>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/x>",
     ]

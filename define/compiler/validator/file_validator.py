@@ -472,7 +472,7 @@ class DefinitionAstValidator:
         *,
         allow_self_reference: bool = False,
     ):
-        position = stmt.position_reference
+        position = stmt.target_position
         if not self._validate_full_chained_name(
             position.chain, scope, allow_self_reference=allow_self_reference
         ):
@@ -512,10 +512,10 @@ class DefinitionAstValidator:
         allow_self_reference: bool = False,
     ):
         from_ok = self._validate_full_chained_name(
-            stmt.from_position.chain, scope, allow_self_reference=allow_self_reference
+            stmt.source_position.chain, scope, allow_self_reference=allow_self_reference
         )
         to_ok = self._validate_full_chained_name(
-            stmt.to_position.chain, scope, allow_self_reference=allow_self_reference
+            stmt.target_position.chain, scope, allow_self_reference=allow_self_reference
         )
         fqun = self._definition.typed_name.name_content.fqun
         if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
@@ -533,18 +533,18 @@ class DefinitionAstValidator:
     ):
         # First, if either position is in an unknown state, mark both as now having an
         # unknown state and don't do any more checks.
-        if tracker.has_unknown_state(stmt.from_position) or tracker.has_unknown_state(
-            stmt.to_position
+        if tracker.has_unknown_state(stmt.source_position) or tracker.has_unknown_state(
+            stmt.target_position
         ):
-            tracker.mark_unknown_state(stmt.from_position)
-            tracker.mark_unknown_state(stmt.to_position)
+            tracker.mark_unknown_state(stmt.source_position)
+            tracker.mark_unknown_state(stmt.target_position)
             return
 
-        from_local = tracker.get_local_position_reference(stmt.from_position, scope)
-        to_local = tracker.get_local_position_reference(stmt.to_position, scope)
+        from_local = tracker.get_local_position_reference(stmt.source_position, scope)
+        to_local = tracker.get_local_position_reference(stmt.target_position, scope)
 
-        from_occupied = tracker.is_occupied(stmt.from_position)
-        to_empty = not tracker.is_occupied(stmt.to_position)
+        from_occupied = tracker.is_occupied(stmt.source_position)
+        to_empty = not tracker.is_occupied(stmt.target_position)
 
         if not (from_local and to_local):
             # For now, we are assuming that all external positions are fine to
@@ -558,45 +558,45 @@ class DefinitionAstValidator:
         if not from_occupied:
             self._diagnostics.append(
                 diagnostics.MoveFromEmptyPositionDiagnostic(
-                    position=stmt.from_position.position,
-                    position_name=stmt.from_position.chain.source_chained_name,
+                    position=stmt.source_position.position,
+                    position_name=stmt.source_position.chain.source_chained_name,
                 )
             )
         if not to_empty:
-            occupant = tracker.get_occupant(stmt.to_position)
+            occupant = tracker.get_occupant(stmt.target_position)
             occupied_at_line = (
                 occupant.creation_position.position.line if occupant else None
             )
             self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
-                    position=stmt.to_position.position,
-                    position_name=stmt.to_position.chain.source_chained_name,
+                    position=stmt.target_position.position,
+                    position_name=stmt.target_position.chain.source_chained_name,
                     occupied_at_line=occupied_at_line,
                 )
             )
 
         if not (from_occupied and to_empty):
-            tracker.mark_unknown_state(stmt.from_position)
-            tracker.mark_unknown_state(stmt.to_position)
+            tracker.mark_unknown_state(stmt.source_position)
+            tracker.mark_unknown_state(stmt.target_position)
             return
 
         if from_local and to_local:
             if self._check_constraints_for_move(stmt, scope, tracker):
-                tracker.move(stmt.from_position, stmt.to_position)
+                tracker.move(stmt.source_position, stmt.target_position)
         else:
             # Chained→chained: both sides need resolution by program validator.
             from_qualities = None
             to_qualities = None
             if from_local:
                 # Local→chained: we know the from qualities locally.
-                from_qualities = tracker.get_occupant(stmt.from_position).qualities
-                tracker.destroy(stmt.from_position)
+                from_qualities = tracker.get_occupant(stmt.source_position).qualities
+                tracker.destroy(stmt.source_position)
             elif to_local:
                 # Chained→local: we know the to qualities locally.
                 to_qualities = scope.get_constraint_names(
-                    stmt.to_position.chain.typed_names[0]
+                    stmt.target_position.chain.typed_names[0]
                 )
-                tracker.create(stmt.to_position, to_qualities)
+                tracker.create(stmt.target_position, to_qualities)
             self._deferred_move_constraint_checks.append(
                 validation_result.DeferredMoveConstraintCheck(
                     enclosing_definition=self._definition,
@@ -606,7 +606,7 @@ class DefinitionAstValidator:
                 )
             )
 
-        if not tracker.has_unknown_state(stmt.to_position):
+        if not tracker.has_unknown_state(stmt.target_position):
             self._action_body_effects.append(
                 action_call_graph.ActionBodyEffect(
                     enclosing_typed_name=self._definition.typed_name,
@@ -622,9 +622,9 @@ class DefinitionAstValidator:
     ) -> bool:
         """Check that a move satisfies destination constraints."""
         # TODO: Check constraints for non-local (chained/global) positions.
-        dp_info = tracker.get_occupant(stmt.from_position)
+        dp_info = tracker.get_occupant(stmt.source_position)
         dest_constraints = scope.get_constraint_names(
-            stmt.to_position.chain.typed_names[0]
+            stmt.target_position.chain.typed_names[0]
         )
         missing_qualities = dest_constraints - dp_info.qualities
         if not missing_qualities:
@@ -632,14 +632,14 @@ class DefinitionAstValidator:
 
         self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
-                position=stmt.to_position.chain.typed_names[0].position,
-                from_position=stmt.from_position.chain.source_chained_name,
-                to_position=stmt.to_position.chain.source_chained_name,
+                position=stmt.target_position.chain.typed_names[0].position,
+                source_position=stmt.source_position.chain.source_chained_name,
+                target_position=stmt.target_position.chain.source_chained_name,
                 missing_qualities=sorted(missing_qualities),
             )
         )
-        tracker.mark_unknown_state(stmt.from_position)
-        tracker.mark_unknown_state(stmt.to_position)
+        tracker.mark_unknown_state(stmt.source_position)
+        tracker.mark_unknown_state(stmt.target_position)
         return False
 
     def _check_if_from_is_a_prefix_of_to(
@@ -653,8 +653,8 @@ class DefinitionAstValidator:
 
         Returns True if a prefix relationship was detected (and diagnostics emitted).
         """
-        from_chain = stmt.from_position.chain
-        to_chain = stmt.to_position.chain
+        from_chain = stmt.source_position.chain
+        to_chain = stmt.target_position.chain
         if len(from_chain.typed_names) > len(to_chain.typed_names):
             return False
         for from_name, to_name in zip(
@@ -677,16 +677,16 @@ class DefinitionAstValidator:
             self._diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
                     position=divergence.position,
-                    from_position=from_chain.source_chained_name,
-                    to_position=to_chain.source_chained_name,
+                    source_position=from_chain.source_chained_name,
+                    target_position=to_chain.source_chained_name,
                 )
             )
             # TODO: Need to export unknown-state positions in FileValidationResult
             # so we know they also can't be checked elsewhere.
-            if tracker.get_local_position_reference(stmt.from_position, scope):
-                tracker.mark_unknown_state(stmt.from_position)
-            if tracker.get_local_position_reference(stmt.to_position, scope):
-                tracker.mark_unknown_state(stmt.to_position)
+            if tracker.get_local_position_reference(stmt.source_position, scope):
+                tracker.mark_unknown_state(stmt.source_position)
+            if tracker.get_local_position_reference(stmt.target_position, scope):
+                tracker.mark_unknown_state(stmt.target_position)
         return True
 
     def _validate_full_chained_name(

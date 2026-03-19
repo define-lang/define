@@ -37,8 +37,8 @@ def test_move_violates_dest_constraints(validate_project: ValidateProject):
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
     assert all_diags[0].position.column == 59
-    assert all_diags[0].from_position == "position<from_pos>"
-    assert all_diags[0].to_position == "position<to_pos>"
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/y>",
     ]
@@ -72,8 +72,8 @@ def test_move_from_unconstrained_to_constrained(validate_project: ValidateProjec
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 13
     assert all_diags[0].position.column == 59
-    assert all_diags[0].from_position == "position<from_pos>"
-    assert all_diags[0].to_position == "position<to_pos>"
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/x>",
     ]
@@ -186,8 +186,8 @@ def test_local_move_violates_constraints_marks_unknown(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
     assert all_diags[0].position.column == 59
-    assert all_diags[0].from_position == "position<from_pos>"
-    assert all_diags[0].to_position == "position<to_pos>"
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/y>",
     ]
@@ -252,8 +252,8 @@ def test_definition_local_to_statement_local_violates(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 15
     assert all_diags[0].position.column == 58
-    assert all_diags[0].from_position == "position<def_pos>"
-    assert all_diags[0].to_position == "position<stmt_pos>"
+    assert all_diags[0].source_position == "position<def_pos>"
+    assert all_diags[0].target_position == "position<stmt_pos>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/y>",
     ]

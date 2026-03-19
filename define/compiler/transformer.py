@@ -270,7 +270,7 @@ class DefineTransformer(
     ) -> ast.CreateDimensionPointStatement:
         """Transform a create dimension point statement."""
         return ast.CreateDimensionPointStatement(
-            position_reference=items[0],
+            target_position=items[0],
             position=ast.SourcePosition.from_meta(meta),
         )
 
@@ -280,8 +280,8 @@ class DefineTransformer(
     ) -> ast.MoveDimensionPointStatement:
         """Transform a move dimension point statement."""
         return ast.MoveDimensionPointStatement(
-            from_position=items[0],
-            to_position=items[1],
+            target_position=items[1],
+            source_position=items[0],
             position=ast.SourcePosition.from_meta(meta),
         )
 

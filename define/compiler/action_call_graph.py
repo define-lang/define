@@ -36,16 +36,12 @@ class ActionBodyEffect:
     """A body statement that writes a DP into a position, for cross-action matching."""
 
     enclosing_typed_name: ast.GlobalTypedNameInDefinition
-    statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
+    statement: ast.DimensionPointStatement
 
     @property
     def modified_position(self) -> ast.ChainedName:
         """Return the position chain that this statement writes into."""
-        match self.statement:
-            case ast.CreateDimensionPointStatement():
-                return self.statement.position_reference.chain
-            case ast.MoveDimensionPointStatement():
-                return self.statement.to_position.chain
+        return self.statement.target_position.chain
 
     @cached_property
     def _action_boundary(self) -> tuple[int, str] | None:
@@ -93,7 +89,7 @@ class ActionGraphEdge:
 
     source: str
     target: str
-    statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
+    statement: ast.DimensionPointStatement
 
 
 class ActionCallGraph:
@@ -137,7 +133,7 @@ class ActionCallGraph:
                 source=source,
                 target=target,
                 statement=cast(
-                    "ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement",
+                    "ast.DimensionPointStatement",
                     data["statement"],
                 ),
             )

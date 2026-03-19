@@ -291,7 +291,7 @@ class TestActionBodyEffect:
         assert len(result.definition_results[0].action_body_effects) == 1
         effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
-        assert effect.modified_position is effect.statement.position_reference.chain
+        assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/test>"
         assert (
             effect.affected_position_qualified_chained_name
@@ -317,7 +317,7 @@ class TestActionBodyEffect:
         assert len(result.definition_results[0].action_body_effects) == 1
         effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
-        assert effect.modified_position is effect.statement.position_reference.chain
+        assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/test>"
         assert (
             effect.affected_position_qualified_chained_name
@@ -343,7 +343,7 @@ class TestActionBodyEffect:
         assert len(result.definition_results[0].action_body_effects) == 1
         effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.MoveDimensionPointStatement)
-        assert effect.modified_position is effect.statement.to_position.chain
+        assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/act>"
         assert (
             effect.affected_position_qualified_chained_name
@@ -368,7 +368,7 @@ class TestActionBodyEffect:
         assert len(result.definition_results[0].action_body_effects) == 1
         effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
-        assert effect.modified_position is effect.statement.position_reference.chain
+        assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"
         assert (
             effect.affected_position_qualified_chained_name
@@ -398,7 +398,7 @@ class TestActionBodyEffect:
         assert len(result.definition_results[0].action_body_effects) == 1
         effect = result.definition_results[0].action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
-        assert effect.modified_position is effect.statement.position_reference.chain
+        assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"
         assert (
             effect.affected_position_qualified_chained_name

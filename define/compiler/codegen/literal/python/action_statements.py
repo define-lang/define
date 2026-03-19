@@ -49,12 +49,12 @@ class ActionStatementsBlockGenerator:
         if isinstance(stmt, ast.CreateDimensionPointStatement):
             return template_context.ActionStatementContext(
                 kind=template_context.StatementKind.CREATE_DIMENSION_POINT,
-                position=self._build_position_expr(stmt.position_reference),
+                position=self._build_position_expr(stmt.target_position),
             )
         return template_context.ActionStatementContext(
             kind=template_context.StatementKind.MOVE_DIMENSION_POINT,
-            position=self._build_position_expr(stmt.from_position),
-            to_position=self._build_position_expr(stmt.to_position),
+            position=self._build_position_expr(stmt.source_position),
+            to_position=self._build_position_expr(stmt.target_position),
         )
 
     def _build_position_expr(

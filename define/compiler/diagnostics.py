@@ -506,8 +506,8 @@ class MoveToSamePositionDiagnostic(Diagnostic):
 class MoveViolatesConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination constraints are not satisfied."""
 
-    from_position: str
-    to_position: str
+    source_position: str
+    target_position: str
     # TODO: missing_qualities should use source form, not canonical form.
     missing_qualities: Sequence[str]
 
@@ -518,8 +518,8 @@ class MoveViolatesConstraintsDiagnostic(Diagnostic):
 
     message_format: ClassVar[str] = (
         "cannot move a dimension point\n"
-        "  from: {self.from_position}\n"
-        "    to: {self.to_position}\n"
+        "  from: {self.source_position}\n"
+        "    to: {self.target_position}\n"
         "because the dimension point being moved does not have the required qualities:\n"
         "  {self.missing_list}"
     )
@@ -529,14 +529,14 @@ class MoveViolatesConstraintsDiagnostic(Diagnostic):
 class MoveIntoDefiningPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement moves a dimension point into a position it defines."""
 
-    from_position: str
-    to_position: str
+    source_position: str
+    target_position: str
     message_format: ClassVar[str] = (
         "cannot move a dimension point\n"
-        "  from: {self.from_position}\n"
-        "    to: {self.to_position}\n"
+        "  from: {self.source_position}\n"
+        "    to: {self.target_position}\n"
         "because the source position defines the destination position"
-        " ('{self.from_position}' is the start of both positions)"
+        " ('{self.source_position}' is the start of both positions)"
     )
 
 

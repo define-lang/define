@@ -576,8 +576,8 @@ def test_move_three_element_chain_to_three_element_chain_violates(
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].from_position == "position<a>::position</x>::position</y>"
-    assert all_diags[0].to_position == "position<b>::position</z>::position</w>"
+    assert all_diags[0].source_position == "position<a>::position</x>::position</y>"
+    assert all_diags[0].target_position == "position<b>::position</z>::position</w>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/x>",
     ]

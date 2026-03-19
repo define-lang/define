@@ -351,8 +351,8 @@ def test_move_both_sides_resolved_immediately(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
     assert all_diags[0].position.column == 66
-    assert all_diags[0].from_position == "position<a>::position</x>"
-    assert all_diags[0].to_position == "position<b>::position</y>"
+    assert all_diags[0].source_position == "position<a>::position</x>"
+    assert all_diags[0].target_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]
@@ -382,8 +382,8 @@ def test_move_from_resolved_to_deferred(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
     assert all_diags[0].position.column == 66
-    assert all_diags[0].from_position == "position<a>::position</x>"
-    assert all_diags[0].to_position == "position<b>::position</y>"
+    assert all_diags[0].source_position == "position<a>::position</x>"
+    assert all_diags[0].target_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]
@@ -414,8 +414,8 @@ def test_move_from_deferred_to_resolved_on_retry(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
     assert all_diags[0].position.column == 66
-    assert all_diags[0].from_position == "position<a>::position</x>"
-    assert all_diags[0].to_position == "position<b>::position</y>"
+    assert all_diags[0].source_position == "position<a>::position</x>"
+    assert all_diags[0].target_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]
@@ -492,8 +492,8 @@ def test_chained_to_chained_move_deferred_both_sides_violates(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 17
     assert all_diags[0].position.column == 66
-    assert all_diags[0].from_position == "position<a>::position</x>"
-    assert all_diags[0].to_position == "position<b>::position</y>"
+    assert all_diags[0].source_position == "position<a>::position</x>"
+    assert all_diags[0].target_position == "position<b>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/z>",
     ]

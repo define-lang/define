@@ -231,18 +231,22 @@ class PositionReference(ASTNode):
 
 
 @dataclass
-class CreateDimensionPointStatement(ASTNode):
-    """Represents a 'create a dimension point in' statement."""
+class DimensionPointStatement(ASTNode):
+    """Base class for statements that operate on a target dimension point position."""
 
-    position_reference: PositionReference
+    target_position: PositionReference
 
 
 @dataclass
-class MoveDimensionPointStatement(ASTNode):
+class CreateDimensionPointStatement(DimensionPointStatement):
+    """Represents a 'create a dimension point in' statement."""
+
+
+@dataclass
+class MoveDimensionPointStatement(DimensionPointStatement):
     """Represents a 'move the dimension point in ... to' statement."""
 
-    from_position: PositionReference
-    to_position: PositionReference
+    source_position: PositionReference
 
 
 type ActionStatement = (
