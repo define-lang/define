@@ -109,7 +109,7 @@ def _make_result(
 class TestActionCallGraph:
     def test_empty_graph(self):
         graph = action_call_graph.ActionCallGraph()
-        assert graph.all_edges() == []
+        assert list(graph.edges()) == []
 
     def test_single_trigger_edge(self):
         graph = action_call_graph.ActionCallGraph()
@@ -140,10 +140,10 @@ class TestActionCallGraph:
             result_b.trigger_positions, result_b.action_body_effects
         )
 
-        edges = graph.all_edges()
+        edges = list(graph.edges())
         assert len(edges) == 1
-        assert edges[0].source_action == "action<d:u:/act_b>"
-        assert edges[0].target_action == "action<d:u:/act_a>"
+        assert edges[0].source == "action<d:u:/act_b>"
+        assert edges[0].target == "action<d:u:/act_a>"
         assert edges[0].statement is stmt
 
     def test_self_trigger(self):
@@ -170,10 +170,10 @@ class TestActionCallGraph:
         graph.process_definition_result(
             result.trigger_positions, result.action_body_effects
         )
-        edges = graph.all_edges()
+        edges = list(graph.edges())
         assert len(edges) == 1
-        assert edges[0].source_action == "action<d:u:/act_a>"
-        assert edges[0].target_action == "action<d:u:/act_a>"
+        assert edges[0].source == "action<d:u:/act_a>"
+        assert edges[0].target == "action<d:u:/act_a>"
 
     def test_deferred_resolution(self):
         graph = action_call_graph.ActionCallGraph()
@@ -201,15 +201,15 @@ class TestActionCallGraph:
         graph.process_definition_result(
             result_b.trigger_positions, result_b.action_body_effects
         )
-        assert graph.all_edges() == []
+        assert list(graph.edges()) == []
 
         graph.process_definition_result(
             result_a.trigger_positions, result_a.action_body_effects
         )
-        edges = graph.all_edges()
+        edges = list(graph.edges())
         assert len(edges) == 1
-        assert edges[0].source_action == "action<d:u:/act_b>"
-        assert edges[0].target_action == "action<d:u:/act_a>"
+        assert edges[0].source == "action<d:u:/act_b>"
+        assert edges[0].target == "action<d:u:/act_a>"
 
     def test_same_result_resolution(self):
         graph = action_call_graph.ActionCallGraph()
@@ -235,10 +235,10 @@ class TestActionCallGraph:
             result.trigger_positions, result.action_body_effects
         )
 
-        edges = graph.all_edges()
+        edges = list(graph.edges())
         assert len(edges) == 1
-        assert edges[0].source_action == "action<d:u:/act_b>"
-        assert edges[0].target_action == "action<d:u:/act_a>"
+        assert edges[0].source == "action<d:u:/act_b>"
+        assert edges[0].target == "action<d:u:/act_a>"
 
     def test_duplicates_not_targeted_twice(self):
         graph = action_call_graph.ActionCallGraph()
@@ -273,10 +273,10 @@ class TestActionCallGraph:
             result_effect.trigger_positions, result_effect.action_body_effects
         )
 
-        edges = graph.all_edges()
+        edges = list(graph.edges())
         assert len(edges) == 1
-        assert edges[0].source_action == "action<d:u:/act_b>"
-        assert edges[0].target_action == "action<d:u:/act_a>"
+        assert edges[0].source == "action<d:u:/act_b>"
+        assert edges[0].target == "action<d:u:/act_a>"
 
     def test_multiple_effects_to_same_target(self):
         graph = action_call_graph.ActionCallGraph()
@@ -312,12 +312,12 @@ class TestActionCallGraph:
             result_effects.trigger_positions, result_effects.action_body_effects
         )
 
-        all_edges = graph.all_edges()
+        all_edges = list(graph.edges())
         assert len(all_edges) == 2
-        sources = {e.source_action for e in all_edges}
+        sources = {e.source for e in all_edges}
         assert sources == {"action<d:u:/act_b>", "action<d:u:/act_c>"}
         for edge in all_edges:
-            assert edge.target_action == "action<d:u:/act_a>"
+            assert edge.target == "action<d:u:/act_a>"
 
     def test_local_prefix_before_action_reference(self):
         graph = action_call_graph.ActionCallGraph()
@@ -370,10 +370,10 @@ class TestActionCallGraph:
             result_b.trigger_positions, result_b.action_body_effects
         )
 
-        edges = graph.all_edges()
+        edges = list(graph.edges())
         assert len(edges) == 1
-        assert edges[0].source_action == "action<d:u:/act_b>"
-        assert edges[0].target_action == "action<d:u:/act_a>"
+        assert edges[0].source == "action<d:u:/act_b>"
+        assert edges[0].target == "action<d:u:/act_a>"
 
     def test_no_edge_when_position_does_not_match(self):
         graph = action_call_graph.ActionCallGraph()
@@ -398,4 +398,4 @@ class TestActionCallGraph:
         graph.process_definition_result(
             result.trigger_positions, result.action_body_effects
         )
-        assert graph.all_edges() == []
+        assert list(graph.edges()) == []

@@ -7,8 +7,8 @@ def _edge_keys(
     result: validation_result.ProgramValidationResult,
 ) -> set[tuple[str, str, int]]:
     return {
-        (e.source_action, e.target_action, e.source_line)
-        for e in result.action_call_graph.all_edges()
+        (e.source, e.target, e.statement.position.line)
+        for e in result.action_call_graph.edges()
     }
 
 

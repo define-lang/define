@@ -6,11 +6,14 @@ import collections
 import typing
 from dataclasses import dataclass
 from functools import cached_property
+from typing import cast
+
+import networkx as nx
 
 from define.compiler import ast
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
 
 @dataclass(frozen=True)
@@ -85,19 +88,12 @@ class ActionBodyEffect:
 
 
 @dataclass(frozen=True)
-class ActionTriggerEdge:
+class ActionGraphEdge:
     """A directed edge from a source action to a target action it triggers."""
 
-    source_action: str
-    """Full typed name of the action (not chained) that performs the triggering effect."""
-    target_action: str
-    """Full typed name of the action (not chained) that gets triggered."""
+    source: str
+    target: str
     statement: ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement
-
-    @property
-    def source_line(self) -> int:
-        """The source line of the statement that produced this edge."""
-        return self.statement.position.line
 
 
 class ActionCallGraph:
@@ -116,15 +112,14 @@ class ActionCallGraph:
     # Target action name --> effects whose target's triggers haven't been
     # registered yet. Drained as action definitions are processed.
     _effects_waiting_for_target: collections.defaultdict[str, list[ActionBodyEffect]]
-    # Source action full typed name --> resolved trigger edges originating from that action.
-    _edges: collections.defaultdict[str, list[ActionTriggerEdge]]
+    _graph: nx.MultiDiGraph[str]
 
     def __init__(self):
         """Initialize an empty call graph."""
         self._trigger_position_to_action_name = {}
         self._actions_with_triggers = set()
         self._effects_waiting_for_target = collections.defaultdict(list)
-        self._edges = collections.defaultdict(list)
+        self._graph = nx.MultiDiGraph()
 
     def process_definition_result(
         self,
@@ -135,9 +130,21 @@ class ActionCallGraph:
         self._register_triggers(trigger_positions)
         self._register_effects(action_body_effects)
 
-    def all_edges(self) -> list[ActionTriggerEdge]:
-        """Return all resolved trigger edges."""
-        return [edge for edges in self._edges.values() for edge in edges]
+    def edges(self) -> Iterator[ActionGraphEdge]:
+        """Yield an ``ActionGraphEdge`` for every resolved trigger edge."""
+        for source, target, data in self._graph.edges(data=True):
+            yield ActionGraphEdge(
+                source=source,
+                target=target,
+                statement=cast(
+                    "ast.CreateDimensionPointStatement | ast.MoveDimensionPointStatement",
+                    data["statement"],
+                ),
+            )
+
+    def unique_edges(self) -> set[tuple[str, str]]:
+        """Return the set of distinct ``(source, target)`` pairs."""
+        return {(source, target) for source, target in self._graph.edges()}
 
     def _register_triggers(self, trigger_positions: Sequence[TriggerPositionInfo]):
         for tp in trigger_positions:
@@ -171,12 +178,9 @@ class ActionCallGraph:
         )
         if target_action is None:
             return
-        edge = ActionTriggerEdge(
-            source_action=source_action,
-            target_action=target_action,
-            statement=effect.statement,
+        _ = self._graph.add_edge(
+            source_action, target_action, statement=effect.statement
         )
-        self._edges[source_action].append(edge)
 
     def _action_has_triggers(self, action_name: str) -> bool:
         """Check if any trigger position is registered for the given action."""

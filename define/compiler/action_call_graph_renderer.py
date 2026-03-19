@@ -29,9 +29,7 @@ class Mermaid:
 
     def render_flowchart(self) -> str:
         """Produce a Mermaid ``flowchart LR`` flowchart from the call graph."""
-        unique_edges: set[tuple[str, str]] = set()
-        for edge in self._graph.all_edges():
-            unique_edges.add((edge.source_action, edge.target_action))
+        unique_edges = self._graph.unique_edges()
 
         if not unique_edges:
             return "flowchart LR\n"
