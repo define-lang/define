@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import abc
 import enum
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final, Self, override
 
@@ -22,7 +23,7 @@ class NameType(enum.StrEnum):
 
 
 # TODO: Should include file name.
-@dataclass
+@dataclass(frozen=True, slots=True)
 class SourcePosition:
     """Represents a position in source code."""
 
@@ -64,28 +65,28 @@ START_OF_FILE_POSITION: Final = SourcePosition(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ASTNode:
     """Base class for all AST nodes."""
 
     position: SourcePosition
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Program(ASTNode):
     """Represents the entire program."""
 
     definitions: list[QualityDefinition]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
     typed_name: GlobalTypedNameInDefinition
 
 
-@dataclass(init=False)
+@dataclass(frozen=True, slots=True, init=False)
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
@@ -109,11 +110,11 @@ class PositionDefinition(QualityDefinition):
             ),
             position=position,
         )
-        self.constraints = constraints
-        self.initialization = initialization
+        object.__setattr__(self, "constraints", constraints)
+        object.__setattr__(self, "initialization", initialization)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class NameContent(ASTNode, abc.ABC):
     """Base class for name content nodes (local or global)."""
 
@@ -127,7 +128,7 @@ class NameContent(ASTNode, abc.ABC):
         """Return the name as it appears in the source."""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class LocalNameContent(NameContent):
     """Represents a local name."""
 
@@ -144,7 +145,7 @@ class LocalNameContent(NameContent):
         return self.name
 
 
-@dataclass(init=False)
+@dataclass(frozen=True, slots=True, init=False)
 class LocalPositionDefinition(ASTNode):
     """Represents a local position definition within an action block."""
 
@@ -160,18 +161,22 @@ class LocalPositionDefinition(ASTNode):
     ):
         """Initialize with a local name, wrapping it in a typed name."""
         super().__init__(position=position)
-        self.typed_name = LocalTypedNameReference(
-            name_type=NameType.POSITION,
-            name_content=local_name,
-            position=local_name.position,
+        object.__setattr__(
+            self,
+            "typed_name",
+            LocalTypedNameReference(
+                name_type=NameType.POSITION,
+                name_content=local_name,
+                position=local_name.position,
+            ),
         )
-        self.constraints = constraints
+        object.__setattr__(self, "constraints", constraints)
 
 
 type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TypedName(ASTNode):
     """Represents a typed name (local or global)."""
 
@@ -180,7 +185,11 @@ class TypedName(ASTNode):
 
     def full_typed_name(self, in_universe: Fqun | None = None) -> str:
         """Return canonical typed-name text including effective FQUN and path."""
-        return f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
+        # Interned to deduplicate repeated constructions of the same name
+        # string, and to enable identity-first dict lookups in the validator.
+        return sys.intern(
+            f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
+        )
 
     @property
     def source_typed_name(self) -> str:
@@ -188,24 +197,24 @@ class TypedName(ASTNode):
         return f"{self.name_type.value}<{self.name_content.source_name}>"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GlobalTypedNameReference(TypedName):
     """Represents a typed global name reference."""
 
-    name_content: ReferenceGlobalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
+    name_content: ReferenceGlobalNameContent
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class LocalTypedNameReference(TypedName):
     """Represents a typed local name reference."""
 
-    name_content: LocalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
+    name_content: LocalNameContent
 
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
@@ -223,26 +232,26 @@ class ChainedName(ASTNode):
         return "::".join(elem.source_typed_name for elem in self.typed_names)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
 
     chain: ChainedName
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class DimensionPointStatement(ASTNode):
     """Base class for statements that operate on a target dimension point position."""
 
     target_position: PositionReference
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CreateDimensionPointStatement(DimensionPointStatement):
     """Represents a 'create a dimension point in' statement."""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class MoveDimensionPointStatement(DimensionPointStatement):
     """Represents a 'move the dimension point in ... to' statement."""
 
@@ -256,21 +265,21 @@ type ActionStatement = (
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class PositionRequirementStatement(ASTNode):
     """Represents a position requirement statement in a constraints block."""
 
     typed_global_name: GlobalTypedNameReference
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
     requirements: list[PositionRequirementStatement]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GlobalPathName(ASTNode):
     """Represents the path portion of a global name."""
 
@@ -286,33 +295,33 @@ class GlobalPathName(ASTNode):
         return root / self.relative_path.with_suffix(".def")
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TriggerConditionStatement(ASTNode):
     """Represents a trigger condition statement."""
 
     position_reference: PositionReference
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
     conditions: list[TriggerConditionStatement]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
 
     statements: list[ActionStatement]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class PositionInitBlock(ActionStatementsBlock):
     """Represents a position init block."""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ActionDefinitionBlock(ASTNode):
     """Represents an action definition block."""
 
@@ -321,7 +330,7 @@ class ActionDefinitionBlock(ASTNode):
     action_statements: ActionStatementsBlock
 
 
-@dataclass(init=False)
+@dataclass(frozen=True, slots=True, init=False)
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
@@ -343,55 +352,58 @@ class ActionDefinition(QualityDefinition):
             ),
             position=position,
         )
-        self.definition_block = definition_block
+        object.__setattr__(self, "definition_block", definition_block)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Multiverse(ASTNode):
     """Represents a multiverse name."""
 
     name: str
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Universe(ASTNode):
     """Represents a universe name."""
 
     name: str
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
     name: str
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Fqun(ASTNode):
     """Represents a fully-qualified universe name."""
 
     multiverse: Multiverse | None
     authority: Authority | None
     universe: Universe
+    canonical: str = field(init=False, repr=False, compare=False)
 
-    @property
-    def canonical(self) -> str:
-        """Return the canonical FQUN string."""
+    def __post_init__(self):
+        """Compute and intern the canonical FQUN string."""
+        # Pre-built because canonical is the only part of Fqun that
+        # anything needs after name validation.
         if self.authority is None:
-            return self.universe.name
+            value = self.universe.name
+        else:
+            parts: list[str] = []
+            if self.multiverse is not None:
+                parts.append(self.multiverse.name)
+            parts.append(self.authority.name)
+            parts.append(self.universe.name)
+            value = ":".join(parts)
+        # Interned to deduplicate across the many Fqun instances
+        # sharing the same combination.
+        object.__setattr__(self, "canonical", sys.intern(value))
 
-        authority_str = self.authority.name
 
-        parts: list[str] = []
-        if self.multiverse is not None:
-            parts.append(self.multiverse.name)
-        parts.append(authority_str)
-        parts.append(self.universe.name)
-        return ":".join(parts)
-
-
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GlobalNameContent(NameContent):
     """Base class for global name-like nodes."""
 
@@ -414,20 +426,38 @@ class GlobalNameContent(NameContent):
         return self.path.name
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class DefinitionGlobalNameContent(GlobalNameContent):
     """Represents a global name at a definition site."""
 
-    fqun: Fqun  # pyright: ignore[reportIncompatibleVariableOverride]
+    fqun: Fqun
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ReferenceGlobalNameContent(GlobalNameContent):
     """Represents a global name at a reference site."""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GlobalTypedNameInDefinition(TypedName):
     """Represents a typed global name at a definition site."""
 
-    name_content: DefinitionGlobalNameContent  # pyright: ignore[reportIncompatibleVariableOverride]
+    name_content: DefinitionGlobalNameContent
+    _source_typed_name: str = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        """Compute and cache the interned typed name string."""
+        object.__setattr__(
+            self,
+            "_source_typed_name",
+            sys.intern(super().full_typed_name()),
+        )
+
+    @override
+    def full_typed_name(self, in_universe: Fqun | None = None) -> str:
+        return self._source_typed_name
+
+    @property
+    @override
+    def source_typed_name(self) -> str:
+        return self._source_typed_name

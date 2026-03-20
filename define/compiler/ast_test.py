@@ -1,5 +1,6 @@
 """Tests for AST nodes."""
 
+import sys
 from pathlib import PurePosixPath
 
 import pytest
@@ -190,3 +191,65 @@ class TestGlobalTypedNameReference:
             reference.full_typed_name(in_universe=in_universe)
             == "position<my.domain.com:my_lib:/thing>"
         )
+
+
+class TestInternedStrings:
+    def test_fqun_canonical_is_interned(self):
+        fqun = _make_fqun("my_lib", authority="my.domain.com")
+        fqun2 = _make_fqun("my_lib", authority="my.domain.com")
+        assert fqun.canonical is fqun2.canonical
+        assert sys.intern(fqun.canonical) is fqun.canonical
+
+    def test_definition_full_typed_name_returns_same_object(self):
+        typed_name = ast.GlobalTypedNameInDefinition(
+            position=_POS,
+            name_type=ast.NameType.POSITION,
+            name_content=ast.DefinitionGlobalNameContent(
+                position=_POS,
+                fqun=_make_fqun("my_lib", authority="my.domain.com"),
+                path=ast.GlobalPathName(position=_POS, name="/thing"),
+            ),
+        )
+        assert typed_name.full_typed_name() is typed_name.full_typed_name()
+
+    def test_definition_full_typed_name_ignores_in_universe(self):
+        typed_name = ast.GlobalTypedNameInDefinition(
+            position=_POS,
+            name_type=ast.NameType.POSITION,
+            name_content=ast.DefinitionGlobalNameContent(
+                position=_POS,
+                fqun=_make_fqun("my_lib", authority="my.domain.com"),
+                path=ast.GlobalPathName(position=_POS, name="/thing"),
+            ),
+        )
+        other = _make_fqun("other_lib", authority="other.domain.com")
+        assert (
+            typed_name.full_typed_name(in_universe=other)
+            is typed_name.full_typed_name()
+        )
+
+    def test_definition_source_typed_name_matches_full(self):
+        typed_name = ast.GlobalTypedNameInDefinition(
+            position=_POS,
+            name_type=ast.NameType.POSITION,
+            name_content=ast.DefinitionGlobalNameContent(
+                position=_POS,
+                fqun=_make_fqun("my_lib", authority="my.domain.com"),
+                path=ast.GlobalPathName(position=_POS, name="/thing"),
+            ),
+        )
+        assert typed_name.source_typed_name is typed_name.full_typed_name()
+
+    def test_reference_full_typed_name_is_interned(self):
+        reference = ast.GlobalTypedNameReference(
+            position=_POS,
+            name_type=ast.NameType.ACTION,
+            name_content=ast.ReferenceGlobalNameContent(
+                position=_POS,
+                fqun=_make_fqun("my_lib", authority="my.domain.com"),
+                path=ast.GlobalPathName(position=_POS, name="/thing"),
+            ),
+        )
+        result = reference.full_typed_name()
+        assert result is reference.full_typed_name()
+        assert sys.intern(result) is result
