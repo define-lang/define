@@ -195,11 +195,7 @@ class TypedName(ASTNode):
 
     def full_typed_name(self, in_universe: Fqun | None = None) -> str:
         """Return canonical typed-name text including effective FQUN and path."""
-        # Interned to deduplicate repeated constructions of the same name
-        # string, and to enable identity-first dict lookups in the validator.
-        return sys.intern(
-            f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
-        )
+        return f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
 
     @property
     def source_typed_name(self) -> str:
@@ -456,11 +452,11 @@ class GlobalTypedNameInDefinition(TypedName):
     _source_typed_name: str = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        """Compute and cache the interned typed name string."""
+        """Compute and cache the typed name string."""
         object.__setattr__(
             self,
             "_source_typed_name",
-            sys.intern(super().full_typed_name()),
+            super().full_typed_name(),
         )
 
     @override

@@ -193,7 +193,7 @@ class TestGlobalTypedNameReference:
         )
 
 
-class TestInternedStrings:
+class TestCachedStrings:
     def test_fqun_canonical_is_interned(self):
         fqun = _make_fqun("my_lib", authority="my.domain.com")
         fqun2 = _make_fqun("my_lib", authority="my.domain.com")
@@ -239,17 +239,3 @@ class TestInternedStrings:
             ),
         )
         assert typed_name.source_typed_name is typed_name.full_typed_name()
-
-    def test_reference_full_typed_name_is_interned(self):
-        reference = ast.GlobalTypedNameReference(
-            position=_POS,
-            name_type=ast.NameType.ACTION,
-            name_content=ast.ReferenceGlobalNameContent(
-                position=_POS,
-                fqun=_make_fqun("my_lib", authority="my.domain.com"),
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
-            ),
-        )
-        result = reference.full_typed_name()
-        assert result is reference.full_typed_name()
-        assert sys.intern(result) is result
