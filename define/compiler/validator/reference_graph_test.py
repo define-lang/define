@@ -3,7 +3,7 @@
 from define.compiler import ast
 from define.compiler.validator import reference_graph
 
-_POS = ast.START_OF_FILE_POSITION
+_POS = ast.start_of_file_position()
 _FQUN = ast.Fqun(
     multiverse=None,
     authority=ast.Authority(name="a.com", position=_POS),

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import string
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from define.compiler import ast, constants, diagnostics
 
@@ -102,6 +102,7 @@ def validate_multiverse_name_format(
                 column=multiverse.position.column + i,
                 end_line=multiverse.position.end_line,
                 end_column=multiverse.position.end_column,
+                file_path=multiverse.position.file_path,
             )
             result.append(
                 diagnostics.MultiverseNameInvalidCharDiagnostic(
@@ -163,6 +164,7 @@ def _validate_authority_domain_format(
                 column=authority.position.column + i,
                 end_line=authority.position.end_line,
                 end_column=authority.position.end_column,
+                file_path=authority.position.file_path,
             )
             result.append(
                 diagnostics.AuthorityDomainInvalidCharDiagnostic(
@@ -185,10 +187,11 @@ def _validate_authority_path_format(
 
     col = authority.position.column + len(domain)
     line = authority.position.line
+    file_path = authority.position.file_path
     for segment in path.split("/"):
         col += 1  # skip '/' separator in source text
         diagnostic = _validate_authority_path_segment(
-            authority.name, line, col, segment
+            authority.name, line, col, segment, file_path
         )
         if diagnostic is not None:
             result.append(diagnostic)
@@ -197,7 +200,11 @@ def _validate_authority_path_format(
 
 
 def _validate_authority_path_segment(
-    authority_name: str, line: int, column: int, segment: str
+    authority_name: str,
+    line: int,
+    column: int,
+    segment: str,
+    file_path: PurePosixPath | None = None,
 ) -> diagnostics.Diagnostic | None:
     if segment == "":
         return diagnostics.AuthorityPathEmptySegmentDiagnostic(
@@ -206,6 +213,7 @@ def _validate_authority_path_segment(
                 column=column - 1,
                 end_line=line,
                 end_column=column,
+                file_path=file_path,
             ),
             authority=authority_name,
         )
@@ -220,6 +228,7 @@ def _validate_authority_path_segment(
                     column=column + i,
                     end_line=line,
                     end_column=column + len(segment),
+                    file_path=file_path,
                 ),
                 segment=segment,
                 char=char,
@@ -302,6 +311,7 @@ def validate_universe_name_format(
                 column=universe.position.column + i,
                 end_line=universe.position.end_line,
                 end_column=universe.position.end_column,
+                file_path=universe.position.file_path,
             )
             result.append(
                 diagnostics.UniverseNameInvalidCharDiagnostic(
@@ -408,6 +418,7 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
                     column=path.position.column + len(path_name) - 1,
                     end_line=path.position.end_line,
                     end_column=path.position.end_column,
+                    file_path=path.position.file_path,
                 ),
                 path=path_name,
             )
@@ -426,6 +437,7 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
                         column=path.position.column + segment_start - 1,
                         end_line=path.position.end_line,
                         end_column=path.position.end_column,
+                        file_path=path.position.file_path,
                     ),
                     path=path_name,
                 )
@@ -442,6 +454,7 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
                             column=path.position.column + segment_start + i,
                             end_line=path.position.end_line,
                             end_column=path.position.end_column,
+                            file_path=path.position.file_path,
                         ),
                         segment=segment,
                         char=char,
@@ -473,6 +486,7 @@ def validate_local_name_format(
                 column=local_name.position.column + i,
                 end_line=local_name.position.end_line,
                 end_column=local_name.position.end_column,
+                file_path=local_name.position.file_path,
             )
             return [
                 diagnostics.InvalidLocalNameFormatDiagnostic(

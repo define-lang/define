@@ -26,7 +26,7 @@ class Diagnostic:
         """Render the diagnostic message from the format template."""
         return self.message_format.format(self=self)
 
-    def format(self, source_lines: Sequence[str], file_name: str | None = None) -> str:
+    def format(self, source_lines: Sequence[str]) -> str:
         """Format the diagnostic with source context and caret pointer."""
         line_idx = self.position.line - 1
         source_line = (
@@ -35,9 +35,9 @@ class Diagnostic:
 
         column = self.position.column
         caret_line = " " * (column - 1) + "^"
-        if file_name is not None:
+        if self.position.file_path is not None:
             header = (
-                f'File "{file_name}", line {self.position.line}, '
+                f'File "{self.position.file_path}", line {self.position.line}, '
                 + f"column {self.position.column}"
             )
         else:

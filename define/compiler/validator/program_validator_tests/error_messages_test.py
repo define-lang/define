@@ -40,9 +40,7 @@ def test_path_mismatch_format(validate_project: ValidateProject):
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(
-        source.splitlines(), file_name=str(result.file_results[0].file_path)
-    )
+    formatted = diags[0].format(source.splitlines())
     assert formatted == (
         'File "foo/bar.def", line 1, column 52\n'
         "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
@@ -73,7 +71,7 @@ def test_duplicate_definition_format():
     )
 
 
-def test_duplicate_definition_format_with_non_filesystem_file_name():
+def test_non_filesystem_diagnostics_have_no_file_name():
     source = (
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
@@ -85,9 +83,10 @@ def test_duplicate_definition_format_with_non_filesystem_file_name():
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines(), str(results[0].file_path))
+    assert diags[0].position.file_path is None
+    formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        'File "<string>", line 2, column 1\n'
+        "line 2, column 1\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "^\n"
         "duplicate position definition for path '/same'; "
@@ -125,10 +124,7 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
 
-    formatted = diags[0].format(
-        source.splitlines(),
-        file_name=str(results[0].file_path),
-    )
+    formatted = diags[0].format(source.splitlines())
     assert formatted == (
         'File "test.def", line 3, column 29\n'
         + "        it has the position<mv:define-lang.org:child:/target>.\n"
@@ -248,9 +244,7 @@ def test_deferred_position_chain_error_format(
         test_result.diagnostics[0].parent_name
         == "position<my.domain.com:my_lib:/pos_b>"
     )
-    formatted = test_result.diagnostics[0].format(
-        source.splitlines(), file_name="test.def"
-    )
+    formatted = test_result.diagnostics[0].format(source.splitlines())
     assert formatted == (
         'File "test.def", line 10, column 72\n'
         "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
@@ -307,9 +301,7 @@ def test_deferred_action_chain_error_format(
     assert (
         test_result.diagnostics[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
     )
-    formatted = test_result.diagnostics[0].format(
-        source.splitlines(), file_name="test.def"
-    )
+    formatted = test_result.diagnostics[0].format(source.splitlines())
     assert formatted == (
         'File "test.def", line 10, column 70\n'
         "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
@@ -396,9 +388,7 @@ def test_move_into_defining_position_format(
         test_result.diagnostics[0].target_position
         == "position<local_pos>::position</mid_pos>::position</end_pos>"
     )
-    formatted = test_result.diagnostics[0].format(
-        source.splitlines(), file_name="test.def"
-    )
+    formatted = test_result.diagnostics[0].format(source.splitlines())
     assert formatted == (
         'File "test.def", line 10, column 81\n'
         "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
@@ -460,7 +450,7 @@ def test_move_violates_constraints_error_message(
         "action<my.domain.com:my_lib:/y>",
         "position<my.domain.com:my_lib:/x>",
     ]
-    formatted = all_diags[0].format(source.splitlines(), file_name="test.def")
+    formatted = all_diags[0].format(source.splitlines())
     assert formatted == (
         'File "test.def", line 14, column 59\n'
         "        move the dimension point in position<from_pos> to position<to_pos>.\n"

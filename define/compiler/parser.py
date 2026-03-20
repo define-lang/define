@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pathlib
 import typing
 from dataclasses import dataclass, field
 
@@ -41,6 +42,7 @@ class Parser:
         """Initialize the parser with the Define grammar."""
         self._lark = lark_standalone.Lark_StandAlone()
 
+    # TODO: Change file_path to PurePosixPath so callers pass it directly.
     def parse(
         self, source: str, file_path: str | os.PathLike[str] | None = None
     ) -> ParseResult:
@@ -61,7 +63,10 @@ class Parser:
             stop_before_line = e.line
             exception = e
 
-        diags = indentation_validator.validate_indentation(source, stop_before_line)
+        posix_path = pathlib.PurePosixPath(file_path) if file_path is not None else None
+        diags = indentation_validator.validate_indentation(
+            source, stop_before_line, file_path=posix_path
+        )
         return ParseResult(tree=tree, diagnostics=diags, exception=exception)
 
     def _do_parse(

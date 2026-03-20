@@ -8,22 +8,26 @@ from typing import TYPE_CHECKING
 from define.compiler import ast, parser_exceptions
 
 if TYPE_CHECKING:
+    from pathlib import PurePosixPath
+
     from define.compiler.lark import lark_standalone
 
 
-def parse_local_name(token: lark_standalone.Token) -> ast.LocalNameContent:
+def parse_local_name(
+    token: lark_standalone.Token, file_path: PurePosixPath | None = None
+) -> ast.LocalNameContent:
     """Parse local name content into an AST local-name node."""
     return ast.LocalNameContent(
         name=token,
-        position=ast.SourcePosition.from_token(token),
+        position=ast.SourcePosition.from_token(token, file_path=file_path),
     )
 
 
 def parse_global_name_definition(
-    token: lark_standalone.Token,
+    token: lark_standalone.Token, file_path: PurePosixPath | None = None
 ) -> ast.DefinitionGlobalNameContent:
     """Parse definition-site global name content into an AST node."""
-    parsed = _parse_global_name(token)
+    parsed = _parse_global_name(token, file_path)
     if parsed.fqun is None:
         raise parser_exceptions.DefinitionGlobalNameContentRequiresFqun(
             token,
@@ -32,19 +36,19 @@ def parse_global_name_definition(
             None,
         )
     return ast.DefinitionGlobalNameContent(
-        position=ast.SourcePosition.from_token(token),
+        position=ast.SourcePosition.from_token(token, file_path=file_path),
         fqun=parsed.fqun,
         path=parsed.path,
     )
 
 
 def parse_global_name_reference(
-    token: lark_standalone.Token,
+    token: lark_standalone.Token, file_path: PurePosixPath | None = None
 ) -> ast.ReferenceGlobalNameContent:
     """Parse reference-site global name content into an AST node."""
-    parsed = _parse_global_name(token)
+    parsed = _parse_global_name(token, file_path)
     return ast.ReferenceGlobalNameContent(
-        position=ast.SourcePosition.from_token(token),
+        position=ast.SourcePosition.from_token(token, file_path=file_path),
         fqun=parsed.fqun,
         path=parsed.path,
     )
@@ -56,7 +60,9 @@ class _ParsedGlobalName:
     path: ast.GlobalPathName
 
 
-def _parse_global_name(token: lark_standalone.Token) -> _ParsedGlobalName:
+def _parse_global_name(
+    token: lark_standalone.Token, file_path: PurePosixPath | None = None
+) -> _ParsedGlobalName:
     # TODO: Support escaped :
     fqun_sep_index = token.rfind(":")
     fqun = None
@@ -65,18 +71,22 @@ def _parse_global_name(token: lark_standalone.Token) -> _ParsedGlobalName:
         fqun_text = token[:fqun_sep_index]
         path_text = token[fqun_sep_index + 1 :]
         path_start = fqun_sep_index + 1
-        fqun = _parse_fqun(token, fqun_text)
+        fqun = _parse_fqun(token, fqun_text, file_path)
     else:
         path_text = token
 
     global_path = ast.GlobalPathName(
         name=path_text,
-        position=_position_for_offsets(token, path_start, path_start + len(path_text)),
+        position=_position_for_offsets(
+            token, path_start, path_start + len(path_text), file_path
+        ),
     )
     return _ParsedGlobalName(fqun, global_path)
 
 
-def _parse_fqun(token: lark_standalone.Token, text: str) -> ast.Fqun:
+def _parse_fqun(
+    token: lark_standalone.Token, text: str, file_path: PurePosixPath | None = None
+) -> ast.Fqun:
     # TODO: Support escaped :
     parts = text.split(":")
     if len(parts) not in {1, 2, 3}:
@@ -89,7 +99,7 @@ def _parse_fqun(token: lark_standalone.Token, text: str) -> ast.Fqun:
 
     multiverse = None
     authority = None
-    fqun_position = _position_for_offsets(token, 0, len(text))
+    fqun_position = _position_for_offsets(token, 0, len(text), file_path)
     if len(parts) == 1:
         universe = ast.Universe(
             name=parts[0],
@@ -104,12 +114,14 @@ def _parse_fqun(token: lark_standalone.Token, text: str) -> ast.Fqun:
         authority = ast.Authority(
             name=authority_text,
             position=_position_for_offsets(
-                token, authority_start, authority_start + len(authority_text)
+                token, authority_start, authority_start + len(authority_text), file_path
             ),
         )
         universe = ast.Universe(
             name=universe_text,
-            position=_position_for_offsets(token, universe_start, universe_end),
+            position=_position_for_offsets(
+                token, universe_start, universe_end, file_path
+            ),
         )
     else:
         multiverse_text, authority_text, universe_text = parts
@@ -121,17 +133,21 @@ def _parse_fqun(token: lark_standalone.Token, text: str) -> ast.Fqun:
         universe_end = universe_start + len(universe_text)
         multiverse = ast.Multiverse(
             name=multiverse_text,
-            position=_position_for_offsets(token, multiverse_start, multiverse_end),
+            position=_position_for_offsets(
+                token, multiverse_start, multiverse_end, file_path
+            ),
         )
         authority = ast.Authority(
             name=authority_text,
             position=_position_for_offsets(
-                token, authority_start, authority_start + len(authority_text)
+                token, authority_start, authority_start + len(authority_text), file_path
             ),
         )
         universe = ast.Universe(
             name=universe_text,
-            position=_position_for_offsets(token, universe_start, universe_end),
+            position=_position_for_offsets(
+                token, universe_start, universe_end, file_path
+            ),
         )
 
     return ast.Fqun(
@@ -157,7 +173,10 @@ def _column(token: lark_standalone.Token) -> int:
 
 
 def _position_for_offsets(
-    token: lark_standalone.Token, start_offset: int, end_offset: int
+    token: lark_standalone.Token,
+    start_offset: int,
+    end_offset: int,
+    file_path: PurePosixPath | None = None,
 ) -> ast.SourcePosition:
     line = _line(token)
     base_column = _column(token)
@@ -166,4 +185,5 @@ def _position_for_offsets(
         column=base_column + start_offset,
         end_line=line,
         end_column=base_column + end_offset,
+        file_path=file_path,
     )

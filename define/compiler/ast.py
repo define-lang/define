@@ -7,7 +7,7 @@ import enum
 import sys
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Final, Self, override
+from typing import TYPE_CHECKING, Self, override
 
 from define.compiler import constants
 
@@ -22,7 +22,6 @@ class NameType(enum.StrEnum):
     ACTION = "action"
 
 
-# TODO: Should include file name.
 @dataclass(frozen=True, slots=True)
 class SourcePosition:
     """Represents a position in source code."""
@@ -31,19 +30,25 @@ class SourcePosition:
     column: int
     end_line: int
     end_column: int
+    file_path: PurePosixPath | None = None
 
     @classmethod
-    def from_meta(cls, meta: lark_standalone.Meta) -> Self:
+    def from_meta(
+        cls, meta: lark_standalone.Meta, file_path: PurePosixPath | None = None
+    ) -> Self:
         """Create a SourcePosition from a Lark Meta object."""
         return cls(
             line=meta.line,
             column=meta.column,
             end_line=meta.end_line,
             end_column=meta.end_column,
+            file_path=file_path,
         )
 
     @classmethod
-    def from_token(cls, token: lark_standalone.Token) -> Self:
+    def from_token(
+        cls, token: lark_standalone.Token, file_path: PurePosixPath | None = None
+    ) -> Self:
         """Create a SourcePosition from a Lark Token."""
         if (
             token.line is None
@@ -57,12 +62,17 @@ class SourcePosition:
             column=token.column,
             end_line=token.end_line,
             end_column=token.end_column,
+            file_path=file_path,
         )
 
 
-START_OF_FILE_POSITION: Final = SourcePosition(
-    line=1, column=1, end_line=1, end_column=1
-)
+def start_of_file_position(
+    file_path: PurePosixPath | None = None,
+) -> SourcePosition:
+    """Return a SourcePosition pointing to the very start of a file."""
+    return SourcePosition(
+        line=1, column=1, end_line=1, end_column=1, file_path=file_path
+    )
 
 
 @dataclass(frozen=True, slots=True)

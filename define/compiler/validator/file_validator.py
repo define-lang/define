@@ -160,8 +160,9 @@ class FileValidator:
             "lark_standalone.Tree[lark_standalone.Token]", parse_result.tree
         )
 
+        file_path = context.full_path if context.is_filesystem_context else None
         try:
-            program = transformer.DefineTransformer().transform(tree)
+            program = transformer.DefineTransformer(file_path=file_path).transform(tree)
         except lark_standalone.VisitError as e:
             if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
                 tracker.mark_transform_finished()

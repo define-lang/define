@@ -5,7 +5,7 @@ from define.compiler.validator import validation_result
 
 
 def _pos() -> ast.SourcePosition:
-    return ast.START_OF_FILE_POSITION
+    return ast.start_of_file_position()
 
 
 def _fqun(domain: str = "d", lib: str = "u") -> ast.Fqun:

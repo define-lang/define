@@ -69,7 +69,10 @@ class Driver:
         entry_file_definitions = [r.definition for r in first_file.definition_results]
         codegen = generator.CodeGenerator()
         gen_diagnostics = codegen.generate(
-            program_result.reference_graph, entry_file_definitions, output_dir
+            program_result.reference_graph,
+            entry_file_definitions,
+            output_dir,
+            entry_point_file_path=first_file.file_path,
         )
         for diagnostic in gen_diagnostics:
             first_file.add_file_diagnostic(diagnostic)
@@ -148,9 +151,8 @@ class Driver:
                         "result.source must be set when there are diagnostics"
                     )
                 source_lines = result.source.splitlines()
-                file_name = str(result.file_path)
                 for diagnostic in result.diagnostics:
-                    print(diagnostic.format(source_lines, file_name), file=error_stream)
+                    print(diagnostic.format(source_lines), file=error_stream)
                 had_errors = True
 
         if stats_stream is not None:

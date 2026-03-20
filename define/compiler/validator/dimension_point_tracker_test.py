@@ -5,7 +5,7 @@ import pytest
 from define.compiler import ast
 from define.compiler.validator import dimension_point_tracker, scope_tracker
 
-_POS = ast.START_OF_FILE_POSITION
+_POS = ast.start_of_file_position()
 _POS2 = ast.SourcePosition(line=2, column=1, end_line=2, end_column=1)
 
 _FQUN = ast.Fqun(

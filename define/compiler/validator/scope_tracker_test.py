@@ -5,7 +5,7 @@ import pytest
 from define.compiler import ast
 from define.compiler.validator import scope_tracker
 
-_POS = ast.START_OF_FILE_POSITION
+_POS = ast.start_of_file_position()
 
 _FQUN = ast.Fqun(
     multiverse=None,

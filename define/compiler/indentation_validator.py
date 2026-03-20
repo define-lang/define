@@ -8,7 +8,12 @@ would probably just be part of the parser.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from define.compiler import ast, diagnostics
+
+if TYPE_CHECKING:
+    from pathlib import PurePosixPath
 
 
 def _remove_comment(line: str) -> str:
@@ -25,7 +30,9 @@ def _remove_comment(line: str) -> str:
 
 
 def validate_indentation(
-    source: str, stop_before_line: int | None = None
+    source: str,
+    stop_before_line: int | None = None,
+    file_path: PurePosixPath | None = None,
 ) -> list[diagnostics.Diagnostic]:
     """Validate indentation of Define source code.
 
@@ -55,7 +62,9 @@ def validate_indentation(
                 expected = block_stack.pop()
                 if actual_indent != expected:
                     result.append(
-                        _make_diagnostic(line_number, line, expected, actual_indent)
+                        _make_diagnostic(
+                            line_number, line, expected, actual_indent, file_path
+                        )
                     )
             if stripped.endswith(" {"):
                 block_stack.append(actual_indent)
@@ -63,7 +72,9 @@ def validate_indentation(
             expected = block_stack[-1] + 4 if block_stack else 0
             if actual_indent != expected:
                 result.append(
-                    _make_diagnostic(line_number, line, expected, actual_indent)
+                    _make_diagnostic(
+                        line_number, line, expected, actual_indent, file_path
+                    )
                 )
             if stripped and stripped.endswith(" {"):
                 block_stack.append(actual_indent)
@@ -72,7 +83,11 @@ def validate_indentation(
 
 
 def _make_diagnostic(
-    line_number: int, line: str, expected: int, actual: int
+    line_number: int,
+    line: str,
+    expected: int,
+    actual: int,
+    file_path: PurePosixPath | None = None,
 ) -> diagnostics.IncorrectIndentationDiagnostic:
     return diagnostics.IncorrectIndentationDiagnostic(
         position=ast.SourcePosition(
@@ -80,6 +95,7 @@ def _make_diagnostic(
             column=1,
             end_line=line_number,
             end_column=len(line) + 1,
+            file_path=file_path,
         ),
         expected_indent=expected,
         actual_indent=actual,

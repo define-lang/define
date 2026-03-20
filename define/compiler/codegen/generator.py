@@ -1,6 +1,6 @@
 """Code generator for the Define compiler."""
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from define.compiler import ast, diagnostics
 from define.compiler.codegen.literal.python import generator as python_generator
@@ -15,6 +15,7 @@ class CodeGenerator:
         graph: reference_graph.ReferenceGraph,
         entry_file_definitions: list[ast.QualityDefinition],
         output_dir: Path,
+        entry_point_file_path: PurePosixPath | None = None,
     ) -> list[diagnostics.Diagnostic]:
         """Generate code for a validated Define program.
 
@@ -35,7 +36,7 @@ class CodeGenerator:
             if entry_file_definitions:
                 position = entry_file_definitions[0].position
             else:
-                position = ast.START_OF_FILE_POSITION
+                position = ast.start_of_file_position(file_path=entry_point_file_path)
             return [diagnostics.EntryPointNotPositionDiagnostic(position=position)]
 
         python_gen = python_generator.PythonLiteralCodeGenerator()
