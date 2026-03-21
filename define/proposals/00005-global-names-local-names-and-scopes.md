@@ -415,6 +415,8 @@ names. For global names it's the global name first, and then the local names
 inside of that thing. For local names it's a local name first, and then the
 local names inside of that thing.
 
+The full name "path" thus created is referred to as a "chained name."
+
 ### Local Naming is Enforced
 
 When it is valid to use a local name, a local name must be used. You may not
