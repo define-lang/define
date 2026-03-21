@@ -157,7 +157,7 @@ class LocalNameContent(NameContent):
 
 @dataclass(frozen=True, slots=True, init=False)
 class LocalPositionDefinition(ASTNode):
-    """Represents a local position definition within an action block."""
+    """Represents a local position definition."""
 
     typed_name: LocalTypedNameReference
     constraints: PositionConstraintBlock | None
@@ -331,7 +331,7 @@ class PositionInitBlock(ActionStatementsBlock):
 class ActionDefinitionBlock(ASTNode):
     """Represents an action definition block."""
 
-    local_definitions: list[LocalPositionDefinition]
+    interface_positions: list[LocalPositionDefinition]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
 

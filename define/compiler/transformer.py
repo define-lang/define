@@ -336,9 +336,11 @@ class DefineTransformer(
         """Transform an action definition block."""
         action_statements = cast("ast.ActionStatementsBlock", items[-1])
         trigger_conditions = cast("ast.TriggerConditionsBlock", items[-2])
-        local_definitions = cast("list[ast.LocalPositionDefinition]", list(items[:-2]))
+        interface_positions = cast(
+            "list[ast.LocalPositionDefinition]", list(items[:-2])
+        )
         return ast.ActionDefinitionBlock(
-            local_definitions=local_definitions,
+            interface_positions=interface_positions,
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,
             position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),

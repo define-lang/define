@@ -967,9 +967,9 @@ Proposals:
 A potential action is defined by a quality definition statement with the type
 `action`, followed by a terminator or an Action Definition Block.
 
-An Action Definition Block may contain any number of local definitions (which
-are optional) followed by two other blocks: the Trigger Conditions Block and the
-Action Statements Block, which are mandatory.
+An Action Definition Block may contain any number of local position definitions
+(which are optional) followed by two other blocks: the Trigger Conditions Block
+and the Action Statements Block, which are mandatory.
 
 The Action Definition Block creates a new local scope.
 

@@ -141,7 +141,7 @@ class DefinitionValidationResult:
             return {}
         fqun = definition.typed_name.name_content.fqun
         result: dict[str, frozenset[str]] = {}
-        for local_def in definition.definition_block.local_definitions:
+        for local_def in definition.definition_block.interface_positions:
             local_name = local_def.typed_name.name_content.name
             if local_name in result:
                 continue

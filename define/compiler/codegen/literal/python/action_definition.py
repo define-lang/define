@@ -46,7 +46,7 @@ class ActionDefinitionGenerator:
                     enclosing_fqun,
                 ),
             )
-            for local_def in block.local_definitions
+            for local_def in block.interface_positions
         ]
 
         trigger_position_name = (
@@ -57,7 +57,7 @@ class ActionDefinitionGenerator:
 
         interface_position_names = {
             local_def.typed_name.source_typed_name
-            for local_def in block.local_definitions
+            for local_def in block.interface_positions
         }
 
         block_gen = action_statements.ActionStatementsBlockGenerator(

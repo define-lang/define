@@ -348,7 +348,7 @@ class DefinitionAstValidator:
         scope = scope_tracker.ScopeTracker(
             self._definition.typed_name.name_content.fqun
         )
-        for local_def in definition_block.local_definitions:
+        for local_def in definition_block.interface_positions:
             self._validate_local_position_definition(local_def, scope)
         self._validate_trigger_conditions(definition_block.trigger_conditions, scope)
         tracker = dimension_point_tracker.LocalDimensionPointTracker(self._definition)

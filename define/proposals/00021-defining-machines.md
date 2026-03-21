@@ -29,7 +29,7 @@ The high level syntax for a machine action will be:
 ```
 define the action<name> {
     # This is called an Action Definition Block.
-    # Other definitions go here
+    # Interface position definitions go here
 
     it happens when {
         # This is called the Trigger Conditions Block.
@@ -41,7 +41,8 @@ define the action<name> {
 }
 ```
 
-In the "other definitions" block, positions may be defined.
+In the Action Definition Block, positions may be defined. These positions are
+called "interface positions."
 
 The blocks must be specified in the order above: first the definition block,
 then the Trigger Conditions Block, and then the Action Statements Block. The

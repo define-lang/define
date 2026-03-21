@@ -157,16 +157,16 @@ def test_action_definition_block_transforms():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.definition_block is not None
-    assert len(definition.definition_block.local_definitions) == 1
+    assert len(definition.definition_block.interface_positions) == 1
     assert (
-        definition.definition_block.local_definitions[0].typed_name.name_content.name
+        definition.definition_block.interface_positions[0].typed_name.name_content.name
         == "run"
     )
     assert definition.definition_block.trigger_conditions is not None
     assert definition.definition_block.action_statements.statements == []
 
 
-def test_action_definition_block_with_local_definition():
+def test_action_definition_block_with_interface_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
         + "    define the position<my_pos>.\n"
@@ -179,14 +179,14 @@ def test_action_definition_block_with_local_definition():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.definition_block is not None
-    assert len(definition.definition_block.local_definitions) == 1
+    assert len(definition.definition_block.interface_positions) == 1
     assert (
-        definition.definition_block.local_definitions[0].typed_name.name_content.name
+        definition.definition_block.interface_positions[0].typed_name.name_content.name
         == "my_pos"
     )
 
 
-def test_action_definition_block_with_multiple_local_definitions():
+def test_action_definition_block_with_multiple_interface_positions():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
         + "    define the position<first_pos>.\n"
@@ -200,13 +200,13 @@ def test_action_definition_block_with_multiple_local_definitions():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     assert definition.definition_block is not None
-    assert len(definition.definition_block.local_definitions) == 2
+    assert len(definition.definition_block.interface_positions) == 2
     assert (
-        definition.definition_block.local_definitions[0].typed_name.name_content.name
+        definition.definition_block.interface_positions[0].typed_name.name_content.name
         == "first_pos"
     )
     assert (
-        definition.definition_block.local_definitions[1].typed_name.name_content.name
+        definition.definition_block.interface_positions[1].typed_name.name_content.name
         == "second_pos"
     )
 
@@ -231,7 +231,7 @@ def test_action_definition_block_source_positions():
     assert block.action_statements.statements == []
 
 
-def test_action_definition_block_local_definition_source_position():
+def test_action_definition_block_interface_position_source_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
         + "    define the position<my_pos>.\n"
@@ -245,7 +245,7 @@ def test_action_definition_block_local_definition_source_position():
     assert isinstance(definition, ast.ActionDefinition)
     block = definition.definition_block
     assert block is not None
-    local_def = block.local_definitions[0]
+    local_def = block.interface_positions[0]
     assert local_def.position.line == 2
     assert local_def.position.column == 5
 
@@ -708,7 +708,7 @@ def test_mixed_action_statements_with_move():
     assert isinstance(stmts[2], ast.LocalPositionDefinition)
 
 
-def test_action_definition_block_with_constrained_local_definition():
+def test_action_definition_block_with_constrained_interface_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
         + "    define the position<my_pos> {\n"
@@ -726,7 +726,7 @@ def test_action_definition_block_with_constrained_local_definition():
     assert isinstance(definition, ast.ActionDefinition)
     block = definition.definition_block
     assert block is not None
-    local_def = block.local_definitions[0]
+    local_def = block.interface_positions[0]
     assert local_def.constraints is not None
     assert len(local_def.constraints.requirements) == 1
     requirement = local_def.constraints.requirements[0]
