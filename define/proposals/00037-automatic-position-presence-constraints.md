@@ -265,7 +265,7 @@ empty.
 
 If the first reference is moving a dimension point from that position or
 destroying a dimension point in that position, the requirement is that the
-position must be empty.
+position must be occupied.
 
 ### Implicit Requirements on Chained Names
 

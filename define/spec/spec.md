@@ -831,6 +831,10 @@ position_requirement_statement = "it has the", " ", typed_global_name, terminato
 
 ## Position References
 
+Proposals:
+
+- [DLP 23: Dimension Points Define Other Positions](../proposals/00023-dimension-points-define-other-positions.md)
+
 A position reference is a single position name or a chained name that ends with
 the name of a position.
 
@@ -845,9 +849,10 @@ Unless otherwise stated, the rules for all position references are:
   constraint on their parent name.
 - For local position names, the parent name must be an action and the local
   position must be defined in the Action Definition Block of that action.
-- Every position named in the chain must already have a dimension point in it
-  (except for the last position in the chain, in the case where we are creating
-  a dimension point in a position or moving a dimension point from a position).
+- Every position in the chain except the last must already contain a dimension
+  point.
+- The statement that uses the position reference determines whether the last
+  position in the chain must contain a dimension point or be empty.
 
 ```ebnf
 position_reference =
@@ -963,6 +968,7 @@ Proposals:
 - [DLP 21: Defining Machines](../proposals/00021-defining-machines.md)
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 - [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
+- [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
 
 A potential action is defined by a quality definition statement with the type
 `action`, followed by a terminator or an Action Definition Block.
@@ -978,6 +984,14 @@ action_name = "action", "<", global_name, ">" ;
 action_definition = "define the potential", " ", action_name, ( terminator | action_definition_block ) ;
 action_definition_block = block_open, { local_position_definition }, trigger_and_action, block_close ;
 ```
+
+### Interface Positions
+
+The local positions defined directly in an Action Definition Block are called
+"interface positions."
+
+When an action is assigned to a dimension point, its interface positions are
+initially empty.
 
 ### Inner Blocks
 
@@ -1007,6 +1021,9 @@ A Trigger Conditions Block contains one Trigger Condition Statement.
 
 The one current Trigger Condition Statement is the Position Presence Statement:
 `the position<name> has a dimension point.`
+
+When compiling an action, the compiler treats the requirements specified by that
+action's Trigger Conditions Block as being satisfied.
 
 ```ebnf
 trigger_conditions = trigger_condition_statement ;
@@ -1058,6 +1075,72 @@ action_statement =
     | quality_assignment_statement
     | wait_until_statement ;
 ```
+
+### Automatic Action Requirements
+
+Proposals:
+
+- [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
+
+For each interface position that is not a trigger position, the compiler
+automatically infers occupancy requirements for that position from the first
+time an Action Statements Block statement references that position. These
+inferred requirements are referred to as Action Requirements.
+
+Callers must satisfy the Action Requirements of an action before triggering it,
+or the compiler will throw an error.
+
+These inferred requirements are thus treated as being always satisfied within
+the Action Statements Block of an action that defines them.
+
+#### How Requirements Are Inferred
+
+If the first reference to the final position in a chained name is a Create
+Dimension Point Statement target or a Move Dimension Point Statement
+destination, that position is required to be empty.
+
+If the first reference to the final position in a chain is a Move Dimension
+Point Statement source or a Destroy Dimension Point Statement target, that
+position is required to contain a dimension point.
+
+Every intermediate position in a chained name is also implicitly required to
+contain a dimension point, if it is the first time that intermediate position is
+referenced in any chain (either within a chain or as the final position) in the
+Action Statements Block.
+
+### Automatic Action Guarantees
+
+For each action, the compiler determines a set of "Action Guarantees." These are
+facts that are guaranteed to always be true when an action completes.
+
+The compiler determines a set of Action Position Occupancy Guarantees:
+
+- Which interface positions are always empty at the end of the action
+- Which interface positions are always filled at the end of the action
+
+The compiler also determines a set of Action Dimension Point Identity
+Guarantees. Upon completion of an action, each dimension point in each position
+is in one of two possible states:
+
+- It is a dimension point that was passed into one of the interface positions at
+  the start of the action, and thus has the same qualities as that dimension
+  point had when it was passed in.
+- It is a new dimension point created by this action or one of this action's
+  callees, and thus has the qualities defined by the position in which it was
+  created.
+
+The compiler uses these guarantees to reason about dimension point occupancy and
+dimension point qualities in a fully modular way without having to do
+whole-program dataflow analysis.
+
+These guarantees are visible only to the action's direct caller.
+
+### Depth-First Post-Order Reference Graph Traversal
+
+The Action Requirements and Action Guarantees system implicitly means that
+actions must be processed in a post-order depth-first traversal of the
+global-name reference graph (a graph of which definitions reference which global
+names).
 
 ## Creating Dimension Points
 
