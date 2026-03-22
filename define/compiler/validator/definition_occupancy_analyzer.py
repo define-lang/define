@@ -197,26 +197,43 @@ class DefinitionOccupancyAnalyzer:
             tracker.mark_unknown_state(stmt.target_position)
             return
 
-        if from_local and to_local:
-            if self._check_constraints_for_move(stmt, scope, tracker):
-                tracker.move(stmt.source_position, stmt.target_position)
+        # Resolve qualities for constraint checking. Local positions use the
+        # tracker/scope; chained positions look up the referenced definition.
+        fqun = self._definition_result.definition.typed_name.name_content.fqun
+        if from_local:
+            from_qualities: frozenset[str] | None = tracker.get_occupant(
+                stmt.source_position
+            ).qualities
         else:
-            # Chained→chained: both sides need resolution.
-            from_qualities = None
-            to_qualities = None
+            from_qualities = self._get_required_qualities_for_position(
+                stmt.source_position.chain, fqun
+            )
+        if to_local:
+            to_qualities: frozenset[str] | None = scope.get_constraint_names(
+                stmt.target_position.chain.typed_names[0]
+            )
+        else:
+            to_qualities = self._get_required_qualities_for_position(
+                stmt.target_position.chain, fqun
+            )
+
+        if not self._check_move_constraints(
+            stmt,
+            from_qualities,
+            to_qualities,
+            both_local=bool(from_local and to_local),
+            tracker=tracker,
+        ):
+            return
+
+        # Update tracker state.
+        if from_local and to_local:
+            tracker.move(stmt.source_position, stmt.target_position)
+        else:
             if from_local:
-                # Local→chained: we know the from qualities locally.
-                from_qualities = tracker.get_occupant(stmt.source_position).qualities
                 tracker.destroy(stmt.source_position)
             elif to_local:
-                # Chained→local: we know the to qualities locally.
-                to_qualities = scope.get_constraint_names(
-                    stmt.target_position.chain.typed_names[0]
-                )
-                tracker.create(stmt.target_position, to_qualities)
-            self._resolve_cross_definition_constraint(
-                stmt, from_qualities, to_qualities
-            )
+                tracker.create(stmt.target_position, to_qualities or frozenset())
 
         if not tracker.has_unknown_state(stmt.target_position):
             self._action_body_effects.append(
@@ -226,18 +243,25 @@ class DefinitionOccupancyAnalyzer:
                 )
             )
 
-    def _check_constraints_for_move(
+    def _check_move_constraints(
         self,
         stmt: ast.MoveDimensionPointStatement,
-        scope: scope_tracker.ScopeTracker,
+        from_qualities: frozenset[str] | None,
+        to_qualities: frozenset[str] | None,
+        *,
+        both_local: bool,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ) -> bool:
-        dp_info = tracker.get_occupant(stmt.source_position)
-        dest_constraints = scope.get_constraint_names(
-            stmt.target_position.chain.typed_names[0]
-        )
-        missing_qualities = dest_constraints - dp_info.qualities
-        if not missing_qualities:
+        """Check that a move satisfies destination constraints.
+
+        Returns True if the move may proceed (constraints satisfied or
+        unresolvable). Returns False if constraints are violated and
+        both positions are local (marks unknown state).
+        """
+        if from_qualities is None or to_qualities is None:
+            return True
+        missing = to_qualities - from_qualities
+        if not missing:
             return True
 
         self._diagnostics.append(
@@ -245,12 +269,14 @@ class DefinitionOccupancyAnalyzer:
                 position=stmt.target_position.chain.typed_names[0].position,
                 source_position=stmt.source_position.chain.source_chained_name,
                 target_position=stmt.target_position.chain.source_chained_name,
-                missing_qualities=sorted(missing_qualities),
+                missing_qualities=sorted(missing),
             )
         )
-        tracker.mark_unknown_state(stmt.source_position)
-        tracker.mark_unknown_state(stmt.target_position)
-        return False
+        if both_local:
+            tracker.mark_unknown_state(stmt.source_position)
+            tracker.mark_unknown_state(stmt.target_position)
+            return False
+        return True
 
     def _check_if_from_is_a_prefix_of_to(
         self,
@@ -298,39 +324,6 @@ class DefinitionOccupancyAnalyzer:
             if tracker.get_local_position_reference(stmt.target_position, scope):
                 tracker.mark_unknown_state(stmt.target_position)
         return True
-
-    def _resolve_cross_definition_constraint(
-        self,
-        stmt: ast.MoveDimensionPointStatement,
-        from_qualities: frozenset[str] | None,
-        to_qualities: frozenset[str] | None,
-    ):
-        """Resolve move constraints for cross-definition moves inline."""
-        fqun = self._definition_result.definition.typed_name.name_content.fqun
-
-        if from_qualities is None:
-            from_qualities = self._get_required_qualities_for_position(
-                stmt.source_position.chain, fqun
-            )
-
-        if to_qualities is None:
-            to_qualities = self._get_required_qualities_for_position(
-                stmt.target_position.chain, fqun
-            )
-
-        if from_qualities is None or to_qualities is None:
-            return
-
-        missing = to_qualities - from_qualities
-        if missing:
-            self._diagnostics.append(
-                diagnostics.MoveViolatesConstraintsDiagnostic(
-                    position=stmt.target_position.position,
-                    source_position=stmt.source_position.chain.source_chained_name,
-                    target_position=stmt.target_position.chain.source_chained_name,
-                    missing_qualities=sorted(missing),
-                )
-            )
 
     def _get_required_qualities_for_position(
         self,
