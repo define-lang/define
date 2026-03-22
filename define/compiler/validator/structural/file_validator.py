@@ -1,6 +1,6 @@
 """Pure per-file validation for the Define language.
 
-FileValidator is a stateless worker that processes one file at a time.
+FileStructuralValidator is a stateless worker that processes one file at a time.
 It takes immutable inputs and produces immutable outputs, with no access
 to shared mutable state.
 """
@@ -27,12 +27,8 @@ from define.compiler import (
 )
 from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.lark import lark_standalone
-from define.compiler.validator import (
-    name_validators,
-    scope_tracker,
-    stats,
-    validation_result,
-)
+from define.compiler.validator import scope_tracker, stats, validation_result
+from define.compiler.validator.structural import name_validators
 
 SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
@@ -77,7 +73,7 @@ class EmptyFileValidationContext(FileValidationContext):
         return None
 
 
-class FileValidator:
+class FileStructuralValidator:
     """Stateless per-file validator.
 
     Processes one file: reads from disk, parses, transforms, and validates
@@ -179,7 +175,7 @@ class FileValidator:
         seen_definitions: dict[str, ast.QualityDefinition] = {}
         definition_results: list[validation_result.DefinitionValidationResult] = []
         for definition in program.definitions:
-            result = DefinitionAstValidator(
+            result = DefinitionStructuralValidator(
                 definition=definition,
                 context=context,
                 seen_definitions=seen_definitions,
@@ -223,7 +219,7 @@ class FileValidator:
         return source, None
 
 
-class DefinitionAstValidator:
+class DefinitionStructuralValidator:
     """Validates one definition within a single file.
 
     Is mutable and not thread-safe.
@@ -283,7 +279,7 @@ class DefinitionAstValidator:
         return validation_result.DefinitionValidationResult(
             definition=self._definition,
             # TODO: This does a bunch of copying that it doesn't need to,
-            # because DefinitionAstValidator is an implementation detail.
+            # because DefinitionStructuralValidator is an implementation detail.
             _diagnostics=list(self._diagnostics),
             reference_edges=list(self._reference_edges),
             discovered_files=list(self._discovered_files),

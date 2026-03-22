@@ -1,0 +1,137 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "file_validator",
+    srcs = ["file_validator.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":name_validators",
+        "//define/compiler:ast",
+        "//define/compiler:constants",
+        "//define/compiler:diagnostics",
+        "//define/compiler:exceptions",
+        "//define/compiler:parser",
+        "//define/compiler:parser_error_classification",
+        "//define/compiler:parser_exceptions",
+        "//define/compiler:transformer",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/lark:lark_standalone",
+        "//define/compiler/validator:scope_tracker",
+        "//define/compiler/validator:stats",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_test(
+    name = "file_validator_test",
+    size = "small",
+    srcs = ["file_validator_test.py"],
+    deps = [
+        ":file_validator",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+        "//define/compiler:exceptions",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+        "//define/compiler:transformer",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "name_validators",
+    srcs = ["name_validators.py"],
+    data = ["//define/reserved_words"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:constants",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "name_validators_test",
+    size = "small",
+    srcs = ["name_validators_test.py"],
+    deps = [
+        ":name_validators",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_library(
+    name = "path_tracker",
+    srcs = ["path_tracker.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["@pypi//pygtrie"],
+)
+
+py_test(
+    name = "path_tracker_test",
+    size = "small",
+    srcs = ["path_tracker_test.py"],
+    deps = [
+        ":path_tracker",
+        "@pypi//pygtrie",
+    ],
+)
+
+py_library(
+    name = "program_validator",
+    srcs = ["program_validator.py"],
+    visibility = [
+        "//define/compiler:__pkg__",
+        "//define/compiler:__subpackages__",
+    ],
+    deps = [
+        ":file_validator",
+        ":path_tracker",
+        "//define/compiler:ast",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler:diagnostics",
+        "//define/compiler:exceptions",
+        "//define/compiler:parser",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator:stats",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:definition_occupancy_analyzer",
+    ],
+)
+
+py_library(
+    name = "structural",
+    srcs = ["__init__.py"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":file_validator",
+        ":file_validator_test",
+        ":name_validators",
+        ":name_validators_test",
+        ":path_tracker",
+        ":path_tracker_test",
+        ":program_validator",
+        ":structural",
+    ],
+)

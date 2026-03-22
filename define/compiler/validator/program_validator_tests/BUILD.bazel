@@ -8,7 +8,7 @@ py_test(
     size = "small",
     srcs = ["diagnostic_collection_test.py"],
     deps = [
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -18,7 +18,7 @@ py_test(
     srcs = ["action_statements_block_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -38,7 +38,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -51,7 +51,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -63,7 +63,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -73,7 +73,7 @@ py_test(
     srcs = ["dimension_point_conflict_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -83,7 +83,7 @@ py_test(
     srcs = ["duplicate_definitions_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -95,7 +95,7 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:exceptions",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -108,7 +108,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -131,7 +131,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -141,7 +141,7 @@ py_test(
     srcs = ["local_name_conflicts_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -152,7 +152,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -173,7 +173,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -194,7 +194,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -204,7 +204,7 @@ py_test(
     srcs = ["name_format_positions_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -215,7 +215,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:file_validator",
+        "//define/compiler/validator/structural:file_validator",
     ],
 )
 
@@ -228,8 +228,8 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:exceptions",
         "//define/compiler:parser_exceptions",
-        "//define/compiler/validator:program_validator",
         "//define/compiler/validator:stats",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -250,7 +250,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -261,7 +261,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -271,7 +271,7 @@ py_test(
     srcs = ["program_config_test.py"],
     deps = [
         "//define/compiler:exceptions",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -281,7 +281,7 @@ py_test(
     srcs = ["reserved_name_positions_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -298,7 +298,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -308,7 +308,7 @@ py_test(
     srcs = ["universe_without_authority_test.py"],
     deps = [
         "//define/compiler:diagnostics",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 

@@ -8,8 +8,9 @@ from typing import Protocol, overload
 import pytest
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator, validation_result
+from define.compiler.validator import validation_result
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 type ParseAndValidateFile = Callable[
     [str | bytes], validation_result.FileValidationResult
@@ -89,7 +90,7 @@ def _run_validation(
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    pv = program_validator.ProgramValidator()
+    pv = program_validator.ProgramStructuralValidator()
     return pv.validate_program(PurePosixPath(entry_file), max_workers=max_workers)
 
 
@@ -154,7 +155,7 @@ def parse_and_validate_file(
             source_path.write_bytes(source)
         monkeypatch.chdir(tmp_path)
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program(relative_path)
             .file_results
         )
@@ -181,7 +182,7 @@ def validate_source_as_file(
         test_helpers.write_project_config(tmp_path, expected_universe_name)
         monkeypatch.chdir(tmp_path)
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program(relative_path)
             .file_results
         )

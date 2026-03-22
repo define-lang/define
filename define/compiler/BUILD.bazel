@@ -38,9 +38,9 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":diagnostics",
-        "//define/compiler/validator:program_validator",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/program_validator_tests:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
     ],
 )
@@ -117,8 +117,8 @@ py_library(
         ":exceptions",
         ":overall_stats",
         "//define/compiler/codegen:generator",
-        "//define/compiler/validator:program_validator",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -290,10 +290,7 @@ py_library(
 py_library(
     name = "transformer",
     srcs = ["transformer.py"],
-    visibility = [
-        "//define/compiler/validator:__pkg__",
-        "//define/compiler/validator/program_validator_tests:__pkg__",
-    ],
+    visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":ast",
         ":name_parser",

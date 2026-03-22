@@ -10,8 +10,8 @@ import pytest
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 
 def test_short_form_global_reference(validate_project: ValidateProject):
@@ -44,8 +44,10 @@ def test_same_fqun_reference_must_use_short_form():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -67,8 +69,10 @@ def test_valid_local_name():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert not result.has_errors()
 
@@ -86,8 +90,10 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -109,8 +115,10 @@ def test_undefined_local_position():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -132,8 +140,10 @@ def test_local_position_defined_after_use():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -155,8 +165,10 @@ def test_local_position_defined_in_action_statements_before_use():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert not result.has_errors()
 
@@ -182,8 +194,10 @@ def test_two_actions_with_definition_block_local_positions():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert not result.has_errors()
 
@@ -199,8 +213,10 @@ def test_single_action_in_position_reference():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3

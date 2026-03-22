@@ -13,8 +13,8 @@ from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
-from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 
 def test_entrypoint_file_not_found(validate_project: ValidateProject):
@@ -66,8 +66,10 @@ def test_non_filesystem_cross_universe_reference(
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert len(result.file_results) == 2
     assert str(result.file_results[0].file_path) == "<string>"

@@ -7,7 +7,7 @@ from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_create_in_self():
@@ -19,7 +19,7 @@ def test_create_in_self():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -57,7 +57,7 @@ def test_move_from_local_to_self():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -76,7 +76,7 @@ def test_move_from_self_to_local():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -216,7 +216,7 @@ def test_chained_name_starting_with_self_two_items_invalid_local():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -313,7 +313,7 @@ def test_self_reference_does_not_trigger_file_loading():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

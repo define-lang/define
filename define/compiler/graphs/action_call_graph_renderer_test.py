@@ -6,7 +6,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler.graphs import action_call_graph, action_call_graph_renderer
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def _write_project_config(tmp_path: Path, universe_name: str):
@@ -55,7 +55,7 @@ def _build_graph(
     monkeypatch: pytest.MonkeyPatch,
     universe_name: str = "my.domain.com:my_lib",
 ) -> action_call_graph.ActionCallGraph:
-    pv = program_validator.ProgramValidator()
+    pv = program_validator.ProgramStructuralValidator()
     _write_project_config(tmp_path, universe_name)
     for name, source in files.items():
         file_path = tmp_path / name

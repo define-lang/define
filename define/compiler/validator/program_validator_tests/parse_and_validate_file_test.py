@@ -12,8 +12,9 @@ from define.compiler import exceptions, parser_exceptions
 from define.compiler.conftest import (
     ParseAndValidateFile,
 )
-from define.compiler.validator import program_validator, stats
+from define.compiler.validator import stats
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
@@ -75,7 +76,7 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
 
 def test_non_filesystem_parse_error_returns_single_result():
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(
             "defin the potential position<my.domain.com:my_lib:/bad>.\n"
         )
@@ -148,7 +149,7 @@ def test_config_error_sets_later_phases_to_zero(
     )
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(relative_path)
         .file_results
     )
@@ -176,7 +177,7 @@ def test_file_not_found_sets_later_phases_to_zero(
     relative_path = PurePosixPath("nonexistent.def")
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(relative_path)
         .file_results
     )
@@ -207,7 +208,7 @@ def test_config_loading_time_ns_tracks_successful_root_load(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
 
-    validator = program_validator.ProgramValidator()
+    validator = program_validator.ProgramStructuralValidator()
     program_result = validator.validate_program(relative_path)
 
     assert program_result.config_loading_time_ns > 0
@@ -224,7 +225,7 @@ def test_config_loading_time_ns_tracks_failing_root_load(
     )
     monkeypatch.chdir(tmp_path)
 
-    validator = program_validator.ProgramValidator()
+    validator = program_validator.ProgramStructuralValidator()
     program_result = validator.validate_program(relative_path)
 
     assert program_result.config_loading_time_ns > 0

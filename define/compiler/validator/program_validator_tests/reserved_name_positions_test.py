@@ -4,13 +4,13 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_reserved_universe_name_position():
     source = "define the potential position<standard:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -25,7 +25,7 @@ def test_reserved_universe_name_position():
 def test_reserved_universe_name_with_authority_position():
     source = "define the potential position<example.com:example:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -44,7 +44,7 @@ def test_reserved_universe_name_with_authority_position():
 def test_reserved_authority_position():
     source = "define the potential position<example.com:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -59,7 +59,7 @@ def test_reserved_authority_position():
 def test_reserved_authority_with_multiverse_position():
     source = "define the potential position<mv:example.com:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -74,7 +74,7 @@ def test_reserved_authority_with_multiverse_position():
 def test_dotless_authority_position():
     source = "define the potential position<localhost:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -90,7 +90,7 @@ def test_dotless_authority_position():
 def test_reserved_multiverse_position():
     source = "define the potential position<python:example.org:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

@@ -4,13 +4,13 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_multiverse_name_position():
     source = "define the potential position<_mv:my.domain.com:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -28,7 +28,7 @@ def test_multiverse_name_position():
 def test_authority_domain_position():
     source = "define the potential position<mv:-example.com:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -46,7 +46,7 @@ def test_authority_domain_position():
 def test_authority_path_position():
     source = "define the potential position<mv:my.domain.com/.hidden:my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -64,7 +64,7 @@ def test_authority_path_position():
 def test_universe_name_position():
     source = "define the potential position<mv:my.domain.com:_my_lib:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -82,7 +82,7 @@ def test_universe_name_position():
 def test_path_segment_position():
     source = "define the potential position<my.domain.com:my_lib:/2bad>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -110,7 +110,7 @@ def test_local_name_position():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

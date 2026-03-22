@@ -9,13 +9,13 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import exceptions
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(PurePosixPath("test.def"))
         .file_results
     )
@@ -33,7 +33,7 @@ def test_invalid_project_config_raises(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.chdir(tmp_path)
 
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(PurePosixPath("test.def"))
         .file_results
     )

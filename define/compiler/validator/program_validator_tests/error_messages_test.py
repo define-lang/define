@@ -9,14 +9,14 @@ import pytest
 
 from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -55,7 +55,7 @@ def test_duplicate_definition_format():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -77,7 +77,7 @@ def test_non_filesystem_diagnostics_have_no_file_name():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -150,7 +150,7 @@ def test_local_duplicate_dimension_point_format():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -180,7 +180,7 @@ def test_move_from_empty_position_format():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -325,7 +325,7 @@ def test_move_to_same_position_format():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -469,7 +469,7 @@ def test_not_project_root_error_message_for_project_root(
 ):
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(PurePosixPath("test.def"))
         .file_results
     )
@@ -548,7 +548,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     monkeypatch.chdir(tmp_path)
 
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(PurePosixPath("test.def"), max_workers=1)
         .file_results
     )
@@ -590,7 +590,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.chdir(tmp_path)
 
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(PurePosixPath("test.def"))
         .file_results
     )
@@ -612,7 +612,7 @@ def test_config_validation_error_message(
     monkeypatch.chdir(tmp_path)
 
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(PurePosixPath("test.def"))
         .file_results
     )

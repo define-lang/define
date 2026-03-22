@@ -35,15 +35,15 @@ flowchart LR
     end
 
     subgraph Validation
-        Transformer --> FileValidator["validator/file_validator.py"]
-        NameValidators["validator/name_validators.py"] --> FileValidator
+        Transformer --> FileValidator["validator/structural/file_validator.py"]
+        NameValidators["validator/structural/name_validators.py"] --> FileValidator
         ScopeTracker["validator/scope_tracker.py"] --> FileValidator
-        DPTracker["validator/dimension_point_tracker.py"] --> FileValidator
+        DPTracker["validator/reference_graph/dimension_point_tracker.py"] --> FileValidator
         IndentValidator["indentation_validator.py"] --> FileValidator
-        FileValidator --> ProgramValidator["validator/program_validator.py"]
-        PathTracker["validator/path_tracker.py"] --> ProgramValidator
-        ReferenceGraph["validator/reference_graph.py"] --> ProgramValidator
-        ActionCallGraph["action_call_graph.py"] --> ProgramValidator
+        FileValidator --> ProgramValidator["validator/structural/program_validator.py"]
+        PathTracker["validator/structural/path_tracker.py"] --> ProgramValidator
+        ReferenceGraph["graphs/reference_graph.py"] --> ProgramValidator
+        ActionCallGraph["graphs/action_call_graph.py"] --> ProgramValidator
         Config["config.py"] --> ProgramValidator
     end
 

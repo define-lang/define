@@ -2,7 +2,7 @@
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_valid_local_positions():
@@ -18,7 +18,7 @@ def test_valid_local_positions():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -84,7 +84,7 @@ def test_undefined_from_position():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -109,7 +109,7 @@ def test_undefined_to_position():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -134,7 +134,7 @@ def test_both_positions_undefined():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -249,7 +249,7 @@ def test_move_from_a_position_to_itself():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -306,7 +306,7 @@ def test_move_to_same_position_does_not_mark_unknown():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

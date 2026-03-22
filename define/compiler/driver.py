@@ -19,7 +19,8 @@ from define.compiler import (
     overall_stats,
 )
 from define.compiler.codegen import generator
-from define.compiler.validator import program_validator, validation_result
+from define.compiler.validator import validation_result
+from define.compiler.validator.structural import program_validator
 
 
 class DriverMode(enum.StrEnum):
@@ -50,7 +51,7 @@ class Driver:
     def validate_program(self, path: Path) -> DriverResult:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
-        pv = program_validator.ProgramValidator()
+        pv = program_validator.ProgramStructuralValidator()
         program_result = pv.validate_program(path=resolved_path)
         return DriverResult(
             result=program_result,

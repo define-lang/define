@@ -10,8 +10,8 @@ import pytest
 
 from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
 _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
@@ -53,7 +53,7 @@ def test_sub_root_redeclares_parent_fqun(
     )
     monkeypatch.chdir(tmp_path)
 
-    result = program_validator.ProgramValidator().validate_program(
+    result = program_validator.ProgramStructuralValidator().validate_program(
         PurePosixPath("test.def"), max_workers=1
     )
     all_diags = result.all_diagnostics
@@ -568,7 +568,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         encoding="utf-8",
     )
 
-    result = program_validator.ProgramValidator().validate_program(
+    result = program_validator.ProgramStructuralValidator().validate_program(
         PurePosixPath("test.def")
     )
     assert len(result.file_results) == 3

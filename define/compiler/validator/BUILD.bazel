@@ -4,145 +4,6 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
-    name = "dimension_point_tracker",
-    srcs = ["dimension_point_tracker.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":scope_tracker",
-        "//define/compiler:ast",
-    ],
-)
-
-py_test(
-    name = "dimension_point_tracker_test",
-    size = "small",
-    srcs = ["dimension_point_tracker_test.py"],
-    deps = [
-        ":dimension_point_tracker",
-        ":scope_tracker",
-        "//define/compiler:ast",
-    ],
-)
-
-py_library(
-    name = "definition_occupancy_analyzer",
-    srcs = ["definition_occupancy_analyzer.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":dimension_point_tracker",
-        ":scope_tracker",
-        ":validation_result",
-        "//define/compiler:ast",
-        "//define/compiler:diagnostics",
-        "//define/compiler/graphs:action_call_graph",
-    ],
-)
-
-py_library(
-    name = "file_validator",
-    srcs = ["file_validator.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":name_validators",
-        ":scope_tracker",
-        ":stats",
-        ":validation_result",
-        "//define/compiler:ast",
-        "//define/compiler:constants",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
-        "//define/compiler:parser",
-        "//define/compiler:parser_error_classification",
-        "//define/compiler:parser_exceptions",
-        "//define/compiler:transformer",
-        "//define/compiler/graphs:action_call_graph",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/lark:lark_standalone",
-    ],
-)
-
-py_test(
-    name = "file_validator_test",
-    size = "small",
-    srcs = ["file_validator_test.py"],
-    deps = [
-        ":file_validator",
-        ":validation_result",
-        "//define/compiler:ast",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
-        "//define/compiler:parser",
-        "//define/compiler:parser_exceptions",
-        "//define/compiler:transformer",
-        "//define/compiler/graphs:reference_graph",
-    ],
-)
-
-py_library(
-    name = "name_validators",
-    srcs = ["name_validators.py"],
-    data = ["//define/reserved_words"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler:constants",
-        "//define/compiler:diagnostics",
-    ],
-)
-
-py_test(
-    name = "name_validators_test",
-    size = "small",
-    srcs = ["name_validators_test.py"],
-    deps = [
-        ":name_validators",
-        "//define/compiler:ast",
-        "//define/compiler:diagnostics",
-    ],
-)
-
-py_library(
-    name = "path_tracker",
-    srcs = ["path_tracker.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = ["@pypi//pygtrie"],
-)
-
-py_test(
-    name = "path_tracker_test",
-    size = "small",
-    srcs = ["path_tracker_test.py"],
-    deps = [
-        ":path_tracker",
-        "@pypi//pygtrie",
-    ],
-)
-
-py_library(
-    name = "program_validator",
-    srcs = ["program_validator.py"],
-    visibility = [
-        "//define/compiler:__pkg__",
-        "//define/compiler:__subpackages__",
-    ],
-    deps = [
-        ":definition_occupancy_analyzer",
-        ":file_validator",
-        ":path_tracker",
-        ":stats",
-        ":validation_result",
-        "//define/compiler:ast",
-        "//define/compiler:config",
-        "//define/compiler:constants",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
-        "//define/compiler:parser",
-        "//define/compiler/graphs:action_call_graph",
-        "//define/compiler/graphs:reference_graph",
-    ],
-)
-
-py_library(
     name = "scope_tracker",
     srcs = ["scope_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -198,13 +59,13 @@ py_test(
     size = "small",
     srcs = ["validation_result_test.py"],
     deps = [
-        ":program_validator",
         ":stats",
         ":validation_result",
         "//define/compiler:parser",
         "//define/compiler:transformer",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator/program_validator_tests:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -226,16 +87,6 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":definition_occupancy_analyzer",
-        ":dimension_point_tracker",
-        ":dimension_point_tracker_test",
-        ":file_validator",
-        ":file_validator_test",
-        ":name_validators",
-        ":name_validators_test",
-        ":path_tracker",
-        ":path_tracker_test",
-        ":program_validator",
         ":scope_tracker",
         ":scope_tracker_test",
         ":stats",

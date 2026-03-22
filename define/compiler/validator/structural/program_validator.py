@@ -1,8 +1,8 @@
 """Parallel coordinator for multi-file Define program validation.
 
-ProgramValidator orchestrates per-file validation using a thread pool.
+ProgramStructuralValidator orchestrates per-file validation using a thread pool.
 It manages all shared state on the main thread and delegates pure
-per-file validation to FileValidator workers.
+per-file validation to FileStructuralValidator workers.
 """
 
 from __future__ import annotations
@@ -26,13 +26,9 @@ from define.compiler import (
     parser,
 )
 from define.compiler.graphs import action_call_graph, reference_graph
-from define.compiler.validator import (
-    definition_occupancy_analyzer,
-    file_validator,
-    path_tracker,
-    stats,
-    validation_result,
-)
+from define.compiler.validator import stats, validation_result
+from define.compiler.validator.reference_graph import definition_occupancy_analyzer
+from define.compiler.validator.structural import file_validator, path_tracker
 
 
 @dataclass
@@ -57,7 +53,7 @@ class _FileWorkPool:
     _max_workers: int | None
     _submitted: list[Future[validation_result.FileValidationResult]]
     _executor: ThreadPoolExecutor
-    _fv: file_validator.FileValidator
+    _fv: file_validator.FileStructuralValidator
 
     def __init__(
         self,
@@ -67,7 +63,7 @@ class _FileWorkPool:
         """Initialize with pool configuration only — no side effects."""
         self._max_workers = max_workers
         self._submitted = []
-        self._fv = file_validator.FileValidator(parser_instance)
+        self._fv = file_validator.FileStructuralValidator(parser_instance)
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def __enter__(self) -> _FileWorkPool:
@@ -101,7 +97,7 @@ class _FileWorkPool:
         return bool(self._submitted)
 
 
-class ProgramValidator:
+class ProgramStructuralValidator:
     """Coordinates parallel validation of a Define program.
 
     Runs a single-threaded coordinator loop that submits files to a thread
@@ -175,7 +171,9 @@ class ProgramValidator:
         max_workers: int | None = None,
     ) -> validation_result.ProgramValidationResult:
         """Validate a program from source text, loading config only when needed."""
-        result = file_validator.FileValidator(self._parser).validate_source(source)
+        result = file_validator.FileStructuralValidator(self._parser).validate_source(
+            source
+        )
         if result.exception is not None:
             return self._build_program_result([result])
 
@@ -240,7 +238,7 @@ class ProgramValidator:
         """Handle one completed definition from a file result."""
         self._definition_owners[id(definition_result)] = result
         name = definition_result.definition.typed_name.full_typed_name()
-        # FileValidator preserves duplicate definitions in source order so
+        # FileStructuralValidator preserves duplicate definitions in source order so
         # the later ones can still return diagnostics. Originally, I tried
         # to make all the later checks still run on duplicates, but it gets
         # into too much complexity. We do still load DiscoveredFiles from

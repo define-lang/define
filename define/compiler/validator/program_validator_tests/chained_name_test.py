@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 class TestCreateDimensionPoint:
@@ -24,7 +24,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -60,7 +60,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -108,7 +108,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -146,7 +146,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -180,7 +180,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -214,7 +214,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -285,7 +285,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -384,7 +384,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -555,7 +555,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -603,7 +603,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -648,7 +648,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -723,7 +723,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -1059,7 +1059,7 @@ class TestCreateDimensionPoint:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -1449,7 +1449,7 @@ class TestUnnecessarySelfReference:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -1474,7 +1474,7 @@ class TestUnnecessarySelfReference:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -1499,7 +1499,7 @@ class TestUnnecessarySelfReference:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )
@@ -1520,7 +1520,7 @@ class TestUnnecessarySelfReference:
             "}\n"
         )
         results = (
-            program_validator.ProgramValidator()
+            program_validator.ProgramStructuralValidator()
             .validate_program_non_filesystem(source)
             .file_results
         )

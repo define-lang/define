@@ -5,7 +5,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_duplicate_local_position():
@@ -21,8 +21,10 @@ def test_duplicate_local_position():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -47,8 +49,10 @@ def test_different_local_positions():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert not result.has_errors()
 
@@ -65,8 +69,10 @@ def test_undefined_position_not_tracked_for_duplicates():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
@@ -101,8 +107,10 @@ def test_two_actions_same_local_position_create_no_error():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert not result.has_errors()
 
@@ -129,8 +137,10 @@ def test_two_actions_same_name_one_duplicate_one_clean():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
@@ -171,8 +181,10 @@ def test_three_actions_dimension_point_isolation():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     assert not result.has_errors()
 
@@ -190,8 +202,10 @@ def test_definition_block_position_enforced():
         "    }\n"
         "}\n"
     )
-    result = program_validator.ProgramValidator().validate_program_non_filesystem(
-        source
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1

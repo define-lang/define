@@ -7,12 +7,9 @@ import pytest
 
 from define.compiler import ast, parser, transformer
 from define.compiler.graphs import reference_graph
-from define.compiler.validator import (
-    program_validator,
-    stats,
-    validation_result,
-)
+from define.compiler.validator import stats, validation_result
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 _FQUN = "my.domain.com:my_lib"
 
@@ -27,7 +24,7 @@ def _validate_single_file(
     test_helpers.write_project_config(tmp_path, _FQUN)
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program(relative_path)
         .file_results
     )

@@ -29,7 +29,7 @@ py_test(
     deps = [
         ":action_call_graph",
         ":action_call_graph_renderer",
-        "//define/compiler/validator:program_validator",
+        "//define/compiler/validator/structural:program_validator",
         "@rules_python//python/runfiles",
     ],
 )

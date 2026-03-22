@@ -13,8 +13,8 @@ from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
-from define.compiler.validator import program_validator
 from define.compiler.validator.program_validator_tests import test_helpers
+from define.compiler.validator.structural import program_validator
 
 
 def test_nested_file_path(validate_project: ValidateProject):
@@ -216,7 +216,7 @@ def test_external_universe_no_project_config(
 ):
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
         .file_results
     )
@@ -237,7 +237,7 @@ def test_external_universe_without_local_deps(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
         .file_results
     )
@@ -259,7 +259,7 @@ def test_external_universe_not_in_local_deps(
     )
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
         .file_results
     )
@@ -289,7 +289,7 @@ def test_external_universe_invalid_local_deps(
     )
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
         .file_results
     )
@@ -311,7 +311,7 @@ def test_external_universe_configured_but_no_sub_root_config(
     (tmp_path / "vendor" / "other").mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(tmp_path)
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(_EXTERNAL_UNIVERSE_SOURCE)
         .file_results
     )
@@ -483,7 +483,7 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

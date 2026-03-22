@@ -4,7 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_different_names_no_error():
@@ -21,7 +21,7 @@ def test_different_names_no_error():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -43,7 +43,7 @@ def test_duplicate_name_error():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -71,7 +71,7 @@ def test_three_locals_two_same_one_diagnostic():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -99,7 +99,7 @@ def test_three_same_name_two_diagnostics():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -120,7 +120,7 @@ def test_three_same_name_two_diagnostics():
 def test_terminated_action_no_error():
     source = "define the potential action<my.domain.com:my_lib:/act>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -141,7 +141,7 @@ def test_single_local_no_error():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -171,7 +171,7 @@ def test_separate_actions_same_local_name_no_error():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -191,7 +191,7 @@ def test_action_statements_local_name_no_error():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -212,7 +212,7 @@ def test_action_statements_duplicate_name_error():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -237,7 +237,7 @@ def test_action_statements_name_conflicts_with_parent_scope():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -263,7 +263,7 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

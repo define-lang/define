@@ -10,7 +10,7 @@ from unittest import mock
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import file_validator
+from define.compiler.validator.structural import file_validator
 
 _POSITION_WITH_REF = (
     "define the potential position<my.domain.com:my_lib:/{name}> {{\n"
@@ -228,11 +228,11 @@ def test_reference_edges_resolve_by_file_completion_order(
     # completion callback rather than being available immediately.
     universe = "mv:define-lang.org:test_parent"
 
-    original_validate_file = file_validator.FileValidator.validate_file
+    original_validate_file = file_validator.FileStructuralValidator.validate_file
     test_completed = threading.Event()
 
     def ordered_validate_file(
-        self: file_validator.FileValidator,
+        self: file_validator.FileStructuralValidator,
         context: file_validator.FileValidationContext,
     ):
         if context.full_path == PurePosixPath("target.def"):
@@ -243,7 +243,7 @@ def test_reference_edges_resolve_by_file_completion_order(
         return result
 
     with mock.patch.object(
-        file_validator.FileValidator,
+        file_validator.FileStructuralValidator,
         "validate_file",
         autospec=True,
         side_effect=ordered_validate_file,

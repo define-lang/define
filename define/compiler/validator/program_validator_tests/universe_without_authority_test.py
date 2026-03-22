@@ -4,13 +4,13 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_standard_without_authority_ok():
     source = "define the potential position<standard:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -25,7 +25,7 @@ def test_standard_without_authority_ok():
 def test_non_standard_without_authority_error():
     source = "define the potential position<my_universe:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -40,7 +40,7 @@ def test_non_standard_without_authority_error():
 def test_with_authority_ok():
     source = "define the potential position<my.domain.com:my_universe:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -51,7 +51,7 @@ def test_with_authority_ok():
 def test_case_insensitive_standard():
     source = "define the potential position<STANDARD:/path>.\n"
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

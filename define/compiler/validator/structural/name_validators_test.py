@@ -2,7 +2,7 @@
 """Tests for name format validators."""
 
 from define.compiler import ast, diagnostics
-from define.compiler.validator import name_validators
+from define.compiler.validator.structural import name_validators
 
 _POS = ast.SourcePosition(line=1, column=10, end_line=1, end_column=20)
 

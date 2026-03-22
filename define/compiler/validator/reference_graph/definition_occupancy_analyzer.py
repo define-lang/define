@@ -6,10 +6,8 @@ import typing
 
 from define.compiler import ast, diagnostics
 from define.compiler.graphs import action_call_graph
-from define.compiler.validator import (
-    dimension_point_tracker,
-    scope_tracker,
-)
+from define.compiler.validator import scope_tracker
+from define.compiler.validator.reference_graph import dimension_point_tracker
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result

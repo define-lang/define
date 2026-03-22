@@ -4,7 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_multiple_diagnostics_collected():
@@ -13,7 +13,7 @@ def test_multiple_diagnostics_collected():
         "define the potential position<standard:/second>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -35,7 +35,7 @@ def test_diagnostics_in_source_order():
         "define the potential position<standard:/second>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

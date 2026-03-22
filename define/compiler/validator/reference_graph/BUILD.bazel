@@ -1,0 +1,64 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "definition_occupancy_analyzer",
+    srcs = ["definition_occupancy_analyzer.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":dimension_point_tracker",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/validator:scope_tracker",
+    ],
+)
+
+py_library(
+    name = "dimension_point_tracker",
+    srcs = ["dimension_point_tracker.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/validator:scope_tracker",
+    ],
+)
+
+py_test(
+    name = "dimension_point_tracker_test",
+    size = "small",
+    srcs = ["dimension_point_tracker_test.py"],
+    deps = [
+        ":dimension_point_tracker",
+        "//define/compiler:ast",
+        "//define/compiler/validator:scope_tracker",
+    ],
+)
+
+py_library(
+    name = "reference_graph",
+    srcs = ["__init__.py"],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":definition_occupancy_analyzer",
+        ":dimension_point_tracker",
+        ":dimension_point_tracker_test",
+        ":reference_graph",
+        "//define/compiler/validator:validation_result",
+    ],
+)

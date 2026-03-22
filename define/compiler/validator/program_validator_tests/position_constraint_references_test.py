@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_position_constraint_reference_with_invalid_path():
@@ -20,7 +20,7 @@ def test_position_constraint_reference_with_invalid_path():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -42,7 +42,7 @@ def test_same_fqun_constraint_reference_must_use_short_form():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -71,7 +71,7 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
         "}\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )

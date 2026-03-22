@@ -4,7 +4,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 """
 
 from define.compiler import diagnostics
-from define.compiler.validator import program_validator
+from define.compiler.validator.structural import program_validator
 
 
 def test_no_duplicates_ok():
@@ -13,7 +13,7 @@ def test_no_duplicates_ok():
         "define the potential position<my.domain.com:my_lib:/second>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -27,7 +27,7 @@ def test_duplicate_position_error():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -47,7 +47,7 @@ def test_duplicate_action_error():
         "define the potential action<my.domain.com:my_lib:/same>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -67,7 +67,7 @@ def test_same_path_different_types_ok():
         "define the potential action<my.domain.com:my_lib:/same>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
@@ -82,7 +82,7 @@ def test_three_duplicates_two_errors():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
     results = (
-        program_validator.ProgramValidator()
+        program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)
         .file_results
     )
