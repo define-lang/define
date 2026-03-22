@@ -447,7 +447,7 @@ class LocalActionNameDiagnostic(Diagnostic):
 
 
 @dataclass
-class LocalDuplicateDimensionPointDiagnostic(Diagnostic):
+class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a dimension point is created in a position that already has one."""
 
     position_name: str

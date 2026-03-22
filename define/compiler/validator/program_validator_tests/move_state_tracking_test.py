@@ -98,7 +98,7 @@ def test_cannot_create_in_position_that_was_moved_into():
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].position.line == 10
     assert diags[0].position.column == 37
     assert diags[0].position_name == "position<b>"

@@ -1506,7 +1506,7 @@ class TestUnnecessarySelfReference:
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
-        assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+        assert isinstance(diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
 
     def test_single_element_self_reference_not_stripped(self):
         source = (

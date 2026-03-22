@@ -26,7 +26,7 @@ def test_duplicate_local_position():
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].position_name == "position<my_pos>"
     assert diags[0].first_creation_line == 7
     assert diags[0].position.line == 8
@@ -134,7 +134,7 @@ def test_two_actions_same_name_one_duplicate_one_clean():
     )
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].position_name == "position<my_pos>"
     assert all_diags[0].first_creation_line == 7
     assert all_diags[0].position.line == 8
@@ -195,7 +195,7 @@ def test_definition_block_position_enforced():
     )
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].position_name == "position<outer_pos>"
     assert diags[0].first_creation_line == 7
     assert diags[0].position.line == 8

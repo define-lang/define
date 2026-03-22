@@ -216,7 +216,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/create/duplicate_local_dimension_point.def": [
-        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+        diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
     "dimension_points/create/single_action_reference.def": [
         diagnostics.PositionReferenceChainEndDiagnostic,
@@ -233,7 +233,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/move/dest_occupied_after_move.def": [
-        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+        diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
     "dimension_points/move/from_empty_position.def": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
@@ -298,7 +298,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
     "position_init/duplicate_create_in_init.def": [
-        diagnostics.LocalDuplicateDimensionPointDiagnostic,
+        diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
     "position_init/undefined_local_move_in_init.def": [
         diagnostics.UndefinedLocalNameDiagnostic,

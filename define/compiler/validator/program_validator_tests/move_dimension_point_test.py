@@ -316,7 +316,7 @@ def test_move_to_same_position_does_not_mark_unknown():
     assert diags[0].position.line == 8
     assert diags[0].position.column == 52
     assert diags[0].position_name == "position<a>"
-    assert isinstance(diags[1], diagnostics.LocalDuplicateDimensionPointDiagnostic)
+    assert isinstance(diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[1].position.line == 9
     assert diags[1].position.column == 37
     assert diags[1].position_name == "position<a>"

@@ -487,7 +487,7 @@ class DefinitionAstValidator:
             if tracker.is_occupied(position):
                 existing = tracker.get_occupant(position)
                 self._diagnostics.append(
-                    diagnostics.LocalDuplicateDimensionPointDiagnostic(
+                    diagnostics.CreateInOccupiedPositionDiagnostic(
                         position=position.position,
                         position_name=position.chain.source_chained_name,
                         first_creation_line=existing.creation_position.position.line,
