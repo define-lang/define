@@ -13,16 +13,15 @@ common --incompatible_enforce_starlark_utf8=error
 common --incompatible_no_implicit_file_export
 common --incompatible_python_disallow_native_rules
 # Uncomment when rules_diff (aspect_rules_lint transitive dep) supports it.
-#common --incompatible_stop_exporting_build_file_path
+# https://gitlab.arm.com/bazel/rules_diff/-/issues/3
+# common --incompatible_stop_exporting_build_file_path
 # Uncomment when with_cfg supports it.
+# https://github.com/fmeum/with_cfg.bzl/issues/253
 #common --incompatible_stop_exporting_language_modules
 common --incompatible_resolve_select_keys_eagerly
 
 # Set default uv venv for aspect_rules_py package resolution
 build --@pypi//venv=dev
-
-# Use prebuilt protoc binary instead of compiling from C++ source.
-build --@protobuf//bazel/toolchains:prefer_prebuilt_protoc
 
 # Ruff linting via aspect_rules_lint
 build --aspects=//tools/bzl:linters.bzl%ruff
