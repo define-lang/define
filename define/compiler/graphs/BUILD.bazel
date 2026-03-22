@@ -1,0 +1,95 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "action_call_graph",
+    srcs = ["action_call_graph.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "@pypi//networkx",
+    ],
+)
+
+py_library(
+    name = "action_call_graph_renderer",
+    srcs = ["action_call_graph_renderer.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [":action_call_graph"],
+)
+
+py_test(
+    name = "action_call_graph_renderer_test",
+    size = "small",
+    srcs = ["action_call_graph_renderer_test.py"],
+    data = ["//tools:validate_mermaid"],
+    env = {"MERMAID_VALIDATOR": "$(rlocationpath //tools:validate_mermaid)"},
+    deps = [
+        ":action_call_graph",
+        ":action_call_graph_renderer",
+        "//define/compiler/validator:program_validator",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_test(
+    name = "action_call_graph_test",
+    size = "small",
+    srcs = ["action_call_graph_test.py"],
+    deps = [
+        ":action_call_graph",
+        "//define/compiler:ast",
+        "//define/compiler/validator:stats",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "graphs",
+    srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "reference_graph",
+    srcs = ["reference_graph.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "@pypi//networkx",
+    ],
+)
+
+py_test(
+    name = "reference_graph_test",
+    size = "small",
+    srcs = ["reference_graph_test.py"],
+    deps = [
+        ":reference_graph",
+        "//define/compiler:ast",
+    ],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":action_call_graph",
+        ":action_call_graph_renderer",
+        ":action_call_graph_renderer_test",
+        ":action_call_graph_test",
+        ":graphs",
+        ":reference_graph",
+        ":reference_graph_test",
+    ],
+)

@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
 from define.compiler import ast
-from define.compiler.validator import reference_graph
+from define.compiler.graphs import reference_graph
 
 _POS = ast.start_of_file_position()
 _FQUN = ast.Fqun(

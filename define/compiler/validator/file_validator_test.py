@@ -16,7 +16,8 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
-from define.compiler.validator import file_validator, reference_graph, validation_result
+from define.compiler.graphs import reference_graph
+from define.compiler.validator import file_validator, validation_result
 
 
 @pytest.fixture

@@ -16,7 +16,6 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
 from define.compiler import (
-    action_call_graph,
     ast,
     constants,
     diagnostics,
@@ -26,10 +25,10 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
+from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.lark import lark_standalone
 from define.compiler.validator import (
     name_validators,
-    reference_graph,
     scope_tracker,
     stats,
     validation_result,

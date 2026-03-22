@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import action_call_graph, ast, diagnostics
+from define.compiler import ast, diagnostics
+from define.compiler.graphs import action_call_graph
 from define.compiler.validator import (
     dimension_point_tracker,
     scope_tracker,

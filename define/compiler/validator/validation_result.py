@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 from define.compiler import (
-    action_call_graph,
     ast,
     diagnostics,
     exceptions,
@@ -18,7 +17,8 @@ if typing.TYPE_CHECKING:
     import pathlib
     from collections.abc import Mapping, Sequence
 
-    from define.compiler.validator import reference_graph, stats
+    from define.compiler.graphs import action_call_graph, reference_graph
+    from define.compiler.validator import stats
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 

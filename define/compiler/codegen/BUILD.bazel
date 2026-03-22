@@ -16,7 +16,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/codegen/literal/python:generator",
-        "//define/compiler/validator:reference_graph",
+        "//define/compiler/graphs:reference_graph",
     ],
 )
 

@@ -18,7 +18,6 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
 from define.compiler import (
-    action_call_graph,
     ast,
     config,
     constants,
@@ -26,11 +25,11 @@ from define.compiler import (
     exceptions,
     parser,
 )
+from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator import (
     definition_occupancy_analyzer,
     file_validator,
     path_tracker,
-    reference_graph,
     stats,
     validation_result,
 )

@@ -5,7 +5,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import action_call_graph, action_call_graph_renderer
+from define.compiler.graphs import action_call_graph, action_call_graph_renderer
 from define.compiler.validator import program_validator
 
 

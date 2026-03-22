@@ -38,7 +38,7 @@ py_library(
         ":template_context",
         ":template_env",
         "//define/compiler:ast",
-        "//define/compiler/validator:reference_graph",
+        "//define/compiler/graphs:reference_graph",
     ],
 )
 

@@ -6,7 +6,7 @@ import re
 import typing
 
 if typing.TYPE_CHECKING:
-    from define.compiler import action_call_graph
+    from define.compiler.graphs import action_call_graph
 
 
 _INVALID_ID_CHARS = re.compile(r"[^A-Za-z0-9_]")

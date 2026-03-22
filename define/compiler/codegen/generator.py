@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 
 from define.compiler import ast, diagnostics
 from define.compiler.codegen.literal.python import generator as python_generator
-from define.compiler.validator import reference_graph
+from define.compiler.graphs import reference_graph
 
 
 class CodeGenerator:

@@ -1,4 +1,5 @@
-from define.compiler import action_call_graph, ast
+from define.compiler import ast
+from define.compiler.graphs import action_call_graph
 from define.compiler.validator import validation_result
 
 # TODO: Make this parse source instead of generating AST nodes.

@@ -12,7 +12,7 @@ from define.compiler.codegen.literal.python import (
     template_context,
     template_env,
 )
-from define.compiler.validator import reference_graph
+from define.compiler.graphs import reference_graph
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"

@@ -32,9 +32,9 @@ py_library(
         ":dimension_point_tracker",
         ":scope_tracker",
         ":validation_result",
-        "//define/compiler:action_call_graph",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
+        "//define/compiler/graphs:action_call_graph",
     ],
 )
 
@@ -44,11 +44,9 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":name_validators",
-        ":reference_graph",
         ":scope_tracker",
         ":stats",
         ":validation_result",
-        "//define/compiler:action_call_graph",
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler:diagnostics",
@@ -57,6 +55,8 @@ py_library(
         "//define/compiler:parser_error_classification",
         "//define/compiler:parser_exceptions",
         "//define/compiler:transformer",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/graphs:reference_graph",
         "//define/compiler/lark:lark_standalone",
     ],
 )
@@ -67,7 +67,6 @@ py_test(
     srcs = ["file_validator_test.py"],
     deps = [
         ":file_validator",
-        ":reference_graph",
         ":validation_result",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -75,6 +74,7 @@ py_test(
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
         "//define/compiler:transformer",
+        "//define/compiler/graphs:reference_graph",
     ],
 )
 
@@ -129,16 +129,16 @@ py_library(
         ":definition_occupancy_analyzer",
         ":file_validator",
         ":path_tracker",
-        ":reference_graph",
         ":stats",
         ":validation_result",
-        "//define/compiler:action_call_graph",
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler:parser",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/graphs:reference_graph",
     ],
 )
 
@@ -157,26 +157,6 @@ py_test(
         ":scope_tracker",
         "//define/compiler:ast",
         "@pypi//pytest",
-    ],
-)
-
-py_library(
-    name = "reference_graph",
-    srcs = ["reference_graph.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "@pypi//networkx",
-    ],
-)
-
-py_test(
-    name = "reference_graph_test",
-    size = "small",
-    srcs = ["reference_graph_test.py"],
-    deps = [
-        ":reference_graph",
-        "//define/compiler:ast",
     ],
 )
 
@@ -203,12 +183,12 @@ py_library(
         "//define/compiler:__subpackages__",
     ],
     deps = [
-        ":reference_graph",
         ":stats",
-        "//define/compiler:action_call_graph",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/graphs:reference_graph",
         "//define/compiler/lark:lark_standalone",
     ],
 )
@@ -219,11 +199,11 @@ py_test(
     srcs = ["validation_result_test.py"],
     deps = [
         ":program_validator",
-        ":reference_graph",
         ":stats",
         ":validation_result",
         "//define/compiler:parser",
         "//define/compiler:transformer",
+        "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator/program_validator_tests:test_helpers",
     ],
 )
@@ -256,8 +236,6 @@ pyright_test(
         ":path_tracker",
         ":path_tracker_test",
         ":program_validator",
-        ":reference_graph",
-        ":reference_graph_test",
         ":scope_tracker",
         ":scope_tracker_test",
         ":stats",

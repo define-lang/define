@@ -6,9 +6,9 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import ast, parser, transformer
+from define.compiler.graphs import reference_graph
 from define.compiler.validator import (
     program_validator,
-    reference_graph,
     stats,
     validation_result,
 )
