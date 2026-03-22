@@ -10,8 +10,8 @@ import pytest
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
-from define.compiler.validator.program_validator_tests import test_helpers
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.structural.program_validator_tests import test_helpers
 
 
 def test_short_form_global_reference(validate_project: ValidateProject):

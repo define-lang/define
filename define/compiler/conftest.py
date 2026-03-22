@@ -9,8 +9,8 @@ import pytest
 
 from define.compiler import diagnostics
 from define.compiler.validator import validation_result
-from define.compiler.validator.program_validator_tests import test_helpers
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.structural.program_validator_tests import test_helpers
 
 type ParseAndValidateFile = Callable[
     [str | bytes], validation_result.FileValidationResult

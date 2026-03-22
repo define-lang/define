@@ -90,7 +90,7 @@ flowchart LR
 - Validator coordinator code is in `compiler/validator/program_validator.py`.
 - Per-file validation code is in `compiler/validator/file_validator.py`.
 - Validator tests are in `compiler/validator/` and
-  `compiler/validator/program_validator_tests/`.
+  `compiler/validator/structural/program_validator_tests/`.
 
 ## Driver
 

@@ -8,8 +8,8 @@ import pytest
 from define.compiler import ast, parser, transformer
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, validation_result
-from define.compiler.validator.program_validator_tests import test_helpers
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.structural.program_validator_tests import test_helpers
 
 _FQUN = "my.domain.com:my_lib"
 

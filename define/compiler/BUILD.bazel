@@ -39,8 +39,8 @@ py_library(
     deps = [
         ":diagnostics",
         "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/program_validator_tests:test_helpers",
         "//define/compiler/validator/structural:program_validator",
+        "//define/compiler/validator/structural/program_validator_tests:test_helpers",
         "@pypi//pytest",
     ],
 )
