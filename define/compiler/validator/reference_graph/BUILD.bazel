@@ -4,8 +4,8 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
-    name = "definition_occupancy_analyzer",
-    srcs = ["definition_occupancy_analyzer.py"],
+    name = "definition_postorder_validator",
+    srcs = ["definition_postorder_validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":dimension_point_tracker",
@@ -55,7 +55,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":definition_occupancy_analyzer",
+        ":definition_postorder_validator",
         ":dimension_point_tracker",
         ":dimension_point_tracker_test",
         ":reference_graph",

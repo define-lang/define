@@ -1,4 +1,4 @@
-"""Post-order occupancy analysis for a single definition."""
+"""Post-order validation for a single definition during the reference graph DFS walk."""
 
 from __future__ import annotations
 
@@ -13,12 +13,8 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
-class DefinitionOccupancyAnalyzer:
-    """Analyzes dimension point occupancy for a single definition's body.
-
-    Runs as part of a DFS post-order walk over the reference graph, after
-    all file validation is complete.
-    """
+class DefinitionPostorderValidator:
+    """Validates a single definition during a DFS post-order walk of the reference graph."""
 
     _definition_result: validation_result.DefinitionValidationResult
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
@@ -30,7 +26,7 @@ class DefinitionOccupancyAnalyzer:
         definition_result: validation_result.DefinitionValidationResult,
         definition_results: dict[str, validation_result.DefinitionValidationResult],
     ):
-        """Initialize with the definition to analyze and the full results map."""
+        """Initialize with the definition to validate and the full results map."""
         self._definition_result = definition_result
         self._definition_results = definition_results
         self._diagnostics = []
@@ -39,7 +35,7 @@ class DefinitionOccupancyAnalyzer:
     def analyze(
         self,
     ) -> tuple[list[diagnostics.Diagnostic], list[action_call_graph.ActionBodyEffect]]:
-        """Run occupancy analysis and return diagnostics and action body effects."""
+        """Run post-order validation and return diagnostics and action body effects."""
         definition = self._definition_result.definition
         if (
             isinstance(definition, ast.ActionDefinition)

@@ -27,7 +27,7 @@ from define.compiler import (
 )
 from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator import stats, validation_result
-from define.compiler.validator.reference_graph import definition_occupancy_analyzer
+from define.compiler.validator.reference_graph import definition_postorder_validator
 from define.compiler.validator.structural import file_validator, path_tracker
 
 
@@ -601,7 +601,7 @@ class ProgramStructuralValidator:
             # not found or had a syntax error that prevented processing.
             if definition_result is None:
                 continue
-            analyzer = definition_occupancy_analyzer.DefinitionOccupancyAnalyzer(
+            analyzer = definition_postorder_validator.DefinitionPostorderValidator(
                 definition_result, self._definition_results
             )
             occupancy_diagnostics, effects = analyzer.analyze()
