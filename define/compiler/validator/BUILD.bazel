@@ -25,11 +25,14 @@ py_test(
 )
 
 py_library(
-    name = "dimension_point_flow_validator",
-    srcs = ["dimension_point_flow_validator.py"],
+    name = "definition_occupancy_analyzer",
+    srcs = ["definition_occupancy_analyzer.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":dimension_point_tracker",
+        ":scope_tracker",
         ":validation_result",
+        "//define/compiler:action_call_graph",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
@@ -40,7 +43,6 @@ py_library(
     srcs = ["file_validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":dimension_point_tracker",
         ":name_validators",
         ":reference_graph",
         ":scope_tracker",
@@ -124,7 +126,7 @@ py_library(
         "//define/compiler:__subpackages__",
     ],
     deps = [
-        ":dimension_point_flow_validator",
+        ":definition_occupancy_analyzer",
         ":file_validator",
         ":path_tracker",
         ":reference_graph",
@@ -244,7 +246,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":dimension_point_flow_validator",
+        ":definition_occupancy_analyzer",
         ":dimension_point_tracker",
         ":dimension_point_tracker_test",
         ":file_validator",

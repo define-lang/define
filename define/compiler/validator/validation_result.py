@@ -16,7 +16,7 @@ from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
-    from collections.abc import Mapping, Sequence, Set
+    from collections.abc import Mapping, Sequence
 
     from define.compiler.validator import reference_graph, stats
 
@@ -68,19 +68,13 @@ class DeferredChainElements:
         )
 
 
-@dataclass
-class DeferredMoveConstraintCheck:
-    """A move constraint check deferred because at least one position is a chained name.
+@dataclass(frozen=True)
+class DimensionPointStatementValidity:
+    """Name validation results for a create or move statement."""
 
-    Whichever of from_qualities/to_qualities is None will be resolved by the
-    program validator from the chained position's definition constraints.
-    The check executes once both are resolved.
-    """
-
-    enclosing_definition: ast.QualityDefinition
-    statement: ast.MoveDimensionPointStatement
-    from_qualities: Set[str] | None
-    to_qualities: Set[str] | None
+    statement: ast.DimensionPointStatement
+    source_ok: bool
+    target_ok: bool
 
 
 @dataclass
@@ -99,7 +93,7 @@ class DefinitionValidationResult:
     action_body_effects: list[action_call_graph.ActionBodyEffect] = field(
         default_factory=list
     )
-    deferred_move_constraint_checks: list[DeferredMoveConstraintCheck] = field(
+    dp_statement_validity: list[DimensionPointStatementValidity] = field(
         default_factory=list
     )
 

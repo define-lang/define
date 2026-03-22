@@ -27,7 +27,7 @@ from define.compiler import (
     parser,
 )
 from define.compiler.validator import (
-    dimension_point_flow_validator,
+    definition_occupancy_analyzer,
     file_validator,
     path_tracker,
     reference_graph,
@@ -167,7 +167,7 @@ class ProgramValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        self._resolve_deferred_move_constraints()
+        self._run_postorder_occupancy_analysis()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
@@ -189,7 +189,7 @@ class ProgramValidator:
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
             self._run_pool_loop(pool)
-        self._resolve_deferred_move_constraints()
+        self._run_postorder_occupancy_analysis()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def _build_program_result(
@@ -250,9 +250,7 @@ class ProgramValidator:
             return
         self._definition_results[name] = definition_result
         self._reference_graph.add_definition(definition_result.definition)
-        self._action_call_graph.process_definition_result(
-            definition_result.trigger_positions, definition_result.action_body_effects
-        )
+        self._action_call_graph.register_triggers(definition_result.trigger_positions)
         self._validate_incoming_chained_names(definition_result)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
         self._validate_outgoing_chained_names(definition_result)
@@ -591,19 +589,29 @@ class ProgramValidator:
                 deferred_validation.source_definition,
             )
 
-    def _resolve_deferred_move_constraints(self):
-        """Phase B: resolve all deferred move constraints after all files are validated."""
-        deferred_checks: list[validation_result.DeferredMoveConstraintCheck] = []
-        for definition_result in self._definition_results.values():
-            deferred_checks.extend(definition_result.deferred_move_constraint_checks)
+    def _run_postorder_occupancy_analysis(self):
+        """Run occupancy analysis for all definitions in DFS post-order.
 
-        analyzer = dimension_point_flow_validator.DimensionPointFlowValidator(
-            self._definition_results
-        )
-        results = analyzer.resolve_deferred_checks(deferred_checks)
-        for enclosing_definition, diagnostic in results:
-            name = enclosing_definition.typed_name.full_typed_name()
-            self._definition_results[name].add_diagnostic(diagnostic)
+        We use dfs_postorder_all rather than dfs_postorder_from because the
+        reference graph can contain multiple roots — the entry-point position
+        and the actions that reference it form separate subgraphs that are
+        only connected through file discovery, not through reference edges.
+        """
+        for definition in self._reference_graph.dfs_postorder_all():
+            name = definition.typed_name.full_typed_name()
+            definition_result = self._definition_results.get(name)
+            # A node without a definition result means the target file was
+            # not found or had a syntax error that prevented processing.
+            if definition_result is None:
+                continue
+            analyzer = definition_occupancy_analyzer.DefinitionOccupancyAnalyzer(
+                definition_result, self._definition_results
+            )
+            occupancy_diagnostics, effects = analyzer.analyze()
+            for d in occupancy_diagnostics:
+                definition_result.add_diagnostic(d)
+            definition_result.action_body_effects.extend(effects)
+            self._action_call_graph.register_effects(effects)
 
     def _validate_chain_element_against_target(
         self,

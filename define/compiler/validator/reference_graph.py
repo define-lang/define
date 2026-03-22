@@ -95,3 +95,10 @@ class ReferenceGraph:
             yield cast(
                 "ast.QualityDefinition", self._graph.nodes[node_key]["definition"]
             )
+
+    def dfs_postorder_all(self) -> Iterator[ast.QualityDefinition]:
+        """Yield all definitions in DFS post-order, handling disconnected components."""
+        for node_key in nx.dfs_postorder_nodes(self._graph):
+            node_data = self._graph.nodes[node_key]
+            if "definition" in node_data:
+                yield cast("ast.QualityDefinition", node_data["definition"])

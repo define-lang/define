@@ -133,12 +133,10 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result_a.trigger_positions, result_a.action_body_effects
-        )
-        graph.process_definition_result(
-            result_b.trigger_positions, result_b.action_body_effects
-        )
+        graph.register_triggers(result_a.trigger_positions)
+        graph.register_effects(result_a.action_body_effects)
+        graph.register_triggers(result_b.trigger_positions)
+        graph.register_effects(result_b.action_body_effects)
 
         edges = list(graph.edges())
         assert len(edges) == 1
@@ -167,9 +165,8 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result.trigger_positions, result.action_body_effects
-        )
+        graph.register_triggers(result.trigger_positions)
+        graph.register_effects(result.action_body_effects)
         edges = list(graph.edges())
         assert len(edges) == 1
         assert edges[0].source == "action<d:u:/act_a>"
@@ -198,14 +195,12 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result_b.trigger_positions, result_b.action_body_effects
-        )
+        graph.register_triggers(result_b.trigger_positions)
+        graph.register_effects(result_b.action_body_effects)
         assert list(graph.edges()) == []
 
-        graph.process_definition_result(
-            result_a.trigger_positions, result_a.action_body_effects
-        )
+        graph.register_triggers(result_a.trigger_positions)
+        graph.register_effects(result_a.action_body_effects)
         edges = list(graph.edges())
         assert len(edges) == 1
         assert edges[0].source == "action<d:u:/act_b>"
@@ -231,9 +226,8 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result.trigger_positions, result.action_body_effects
-        )
+        graph.register_triggers(result.trigger_positions)
+        graph.register_effects(result.action_body_effects)
 
         edges = list(graph.edges())
         assert len(edges) == 1
@@ -266,12 +260,10 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result_triggers.trigger_positions, result_triggers.action_body_effects
-        )
-        graph.process_definition_result(
-            result_effect.trigger_positions, result_effect.action_body_effects
-        )
+        graph.register_triggers(result_triggers.trigger_positions)
+        graph.register_effects(result_triggers.action_body_effects)
+        graph.register_triggers(result_effect.trigger_positions)
+        graph.register_effects(result_effect.action_body_effects)
 
         edges = list(graph.edges())
         assert len(edges) == 1
@@ -305,12 +297,10 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result_a.trigger_positions, result_a.action_body_effects
-        )
-        graph.process_definition_result(
-            result_effects.trigger_positions, result_effects.action_body_effects
-        )
+        graph.register_triggers(result_a.trigger_positions)
+        graph.register_effects(result_a.action_body_effects)
+        graph.register_triggers(result_effects.trigger_positions)
+        graph.register_effects(result_effects.action_body_effects)
 
         all_edges = list(graph.edges())
         assert len(all_edges) == 2
@@ -363,12 +353,10 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result_a.trigger_positions, result_a.action_body_effects
-        )
-        graph.process_definition_result(
-            result_b.trigger_positions, result_b.action_body_effects
-        )
+        graph.register_triggers(result_a.trigger_positions)
+        graph.register_effects(result_a.action_body_effects)
+        graph.register_triggers(result_b.trigger_positions)
+        graph.register_effects(result_b.action_body_effects)
 
         edges = list(graph.edges())
         assert len(edges) == 1
@@ -395,7 +383,6 @@ class TestActionCallGraph:
             ],
         )
 
-        graph.process_definition_result(
-            result.trigger_positions, result.action_body_effects
-        )
+        graph.register_triggers(result.trigger_positions)
+        graph.register_effects(result.action_body_effects)
         assert list(graph.edges()) == []

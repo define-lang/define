@@ -117,14 +117,31 @@ class ActionCallGraph:
         self._effects_waiting_for_target = collections.defaultdict(list)
         self._graph = nx.MultiDiGraph()
 
-    def process_definition_result(
-        self,
-        trigger_positions: Sequence[TriggerPositionInfo],
-        action_body_effects: Sequence[ActionBodyEffect],
-    ):
-        """Register triggers and effects from a completed definition's validation."""
-        self._register_triggers(trigger_positions)
-        self._register_effects(action_body_effects)
+    def register_triggers(self, trigger_positions: Sequence[TriggerPositionInfo]):
+        """Register trigger positions from a completed definition's validation."""
+        for tp in trigger_positions:
+            action_name = tp.enclosing_typed_name.full_typed_name()
+            self._trigger_position_to_action_name[
+                tp.checked_position_name_with_prefix
+            ] = action_name
+            self._actions_with_triggers.add(action_name)
+
+        # Resolve deferred effects whose target action now has triggers.
+        newly_registered_actions = {
+            tp.enclosing_typed_name.full_typed_name() for tp in trigger_positions
+        }
+        for action_name in newly_registered_actions:
+            for effect in self._effects_waiting_for_target.pop(action_name, []):
+                self._resolve_effect(effect)
+
+    def register_effects(self, body_effects: Sequence[ActionBodyEffect]):
+        """Register action body effects, resolving them against known triggers."""
+        for effect in body_effects:
+            target = effect.target_action_name
+            if self._action_has_triggers(target):
+                self._resolve_effect(effect)
+            else:
+                self._effects_waiting_for_target[target].append(effect)
 
     def edges(self) -> Iterator[ActionGraphEdge]:
         """Yield an ``ActionGraphEdge`` for every resolved trigger edge."""
@@ -141,30 +158,6 @@ class ActionCallGraph:
     def unique_edges(self) -> set[tuple[str, str]]:
         """Return the set of distinct ``(source, target)`` pairs."""
         return {(source, target) for source, target in self._graph.edges()}
-
-    def _register_triggers(self, trigger_positions: Sequence[TriggerPositionInfo]):
-        for tp in trigger_positions:
-            action_name = tp.enclosing_typed_name.full_typed_name()
-            self._trigger_position_to_action_name[
-                tp.checked_position_name_with_prefix
-            ] = action_name
-            self._actions_with_triggers.add(action_name)
-
-        # Resolve deferred effects whose target action now has triggers.
-        newly_registered_actions = {
-            tp.enclosing_typed_name.full_typed_name() for tp in trigger_positions
-        }
-        for action_name in newly_registered_actions:
-            for effect in self._effects_waiting_for_target.pop(action_name, []):
-                self._resolve_effect(effect)
-
-    def _register_effects(self, body_effects: Sequence[ActionBodyEffect]):
-        for effect in body_effects:
-            target = effect.target_action_name
-            if self._action_has_triggers(target):
-                self._resolve_effect(effect)
-            else:
-                self._effects_waiting_for_target[target].append(effect)
 
     def _resolve_effect(self, effect: ActionBodyEffect):
         """Resolve an effect against the trigger index."""

@@ -28,7 +28,6 @@ from define.compiler import (
 )
 from define.compiler.lark import lark_standalone
 from define.compiler.validator import (
-    dimension_point_tracker,
     name_validators,
     reference_graph,
     scope_tracker,
@@ -238,10 +237,7 @@ class DefinitionAstValidator:
     _discovered_files: list[validation_result.DiscoveredFile]
     _deferred_chained_names: list[validation_result.DeferredChainElements]
     _trigger_positions: list[action_call_graph.TriggerPositionInfo]
-    _action_body_effects: list[action_call_graph.ActionBodyEffect]
-    _deferred_move_constraint_checks: list[
-        validation_result.DeferredMoveConstraintCheck
-    ]
+    _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
 
@@ -259,8 +255,7 @@ class DefinitionAstValidator:
         self._discovered_files = []
         self._deferred_chained_names = []
         self._trigger_positions = []
-        self._action_body_effects = []
-        self._deferred_move_constraint_checks = []
+        self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
 
@@ -295,8 +290,7 @@ class DefinitionAstValidator:
             discovered_files=list(self._discovered_files),
             deferred_chained_names=list(self._deferred_chained_names),
             trigger_positions=list(self._trigger_positions),
-            action_body_effects=list(self._action_body_effects),
-            deferred_move_constraint_checks=list(self._deferred_move_constraint_checks),
+            dp_statement_validity=list(self._dp_statement_validity),
         )
 
     def _validate_path_matches_file(self):
@@ -351,20 +345,10 @@ class DefinitionAstValidator:
         for local_def in definition_block.interface_positions:
             self._validate_local_position_definition(local_def, scope)
         self._validate_trigger_conditions(definition_block.trigger_conditions, scope)
-        tracker = dimension_point_tracker.LocalDimensionPointTracker(self._definition)
-        # Set all positions from the Trigger Conditions Block as having
-        # the state that the Trigger Conditions Block says they have.
-        for condition in definition_block.trigger_conditions.conditions:
-            ref = condition.position_reference
-            local_ref = tracker.get_local_position_reference(ref, scope)
-            if local_ref is not None:
-                qualities = scope.get_constraint_names(ref.chain.typed_names[0])
-                tracker.create(ref, qualities)
         scope.enter_child_scope()
         self._validate_action_statements(
             definition_block.action_statements,
             scope,
-            tracker,
         )
 
     def _validate_global_position_definition_block(
@@ -374,11 +358,9 @@ class DefinitionAstValidator:
         if definition.initialization is not None:
             scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
             scope.add_definition(definition)
-            tracker = dimension_point_tracker.LocalDimensionPointTracker(definition)
             self._validate_action_statements(
                 definition.initialization,
                 scope,
-                tracker,
                 allow_self_reference=True,
             )
         if definition.constraints:
@@ -404,7 +386,6 @@ class DefinitionAstValidator:
         self,
         action_statements: ast.ActionStatementsBlock,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
         *,
         allow_self_reference: bool = False,
     ):
@@ -427,11 +408,11 @@ class DefinitionAstValidator:
                     self._validate_local_position_definition(stmt, scope)
                 case ast.CreateDimensionPointStatement():
                     self._validate_create_dimension_point(
-                        stmt, scope, tracker, allow_self_reference=allow_self_reference
+                        stmt, scope, allow_self_reference=allow_self_reference
                     )
                 case ast.MoveDimensionPointStatement():
                     self._validate_move_dimension_point(
-                        stmt, scope, tracker, allow_self_reference=allow_self_reference
+                        stmt, scope, allow_self_reference=allow_self_reference
                     )
 
     def _validate_local_position_definition(
@@ -469,38 +450,19 @@ class DefinitionAstValidator:
         self,
         stmt: ast.CreateDimensionPointStatement,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
         *,
         allow_self_reference: bool = False,
     ):
-        position = stmt.target_position
-        if not self._validate_full_chained_name(
-            position.chain, scope, allow_self_reference=allow_self_reference
-        ):
-            return
-
-        if tracker.has_unknown_state(position):
-            return
-
-        local_ref = tracker.get_local_position_reference(position, scope)
-        if local_ref is not None:
-            if tracker.is_occupied(position):
-                existing = tracker.get_occupant(position)
-                self._diagnostics.append(
-                    diagnostics.CreateInOccupiedPositionDiagnostic(
-                        position=position.position,
-                        position_name=position.chain.source_chained_name,
-                        first_creation_line=existing.creation_position.position.line,
-                    )
-                )
-                return
-            qualities = scope.get_constraint_names(position.chain.typed_names[0])
-            tracker.create(position, qualities)
-
-        self._action_body_effects.append(
-            action_call_graph.ActionBodyEffect(
-                enclosing_typed_name=self._definition.typed_name,
+        target_ok = self._validate_full_chained_name(
+            stmt.target_position.chain,
+            scope,
+            allow_self_reference=allow_self_reference,
+        )
+        self._dp_statement_validity.append(
+            validation_result.DimensionPointStatementValidity(
                 statement=stmt,
+                source_ok=True,
+                target_ok=target_ok,
             )
         )
 
@@ -508,187 +470,26 @@ class DefinitionAstValidator:
         self,
         stmt: ast.MoveDimensionPointStatement,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
         *,
         allow_self_reference: bool = False,
     ):
-        from_ok = self._validate_full_chained_name(
-            stmt.source_position.chain, scope, allow_self_reference=allow_self_reference
+        source_ok = self._validate_full_chained_name(
+            stmt.source_position.chain,
+            scope,
+            allow_self_reference=allow_self_reference,
         )
-        to_ok = self._validate_full_chained_name(
-            stmt.target_position.chain, scope, allow_self_reference=allow_self_reference
+        target_ok = self._validate_full_chained_name(
+            stmt.target_position.chain,
+            scope,
+            allow_self_reference=allow_self_reference,
         )
-        fqun = self._definition.typed_name.name_content.fqun
-        if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
-            return
-        if not (from_ok and to_ok):
-            return
-
-        self._execute_move(stmt, scope, tracker)
-
-    def _execute_move(
-        self,
-        stmt: ast.MoveDimensionPointStatement,
-        scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
-    ):
-        # First, if either position is in an unknown state, mark both as now having an
-        # unknown state and don't do any more checks.
-        if tracker.has_unknown_state(stmt.source_position) or tracker.has_unknown_state(
-            stmt.target_position
-        ):
-            tracker.mark_unknown_state(stmt.source_position)
-            tracker.mark_unknown_state(stmt.target_position)
-            return
-
-        from_local = tracker.get_local_position_reference(stmt.source_position, scope)
-        to_local = tracker.get_local_position_reference(stmt.target_position, scope)
-
-        from_occupied = tracker.is_occupied(stmt.source_position)
-        to_empty = not tracker.is_occupied(stmt.target_position)
-
-        if not (from_local and to_local):
-            # For now, we are assuming that all external positions are fine to
-            # move into or from, for the sake of simplicity.
-            #
-            # TODO: Need to do occupancy tracking on external positions, or more
-            # realistically, need to have constraints that enforce that state.
-            from_occupied = (not from_local) or from_occupied
-            to_empty = (not to_local) or to_empty
-
-        if not from_occupied:
-            self._diagnostics.append(
-                diagnostics.MoveFromEmptyPositionDiagnostic(
-                    position=stmt.source_position.position,
-                    position_name=stmt.source_position.chain.source_chained_name,
-                )
-            )
-        if not to_empty:
-            occupant = tracker.get_occupant(stmt.target_position)
-            occupied_at_line = (
-                occupant.creation_position.position.line if occupant else None
-            )
-            self._diagnostics.append(
-                diagnostics.MoveToOccupiedPositionDiagnostic(
-                    position=stmt.target_position.position,
-                    position_name=stmt.target_position.chain.source_chained_name,
-                    occupied_at_line=occupied_at_line,
-                )
-            )
-
-        if not (from_occupied and to_empty):
-            tracker.mark_unknown_state(stmt.source_position)
-            tracker.mark_unknown_state(stmt.target_position)
-            return
-
-        if from_local and to_local:
-            if self._check_constraints_for_move(stmt, scope, tracker):
-                tracker.move(stmt.source_position, stmt.target_position)
-        else:
-            # Chained→chained: both sides need resolution by program validator.
-            from_qualities = None
-            to_qualities = None
-            if from_local:
-                # Local→chained: we know the from qualities locally.
-                from_qualities = tracker.get_occupant(stmt.source_position).qualities
-                tracker.destroy(stmt.source_position)
-            elif to_local:
-                # Chained→local: we know the to qualities locally.
-                to_qualities = scope.get_constraint_names(
-                    stmt.target_position.chain.typed_names[0]
-                )
-                tracker.create(stmt.target_position, to_qualities)
-            self._deferred_move_constraint_checks.append(
-                validation_result.DeferredMoveConstraintCheck(
-                    enclosing_definition=self._definition,
-                    statement=stmt,
-                    from_qualities=from_qualities,
-                    to_qualities=to_qualities,
-                )
-            )
-
-        if not tracker.has_unknown_state(stmt.target_position):
-            self._action_body_effects.append(
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=self._definition.typed_name,
-                    statement=stmt,
-                )
-            )
-
-    def _check_constraints_for_move(
-        self,
-        stmt: ast.MoveDimensionPointStatement,
-        scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
-    ) -> bool:
-        """Check that a move satisfies destination constraints."""
-        # TODO: Check constraints for non-local (chained/global) positions.
-        dp_info = tracker.get_occupant(stmt.source_position)
-        dest_constraints = scope.get_constraint_names(
-            stmt.target_position.chain.typed_names[0]
-        )
-        missing_qualities = dest_constraints - dp_info.qualities
-        if not missing_qualities:
-            return True
-
-        self._diagnostics.append(
-            diagnostics.MoveViolatesConstraintsDiagnostic(
-                position=stmt.target_position.chain.typed_names[0].position,
-                source_position=stmt.source_position.chain.source_chained_name,
-                target_position=stmt.target_position.chain.source_chained_name,
-                missing_qualities=sorted(missing_qualities),
+        self._dp_statement_validity.append(
+            validation_result.DimensionPointStatementValidity(
+                statement=stmt,
+                source_ok=source_ok,
+                target_ok=target_ok,
             )
         )
-        tracker.mark_unknown_state(stmt.source_position)
-        tracker.mark_unknown_state(stmt.target_position)
-        return False
-
-    def _check_if_from_is_a_prefix_of_to(
-        self,
-        stmt: ast.MoveDimensionPointStatement,
-        fqun: ast.Fqun,
-        scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
-    ) -> bool:
-        """Check if the from chain is a prefix of (or identical to) the to chain.
-
-        Returns True if a prefix relationship was detected (and diagnostics emitted).
-        """
-        from_chain = stmt.source_position.chain
-        to_chain = stmt.target_position.chain
-        if len(from_chain.typed_names) > len(to_chain.typed_names):
-            return False
-        for from_name, to_name in zip(
-            from_chain.typed_names, to_chain.typed_names, strict=False
-        ):
-            if from_name.full_typed_name(in_universe=fqun) != to_name.full_typed_name(
-                in_universe=fqun
-            ):
-                return False
-
-        if len(from_chain.typed_names) == len(to_chain.typed_names):
-            self._diagnostics.append(
-                diagnostics.MoveToSamePositionDiagnostic(
-                    position=to_chain.typed_names[-1].position,
-                    position_name=to_chain.source_chained_name,
-                )
-            )
-        else:
-            divergence = to_chain.typed_names[len(from_chain.typed_names)]
-            self._diagnostics.append(
-                diagnostics.MoveIntoDefiningPositionDiagnostic(
-                    position=divergence.position,
-                    source_position=from_chain.source_chained_name,
-                    target_position=to_chain.source_chained_name,
-                )
-            )
-            # TODO: Need to export unknown-state positions in FileValidationResult
-            # so we know they also can't be checked elsewhere.
-            if tracker.get_local_position_reference(stmt.source_position, scope):
-                tracker.mark_unknown_state(stmt.source_position)
-            if tracker.get_local_position_reference(stmt.target_position, scope):
-                tracker.mark_unknown_state(stmt.target_position)
-        return True
 
     def _validate_full_chained_name(
         self,
