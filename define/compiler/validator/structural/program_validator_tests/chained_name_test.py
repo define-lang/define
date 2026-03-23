@@ -121,12 +121,12 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].position.line == 6
         assert diags[0].position.column == 54
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].element_name == "action<act_b>"
-        assert diags[1].parent_name == "position<pos_a>"
+        assert isinstance(diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
         assert diags[1].position.line == 6
         assert diags[1].position.column == 54
-        assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(diags[2], diagnostics.ChainElementNotInConstraintsDiagnostic)
+        assert diags[2].element_name == "action<act_b>"
+        assert diags[2].parent_name == "position<pos_a>"
         assert diags[2].position.line == 6
         assert diags[2].position.column == 54
         assert isinstance(diags[3], diagnostics.LocalActionNameDiagnostic)

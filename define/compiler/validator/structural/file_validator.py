@@ -230,7 +230,6 @@ class DefinitionStructuralValidator:
     _definition: ast.QualityDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
     _discovered_files: list[validation_result.DiscoveredFile]
-    _deferred_chained_names: list[validation_result.DeferredChainElements]
     _trigger_positions: list[action_call_graph.TriggerPositionInfo]
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: dict[str, ast.QualityDefinition]
@@ -248,7 +247,6 @@ class DefinitionStructuralValidator:
         self._diagnostics = []
         self._reference_edges = []
         self._discovered_files = []
-        self._deferred_chained_names = []
         self._trigger_positions = []
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
@@ -283,7 +281,6 @@ class DefinitionStructuralValidator:
             _diagnostics=list(self._diagnostics),
             reference_edges=list(self._reference_edges),
             discovered_files=list(self._discovered_files),
-            deferred_chained_names=list(self._deferred_chained_names),
             trigger_positions=list(self._trigger_positions),
             dp_statement_validity=list(self._dp_statement_validity),
         )
@@ -519,18 +516,18 @@ class DefinitionStructuralValidator:
             del chain.typed_names[0]
             first = chain.typed_names[0]
 
-        first_is_defined = True
-        if not scope.is_defined(first):
-            first_is_defined = False
-            if isinstance(first, ast.LocalTypedNameReference):
-                self._diagnostics.append(
-                    diagnostics.UndefinedLocalNameDiagnostic(
-                        position=first.name_content.position,
-                        local_name=first.full_typed_name(in_universe=fqun),
-                    )
+        # TODO: Support quality-required global names when those exist
+        # (and throw an error for invalid ones).
+        if not scope.is_defined(first) and isinstance(
+            first, ast.LocalTypedNameReference
+        ):
+            self._diagnostics.append(
+                diagnostics.UndefinedLocalNameDiagnostic(
+                    position=first.name_content.position,
+                    local_name=first.full_typed_name(in_universe=fqun),
                 )
-                may_continue = False
-            # TODO: Support global names starting positions.
+            )
+            may_continue = False
 
         previous_element = None
         for typed_name in chain.typed_names:
@@ -559,33 +556,6 @@ class DefinitionStructuralValidator:
                 # resolve it in program_validator.
                 may_continue = False
             previous_element = typed_name
-
-        if len(chain.typed_names) > 1 and first_is_defined:
-            # If the first item is a local position, we have to do the validation
-            # of the second item immediately, because the constraint of the local
-            # position won't be passed out of the function if it's in an Action
-            # Statements Block. (If it's in an Action Definition Block, we still
-            # _can_ do it now, so we simply should.)
-            self._validate_chain_element_against_constraints(
-                chain.typed_names[1], chain.typed_names[0], scope
-            )
-
-        # TODO: In the future when the _first_ element can be a global name, this will
-        # be more complex.
-        if len(chain.typed_names) > 2 and isinstance(
-            chain.typed_names[1], ast.GlobalTypedNameReference
-        ):
-            self._deferred_chained_names.append(
-                validation_result.DeferredChainElements(
-                    enclosing_definition=self._definition,
-                    parent_element=chain.typed_names[1],
-                    chain_element=chain.typed_names[2],
-                    remaining_chain=ast.ChainedName(
-                        typed_names=chain.typed_names[3:],
-                        position=chain.position,
-                    ),
-                )
-            )
 
         if chain.typed_names[-1].name_type != ast.NameType.POSITION:
             self._diagnostics.append(
@@ -622,23 +592,6 @@ class DefinitionStructuralValidator:
                 diagnostics.LocalActionNameDiagnostic(
                     position=chain_element.name_content.position,
                     local_name=chain_element.name_content.name,
-                )
-            )
-
-    def _validate_chain_element_against_constraints(
-        self,
-        chain_element: ast.TypedNameReference,
-        parent: ast.TypedNameReference,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Check chain_element against parent's constraints. Returns True if valid."""
-        if not scope.definition_has_quality(parent, chain_element):
-            fqun = self._definition.typed_name.name_content.fqun
-            self._diagnostics.append(
-                diagnostics.ChainElementNotInConstraintsDiagnostic(
-                    position=chain_element.position,
-                    element_name=chain_element.full_typed_name(in_universe=fqun),
-                    parent_name=parent.full_typed_name(in_universe=fqun),
                 )
             )
 

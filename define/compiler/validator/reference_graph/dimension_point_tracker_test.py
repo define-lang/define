@@ -72,47 +72,47 @@ def _make_scope_with_def(name: str) -> scope_tracker.ScopeTracker:
     return scope
 
 
-def test_get_local_position_reference_single_local_in_scope():
+def test_get_local_position_single_local_in_scope():
     scope = _make_scope_with_def("my_pos")
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    result = tracker.get_local_position_reference(ref, scope)
+    result = tracker.get_local_position(ref, scope)
 
     assert result is not None
     assert isinstance(result, ast.LocalTypedNameReference)
     assert result.name_content.name == "my_pos"
 
 
-def test_get_local_position_reference_multi_item_chain():
+def test_get_local_position_multi_item_chain():
     scope = _make_scope_with_def("my_pos")
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("my_pos"), _make_global_ref("/child")])
 
-    result = tracker.get_local_position_reference(ref, scope)
+    result = tracker.get_local_position(ref, scope)
 
     assert result is None
 
 
-def test_get_local_position_reference_global_reference():
+def test_get_local_position_global_reference():
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     scope = scope_tracker.ScopeTracker(_FQUN)
     scope.enter_child_scope()
     ref = _make_position_ref([_make_global_ref("/some_pos")])
 
-    result = tracker.get_local_position_reference(ref, scope)
+    result = tracker.get_local_position(ref, scope)
 
     assert result is None
 
 
-def test_get_local_position_reference_in_parent_scope():
+def test_get_local_position_in_parent_scope():
     scope = scope_tracker.ScopeTracker(_FQUN)
     scope.add_definition(_make_local_def("parent_pos"))
     scope.enter_child_scope()
     tracker = dimension_point_tracker.LocalDimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("parent_pos")])
 
-    result = tracker.get_local_position_reference(ref, scope)
+    result = tracker.get_local_position(ref, scope)
 
     assert result is not None
 

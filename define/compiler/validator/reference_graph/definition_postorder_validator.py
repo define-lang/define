@@ -32,34 +32,46 @@ class DefinitionPostorderValidator:
         self._diagnostics = []
         self._action_body_effects = []
 
+    @property
+    def _definition(self) -> ast.QualityDefinition:
+        return self._definition_result.definition
+
     def analyze(
         self,
     ) -> tuple[list[diagnostics.Diagnostic], list[action_call_graph.ActionBodyEffect]]:
         """Run post-order validation and return diagnostics and action body effects."""
-        definition = self._definition_result.definition
-        if (
-            isinstance(definition, ast.ActionDefinition)
-            and definition.definition_block is not None
-        ):
-            self._analyze_action_definition(definition.definition_block)
-        elif isinstance(definition, ast.PositionDefinition):
-            self._analyze_position_definition(definition)
+        match self._definition:
+            case ast.ActionDefinition() as action_def:
+                if action_def.definition_block is not None:
+                    self._analyze_action_definition(action_def.definition_block)
+            case ast.PositionDefinition() as pos_def:
+                self._analyze_position_definition(pos_def)
+            case _:
+                raise TypeError(f"Unexpected definition type: {type(self._definition)}")
         return self._diagnostics, self._action_body_effects
 
     def _analyze_action_definition(self, definition_block: ast.ActionDefinitionBlock):
-        definition = self._definition_result.definition
-        scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
-        for local_def in definition_block.interface_positions:
-            scope.add_definition(local_def)
-        tracker = dimension_point_tracker.LocalDimensionPointTracker(definition)
+        scope = scope_tracker.ScopeTracker(
+            self._definition.typed_name.name_content.fqun
+        )
+        for pos in definition_block.interface_positions:
+            # Skip duplicates so the first definition's constraints are preserved,
+            # matching file_validator's behavior of not adding conflicting names.
+            if not scope.is_defined(pos.typed_name):
+                scope.add_definition(pos)
+        tracker = dimension_point_tracker.LocalDimensionPointTracker(self._definition)
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
         for condition in definition_block.trigger_conditions.conditions:
-            ref = condition.position_reference
-            local_ref = tracker.get_local_position_reference(ref, scope)
-            if local_ref is not None:
-                qualities = scope.get_constraint_names(ref.chain.typed_names[0])
-                tracker.create(ref, qualities)
+            self._validate_chained_name(condition.position_reference.chain, scope)
+            local_position = tracker.get_local_position(
+                condition.position_reference, scope
+            )
+            if local_position is not None:
+                qualities = scope.get_constraint_names(
+                    condition.position_reference.chain.typed_names[0]
+                )
+                tracker.create(condition.position_reference, qualities)
         scope.enter_child_scope()
         self._analyze_statements(definition_block.action_statements, scope, tracker)
 
@@ -96,12 +108,13 @@ class DefinitionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
+        self._validate_chained_name(stmt.target_position.chain, scope)
         position = stmt.target_position
         if not validity.target_ok:
             return
         if tracker.has_unknown_state(position):
             return
-        local_ref = tracker.get_local_position_reference(position, scope)
+        local_ref = tracker.get_local_position(position, scope)
         if local_ref is not None:
             if tracker.is_occupied(position):
                 existing = tracker.get_occupant(position)
@@ -118,7 +131,7 @@ class DefinitionPostorderValidator:
 
         self._action_body_effects.append(
             action_call_graph.ActionBodyEffect(
-                enclosing_typed_name=self._definition_result.definition.typed_name,
+                enclosing_typed_name=self._definition.typed_name,
                 statement=stmt,
             )
         )
@@ -130,7 +143,9 @@ class DefinitionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
         tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        fqun = self._definition_result.definition.typed_name.name_content.fqun
+        self._validate_chained_name(stmt.source_position.chain, scope)
+        self._validate_chained_name(stmt.target_position.chain, scope)
+        fqun = self._definition.typed_name.name_content.fqun
         if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
             return
         if not (validity.source_ok and validity.target_ok):
@@ -152,8 +167,8 @@ class DefinitionPostorderValidator:
             tracker.mark_unknown_state(stmt.target_position)
             return
 
-        from_local = tracker.get_local_position_reference(stmt.source_position, scope)
-        to_local = tracker.get_local_position_reference(stmt.target_position, scope)
+        from_local = tracker.get_local_position(stmt.source_position, scope)
+        to_local = tracker.get_local_position(stmt.target_position, scope)
 
         from_occupied = tracker.is_occupied(stmt.source_position)
         to_empty = not tracker.is_occupied(stmt.target_position)
@@ -194,7 +209,7 @@ class DefinitionPostorderValidator:
 
         # Resolve qualities for constraint checking. Local positions use the
         # tracker/scope; chained positions look up the referenced definition.
-        fqun = self._definition_result.definition.typed_name.name_content.fqun
+        fqun = self._definition.typed_name.name_content.fqun
         if from_local:
             from_qualities: frozenset[str] | None = tracker.get_occupant(
                 stmt.source_position
@@ -233,7 +248,7 @@ class DefinitionPostorderValidator:
         if not tracker.has_unknown_state(stmt.target_position):
             self._action_body_effects.append(
                 action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=self._definition_result.definition.typed_name,
+                    enclosing_typed_name=self._definition.typed_name,
                     statement=stmt,
                 )
             )
@@ -314,11 +329,141 @@ class DefinitionPostorderValidator:
             )
             # TODO: Need to export unknown-state positions in FileValidationResult
             # so we know they also can't be checked elsewhere.
-            if tracker.get_local_position_reference(stmt.source_position, scope):
+            if tracker.get_local_position(stmt.source_position, scope):
                 tracker.mark_unknown_state(stmt.source_position)
-            if tracker.get_local_position_reference(stmt.target_position, scope):
+            if tracker.get_local_position(stmt.target_position, scope):
                 tracker.mark_unknown_state(stmt.target_position)
         return True
+
+    def _validate_chained_name(
+        self,
+        chain: ast.ChainedName,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Validate chained name elements against their parent name's constraints."""
+        if len(chain.typed_names) < 2:
+            return
+        enclosing_fqun = self._definition.typed_name.name_content.fqun
+        elements = chain.typed_names
+
+        # Check the second element against the first element's constraints
+        # using the scope tracker. This works also for position-self references
+        # because we inserted the position's definition into the scope already.
+        first = elements[0]
+        if scope.is_defined(first):
+            self._check_chain_element_in_constraints(
+                elements[1],
+                scope.get_constraint_names(first),
+                first.full_typed_name(in_universe=enclosing_fqun),
+                enclosing_fqun,
+            )
+
+        index = 1
+        while index < len(elements) - 1:
+            parent = elements[index]
+            # The file_validator already diagnoses invalid chains before
+            # they reach us. However, they still _exist_, so we skip them.
+            if not isinstance(parent, ast.GlobalTypedNameReference):
+                return
+            parent_name = parent.full_typed_name(in_universe=enclosing_fqun)
+            parent_result = self._definition_results.get(parent_name)
+            # This means the definition's file did not load or did not parse.
+            if parent_result is None:
+                return
+            child = elements[index + 1]
+            match parent_result.definition:
+                case ast.PositionDefinition() as position_def:
+                    self._check_chain_element_in_constraints(
+                        child,
+                        position_def.constraint_names,
+                        parent_name,
+                        enclosing_fqun,
+                    )
+                    index += 1
+                case ast.ActionDefinition() as action_def:
+                    consumed = self._validate_action_chain_step(
+                        child,
+                        elements,
+                        index + 1,
+                        action_def,
+                        parent_name,
+                        enclosing_fqun,
+                    )
+                    if consumed == 0:
+                        return
+                    index += consumed
+                case _:
+                    raise TypeError(
+                        f"Unexpected definition type: {type(parent_result.definition)}"
+                    )
+
+    def _validate_action_chain_step(
+        self,
+        child: ast.TypedNameReference,
+        elements: list[ast.TypedNameReference],
+        child_index: int,
+        action_def: ast.ActionDefinition,
+        parent_name: str,
+        fqun: ast.Fqun,
+    ) -> int:
+        """Validate chain elements against an action definition's local positions.
+
+        Returns the number of elements consumed (0 means stop walking).
+        """
+        # TODO: We should emit more specific diagnostics for these cases.
+        if not isinstance(child, ast.LocalTypedNameReference):
+            self._emit_not_in_action_diagnostic(child, parent_name, fqun)
+            return 0
+        if child.name_type != ast.NameType.POSITION:
+            self._emit_not_in_action_diagnostic(child, parent_name, fqun)
+            return 0
+        if child.name_content.name not in action_def.interface_position_constraints:
+            self._emit_not_in_action_diagnostic(child, parent_name, fqun)
+            return 0
+        # The caller guarantees child exists, but not that the child's child exists.
+        if child_index + 1 >= len(elements):
+            return 1
+        next_child = elements[child_index + 1]
+        self._check_chain_element_in_constraints(
+            next_child,
+            action_def.interface_position_constraints[child.name_content.name],
+            child.full_typed_name(),
+            fqun,
+        )
+        return 2
+
+    def _check_chain_element_in_constraints(
+        self,
+        element: ast.TypedNameReference,
+        constraint_names: frozenset[str],
+        parent_name: str,
+        fqun: ast.Fqun,
+    ):
+        """Check if a chain element is declared in the parent's constraints."""
+        element_name = element.full_typed_name(in_universe=fqun)
+        if element_name not in constraint_names:
+            self._diagnostics.append(
+                diagnostics.ChainElementNotInConstraintsDiagnostic(
+                    position=element.position,
+                    element_name=element_name,
+                    parent_name=parent_name,
+                )
+            )
+
+    def _emit_not_in_action_diagnostic(
+        self,
+        element: ast.TypedNameReference,
+        parent_name: str,
+        fqun: ast.Fqun,
+    ):
+        """Emit a diagnostic for a chain element not found in an action definition."""
+        self._diagnostics.append(
+            diagnostics.ChainElementNotInActionDiagnostic(
+                position=element.position,
+                element_name=element.full_typed_name(in_universe=fqun),
+                parent_name=parent_name,
+            )
+        )
 
     def _get_required_qualities_for_position(
         self,
@@ -349,6 +494,11 @@ class DefinitionPostorderValidator:
             return None
 
         if isinstance(last_element, ast.GlobalTypedNameReference):
-            return definition_result.position_constraint_names
-        locals_map = definition_result.action_local_position_constraint_names
-        return locals_map.get(last_element.name_content.name, frozenset())
+            if not isinstance(definition_result.definition, ast.PositionDefinition):
+                return frozenset()
+            return definition_result.definition.constraint_names
+        if isinstance(definition_result.definition, ast.ActionDefinition):
+            return definition_result.definition.interface_position_constraints.get(
+                last_element.name_content.name, frozenset()
+            )
+        return frozenset()

@@ -36,7 +36,7 @@ class LocalDimensionPointTracker:
         self._dimension_points: dict[str, DimensionPointInfo] = {}
         self._positions_with_unknown_state: set[str] = set()
 
-    def get_local_position_reference(
+    def get_local_position(
         self,
         ref: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,

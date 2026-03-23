@@ -211,8 +211,8 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "dimension_points/create/chain_ending_with_action.def": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/create/duplicate_local_dimension_point.def": [
@@ -228,8 +228,8 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "dimension_points/move/chain_ending_with_action.def": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/move/dest_occupied_after_move.def": [
@@ -275,8 +275,8 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "trigger_conditions/chain_ending_with_action.def": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
+        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
     "trigger_conditions/invalid_local_name_format.def": [

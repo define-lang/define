@@ -123,6 +123,17 @@ class PositionDefinition(QualityDefinition):
         object.__setattr__(self, "constraints", constraints)
         object.__setattr__(self, "initialization", initialization)
 
+    @property
+    def constraint_names(self) -> frozenset[str]:
+        """Return the fully-qualified constraint names for this position."""
+        if self.constraints is None:
+            return frozenset()
+        fqun = self.typed_name.name_content.fqun
+        return frozenset(
+            requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            for requirement in self.constraints.requirements
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class NameContent(ASTNode, abc.ABC):
@@ -341,6 +352,26 @@ class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
     definition_block: ActionDefinitionBlock | None
+
+    @property
+    def interface_position_constraints(self) -> dict[str, frozenset[str]]:
+        """Return constraint names for each interface position, keyed by local name."""
+        if self.definition_block is None:
+            return {}
+        fqun = self.typed_name.name_content.fqun
+        result: dict[str, frozenset[str]] = {}
+        for local_def in self.definition_block.interface_positions:
+            local_name = local_def.typed_name.name_content.name
+            if local_name in result:
+                continue
+            if local_def.constraints is None:
+                result[local_name] = frozenset()
+                continue
+            result[local_name] = frozenset(
+                requirement.typed_global_name.full_typed_name(in_universe=fqun)
+                for requirement in local_def.constraints.requirements
+            )
+        return result
 
     def __init__(
         self,

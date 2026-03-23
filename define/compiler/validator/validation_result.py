@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass, field
-from functools import cached_property
 
 from define.compiler import (
     ast,
@@ -15,7 +14,7 @@ from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from define.compiler.graphs import action_call_graph, reference_graph
     from define.compiler.validator import stats
@@ -31,41 +30,6 @@ class DiscoveredFile:
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str
     position: ast.SourcePosition
-
-
-@dataclass(frozen=True)
-class DeferredChainElements:
-    """The remaining sub-section of a chained name that needs deferred validation against a global name's definition."""
-
-    enclosing_definition: ast.QualityDefinition
-    parent_element: ast.GlobalTypedNameReference
-    chain_element: ast.TypedNameReference
-    remaining_chain: ast.ChainedName
-
-    @property
-    def source_fqun(self) -> ast.Fqun:
-        """Return the FQUN of the enclosing definition."""
-        return self.enclosing_definition.typed_name.name_content.fqun
-
-    @cached_property
-    def parent_full_typed_name(self) -> str:
-        """Return the fully qualified typed-name key for the parent element."""
-        return self.parent_element.full_typed_name(in_universe=self.source_fqun)
-
-    def next_deferred(
-        self,
-        validated_element: ast.GlobalTypedNameReference,
-        remaining: ast.ChainedName,
-    ) -> DeferredChainElements:
-        """Create the next deferred element after validating one in the chain."""
-        chain_element = remaining.typed_names[0]
-        del remaining.typed_names[0]
-        return DeferredChainElements(
-            enclosing_definition=self.enclosing_definition,
-            parent_element=validated_element,
-            chain_element=chain_element,
-            remaining_chain=remaining,
-        )
 
 
 @dataclass(frozen=True)
@@ -86,7 +50,6 @@ class DefinitionValidationResult:
 
     reference_edges: list[reference_graph.ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
-    deferred_chained_names: list[DeferredChainElements] = field(default_factory=list)
     trigger_positions: list[action_call_graph.TriggerPositionInfo] = field(
         default_factory=list
     )
@@ -108,45 +71,6 @@ class DefinitionValidationResult:
             self._diagnostics,
             key=lambda d: (d.position.line, d.position.column),
         )
-
-    @property
-    def position_constraint_names(self) -> frozenset[str]:
-        """Return required qualities when this definition is a global position."""
-        definition = self.definition
-        if not isinstance(definition, ast.PositionDefinition):
-            return frozenset()
-        if definition.constraints is None:
-            return frozenset()
-        fqun = definition.typed_name.name_content.fqun
-        return frozenset(
-            requirement.typed_global_name.full_typed_name(in_universe=fqun)
-            for requirement in definition.constraints.requirements
-        )
-
-    @property
-    def action_local_position_constraint_names(
-        self,
-    ) -> Mapping[str, frozenset[str]]:
-        """Return local position constraints when this definition is an action."""
-        definition = self.definition
-        if not isinstance(definition, ast.ActionDefinition):
-            return {}
-        if definition.definition_block is None:
-            return {}
-        fqun = definition.typed_name.name_content.fqun
-        result: dict[str, frozenset[str]] = {}
-        for local_def in definition.definition_block.interface_positions:
-            local_name = local_def.typed_name.name_content.name
-            if local_name in result:
-                continue
-            if local_def.constraints is None:
-                result[local_name] = frozenset()
-                continue
-            result[local_name] = frozenset(
-                requirement.typed_global_name.full_typed_name(in_universe=fqun)
-                for requirement in local_def.constraints.requirements
-            )
-        return result
 
 
 @dataclass

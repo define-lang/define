@@ -1,3 +1,4 @@
+# pyright: reportImplicitStringConcatenation=false
 """Tests for AST nodes."""
 
 import sys
@@ -5,9 +6,32 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import ast
+from define.compiler import ast, parser, transformer
 
 _POS = ast.start_of_file_position()
+_FQUN = "my.domain.com:my_lib"
+
+
+def _parse_position(source: str) -> ast.PositionDefinition:
+    parse_result = parser.Parser().parse(source)
+    assert parse_result.diagnostics == []
+    assert parse_result.tree is not None
+    program = transformer.DefineTransformer().transform(parse_result.tree)
+    definition = program.definitions[0]
+    if not isinstance(definition, ast.PositionDefinition):
+        raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
+    return definition
+
+
+def _parse_action(source: str) -> ast.ActionDefinition:
+    parse_result = parser.Parser().parse(source)
+    assert parse_result.diagnostics == []
+    assert parse_result.tree is not None
+    program = transformer.DefineTransformer().transform(parse_result.tree)
+    definition = program.definitions[0]
+    if not isinstance(definition, ast.ActionDefinition):
+        raise TypeError(f"Expected ActionDefinition, got {type(definition)}")
+    return definition
 
 
 def _make_fqun(
@@ -239,3 +263,125 @@ class TestCachedStrings:
             ),
         )
         assert typed_name.source_typed_name is typed_name.full_typed_name()
+
+
+class TestInterfacePositionConstraints:
+    def test_with_constraints(self):
+        action = _parse_action(
+            f"define the potential action<{_FQUN}:/act> {{\n"
+            "    define the position<pos_a> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</child>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<pos_b> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</x>.\n"
+            "            it has the position</y>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert action.interface_position_constraints == {
+            "pos_a": frozenset({f"position<{_FQUN}:/child>"}),
+            "pos_b": frozenset(
+                {
+                    f"position<{_FQUN}:/x>",
+                    f"position<{_FQUN}:/y>",
+                }
+            ),
+        }
+
+    def test_no_constraints(self):
+        action = _parse_action(
+            f"define the potential action<{_FQUN}:/act> {{\n"
+            "    define the position<pos_a>.\n"
+            "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert action.interface_position_constraints == {
+            "pos_a": frozenset(),
+        }
+
+    def test_ignore_later_duplicate_with_different_constraints(self):
+        action = _parse_action(
+            f"define the potential action<{_FQUN}:/act> {{\n"
+            "    define the position<pos_a> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</first>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<pos_a> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</second>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert action.interface_position_constraints == {
+            "pos_a": frozenset({f"position<{_FQUN}:/first>"}),
+        }
+
+    def test_ignore_later_duplicate_that_adds_constraints(self):
+        action = _parse_action(
+            f"define the potential action<{_FQUN}:/act> {{\n"
+            "    define the position<pos_a>.\n"
+            "    define the position<pos_a> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</second>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert action.interface_position_constraints == {
+            "pos_a": frozenset(),
+        }
+
+    def test_no_block(self):
+        action = _parse_action(f"define the potential action<{_FQUN}:/act>.\n")
+        assert action.interface_position_constraints == {}
+
+
+class TestPositionConstraintNames:
+    def test_with_constraints(self):
+        position = _parse_position(
+            f"define the potential position<{_FQUN}:/a> {{\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</child>.\n"
+            "        it has the position</other>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert position.constraint_names == frozenset(
+            {
+                f"position<{_FQUN}:/child>",
+                f"position<{_FQUN}:/other>",
+            }
+        )
+
+    def test_no_constraints(self):
+        position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
+        assert position.constraint_names == frozenset()

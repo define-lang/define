@@ -39,14 +39,6 @@ class _DeferredReferenceEdge:
     source_definition: validation_result.DefinitionValidationResult
 
 
-@dataclass
-class _DeferredChainValidation:
-    """A chain element waiting for its parent definition to become resolvable."""
-
-    deferred: validation_result.DeferredChainElements
-    source_definition: validation_result.DefinitionValidationResult
-
-
 class _FileWorkPool:
     """Manages a thread pool for parallel file validation."""
 
@@ -111,7 +103,6 @@ class ProgramStructuralValidator:
     _reference_graph: reference_graph.ReferenceGraph
     _action_call_graph: action_call_graph.ActionCallGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
-    _deferred_chain_validations: dict[str, list[_DeferredChainValidation]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _definition_owners: dict[int, validation_result.FileValidationResult]
     _config_loading_time_ns: int
@@ -124,7 +115,6 @@ class ProgramStructuralValidator:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
-        self._deferred_chain_validations = {}
         self._definition_results = {}
         self._definition_owners = {}
         self._config_loading_time_ns = 0
@@ -162,7 +152,7 @@ class ProgramStructuralValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        self._run_postorder_occupancy_analysis()
+        self._run_postorder_analysis()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
@@ -180,13 +170,19 @@ class ProgramStructuralValidator:
         self._path_tracker.mark_in_progress(result.file_path)
         self._path_tracker.set_result(result.file_path, result)
 
+        # TODO: When config resolution partially fails, we skip edge resolution
+        # and pool work entirely. This should be restructured so that definition
+        # registration and edge validation always happen, and only cross-universe
+        # discovery is conditional on config success.
         if not self._resolve_non_filesystem_discovered_files(result):
+            self._register_definitions(result)
+            self._run_postorder_analysis()
             return self._build_program_result(self._path_tracker.completed_results())
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
             self._run_pool_loop(pool)
-        self._run_postorder_occupancy_analysis()
+        self._run_postorder_analysis()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def _build_program_result(
@@ -230,6 +226,20 @@ class ProgramStructuralValidator:
         self._validate_incoming_reference_edges(result.file_path)
         result.stats.global_validation += time.perf_counter_ns() - started_at
 
+    def _register_definitions(
+        self,
+        result: validation_result.FileValidationResult,
+    ):
+        """Register definitions from a file result for non-filesystem error-state postorder analysis only."""
+        # TODO: This will go away when we fix the bug about edge resolution for
+        # partially-failed non-filesystem states.
+        for definition_result in result.definition_results:
+            name = definition_result.definition.typed_name.full_typed_name()
+            if name in self._definition_results:
+                continue
+            self._definition_results[name] = definition_result
+            self._reference_graph.add_definition(definition_result.definition)
+
     def _process_completed_definition(
         self,
         result: validation_result.FileValidationResult,
@@ -248,9 +258,7 @@ class ProgramStructuralValidator:
         self._definition_results[name] = definition_result
         self._reference_graph.add_definition(definition_result.definition)
         self._action_call_graph.register_triggers(definition_result.trigger_positions)
-        self._validate_incoming_chained_names(definition_result)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
-        self._validate_outgoing_chained_names(definition_result)
 
     def _submit_discovered_files(
         self,
@@ -555,39 +563,8 @@ class ProgramStructuralValidator:
                 deferred_edge.source_definition,
             )
 
-    def _validate_outgoing_chained_names(
-        self,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Queue or immediately validate deferred chain elements referenced within this definition."""
-        for deferred in source_definition.deferred_chained_names:
-            # Same race as _validate_outgoing_reference_edges: the parent
-            # definition may already have been registered (for example, because
-            # its file was discovered and completed earlier) before we process
-            # this definition's chain elements.
-            if deferred.parent_full_typed_name in self._definition_results:
-                self._validate_chain_element_against_target(
-                    deferred,
-                    source_definition,
-                )
-            else:
-                self._deferred_chain_validations.setdefault(
-                    deferred.parent_full_typed_name, []
-                ).append(_DeferredChainValidation(deferred, source_definition))
-
-    def _validate_incoming_chained_names(
-        self, target_definition: validation_result.DefinitionValidationResult
-    ):
-        """Validate deferred chain elements that were waiting for this definition."""
-        name = target_definition.definition.typed_name.full_typed_name()
-        for deferred_validation in self._deferred_chain_validations.pop(name, []):
-            self._validate_chain_element_against_target(
-                deferred_validation.deferred,
-                deferred_validation.source_definition,
-            )
-
-    def _run_postorder_occupancy_analysis(self):
-        """Run occupancy analysis for all definitions in DFS post-order.
+    def _run_postorder_analysis(self):
+        """Run analysis for all definitions in DFS post-order.
 
         We use dfs_postorder_all rather than dfs_postorder_from because the
         reference graph can contain multiple roots — the entry-point position
@@ -609,159 +586,6 @@ class ProgramStructuralValidator:
                 definition_result.add_diagnostic(d)
             definition_result.action_body_effects.extend(effects)
             self._action_call_graph.register_effects(effects)
-
-    def _validate_chain_element_against_target(
-        self,
-        deferred: validation_result.DeferredChainElements,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Validate a chain element against a completed target definition."""
-        started_at = time.perf_counter_ns()
-        self._do_validate_chain_element_against_target(deferred, source_definition)
-        self._record_deferred_validation_time(source_definition, started_at)
-
-    def _do_validate_chain_element_against_target(
-        self,
-        deferred: validation_result.DeferredChainElements,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Validate a chain element against its parent's completed definition."""
-        target_result = self._definition_results.get(deferred.parent_full_typed_name)
-        if target_result is None:
-            return
-        match target_result.definition:
-            case ast.PositionDefinition():
-                self._validate_chain_against_position_def(
-                    deferred,
-                    target_result,
-                    source_definition,
-                )
-            case ast.ActionDefinition():
-                self._validate_chain_against_action_def(
-                    deferred,
-                    target_result,
-                    source_definition,
-                )
-            case _:
-                raise TypeError(
-                    f"Unexpected definition type: {type(target_result.definition)}"
-                )
-
-    def _validate_chain_against_position_def(
-        self,
-        deferred: validation_result.DeferredChainElements,
-        target_result: validation_result.DefinitionValidationResult,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Validate a chain element against a position definition's constraints."""
-        self._check_chain_element_against_constraints(
-            deferred.chain_element,
-            target_result.position_constraint_names,
-            deferred.parent_full_typed_name,
-            deferred.source_fqun,
-            source_definition,
-        )
-        self._defer_chain_continuation(
-            deferred,
-            deferred.chain_element,
-            deferred.remaining_chain,
-            source_definition,
-        )
-
-    def _validate_chain_against_action_def(
-        self,
-        deferred: validation_result.DeferredChainElements,
-        target_result: validation_result.DefinitionValidationResult,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Validate a chain element against an action definition's local positions."""
-        element = deferred.chain_element
-        if not isinstance(element, ast.LocalTypedNameReference):
-            self._emit_not_in_action_diagnostic(deferred, source_definition)
-            return
-        if element.name_type != ast.NameType.POSITION:
-            self._emit_not_in_action_diagnostic(deferred, source_definition)
-            return
-        locals_map = target_result.action_local_position_constraint_names
-        if element.name_content.name not in locals_map:
-            self._emit_not_in_action_diagnostic(deferred, source_definition)
-            return
-        if not deferred.remaining_chain.typed_names:
-            return
-        next_element = deferred.remaining_chain.typed_names[0]
-        del deferred.remaining_chain.typed_names[0]
-        self._check_chain_element_against_constraints(
-            next_element,
-            locals_map[element.name_content.name],
-            element.full_typed_name(),
-            deferred.source_fqun,
-            source_definition,
-        )
-        self._defer_chain_continuation(
-            deferred,
-            next_element,
-            deferred.remaining_chain,
-            source_definition,
-        )
-
-    def _emit_not_in_action_diagnostic(
-        self,
-        deferred: validation_result.DeferredChainElements,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Emit a diagnostic for a chain element not found in an action definition."""
-        source_definition.add_diagnostic(
-            diagnostics.ChainElementNotInActionDiagnostic(
-                position=deferred.chain_element.position,
-                element_name=deferred.chain_element.full_typed_name(
-                    in_universe=deferred.source_fqun
-                ),
-                parent_name=deferred.parent_full_typed_name,
-            )
-        )
-
-    def _defer_chain_continuation(
-        self,
-        deferred: validation_result.DeferredChainElements,
-        validated_element: ast.TypedNameReference,
-        remaining: ast.ChainedName,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Submit a deferred chain validation, or validate immediately if ready."""
-        if not remaining.typed_names:
-            return
-        next_deferred = deferred.next_deferred(
-            typing.cast("ast.GlobalTypedNameReference", validated_element),
-            remaining,
-        )
-        if next_deferred.parent_full_typed_name in self._definition_results:
-            self._validate_chain_element_against_target(
-                next_deferred,
-                source_definition,
-            )
-            return
-        self._deferred_chain_validations.setdefault(
-            next_deferred.parent_full_typed_name, []
-        ).append(_DeferredChainValidation(next_deferred, source_definition))
-
-    def _check_chain_element_against_constraints(
-        self,
-        element: ast.TypedNameReference,
-        constraint_names: frozenset[str],
-        parent_name: str,
-        source_fqun: ast.Fqun,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Check if a chain element matches any constraint, adding a diagnostic if not."""
-        element_name = element.full_typed_name(in_universe=source_fqun)
-        if element_name not in constraint_names:
-            source_definition.add_diagnostic(
-                diagnostics.ChainElementNotInConstraintsDiagnostic(
-                    position=element.position,
-                    element_name=element_name,
-                    parent_name=parent_name,
-                )
-            )
 
     def _check_existing_root_conflicts_for_first_subroot_load(
         self,
