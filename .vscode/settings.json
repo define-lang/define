@@ -10,5 +10,6 @@
   },
   "ruff.lint.enable": true,
   "bazel.executable": "bazelisk",
-  "markdown.validate.enabled": true
+  "markdown.validate.enabled": true,
+  "python.analysis.exclude": ["bazel-*"]
 }
