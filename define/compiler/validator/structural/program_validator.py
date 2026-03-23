@@ -27,7 +27,7 @@ from define.compiler import (
 )
 from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator import stats, validation_result
-from define.compiler.validator.reference_graph import definition_postorder_validator
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import file_validator, path_tracker
 
 
@@ -152,7 +152,10 @@ class ProgramStructuralValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        self._run_postorder_analysis()
+        self._action_call_graph = reference_graph_validator.ReferenceGraphValidator(
+            self._reference_graph,
+            self._definition_results,
+        ).validate()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
@@ -176,13 +179,19 @@ class ProgramStructuralValidator:
         # discovery is conditional on config success.
         if not self._resolve_non_filesystem_discovered_files(result):
             self._register_definitions(result)
-            self._run_postorder_analysis()
+            self._action_call_graph = reference_graph_validator.ReferenceGraphValidator(
+                self._reference_graph,
+                self._definition_results,
+            ).validate()
             return self._build_program_result(self._path_tracker.completed_results())
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
             self._run_pool_loop(pool)
-        self._run_postorder_analysis()
+        self._action_call_graph = reference_graph_validator.ReferenceGraphValidator(
+            self._reference_graph,
+            self._definition_results,
+        ).validate()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def _build_program_result(
@@ -561,33 +570,6 @@ class ProgramStructuralValidator:
                 target_result,
                 deferred_edge.source_definition,
             )
-
-    def _run_postorder_analysis(self):
-        """Run analysis for all definitions in DFS post-order.
-
-        We use dfs_postorder_all rather than dfs_postorder_from because the
-        reference graph can contain multiple roots — the entry-point position
-        and the actions that reference it form separate subgraphs that are
-        only connected through file discovery, not through reference edges.
-        """
-        for definition in self._reference_graph.dfs_postorder_all():
-            name = definition.typed_name.full_typed_name()
-            definition_result = self._definition_results.get(name)
-            # A node without a definition result means the target file was
-            # not found or had a syntax error that prevented processing.
-            if definition_result is None:
-                continue
-            self._action_call_graph.register_triggers(
-                definition_result.trigger_positions
-            )
-            analyzer = definition_postorder_validator.DefinitionPostorderValidator(
-                definition_result, self._definition_results
-            )
-            occupancy_diagnostics, effects = analyzer.analyze()
-            for d in occupancy_diagnostics:
-                definition_result.add_diagnostic(d)
-            definition_result.action_body_effects.extend(effects)
-            self._action_call_graph.register_effects(effects)
 
     def _check_existing_root_conflicts_for_first_subroot_load(
         self,

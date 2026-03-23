@@ -17,6 +17,17 @@ py_library(
 )
 
 py_library(
+    name = "reference_graph_validator",
+    srcs = ["reference_graph_validator.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":definition_postorder_validator",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/graphs:reference_graph",
+    ],
+)
+
+py_library(
     name = "dimension_point_tracker",
     srcs = ["dimension_point_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -59,6 +70,7 @@ pyright_test(
         ":dimension_point_tracker",
         ":dimension_point_tracker_test",
         ":reference_graph",
+        ":reference_graph_validator",
         "//define/compiler/validator:validation_result",
     ],
 )
