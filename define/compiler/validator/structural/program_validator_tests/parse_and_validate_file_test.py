@@ -24,7 +24,6 @@ def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
         + timings.transform
         + timings.file_validation
         + timings.global_validation
-        + timings.deferred_validation
     )
     assert timings.overall_compile == phase_sum
 

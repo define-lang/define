@@ -15,7 +15,6 @@ class ValidationTimingStats:
     transform: int = 0
     file_validation: int = 0
     global_validation: int = 0
-    deferred_validation: int = 0
     queue_wait: int = 0
 
     @property
@@ -27,7 +26,6 @@ class ValidationTimingStats:
             + self.transform
             + self.file_validation
             + self.global_validation
-            + self.deferred_validation
         )
 
 

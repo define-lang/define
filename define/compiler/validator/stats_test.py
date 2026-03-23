@@ -21,7 +21,6 @@ class TestBuildWithNoPhases:
         assert result.transform == 0
         assert result.file_validation == 0
         assert result.global_validation == 0
-        assert result.deferred_validation == 0
         assert result.queue_wait == 0
 
     def test_overall_compile_is_zero(self):
@@ -166,7 +165,7 @@ class TestOverallCompileProperty:
         assert result.queue_wait == 500
         assert result.overall_compile == 700
 
-    def test_global_and_deferred_are_included(self):
+    def test_global_validation_is_included(self):
         tracker = _make_tracker([100])
         with patch.object(
             time,
@@ -180,7 +179,6 @@ class TestOverallCompileProperty:
             tracker.mark_file_validation_finished()
         result = tracker.build()
         result.global_validation = 23
-        result.deferred_validation = 17
         result.queue_wait = 100
 
-        assert result.overall_compile == 740
+        assert result.overall_compile == 723

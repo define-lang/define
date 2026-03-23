@@ -104,7 +104,6 @@ class ProgramStructuralValidator:
     _action_call_graph: action_call_graph.ActionCallGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
-    _definition_owners: dict[int, validation_result.FileValidationResult]
     _config_loading_time_ns: int
 
     def __init__(self):
@@ -116,7 +115,6 @@ class ProgramStructuralValidator:
         self._action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._definition_results = {}
-        self._definition_owners = {}
         self._config_loading_time_ns = 0
 
     @cached_property
@@ -255,7 +253,6 @@ class ProgramStructuralValidator:
         definition_result: validation_result.DefinitionValidationResult,
     ):
         """Handle one completed definition from a file result."""
-        self._definition_owners[id(definition_result)] = result
         name = definition_result.definition.typed_name.full_typed_name()
         # FileStructuralValidator preserves duplicate definitions in source order so
         # the later ones can still return diagnostics. Originally, I tried
@@ -505,23 +502,6 @@ class ProgramStructuralValidator:
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Validate a reference edge against a completed target file's result."""
-        started_at = time.perf_counter_ns()
-        self._do_validate_reference_against_target(
-            edge=edge,
-            target_file=target_file,
-            target_result=target_result,
-            source_definition=source_definition,
-        )
-        self._record_deferred_validation_time(source_definition, started_at)
-
-    def _do_validate_reference_against_target(
-        self,
-        edge: reference_graph.ReferenceEdge,
-        target_file: pathlib.PurePosixPath,
-        target_result: validation_result.FileValidationResult,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        """Apply reference-target validation checks without timing side effects."""
         global_name = edge.global_name_reference.name_content
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
@@ -603,18 +583,6 @@ class ProgramStructuralValidator:
             if definition_result.discovered_files:
                 return definition_result.discovered_files[0]
         return None
-
-    def _record_deferred_validation_time(
-        self,
-        definition_result: validation_result.DefinitionValidationResult,
-        started_at: int,
-    ):
-        """Add deferred-validation time to the file that owns a definition."""
-        self._definition_owners[
-            id(definition_result)
-        ].stats.deferred_validation += (  # pragma: no mutate
-            time.perf_counter_ns() - started_at
-        )
 
     # TODO: This should probably return a Config object.
     def _load_root_config(

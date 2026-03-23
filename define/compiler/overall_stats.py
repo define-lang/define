@@ -30,7 +30,6 @@ class OverallStats:
     transform: int = 0
     file_validation: int = 0
     global_validation: int = 0
-    deferred_validation: int = 0
     avg_queue_wait: int = 0
     max_queue_wait: int = 0
     overall_compile: int = 0
@@ -51,7 +50,6 @@ def calculate_overall_stats(
         s.transform += fs.transform
         s.file_validation += fs.file_validation
         s.global_validation += fs.global_validation
-        s.deferred_validation += fs.deferred_validation
         total_queue_wait += fs.queue_wait
         if fs.queue_wait > s.max_queue_wait:
             s.max_queue_wait = fs.queue_wait
@@ -59,12 +57,7 @@ def calculate_overall_stats(
     s.file_count = len(results)
     s.avg_queue_wait = total_queue_wait // s.file_count if s.file_count > 0 else 0
     s.overall_compile = (
-        s.file_loading
-        + s.parse
-        + s.transform
-        + s.file_validation
-        + s.global_validation
-        + s.deferred_validation
+        s.file_loading + s.parse + s.transform + s.file_validation + s.global_validation
     )
     return s
 
@@ -112,7 +105,6 @@ def _format_breakdown_section(stats: OverallStats) -> str:
             ("Transform", format_ns(stats.transform)),
             ("File validation", format_ns(stats.file_validation)),
             ("Global validation", format_ns(stats.global_validation)),
-            ("Deferred validation", format_ns(stats.deferred_validation)),
         ],
     )
 
@@ -135,7 +127,6 @@ def _format_per_file_section(
             ("Transform", format_ns(s.transform)),
             ("File validation", format_ns(s.file_validation)),
             ("Global validation", format_ns(s.global_validation)),
-            ("Deferred validation", format_ns(s.deferred_validation)),
             ("Queue wait", format_ns(s.queue_wait)),
         ]
         max_label_width = max(len(label) for label, _ in file_rows)
