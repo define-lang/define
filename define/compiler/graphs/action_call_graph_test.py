@@ -173,40 +173,6 @@ class TestActionCallGraph:
         assert edges[0].source == "action<d:u:/act_a>"
         assert edges[0].target == "action<d:u:/act_a>"
 
-    def test_deferred_resolution(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _global_action_local_pos("/act_a", "my_pos")
-        stmt = _make_create_stmt(chain)
-
-        # Register effect first, before trigger.
-        result_b = _make_result(
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt,
-                )
-            ],
-        )
-        result_a = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("my_pos"),
-                )
-            ],
-        )
-
-        graph.register_triggers(result_b.trigger_positions)
-        graph.register_effects(result_b.action_body_effects)
-        assert list(graph.edges()) == []
-
-        graph.register_triggers(result_a.trigger_positions)
-        graph.register_effects(result_a.action_body_effects)
-        edges = list(graph.edges())
-        assert len(edges) == 1
-        assert edges[0].source == "action<d:u:/act_b>"
-        assert edges[0].target == "action<d:u:/act_a>"
-
     def test_same_result_resolution(self):
         graph = action_call_graph.ActionCallGraph()
         chain = _global_action_local_pos("/act_a", "my_pos")

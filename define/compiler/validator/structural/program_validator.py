@@ -257,7 +257,6 @@ class ProgramStructuralValidator:
             return
         self._definition_results[name] = definition_result
         self._reference_graph.add_definition(definition_result.definition)
-        self._action_call_graph.register_triggers(definition_result.trigger_positions)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
     def _submit_discovered_files(
@@ -578,6 +577,9 @@ class ProgramStructuralValidator:
             # not found or had a syntax error that prevented processing.
             if definition_result is None:
                 continue
+            self._action_call_graph.register_triggers(
+                definition_result.trigger_positions
+            )
             analyzer = definition_postorder_validator.DefinitionPostorderValidator(
                 definition_result, self._definition_results
             )
