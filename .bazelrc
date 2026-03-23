@@ -36,7 +36,9 @@ common --incompatible_stop_exporting_language_modules
 common --incompatible_strip_executable_safely
 common --incompatible_use_cc_configure_from_rules_cc
 common --experimental_bzl_visibility
-common --experimental_strict_repo_env
+# Uncomment when ape module supports strict repo env on macOS.
+# https://gitlab.arm.com/bazel/ape/-/issues/17
+# common --experimental_strict_repo_env
 
 # Set default uv venv for aspect_rules_py package resolution
 build --@pypi//venv=dev
