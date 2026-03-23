@@ -9,14 +9,24 @@ test --test_summary=terse
 common --incompatible_check_testonly_for_output_files
 common --incompatible_config_setting_private_default_visibility
 common --incompatible_default_to_explicit_init_py
+common --incompatible_disable_starlark_host_transitions
 common --incompatible_enforce_starlark_utf8=error
+# Uncomment when protobuf stops using default provider fields.
+# https://github.com/bazelbuild/bazel/issues/20183
+# common --incompatible_disable_target_default_provider_fields
 common --incompatible_no_implicit_file_export
+# Uncomment when rules_cc stops using the deprecated outputs parameter in rule().
+# https://github.com/bazelbuild/rules_cc/issues/602
+# common --incompatible_no_rule_outputs_param
 common --incompatible_python_disallow_native_rules
+common --incompatible_resolve_select_keys_eagerly
 # Uncomment when rules_diff (aspect_rules_lint transitive dep) supports it.
 # https://gitlab.arm.com/bazel/rules_diff/-/issues/3
 # common --incompatible_stop_exporting_build_file_path
 common --incompatible_stop_exporting_language_modules
-common --incompatible_resolve_select_keys_eagerly
+common --incompatible_use_cc_configure_from_rules_cc
+common --experimental_bzl_visibility
+common --experimental_strict_repo_env
 
 # Set default uv venv for aspect_rules_py package resolution
 build --@pypi//venv=dev
