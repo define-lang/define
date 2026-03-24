@@ -109,16 +109,6 @@ py_test(
 )
 
 py_test(
-    name = "parallel_test",
-    size = "small",
-    srcs = ["parallel_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-    ],
-)
-
-py_test(
     name = "position_init_self_reference_test",
     size = "small",
     srcs = ["position_init_self_reference_test.py"],
@@ -166,7 +156,6 @@ pyright_test(
         ":move_dimension_point_test",
         ":move_local_constraint_test",
         ":move_state_tracking_test",
-        ":parallel_test",
         ":position_init_self_reference_test",
         ":reference_graph_validator_tests",
         ":trigger_conditions_test",

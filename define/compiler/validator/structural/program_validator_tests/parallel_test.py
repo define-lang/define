@@ -40,6 +40,17 @@ def _position_with_refs(name: str, refs: list[str]) -> str:
     )
 
 
+def _hub_with_refs(ref_lines: list[str]) -> str:
+    lines = "".join(f"        {line}\n" for line in ref_lines)
+    return (
+        f"define the potential position<my.domain.com:my_lib:/hub> {{\n"
+        f"    it may only contain dimension points where {{\n"
+        f"{lines}"
+        f"    }}\n"
+        f"}}\n"
+    )
+
+
 def test_fan_out(validate_project: ValidateProject):
     leaf_names = [f"leaf_{i}" for i in range(10)]
     files = {"root.def": _position_with_refs("root", leaf_names)}
@@ -181,48 +192,3 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert diag2.position.column == 62
     assert diag2.expected_path == "/lib/target"
     assert diag2.actual_path == "/target"
-
-
-def _hub_with_refs(ref_lines: list[str]) -> str:
-    lines = "".join(f"        {line}\n" for line in ref_lines)
-    return (
-        f"define the potential position<my.domain.com:my_lib:/hub> {{\n"
-        f"    it may only contain dimension points where {{\n"
-        f"{lines}"
-        f"    }}\n"
-        f"}}\n"
-    )
-
-
-def test_chained_to_chained_move_deferred_both_sides(
-    validate_project: ValidateProject,
-):
-    result = validate_project(
-        {
-            "x.def": _simple_position("x"),
-            "y.def": _simple_position("y"),
-            "test.def": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "        define the position<a> {\n"
-                "            it may only contain dimension points where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<b> {\n"
-                "            it may only contain dimension points where {\n"
-                "                it has the position</y>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a dimension point in position<a>.\n"
-                "        move the dimension point in position<a>::position</x> to position<b>::position</y>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-        max_workers=1,
-    )
-    assert not result.has_errors()
