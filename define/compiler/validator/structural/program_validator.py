@@ -106,8 +106,6 @@ class ProgramStructuralValidator:
 
     def __init__(self):
         """Initialize coordinator state for one program validation."""
-        # TODO: A lot of this is starting to feel like complexity that
-        # should be abstracted behind something larger.
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
