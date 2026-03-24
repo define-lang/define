@@ -21,6 +21,12 @@ basedpyright_bin.basedpyright_binary(
     visibility = ["//:__subpackages__"],
 )
 
+basedpyright_bin.basedpyright_langserver_binary(
+    name = "basedpyright-langserver",
+    chdir = package_name(),
+    visibility = ["//:__subpackages__"],
+)
+
 # --- Lock file management ---
 
 native_binary(

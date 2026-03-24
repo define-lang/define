@@ -109,6 +109,12 @@ native_test(
 )
 
 native_binary(
+    name = "basedpyright_langserver_sh",
+    src = "basedpyright-langserver.sh",
+    data = ["//:basedpyright-langserver"],
+)
+
+native_binary(
     name = "update_lock",
     src = "update_lock.sh",
     out = "update_lock_runner",

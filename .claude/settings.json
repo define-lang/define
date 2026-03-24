@@ -1,23 +1,5 @@
 {
   "permissions": {
-    "ask": [
-      "Bash(git checkout*)",
-      "Bash(git commit*)",
-      "Bash(git push*)",
-      "Bash(git reset)"
-    ],
-    "deny": [
-      "Bash(pip *)",
-      "Bash(pip3 *)",
-      "Bash(pipx *)",
-      "Bash(python -m pip *)",
-      "Bash(uv run pip *)",
-      "Bash(uv run pip3 *)",
-      "Bash(uv run pipx *)",
-      "Bash(uv run python -m pip *)",
-      "Bash(uv run python -m pip3 *)",
-      "Bash(uv run python -m pipx *)"
-    ],
     "allow": [
       "Read(~/.cache/bazel/**)",
       "WebSearch",
@@ -67,6 +49,35 @@
       "Bash(uv run tools/setup_local_dev.py)",
       "Bash(uv run mutmut *)",
       "Bash(bazelisk *)"
+    ],
+    "deny": [
+      "Bash(pip *)",
+      "Bash(pip3 *)",
+      "Bash(pipx *)",
+      "Bash(python -m pip *)",
+      "Bash(uv run pip *)",
+      "Bash(uv run pip3 *)",
+      "Bash(uv run pipx *)",
+      "Bash(uv run python -m pip *)",
+      "Bash(uv run python -m pip3 *)",
+      "Bash(uv run python -m pipx *)"
+    ],
+    "ask": [
+      "Bash(git checkout*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git reset)"
     ]
+  },
+  "enabledPlugins": {
+    "bazel-basedpyright-lsp@define-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "define-plugins": {
+      "source": {
+        "source": "directory",
+        "path": "./claude-plugins"
+      }
+    }
   }
 }

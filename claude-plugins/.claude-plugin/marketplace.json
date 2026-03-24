@@ -1,0 +1,15 @@
+{
+  "name": "define-plugins",
+  "description": "Claude Code plugins for the Define project",
+  "owner": {
+    "name": "Define Project"
+  },
+  "plugins": [
+    {
+      "name": "bazel-basedpyright-lsp",
+      "description": "Hermetic basedpyright language server via Bazel for code intelligence",
+      "version": "1.0.0",
+      "source": "./bazel-basedpyright-lsp"
+    }
+  ]
+}

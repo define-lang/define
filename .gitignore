@@ -5,7 +5,7 @@
 /buf/
 
 # Bazel
-bazel-*
+/bazel-*
 
 # Define compiler output
 define-out/
