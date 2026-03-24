@@ -25,9 +25,8 @@ from define.compiler import (
     exceptions,
     parser,
 )
-from define.compiler.graphs import action_call_graph, reference_graph
+from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, validation_result
-from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import file_validator, path_tracker
 
 
@@ -101,7 +100,6 @@ class ProgramStructuralValidator:
 
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
-    _action_call_graph: action_call_graph.ActionCallGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _config_loading_time_ns: int
@@ -112,7 +110,6 @@ class ProgramStructuralValidator:
         # should be abstracted behind something larger.
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
-        self._action_call_graph = action_call_graph.ActionCallGraph()
         self._deferred_edges = {}
         self._definition_results = {}
         self._config_loading_time_ns = 0
@@ -150,10 +147,6 @@ class ProgramStructuralValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        self._action_call_graph = reference_graph_validator.ReferenceGraphValidator(
-            self._reference_graph,
-            self._definition_results,
-        ).validate()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
@@ -177,19 +170,11 @@ class ProgramStructuralValidator:
         # discovery is conditional on config success.
         if not self._resolve_non_filesystem_discovered_files(result):
             self._register_definitions(result)
-            self._action_call_graph = reference_graph_validator.ReferenceGraphValidator(
-                self._reference_graph,
-                self._definition_results,
-            ).validate()
             return self._build_program_result(self._path_tracker.completed_results())
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
             self._run_pool_loop(pool)
-        self._action_call_graph = reference_graph_validator.ReferenceGraphValidator(
-            self._reference_graph,
-            self._definition_results,
-        ).validate()
         return self._build_program_result(self._path_tracker.completed_results())
 
     def _build_program_result(
@@ -199,9 +184,9 @@ class ProgramStructuralValidator:
         """Wrap file results into a ProgramValidationResult."""
         return validation_result.ProgramValidationResult(
             file_results=file_results,
-            action_call_graph=self._action_call_graph,
             config_loading_time_ns=self._config_loading_time_ns,
             reference_graph=self._reference_graph,
+            definition_results=self._definition_results,
         )
 
     def _run_pool_loop(

@@ -10,8 +10,8 @@ import pytest
 
 from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import ValidateProject
+from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.structural.program_validator_tests import test_helpers
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
 _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"

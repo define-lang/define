@@ -40,9 +40,11 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":diagnostics",
+        "//define/compiler/graphs:action_call_graph",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
-        "//define/compiler/validator/structural/program_validator_tests:test_helpers",
         "@pypi//pytest",
     ],
 )
@@ -120,6 +122,7 @@ py_library(
         ":overall_stats",
         "//define/compiler/codegen:generator",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
     ],
 )

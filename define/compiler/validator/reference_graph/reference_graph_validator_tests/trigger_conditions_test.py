@@ -1,11 +1,16 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
-from define.compiler.validator.structural import program_validator
+from define.compiler.conftest import (
+    ValidateNonFilesystemWithReferenceGraph,
+    ValidateProjectWithReferenceGraph,
+)
 
 
 class TestTriggerConditionValidation:
-    def test_valid_local_name(self):
+    def test_valid_local_name(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<my_pos>.\n"
@@ -17,15 +22,14 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert diags == []
 
-    def test_undefined_local_name(self):
+    def test_undefined_local_name(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it happens when {\n"
@@ -36,11 +40,7 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -48,8 +48,11 @@ class TestTriggerConditionValidation:
         assert diags[0].position.line == 3
         assert diags[0].position.column == 22
 
-    def test_valid_global_name(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_valid_global_name(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -64,9 +67,12 @@ class TestTriggerConditionValidation:
                 "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
-    def test_invalid_local_name_format(self):
+    def test_invalid_local_name_format(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it happens when {\n"
@@ -77,11 +83,7 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -94,8 +96,11 @@ class TestTriggerConditionValidation:
         assert diags[1].position.line == 3
         assert diags[1].position.column == 22
 
-    def test_two_item_chain(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_two_item_chain(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -115,9 +120,12 @@ class TestTriggerConditionValidation:
                 "inner.def": "define the potential position<my.domain.com:my_lib:/inner>.\n",
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
-    def test_chain_ending_with_action(self):
+    def test_chain_ending_with_action(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a>.\n"
@@ -129,11 +137,7 @@ class TestTriggerConditionValidation:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
@@ -155,8 +159,10 @@ class TestTriggerConditionValidation:
         assert diags[3].position.line == 4
         assert diags[3].position.column == 37
 
-    def test_three_item_chain_valid(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_three_item_chain_valid(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -183,10 +189,12 @@ class TestTriggerConditionValidation:
                 "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
-    def test_three_item_chain_invalid(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_three_item_chain_invalid(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -214,7 +222,7 @@ class TestTriggerConditionValidation:
                 "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic

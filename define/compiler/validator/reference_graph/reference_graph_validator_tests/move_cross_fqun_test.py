@@ -1,16 +1,15 @@
 # pyright: reportUnusedCallResult=false
 
-from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
+from define.compiler import conftest, diagnostics
 
 _PARENT = "mv:define-lang.org:parent"
 _CHILD = "mv:define-lang.org:child"
 
 
 def test_cross_fqun_local_to_local_satisfies(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/x.def": f"define the potential position<{_CHILD}:/x>.\n",
             "test.def": (
@@ -39,13 +38,13 @@ def test_cross_fqun_local_to_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_cross_fqun_local_to_local_violates(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/x.def": f"define the potential position<{_CHILD}:/x>.\n",
             "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
@@ -75,7 +74,7 @@ def test_cross_fqun_local_to_local_violates(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -84,9 +83,9 @@ def test_cross_fqun_local_to_local_violates(
 
 
 def test_cross_fqun_local_to_chained_satisfies(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/x.def": (
                 f"define the potential position<{_CHILD}:/x> {{\n"
@@ -122,13 +121,13 @@ def test_cross_fqun_local_to_chained_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_cross_fqun_local_to_chained_violates(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/x.def": (
                 f"define the potential position<{_CHILD}:/x> {{\n"
@@ -160,7 +159,7 @@ def test_cross_fqun_local_to_chained_violates(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -169,9 +168,9 @@ def test_cross_fqun_local_to_chained_violates(
 
 
 def test_cross_fqun_chained_to_local_satisfies(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/x.def": (
                 f"define the potential position<{_CHILD}:/x> {{\n"
@@ -207,13 +206,13 @@ def test_cross_fqun_chained_to_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_cross_fqun_chained_to_local_violates(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/x.def": f"define the potential position<{_CHILD}:/x>.\n",
             "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
@@ -243,7 +242,7 @@ def test_cross_fqun_chained_to_local_violates(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -252,9 +251,9 @@ def test_cross_fqun_chained_to_local_violates(
 
 
 def test_cross_fqun_move_to_chained_action_local_satisfies(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
             "lib/act.def": (
@@ -293,13 +292,13 @@ def test_cross_fqun_move_to_chained_action_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_cross_fqun_move_to_chained_action_local_violates(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
             "lib/act.def": (
@@ -334,7 +333,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -343,9 +342,9 @@ def test_cross_fqun_move_to_chained_action_local_violates(
 
 
 def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
             "lib/act.def": (
@@ -385,7 +384,7 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
     assert all_diags[0].element_name == "position<no_such>"

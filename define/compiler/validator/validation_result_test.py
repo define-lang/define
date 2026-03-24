@@ -7,9 +7,9 @@ import pytest
 
 from define.compiler import ast, parser, transformer
 from define.compiler.graphs import reference_graph
-from define.compiler.validator import stats, validation_result
+from define.compiler.validator import stats, test_helpers, validation_result
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.structural.program_validator_tests import test_helpers
 
 _FQUN = "my.domain.com:my_lib"
 
@@ -23,13 +23,15 @@ def _validate_single_file(
     (tmp_path / relative_path).write_text(source, encoding="utf-8")
     test_helpers.write_project_config(tmp_path, _FQUN)
     monkeypatch.chdir(tmp_path)
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program(relative_path)
-        .file_results
+    program_result = program_validator.ProgramStructuralValidator().validate_program(
+        relative_path
     )
-    assert len(results) == 1
-    return results[0]
+    reference_graph_validator.ReferenceGraphValidator(
+        program_result.reference_graph,
+        program_result.definition_results,
+    ).validate()
+    assert len(program_result.file_results) == 1
+    return program_result.file_results[0]
 
 
 def _parse(source: str) -> validation_result.FileValidationResult:

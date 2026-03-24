@@ -1,0 +1,175 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_test(
+    name = "action_triggering_test",
+    size = "small",
+    srcs = ["action_triggering_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "chained_name_test",
+    size = "small",
+    srcs = ["chained_name_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "create_dimension_point_test",
+    size = "small",
+    srcs = ["create_dimension_point_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "dimension_point_conflict_test",
+    size = "small",
+    srcs = ["dimension_point_conflict_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "error_messages_test",
+    size = "small",
+    srcs = ["error_messages_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "move_chained_constraint_test",
+    size = "small",
+    srcs = ["move_chained_constraint_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "move_cross_fqun_test",
+    size = "small",
+    srcs = ["move_cross_fqun_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "move_dimension_point_test",
+    size = "small",
+    srcs = ["move_dimension_point_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "move_local_constraint_test",
+    size = "small",
+    srcs = ["move_local_constraint_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "move_state_tracking_test",
+    size = "small",
+    srcs = ["move_state_tracking_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "parallel_test",
+    size = "small",
+    srcs = ["parallel_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "position_init_self_reference_test",
+    size = "small",
+    srcs = ["position_init_self_reference_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_library(
+    name = "reference_graph_validator_tests",
+    srcs = ["__init__.py"],
+)
+
+py_test(
+    name = "trigger_conditions_test",
+    size = "small",
+    srcs = ["trigger_conditions_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":action_triggering_test",
+        ":chained_name_test",
+        ":create_dimension_point_test",
+        ":dimension_point_conflict_test",
+        ":error_messages_test",
+        ":move_chained_constraint_test",
+        ":move_cross_fqun_test",
+        ":move_dimension_point_test",
+        ":move_local_constraint_test",
+        ":move_state_tracking_test",
+        ":parallel_test",
+        ":position_init_self_reference_test",
+        ":reference_graph_validator_tests",
+        ":trigger_conditions_test",
+        "//define/compiler:conftest",
+    ],
+)

@@ -7,12 +7,17 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
-from define.compiler.validator.structural import program_validator
+from define.compiler.conftest import (
+    ValidateNonFilesystemWithReferenceGraph,
+    ValidateProjectWithReferenceGraph,
+)
 
 
 class TestCreateDimensionPoint:
-    def test_invalid_local_name_char(self):
+    def test_invalid_local_name_char(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<inner_pos>.\n"
@@ -23,11 +28,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(
@@ -48,7 +49,10 @@ class TestCreateDimensionPoint:
         assert diags[2].position.line == 6
         assert diags[2].position.column == 67
 
-    def test_chain_both_endpoints_action(self):
+    def test_chain_both_endpoints_action(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -59,11 +63,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 6
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -96,7 +96,10 @@ class TestCreateDimensionPoint:
         assert diags[5].position.line == 6
         assert diags[5].position.column == 78
 
-    def test_chain_ending_with_action(self):
+    def test_chain_ending_with_action(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a>.\n"
@@ -107,11 +110,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
@@ -134,7 +133,10 @@ class TestCreateDimensionPoint:
         assert diags[3].position.line == 6
         assert diags[3].position.column == 61
 
-    def test_chain_starting_with_action(self):
+    def test_chain_starting_with_action(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -145,11 +147,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -168,7 +166,10 @@ class TestCreateDimensionPoint:
         assert diags[2].position.line == 6
         assert diags[2].position.column == 52
 
-    def test_local_action_name_does_not_match_position(self):
+    def test_local_action_name_does_not_match_position(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<a>.\n"
@@ -179,11 +180,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -202,7 +199,10 @@ class TestCreateDimensionPoint:
         assert diags[2].position.line == 6
         assert diags[2].position.column == 48
 
-    def test_name_error_with_chain_endpoint_check(self):
+    def test_name_error_with_chain_endpoint_check(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -213,11 +213,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -237,8 +233,10 @@ class TestCreateDimensionPoint:
         assert diags[2].position.line == 6
         assert diags[2].position.column == 50
 
-    def test_valid_chain_with_action_in_middle(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_valid_chain_with_action_in_middle(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -267,9 +265,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
-    def test_chain_second_element_not_in_constraints(self):
+    def test_chain_second_element_not_in_constraints(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
@@ -284,11 +285,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 5
         assert isinstance(
@@ -322,9 +319,9 @@ class TestCreateDimensionPoint:
         assert diags[4].position.column == 31
 
     def test_chain_second_element_global_not_in_constraints(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -364,7 +361,7 @@ class TestCreateDimensionPoint:
                 ),
             },
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -372,7 +369,10 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<x>"
 
-    def test_chain_second_element_position_has_no_constraints(self):
+    def test_chain_second_element_position_has_no_constraints(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a>.\n"
@@ -383,11 +383,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(
@@ -415,9 +411,9 @@ class TestCreateDimensionPoint:
         assert diags[3].position.column == 69
 
     def test_chain_second_element_matches_constraint(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -446,12 +442,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
     def test_duplicate_definition_preserves_first_constraints(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -481,7 +477,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert all_diags[0].local_name == "pos_a"
@@ -490,9 +486,9 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 25
 
     def test_duplicate_source_definition_does_not_add_chain_diagnostics(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -530,7 +526,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
         assert all_diags[0].definition_type == "action"
@@ -539,7 +535,10 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.line == 10
         assert all_diags[0].position.column == 1
 
-    def test_chain_second_element_wrong_type_in_constraints(self):
+    def test_chain_second_element_wrong_type_in_constraints(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
@@ -554,11 +553,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 5
         assert isinstance(
@@ -591,7 +586,10 @@ class TestCreateDimensionPoint:
         assert diags[4].position.line == 4
         assert diags[4].position.column == 33
 
-    def test_chain_second_element_skipped_when_first_undefined(self):
+    def test_chain_second_element_skipped_when_first_undefined(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -602,11 +600,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -632,7 +626,10 @@ class TestCreateDimensionPoint:
         assert diags[3].position.line == 6
         assert diags[3].position.column == 71
 
-    def test_chain_second_element_name_error_also_not_in_constraints(self):
+    def test_chain_second_element_name_error_also_not_in_constraints(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
@@ -647,11 +644,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 5
         assert isinstance(
@@ -686,9 +679,10 @@ class TestCreateDimensionPoint:
         assert diags[4].position.column == 31
 
     def test_chained_local_after_short_form_global_position(
-        self, validate_project: ValidateProject
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -703,7 +697,7 @@ class TestCreateDimensionPoint:
                 "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             },
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
@@ -711,7 +705,10 @@ class TestCreateDimensionPoint:
         assert all_diags[0].local_name == "position<local>"
         assert all_diags[0].preceding_name == "position<my.domain.com:my_lib:/other>"
 
-    def test_undefined_local_position_in_chain(self):
+    def test_undefined_local_position_in_chain(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -722,11 +719,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -753,9 +746,9 @@ class TestCreateDimensionPoint:
         assert diags[3].position.column == 70
 
     def test_chain_third_element_in_position_constraints(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -781,12 +774,12 @@ class TestCreateDimensionPoint:
                 "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
     def test_chain_third_element_not_in_position_constraints(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -813,7 +806,7 @@ class TestCreateDimensionPoint:
                 "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -824,9 +817,9 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 72
 
     def test_chain_third_element_position_no_constraints(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -846,7 +839,7 @@ class TestCreateDimensionPoint:
                 "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -856,8 +849,10 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.line == 10
         assert all_diags[0].position.column == 72
 
-    def test_chain_element_inside_action_valid(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_chain_element_inside_action_valid(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -886,12 +881,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
     def test_chain_element_inside_action_not_found(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -920,7 +915,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
         assert all_diags[0].element_name == "position<no_such>"
@@ -929,9 +924,9 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.column == 70
 
     def test_chain_element_inside_action_no_block(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -950,7 +945,7 @@ class TestCreateDimensionPoint:
                 "act_b.def": "define the potential action<my.domain.com:my_lib:/act_b>.\n",
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
         assert all_diags[0].element_name == "position<pos_c>"
@@ -958,8 +953,10 @@ class TestCreateDimensionPoint:
         assert all_diags[0].position.line == 10
         assert all_diags[0].position.column == 70
 
-    def test_five_element_alternating_chain(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_five_element_alternating_chain(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1003,12 +1000,12 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
     def test_four_element_chain_through_positions(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1041,9 +1038,12 @@ class TestCreateDimensionPoint:
                 "pos_d.def": "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
-    def test_chain_third_element_skipped_when_second_fails(self):
+    def test_chain_third_element_skipped_when_second_fails(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
@@ -1058,11 +1058,7 @@ class TestCreateDimensionPoint:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 5
         assert isinstance(
@@ -1096,9 +1092,9 @@ class TestCreateDimensionPoint:
         assert diags[4].position.column == 31
 
     def test_chain_action_cannot_contain_action(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1140,7 +1136,9 @@ class TestCreateDimensionPoint:
             }
         )
         test_result = next(
-            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+            r
+            for r in result.program_result.file_results
+            if r.file_path == PurePosixPath("test.def")
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.ChainElementNotInActionDiagnostic,
@@ -1152,8 +1150,10 @@ class TestCreateDimensionPoint:
         assert diag.position.line == 10
         assert diag.position.column == 64
 
-    def test_chain_action_then_action_short(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_chain_action_then_action_short(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1185,7 +1185,9 @@ class TestCreateDimensionPoint:
             }
         )
         test_result = next(
-            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+            r
+            for r in result.program_result.file_results
+            if r.file_path == PurePosixPath("test.def")
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.PositionReferenceChainEndDiagnostic,
@@ -1204,8 +1206,10 @@ class TestCreateDimensionPoint:
 
 
 class TestMoveDimensionPoint:
-    def test_chain_ending_with_action_in_from(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_chain_ending_with_action_in_from(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1237,7 +1241,9 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+            r
+            for r in result.program_result.file_results
+            if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1245,8 +1251,10 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_chain_ending_with_action_in_to(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_chain_ending_with_action_in_to(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1278,7 +1286,9 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+            r
+            for r in result.program_result.file_results
+            if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1286,8 +1296,10 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_single_action_in_from_position(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_single_action_in_from_position(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1315,7 +1327,9 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+            r
+            for r in result.program_result.file_results
+            if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1323,8 +1337,10 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_single_action_in_to_position(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_single_action_in_to_position(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1351,7 +1367,9 @@ class TestMoveDimensionPoint:
             }
         )
         test_result = next(
-            r for r in result.file_results if r.file_path == PurePosixPath("test.def")
+            r
+            for r in result.program_result.file_results
+            if r.file_path == PurePosixPath("test.def")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1359,8 +1377,10 @@ class TestMoveDimensionPoint:
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
-    def test_valid_chained_through_action(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_valid_chained_through_action(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1394,10 +1414,12 @@ class TestMoveDimensionPoint:
                 ),
             }
         )
-        assert not result.has_errors()
+        assert not result.program_result.has_errors()
 
-    def test_chain_not_in_constraints(self, validate_project: ValidateProject):
-        result = validate_project(
+    def test_chain_not_in_constraints(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1427,7 +1449,7 @@ class TestMoveDimensionPoint:
                 "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
-        all_diags = result.all_diagnostics
+        all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
@@ -1436,7 +1458,10 @@ class TestMoveDimensionPoint:
 
 
 class TestUnnecessarySelfReference:
-    def test_self_reference_in_chain(self):
+    def test_self_reference_in_chain(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
@@ -1448,11 +1473,7 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
@@ -1462,7 +1483,10 @@ class TestUnnecessarySelfReference:
             " because the code is already inside that definition"
         )
 
-    def test_self_reference_still_validates_remaining_chain(self):
+    def test_self_reference_still_validates_remaining_chain(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<inner>.\n"
@@ -1473,11 +1497,7 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
@@ -1485,7 +1505,10 @@ class TestUnnecessarySelfReference:
         assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[2].local_name == "Bad"
 
-    def test_self_reference_removal_affects_downstream_validation(self):
+    def test_self_reference_removal_affects_downstream_validation(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<trigger_pos>.\n"
@@ -1498,17 +1521,16 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert isinstance(diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
 
-    def test_single_element_self_reference_not_stripped(self):
+    def test_single_element_self_reference_not_stripped(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<trigger_pos>.\n"
@@ -1519,11 +1541,7 @@ class TestUnnecessarySelfReference:
             "    }\n"
             "}\n"
         )
-        results = (
-            program_validator.ProgramStructuralValidator()
-            .validate_program_non_filesystem(source)
-            .file_results
-        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
@@ -1532,9 +1550,9 @@ class TestUnnecessarySelfReference:
 
 class TestChainActionValidation:
     def test_local_action_name_after_action_rejected(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1564,37 +1582,47 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(result.file_results) == 2
-        assert result.file_results[0].file_path == PurePosixPath("test.def")
-        assert result.file_results[1].file_path == PurePosixPath("a.def")
-        assert list(result.file_results[1].diagnostics) == []
-        assert len(result.file_results[0].diagnostics) == 3
+        assert len(result.program_result.file_results) == 2
+        assert result.program_result.file_results[0].file_path == PurePosixPath(
+            "test.def"
+        )
+        assert result.program_result.file_results[1].file_path == PurePosixPath("a.def")
+        assert list(result.program_result.file_results[1].diagnostics) == []
+        assert len(result.program_result.file_results[0].diagnostics) == 3
         assert isinstance(
-            result.file_results[0].diagnostics[0],
+            result.program_result.file_results[0].diagnostics[0],
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
-        assert result.file_results[0].diagnostics[0].position.line == 10
-        assert result.file_results[0].diagnostics[0].position.column == 62
+        assert result.program_result.file_results[0].diagnostics[0].position.line == 10
+        assert (
+            result.program_result.file_results[0].diagnostics[0].position.column == 62
+        )
         assert isinstance(
-            result.file_results[0].diagnostics[1],
+            result.program_result.file_results[0].diagnostics[1],
             diagnostics.ChainElementNotInActionDiagnostic,
         )
-        assert result.file_results[0].diagnostics[1].element_name == "action<bad>"
         assert (
-            result.file_results[0].diagnostics[1].parent_name
+            result.program_result.file_results[0].diagnostics[1].element_name
+            == "action<bad>"
+        )
+        assert (
+            result.program_result.file_results[0].diagnostics[1].parent_name
             == "action<my.domain.com:my_lib:/a>"
         )
-        assert result.file_results[0].diagnostics[1].position.line == 10
-        assert result.file_results[0].diagnostics[1].position.column == 62
-        assert isinstance(
-            result.file_results[0].diagnostics[2], diagnostics.LocalActionNameDiagnostic
+        assert result.program_result.file_results[0].diagnostics[1].position.line == 10
+        assert (
+            result.program_result.file_results[0].diagnostics[1].position.column == 62
         )
-        assert result.file_results[0].diagnostics[2].local_name == "bad"
+        assert isinstance(
+            result.program_result.file_results[0].diagnostics[2],
+            diagnostics.LocalActionNameDiagnostic,
+        )
+        assert result.program_result.file_results[0].diagnostics[2].local_name == "bad"
 
     def test_chain_through_action_with_constrained_local_position(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1630,20 +1658,24 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(result.file_results) == 4
-        assert result.file_results[0].file_path == PurePosixPath("test.def")
-        assert len(result.file_results[0].diagnostics) == 1
-        diag = result.file_results[0].diagnostics[0]
+        assert len(result.program_result.file_results) == 4
+        assert result.program_result.file_results[0].file_path == PurePosixPath(
+            "test.def"
+        )
+        assert len(result.program_result.file_results[0].diagnostics) == 1
+        diag = result.program_result.file_results[0].diagnostics[0]
         assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
         assert diag.element_name == "position<my.domain.com:my_lib:/wrong>"
         assert diag.parent_name == "position<inner>"
         assert diag.position.line == 10
-        assert all(len(r.diagnostics) == 0 for r in result.file_results[1:])
+        assert all(
+            len(r.diagnostics) == 0 for r in result.program_result.file_results[1:]
+        )
 
     def test_chain_through_action_valid_continuation(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1678,13 +1710,13 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(result.file_results) == 3
-        assert all(len(r.diagnostics) == 0 for r in result.file_results)
+        assert len(result.program_result.file_results) == 3
+        assert all(len(r.diagnostics) == 0 for r in result.program_result.file_results)
 
     def test_deferred_chain_continuation_through_action_produces_error(
-        self, validate_project: ValidateProject
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
-        result = validate_project(
+        result = validate_project_with_reference_graph(
             {
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -1727,11 +1759,15 @@ class TestChainActionValidation:
             },
             max_workers=1,
         )
-        assert len(result.file_results) == 5
-        assert result.file_results[0].file_path == PurePosixPath("test.def")
-        assert len(result.file_results[0].diagnostics) == 1
-        diag = result.file_results[0].diagnostics[0]
+        assert len(result.program_result.file_results) == 5
+        assert result.program_result.file_results[0].file_path == PurePosixPath(
+            "test.def"
+        )
+        assert len(result.program_result.file_results[0].diagnostics) == 1
+        diag = result.program_result.file_results[0].diagnostics[0]
         assert isinstance(diag, diagnostics.ChainElementNotInConstraintsDiagnostic)
         assert diag.element_name == "position<my.domain.com:my_lib:/leaf>"
         assert diag.parent_name == "position<my.domain.com:my_lib:/target>"
-        assert all(len(r.diagnostics) == 0 for r in result.file_results[1:])
+        assert all(
+            len(r.diagnostics) == 0 for r in result.program_result.file_results[1:]
+        )

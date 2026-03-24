@@ -99,11 +99,9 @@ py_library(
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler:parser",
-        "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
     ],
 )
 

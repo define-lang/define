@@ -115,9 +115,9 @@ class ProgramValidationResult:
     """Full result of validating a Define program."""
 
     file_results: list[FileValidationResult]
-    action_call_graph: action_call_graph.ActionCallGraph
     config_loading_time_ns: int
     reference_graph: reference_graph.ReferenceGraph
+    definition_results: dict[str, DefinitionValidationResult]
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:

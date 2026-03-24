@@ -32,47 +32,14 @@ py_test(
 )
 
 py_test(
-    name = "chained_name_test",
-    size = "small",
-    srcs = ["chained_name_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
     name = "cross_fqun_walking_test",
     size = "small",
     srcs = ["cross_fqun_walking_test.py"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
-    name = "create_dimension_point_test",
-    size = "small",
-    srcs = ["create_dimension_point_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
-    name = "dimension_point_conflict_test",
-    size = "small",
-    srcs = ["dimension_point_conflict_test.py"],
-    deps = [
-        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -92,9 +59,9 @@ py_test(
     size = "small",
     srcs = ["error_messages_test.py"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:exceptions",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -104,10 +71,10 @@ py_test(
     size = "small",
     srcs = ["file_not_found_test.py"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -127,10 +94,10 @@ py_test(
     size = "small",
     srcs = ["global_name_walking_test.py"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -140,59 +107,6 @@ py_test(
     size = "small",
     srcs = ["local_name_conflicts_test.py"],
     deps = [
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
-    name = "move_chained_constraint_test",
-    size = "small",
-    srcs = ["move_chained_constraint_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
-    name = "move_cross_fqun_test",
-    size = "small",
-    srcs = ["move_cross_fqun_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-    ],
-)
-
-py_test(
-    name = "move_dimension_point_test",
-    size = "small",
-    srcs = ["move_dimension_point_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
-    name = "move_local_constraint_test",
-    size = "small",
-    srcs = ["move_local_constraint_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-    ],
-)
-
-py_test(
-    name = "move_state_tracking_test",
-    size = "small",
-    srcs = ["move_state_tracking_test.py"],
-    deps = [
-        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -224,11 +138,11 @@ py_test(
     size = "small",
     srcs = ["parse_and_validate_file_test.py"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:exceptions",
         "//define/compiler:parser_exceptions",
         "//define/compiler/validator:stats",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -255,17 +169,6 @@ py_test(
 )
 
 py_test(
-    name = "position_init_self_reference_test",
-    size = "small",
-    srcs = ["position_init_self_reference_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_test(
     name = "program_config_test",
     size = "small",
     srcs = ["program_config_test.py"],
@@ -280,23 +183,6 @@ py_test(
     size = "small",
     srcs = ["reserved_name_positions_test.py"],
     deps = [
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_library(
-    name = "test_helpers",
-    srcs = ["test_helpers.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-)
-
-py_test(
-    name = "trigger_conditions_test",
-    size = "small",
-    srcs = ["trigger_conditions_test.py"],
-    deps = [
-        "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -332,34 +218,24 @@ pyright_test(
     deps = [
         ":action_statements_block_test",
         ":action_triggering_test",
-        ":chained_name_test",
-        ":create_dimension_point_test",
         ":cross_fqun_walking_test",
         ":diagnostic_collection_test",
-        ":dimension_point_conflict_test",
         ":duplicate_definitions_test",
         ":error_messages_test",
         ":file_not_found_test",
         ":fqun_mismatch_test",
         ":global_name_walking_test",
         ":local_name_conflicts_test",
-        ":move_chained_constraint_test",
-        ":move_cross_fqun_test",
-        ":move_dimension_point_test",
-        ":move_local_constraint_test",
-        ":move_state_tracking_test",
         ":name_format_positions_test",
         ":parallel_test",
         ":parse_and_validate_file_test",
         ":path_mismatch_test",
         ":position_constraint_references_test",
-        ":position_init_self_reference_test",
         ":program_config_test",
         ":program_validator_tests",
         ":reserved_name_positions_test",
-        ":test_helpers",
-        ":trigger_conditions_test",
         ":universe_without_authority_test",
         "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
     ],
 )

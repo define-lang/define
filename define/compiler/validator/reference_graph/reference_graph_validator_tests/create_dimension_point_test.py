@@ -9,13 +9,17 @@ from pathlib import Path
 import pytest
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
-from define.compiler.validator.structural import program_validator
-from define.compiler.validator.structural.program_validator_tests import test_helpers
+from define.compiler.conftest import (
+    ValidateNonFilesystemWithReferenceGraph,
+    ValidateProjectWithReferenceGraph,
+)
+from define.compiler.validator import test_helpers
 
 
-def test_short_form_global_reference(validate_project: ValidateProject):
-    result = validate_project(
+def test_short_form_global_reference(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -30,10 +34,12 @@ def test_short_form_global_reference(validate_project: ValidateProject):
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
-def test_same_fqun_reference_must_use_short_form():
+def test_same_fqun_reference_must_use_short_form(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -44,11 +50,7 @@ def test_same_fqun_reference_must_use_short_form():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
@@ -57,7 +59,9 @@ def test_same_fqun_reference_must_use_short_form():
     assert diags[0].position.column == 46
 
 
-def test_valid_local_name():
+def test_valid_local_name(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -69,15 +73,15 @@ def test_valid_local_name():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     assert not result.has_errors()
 
 
-def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_cross_universe_not_configured(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     monkeypatch.chdir(tmp_path)
     source = (
@@ -90,11 +94,7 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
@@ -104,7 +104,9 @@ def test_cross_universe_not_configured(tmp_path: Path, monkeypatch: pytest.Monke
     assert diags[0].position.column == 46
 
 
-def test_undefined_local_position():
+def test_undefined_local_position(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -115,11 +117,7 @@ def test_undefined_local_position():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -128,7 +126,9 @@ def test_undefined_local_position():
     assert diags[0].position.column == 46
 
 
-def test_local_position_defined_after_use():
+def test_local_position_defined_after_use(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -140,11 +140,7 @@ def test_local_position_defined_after_use():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -153,7 +149,9 @@ def test_local_position_defined_after_use():
     assert diags[0].position.column == 46
 
 
-def test_local_position_defined_in_action_statements_before_use():
+def test_local_position_defined_in_action_statements_before_use(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -165,15 +163,13 @@ def test_local_position_defined_in_action_statements_before_use():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     assert not result.has_errors()
 
 
-def test_two_actions_with_definition_block_local_positions():
+def test_two_actions_with_definition_block_local_positions(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
         "    define the position<run>.\n"
@@ -194,15 +190,13 @@ def test_two_actions_with_definition_block_local_positions():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     assert not result.has_errors()
 
 
-def test_single_action_in_position_reference():
+def test_single_action_in_position_reference(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -213,11 +207,7 @@ def test_single_action_in_position_reference():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)

@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler.graphs import action_call_graph, action_call_graph_renderer
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 
@@ -64,8 +65,12 @@ def _build_graph(
     monkeypatch.chdir(tmp_path)
     entry_point = PurePosixPath(next(iter(files)))
     program_result = pv.validate_program(entry_point)
+    call_graph = reference_graph_validator.ReferenceGraphValidator(
+        program_result.reference_graph,
+        program_result.definition_results,
+    ).validate()
     assert not program_result.has_errors()
-    return program_result.action_call_graph
+    return call_graph
 
 
 _ACTION_A = (

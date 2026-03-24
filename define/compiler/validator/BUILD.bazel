@@ -22,6 +22,13 @@ py_test(
 )
 
 py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_library(
     name = "stats",
     srcs = ["stats.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -64,8 +71,9 @@ py_test(
         "//define/compiler:parser",
         "//define/compiler:transformer",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
-        "//define/compiler/validator/structural/program_validator_tests:test_helpers",
     ],
 )
 
@@ -91,6 +99,7 @@ pyright_test(
         ":scope_tracker_test",
         ":stats",
         ":stats_test",
+        ":test_helpers",
         ":validation_result",
         ":validation_result_test",
         ":validator",

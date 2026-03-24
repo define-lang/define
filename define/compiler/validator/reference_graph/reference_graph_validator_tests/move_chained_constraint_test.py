@@ -1,12 +1,13 @@
 # pyright: reportUnusedCallResult=false
 
-from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
-from define.compiler.validator.structural import program_validator
+from define.compiler import conftest, diagnostics
+from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
 
 
-def test_move_to_chained_dest_violates_constraints(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_to_chained_dest_violates_constraints(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -37,7 +38,7 @@ def test_move_to_chained_dest_violates_constraints(validate_project: ValidatePro
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -45,8 +46,10 @@ def test_move_to_chained_dest_violates_constraints(validate_project: ValidatePro
     ]
 
 
-def test_move_to_chained_dest_satisfies_constraints(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_to_chained_dest_satisfies_constraints(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -79,11 +82,13 @@ def test_move_to_chained_dest_satisfies_constraints(validate_project: ValidatePr
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
-def test_move_to_chained_dest_unconstrained(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_to_chained_dest_unconstrained(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
             "test.def": (
@@ -105,13 +110,13 @@ def test_move_to_chained_dest_unconstrained(validate_project: ValidateProject):
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_move_from_chained_to_local_violates_constraints(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
@@ -144,7 +149,7 @@ def test_move_from_chained_to_local_violates_constraints(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -153,9 +158,9 @@ def test_move_from_chained_to_local_violates_constraints(
 
 
 def test_move_from_chained_to_local_satisfies_constraints(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "q.def": "define the potential position<my.domain.com:my_lib:/q>.\n",
             "x.def": (
@@ -195,13 +200,13 @@ def test_move_from_chained_to_local_satisfies_constraints(
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_move_from_unconstrained_local_to_chained_constrained(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -230,7 +235,7 @@ def test_move_from_unconstrained_local_to_chained_constrained(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -238,8 +243,10 @@ def test_move_from_unconstrained_local_to_chained_constrained(
     ]
 
 
-def test_definition_local_to_chained_violates(validate_project: ValidateProject):
-    result = validate_project(
+def test_definition_local_to_chained_violates(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -267,7 +274,7 @@ def test_definition_local_to_chained_violates(validate_project: ValidateProject)
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -275,8 +282,10 @@ def test_definition_local_to_chained_violates(validate_project: ValidateProject)
     ]
 
 
-def test_definition_local_to_chained_satisfies(validate_project: ValidateProject):
-    result = validate_project(
+def test_definition_local_to_chained_satisfies(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": (
@@ -307,11 +316,13 @@ def test_definition_local_to_chained_satisfies(validate_project: ValidateProject
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
-def test_chained_to_definition_local_violates(validate_project: ValidateProject):
-    result = validate_project(
+def test_chained_to_definition_local_violates(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
@@ -344,7 +355,7 @@ def test_chained_to_definition_local_violates(validate_project: ValidateProject)
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].missing_qualities == [
@@ -352,8 +363,10 @@ def test_chained_to_definition_local_violates(validate_project: ValidateProject)
     ]
 
 
-def test_chained_to_definition_local_satisfies(validate_project: ValidateProject):
-    result = validate_project(
+def test_chained_to_definition_local_satisfies(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "q.def": "define the potential position<my.domain.com:my_lib:/q>.\n",
             "x.def": (
@@ -393,13 +406,13 @@ def test_chained_to_definition_local_satisfies(validate_project: ValidateProject
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_move_from_multi_element_chain_to_unconstrained_local(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -428,13 +441,13 @@ def test_move_from_multi_element_chain_to_unconstrained_local(
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_move_from_multi_element_chain_to_constrained_local(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -474,13 +487,13 @@ def test_move_from_multi_element_chain_to_constrained_local(
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_move_three_element_chain_to_three_element_chain_satisfies(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -520,13 +533,13 @@ def test_move_three_element_chain_to_three_element_chain_satisfies(
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_move_three_element_chain_to_three_element_chain_violates(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
@@ -573,7 +586,7 @@ def test_move_three_element_chain_to_three_element_chain_violates(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].source_position == "position<a>::position</x>::position</y>"
@@ -583,7 +596,9 @@ def test_move_three_element_chain_to_three_element_chain_violates(
     ]
 
 
-def test_move_from_local_local_chain():
+def test_move_from_local_local_chain(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<a>.\n"
@@ -596,11 +611,8 @@ def test_move_from_local_local_chain():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
+    results = result.file_results
     assert len(results[0].diagnostics) == 2
     assert isinstance(
         results[0].diagnostics[0],
@@ -612,7 +624,9 @@ def test_move_from_local_local_chain():
     )
 
 
-def test_move_from_local_local_local_chain():
+def test_move_from_local_local_local_chain(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<a>.\n"
@@ -626,11 +640,8 @@ def test_move_from_local_local_local_chain():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
+    results = result.file_results
     assert len(results[0].diagnostics) == 3
     assert isinstance(
         results[0].diagnostics[0],

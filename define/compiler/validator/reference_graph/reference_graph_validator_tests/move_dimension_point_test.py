@@ -1,11 +1,15 @@
 # pyright: reportUnusedCallResult=false
 
 from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
-from define.compiler.validator.structural import program_validator
+from define.compiler.conftest import (
+    ValidateNonFilesystemWithReferenceGraph,
+    ValidateProjectWithReferenceGraph,
+)
 
 
-def test_valid_local_positions():
+def test_valid_local_positions(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<from_pos>.\n"
@@ -17,18 +21,14 @@ def test_valid_local_positions():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     assert results[0].diagnostics == []
 
 
 def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -61,7 +61,7 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert all_diags[0].definition_type == "action"
@@ -71,7 +71,9 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
     assert all_diags[0].position.column == 1
 
 
-def test_undefined_from_position():
+def test_undefined_from_position(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<to_pos>.\n"
@@ -83,11 +85,7 @@ def test_undefined_from_position():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -96,7 +94,9 @@ def test_undefined_from_position():
     assert diags[0].position.column == 46
 
 
-def test_undefined_to_position():
+def test_undefined_to_position(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<from_pos>.\n"
@@ -108,11 +108,7 @@ def test_undefined_to_position():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -121,7 +117,9 @@ def test_undefined_to_position():
     assert diags[0].position.column == 68
 
 
-def test_both_positions_undefined():
+def test_both_positions_undefined(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -133,11 +131,7 @@ def test_both_positions_undefined():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -151,9 +145,9 @@ def test_both_positions_undefined():
 
 
 def test_same_fqun_must_use_short_form_in_from(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "other.def": (
                 "define the potential position<my.domain.com:my_lib:/other>.\n"
@@ -171,7 +165,7 @@ def test_same_fqun_must_use_short_form_in_from(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
@@ -182,9 +176,9 @@ def test_same_fqun_must_use_short_form_in_from(
 
 
 def test_same_fqun_must_use_short_form_in_to(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "other.def": (
                 "define the potential position<my.domain.com:my_lib:/other>.\n"
@@ -202,7 +196,7 @@ def test_same_fqun_must_use_short_form_in_to(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position.line == 7
@@ -216,8 +210,10 @@ def test_same_fqun_must_use_short_form_in_to(
     assert all_diags[1].position.column == 68
 
 
-def test_valid_global_to_position(validate_project: ValidateProject):
-    result = validate_project(
+def test_valid_global_to_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -232,10 +228,12 @@ def test_valid_global_to_position(validate_project: ValidateProject):
             "global_pos.def": "define the potential position<my.domain.com:my_lib:/global_pos>.\n",
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
-def test_move_from_a_position_to_itself():
+def test_move_from_a_position_to_itself(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -248,11 +246,7 @@ def test_move_from_a_position_to_itself():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
@@ -261,8 +255,10 @@ def test_move_from_a_position_to_itself():
     assert diags[0].position_name == "position<a>"
 
 
-def test_move_from_a_chained_position_to_itself(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_from_a_chained_position_to_itself(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -283,7 +279,7 @@ def test_move_from_a_chained_position_to_itself(validate_project: ValidateProjec
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].position.line == 12
@@ -291,7 +287,9 @@ def test_move_from_a_chained_position_to_itself(validate_project: ValidateProjec
     assert all_diags[0].position_name == "position<a>::position</x>"
 
 
-def test_move_to_same_position_does_not_mark_unknown():
+def test_move_to_same_position_does_not_mark_unknown(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -305,11 +303,7 @@ def test_move_to_same_position_does_not_mark_unknown():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
@@ -323,8 +317,10 @@ def test_move_to_same_position_does_not_mark_unknown():
     assert diags[1].first_creation_line == 7
 
 
-def test_move_to_chained_prefix_position(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_to_chained_prefix_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -343,7 +339,7 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
             "target_pos.def": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].position.line == 10
@@ -352,8 +348,10 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
     assert all_diags[0].target_position == "position<local_pos>::position</target_pos>"
 
 
-def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_to_chained_prefix_marks_unknown(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "test.def": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -373,7 +371,7 @@ def test_move_to_chained_prefix_marks_unknown(validate_project: ValidateProject)
             "target_pos.def": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].position.line == 10

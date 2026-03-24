@@ -1,11 +1,12 @@
 # pyright: reportUnusedCallResult=false
 
-from define.compiler import diagnostics
-from define.compiler.conftest import ValidateProject
-from define.compiler.validator.structural import program_validator
+from define.compiler import conftest, diagnostics
+from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
 
 
-def test_move_from_empty_position():
+def test_move_from_empty_position(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -18,11 +19,7 @@ def test_move_from_empty_position():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -31,7 +28,9 @@ def test_move_from_empty_position():
     assert diags[0].position_name == "position<from_pos>"
 
 
-def test_move_to_occupied_position():
+def test_move_to_occupied_position(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -47,11 +46,7 @@ def test_move_to_occupied_position():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -61,7 +56,9 @@ def test_move_to_occupied_position():
     assert diags[0].occupied_at_line == 9
 
 
-def test_move_updates_state_allows_create_in_source():
+def test_move_updates_state_allows_create_in_source(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -76,15 +73,13 @@ def test_move_updates_state_allows_create_in_source():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     assert not result.has_errors()
 
 
-def test_cannot_create_in_position_that_was_moved_into():
+def test_cannot_create_in_position_that_was_moved_into(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -99,11 +94,7 @@ def test_cannot_create_in_position_that_was_moved_into():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -113,7 +104,9 @@ def test_cannot_create_in_position_that_was_moved_into():
     assert diags[0].first_creation_line == 9
 
 
-def test_double_move_works():
+def test_double_move_works(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -129,15 +122,13 @@ def test_double_move_works():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     assert not result.has_errors()
 
 
-def test_same_move_twice_in_a_row():
+def test_same_move_twice_in_a_row(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -152,11 +143,7 @@ def test_same_move_twice_in_a_row():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -170,7 +157,9 @@ def test_same_move_twice_in_a_row():
     assert diags[1].occupied_at_line == 9
 
 
-def test_round_trip_move_fails_second_return():
+def test_round_trip_move_fails_second_return(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -186,11 +175,7 @@ def test_round_trip_move_fails_second_return():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -204,7 +189,9 @@ def test_round_trip_move_fails_second_return():
     assert diags[1].occupied_at_line == 10
 
 
-def test_two_actions_same_name_one_empty_error_one_clean():
+def test_two_actions_same_name_one_empty_error_one_clean(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
         "    define the position<run>.\n"
@@ -228,11 +215,7 @@ def test_two_actions_same_name_one_empty_error_one_clean():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -241,7 +224,9 @@ def test_two_actions_same_name_one_empty_error_one_clean():
     assert all_diags[0].position.column == 37
 
 
-def test_two_actions_same_name_one_occupied_error_one_clean():
+def test_two_actions_same_name_one_occupied_error_one_clean(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
         "    define the position<run>.\n"
@@ -267,11 +252,7 @@ def test_two_actions_same_name_one_occupied_error_one_clean():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -281,7 +262,9 @@ def test_two_actions_same_name_one_occupied_error_one_clean():
     assert all_diags[0].occupied_at_line == 9
 
 
-def test_two_actions_with_move_same_local_names():
+def test_two_actions_with_move_same_local_names(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/act_one> {\n"
         "    define the position<run>.\n"
@@ -306,16 +289,13 @@ def test_two_actions_with_move_same_local_names():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     assert not result.has_errors()
 
 
-def test_move_from_empty_marks_both_positions_unknown():
-    """Proves that later errors don't fire after an earlier dimension point state error."""
+def test_move_from_empty_marks_both_positions_unknown(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -330,11 +310,7 @@ def test_move_from_empty_marks_both_positions_unknown():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -343,7 +319,9 @@ def test_move_from_empty_marks_both_positions_unknown():
     assert diags[0].position_name == "position<a>"
 
 
-def test_move_to_occupied_marks_both_positions_unknown():
+def test_move_to_occupied_marks_both_positions_unknown(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -360,11 +338,7 @@ def test_move_to_occupied_marks_both_positions_unknown():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -374,7 +348,9 @@ def test_move_to_occupied_marks_both_positions_unknown():
     assert diags[0].occupied_at_line == 9
 
 
-def test_both_from_empty_and_to_occupied_marks_unknown():
+def test_both_from_empty_and_to_occupied_marks_unknown(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -391,11 +367,7 @@ def test_both_from_empty_and_to_occupied_marks_unknown():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -409,7 +381,9 @@ def test_both_from_empty_and_to_occupied_marks_unknown():
     assert diags[1].occupied_at_line == 8
 
 
-def test_unknown_state_does_not_affect_other_positions():
+def test_unknown_state_does_not_affect_other_positions(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -426,11 +400,7 @@ def test_unknown_state_does_not_affect_other_positions():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -444,7 +414,9 @@ def test_unknown_state_does_not_affect_other_positions():
     assert diags[1].occupied_at_line == 10
 
 
-def test_single_unknown_position_marks_both_unknown():
+def test_single_unknown_position_marks_both_unknown(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
@@ -462,11 +434,7 @@ def test_single_unknown_position_marks_both_unknown():
         "    }\n"
         "}\n"
     )
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
+    result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
@@ -477,9 +445,9 @@ def test_single_unknown_position_marks_both_unknown():
 
 
 def test_move_from_chained_to_occupied_local_position(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -502,7 +470,7 @@ def test_move_from_chained_to_occupied_local_position(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].position.line == 14

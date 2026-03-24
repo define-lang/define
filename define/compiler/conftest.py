@@ -2,15 +2,26 @@
 """Shared test fixtures for the Define compiler."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Protocol, overload
 
 import pytest
 
 from define.compiler import diagnostics
-from define.compiler.validator import validation_result
+from define.compiler.graphs import action_call_graph
+from define.compiler.validator import test_helpers, validation_result
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.structural.program_validator_tests import test_helpers
+
+
+@dataclass
+class FullValidationResult:
+    """Result of running both structural and reference graph validation."""
+
+    program_result: validation_result.ProgramValidationResult
+    action_call_graph: action_call_graph.ActionCallGraph
+
 
 type ParseAndValidateFile = Callable[
     [str | bytes], validation_result.FileValidationResult
@@ -188,5 +199,89 @@ def validate_source_as_file(
         )
         assert len(results) == 1
         return list(results[0].diagnostics)
+
+    return _run
+
+
+type ValidateNonFilesystemWithReferenceGraph = Callable[
+    [str], validation_result.ProgramValidationResult
+]
+
+
+@pytest.fixture
+def validate_non_filesystem_with_reference_graph() -> (
+    ValidateNonFilesystemWithReferenceGraph
+):
+    """Validate source text through both structural and reference graph validation."""
+
+    def _run(source: str) -> validation_result.ProgramValidationResult:
+        result = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+        reference_graph_validator.ReferenceGraphValidator(
+            result.reference_graph,
+            result.definition_results,
+        ).validate()
+        return result
+
+    return _run
+
+
+def _run_reference_graph_validation(
+    structural_result: validation_result.ProgramValidationResult,
+) -> FullValidationResult:
+    call_graph = reference_graph_validator.ReferenceGraphValidator(
+        structural_result.reference_graph,
+        structural_result.definition_results,
+    ).validate()
+    return FullValidationResult(
+        program_result=structural_result,
+        action_call_graph=call_graph,
+    )
+
+
+class ValidateProjectWithReferenceGraph(Protocol):
+    """Callable that runs structural + reference graph validation."""
+
+    def __call__(
+        self,
+        files: dict[str, str],
+        *,
+        universe_name: str = ...,
+        max_workers: int | None = ...,
+        local_deps: dict[str, str] | None = ...,
+        sub_roots: dict[str, str] | None = ...,
+        entry_file: str = ...,
+    ) -> FullValidationResult:
+        """Validate a project through both validation phases."""
+        ...
+
+
+@pytest.fixture
+def validate_project_with_reference_graph(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> ValidateProjectWithReferenceGraph:
+    """Set up a multi-file project and run both structural and reference graph validation."""
+
+    def _run(
+        files: dict[str, str],
+        *,
+        universe_name: str = "my.domain.com:my_lib",
+        max_workers: int | None = None,
+        local_deps: dict[str, str] | None = None,
+        sub_roots: dict[str, str] | None = None,
+        entry_file: str = "test.def",
+    ) -> FullValidationResult:
+        structural_result = _run_validation(
+            tmp_path,
+            monkeypatch,
+            files,
+            universe_name,
+            max_workers=max_workers,
+            local_deps=local_deps,
+            sub_roots=sub_roots,
+            entry_file=entry_file,
+        )
+        return _run_reference_graph_validation(structural_result)
 
     return _run

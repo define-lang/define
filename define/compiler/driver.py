@@ -20,6 +20,7 @@ from define.compiler import (
 )
 from define.compiler.codegen import generator
 from define.compiler.validator import validation_result
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 
@@ -53,6 +54,12 @@ class Driver:
         resolved_path = self._resolve_path(path)
         pv = program_validator.ProgramStructuralValidator()
         program_result = pv.validate_program(path=resolved_path)
+        # TODO: Make ReferenceGraphValidator return diagnostics instead of
+        # adding them to definitions itself?
+        _ = reference_graph_validator.ReferenceGraphValidator(
+            program_result.reference_graph,
+            program_result.definition_results,
+        ).validate()
         return DriverResult(
             result=program_result,
             overall_stats=overall_stats.calculate_overall_stats(

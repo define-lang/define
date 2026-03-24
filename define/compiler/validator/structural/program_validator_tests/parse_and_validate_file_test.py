@@ -12,9 +12,8 @@ from define.compiler import exceptions, parser_exceptions
 from define.compiler.conftest import (
     ParseAndValidateFile,
 )
-from define.compiler.validator import stats
+from define.compiler.validator import stats, test_helpers
 from define.compiler.validator.structural import program_validator
-from define.compiler.validator.structural.program_validator_tests import test_helpers
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):

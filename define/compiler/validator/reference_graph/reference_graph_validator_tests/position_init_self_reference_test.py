@@ -5,12 +5,14 @@ from pathlib import PurePosixPath
 from define.compiler import diagnostics
 from define.compiler.conftest import (
     ParseAndValidateFile,
-    ValidateProject,
+    ValidateNonFilesystemWithReferenceGraph,
+    ValidateProjectWithReferenceGraph,
 )
-from define.compiler.validator.structural import program_validator
 
 
-def test_create_in_self():
+def test_create_in_self(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
@@ -18,17 +20,15 @@ def test_create_in_self():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert diags == []
 
 
-def test_create_in_self_with_constraints(validate_project: ValidateProject):
-    result = validate_project(
+def test_create_in_self_with_constraints(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -43,10 +43,12 @@ def test_create_in_self_with_constraints(validate_project: ValidateProject):
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
-def test_move_from_local_to_self():
+def test_move_from_local_to_self(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
@@ -56,16 +58,14 @@ def test_move_from_local_to_self():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert diags == []
 
 
-def test_move_from_self_to_local():
+def test_move_from_self_to_local(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
@@ -75,17 +75,15 @@ def test_move_from_self_to_local():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert diags == []
 
 
-def test_move_to_self_violates_constraints(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_to_self_violates_constraints(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -102,7 +100,7 @@ def test_move_to_self_violates_constraints(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 8
@@ -114,8 +112,10 @@ def test_move_to_self_violates_constraints(validate_project: ValidateProject):
     ]
 
 
-def test_move_from_self_violates_constraints(validate_project: ValidateProject):
-    result = validate_project(
+def test_move_from_self_violates_constraints(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.def": (
@@ -133,7 +133,7 @@ def test_move_from_self_violates_constraints(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].position.line == 9
@@ -145,8 +145,10 @@ def test_move_from_self_violates_constraints(validate_project: ValidateProject):
     ]
 
 
-def test_self_reference_mixed_with_other_reference(validate_project: ValidateProject):
-    result = validate_project(
+def test_self_reference_mixed_with_other_reference(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
         {
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.def": (
@@ -159,13 +161,13 @@ def test_self_reference_mixed_with_other_reference(validate_project: ValidatePro
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_chained_name_starting_with_self_two_items_valid(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.def": (
@@ -180,13 +182,13 @@ def test_chained_name_starting_with_self_two_items_valid(
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_chained_name_starting_with_self_two_items_invalid_global(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.def": (
@@ -198,7 +200,7 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
             ),
         }
     )
-    all_diags = result.all_diagnostics
+    all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
     assert all_diags[0].position.line == 3
@@ -207,7 +209,9 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
     assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/test>"
 
 
-def test_chained_name_starting_with_self_two_items_invalid_local():
+def test_chained_name_starting_with_self_two_items_invalid_local(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
@@ -215,11 +219,7 @@ def test_chained_name_starting_with_self_two_items_invalid_local():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic)
@@ -235,9 +235,9 @@ def test_chained_name_starting_with_self_two_items_invalid_local():
 
 
 def test_chained_name_starting_with_self_three_items_valid(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "other.def": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -262,13 +262,13 @@ def test_chained_name_starting_with_self_three_items_valid(
             ),
         }
     )
-    assert not result.has_errors()
+    assert not result.program_result.has_errors()
 
 
 def test_chained_name_starting_with_self_three_items_invalid(
-    validate_project: ValidateProject,
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    result = validate_project(
+    result = validate_project_with_reference_graph(
         {
             "other.def": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
@@ -293,9 +293,9 @@ def test_chained_name_starting_with_self_three_items_invalid(
             ),
         }
     )
-    assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
-    test_diags = result.file_results[0].diagnostics
+    assert len(result.program_result.file_results) == 2
+    assert result.program_result.file_results[0].file_path == PurePosixPath("test.def")
+    test_diags = result.program_result.file_results[0].diagnostics
     assert len(test_diags) == 1
     assert isinstance(test_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
     assert test_diags[0].position.line == 6
@@ -304,7 +304,9 @@ def test_chained_name_starting_with_self_three_items_invalid(
     assert test_diags[0].parent_name == "action<my.domain.com:my_lib:/other>"
 
 
-def test_self_reference_does_not_trigger_file_loading():
+def test_self_reference_does_not_trigger_file_loading(
+    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
@@ -312,11 +314,7 @@ def test_self_reference_does_not_trigger_file_loading():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
-    )
+    results = validate_non_filesystem_with_reference_graph(source).file_results
     assert len(results) == 1
     diags = results[0].diagnostics
     assert diags == []
