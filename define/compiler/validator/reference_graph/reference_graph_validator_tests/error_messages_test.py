@@ -32,8 +32,9 @@ def test_local_duplicate_dimension_point_format(
         "line 8, column 37\n"
         "        create a dimension point in position<pos>.\n"
         "                                    ^\n"
-        "a dimension point already exists in 'position<pos>'; "
-        "it was put there on line 7"
+        "a dimension point already exists in 'position<pos>';"
+        " it was put there at:\n"
+        "line 7, column 37"
     )
 
 
@@ -271,6 +272,114 @@ def test_move_into_defining_position_format(
         "    to: position<local_pos>::position</mid_pos>::position</end_pos>\n"
         "because the source position defines the destination position"
         " ('position<local_pos>' is the start of both positions)"
+    )
+
+
+def test_action_requires_empty_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</other>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        create a dimension point in position<box>::action</other>::position<item>.\n"
+        "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.def", line 13, column 37\n'
+        "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+        "                                    ^\n"
+        "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
+        "However, 'position<box>::action</other>::position<item>'"
+        " must be empty before that action runs, and it is not empty.\n"
+        "It was filled at:\n"
+        'File "test.def", line 12, column 37\n\n'
+        "This requirement happens because of this line of code inside of the action:\n"
+        'File "other.def", line 7, column 37'
+    )
+
+
+def test_action_requires_occupied_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</other>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.def", line 12, column 37\n'
+        "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+        "                                    ^\n"
+        "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
+        "However, 'position<box>::action</other>::position<item>'"
+        " must be occupied before that action runs, and it not occupied.\n\n"
+        "This requirement happens because of this line of code inside of the action:\n"
+        'File "other.def", line 8, column 37'
     )
 
 

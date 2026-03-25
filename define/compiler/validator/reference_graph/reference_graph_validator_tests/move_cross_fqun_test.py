@@ -385,11 +385,9 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
         sub_roots={"lib": _CHILD},
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
     assert all_diags[0].element_name == "position<no_such>"
     assert all_diags[0].parent_name == f"action<{_CHILD}:/act>"
-    assert isinstance(all_diags[1], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[1].missing_qualities == [
-        f"position<{_CHILD}:/quality>",
-    ]
+    assert all_diags[0].position.line == 17
+    assert all_diags[0].position.column == 91

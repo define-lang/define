@@ -55,6 +55,8 @@ def _build_graph(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     universe_name: str = "my.domain.com:my_lib",
+    *,
+    expect_errors: bool = False,
 ) -> action_call_graph.ActionCallGraph:
     pv = program_validator.ProgramStructuralValidator()
     _write_project_config(tmp_path, universe_name)
@@ -69,7 +71,8 @@ def _build_graph(
         program_result.reference_graph,
         program_result.definition_results,
     ).validate()
-    assert not program_result.has_errors()
+    if not expect_errors:
+        assert not program_result.has_errors()
     return call_graph
 
 
@@ -153,6 +156,7 @@ class TestRenderMermaid:
             },
             tmp_path,
             monkeypatch,
+            expect_errors=True,
         )
 
         result = action_call_graph_renderer.Mermaid(graph).render_flowchart()

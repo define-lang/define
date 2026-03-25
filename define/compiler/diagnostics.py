@@ -14,6 +14,13 @@ if typing.TYPE_CHECKING:
 from define.compiler import constants
 
 
+def _format_position(pos: ast.SourcePosition) -> str:
+    """Format a source position as a human-readable location string."""
+    if pos.file_path is not None:
+        return f'File "{pos.file_path}", line {pos.line}, column {pos.column}'
+    return f"line {pos.line}, column {pos.column}"
+
+
 @dataclass
 class Diagnostic:
     """Base class for all validation diagnostics."""
@@ -35,13 +42,7 @@ class Diagnostic:
 
         column = self.position.column
         caret_line = " " * (column - 1) + "^"
-        if self.position.file_path is not None:
-            header = (
-                f'File "{self.position.file_path}", line {self.position.line}, '
-                + f"column {self.position.column}"
-            )
-        else:
-            header = f"line {self.position.line}, column {self.position.column}"
+        header = _format_position(self.position)
 
         return f"{header}\n{source_line}\n{caret_line}\n{self.message}"
 
@@ -451,11 +452,16 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a dimension point is created in a position that already has one."""
 
     position_name: str
-    first_creation_line: int
+    created_at: ast.SourcePosition
     message_format: ClassVar[str] = (
-        "a dimension point already exists in '{self.position_name}'; "
-        "it was put there on line {self.first_creation_line}"
+        "a dimension point already exists in '{self.position_name}';"
+        " it was put there at:\n{self.formatted_created_at}"
     )
+
+    @property
+    def formatted_created_at(self) -> str:
+        """Format the created_at position as a human-readable location string."""
+        return _format_position(self.created_at)
 
 
 @dataclass
@@ -463,19 +469,18 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination position already contains a dimension point."""
 
     position_name: str
-    # TODO: Track cross-file moves to always provide this.
-    occupied_at_line: int | None = None
+    occupied_at: ast.SourcePosition | None = None
 
     @property
     @typing.override
     def message(self) -> str:
-        """Render the diagnostic message, optionally including the occupied-at line."""
+        """Render the diagnostic message, optionally including the occupied-at position."""
         base = (
             f"cannot move a dimension point to '{self.position_name}'"
             " because it already contains one"
         )
-        if self.occupied_at_line is not None:
-            return f"{base}; it was put there on line {self.occupied_at_line}"
+        if self.occupied_at is not None:
+            return f"{base}; it was put there at:\n{_format_position(self.occupied_at)}"
         return base
 
 
@@ -612,3 +617,75 @@ class IncorrectIndentationDiagnostic(Diagnostic):
         "expected {self.expected_indent} spaces of indentation on this line,"
         " but found {self.actual_indent}"
     )
+
+
+# TODO: These diagnostics should show source context from inferred_at,
+# not just the file/line/column. This requires passing the other file's
+# source lines through to the diagnostic's format() method.
+
+
+@dataclass
+class ActionRequirementDiagnostic(Diagnostic):
+    """Base class for diagnostics about interface position occupancy state."""
+
+    action_name: str
+    position_name: str
+    inferred_at: ast.SourcePosition
+
+    @property
+    def formatted_inferred_at(self) -> str:
+        """Format the inferred_at position as a human-readable location string."""
+        return _format_position(self.inferred_at)
+
+
+@dataclass
+class ActionRequiresEmptyPositionDiagnostic(ActionRequirementDiagnostic):
+    """Diagnostic for when an action requires an interface position to be empty but it is not."""
+
+    filled_at: ast.SourcePosition
+    message_format: ClassVar[str] = (
+        "this line is triggering `{self.action_name}` to run.\n"
+        "However, '{self.position_name}' must be empty before that action runs, and it is not empty.\n"
+        "It was filled at:\n{self.formatted_filled_at}\n\n"
+        "This requirement happens because of this line of code inside of the action:\n"
+        "{self.formatted_inferred_at}"
+    )
+
+    @property
+    def formatted_filled_at(self) -> str:
+        """Format the filled_at position as a human-readable location string."""
+        return _format_position(self.filled_at)
+
+
+@dataclass
+class ActionRequiresOccupiedPositionDiagnostic(ActionRequirementDiagnostic):
+    """Diagnostic for when an action requires an interface position to be occupied but it is not."""
+
+    message_format: ClassVar[str] = (
+        "this line is triggering `{self.action_name}` to run.\n"
+        "However, '{self.position_name}' must be occupied before that action runs, and it not occupied.\n\n"
+        "This requirement happens because of this line of code inside of the action:\n"
+        "{self.formatted_inferred_at}"
+    )
+
+
+# TODO: Should perhaps just merge this with the normal MoveFromEmpty diagnostic.
+@dataclass
+class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
+    """Diagnostic for moving from an empty action interface position."""
+
+    action_name: str
+    position_name: str
+    inferred_at: ast.SourcePosition | None
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render the diagnostic message."""
+        base = (
+            f"cannot move a dimension point from '{self.position_name}'"
+            f" because it does not contain one"
+        )
+        if self.inferred_at is not None:
+            return f"{base}; it was emptied at:\n{_format_position(self.inferred_at)}"
+        return f"{base}; action interface positions are empty by default"

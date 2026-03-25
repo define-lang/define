@@ -1,3 +1,5 @@
+from pathlib import PurePosixPath
+
 from define.compiler import ast, diagnostics
 
 _POS = ast.SourcePosition(line=3, column=5, end_line=3, end_column=12)
@@ -33,14 +35,59 @@ def test_move_to_occupied_message_without_line_number():
     )
 
 
-def test_move_to_occupied_message_with_line_number():
+def test_move_to_occupied_message_with_position():
     diagnostic = diagnostics.MoveToOccupiedPositionDiagnostic(
         position=_POS,
         position_name="position<target>",
-        occupied_at_line=9,
+        occupied_at=ast.SourcePosition(
+            line=9,
+            column=37,
+            end_line=9,
+            end_column=37,
+            file_path=PurePosixPath("test.def"),
+        ),
     )
 
     assert diagnostic.message == (
         "cannot move a dimension point to 'position<target>'"
-        " because it already contains one; it was put there on line 9"
+        " because it already contains one; it was put there at:\n"
+        'File "test.def", line 9, column 37'
+    )
+
+
+def test_move_from_empty_interface_position_default():
+    diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
+        position=_POS,
+        action_name="action<my.domain.com:my_lib:/other>",
+        position_name="position<box>::action</other>::position<item>",
+        inferred_at=None,
+    )
+
+    assert diagnostic.message == (
+        "cannot move a dimension point from"
+        " 'position<box>::action</other>::position<item>'"
+        " because it does not contain one;"
+        " action interface positions are empty by default"
+    )
+
+
+def test_move_from_empty_interface_position_with_inferred_at():
+    diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
+        position=_POS,
+        action_name="action<my.domain.com:my_lib:/other>",
+        position_name="position<box>::action</other>::position<trigger_pos>",
+        inferred_at=ast.SourcePosition(
+            line=7,
+            column=37,
+            end_line=7,
+            end_column=37,
+            file_path=PurePosixPath("other.def"),
+        ),
+    )
+
+    assert diagnostic.message == (
+        "cannot move a dimension point from"
+        " 'position<box>::action</other>::position<trigger_pos>'"
+        " because it does not contain one; it was emptied at:\n"
+        'File "other.def", line 7, column 37'
     )

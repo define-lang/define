@@ -116,6 +116,7 @@ class PositionDefinition(QualityDefinition):
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.POSITION,
                 name_content=name,
+                # TODO: This is the wrong position.
                 position=name.position,
             ),
             position=position,
@@ -353,25 +354,10 @@ class ActionDefinition(QualityDefinition):
 
     definition_block: ActionDefinitionBlock | None
 
-    @property
-    def interface_position_constraints(self) -> dict[str, frozenset[str]]:
-        """Return constraint names for each interface position, keyed by local name."""
-        if self.definition_block is None:
-            return {}
-        fqun = self.typed_name.name_content.fqun
-        result: dict[str, frozenset[str]] = {}
-        for local_def in self.definition_block.interface_positions:
-            local_name = local_def.typed_name.name_content.name
-            if local_name in result:
-                continue
-            if local_def.constraints is None:
-                result[local_name] = frozenset()
-                continue
-            result[local_name] = frozenset(
-                requirement.typed_global_name.full_typed_name(in_universe=fqun)
-                for requirement in local_def.constraints.requirements
-            )
-        return result
+    # Computed properties
+    interface_positions: dict[str, LocalPositionDefinition]
+    interface_position_constraints: dict[str, frozenset[str]]
+    trigger_position: LocalPositionDefinition | None
 
     def __init__(
         self,
@@ -385,11 +371,65 @@ class ActionDefinition(QualityDefinition):
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.ACTION,
                 name_content=name,
+                # TODO: This is the wrong position.
                 position=name.position,
             ),
             position=position,
         )
         object.__setattr__(self, "definition_block", definition_block)
+        # Instead of making these into properties, we compute them up front for two
+        # reasons: (1) it's complex to make cached properties on frozen dataclasses
+        # (2) this guarantees later thread-safety for accessing this information
+        # on this object (instead of trying to potentially create multiple cached
+        # copies of it across threads).
+        object.__setattr__(
+            self,
+            "interface_positions",
+            self._compute_interface_positions(),
+        )
+        object.__setattr__(
+            self,
+            "interface_position_constraints",
+            self._compute_interface_position_constraints(),
+        )
+        object.__setattr__(self, "trigger_position", self._compute_trigger_position())
+
+    def _compute_interface_positions(self) -> dict[str, LocalPositionDefinition]:
+        if self.definition_block is None:
+            return {}
+        result: dict[str, LocalPositionDefinition] = {}
+        for local_def in self.definition_block.interface_positions:
+            local_name = local_def.typed_name.name_content.name
+            if local_name not in result:
+                result[local_name] = local_def
+        return result
+
+    def _compute_interface_position_constraints(self) -> dict[str, frozenset[str]]:
+        if self.definition_block is None:
+            return {}
+        fqun = self.typed_name.name_content.fqun
+        result: dict[str, frozenset[str]] = {}
+        for local_name, local_def in self.interface_positions.items():
+            if local_def.constraints is None:
+                result[local_name] = frozenset()
+                continue
+            result[local_name] = frozenset(
+                requirement.typed_global_name.full_typed_name(in_universe=fqun)
+                for requirement in local_def.constraints.requirements
+            )
+        return result
+
+    def _compute_trigger_position(self) -> LocalPositionDefinition | None:
+        if self.definition_block is None:
+            return None
+        conditions = self.definition_block.trigger_conditions.conditions
+        if not conditions:
+            return None
+        first_ref = conditions[0].position_reference.chain.typed_names[0]
+        if not isinstance(first_ref, LocalTypedNameReference):
+            return None
+        trigger_name = first_ref.name_content.name
+        return self.interface_positions.get(trigger_name)
 
 
 @dataclass(frozen=True, slots=True)

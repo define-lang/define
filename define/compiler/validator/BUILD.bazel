@@ -68,6 +68,7 @@ py_test(
     deps = [
         ":stats",
         ":validation_result",
+        "//define/compiler:conftest",
         "//define/compiler:parser",
         "//define/compiler:transformer",
         "//define/compiler/graphs:reference_graph",

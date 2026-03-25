@@ -197,17 +197,13 @@ def test_same_fqun_must_use_short_form_in_to(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.line == 7
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position_name == "position<from_pos>"
+    assert len(all_diags) == 1
     assert isinstance(
-        all_diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
-    assert all_diags[1].fqun == "my.domain.com:my_lib"
-    assert all_diags[1].position.line == 7
-    assert all_diags[1].position.column == 68
+    assert all_diags[0].fqun == "my.domain.com:my_lib"
+    assert all_diags[0].position.line == 7
+    assert all_diags[0].position.column == 68
 
 
 def test_valid_global_to_position(
@@ -314,7 +310,7 @@ def test_move_to_same_position_does_not_mark_unknown(
     assert diags[1].position.line == 9
     assert diags[1].position.column == 37
     assert diags[1].position_name == "position<a>"
-    assert diags[1].first_creation_line == 7
+    assert diags[1].created_at.line == 7
 
 
 def test_move_to_chained_prefix_position(

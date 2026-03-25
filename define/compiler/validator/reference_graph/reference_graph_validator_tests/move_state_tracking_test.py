@@ -53,7 +53,9 @@ def test_move_to_occupied_position(
     assert diags[0].position.line == 10
     assert diags[0].position.column == 59
     assert diags[0].position_name == "position<to_pos>"
-    assert diags[0].occupied_at_line == 9
+    assert diags[0].occupied_at is not None
+    assert diags[0].occupied_at.column == 37
+    assert diags[0].occupied_at.line == 9
 
 
 def test_move_updates_state_allows_create_in_source(
@@ -101,7 +103,7 @@ def test_cannot_create_in_position_that_was_moved_into(
     assert diags[0].position.line == 10
     assert diags[0].position.column == 37
     assert diags[0].position_name == "position<b>"
-    assert diags[0].first_creation_line == 9
+    assert diags[0].created_at.line == 9
 
 
 def test_double_move_works(
@@ -154,7 +156,9 @@ def test_same_move_twice_in_a_row(
     assert diags[1].position.line == 10
     assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
-    assert diags[1].occupied_at_line == 9
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.column == 52
+    assert diags[1].occupied_at.line == 9
 
 
 def test_round_trip_move_fails_second_return(
@@ -186,7 +190,9 @@ def test_round_trip_move_fails_second_return(
     assert diags[1].position.line == 11
     assert diags[1].position.column == 52
     assert diags[1].position_name == "position<a>"
-    assert diags[1].occupied_at_line == 10
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.column == 52
+    assert diags[1].occupied_at.line == 10
 
 
 def test_two_actions_same_name_one_empty_error_one_clean(
@@ -259,7 +265,9 @@ def test_two_actions_same_name_one_occupied_error_one_clean(
     assert all_diags[0].position.line == 10
     assert all_diags[0].position.column == 59
     assert all_diags[0].position_name == "position<to_pos>"
-    assert all_diags[0].occupied_at_line == 9
+    assert all_diags[0].occupied_at is not None
+    assert all_diags[0].occupied_at.column == 37
+    assert all_diags[0].occupied_at.line == 9
 
 
 def test_two_actions_with_move_same_local_names(
@@ -345,7 +353,9 @@ def test_move_to_occupied_marks_both_positions_unknown(
     assert diags[0].position.line == 10
     assert diags[0].position.column == 52
     assert diags[0].position_name == "position<b>"
-    assert diags[0].occupied_at_line == 9
+    assert diags[0].occupied_at is not None
+    assert diags[0].occupied_at.column == 37
+    assert diags[0].occupied_at.line == 9
 
 
 def test_both_from_empty_and_to_occupied_marks_unknown(
@@ -378,7 +388,9 @@ def test_both_from_empty_and_to_occupied_marks_unknown(
     assert diags[1].position.line == 9
     assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
-    assert diags[1].occupied_at_line == 8
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.column == 37
+    assert diags[1].occupied_at.line == 8
 
 
 def test_unknown_state_does_not_affect_other_positions(
@@ -411,7 +423,9 @@ def test_unknown_state_does_not_affect_other_positions(
     assert diags[1].position.line == 11
     assert diags[1].position.column == 52
     assert diags[1].position_name == "position<b>"
-    assert diags[1].occupied_at_line == 10
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.column == 52
+    assert diags[1].occupied_at.line == 10
 
 
 def test_single_unknown_position_marks_both_unknown(
@@ -441,7 +455,9 @@ def test_single_unknown_position_marks_both_unknown(
     assert diags[0].position.line == 11
     assert diags[0].position.column == 52
     assert diags[0].position_name == "position<b>"
-    assert diags[0].occupied_at_line == 10
+    assert diags[0].occupied_at is not None
+    assert diags[0].occupied_at.column == 37
+    assert diags[0].occupied_at.line == 10
 
 
 def test_move_from_chained_to_occupied_local_position(
@@ -476,4 +492,6 @@ def test_move_from_chained_to_occupied_local_position(
     assert all_diags[0].position.line == 14
     assert all_diags[0].position.column == 68
     assert all_diags[0].position_name == "position<dest>"
-    assert all_diags[0].occupied_at_line == 13
+    assert all_diags[0].occupied_at is not None
+    assert all_diags[0].occupied_at.column == 37
+    assert all_diags[0].occupied_at.line == 13

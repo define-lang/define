@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from define.compiler import ast, parser, transformer
+from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, test_helpers, validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
@@ -203,22 +204,37 @@ class TestActionBodyEffect:
         )
 
     def test_create_to_explicit_action(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
     ):
-        result = _validate_single_file(
-            tmp_path,
-            monkeypatch,
-            f"define the potential action<{_FQUN}:/act> {{\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
-            "    } and it does {\n"
-            "        create a dimension point in action</other>::position<tp>.\n"
-            "    }\n"
-            "}\n",
+        result = validate_project_with_reference_graph(
+            {
+                "other.def": (
+                    f"define the potential action<{_FQUN}:/other> {{\n"
+                    "    define the position<tp>.\n"
+                    "    it happens when {\n"
+                    "        the position<tp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.def": (
+                    f"define the potential action<{_FQUN}:/act> {{\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</other>::position<tp>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
         )
-        assert len(result.definition_results[0].action_body_effects) == 1
-        effect = result.definition_results[0].action_body_effects[0]
+        act_result = result.program_result.definition_results[f"action<{_FQUN}:/act>"]
+        assert len(act_result.action_body_effects) == 1
+        effect = act_result.action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"
@@ -228,27 +244,42 @@ class TestActionBodyEffect:
         )
 
     def test_create_through_local_prefix(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
     ):
-        result = _validate_single_file(
-            tmp_path,
-            monkeypatch,
-            f"define the potential action<{_FQUN}:/act> {{\n"
-            "    define the position<run>.\n"
-            "    define the position<local> {\n"
-            "        it may only contain dimension points where {\n"
-            "            it has the action</other>.\n"
-            "        }\n"
-            "    }\n"
-            "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
-            "    } and it does {\n"
-            "        create a dimension point in position<local>::action</other>::position<tp>.\n"
-            "    }\n"
-            "}\n",
+        result = validate_project_with_reference_graph(
+            {
+                "other.def": (
+                    f"define the potential action<{_FQUN}:/other> {{\n"
+                    "    define the position<tp>.\n"
+                    "    it happens when {\n"
+                    "        the position<tp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.def": (
+                    f"define the potential action<{_FQUN}:/act> {{\n"
+                    "    define the position<run>.\n"
+                    "    define the position<local> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<local>::action</other>::position<tp>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
         )
-        assert len(result.definition_results[0].action_body_effects) == 1
-        effect = result.definition_results[0].action_body_effects[0]
+        act_result = result.program_result.definition_results[f"action<{_FQUN}:/act>"]
+        assert len(act_result.action_body_effects) == 1
+        effect = act_result.action_body_effects[0]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"

@@ -14,6 +14,36 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_test",
+    size = "small",
+    srcs = ["automated_guarantees_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "automated_guarantees_unknown_test",
+    size = "small",
+    srcs = ["automated_guarantees_unknown_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_test",
+    size = "small",
+    srcs = ["automated_requirements_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
     name = "chained_name_test",
     size = "small",
     srcs = ["chained_name_test.py"],
@@ -55,6 +85,15 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "inferred_action_occupancy_test",
+    size = "small",
+    srcs = ["inferred_action_occupancy_test.py"],
+    deps = [
+        "//define/compiler:conftest",
     ],
 )
 
@@ -147,10 +186,14 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_triggering_test",
+        ":automated_guarantees_test",
+        ":automated_guarantees_unknown_test",
+        ":automated_requirements_test",
         ":chained_name_test",
         ":create_dimension_point_test",
         ":dimension_point_conflict_test",
         ":error_messages_test",
+        ":inferred_action_occupancy_test",
         ":move_chained_constraint_test",
         ":move_cross_fqun_test",
         ":move_dimension_point_test",

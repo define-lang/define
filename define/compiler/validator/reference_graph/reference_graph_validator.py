@@ -5,7 +5,10 @@ from __future__ import annotations
 import typing
 
 from define.compiler.graphs import action_call_graph, reference_graph
-from define.compiler.validator.reference_graph import definition_postorder_validator
+from define.compiler.validator.reference_graph import (
+    action_contract,
+    definition_postorder_validator,
+)
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
@@ -21,6 +24,7 @@ class ReferenceGraphValidator:
 
     _reference_graph: reference_graph.ReferenceGraph
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _action_contracts: dict[str, action_contract.ActionContract]
 
     def __init__(
         self,
@@ -30,6 +34,7 @@ class ReferenceGraphValidator:
         """Initialize with the reference graph and definition results."""
         self._reference_graph = graph
         self._definition_results = definition_results
+        self._action_contracts = {}
 
     def validate(self) -> action_call_graph.ActionCallGraph:
         """Run analysis for all definitions in DFS post-order.
@@ -49,11 +54,13 @@ class ReferenceGraphValidator:
                 continue
             call_graph.register_triggers(definition_result.trigger_positions)
             analyzer = definition_postorder_validator.DefinitionPostorderValidator(
-                definition_result, self._definition_results
+                definition_result, self._definition_results, self._action_contracts
             )
-            diagnostics, effects = analyzer.analyze()
+            diagnostics, effects, contract = analyzer.analyze()
             for d in diagnostics:
                 definition_result.add_diagnostic(d)
             definition_result.action_body_effects.extend(effects)
             call_graph.register_effects(effects)
+            if contract is not None:
+                self._action_contracts[name] = contract
         return call_graph

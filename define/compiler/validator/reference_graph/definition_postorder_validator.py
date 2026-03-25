@@ -3,14 +3,29 @@
 from __future__ import annotations
 
 import typing
+from dataclasses import dataclass
+from functools import cached_property
 
 from define.compiler import ast, diagnostics
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import scope_tracker
-from define.compiler.validator.reference_graph import dimension_point_tracker
+from define.compiler.validator.reference_graph import (
+    action_contract,
+    dimension_point_tracker,
+)
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
+
+
+@dataclass(frozen=True)
+class _ValidatedMove:
+    """Result of successful move precondition validation."""
+
+    to_qualities: frozenset[str]
+    to_external: action_contract.ActionAndInterfacePosition | None
+    from_tracked: bool
+    to_tracked: bool
 
 
 class DefinitionPostorderValidator:
@@ -18,76 +33,177 @@ class DefinitionPostorderValidator:
 
     _definition_result: validation_result.DefinitionValidationResult
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _action_contracts: dict[str, action_contract.ActionContract]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_body_effects: list[action_call_graph.ActionBodyEffect]
+
+    # TODO: Split into ActionPostorderValidator and PositionPostorderValidator
+    # subclasses so _action_definition is a non-optional field on the action
+    # subclass.
+    _inferred_requirements: dict[str, action_contract.InterfacePositionRequirement]
 
     def __init__(
         self,
         definition_result: validation_result.DefinitionValidationResult,
         definition_results: dict[str, validation_result.DefinitionValidationResult],
+        action_contracts: dict[str, action_contract.ActionContract],
     ):
         """Initialize with the definition to validate and the full results map."""
         self._definition_result = definition_result
         self._definition_results = definition_results
+        self._action_contracts = action_contracts
         self._diagnostics = []
         self._action_body_effects = []
+        self._inferred_requirements = {}
+
+    @property
+    def _action_definition(self) -> ast.ActionDefinition:
+        if not isinstance(self._definition, ast.ActionDefinition):
+            raise TypeError(f"Expected ActionDefinition, got {type(self._definition)}")
+        return self._definition
+
+    @property
+    def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
+        return self._action_definition.interface_positions
+
+    @property
+    def _trigger_position(self) -> ast.LocalPositionDefinition | None:
+        return self._action_definition.trigger_position
 
     @property
     def _definition(self) -> ast.QualityDefinition:
         return self._definition_result.definition
 
+    @property
+    def _enclosing_fqun(self) -> ast.Fqun:
+        return self._definition.typed_name.name_content.fqun
+
+    @cached_property
+    def _tracker(self) -> dimension_point_tracker.DimensionPointTracker:
+        return dimension_point_tracker.DimensionPointTracker(self._definition)
+
     def analyze(
         self,
-    ) -> tuple[list[diagnostics.Diagnostic], list[action_call_graph.ActionBodyEffect]]:
-        """Run post-order validation and return diagnostics and action body effects."""
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        list[action_call_graph.ActionBodyEffect],
+        action_contract.ActionContract | None,
+    ]:
+        """Run post-order validation and return diagnostics, effects, and contract."""
+        contract: action_contract.ActionContract | None = None
         match self._definition:
             case ast.ActionDefinition() as action_def:
                 if action_def.definition_block is not None:
-                    self._analyze_action_definition(action_def.definition_block)
+                    contract = self._analyze_action_definition(
+                        action_def.definition_block
+                    )
+                else:
+                    contract = action_contract.EmptyContract()
             case ast.PositionDefinition() as pos_def:
                 self._analyze_position_definition(pos_def)
             case _:
                 raise TypeError(f"Unexpected definition type: {type(self._definition)}")
-        return self._diagnostics, self._action_body_effects
+        return self._diagnostics, self._action_body_effects, contract
 
-    def _analyze_action_definition(self, definition_block: ast.ActionDefinitionBlock):
-        scope = scope_tracker.ScopeTracker(
-            self._definition.typed_name.name_content.fqun
-        )
+    def _analyze_action_definition(
+        self,
+        definition_block: ast.ActionDefinitionBlock,
+    ) -> action_contract.ActionContract:
+        scope = scope_tracker.ScopeTracker(self._enclosing_fqun)
         for pos in definition_block.interface_positions:
             # Skip duplicates so the first definition's constraints are preserved,
             # matching file_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
                 scope.add_definition(pos)
-        tracker = dimension_point_tracker.LocalDimensionPointTracker(self._definition)
+
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
         for condition in definition_block.trigger_conditions.conditions:
-            self._validate_chained_name(condition.position_reference.chain, scope)
-            local_position = tracker.get_local_position(
+            self._validate_chained_name(condition.position_reference, scope)
+            local_position = self._tracker.get_local_position(
                 condition.position_reference, scope
             )
             if local_position is not None:
+                trigger_name = local_position.name_content.name
                 qualities = scope.get_constraint_names(
                     condition.position_reference.chain.typed_names[0]
                 )
-                tracker.create(condition.position_reference, qualities)
+                # DLP 37: We assume trigger points are occupied upon the start
+                # of the action, but we can only assume they have the qualities
+                # they are declared with.
+                self._tracker.create(
+                    condition.position_reference,
+                    qualities,
+                    origin_position=self._interface_positions.get(trigger_name),
+                )
+
         scope.enter_child_scope()
-        self._analyze_statements(definition_block.action_statements, scope, tracker)
+        self._analyze_statements(definition_block.action_statements, scope)
+
+        return self._generate_contract()
+
+    def _generate_contract(self) -> action_contract.ActionContract:
+        """Generate the action contract from inferred requirements and final tracker state."""
+        trigger_name = (
+            self._trigger_position.typed_name.name_content.name
+            if self._trigger_position is not None
+            else None
+        )
+        referenced_positions = {trigger_name} | set(self._inferred_requirements.keys())
+
+        guarantees: dict[str, action_contract.InterfacePositionGuarantee] = {}
+        for local_name, pos in self._interface_positions.items():
+            if local_name not in referenced_positions:
+                continue
+            key = f"position<{local_name}>"
+
+            if self._tracker.has_unknown_state_by_key(key):
+                guarantees[local_name] = action_contract.UnknownGuarantee(
+                    position=pos,
+                )
+            elif self._tracker.is_occupied_by_key(key):
+                info = self._tracker.get_occupant_by_key(key)
+                if info.origin_position is not None:
+                    guarantees[local_name] = (
+                        action_contract.OccupiedByExistingGuarantee(
+                            position=pos,
+                            origin_position=info.origin_position,
+                            caused_by=info.code_position,
+                        )
+                    )
+                else:
+                    guarantees[local_name] = action_contract.OccupiedByNewGuarantee(
+                        position=pos,
+                        qualities=info.qualities,
+                        caused_by=info.code_position,
+                    )
+            else:
+                guarantees[local_name] = action_contract.EmptyGuarantee(
+                    position=pos,
+                    caused_by=self._tracker.get_emptied_by_key(key),
+                )
+
+        return action_contract.ActionContract(
+            requirements=self._inferred_requirements,
+            guarantees=guarantees,
+            trigger_position_name=(
+                self._trigger_position.typed_name.name_content.name
+                if self._trigger_position is not None
+                else ""
+            ),
+        )
 
     def _analyze_position_definition(self, definition: ast.PositionDefinition):
         if definition.initialization is None:
             return
         scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
         scope.add_definition(definition)
-        tracker = dimension_point_tracker.LocalDimensionPointTracker(definition)
-        self._analyze_statements(definition.initialization, scope, tracker)
+        self._analyze_statements(definition.initialization, scope)
 
     def _analyze_statements(
         self,
         action_statements: ast.ActionStatementsBlock,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
         validity_iter = iter(self._definition_result.dp_statement_validity)
         for stmt in action_statements.statements:
@@ -96,39 +212,34 @@ class DefinitionPostorderValidator:
                     scope.add_definition(stmt)
                 case ast.CreateDimensionPointStatement():
                     validity = next(validity_iter)
-                    self._analyze_create(stmt, validity, scope, tracker)
+                    self._analyze_create(stmt, validity, scope)
                 case ast.MoveDimensionPointStatement():
                     validity = next(validity_iter)
-                    self._analyze_move(stmt, validity, scope, tracker)
+                    self._analyze_move(stmt, validity, scope)
 
     def _analyze_create(
         self,
         stmt: ast.CreateDimensionPointStatement,
         validity: validation_result.DimensionPointStatementValidity,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        self._validate_chained_name(stmt.target_position.chain, scope)
+        self._validate_chained_name(stmt.target_position, scope)
         position = stmt.target_position
         if not validity.target_ok:
             return
-        if tracker.has_unknown_state(position):
+        if self._tracker.has_unknown_state(position):
             return
-        local_ref = tracker.get_local_position(position, scope)
-        if local_ref is not None:
-            if tracker.is_occupied(position):
-                existing = tracker.get_occupant(position)
-                self._diagnostics.append(
-                    diagnostics.CreateInOccupiedPositionDiagnostic(
-                        position=position.position,
-                        position_name=position.chain.source_chained_name,
-                        first_creation_line=existing.creation_position.position.line,
-                    )
-                )
-                return
-            qualities = scope.get_constraint_names(position.chain.typed_names[0])
-            tracker.create(position, qualities)
 
+        local_ref = self._tracker.get_local_position(position, scope)
+        if local_ref is not None:
+            if not self._analyze_create_local(local_ref, scope):
+                return
+        else:
+            if not self._analyze_create_chained_name(position):
+                return
+
+        # TODO: I'm not sure we need this anymore, I think we have a more direct
+        # mechanism we could use to build the action graph.
         self._action_body_effects.append(
             action_call_graph.ActionBodyEffect(
                 enclosing_typed_name=self._definition.typed_name,
@@ -136,137 +247,378 @@ class DefinitionPostorderValidator:
             )
         )
 
+    def _analyze_create_local(
+        self,
+        local_ref: ast.LocalTypedNameReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> bool:
+        """Analyze a create statement targeting a local position.
+
+        Returns True if the create succeeded and an effect should be recorded.
+        """
+        self._maybe_infer_requirement(
+            action_contract.PositionOccupancyState.EMPTY,
+            local_ref,
+            scope,
+        )
+        if self._tracker.is_occupied(local_ref):
+            existing = self._tracker.get_occupant(local_ref)
+            self._diagnostics.append(
+                diagnostics.CreateInOccupiedPositionDiagnostic(
+                    position=local_ref.position,
+                    position_name=local_ref.source_typed_name,
+                    created_at=existing.code_position,
+                )
+            )
+            return False
+        qualities = scope.get_constraint_names(local_ref)
+        self._tracker.create(local_ref, qualities)
+        return True
+
+    def _analyze_create_chained_name(
+        self,
+        position: ast.PositionReference,
+    ) -> bool:
+        """Analyze a create statement targeting a chained name position.
+
+        Returns True if an effect should be recorded.
+        """
+        external = action_contract.ActionAndInterfacePosition.from_position_reference(
+            position, self._enclosing_fqun
+        )
+        if external is None:
+            return True
+        if self._tracker.is_occupied(position):
+            self._diagnostics.append(
+                diagnostics.CreateInOccupiedPositionDiagnostic(
+                    position=position.position,
+                    position_name=position.chain.source_chained_name,
+                    created_at=self._tracker.get_occupant(position).code_position,
+                )
+            )
+            return False
+        qualities = self._get_external_interface_position_qualities(external)
+        self._tracker.create(position, qualities)
+        self._check_trigger(position, external)
+        return True
+
     def _analyze_move(
         self,
         stmt: ast.MoveDimensionPointStatement,
         validity: validation_result.DimensionPointStatementValidity,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        self._validate_chained_name(stmt.source_position.chain, scope)
-        self._validate_chained_name(stmt.target_position.chain, scope)
-        fqun = self._definition.typed_name.name_content.fqun
-        if self._check_if_from_is_a_prefix_of_to(stmt, fqun, scope, tracker):
+        self._validate_chained_name(stmt.source_position, scope)
+        self._validate_chained_name(stmt.target_position, scope)
+        if self._check_if_from_is_a_prefix_of_to(stmt, scope):
             return
         if not (validity.source_ok and validity.target_ok):
             return
-        self._execute_move(stmt, scope, tracker)
+        self._execute_move(stmt.source_position, stmt.target_position, scope)
+        if self._tracker.has_unknown_state(stmt.target_position):
+            return
+        self._action_body_effects.append(
+            action_call_graph.ActionBodyEffect(
+                enclosing_typed_name=self._definition.typed_name,
+                statement=stmt,
+            )
+        )
 
     def _execute_move(
         self,
-        stmt: ast.MoveDimensionPointStatement,
+        from_pos: ast.PositionReference,
+        to_pos: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ):
-        # First, if either position is in an unknown state, mark both as now having an
-        # unknown state and don't do any more checks.
-        if tracker.has_unknown_state(stmt.source_position) or tracker.has_unknown_state(
-            stmt.target_position
+        """Execute a move and update tracker state."""
+        if self._tracker.has_unknown_state(from_pos) or self._tracker.has_unknown_state(
+            to_pos
         ):
-            tracker.mark_unknown_state(stmt.source_position)
-            tracker.mark_unknown_state(stmt.target_position)
+            self._tracker.mark_unknown(from_pos)
+            self._tracker.mark_unknown(to_pos)
             return
 
-        from_local = tracker.get_local_position(stmt.source_position, scope)
-        to_local = tracker.get_local_position(stmt.target_position, scope)
+        validated = self._validate_move_preconditions(from_pos, to_pos, scope)
+        if validated is None:
+            return
 
-        from_occupied = tracker.is_occupied(stmt.source_position)
-        to_empty = not tracker.is_occupied(stmt.target_position)
+        self._commit_move(from_pos, to_pos, validated)
 
-        if not (from_local and to_local):
-            # For now, we are assuming that all external positions are fine to
-            # move into or from, for the sake of simplicity.
-            #
-            # TODO: Need to do occupancy tracking on external positions, or more
-            # realistically, need to have constraints that enforce that state.
-            from_occupied = (not from_local) or from_occupied
-            to_empty = (not to_local) or to_empty
+    def _validate_move_preconditions(
+        self,
+        from_pos: ast.PositionReference,
+        to_pos: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> _ValidatedMove | None:
+        """Classify positions, infer requirements, and validate occupancy and constraints.
+
+        Returns a _ValidatedMove if the move may proceed, or None if validation failed.
+        """
+        from_local = self._tracker.get_local_position(from_pos, scope)
+        to_local = self._tracker.get_local_position(to_pos, scope)
+
+        from_external = (
+            None
+            if from_local
+            else action_contract.ActionAndInterfacePosition.from_position_reference(
+                from_pos,
+                self._enclosing_fqun,
+            )
+        )
+        to_external = (
+            None
+            if to_local
+            else action_contract.ActionAndInterfacePosition.from_position_reference(
+                to_pos,
+                self._enclosing_fqun,
+            )
+        )
+
+        # TODO: This is only necessary temporarily while we don't
+        # support tracking full chained names.
+        from_tracked = bool(from_local or from_external)
+        to_tracked = bool(to_local or to_external)
+
+        # Infer requirements for local interface positions.
+        if from_local:
+            self._maybe_infer_requirement(
+                action_contract.PositionOccupancyState.OCCUPIED,
+                from_local,
+                scope,
+            )
+        if to_local:
+            self._maybe_infer_requirement(
+                action_contract.PositionOccupancyState.EMPTY,
+                to_local,
+                scope,
+            )
+
+        from_occupied = self._tracker.is_occupied(from_pos) if from_tracked else True
+        to_empty = not self._tracker.is_occupied(to_pos) if to_tracked else True
 
         if not from_occupied:
-            self._diagnostics.append(
-                diagnostics.MoveFromEmptyPositionDiagnostic(
-                    position=stmt.source_position.position,
-                    position_name=stmt.source_position.chain.source_chained_name,
+            if from_external:
+                self._diagnostics.append(
+                    diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
+                        position=from_pos.position,
+                        action_name=from_external.action_name,
+                        position_name=from_pos.chain.source_chained_name,
+                        inferred_at=self._tracker.get_emptied_by(from_pos),
+                    )
                 )
-            )
+            else:
+                self._diagnostics.append(
+                    diagnostics.MoveFromEmptyPositionDiagnostic(
+                        position=from_pos.position,
+                        position_name=from_pos.chain.source_chained_name,
+                    )
+                )
         if not to_empty:
-            occupant = tracker.get_occupant(stmt.target_position)
-            occupied_at_line = (
-                occupant.creation_position.position.line if occupant else None
-            )
+            occupant = self._tracker.get_occupant(to_pos)
             self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
-                    position=stmt.target_position.position,
-                    position_name=stmt.target_position.chain.source_chained_name,
-                    occupied_at_line=occupied_at_line,
+                    position=to_pos.position,
+                    position_name=to_pos.chain.source_chained_name,
+                    occupied_at=occupant.code_position,
                 )
             )
 
         if not (from_occupied and to_empty):
-            tracker.mark_unknown_state(stmt.source_position)
-            tracker.mark_unknown_state(stmt.target_position)
-            return
+            self._tracker.mark_unknown(from_pos)
+            self._tracker.mark_unknown(to_pos)
+            return None
 
-        # Resolve qualities for constraint checking. Local positions use the
-        # tracker/scope; chained positions look up the referenced definition.
-        fqun = self._definition.typed_name.name_content.fqun
-        if from_local:
-            from_qualities: frozenset[str] | None = tracker.get_occupant(
-                stmt.source_position
+        # Resolve qualities for constraint checking. Tracked positions use the
+        # tracker/scope; untracked chained positions look up the referenced definition.
+        if from_tracked:
+            from_qualities: frozenset[str] | None = self._tracker.get_occupant(
+                from_pos
             ).qualities
         else:
             from_qualities = self._get_required_qualities_for_position(
-                stmt.source_position.chain, fqun
+                from_pos.chain, self._enclosing_fqun
             )
-        if to_local:
-            to_qualities: frozenset[str] | None = scope.get_constraint_names(
-                stmt.target_position.chain.typed_names[0]
-            )
+        if to_tracked:
+            if to_local:
+                to_qualities: frozenset[str] | None = scope.get_constraint_names(
+                    to_pos.chain.typed_names[0]
+                )
+            else:
+                to_qualities = (
+                    self._get_external_interface_position_qualities(to_external)
+                    if to_external
+                    else None
+                )
         else:
             to_qualities = self._get_required_qualities_for_position(
-                stmt.target_position.chain, fqun
+                to_pos.chain, self._enclosing_fqun
             )
 
         if not self._check_move_constraints(
-            stmt,
+            from_pos,
+            to_pos,
             from_qualities,
             to_qualities,
-            both_local=bool(from_local and to_local),
-            tracker=tracker,
+            both_tracked=bool(from_tracked and to_tracked),
+        ):
+            return None
+
+        return _ValidatedMove(
+            to_qualities=to_qualities or frozenset(),
+            to_external=to_external,
+            from_tracked=from_tracked,
+            to_tracked=to_tracked,
+        )
+
+    def _commit_move(
+        self,
+        from_pos: ast.PositionReference,
+        to_pos: ast.PositionReference,
+        validated: _ValidatedMove,
+    ):
+        """Update tracker state after a validated move."""
+        if validated.from_tracked and validated.to_tracked:
+            self._tracker.move(from_pos, to_pos)
+        elif validated.from_tracked:
+            self._tracker.destroy(from_pos)
+        elif validated.to_tracked:
+            self._tracker.create(to_pos, validated.to_qualities)
+
+        if validated.to_external is not None:
+            self._check_trigger(to_pos, validated.to_external)
+
+    def _maybe_infer_requirement(
+        self,
+        required_state: action_contract.PositionOccupancyState,
+        local_ref: ast.LocalTypedNameReference,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Infer a requirement for a non-trigger interface position on first reference."""
+        if not isinstance(self._definition, ast.ActionDefinition):
+            return
+        local_name = local_ref.name_content.name
+        if local_name not in self._interface_positions:
+            return
+        if (
+            self._trigger_position is not None
+            and local_name == self._trigger_position.typed_name.name_content.name
         ):
             return
+        if local_name in self._inferred_requirements:
+            return
 
-        # Update tracker state.
-        if from_local and to_local:
-            tracker.move(stmt.source_position, stmt.target_position)
-        else:
-            if from_local:
-                tracker.destroy(stmt.source_position)
-            elif to_local:
-                tracker.create(stmt.target_position, to_qualities or frozenset())
-
-        if not tracker.has_unknown_state(stmt.target_position):
-            self._action_body_effects.append(
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=self._definition.typed_name,
-                    statement=stmt,
-                )
+        self._inferred_requirements[local_name] = (
+            action_contract.InterfacePositionRequirement(
+                position=self._interface_positions[local_name],
+                required_state=required_state,
+                inferred_from=local_ref.position,
             )
+        )
+
+        if required_state == action_contract.PositionOccupancyState.OCCUPIED:
+            qualities = scope.get_constraint_names(local_ref)
+            self._tracker.create(
+                local_ref,
+                qualities,
+                origin_position=self._interface_positions.get(local_name),
+            )
+
+    def _check_trigger(
+        self,
+        ref: ast.PositionReference,
+        external: action_contract.ActionAndInterfacePosition,
+    ):
+        """Check if filling this interface position triggers the named action."""
+        contract = self._action_contracts.get(external.action_name)
+        if contract is None:
+            return
+        if external.position_name != contract.trigger_position_name:
+            return
+
+        self._check_requirements(ref, external.action_name, contract)
+        self._tracker.apply_guarantees(ref, contract.guarantees)
+
+    def _check_requirements(
+        self,
+        trigger_position: ast.PositionReference,
+        action_name: str,
+        contract: action_contract.ActionContract,
+    ):
+        """Check that all action requirements are satisfied before triggering."""
+        dp = self._tracker.get_occupant(trigger_position)
+
+        chain_prefix = "::".join(
+            e.source_typed_name for e in trigger_position.chain.typed_names[:-1]
+        )
+
+        for req in contract.requirements.values():
+            req_name = req.position.typed_name.name_content.name
+            key = self._tracker.interface_position_key(trigger_position, req_name)
+
+            if self._tracker.has_unknown_state_by_key(key):
+                continue
+
+            is_occupied = self._tracker.is_occupied_by_key(key)
+            req_chained_name = (
+                f"{chain_prefix}::{req.position.typed_name.source_typed_name}"
+            )
+
+            if (
+                req.required_state == action_contract.PositionOccupancyState.EMPTY
+                and is_occupied
+            ):
+                occupant = self._tracker.get_occupant_by_key(key)
+                self._diagnostics.append(
+                    diagnostics.ActionRequiresEmptyPositionDiagnostic(
+                        position=dp.code_position,
+                        action_name=action_name,
+                        position_name=req_chained_name,
+                        inferred_at=req.inferred_from,
+                        filled_at=occupant.code_position,
+                    )
+                )
+            elif (
+                req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+                and not is_occupied
+            ):
+                self._diagnostics.append(
+                    diagnostics.ActionRequiresOccupiedPositionDiagnostic(
+                        position=dp.code_position,
+                        action_name=action_name,
+                        position_name=req_chained_name,
+                        inferred_at=req.inferred_from,
+                    )
+                )
+
+    def _get_external_interface_position_qualities(
+        self,
+        external: action_contract.ActionAndInterfacePosition,
+    ) -> frozenset[str]:
+        """Get the constraint qualities for an external action's interface position."""
+        definition_result = self._definition_results.get(external.action_name)
+        if definition_result is None:
+            return frozenset()
+        action_def = definition_result.definition
+        if not isinstance(action_def, ast.ActionDefinition):
+            return frozenset()
+        return action_def.interface_position_constraints.get(
+            external.position_name, frozenset()
+        )
 
     def _check_move_constraints(
         self,
-        stmt: ast.MoveDimensionPointStatement,
+        from_pos: ast.PositionReference,
+        to_pos: ast.PositionReference,
         from_qualities: frozenset[str] | None,
         to_qualities: frozenset[str] | None,
         *,
-        both_local: bool,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
+        both_tracked: bool,
     ) -> bool:
         """Check that a move satisfies destination constraints.
 
         Returns True if the move may proceed (constraints satisfied or
         unresolvable). Returns False if constraints are violated and
-        both positions are local (marks unknown state).
+        both positions are tracked (marks unknown state).
         """
         if from_qualities is None or to_qualities is None:
             return True
@@ -276,29 +628,28 @@ class DefinitionPostorderValidator:
 
         self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
-                position=stmt.target_position.chain.typed_names[0].position,
-                source_position=stmt.source_position.chain.source_chained_name,
-                target_position=stmt.target_position.chain.source_chained_name,
+                position=to_pos.chain.typed_names[0].position,
+                source_position=from_pos.chain.source_chained_name,
+                target_position=to_pos.chain.source_chained_name,
                 missing_qualities=sorted(missing),
             )
         )
-        if both_local:
-            tracker.mark_unknown_state(stmt.source_position)
-            tracker.mark_unknown_state(stmt.target_position)
+        if both_tracked:
+            self._tracker.mark_unknown(from_pos)
+            self._tracker.mark_unknown(to_pos)
             return False
         return True
 
     def _check_if_from_is_a_prefix_of_to(
         self,
         stmt: ast.MoveDimensionPointStatement,
-        fqun: ast.Fqun,
         scope: scope_tracker.ScopeTracker,
-        tracker: dimension_point_tracker.LocalDimensionPointTracker,
     ) -> bool:
         """Check if the from chain is a prefix of (or identical to) the to chain.
 
         Returns True if a prefix relationship was detected (and diagnostics emitted).
         """
+        fqun = self._enclosing_fqun
         from_chain = stmt.source_position.chain
         to_chain = stmt.target_position.chain
         if len(from_chain.typed_names) > len(to_chain.typed_names):
@@ -329,21 +680,25 @@ class DefinitionPostorderValidator:
             )
             # TODO: Need to export unknown-state positions in FileValidationResult
             # so we know they also can't be checked elsewhere.
-            if tracker.get_local_position(stmt.source_position, scope):
-                tracker.mark_unknown_state(stmt.source_position)
-            if tracker.get_local_position(stmt.target_position, scope):
-                tracker.mark_unknown_state(stmt.target_position)
+            if self._tracker.get_local_position(stmt.source_position, scope):
+                self._tracker.mark_unknown(stmt.source_position)
+            if self._tracker.get_local_position(stmt.target_position, scope):
+                self._tracker.mark_unknown(stmt.target_position)
         return True
 
     def _validate_chained_name(
         self,
-        chain: ast.ChainedName,
+        ref: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Validate chained name elements against their parent name's constraints."""
+        """Validate chained name elements against their parent name's constraints.
+
+        Marks the chain's position as UNKNOWN in the tracker if validation fails.
+        """
+        chain = ref.chain
         if len(chain.typed_names) < 2:
             return
-        enclosing_fqun = self._definition.typed_name.name_content.fqun
+        enclosing_fqun = self._enclosing_fqun
         elements = chain.typed_names
 
         # Check the second element against the first element's constraints
@@ -352,6 +707,7 @@ class DefinitionPostorderValidator:
         first = elements[0]
         if scope.is_defined(first):
             self._check_chain_element_in_constraints(
+                ref,
                 elements[1],
                 scope.get_constraint_names(first),
                 first.full_typed_name(in_universe=enclosing_fqun),
@@ -364,16 +720,19 @@ class DefinitionPostorderValidator:
             # The file_validator already diagnoses invalid chains before
             # they reach us. However, they still _exist_, so we skip them.
             if not isinstance(parent, ast.GlobalTypedNameReference):
+                self._tracker.mark_unknown(ref)
                 return
             parent_name = parent.full_typed_name(in_universe=enclosing_fqun)
             parent_result = self._definition_results.get(parent_name)
             # This means the definition's file did not load or did not parse.
             if parent_result is None:
+                self._tracker.mark_unknown(ref)
                 return
             child = elements[index + 1]
             match parent_result.definition:
                 case ast.PositionDefinition() as position_def:
                     self._check_chain_element_in_constraints(
+                        ref,
                         child,
                         position_def.constraint_names,
                         parent_name,
@@ -382,6 +741,7 @@ class DefinitionPostorderValidator:
                     index += 1
                 case ast.ActionDefinition() as action_def:
                     consumed = self._validate_action_chain_step(
+                        ref,
                         child,
                         elements,
                         index + 1,
@@ -399,6 +759,7 @@ class DefinitionPostorderValidator:
 
     def _validate_action_chain_step(
         self,
+        ref: ast.PositionReference,
         child: ast.TypedNameReference,
         elements: list[ast.TypedNameReference],
         child_index: int,
@@ -412,19 +773,20 @@ class DefinitionPostorderValidator:
         """
         # TODO: We should emit more specific diagnostics for these cases.
         if not isinstance(child, ast.LocalTypedNameReference):
-            self._emit_not_in_action_diagnostic(child, parent_name, fqun)
+            self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
             return 0
         if child.name_type != ast.NameType.POSITION:
-            self._emit_not_in_action_diagnostic(child, parent_name, fqun)
+            self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
             return 0
         if child.name_content.name not in action_def.interface_position_constraints:
-            self._emit_not_in_action_diagnostic(child, parent_name, fqun)
+            self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
             return 0
         # The caller guarantees child exists, but not that the child's child exists.
         if child_index + 1 >= len(elements):
             return 1
         next_child = elements[child_index + 1]
         self._check_chain_element_in_constraints(
+            ref,
             next_child,
             action_def.interface_position_constraints[child.name_content.name],
             child.full_typed_name(),
@@ -434,6 +796,7 @@ class DefinitionPostorderValidator:
 
     def _check_chain_element_in_constraints(
         self,
+        ref: ast.PositionReference,
         element: ast.TypedNameReference,
         constraint_names: frozenset[str],
         parent_name: str,
@@ -449,9 +812,11 @@ class DefinitionPostorderValidator:
                     parent_name=parent_name,
                 )
             )
+            self._tracker.mark_unknown(ref)
 
     def _emit_not_in_action_diagnostic(
         self,
+        ref: ast.PositionReference,
         element: ast.TypedNameReference,
         parent_name: str,
         fqun: ast.Fqun,
@@ -464,6 +829,7 @@ class DefinitionPostorderValidator:
                 parent_name=parent_name,
             )
         )
+        self._tracker.mark_unknown(ref)
 
     def _get_required_qualities_for_position(
         self,
