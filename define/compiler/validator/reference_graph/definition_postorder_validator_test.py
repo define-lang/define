@@ -18,7 +18,7 @@ def _get_contract(
     )
     assert not result.has_errors(), result.all_diagnostics
     definition_result = result.definition_results[action_name]
-    validator = definition_postorder_validator.DefinitionPostorderValidator(
+    validator = definition_postorder_validator.create_postorder_validator(
         definition_result, result.definition_results, {}
     )
     _, _, contract = validator.analyze()

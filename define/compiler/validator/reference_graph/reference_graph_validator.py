@@ -53,7 +53,7 @@ class ReferenceGraphValidator:
             if definition_result is None:
                 continue
             call_graph.register_triggers(definition_result.trigger_positions)
-            analyzer = definition_postorder_validator.DefinitionPostorderValidator(
+            analyzer = definition_postorder_validator.create_postorder_validator(
                 definition_result, self._definition_results, self._action_contracts
             )
             diagnostics, effects, contract = analyzer.analyze()

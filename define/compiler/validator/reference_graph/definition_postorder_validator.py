@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import abc
 import typing
 from dataclasses import dataclass
 from functools import cached_property
@@ -28,7 +29,7 @@ class _ValidatedMove:
     to_tracked: bool
 
 
-class DefinitionPostorderValidator:
+class DefinitionPostorderValidator(abc.ABC):
     """Validates a single definition during a DFS post-order walk of the reference graph."""
 
     _definition_result: validation_result.DefinitionValidationResult
@@ -36,11 +37,6 @@ class DefinitionPostorderValidator:
     _action_contracts: dict[str, action_contract.ActionContract]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_body_effects: list[action_call_graph.ActionBodyEffect]
-
-    # TODO: Split into ActionPostorderValidator and PositionPostorderValidator
-    # subclasses so _action_definition is a non-optional field on the action
-    # subclass.
-    _inferred_requirements: dict[str, action_contract.InterfacePositionRequirement]
 
     def __init__(
         self,
@@ -54,21 +50,6 @@ class DefinitionPostorderValidator:
         self._action_contracts = action_contracts
         self._diagnostics = []
         self._action_body_effects = []
-        self._inferred_requirements = {}
-
-    @property
-    def _action_definition(self) -> ast.ActionDefinition:
-        if not isinstance(self._definition, ast.ActionDefinition):
-            raise TypeError(f"Expected ActionDefinition, got {type(self._definition)}")
-        return self._definition
-
-    @property
-    def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
-        return self._action_definition.interface_positions
-
-    @property
-    def _trigger_position(self) -> ast.LocalPositionDefinition | None:
-        return self._action_definition.trigger_position
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -82,6 +63,7 @@ class DefinitionPostorderValidator:
     def _tracker(self) -> dimension_point_tracker.DimensionPointTracker:
         return dimension_point_tracker.DimensionPointTracker(self._definition)
 
+    @abc.abstractmethod
     def analyze(
         self,
     ) -> tuple[
@@ -90,115 +72,27 @@ class DefinitionPostorderValidator:
         action_contract.ActionContract | None,
     ]:
         """Run post-order validation and return diagnostics, effects, and contract."""
-        contract: action_contract.ActionContract | None = None
-        match self._definition:
-            case ast.ActionDefinition() as action_def:
-                if action_def.definition_block is not None:
-                    contract = self._analyze_action_definition(
-                        action_def.definition_block
-                    )
-                else:
-                    contract = action_contract.EmptyContract()
-            case ast.PositionDefinition() as pos_def:
-                self._analyze_position_definition(pos_def)
-            case _:
-                raise TypeError(f"Unexpected definition type: {type(self._definition)}")
-        return self._diagnostics, self._action_body_effects, contract
 
-    def _analyze_action_definition(
+    def _maybe_infer_requirement(  # noqa: B027
         self,
-        definition_block: ast.ActionDefinitionBlock,
-    ) -> action_contract.ActionContract:
-        scope = scope_tracker.ScopeTracker(self._enclosing_fqun)
-        for pos in definition_block.interface_positions:
-            # Skip duplicates so the first definition's constraints are preserved,
-            # matching file_validator's behavior of not adding conflicting names.
-            if not scope.is_defined(pos.typed_name):
-                scope.add_definition(pos)
+        _required_state: action_contract.PositionOccupancyState,
+        _local_ref: ast.LocalTypedNameReference,
+        _scope: scope_tracker.ScopeTracker,
+    ):
+        """Infer a requirement for a non-trigger interface position on first reference.
 
-        # Set all positions from the Trigger Conditions Block as having
-        # the state that the Trigger Conditions Block says they have.
-        for condition in definition_block.trigger_conditions.conditions:
-            self._validate_chained_name(condition.position_reference, scope)
-            local_position = self._tracker.get_local_position(
-                condition.position_reference, scope
-            )
-            if local_position is not None:
-                trigger_name = local_position.name_content.name
-                qualities = scope.get_constraint_names(
-                    condition.position_reference.chain.typed_names[0]
-                )
-                # DLP 37: We assume trigger points are occupied upon the start
-                # of the action, but we can only assume they have the qualities
-                # they are declared with.
-                self._tracker.create(
-                    condition.position_reference,
-                    qualities,
-                    origin_position=self._interface_positions.get(trigger_name),
-                )
+        No-op for non-action definitions. Overridden by ActionPostorderValidator.
+        """
 
-        scope.enter_child_scope()
-        self._analyze_statements(definition_block.action_statements, scope)
+    def _check_trigger(  # noqa: B027
+        self,
+        _ref: ast.PositionReference,
+        _external: action_contract.ActionAndInterfacePosition,
+    ):
+        """Check if filling this interface position triggers the named action.
 
-        return self._generate_contract()
-
-    def _generate_contract(self) -> action_contract.ActionContract:
-        """Generate the action contract from inferred requirements and final tracker state."""
-        trigger_name = (
-            self._trigger_position.typed_name.name_content.name
-            if self._trigger_position is not None
-            else None
-        )
-        referenced_positions = {trigger_name} | set(self._inferred_requirements.keys())
-
-        guarantees: dict[str, action_contract.InterfacePositionGuarantee] = {}
-        for local_name, pos in self._interface_positions.items():
-            if local_name not in referenced_positions:
-                continue
-            key = f"position<{local_name}>"
-
-            if self._tracker.has_unknown_state_by_key(key):
-                guarantees[local_name] = action_contract.UnknownGuarantee(
-                    position=pos,
-                )
-            elif self._tracker.is_occupied_by_key(key):
-                info = self._tracker.get_occupant_by_key(key)
-                if info.origin_position is not None:
-                    guarantees[local_name] = (
-                        action_contract.OccupiedByExistingGuarantee(
-                            position=pos,
-                            origin_position=info.origin_position,
-                            caused_by=info.code_position,
-                        )
-                    )
-                else:
-                    guarantees[local_name] = action_contract.OccupiedByNewGuarantee(
-                        position=pos,
-                        qualities=info.qualities,
-                        caused_by=info.code_position,
-                    )
-            else:
-                guarantees[local_name] = action_contract.EmptyGuarantee(
-                    position=pos,
-                    caused_by=self._tracker.get_emptied_by_key(key),
-                )
-
-        return action_contract.ActionContract(
-            requirements=self._inferred_requirements,
-            guarantees=guarantees,
-            trigger_position_name=(
-                self._trigger_position.typed_name.name_content.name
-                if self._trigger_position is not None
-                else ""
-            ),
-        )
-
-    def _analyze_position_definition(self, definition: ast.PositionDefinition):
-        if definition.initialization is None:
-            return
-        scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
-        scope.add_definition(definition)
-        self._analyze_statements(definition.initialization, scope)
+        No-op for non-action definitions. Overridden by ActionPostorderValidator.
+        """
 
     def _analyze_statements(
         self,
@@ -487,109 +381,6 @@ class DefinitionPostorderValidator:
         if validated.to_external is not None:
             self._check_trigger(to_pos, validated.to_external)
 
-    def _maybe_infer_requirement(
-        self,
-        required_state: action_contract.PositionOccupancyState,
-        local_ref: ast.LocalTypedNameReference,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Infer a requirement for a non-trigger interface position on first reference."""
-        if not isinstance(self._definition, ast.ActionDefinition):
-            return
-        local_name = local_ref.name_content.name
-        if local_name not in self._interface_positions:
-            return
-        if (
-            self._trigger_position is not None
-            and local_name == self._trigger_position.typed_name.name_content.name
-        ):
-            return
-        if local_name in self._inferred_requirements:
-            return
-
-        self._inferred_requirements[local_name] = (
-            action_contract.InterfacePositionRequirement(
-                position=self._interface_positions[local_name],
-                required_state=required_state,
-                inferred_from=local_ref.position,
-            )
-        )
-
-        if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            qualities = scope.get_constraint_names(local_ref)
-            self._tracker.create(
-                local_ref,
-                qualities,
-                origin_position=self._interface_positions.get(local_name),
-            )
-
-    def _check_trigger(
-        self,
-        ref: ast.PositionReference,
-        external: action_contract.ActionAndInterfacePosition,
-    ):
-        """Check if filling this interface position triggers the named action."""
-        contract = self._action_contracts.get(external.action_name)
-        if contract is None:
-            return
-        if external.position_name != contract.trigger_position_name:
-            return
-
-        self._check_requirements(ref, external.action_name, contract)
-        self._tracker.apply_guarantees(ref, contract.guarantees)
-
-    def _check_requirements(
-        self,
-        trigger_position: ast.PositionReference,
-        action_name: str,
-        contract: action_contract.ActionContract,
-    ):
-        """Check that all action requirements are satisfied before triggering."""
-        dp = self._tracker.get_occupant(trigger_position)
-
-        chain_prefix = "::".join(
-            e.source_typed_name for e in trigger_position.chain.typed_names[:-1]
-        )
-
-        for req in contract.requirements.values():
-            req_name = req.position.typed_name.name_content.name
-            key = self._tracker.interface_position_key(trigger_position, req_name)
-
-            if self._tracker.has_unknown_state_by_key(key):
-                continue
-
-            is_occupied = self._tracker.is_occupied_by_key(key)
-            req_chained_name = (
-                f"{chain_prefix}::{req.position.typed_name.source_typed_name}"
-            )
-
-            if (
-                req.required_state == action_contract.PositionOccupancyState.EMPTY
-                and is_occupied
-            ):
-                occupant = self._tracker.get_occupant_by_key(key)
-                self._diagnostics.append(
-                    diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        position=dp.code_position,
-                        action_name=action_name,
-                        position_name=req_chained_name,
-                        inferred_at=req.inferred_from,
-                        filled_at=occupant.code_position,
-                    )
-                )
-            elif (
-                req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-                and not is_occupied
-            ):
-                self._diagnostics.append(
-                    diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        position=dp.code_position,
-                        action_name=action_name,
-                        position_name=req_chained_name,
-                        inferred_at=req.inferred_from,
-                    )
-                )
-
     def _get_external_interface_position_qualities(
         self,
         external: action_contract.ActionAndInterfacePosition,
@@ -868,3 +659,285 @@ class DefinitionPostorderValidator:
                 last_element.name_content.name, frozenset()
             )
         return frozenset()
+
+
+class ActionPostorderValidator(DefinitionPostorderValidator):
+    """Validates an action definition during a DFS post-order walk."""
+
+    _inferred_requirements: dict[str, action_contract.InterfacePositionRequirement]
+
+    def __init__(
+        self,
+        definition_result: validation_result.DefinitionValidationResult,
+        definition_results: dict[str, validation_result.DefinitionValidationResult],
+        action_contracts: dict[str, action_contract.ActionContract],
+    ):
+        """Initialize with the action definition to validate and the full results map."""
+        super().__init__(definition_result, definition_results, action_contracts)
+        self._inferred_requirements = {}
+
+    @property
+    def _action_definition(self) -> ast.ActionDefinition:
+        return typing.cast("ast.ActionDefinition", self._definition)
+
+    @property
+    def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
+        return self._action_definition.interface_positions
+
+    @property
+    def _trigger_position(self) -> ast.LocalPositionDefinition | None:
+        return self._action_definition.trigger_position
+
+    @typing.override
+    def analyze(
+        self,
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        list[action_call_graph.ActionBodyEffect],
+        action_contract.ActionContract | None,
+    ]:
+        """Run post-order validation and return diagnostics, effects, and contract."""
+        action_def = self._action_definition
+        if action_def.definition_block is not None:
+            contract = self._analyze_action_definition(action_def.definition_block)
+        else:
+            contract = action_contract.EmptyContract()
+        return self._diagnostics, self._action_body_effects, contract
+
+    def _analyze_action_definition(
+        self,
+        definition_block: ast.ActionDefinitionBlock,
+    ) -> action_contract.ActionContract:
+        scope = scope_tracker.ScopeTracker(self._enclosing_fqun)
+        for pos in definition_block.interface_positions:
+            # Skip duplicates so the first definition's constraints are preserved,
+            # matching file_validator's behavior of not adding conflicting names.
+            if not scope.is_defined(pos.typed_name):
+                scope.add_definition(pos)
+
+        # Set all positions from the Trigger Conditions Block as having
+        # the state that the Trigger Conditions Block says they have.
+        for condition in definition_block.trigger_conditions.conditions:
+            self._validate_chained_name(condition.position_reference, scope)
+            local_position = self._tracker.get_local_position(
+                condition.position_reference, scope
+            )
+            if local_position is not None:
+                trigger_name = local_position.name_content.name
+                qualities = scope.get_constraint_names(
+                    condition.position_reference.chain.typed_names[0]
+                )
+                # DLP 37: We assume trigger points are occupied upon the start
+                # of the action, but we can only assume they have the qualities
+                # they are declared with.
+                self._tracker.create(
+                    condition.position_reference,
+                    qualities,
+                    origin_position=self._interface_positions.get(trigger_name),
+                )
+
+        scope.enter_child_scope()
+        self._analyze_statements(definition_block.action_statements, scope)
+
+        return self._generate_contract()
+
+    def _generate_contract(self) -> action_contract.ActionContract:
+        """Generate the action contract from inferred requirements and final tracker state."""
+        trigger_name = (
+            self._trigger_position.typed_name.name_content.name
+            if self._trigger_position is not None
+            else None
+        )
+        referenced_positions = {trigger_name} | set(self._inferred_requirements.keys())
+
+        guarantees: dict[str, action_contract.InterfacePositionGuarantee] = {}
+        for local_name, pos in self._interface_positions.items():
+            if local_name not in referenced_positions:
+                continue
+            key = f"position<{local_name}>"
+
+            if self._tracker.has_unknown_state_by_key(key):
+                guarantees[local_name] = action_contract.UnknownGuarantee(
+                    position=pos,
+                )
+            elif self._tracker.is_occupied_by_key(key):
+                info = self._tracker.get_occupant_by_key(key)
+                if info.origin_position is not None:
+                    guarantees[local_name] = (
+                        action_contract.OccupiedByExistingGuarantee(
+                            position=pos,
+                            origin_position=info.origin_position,
+                            caused_by=info.code_position,
+                        )
+                    )
+                else:
+                    guarantees[local_name] = action_contract.OccupiedByNewGuarantee(
+                        position=pos,
+                        qualities=info.qualities,
+                        caused_by=info.code_position,
+                    )
+            else:
+                guarantees[local_name] = action_contract.EmptyGuarantee(
+                    position=pos,
+                    caused_by=self._tracker.get_emptied_by_key(key),
+                )
+
+        return action_contract.ActionContract(
+            requirements=self._inferred_requirements,
+            guarantees=guarantees,
+            trigger_position_name=(
+                self._trigger_position.typed_name.name_content.name
+                if self._trigger_position is not None
+                else ""
+            ),
+        )
+
+    @typing.override
+    def _maybe_infer_requirement(
+        self,
+        required_state: action_contract.PositionOccupancyState,
+        local_ref: ast.LocalTypedNameReference,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Infer a requirement for a non-trigger interface position on first reference."""
+        local_name = local_ref.name_content.name
+        if local_name not in self._interface_positions:
+            return
+        if (
+            self._trigger_position is not None
+            and local_name == self._trigger_position.typed_name.name_content.name
+        ):
+            return
+        if local_name in self._inferred_requirements:
+            return
+
+        self._inferred_requirements[local_name] = (
+            action_contract.InterfacePositionRequirement(
+                position=self._interface_positions[local_name],
+                required_state=required_state,
+                inferred_from=local_ref.position,
+            )
+        )
+
+        if required_state == action_contract.PositionOccupancyState.OCCUPIED:
+            qualities = scope.get_constraint_names(local_ref)
+            self._tracker.create(
+                local_ref,
+                qualities,
+                origin_position=self._interface_positions.get(local_name),
+            )
+
+    @typing.override
+    def _check_trigger(
+        self,
+        ref: ast.PositionReference,
+        external: action_contract.ActionAndInterfacePosition,
+    ):
+        """Check if filling this interface position triggers the named action."""
+        contract = self._action_contracts.get(external.action_name)
+        if contract is None:
+            return
+        if external.position_name != contract.trigger_position_name:
+            return
+
+        self._check_requirements(ref, external.action_name, contract)
+        self._tracker.apply_guarantees(ref, contract.guarantees)
+
+    def _check_requirements(
+        self,
+        trigger_position: ast.PositionReference,
+        action_name: str,
+        contract: action_contract.ActionContract,
+    ):
+        """Check that all action requirements are satisfied before triggering."""
+        dp = self._tracker.get_occupant(trigger_position)
+
+        chain_prefix = "::".join(
+            e.source_typed_name for e in trigger_position.chain.typed_names[:-1]
+        )
+
+        for req in contract.requirements.values():
+            req_name = req.position.typed_name.name_content.name
+            key = self._tracker.interface_position_key(trigger_position, req_name)
+
+            if self._tracker.has_unknown_state_by_key(key):
+                continue
+
+            is_occupied = self._tracker.is_occupied_by_key(key)
+            req_chained_name = (
+                f"{chain_prefix}::{req.position.typed_name.source_typed_name}"
+            )
+
+            if (
+                req.required_state == action_contract.PositionOccupancyState.EMPTY
+                and is_occupied
+            ):
+                occupant = self._tracker.get_occupant_by_key(key)
+                self._diagnostics.append(
+                    diagnostics.ActionRequiresEmptyPositionDiagnostic(
+                        position=dp.code_position,
+                        action_name=action_name,
+                        position_name=req_chained_name,
+                        inferred_at=req.inferred_from,
+                        filled_at=occupant.code_position,
+                    )
+                )
+            elif (
+                req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+                and not is_occupied
+            ):
+                self._diagnostics.append(
+                    diagnostics.ActionRequiresOccupiedPositionDiagnostic(
+                        position=dp.code_position,
+                        action_name=action_name,
+                        position_name=req_chained_name,
+                        inferred_at=req.inferred_from,
+                    )
+                )
+
+
+class PositionPostorderValidator(DefinitionPostorderValidator):
+    """Validates a position definition during a DFS post-order walk."""
+
+    # TODO: Position init blocks should also check triggers when creating/moving
+    # into external action interface positions. Currently _check_trigger is a
+    # no-op for position definitions.
+
+    @typing.override
+    def analyze(
+        self,
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        list[action_call_graph.ActionBodyEffect],
+        action_contract.ActionContract | None,
+    ]:
+        """Run post-order validation and return diagnostics and effects."""
+        definition = self._definition
+        if not isinstance(definition, ast.PositionDefinition):
+            raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
+        self._analyze_position_definition(definition)
+        return self._diagnostics, self._action_body_effects, None
+
+    def _analyze_position_definition(self, definition: ast.PositionDefinition):
+        if definition.initialization is None:
+            return
+        scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
+        scope.add_definition(definition)
+        self._analyze_statements(definition.initialization, scope)
+
+
+def create_postorder_validator(
+    definition_result: validation_result.DefinitionValidationResult,
+    definition_results: dict[str, validation_result.DefinitionValidationResult],
+    action_contracts: dict[str, action_contract.ActionContract],
+) -> DefinitionPostorderValidator:
+    """Create the appropriate postorder validator for the given definition."""
+    if isinstance(definition_result.definition, ast.ActionDefinition):
+        return ActionPostorderValidator(
+            definition_result, definition_results, action_contracts
+        )
+    if isinstance(definition_result.definition, ast.PositionDefinition):
+        return PositionPostorderValidator(
+            definition_result, definition_results, action_contracts
+        )
+    raise TypeError(f"Unexpected definition type: {type(definition_result.definition)}")
