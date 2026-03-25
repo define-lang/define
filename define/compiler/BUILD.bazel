@@ -40,6 +40,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":diagnostics",
+        ":parser",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
@@ -120,6 +121,7 @@ py_library(
     deps = [
         ":exceptions",
         ":overall_stats",
+        ":parser",
         "//define/compiler/codegen:generator",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
@@ -135,6 +137,7 @@ py_test(
     deps = [
         ":driver",
         ":exceptions",
+        ":parser",
         ":parser_exceptions",
         "@pypi//hypothesis",
     ],
@@ -148,6 +151,7 @@ py_test(
     deps = [
         ":diagnostics",
         ":driver",
+        ":parser",
         "//define/compiler/validator:validation_result",
     ],
 )
@@ -160,6 +164,7 @@ py_test(
     deps = [
         ":driver",
         ":overall_stats",
+        ":parser",
     ],
 )
 
@@ -171,6 +176,7 @@ py_test(
         ":diagnostics",
         ":driver",
         ":exceptions",
+        ":parser",
         ":parser_exceptions",
     ],
 )

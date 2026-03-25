@@ -12,7 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import constants, driver, overall_stats
+from define.compiler import constants, driver, overall_stats, parser
+
+_PARSER = parser.Parser()
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -29,7 +31,7 @@ class TestRun:
         monkeypatch.chdir(project_root)
 
         error_stream = io.StringIO()
-        result = driver.Driver().run(outside_path, error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(outside_path, error_stream=error_stream)
 
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
@@ -51,7 +53,7 @@ class TestRun:
         monkeypatch.chdir(tmp_path)
 
         error_stream = io.StringIO()
-        result = driver.Driver().run(Path("test.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(Path("test.def"), error_stream=error_stream)
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
             'File ".define/project/config.defcl"\n'
@@ -73,7 +75,7 @@ class TestRun:
         )
         monkeypatch.chdir(tmp_path)
 
-        result = driver.Driver().run(Path("test.def"))
+        result = driver.Driver(_PARSER).run(Path("test.def"))
 
         captured = capsys.readouterr()
         assert result == driver.ExitCode.ERROR
@@ -87,7 +89,7 @@ class TestRun:
     def test_valid_file_returns_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         error_stream = io.StringIO()
-        result = driver.Driver().run(Path("test.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(Path("test.def"), error_stream=error_stream)
         assert result == driver.ExitCode.SUCCESS
         assert error_stream.getvalue() == ""
 
@@ -100,7 +102,9 @@ class TestRun:
         monkeypatch.chdir(project_root)
 
         error_stream = io.StringIO()
-        result = driver.Driver().run(Path("../outside.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(
+            Path("../outside.def"), error_stream=error_stream
+        )
 
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
@@ -115,7 +119,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(FILES_ROOT)
         error_stream = io.StringIO()
-        result = driver.Driver().run(
+        result = driver.Driver(_PARSER).run(
             Path("invalid/syntax/keywords/misspelled_define.def"),
             error_stream=error_stream,
         )
@@ -132,7 +136,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "invalid" / "syntax" / "path_mismatch")
         error_stream = io.StringIO()
-        result = driver.Driver().run(
+        result = driver.Driver(_PARSER).run(
             Path("wrong_file.def"),
             error_stream=error_stream,
         )
@@ -149,7 +153,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         stats_stream = io.StringIO()
-        result = driver.Driver().run(
+        result = driver.Driver(_PARSER).run(
             Path("test.def"),
             stats_stream=stats_stream,
             stats_mode=overall_stats.StatsMode.OVERALL,
@@ -165,7 +169,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         error_stream = io.StringIO()
-        result = driver.Driver().run(Path("test.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(Path("test.def"), error_stream=error_stream)
         assert result == driver.ExitCode.SUCCESS
         assert "Compilation Stats" not in error_stream.getvalue()
 
@@ -173,7 +177,7 @@ class TestRun:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
-        result = driver.Driver().run(
+        result = driver.Driver(_PARSER).run(
             Path("test.def"),
             mode=driver.DriverMode.COMPILE,
             output_dir=tmp_path,
@@ -184,7 +188,7 @@ class TestRun:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         monkeypatch.chdir(FILES_ROOT)
-        result = driver.Driver().run(
+        result = driver.Driver(_PARSER).run(
             Path("invalid/syntax/keywords/misspelled_define.def"),
             mode=driver.DriverMode.COMPILE,
             error_stream=io.StringIO(),

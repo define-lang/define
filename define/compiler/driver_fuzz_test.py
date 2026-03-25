@@ -10,8 +10,10 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from define.compiler import driver, exceptions, parser_exceptions
+from define.compiler import driver, exceptions, parser, parser_exceptions
 from define.compiler.validator import validation_result
+
+_PARSER = parser.Parser()
 
 _MULTIVERSE_NAMES = ["mv", "standard", "mymv", "test_mv"]
 _AUTHORITY_DOMAINS = ["example.com", "define-lang.org", "test.io", "my.domain.co"]
@@ -1617,7 +1619,7 @@ def _structured_random_global_name_bytes(draw: st.DrawFn) -> bytes:
 def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
     file_path = fuzz_project / "test.def"
     file_path.write_text(source, encoding="utf-8")
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_results_are_clean(results, _escape_content(source))
 
@@ -1635,7 +1637,7 @@ def test_valid_projects_validate_cleanly(
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
 
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     debug_source = _project_case_debug_text(project_case)
     results = d.validate_program(Path(project_case.entrypoint)).result.file_results
     _assert_results_are_clean(results, debug_source)
@@ -1650,7 +1652,7 @@ def test_valid_projects_validate_cleanly(
 @given(source=mutated_sources())
 def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
     (fuzz_project / "test.def").write_text(source, encoding="utf-8")
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, _escape_content(source))
 
@@ -1667,7 +1669,7 @@ def test_mutated_projects_no_unclassified_errors(
 ):
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path(project_case.entrypoint)).result.file_results
     _assert_only_parser_syntax_exceptions(
         results, _project_case_debug_text(project_case)
@@ -1684,7 +1686,7 @@ def test_mutated_projects_no_unclassified_errors(
 def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
     file_path = fuzz_project / "test.def"
     file_path.write_bytes(data)
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(data))
 
@@ -1704,7 +1706,7 @@ def test_random_local_name_bytes_no_unclassified_errors(
 ):
     template = _local_name_context_template(context)
     (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
 
@@ -1724,7 +1726,7 @@ def test_random_global_name_raw_bytes_no_unclassified_errors(
 ):
     template = _global_name_context_template(context)
     (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
 
@@ -1744,6 +1746,6 @@ def test_random_global_name_structured_bytes_no_unclassified_errors(
 ):
     template = _global_name_context_template(context)
     (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     results = d.validate_program(Path("test.def")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(name_bytes))

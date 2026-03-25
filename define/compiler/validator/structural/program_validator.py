@@ -11,7 +11,6 @@ import time
 import typing
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from functools import cached_property
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -98,26 +97,27 @@ class ProgramStructuralValidator:
     config_loading_time_ns stores program-level config loading time.
     """
 
+    _parser: parser.Parser
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _config_loading_time_ns: int
 
-    def __init__(self):
-        """Initialize coordinator state for one program validation."""
+    def __init__(self, parser_instance: parser.Parser | None = None):
+        """Initialize coordinator state for one program validation.
+
+        If parser_instance is provided, it will be used instead of
+        constructing a new one. This is only a performance optimization
+        that avoids reconstructing the Lark grammar on each validation.
+        """
+        # Lark parsers are thread-safe, so sharing one instance is safe.
+        self._parser = parser_instance or parser.Parser()
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
         self._definition_results = {}
         self._config_loading_time_ns = 0
-
-    @cached_property
-    def _parser(self) -> parser.Parser:
-        """Lazily construct and cache the parser for this validator instance."""
-        # Lark parsers are thread-safe, so we construct one shared instance.
-        # Reconstructing repeatedly is slow because it must parse the grammar.
-        return parser.Parser()
 
     def validate_program(
         self,

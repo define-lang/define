@@ -8,7 +8,10 @@ import pytest
 from define.compiler import (
     driver,
     exceptions,
+    parser,
 )
+
+_PARSER = parser.Parser()
 
 
 def _setup_project(tmp_path: Path, universe_name: str) -> None:
@@ -34,7 +37,7 @@ class TestPathFormats:
         _write_source(tmp_path, "sub/test.def", source)
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver()
+        d = driver.Driver(_PARSER)
         driver_result = d.validate_program(Path(PureWindowsPath("sub\\test.def")))
         assert len(driver_result.result.file_results) == 1
         result = driver_result.result.file_results[0]
@@ -55,7 +58,7 @@ class TestPathResolution:
         )
         monkeypatch.chdir(tmp_path)
 
-        driver_result = driver.Driver().validate_program(source_file)
+        driver_result = driver.Driver(_PARSER).validate_program(source_file)
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
@@ -73,7 +76,7 @@ class TestPathResolution:
         source_file = outside / "hello.def"
         monkeypatch.chdir(project)
 
-        d = driver.Driver()
+        d = driver.Driver(_PARSER)
         with pytest.raises(exceptions.AbsolutePathError) as exc_info:
             d.validate_program(source_file)
         assert exc_info.value.input_path == source_file
@@ -92,7 +95,9 @@ class TestPathResolution:
         )
         monkeypatch.chdir(tmp_path)
 
-        driver_result = driver.Driver().validate_program(Path("sub/../hello.def"))
+        driver_result = driver.Driver(_PARSER).validate_program(
+            Path("sub/../hello.def")
+        )
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
@@ -115,7 +120,7 @@ class TestPathResolution:
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        driver_result = driver.Driver().validate_program(Path("link/hello.def"))
+        driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.def"))
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
@@ -133,7 +138,7 @@ class TestPathResolution:
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        d = driver.Driver()
+        d = driver.Driver(_PARSER)
         with pytest.raises(exceptions.RelativePathError) as exc_info:
             d.validate_program(Path("link/../hello.def"))
         assert exc_info.value.input_path == Path("link/../hello.def")
@@ -152,7 +157,9 @@ class TestPathResolution:
         (tmp_path / "link").symlink_to(tmp_path / "real" / "sub")
         monkeypatch.chdir(tmp_path)
 
-        driver_result = driver.Driver().validate_program(Path("link/../hello.def"))
+        driver_result = driver.Driver(_PARSER).validate_program(
+            Path("link/../hello.def")
+        )
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
@@ -165,7 +172,7 @@ class TestPathResolution:
         _setup_project(tmp_path, "test.example.com:my_lib")
         monkeypatch.chdir(tmp_path)
 
-        d = driver.Driver()
+        d = driver.Driver(_PARSER)
         with pytest.raises(exceptions.RelativePathError) as exc_info:
             d.validate_program(Path("../hello.def"))
         assert exc_info.value.input_path == Path("../hello.def")

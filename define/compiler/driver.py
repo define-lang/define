@@ -17,6 +17,7 @@ from typing import TextIO
 from define.compiler import (
     exceptions,
     overall_stats,
+    parser,
 )
 from define.compiler.codegen import generator
 from define.compiler.validator import validation_result
@@ -49,10 +50,19 @@ class DriverResult:
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
+    def __init__(self, parser_instance: parser.Parser | None = None):
+        """Initialize the driver.
+
+        If parser_instance is provided, it will be used instead of
+        constructing a new one. This is only a performance optimization
+        that avoids reconstructing the Lark grammar on each compilation.
+        """
+        self._parser_instance: parser.Parser | None = parser_instance
+
     def validate_program(self, path: Path) -> DriverResult:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
-        pv = program_validator.ProgramStructuralValidator()
+        pv = program_validator.ProgramStructuralValidator(self._parser_instance)
         program_result = pv.validate_program(path=resolved_path)
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?

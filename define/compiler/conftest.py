@@ -8,11 +8,13 @@ from typing import Protocol, overload
 
 import pytest
 
-from define.compiler import diagnostics
+from define.compiler import diagnostics, parser
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
+
+_PARSER = parser.Parser()
 
 
 @dataclass
@@ -101,7 +103,7 @@ def _run_validation(
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    pv = program_validator.ProgramStructuralValidator()
+    pv = program_validator.ProgramStructuralValidator(_PARSER)
     return pv.validate_program(PurePosixPath(entry_file), max_workers=max_workers)
 
 
@@ -166,7 +168,7 @@ def parse_and_validate_file(
             source_path.write_bytes(source)
         monkeypatch.chdir(tmp_path)
         results = (
-            program_validator.ProgramStructuralValidator()
+            program_validator.ProgramStructuralValidator(_PARSER)
             .validate_program(relative_path)
             .file_results
         )
@@ -193,7 +195,7 @@ def validate_source_as_file(
         test_helpers.write_project_config(tmp_path, expected_universe_name)
         monkeypatch.chdir(tmp_path)
         results = (
-            program_validator.ProgramStructuralValidator()
+            program_validator.ProgramStructuralValidator(_PARSER)
             .validate_program(relative_path)
             .file_results
         )
@@ -215,9 +217,9 @@ def validate_non_filesystem_with_reference_graph() -> (
     """Validate source text through both structural and reference graph validation."""
 
     def _run(source: str) -> validation_result.ProgramValidationResult:
-        result = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
+        result = program_validator.ProgramStructuralValidator(
+            _PARSER
+        ).validate_program_non_filesystem(source)
         reference_graph_validator.ReferenceGraphValidator(
             result.reference_graph,
             result.definition_results,

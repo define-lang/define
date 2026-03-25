@@ -20,7 +20,9 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import diagnostics, driver, parser_exceptions
+from define.compiler import diagnostics, driver, parser, parser_exceptions
+
+_PARSER = parser.Parser()
 
 TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
@@ -424,7 +426,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that valid files in files/valid/ parse successfully."""
     monkeypatch.chdir(FILES_ROOT)
 
-    driver_result = driver.Driver().validate_program(def_file)
+    driver_result = driver.Driver(_PARSER).validate_program(def_file)
     assert not driver_result.result.has_errors()
 
 
@@ -436,7 +438,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_invalid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that invalid files produce syntax errors or validation diagnostics."""
     monkeypatch.chdir(FILES_ROOT)
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
     rel_key = def_file.relative_to(Path("invalid")).as_posix()
 
     expected_types = EXPECTED_FILE_DIAGNOSTICS.get(rel_key)
@@ -465,7 +467,7 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
     """Test that valid projects produce no diagnostics."""
     monkeypatch.chdir(project_dir)
 
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
 
     entry_point = project_entrypoint(project_dir)
     driver_result = d.validate_program(entry_point)
@@ -481,7 +483,7 @@ def test_invalid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
     """Test that invalid projects produce expected diagnostics."""
     monkeypatch.chdir(project_dir)
 
-    d = driver.Driver()
+    d = driver.Driver(_PARSER)
 
     entry_point = project_entrypoint(project_dir)
     rel_key = project_dir.relative_to(PROJECTS_ROOT / "invalid").as_posix()
