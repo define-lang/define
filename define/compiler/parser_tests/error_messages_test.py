@@ -4,6 +4,8 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
+import pathlib
+
 from define.compiler import parser, parser_exceptions
 
 
@@ -24,7 +26,7 @@ def test_error_message_without_path(p: parser.Parser) -> None:
 def test_error_message_with_path(p: parser.Parser) -> None:
     result = p.parse(
         "\ufeffdefine the potential position<standard:/path>.\n",
-        file_path="test.def",
+        file_path=pathlib.PurePosixPath("test.def"),
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
@@ -54,7 +56,8 @@ def test_char_error_message(p: parser.Parser) -> None:
 
 def test_char_error_message_with_path(p: parser.Parser) -> None:
     result = p.parse(
-        "define the potential position<standard:/path>.\r\n", file_path="test.def"
+        "define the potential position<standard:/path>.\r\n",
+        file_path=pathlib.PurePosixPath("test.def"),
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pathlib
 import typing
 from dataclasses import dataclass, field
 
@@ -15,7 +14,7 @@ from define.compiler import (
 from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
-    import os
+    import pathlib
 
 UnexpectedInput = lark_standalone.UnexpectedInput
 
@@ -42,9 +41,8 @@ class Parser:
         """Initialize the parser with the Define grammar."""
         self._lark = lark_standalone.Lark_StandAlone()
 
-    # TODO: Change file_path to PurePosixPath so callers pass it directly.
     def parse(
-        self, source: str, file_path: str | os.PathLike[str] | None = None
+        self, source: str, file_path: pathlib.PurePosixPath | None = None
     ) -> ParseResult:
         """Parse Define source code and return a ParseResult.
 
@@ -63,14 +61,13 @@ class Parser:
             stop_before_line = e.line
             exception = e
 
-        posix_path = pathlib.PurePosixPath(file_path) if file_path is not None else None
         diags = indentation_validator.validate_indentation(
-            source, stop_before_line, file_path=posix_path
+            source, stop_before_line, file_path=file_path
         )
         return ParseResult(tree=tree, diagnostics=diags, exception=exception)
 
     def _do_parse(
-        self, source: str, file_path: str | os.PathLike[str] | None
+        self, source: str, file_path: pathlib.PurePosixPath | None
     ) -> lark_standalone.Tree[lark_standalone.Token]:
         """Run the Lark parser with error classification."""
         try:

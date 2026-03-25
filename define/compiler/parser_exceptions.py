@@ -1,6 +1,6 @@
 """Human-readable parser error messages for the Define language."""
 
-import os
+import pathlib
 from typing import ClassVar, Self, override
 
 from define.compiler import exceptions
@@ -25,14 +25,14 @@ class DefineSyntaxError(exceptions.DefineError):
     context: str
     line: int
     column: int
-    file_path: str | os.PathLike[str] | None
+    file_path: pathlib.PurePosixPath | None
 
     def __init__(
         self,
         context: str,
         line: int,
         column: int,
-        file_path: str | os.PathLike[str] | None,
+        file_path: pathlib.PurePosixPath | None,
     ):
         """Initialize the syntax error with location and context information."""
         super().__init__(context, line, column)
@@ -71,7 +71,7 @@ class DefineTokenError(DefineSyntaxError):
         self,
         exception: lark_standalone.UnexpectedToken,
         source: str,
-        file_path: str | os.PathLike[str] | None,
+        file_path: pathlib.PurePosixPath | None,
     ):
         """Initialize with the unexpected token."""
         super().__init__(
@@ -94,7 +94,7 @@ class DefineCharError(DefineSyntaxError):
         line: int,
         column: int,
         char: str,
-        file_path: str | os.PathLike[str] | None,
+        file_path: pathlib.PurePosixPath | None,
     ):
         """Initialize with the unexpected character."""
         super().__init__(context, line, column, file_path)
@@ -106,7 +106,7 @@ class DefineCharError(DefineSyntaxError):
         exception: lark_standalone.UnexpectedInput,
         source: str,
         char: str,
-        file_path: str | os.PathLike[str] | None,
+        file_path: pathlib.PurePosixPath | None,
     ) -> Self:
         """Construct a character error from a Lark exception."""
         return cls(
@@ -317,7 +317,7 @@ class MissingCloseAngleBracket(DefineTokenError):
         self,
         exception: lark_standalone.UnexpectedToken,
         source: str,
-        file_path: str | os.PathLike[str] | None,
+        file_path: pathlib.PurePosixPath | None,
         name: str,
     ):
         """Initialize with the parsed name token that missed '>'."""
@@ -376,7 +376,7 @@ class MissingOpenAngleBracket(DefineTokenError):
         self,
         exception: lark_standalone.UnexpectedToken,
         source: str,
-        file_path: str | os.PathLike[str] | None,
+        file_path: pathlib.PurePosixPath | None,
         name: str,
     ):
         """Initialize with the parsed name token that missed '<'."""

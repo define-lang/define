@@ -10,7 +10,7 @@ import typing
 from define.compiler import parser_exceptions
 
 if typing.TYPE_CHECKING:
-    import os
+    import pathlib
 
     from define.compiler.lark import lark_standalone
 
@@ -48,7 +48,7 @@ def _is_space_followed_only_by_whitespace(source: str, line: int, column: int) -
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,
-    file_path: str | os.PathLike[str] | None,
+    file_path: pathlib.PurePosixPath | None,
 ):
     """Classify a token error into a specific exception type."""
     ####################################
@@ -251,7 +251,7 @@ def raise_token_error(
 
 
 def make_invalid_encoding_error(
-    raw: bytes, e: UnicodeDecodeError, path: os.PathLike[str]
+    raw: bytes, e: UnicodeDecodeError, path: pathlib.PurePosixPath
 ) -> parser_exceptions.InvalidEncodingError:
     """Create an InvalidEncodingError from a UnicodeDecodeError."""
     before = raw[: e.start]
