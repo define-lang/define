@@ -133,6 +133,7 @@ py_test(
     name = "driver_fuzz_test",
     size = "medium",
     srcs = ["driver_fuzz_test.py"],
+    shard_count = 8,
     tags = ["manual"],
     deps = [
         ":driver",
