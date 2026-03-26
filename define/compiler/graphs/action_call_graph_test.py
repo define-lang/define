@@ -1,355 +1,258 @@
-from define.compiler import ast
-from define.compiler.graphs import action_call_graph
-from define.compiler.validator import validation_result
+# pyright: reportUnusedCallResult=false
+from define.compiler import conftest
 
-# TODO: Make this parse source instead of generating AST nodes.
+_ACT_A = "action<my.domain.com:my_lib:/act_a>"
+_ACT_B = "action<my.domain.com:my_lib:/act_b>"
+_ACT_C = "action<my.domain.com:my_lib:/act_c>"
 
+_NOOP_ACTION_ACT_A = (
+    "define the potential action<my.domain.com:my_lib:/act_a> {\n"
+    "    define the position<my_pos>.\n"
+    "    it happens when {\n"
+    "        the position<my_pos> has a dimension point.\n"
+    "    } and it does {\n"
+    "        define the position<_noop>.\n"
+    "        create a dimension point in position<_noop>.\n"
+    "    }\n"
+    "}\n"
+)
 
-def _pos() -> ast.SourcePosition:
-    return ast.start_of_file_position()
+_CALLER_ACT_B = (
+    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+    "    define the position<pp>.\n"
+    "    define the position<gateway> {\n"
+    "        it may only contain dimension points where {\n"
+    "            it has the action</act_a>.\n"
+    "        }\n"
+    "    }\n"
+    "    it happens when {\n"
+    "        the position<pp> has a dimension point.\n"
+    "    } and it does {\n"
+    "        create a dimension point in position<gateway>::action</act_a>::position<my_pos>.\n"
+    "    }\n"
+    "}\n"
+)
 
-
-def _fqun(domain: str = "d", lib: str = "u") -> ast.Fqun:
-    return ast.Fqun(
-        position=_pos(),
-        multiverse=None,
-        authority=ast.Authority(position=_pos(), name=domain),
-        universe=ast.Universe(position=_pos(), name=lib),
-    )
-
-
-def _action_typed_name(
-    path: str, fqun: ast.Fqun | None = None
-) -> ast.GlobalTypedNameInDefinition:
-    fqun = fqun or _fqun()
-    return ast.GlobalTypedNameInDefinition(
-        position=_pos(),
-        name_type=ast.NameType.ACTION,
-        name_content=ast.DefinitionGlobalNameContent(
-            position=_pos(),
-            fqun=fqun,
-            path=ast.GlobalPathName(position=_pos(), name=path),
-        ),
-    )
-
-
-def _chained_name(elements: list[ast.TypedNameReference]) -> ast.ChainedName:
-    return ast.ChainedName(typed_names=elements, position=_pos())
-
-
-def _local_chain(name: str) -> ast.ChainedName:
-    return _chained_name(
-        [
-            ast.LocalTypedNameReference(
-                position=_pos(),
-                name_type=ast.NameType.POSITION,
-                name_content=ast.LocalNameContent(position=_pos(), name=name),
-            )
-        ]
-    )
+_ENTRY_POS_REFS_B_C = (
+    "define the potential position<my.domain.com:my_lib:/test> {\n"
+    "    it may only contain dimension points where {\n"
+    "        it has the action</act_b>.\n"
+    "        it has the action</act_c>.\n"
+    "    }\n"
+    "}\n"
+)
 
 
-def _global_action_local_pos(action_path: str, pos_name: str) -> ast.ChainedName:
-    return _chained_name(
-        [
-            ast.GlobalTypedNameReference(
-                position=_pos(),
-                name_type=ast.NameType.ACTION,
-                name_content=ast.ReferenceGlobalNameContent(
-                    position=_pos(),
-                    fqun=None,
-                    path=ast.GlobalPathName(position=_pos(), name=action_path),
-                ),
-            ),
-            ast.LocalTypedNameReference(
-                position=_pos(),
-                name_type=ast.NameType.POSITION,
-                name_content=ast.LocalNameContent(position=_pos(), name=pos_name),
-            ),
-        ]
-    )
-
-
-def _make_create_stmt(
-    chain: ast.ChainedName,
-) -> ast.CreateDimensionPointStatement:
-    return ast.CreateDimensionPointStatement(
-        position=_pos(),
-        target_position=ast.PositionReference(position=_pos(), chain=chain),
-    )
-
-
-def _make_move_stmt(
-    to_chain: ast.ChainedName,
-) -> ast.MoveDimensionPointStatement:
-    return ast.MoveDimensionPointStatement(
-        position=_pos(),
-        target_position=ast.PositionReference(position=_pos(), chain=to_chain),
-        source_position=ast.PositionReference(position=_pos(), chain=_chained_name([])),
-    )
-
-
-def _make_result(
-    trigger_positions: list[action_call_graph.TriggerPositionInfo] | None = None,
-    action_body_effects: list[action_call_graph.ActionBodyEffect] | None = None,
-) -> validation_result.DefinitionValidationResult:
-    return validation_result.DefinitionValidationResult(
-        definition=ast.PositionDefinition(
-            name=ast.DefinitionGlobalNameContent(
-                position=_pos(),
-                fqun=_fqun(),
-                path=ast.GlobalPathName(position=_pos(), name="/placeholder"),
-            ),
-            position=_pos(),
-        ),
-        trigger_positions=trigger_positions or [],
-        action_body_effects=action_body_effects or [],
-    )
+def _edge_pairs(
+    result: conftest.FullValidationResult,
+) -> set[tuple[str, str]]:
+    return {(e.source, e.target) for e in result.action_call_graph.edges()}
 
 
 class TestActionCallGraph:
-    def test_empty_graph(self):
-        graph = action_call_graph.ActionCallGraph()
-        assert list(graph.edges()) == []
-
-    def test_single_trigger_edge(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _global_action_local_pos("/act_a", "my_pos")
-        stmt = _make_create_stmt(chain)
-
-        result_a = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("my_pos"),
-                )
-            ],
-        )
-        result_b = _make_result(
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt,
-                )
-            ],
-        )
-
-        graph.register_triggers(result_a.trigger_positions)
-        graph.register_effects(result_a.action_body_effects)
-        graph.register_triggers(result_b.trigger_positions)
-        graph.register_effects(result_b.action_body_effects)
-
-        edges = list(graph.edges())
-        assert len(edges) == 1
-        assert edges[0].source == "action<d:u:/act_b>"
-        assert edges[0].target == "action<d:u:/act_a>"
-        assert edges[0].statement is stmt
-
-    def test_self_trigger(self):
-        graph = action_call_graph.ActionCallGraph()
-        typed_name = _action_typed_name("/act_a")
-        chain = _local_chain("my_pos")
-        stmt = _make_create_stmt(chain)
-
-        result = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=typed_name,
-                    checked_position=chain,
-                )
-            ],
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=typed_name,
-                    statement=stmt,
-                )
-            ],
-        )
-
-        graph.register_triggers(result.trigger_positions)
-        graph.register_effects(result.action_body_effects)
-        edges = list(graph.edges())
-        assert len(edges) == 1
-        assert edges[0].source == "action<d:u:/act_a>"
-        assert edges[0].target == "action<d:u:/act_a>"
-
-    def test_same_result_resolution(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _global_action_local_pos("/act_a", "my_pos")
-        stmt = _make_create_stmt(chain)
-
-        result = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("my_pos"),
-                )
-            ],
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt,
-                )
-            ],
-        )
-
-        graph.register_triggers(result.trigger_positions)
-        graph.register_effects(result.action_body_effects)
-
-        edges = list(graph.edges())
-        assert len(edges) == 1
-        assert edges[0].source == "action<d:u:/act_b>"
-        assert edges[0].target == "action<d:u:/act_a>"
-
-    def test_duplicates_not_targeted_twice(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _global_action_local_pos("/act_a", "shared")
-        stmt = _make_create_stmt(chain)
-
-        result_triggers = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("shared"),
+    def test_empty_graph(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_c"),
-                    checked_position=_local_chain("shared"),
+            },
+        )
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == set()
+
+    def test_single_trigger_edge(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "act_b.def": _CALLER_ACT_B,
+                "act_a.def": _NOOP_ACTION_ACT_A,
+            },
+            entry_file="act_b.def",
+        )
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+
+    def test_self_trigger(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "act_a.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_a> {\n"
+                    "    define the position<my_pos>.\n"
+                    "    define the position<other>.\n"
+                    "    it happens when {\n"
+                    "        the position<my_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in position<my_pos> to position<other>.\n"
+                    "        create a dimension point in position<my_pos>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-            ],
+            },
+            entry_file="act_a.def",
         )
-        result_effect = _make_result(
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt,
-                )
-            ],
-        )
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == {(_ACT_A, _ACT_A)}
 
-        graph.register_triggers(result_triggers.trigger_positions)
-        graph.register_effects(result_triggers.action_body_effects)
-        graph.register_triggers(result_effect.trigger_positions)
-        graph.register_effects(result_effect.action_body_effects)
-
-        edges = list(graph.edges())
-        assert len(edges) == 1
-        assert edges[0].source == "action<d:u:/act_b>"
-        assert edges[0].target == "action<d:u:/act_a>"
-
-    def test_multiple_effects_to_same_target(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _global_action_local_pos("/act_a", "my_pos")
-        stmt_b = _make_create_stmt(chain)
-        stmt_c = _make_move_stmt(chain)
-
-        result_a = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("my_pos"),
-                )
-            ],
-        )
-        result_effects = _make_result(
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt_b,
+    def test_duplicates_not_targeted_twice(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": _ENTRY_POS_REFS_B_C,
+                "act_a.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_a> {\n"
+                    "    define the position<shared>.\n"
+                    "    it happens when {\n"
+                    "        the position<shared> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_c"),
-                    statement=stmt_c,
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pp>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<gateway>::action</act_a>::position<shared>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-            ],
-        )
-
-        graph.register_triggers(result_a.trigger_positions)
-        graph.register_effects(result_a.action_body_effects)
-        graph.register_triggers(result_effects.trigger_positions)
-        graph.register_effects(result_effects.action_body_effects)
-
-        all_edges = list(graph.edges())
-        assert len(all_edges) == 2
-        sources = {e.source for e in all_edges}
-        assert sources == {"action<d:u:/act_b>", "action<d:u:/act_c>"}
-        for edge in all_edges:
-            assert edge.target == "action<d:u:/act_a>"
-
-    def test_local_prefix_before_action_reference(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _chained_name(
-            [
-                ast.LocalTypedNameReference(
-                    position=_pos(),
-                    name_type=ast.NameType.POSITION,
-                    name_content=ast.LocalNameContent(position=_pos(), name="x"),
+                "act_c.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_c> {\n"
+                    "    define the position<shared>.\n"
+                    "    it happens when {\n"
+                    "        the position<shared> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-                ast.GlobalTypedNameReference(
-                    position=_pos(),
-                    name_type=ast.NameType.ACTION,
-                    name_content=ast.ReferenceGlobalNameContent(
-                        position=_pos(),
-                        fqun=None,
-                        path=ast.GlobalPathName(position=_pos(), name="/act_a"),
-                    ),
+            },
+        )
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+
+    def test_multiple_effects_to_same_target(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": _ENTRY_POS_REFS_B_C,
+                "act_a.def": _NOOP_ACTION_ACT_A,
+                "act_b.def": _CALLER_ACT_B,
+                "act_c.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_c> {\n"
+                    "    define the position<pp>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<tmp>.\n"
+                    "        create a dimension point in position<tmp>.\n"
+                    "        move the dimension point in position<tmp> to position<gateway>::action</act_a>::position<my_pos>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-                ast.LocalTypedNameReference(
-                    position=_pos(),
-                    name_type=ast.NameType.POSITION,
-                    name_content=ast.LocalNameContent(position=_pos(), name="my_pos"),
+            },
+        )
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == {(_ACT_B, _ACT_A), (_ACT_C, _ACT_A)}
+
+    def test_local_prefix_before_action_reference(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pp>.\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</act_a>::position<my_pos>.\n"
+                    "    }\n"
+                    "}\n"
                 ),
-            ]
+                "act_a.def": _NOOP_ACTION_ACT_A,
+            },
+            entry_file="act_b.def",
         )
-        stmt = _make_create_stmt(chain)
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
 
-        result_a = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("my_pos"),
-                )
-            ],
+    def test_no_edge_when_position_does_not_match(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "act_b.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pp>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<gateway>::action</act_a>::position<other_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_a.def": (
+                    "define the potential action<my.domain.com:my_lib:/act_a> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    define the position<other_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+            entry_file="act_b.def",
         )
-        result_b = _make_result(
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt,
-                )
-            ],
-        )
-
-        graph.register_triggers(result_a.trigger_positions)
-        graph.register_effects(result_a.action_body_effects)
-        graph.register_triggers(result_b.trigger_positions)
-        graph.register_effects(result_b.action_body_effects)
-
-        edges = list(graph.edges())
-        assert len(edges) == 1
-        assert edges[0].source == "action<d:u:/act_b>"
-        assert edges[0].target == "action<d:u:/act_a>"
-
-    def test_no_edge_when_position_does_not_match(self):
-        graph = action_call_graph.ActionCallGraph()
-        chain = _global_action_local_pos("/act_a", "other_pos")
-        stmt = _make_create_stmt(chain)
-
-        result = _make_result(
-            trigger_positions=[
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=_action_typed_name("/act_a"),
-                    checked_position=_local_chain("trigger_pos"),
-                )
-            ],
-            action_body_effects=[
-                action_call_graph.ActionBodyEffect(
-                    enclosing_typed_name=_action_typed_name("/act_b"),
-                    statement=stmt,
-                )
-            ],
-        )
-
-        graph.register_triggers(result.trigger_positions)
-        graph.register_effects(result.action_body_effects)
-        assert list(graph.edges()) == []
+        assert not result.program_result.has_errors()
+        assert _edge_pairs(result) == set()
