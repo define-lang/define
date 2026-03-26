@@ -261,7 +261,7 @@ class DefinitionPostorderValidator(abc.ABC):
     ):
         self._validate_chained_name(stmt.source_position, scope)
         self._validate_chained_name(stmt.target_position, scope)
-        if self._check_if_from_is_a_prefix_of_to(stmt, scope):
+        if self._check_if_from_is_a_prefix_of_to(stmt):
             return
         if not (validity.source_ok and validity.target_ok):
             return
@@ -491,7 +491,6 @@ class DefinitionPostorderValidator(abc.ABC):
     def _check_if_from_is_a_prefix_of_to(
         self,
         stmt: ast.MoveDimensionPointStatement,
-        scope: scope_tracker.ScopeTracker,
     ) -> bool:
         """Check if the from chain is a prefix of (or identical to) the to chain.
 
@@ -526,12 +525,8 @@ class DefinitionPostorderValidator(abc.ABC):
                     target_position=to_chain.source_chained_name,
                 )
             )
-            # TODO: Need to export unknown-state positions in FileValidationResult
-            # so we know they also can't be checked elsewhere.
-            if self._tracker.get_local_position(stmt.source_position, scope):
-                self._tracker.mark_unknown(stmt.source_position)
-            if self._tracker.get_local_position(stmt.target_position, scope):
-                self._tracker.mark_unknown(stmt.target_position)
+            self._tracker.mark_unknown(stmt.source_position)
+            self._tracker.mark_unknown(stmt.target_position)
         return True
 
     def _validate_chained_name(
@@ -552,9 +547,6 @@ class DefinitionPostorderValidator(abc.ABC):
         # Check the second element against the first element's constraints
         # using the scope tracker. This works also for position-self references
         # because we inserted the position's definition into the scope already.
-        # TODO: When the first element is a global name that is NOT in scope,
-        # no constraint check happens for the second element. This lets invalid
-        # chains like `action</other>::position<x>` slip through unchecked.
         first = elements[0]
         if scope.is_defined(first):
             self._check_chain_element_in_constraints(
