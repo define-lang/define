@@ -438,6 +438,19 @@ class UndefinedLocalNameDiagnostic(Diagnostic):
 
 
 @dataclass
+class UnknownGlobalNameDiagnostic(Diagnostic):
+    """Diagnostic for when a global name starts a chain but is not available."""
+
+    source_global_name: str
+    full_global_name: str
+    message_format: ClassVar[str] = (
+        "'{self.source_global_name}' is not available inside of this definition."
+        " To make it available, add this line at the top of the definition:\n\n"
+        "   this dimension point must have the '{self.full_global_name}'."
+    )
+
+
+@dataclass
 class LocalActionNameDiagnostic(Diagnostic):
     """Diagnostic for when an action uses a local name instead of a global reference."""
 

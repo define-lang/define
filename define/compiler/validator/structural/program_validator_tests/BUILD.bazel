@@ -198,6 +198,16 @@ py_test(
     ],
 )
 
+py_test(
+    name = "quality_requirement_test",
+    size = "small",
+    srcs = ["quality_requirement_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
 py_library(
     name = "program_validator_tests",
     srcs = ["__init__.py"],
@@ -233,6 +243,7 @@ pyright_test(
         ":position_constraint_references_test",
         ":program_config_test",
         ":program_validator_tests",
+        ":quality_requirement_test",
         ":reserved_name_positions_test",
         ":universe_without_authority_test",
         "//define/compiler:conftest",

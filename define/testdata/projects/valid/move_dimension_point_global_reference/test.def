@@ -1,8 +1,17 @@
 define the potential action<mv:define-lang.org:test_move_dim_global:/test> {
-    define the position<local_pos>.
+    define the position<local_pos> {
+        it may only contain dimension points where {
+            it has the position</target_pos>.
+        }
+    }
     it happens when {
         the position<local_pos> has a dimension point.
     } and it does {
-        move the dimension point in position<local_pos> to position</target_pos>.
+        define the position<dest> {
+            it may only contain dimension points where {
+                it has the position</target_pos>.
+            }
+        }
+        move the dimension point in position<local_pos> to position<dest>.
     }
 }

@@ -79,10 +79,15 @@ def _build_graph(
 _ACTION_A = (
     "define the potential action<my.domain.com:my_lib:/act_a> {\n"
     "    define the position<pp>.\n"
+    "    define the position<gateway> {\n"
+    "        it may only contain dimension points where {\n"
+    "            it has the action</act_b>.\n"
+    "        }\n"
+    "    }\n"
     "    it happens when {\n"
     "        the position<pp> has a dimension point.\n"
     "    } and it does {\n"
-    "        create a dimension point in action</act_b>::position<pp>.\n"
+    "        create a dimension point in position<gateway>::action</act_b>::position<pp>.\n"
     "    }\n"
     "}\n"
 )
@@ -103,8 +108,11 @@ _ACTION_B_TRIGGERED = (
 
 _POS_COLOR_SOURCE = (
     "define the potential position<my.domain.com:my_lib:/color> {\n"
+    "    it may only contain dimension points where {\n"
+    "        it has the action</act_b>.\n"
+    "    }\n"
     "    after it is assigned {\n"
-    "        create a dimension point in action</act_b>::position<pp>.\n"
+    "        create a dimension point in position</color>::action</act_b>::position<pp>.\n"
     "    }\n"
     "}\n"
 )
@@ -141,11 +149,16 @@ class TestRenderMermaid:
         source_a = (
             "define the potential action<my.domain.com:my_lib:/act_a> {\n"
             "    define the position<pp>.\n"
+            "    define the position<gateway> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</act_b>.\n"
+            "        }\n"
+            "    }\n"
             "    it happens when {\n"
             "        the position<pp> has a dimension point.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</act_b>::position<pp>.\n"
-            "        create a dimension point in action</act_b>::position<pp>.\n"
+            "        create a dimension point in position<gateway>::action</act_b>::position<pp>.\n"
+            "        create a dimension point in position<gateway>::action</act_b>::position<pp>.\n"
             "    }\n"
             "}\n"
         )
@@ -174,10 +187,15 @@ class TestRenderMermaid:
         action_b_chains = (
             "define the potential action<my.domain.com:my_lib:/act_b> {\n"
             "    define the position<pp>.\n"
+            "    define the position<gateway> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</act_c>.\n"
+            "        }\n"
+            "    }\n"
             "    it happens when {\n"
             "        the position<pp> has a dimension point.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</act_c>::position<pp>.\n"
+            "        create a dimension point in position<gateway>::action</act_c>::position<pp>.\n"
             "    }\n"
             "}\n"
         )
@@ -217,10 +235,15 @@ class TestRenderMermaid:
         source_foo = (
             "define the potential action<test.org:other_lib:/foo> {\n"
             "    define the position<pp>.\n"
+            "    define the position<gateway> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</bar>.\n"
+            "        }\n"
+            "    }\n"
             "    it happens when {\n"
             "        the position<pp> has a dimension point.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</bar>::position<pp>.\n"
+            "        create a dimension point in position<gateway>::action</bar>::position<pp>.\n"
             "    }\n"
             "}\n"
         )

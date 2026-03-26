@@ -530,3 +530,39 @@ def test_position_init_satisfies_requirements(
         }
     )
     assert not result.program_result.has_errors()
+
+
+def test_no_requirement_check_on_unknown_global_chain_start(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].source_global_name == "action</other>"
+    assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"

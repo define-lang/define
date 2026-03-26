@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+from pathlib import PurePosixPath
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
@@ -47,10 +49,12 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
     assert all_diags[0].position.line == 15
     assert all_diags[0].position.column == 37
     assert all_diags[0].position_name == "position<src>"
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[1].position.file_path == PurePosixPath("test.def")
     assert all_diags[1].position.line == 15
     assert all_diags[1].position.column == 54
     assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
@@ -101,6 +105,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
     assert all_diags[0].position.line == 11
     assert all_diags[0].position.column == 37
 
@@ -148,6 +153,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
     assert all_diags[0].position.line == 11
     assert all_diags[0].position.column == 37
 
@@ -196,6 +202,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
     assert all_diags[0].position.line == 11
     assert all_diags[0].position.column == 37
 
@@ -241,6 +248,7 @@ def test_unknown_from_move_to_occupied_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
     assert all_diags[0].position.line == 10
     assert all_diags[0].position.column == 56
 
@@ -290,6 +298,7 @@ def test_unknown_from_constraint_violation_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
     assert all_diags[0].position.line == 13
     assert all_diags[0].position.column == 64
 
@@ -336,6 +345,7 @@ def test_unknown_propagation_from_local_to_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
     assert all_diags[0].position.line == 11
     assert all_diags[0].position.column == 37
 
@@ -401,5 +411,49 @@ def test_unknown_from_prefix_move_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("outer.def")
     assert all_diags[0].position.line == 12
     assert all_diags[0].position.column == 73
+
+
+def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in action</other>::position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].source_global_name == "action</other>"
+    assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position.line == 6
+    assert isinstance(all_diags[1], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[1].position.file_path == PurePosixPath("test.def")
+    assert all_diags[1].source_global_name == "action</other>"
+    assert all_diags[1].full_global_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[1].position.line == 7

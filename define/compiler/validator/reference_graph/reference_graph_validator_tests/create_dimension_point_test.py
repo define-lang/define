@@ -34,7 +34,13 @@ def test_short_form_global_reference(
             "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
         }
     )
-    assert not result.program_result.has_errors()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].source_global_name == "position</other>"
+    assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position.line == 6
+    assert all_diags[0].position.column == 37
 
 
 def test_same_fqun_reference_must_use_short_form(
@@ -52,11 +58,16 @@ def test_same_fqun_reference_must_use_short_form(
     )
     result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
-    assert diags[0].fqun == "my.domain.com:my_lib"
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[0].source_global_name == "position<my.domain.com:my_lib:/other>"
+    assert diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
     assert diags[0].position.line == 6
-    assert diags[0].position.column == 46
+    assert diags[0].position.column == 37
+    assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[1].fqun == "my.domain.com:my_lib"
+    assert diags[1].position.line == 6
+    assert diags[1].position.column == 46
 
 
 def test_valid_local_name(
@@ -96,12 +107,17 @@ def test_cross_universe_not_configured(
     )
     result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].universe == "other.domain.com:other_lib"
-    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[0].source_global_name == "position<other.domain.com:other_lib:/dep>"
+    assert diags[0].full_global_name == "position<other.domain.com:other_lib:/dep>"
     assert diags[0].position.line == 6
-    assert diags[0].position.column == 46
+    assert diags[0].position.column == 37
+    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].universe == "other.domain.com:other_lib"
+    assert diags[1].current_universe_name == "my.domain.com:my_lib"
+    assert diags[1].position.line == 6
+    assert diags[1].position.column == 46
 
 
 def test_undefined_local_position(

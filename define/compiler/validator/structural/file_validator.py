@@ -498,12 +498,11 @@ class DefinitionStructuralValidator:
         fqun = self._definition.typed_name.name_content.fqun
         may_continue = True
 
-        is_chained_self_reference = (
-            len(chain.typed_names) > 1
-            and isinstance(first, ast.GlobalTypedNameReference)
-            and first.full_typed_name(in_universe=fqun)
+        is_self_reference = (
+            first.full_typed_name(in_universe=fqun)
             == self._definition.typed_name.full_typed_name()
         )
+        is_chained_self_reference = is_self_reference and len(chain.typed_names) > 1
         if is_chained_self_reference and not allow_self_reference:
             self._diagnostics.append(
                 diagnostics.UnnecessarySelfReferenceDiagnostic(
@@ -529,10 +528,15 @@ class DefinitionStructuralValidator:
             )
             may_continue = False
 
-        # TODO: When the first element is a global name that is not the
-        # self-reference, diagnose it as invalid. Only self-references are
-        # currently valid as the first element of a chain. A chain like
-        # `action</other>::position<x>` should be rejected here.
+        if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
+            self._diagnostics.append(
+                diagnostics.UnknownGlobalNameDiagnostic(
+                    position=first.position,
+                    source_global_name=first.source_typed_name,
+                    full_global_name=first.full_typed_name(in_universe=fqun),
+                )
+            )
+            may_continue = False
 
         previous_element = None
         for typed_name in chain.typed_names:

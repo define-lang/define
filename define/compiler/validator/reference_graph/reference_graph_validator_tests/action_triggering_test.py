@@ -28,10 +28,15 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -49,7 +54,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _OTHER, 6)}
+        assert _edge_keys(result) == {(_TEST, _OTHER, 11)}
 
     def test_create_and_move_trigger_other_action(
         self,
@@ -60,12 +65,17 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
                     "        define the position<tmp>.\n"
                     "        create a dimension point in position<tmp>.\n"
-                    "        move the dimension point in position<tmp> to action</other>::position<trigger_pos>.\n"
+                    "        move the dimension point in position<tmp> to position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -83,7 +93,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _OTHER, 8)}
+        assert _edge_keys(result) == {(_TEST, _OTHER, 13)}
 
     def test_no_trigger_when_writing_to_non_trigger_position(
         self,
@@ -94,10 +104,15 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<non_trigger>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -127,10 +142,15 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</act_b>::position<trigger_pos>.\n"
+                    "        create a dimension point in position<gateway>::action</act_b>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -148,7 +168,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _ACT_B, 6)}
+        assert _edge_keys(result) == {(_TEST, _ACT_B, 11)}
 
     def test_trigger_chain(
         self,
@@ -159,20 +179,30 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</act_b>::position<trigger_b>.\n"
+                    "        create a dimension point in position<gateway>::action</act_b>::position<trigger_b>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "act_b.def": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<trigger_b>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_c>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<trigger_b> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</act_c>::position<trigger_c>.\n"
+                    "        create a dimension point in position<gateway>::action</act_c>::position<trigger_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -190,7 +220,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _ACT_B, 6), (_ACT_B, _ACT_C, 6)}
+        assert _edge_keys(result) == {(_TEST, _ACT_B, 11), (_ACT_B, _ACT_C, 11)}
 
     def test_self_trigger(
         self,
@@ -233,10 +263,15 @@ class TestActionTriggering:
                     "}\n"
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -297,10 +332,7 @@ class TestActionTriggering:
             tp.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
         )
-        assert len(tp.checked_position.typed_names) == 1
-        assert (
-            tp.checked_position.typed_names[0].full_typed_name() == "position<my_pos>"
-        )
+        assert tp.checked_position.source_chained_name == "position<my_pos>"
 
     def test_action_body_effects_recorded(
         self,
@@ -311,10 +343,15 @@ class TestActionTriggering:
                 "test.def": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<pos>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -352,17 +389,9 @@ class TestActionTriggering:
             if e.enclosing_typed_name.full_typed_name()
             == "action<my.domain.com:my_lib:/test>"
         )
-        assert len(test_effect.modified_position.typed_names) == 2
-        fqun = test_effect.enclosing_typed_name.name_content.fqun
         assert (
-            test_effect.modified_position.typed_names[0].full_typed_name(
-                in_universe=fqun
-            )
-            == "action<my.domain.com:my_lib:/other>"
-        )
-        assert (
-            test_effect.modified_position.typed_names[1].full_typed_name()
-            == "position<pos>"
+            test_effect.modified_position.source_chained_name
+            == "position<gateway>::action</other>::position<pos>"
         )
 
     def test_local_prefix_before_action_trigger(
@@ -477,6 +506,44 @@ class TestActionTriggering:
         assert all_body_effects == []
 
 
+class TestUnknownGlobalNoTrigger:
+    def test_no_trigger_edge_on_unknown_global_chain_start(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+        assert all_diags[0].source_global_name == "action</other>"
+        assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
+        assert _edge_keys(result) == set()
+
+
 _OTHER_ACTION = (
     "define the potential action<my.domain.com:my_lib:/other> {\n"
     "    define the position<trigger_pos>.\n"
@@ -499,8 +566,11 @@ class TestPositionInitTriggering:
             {
                 "test.def": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the action</other>.\n"
+                    "    }\n"
                     "    after it is assigned {\n"
-                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -508,7 +578,7 @@ class TestPositionInitTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 3)}
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 6)}
 
     def test_position_init_move_triggers_action(
         self,
@@ -518,10 +588,13 @@ class TestPositionInitTriggering:
             {
                 "test.def": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the action</other>.\n"
+                    "    }\n"
                     "    after it is assigned {\n"
                     "        define the position<tmp>.\n"
                     "        create a dimension point in position<tmp>.\n"
-                    "        move the dimension point in position<tmp> to action</other>::position<trigger_pos>.\n"
+                    "        move the dimension point in position<tmp> to position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -529,7 +602,7 @@ class TestPositionInitTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 5)}
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 8)}
 
     def test_position_init_self_reference_no_trigger_edge(
         self,
@@ -557,8 +630,11 @@ class TestPositionInitTriggering:
             {
                 "test.def": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the action</other>.\n"
+                    "    }\n"
                     "    after it is assigned {\n"
-                    "        create a dimension point in action</other>::position<non_trigger>.\n"
+                    "        create a dimension point in position</test>::action</other>::position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -587,16 +663,24 @@ class TestPositionInitTriggering:
             {
                 "test.def": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the action</other>.\n"
+                    "    }\n"
                     "    after it is assigned {\n"
-                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -605,8 +689,8 @@ class TestPositionInitTriggering:
         )
         assert not result.program_result.has_errors()
         assert _edge_keys(result) == {
-            (_POS_TEST, _OTHER, 3),
-            (_TEST, _OTHER, 11),
+            (_POS_TEST, _OTHER, 6),
+            (_TEST, _OTHER, 19),
         }
 
     def test_position_init_chained_through_self_triggers_action(

@@ -67,7 +67,13 @@ class TestTriggerConditionValidation:
                 "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
             }
         )
-        assert not result.program_result.has_errors()
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+        assert all_diags[0].source_global_name == "position</other>"
+        assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
+        assert all_diags[0].position.line == 3
+        assert all_diags[0].position.column == 13
 
     def test_invalid_local_name_format(
         self,

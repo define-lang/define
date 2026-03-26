@@ -1,6 +1,11 @@
 define the potential action<mv:define-lang.org:test_trigger_short_global:/test> {
+    define the position<trigger> {
+        it may only contain dimension points where {
+            it has the position</other>.
+        }
+    }
     it happens when {
-        the position</other> has a dimension point.
+        the position<trigger>::position</other> has a dimension point.
     } and it does {
         define the position<_noop>.
         create a dimension point in position<_noop>.

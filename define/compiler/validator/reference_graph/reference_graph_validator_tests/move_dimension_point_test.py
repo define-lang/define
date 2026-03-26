@@ -42,10 +42,15 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
                 "}\n"
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<from_pos>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</dest>.\n"
+                "        }\n"
+                "    }\n"
                 "    it happens when {\n"
                 "        the position<from_pos> has a dimension point.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<from_pos> to position</dest>.\n"
+                "        move the dimension point in position<from_pos> to position<gateway>::position</dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -156,10 +161,15 @@ def test_same_fqun_must_use_short_form_in_from(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<to_pos>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</other>.\n"
+                "        }\n"
+                "    }\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<my.domain.com:my_lib:/other> to position<to_pos>.\n"
+                "        move the dimension point in position<gateway>::position<my.domain.com:my_lib:/other> to position<to_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -171,8 +181,8 @@ def test_same_fqun_must_use_short_form_in_from(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
     assert all_diags[0].fqun == "my.domain.com:my_lib"
-    assert all_diags[0].position.line == 7
-    assert all_diags[0].position.column == 46
+    assert all_diags[0].position.line == 12
+    assert all_diags[0].position.column == 65
 
 
 def test_same_fqun_must_use_short_form_in_to(
@@ -187,10 +197,15 @@ def test_same_fqun_must_use_short_form_in_to(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<from_pos>.\n"
+                "    define the position<gateway> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</other>.\n"
+                "        }\n"
+                "    }\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<from_pos> to position<my.domain.com:my_lib:/other>.\n"
+                "        move the dimension point in position<from_pos> to position<gateway>::position<my.domain.com:my_lib:/other>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -202,8 +217,8 @@ def test_same_fqun_must_use_short_form_in_to(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
     assert all_diags[0].fqun == "my.domain.com:my_lib"
-    assert all_diags[0].position.line == 7
-    assert all_diags[0].position.column == 68
+    assert all_diags[0].position.line == 12
+    assert all_diags[0].position.column == 87
 
 
 def test_valid_global_to_position(
@@ -224,7 +239,13 @@ def test_valid_global_to_position(
             "global_pos.def": "define the potential position<my.domain.com:my_lib:/global_pos>.\n",
         }
     )
-    assert not result.program_result.has_errors()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].source_global_name == "position</global_pos>"
+    assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/global_pos>"
+    assert all_diags[0].position.line == 6
+    assert all_diags[0].position.column == 60
 
 
 def test_move_from_a_position_to_itself(

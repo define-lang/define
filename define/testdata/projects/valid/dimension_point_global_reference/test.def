@@ -3,6 +3,11 @@ define the potential action<mv:define-lang.org:test_dim_global:/test> {
     it happens when {
         the position<run> has a dimension point.
     } and it does {
-        create a dimension point in position</target_pos>.
+        define the position<dest> {
+            it may only contain dimension points where {
+                it has the position</target_pos>.
+            }
+        }
+        create a dimension point in position<dest>.
     }
 }

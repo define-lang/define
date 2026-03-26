@@ -698,12 +698,15 @@ class TestCreateDimensionPoint:
             },
         )
         all_diags = result.program_result.all_diagnostics
-        assert len(all_diags) == 1
+        assert len(all_diags) == 2
+        assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+        assert all_diags[0].source_global_name == "position</other>"
+        assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
         assert isinstance(
-            all_diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            all_diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
-        assert all_diags[0].local_name == "position<local>"
-        assert all_diags[0].preceding_name == "position<my.domain.com:my_lib:/other>"
+        assert all_diags[1].local_name == "position<local>"
+        assert all_diags[1].preceding_name == "position<my.domain.com:my_lib:/other>"
 
     def test_undefined_local_position_in_chain(
         self,
@@ -1331,9 +1334,18 @@ class TestMoveDimensionPoint:
             for r in result.program_result.file_results
             if r.file_path == PurePosixPath("test.def")
         )
-        assert len(test_result.diagnostics) == 1
+        assert len(test_result.diagnostics) == 2
         assert isinstance(
             test_result.diagnostics[0],
+            diagnostics.UnknownGlobalNameDiagnostic,
+        )
+        assert test_result.diagnostics[0].source_global_name == "action</act_x>"
+        assert (
+            test_result.diagnostics[0].full_global_name
+            == "action<my.domain.com:my_lib:/act_x>"
+        )
+        assert isinstance(
+            test_result.diagnostics[1],
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
@@ -1371,9 +1383,18 @@ class TestMoveDimensionPoint:
             for r in result.program_result.file_results
             if r.file_path == PurePosixPath("test.def")
         )
-        assert len(test_result.diagnostics) == 1
+        assert len(test_result.diagnostics) == 2
         assert isinstance(
             test_result.diagnostics[0],
+            diagnostics.UnknownGlobalNameDiagnostic,
+        )
+        assert test_result.diagnostics[0].source_global_name == "action</act_y>"
+        assert (
+            test_result.diagnostics[0].full_global_name
+            == "action<my.domain.com:my_lib:/act_y>"
+        )
+        assert isinstance(
+            test_result.diagnostics[1],
             diagnostics.PositionReferenceChainEndDiagnostic,
         )
 
@@ -1545,7 +1566,54 @@ class TestUnnecessarySelfReference:
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert diags[0].position.line == 6
+        assert diags[0].position.column == 37
         assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+        assert diags[1].position.line == 6
+        assert diags[1].position.column == 37
+        assert diags[1].cycle == [
+            "action<my.domain.com:my_lib:/test>",
+            "action<my.domain.com:my_lib:/test>",
+        ]
+
+
+class TestUnknownGlobalChainStart:
+    def test_no_constraint_check_on_unknown_global(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</other>::position<x>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.def": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<x>.\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+        assert all_diags[0].source_global_name == "action</other>"
+        assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
+        assert all_diags[0].position.line == 6
+        assert all_diags[0].position.column == 37
 
 
 class TestChainActionValidation:

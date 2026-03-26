@@ -350,10 +350,15 @@ class TestDimensionPointReferenceEdges:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
+            "    define the position<gateway> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</beta>.\n"
+            "        }\n"
+            "    }\n"
             "    it happens when {\n"
             "        the position<run> has a dimension point.\n"
             "    } and it does {\n"
-            "        create a dimension point in position</alpha>::action</beta>::position</gamma>.\n"
+            "        create a dimension point in position<gateway>::action</beta>::position</gamma>.\n"
             "    }\n"
             "}\n"
         )

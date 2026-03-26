@@ -223,10 +223,15 @@ class TestActionBodyEffect:
                 "test.def": (
                     f"define the potential action<{_FQUN}:/act> {{\n"
                     "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<tp>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<tp>.\n"
                     "    }\n"
                     "}\n"
                 ),

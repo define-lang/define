@@ -274,6 +274,7 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "syntax/short_form_required/move_full_form_same_fqun.def": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
+        diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
     "trigger_conditions/chain_ending_with_action.def": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,

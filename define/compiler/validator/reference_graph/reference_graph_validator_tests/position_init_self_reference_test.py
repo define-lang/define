@@ -161,7 +161,13 @@ def test_self_reference_mixed_with_other_reference(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].source_global_name == "position</other>"
+    assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position.line == 4
+    assert all_diags[0].position.column == 37
 
 
 def test_chained_name_starting_with_self_two_items_valid(

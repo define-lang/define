@@ -4,7 +4,12 @@ define the potential action<mv:define-lang.org:test_dim_multi:/test> {
     it happens when {
         the position<run> has a dimension point.
     } and it does {
+        define the position<dest> {
+            it may only contain dimension points where {
+                it has the position</global_pos>.
+            }
+        }
         create a dimension point in position<local_pos>.
-        create a dimension point in position</global_pos>.
+        create a dimension point in position<dest>.
     }
 }
