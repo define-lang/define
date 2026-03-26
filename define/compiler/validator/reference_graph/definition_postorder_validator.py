@@ -84,15 +84,72 @@ class DefinitionPostorderValidator(abc.ABC):
         No-op for non-action definitions. Overridden by ActionPostorderValidator.
         """
 
-    def _check_trigger(  # noqa: B027
+    def _check_trigger(
         self,
-        _ref: ast.PositionReference,
-        _external: action_contract.ActionAndInterfacePosition,
+        ref: ast.PositionReference,
+        external: action_contract.ActionAndInterfacePosition,
     ):
-        """Check if filling this interface position triggers the named action.
+        """Check if filling this interface position triggers the named action."""
+        contract = self._action_contracts.get(external.action_name)
+        if contract is None:
+            return
+        if external.position_name != contract.trigger_position_name:
+            return
 
-        No-op for non-action definitions. Overridden by ActionPostorderValidator.
-        """
+        self._check_requirements(ref, external.action_name, contract)
+        self._tracker.apply_guarantees(ref, contract.guarantees)
+
+    def _check_requirements(
+        self,
+        trigger_position: ast.PositionReference,
+        action_name: str,
+        contract: action_contract.ActionContract,
+    ):
+        """Check that all action requirements are satisfied before triggering."""
+        dp = self._tracker.get_occupant(trigger_position)
+
+        chain_prefix = "::".join(
+            e.source_typed_name for e in trigger_position.chain.typed_names[:-1]
+        )
+
+        for req in contract.requirements.values():
+            req_name = req.position.typed_name.name_content.name
+            key = self._tracker.interface_position_key(trigger_position, req_name)
+
+            if self._tracker.has_unknown_state_by_key(key):
+                continue
+
+            is_occupied = self._tracker.is_occupied_by_key(key)
+            req_chained_name = (
+                f"{chain_prefix}::{req.position.typed_name.source_typed_name}"
+            )
+
+            if (
+                req.required_state == action_contract.PositionOccupancyState.EMPTY
+                and is_occupied
+            ):
+                occupant = self._tracker.get_occupant_by_key(key)
+                self._diagnostics.append(
+                    diagnostics.ActionRequiresEmptyPositionDiagnostic(
+                        position=dp.code_position,
+                        action_name=action_name,
+                        position_name=req_chained_name,
+                        inferred_at=req.inferred_from,
+                        filled_at=occupant.code_position,
+                    )
+                )
+            elif (
+                req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+                and not is_occupied
+            ):
+                self._diagnostics.append(
+                    diagnostics.ActionRequiresOccupiedPositionDiagnostic(
+                        position=dp.code_position,
+                        action_name=action_name,
+                        position_name=req_chained_name,
+                        inferred_at=req.inferred_from,
+                    )
+                )
 
     def _analyze_statements(
         self,
@@ -495,6 +552,9 @@ class DefinitionPostorderValidator(abc.ABC):
         # Check the second element against the first element's constraints
         # using the scope tracker. This works also for position-self references
         # because we inserted the position's definition into the scope already.
+        # TODO: When the first element is a global name that is NOT in scope,
+        # no constraint check happens for the second element. This lets invalid
+        # chains like `action</other>::position<x>` slip through unchecked.
         first = elements[0]
         if scope.is_defined(first):
             self._check_chain_element_in_constraints(
@@ -827,81 +887,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 origin_position=self._interface_positions.get(local_name),
             )
 
-    @typing.override
-    def _check_trigger(
-        self,
-        ref: ast.PositionReference,
-        external: action_contract.ActionAndInterfacePosition,
-    ):
-        """Check if filling this interface position triggers the named action."""
-        contract = self._action_contracts.get(external.action_name)
-        if contract is None:
-            return
-        if external.position_name != contract.trigger_position_name:
-            return
-
-        self._check_requirements(ref, external.action_name, contract)
-        self._tracker.apply_guarantees(ref, contract.guarantees)
-
-    def _check_requirements(
-        self,
-        trigger_position: ast.PositionReference,
-        action_name: str,
-        contract: action_contract.ActionContract,
-    ):
-        """Check that all action requirements are satisfied before triggering."""
-        dp = self._tracker.get_occupant(trigger_position)
-
-        chain_prefix = "::".join(
-            e.source_typed_name for e in trigger_position.chain.typed_names[:-1]
-        )
-
-        for req in contract.requirements.values():
-            req_name = req.position.typed_name.name_content.name
-            key = self._tracker.interface_position_key(trigger_position, req_name)
-
-            if self._tracker.has_unknown_state_by_key(key):
-                continue
-
-            is_occupied = self._tracker.is_occupied_by_key(key)
-            req_chained_name = (
-                f"{chain_prefix}::{req.position.typed_name.source_typed_name}"
-            )
-
-            if (
-                req.required_state == action_contract.PositionOccupancyState.EMPTY
-                and is_occupied
-            ):
-                occupant = self._tracker.get_occupant_by_key(key)
-                self._diagnostics.append(
-                    diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        position=dp.code_position,
-                        action_name=action_name,
-                        position_name=req_chained_name,
-                        inferred_at=req.inferred_from,
-                        filled_at=occupant.code_position,
-                    )
-                )
-            elif (
-                req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-                and not is_occupied
-            ):
-                self._diagnostics.append(
-                    diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        position=dp.code_position,
-                        action_name=action_name,
-                        position_name=req_chained_name,
-                        inferred_at=req.inferred_from,
-                    )
-                )
-
 
 class PositionPostorderValidator(DefinitionPostorderValidator):
     """Validates a position definition during a DFS post-order walk."""
-
-    # TODO: Position init blocks should also check triggers when creating/moving
-    # into external action interface positions. Currently _check_trigger is a
-    # no-op for position definitions.
 
     @typing.override
     def analyze(

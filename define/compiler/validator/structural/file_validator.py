@@ -529,6 +529,11 @@ class DefinitionStructuralValidator:
             )
             may_continue = False
 
+        # TODO: When the first element is a global name that is not the
+        # self-reference, diagnose it as invalid. Only self-references are
+        # currently valid as the first element of a chain. A chain like
+        # `action</other>::position<x>` should be rejected here.
+
         previous_element = None
         for typed_name in chain.typed_names:
             self._validate_chained_name_element(
