@@ -443,12 +443,8 @@ class DefinitionPostorderValidator(abc.ABC):
         external: action_contract.ActionAndInterfacePosition,
     ) -> frozenset[str]:
         """Get the constraint qualities for an external action's interface position."""
-        definition_result = self._definition_results.get(external.action_name)
-        if definition_result is None:
-            return frozenset()
-        action_def = definition_result.definition
-        if not isinstance(action_def, ast.ActionDefinition):
-            return frozenset()
+        definition_result = self._definition_results[external.action_name]
+        action_def = typing.cast("ast.ActionDefinition", definition_result.definition)
         return action_def.interface_position_constraints.get(
             external.position_name, frozenset()
         )
@@ -685,32 +681,15 @@ class DefinitionPostorderValidator(abc.ABC):
         # position requires (from its original creation site), and we lose that
         # knowledge by only looking at its current location.
         last_element = chain.typed_names[-1]
-
-        if isinstance(last_element, ast.GlobalTypedNameReference):
-            lookup_key = last_element.full_typed_name(in_universe=fqun)
-        else:
-            # If the last element is a local reference, then per the
-            # guarantees provided by file_validator, it _must_ be
-            # a chain with more than one item in it, and the parent
-            # must be a globally-named action.
-            parent = chain.typed_names[-2]
-            if not isinstance(parent, ast.GlobalTypedNameReference):
-                raise ValueError("got a local name where a global name was expected")
-            lookup_key = parent.full_typed_name(in_universe=fqun)
+        lookup_key = last_element.full_typed_name(in_universe=fqun)
 
         definition_result = self._definition_results.get(lookup_key)
         if definition_result is None:
             return None
 
-        if isinstance(last_element, ast.GlobalTypedNameReference):
-            if not isinstance(definition_result.definition, ast.PositionDefinition):
-                return frozenset()
-            return definition_result.definition.constraint_names
-        if isinstance(definition_result.definition, ast.ActionDefinition):
-            return definition_result.definition.interface_position_constraints.get(
-                last_element.name_content.name, frozenset()
-            )
-        return frozenset()
+        if not isinstance(definition_result.definition, ast.PositionDefinition):
+            return frozenset()
+        return definition_result.definition.constraint_names
 
 
 class ActionPostorderValidator(DefinitionPostorderValidator):

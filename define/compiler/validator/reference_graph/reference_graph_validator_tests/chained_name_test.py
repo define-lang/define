@@ -1839,3 +1839,40 @@ class TestChainActionValidation:
         assert all(
             len(r.diagnostics) == 0 for r in result.program_result.file_results[1:]
         )
+
+
+class TestMissingDefinitionInChain:
+    def test_chained_name_with_missing_middle_definition(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</middle>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<gateway>::position</middle>::position</end>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "end.def": "define the potential position<my.domain.com:my_lib:/end>.\n",
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 2
+        assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+        assert all_diags[0].file_path == "middle.def"
+        assert all_diags[0].position.line == 5
+        assert all_diags[0].position.column == 33
+        assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+        assert all_diags[1].file_path == "middle.def"
+        assert all_diags[1].position.line == 11
+        assert all_diags[1].position.column == 65

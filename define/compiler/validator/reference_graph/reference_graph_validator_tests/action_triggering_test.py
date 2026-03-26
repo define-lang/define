@@ -716,3 +716,47 @@ class TestPositionInitTriggering:
         )
         assert not result.program_result.has_errors()
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 8)}
+
+
+class TestCircularDependencyTriggering:
+    def test_circular_dependency_skips_trigger_check(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.def": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the position</pos>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "pos.def": (
+                    "define the potential position<my.domain.com:my_lib:/pos> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the action</test>.\n"
+                    "    }\n"
+                    "    after it is assigned {\n"
+                    "        create a dimension point in position</pos>::action</test>::position<run>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 2
+        assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+        assert all_diags[0].position.line == 3
+        assert all_diags[0].position.column == 20
+        assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+        assert all_diags[1].position.line == 6
+        assert all_diags[1].position.column == 53
