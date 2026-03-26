@@ -578,6 +578,77 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert result.file_results[2].file_path == PurePosixPath("lib/inner/leaf.def")
 
 
+def test_partial_sub_root_failure_still_validates_successful_sub_roots(
+    validate_project: ValidateProject,
+):
+    child_a = "mv:define-lang.org:child_a"
+    child_b = "mv:define-lang.org:child_b"
+    result = validate_project(
+        {
+            "test.def": (
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain dimension points where {{\n"
+                f"        it has the position<{child_a}:/target_a>.\n"
+                f"        it has the position<{child_b}:/target_b>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib_a/target_a.def": f"define the potential position<{child_a}:/target_a>.\n",
+        },
+        universe_name=_PARENT_UNIVERSE,
+        local_deps={child_a: "lib_a", child_b: "lib_b"},
+        sub_roots={"lib_a": child_a},
+    )
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 29
+    assert isinstance(diags[0].error, exceptions.NotProjectRootError)
+    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
+
+
+def test_partial_local_deps_missing_still_validates_configured_sub_roots(
+    validate_project: ValidateProject,
+):
+    child_a = "mv:define-lang.org:child_a"
+    child_b = "mv:define-lang.org:child_b"
+    result = validate_project(
+        {
+            "test.def": (
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain dimension points where {{\n"
+                f"        it has the position<{child_a}:/target_a>.\n"
+                f"        it has the position<{child_b}:/target_b>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib_a/target_a.def": f"define the potential position<{child_a}:/target_a>.\n",
+        },
+        universe_name=_PARENT_UNIVERSE,
+        local_deps={child_a: "lib_a"},
+        sub_roots={"lib_a": child_a},
+    )
+    assert len(result.file_results) == 2
+    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].exception is None
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 29
+    assert diags[0].universe == child_b
+    assert diags[0].current_universe_name == _PARENT_UNIVERSE
+    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.def")
+    assert result.file_results[1].exception is None
+    assert result.file_results[1].diagnostics == []
+
+
 def test_failed_root_discovery_does_not_skip_remaining_files(
     validate_project: ValidateProject,
 ):

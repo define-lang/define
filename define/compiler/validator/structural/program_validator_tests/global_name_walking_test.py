@@ -231,6 +231,47 @@ def test_external_universe_no_project_config(
     assert diags[0].config_path == ".define/project/config.defcl"
 
 
+def test_config_failure_still_validates_same_file_cycles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    source = (
+        "define the potential position<my.domain.com:my_lib:/a> {\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<other.example.com:other_universe:/target>.\n"
+        "        it has the position</b>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential position<my.domain.com:my_lib:/b> {\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</a>.\n"
+        "    }\n"
+        "}\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].position.line == 9
+    assert diags[0].position.column == 20
+    assert diags[0].cycle == [
+        "position<my.domain.com:my_lib:/a>",
+        "position<my.domain.com:my_lib:/b>",
+        "position<my.domain.com:my_lib:/a>",
+    ]
+    assert isinstance(
+        diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    assert diags[1].position.line == 3
+    assert diags[1].position.column == 29
+    assert diags[1].universe == "other.example.com:other_universe"
+
+
 def test_external_universe_without_local_deps(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -465,6 +506,46 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[1].position.line == 4
     assert diags[1].position.column == 29
     assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
+    assert result.file_results[1].diagnostics == []
+
+
+def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_filesystem(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    child_a = "mv:define-lang.org:child_a"
+    child_b = "mv:define-lang.org:child_b"
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    test_helpers.write_local_deps_config(tmp_path, {child_a: "lib_a"})
+    test_helpers.write_sub_root(tmp_path, "lib_a", child_a)
+    (tmp_path / "lib_a/target_a.def").write_text(
+        f"define the potential position<{child_a}:/target_a>.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain dimension points where {\n"
+        f"        it has the position<{child_a}:/target_a>.\n"
+        f"        it has the position<{child_b}:/target_b>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 2
+    assert result.file_results[0].exception is None
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].position.line == 4
+    assert diags[0].position.column == 29
+    assert diags[0].universe == child_b
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert result.file_results[1].file_path.name == "target_a.def"
+    assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
 

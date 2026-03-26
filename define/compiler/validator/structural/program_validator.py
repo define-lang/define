@@ -162,13 +162,7 @@ class ProgramStructuralValidator:
         self._path_tracker.mark_in_progress(result.file_path)
         self._path_tracker.set_result(result.file_path, result)
 
-        # TODO: When config resolution partially fails, we skip edge resolution
-        # and pool work entirely. This should be restructured so that definition
-        # registration and edge validation always happen, and only cross-universe
-        # discovery is conditional on config success.
-        if not self._resolve_non_filesystem_discovered_files(result):
-            self._register_definitions(result)
-            return self._build_program_result(self._path_tracker.completed_results())
+        self._resolve_non_filesystem_discovered_files(result)
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._process_completed_result(result, pool)
@@ -215,20 +209,6 @@ class ProgramStructuralValidator:
         # don't race ahead of the completed file's real contents.
         self._validate_incoming_reference_edges(result.file_path)
         result.stats.global_validation += time.perf_counter_ns() - started_at
-
-    def _register_definitions(
-        self,
-        result: validation_result.FileValidationResult,
-    ):
-        """Register definitions from a file result for non-filesystem error-state postorder analysis only."""
-        # TODO: This will go away when we fix the bug about edge resolution for
-        # partially-failed non-filesystem states.
-        for definition_result in result.definition_results:
-            name = definition_result.definition.typed_name.full_typed_name()
-            if name in self._definition_results:
-                continue
-            self._definition_results[name] = definition_result
-            self._reference_graph.add_definition(definition_result.definition)
 
     def _process_completed_definition(
         self,
@@ -292,23 +272,22 @@ class ProgramStructuralValidator:
     def _resolve_non_filesystem_discovered_files(
         self,
         result: validation_result.FileValidationResult,
-    ) -> bool:
+    ):
         """Load project config if necessary, and resolve FQUNs to sub-roots."""
         if self._first_discovered_file(result) is None:
-            return True
+            return
 
         current_fqun, sub_root_mappings = self._load_config_in_non_filesystem_context(
             result
         )
-        # We check both of these just for type narrowing.
         if current_fqun is None or sub_root_mappings is None:
-            return False
+            self._strip_cross_universe_refs(result)
+            return
         self._resolve_non_filesystem_discovered_files_with_config(
             result=result,
             current_fqun=current_fqun,
             sub_root_mappings=sub_root_mappings,
         )
-        return True
 
     def _resolve_non_filesystem_discovered_files_with_config(
         self,
@@ -350,6 +329,24 @@ class ProgramStructuralValidator:
                     or ref_edge.global_name_reference.name_content.fqun.canonical
                     not in unknown_fquns
                 )
+            ]
+
+    def _strip_cross_universe_refs(
+        self,
+        result: validation_result.FileValidationResult,
+    ):
+        """Strip all discovered files and cross-universe edges after total config failure.
+
+        When root config loading fails entirely, every cross-universe FQUN is
+        unresolvable. Same-universe edges are kept so that same-file validation
+        (e.g. cycle detection) still runs.
+        """
+        for definition_result in result.definition_results:
+            definition_result.discovered_files = []
+            definition_result.reference_edges = [
+                ref_edge
+                for ref_edge in definition_result.reference_edges
+                if ref_edge.global_name_reference.name_content.fqun is None
             ]
 
     def _load_config_in_non_filesystem_context(
@@ -461,6 +458,12 @@ class ProgramStructuralValidator:
         """
         # This check is only for current-universe references.
         if edge.global_name_reference.name_content.fqun is not None:
+            return False
+
+        # When config failed to load, we have no sub-root information to check
+        # against. This happens in non-filesystem mode when the root project
+        # config is missing.
+        if not self._path_tracker.project_root_loaded(enclosing_root):
             return False
 
         actual_root = self._path_tracker.find_enclosing_root(target_file)
