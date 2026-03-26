@@ -276,13 +276,11 @@ class DefinitionStructuralValidator:
         """Build a result object from the validator's private state."""
         return validation_result.DefinitionValidationResult(
             definition=self._definition,
-            # TODO: This does a bunch of copying that it doesn't need to,
-            # because DefinitionStructuralValidator is an implementation detail.
-            _diagnostics=list(self._diagnostics),
-            reference_edges=list(self._reference_edges),
-            discovered_files=list(self._discovered_files),
-            trigger_positions=list(self._trigger_positions),
-            dp_statement_validity=list(self._dp_statement_validity),
+            _diagnostics=self._diagnostics,
+            reference_edges=self._reference_edges,
+            discovered_files=self._discovered_files,
+            trigger_positions=self._trigger_positions,
+            dp_statement_validity=self._dp_statement_validity,
         )
 
     def _validate_path_matches_file(self):
