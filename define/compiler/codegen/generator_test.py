@@ -44,8 +44,8 @@ class TestCodeGenerator:
 
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.EntryPointNotPositionDiagnostic)
-        assert result[0].position.line == 1
-        assert result[0].position.column == 1
+        assert result[0].location.line == 1
+        assert result[0].location.column == 1
 
     def test_file_with_action_and_position_passes(
         self, validate_project: ValidateProject, tmp_path: Path

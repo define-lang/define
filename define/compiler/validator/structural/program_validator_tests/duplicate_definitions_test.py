@@ -37,8 +37,8 @@ def test_duplicate_position_error():
     assert diags[0].definition_type == "position"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
-    assert diags[0].position.line == 2
-    assert diags[0].position.column == 1
+    assert diags[0].location.line == 2
+    assert diags[0].location.column == 1
 
 
 def test_duplicate_action_error():
@@ -57,8 +57,8 @@ def test_duplicate_action_error():
     assert diags[0].definition_type == "action"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
-    assert diags[0].position.line == 2
-    assert diags[0].position.column == 1
+    assert diags[0].location.line == 2
+    assert diags[0].location.column == 1
 
 
 def test_same_path_different_types_ok():
@@ -93,10 +93,10 @@ def test_three_duplicates_two_errors():
     assert diags[0].definition_type == "position"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
-    assert diags[0].position.line == 2
-    assert diags[0].position.column == 1
+    assert diags[0].location.line == 2
+    assert diags[0].location.column == 1
     assert diags[1].definition_type == "position"
     assert diags[1].path == "/same"
     assert diags[1].first_definition_line == 1
-    assert diags[1].position.line == 3
-    assert diags[1].position.column == 1
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 1

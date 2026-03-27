@@ -60,8 +60,8 @@ def test_sub_root_redeclares_parent_fqun(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.ConfigLoadErrorDiagnostic)
-    assert diag.position.line == 3
-    assert diag.position.column == 29
+    assert diag.location.line == 3
+    assert diag.location.column == 29
     assert isinstance(diag.error, exceptions.DuplicateFqunError)
     assert diag.error.fqun == parent_fqun
     assert diag.error.existing_config == PurePosixPath(".define/project/config.defcl")
@@ -112,8 +112,8 @@ def test_cross_fqun_file_not_found(validate_project: ValidateProject):
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[0].file_path == "lib/missing.def"
 
 
@@ -136,8 +136,8 @@ def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
 
 
@@ -168,8 +168,8 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert all_diags[0].position.line == 3
-    assert all_diags[0].position.column == 29
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 29
     assert isinstance(all_diags[0].error, exceptions.NotProjectRootError)
 
 
@@ -194,8 +194,8 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == _CHILD_UNIVERSE
     assert diags[0].error.actual_fqun == wrong_universe
@@ -226,8 +226,8 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 4
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
     assert diags[0].error.expected_fqun == second_child
     assert diags[0].error.actual_fqun == _CHILD_UNIVERSE
@@ -259,15 +259,15 @@ def test_sub_root_conflict(validate_project: ValidateProject):
     assert len(result.file_results[0].diagnostics) == 2
     path_diag = result.file_results[0].diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.position.line == 3
-    assert path_diag.position.column == 29
+    assert path_diag.location.line == 3
+    assert path_diag.location.column == 29
     assert path_diag.path.endswith("lib/parent_target.def")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
     sub_root_diag = result.file_results[0].diagnostics[1]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
-    assert sub_root_diag.position.line == 4
-    assert sub_root_diag.position.column == 29
+    assert sub_root_diag.location.line == 4
+    assert sub_root_diag.location.column == 29
     assert sub_root_diag.universe == _CHILD_UNIVERSE
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
@@ -303,23 +303,23 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
     assert len(result.file_results[0].diagnostics) == 3
     path_diag = result.file_results[0].diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.position.line == 3
-    assert path_diag.position.column == 29
+    assert path_diag.location.line == 3
+    assert path_diag.location.column == 29
     assert path_diag.path.endswith("lib/parent_target.def")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
     sub_root_diag = result.file_results[0].diagnostics[2]
     assert isinstance(sub_root_diag, diagnostics.SubRootAlreadyOccupiedDiagnostic)
-    assert sub_root_diag.position.line == 4
-    assert sub_root_diag.position.column == 29
+    assert sub_root_diag.location.line == 4
+    assert sub_root_diag.location.column == 29
     assert sub_root_diag.universe == _CHILD_UNIVERSE
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.def"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
     not_found_diag = result.file_results[0].diagnostics[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert not_found_diag.position.line == 4
-    assert not_found_diag.position.column == 29
+    assert not_found_diag.location.line == 4
+    assert not_found_diag.location.column == 29
     assert not_found_diag.file_path == "lib/missing_target.def"
     assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.def")
     assert result.file_results[1].exception is None
@@ -352,8 +352,8 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
         result.file_results[0].diagnostics[0],
         diagnostics.PathInsideOtherUniverseDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].position.line == 4
-    assert result.file_results[0].diagnostics[0].position.column == 29
+    assert result.file_results[0].diagnostics[0].location.line == 4
+    assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path.endswith("lib/parent_target.def")
     assert result.file_results[0].diagnostics[0].other_universe == _CHILD_UNIVERSE
     assert result.file_results[0].diagnostics[0].sub_root_path == "lib"
@@ -402,14 +402,14 @@ def test_path_inside_other_universe_skips_further_validation(
     assert isinstance(
         wrong_type_diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic
     )
-    assert wrong_type_diag.position.line == 3
-    assert wrong_type_diag.position.column == 29
+    assert wrong_type_diag.location.line == 3
+    assert wrong_type_diag.location.column == 29
     assert wrong_type_diag.path == "/child_action"
     assert wrong_type_diag.expected_type == "position"
     path_diag = result.file_results[0].diagnostics[1]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
-    assert path_diag.position.line == 4
-    assert path_diag.position.column == 29
+    assert path_diag.location.line == 4
+    assert path_diag.location.column == 29
     assert path_diag.path.endswith("lib/child_action.def")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
@@ -443,8 +443,8 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
         result.file_results[0].diagnostics[0],
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].position.line == 3
-    assert result.file_results[0].diagnostics[0].position.column == 29
+    assert result.file_results[0].diagnostics[0].location.line == 3
+    assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path == "/target"
     assert result.file_results[0].diagnostics[0].expected_type == "position"
     assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
@@ -453,8 +453,8 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
     assert isinstance(
         result.file_results[1].diagnostics[0], diagnostics.FqunMismatchDiagnostic
     )
-    assert result.file_results[1].diagnostics[0].position.line == 1
-    assert result.file_results[1].diagnostics[0].position.column == 31
+    assert result.file_results[1].diagnostics[0].location.line == 1
+    assert result.file_results[1].diagnostics[0].location.column == 31
     assert result.file_results[1].diagnostics[0].expected == _CHILD_UNIVERSE
     assert result.file_results[1].diagnostics[0].actual == wrong_fqun
 
@@ -493,8 +493,8 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
         result.file_results[0].diagnostics[0],
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].position.line == 3
-    assert result.file_results[0].diagnostics[0].position.column == 29
+    assert result.file_results[0].diagnostics[0].location.line == 3
+    assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path == "/target"
     assert result.file_results[0].diagnostics[0].expected_type == "position"
     assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
@@ -605,8 +605,8 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 4
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
     assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.def")
     assert result.file_results[1].exception is None
@@ -640,8 +640,8 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].position.line == 4
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == _PARENT_UNIVERSE
     assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.def")
@@ -673,8 +673,8 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
     assert result.file_results[1].file_path == PurePosixPath("local.def")
     assert result.file_results[1].diagnostics == []
@@ -705,11 +705,11 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert diags[0].path == "/wrong_type"
     assert diags[0].expected_type == "position"
-    assert diags[0].position.line == 4
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[1].position.line == 3
-    assert diags[1].position.column == 29
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 29
     assert isinstance(diags[1].error, exceptions.NotProjectRootError)
     assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
     assert result.file_results[1].diagnostics == []

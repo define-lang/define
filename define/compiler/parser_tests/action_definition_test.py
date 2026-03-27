@@ -232,7 +232,7 @@ def test_action_block_no_indentation(p: parser.Parser) -> None:
     assert len(result.diagnostics) == 3
     for i, d in enumerate(result.diagnostics):
         assert isinstance(d, diagnostics.IncorrectIndentationDiagnostic)
-        assert d.position.line == i + 2
+        assert d.location.line == i + 2
         assert d.expected_indent == 4
         assert d.actual_indent == 0
     assert result.tree is not None

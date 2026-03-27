@@ -29,8 +29,8 @@ def test_duplicate_local_position(
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].position_name == "position<my_pos>"
     assert diags[0].created_at.line == 7
-    assert diags[0].position.line == 8
-    assert diags[0].position.column == 37
+    assert diags[0].location.line == 8
+    assert diags[0].location.column == 37
 
 
 def test_different_local_positions(
@@ -72,12 +72,12 @@ def test_undefined_position_not_tracked_for_duplicates(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
-    assert diags[0].position.line == 6
-    assert diags[0].position.column == 46
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 46
     assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[1].local_name == "position<no_such_pos>"
-    assert diags[1].position.line == 7
-    assert diags[1].position.column == 46
+    assert diags[1].location.line == 7
+    assert diags[1].location.column == 46
 
 
 def test_two_actions_same_local_position_create_no_error(
@@ -137,8 +137,8 @@ def test_two_actions_same_name_one_duplicate_one_clean(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].position_name == "position<my_pos>"
     assert all_diags[0].created_at.line == 7
-    assert all_diags[0].position.line == 8
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 37
 
 
 def test_three_actions_dimension_point_isolation(
@@ -198,5 +198,5 @@ def test_definition_block_position_enforced(
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].position_name == "position<outer_pos>"
     assert diags[0].created_at.line == 7
-    assert diags[0].position.line == 8
-    assert diags[0].position.column == 37
+    assert diags[0].location.line == 8
+    assert diags[0].location.column == 37

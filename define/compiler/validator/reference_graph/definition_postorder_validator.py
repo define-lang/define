@@ -146,7 +146,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 occupant = self._tracker.get_occupant_by_key(key)
                 self._diagnostics.append(
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        position=dp.last_position.position,
+                        location=dp.last_position.position,
                         action_name=action_chain.typed_names[-1].full_typed_name(
                             in_universe=self._enclosing_fqun
                         ),
@@ -161,7 +161,7 @@ class DefinitionPostorderValidator(abc.ABC):
             ):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        position=dp.last_position.position,
+                        location=dp.last_position.position,
                         action_name=action_chain.typed_names[-1].full_typed_name(
                             in_universe=self._enclosing_fqun
                         ),
@@ -206,7 +206,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if self._tracker.is_occupied(position):
             self._diagnostics.append(
                 diagnostics.CreateInOccupiedPositionDiagnostic(
-                    position=position.position,
+                    location=position.position,
                     position_name=position.chain.source_chained_name,
                     created_at=self._tracker.get_occupant(
                         position
@@ -296,7 +296,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 emptied_by = self._tracker.get_emptied_by(from_pos)
                 self._diagnostics.append(
                     diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-                        position=from_pos.position,
+                        location=from_pos.position,
                         position_name=from_pos.chain.source_chained_name,
                         inferred_at=emptied_by.position if emptied_by else None,
                     )
@@ -304,7 +304,7 @@ class DefinitionPostorderValidator(abc.ABC):
             else:
                 self._diagnostics.append(
                     diagnostics.MoveFromEmptyPositionDiagnostic(
-                        position=from_pos.position,
+                        location=from_pos.position,
                         position_name=from_pos.chain.source_chained_name,
                     )
                 )
@@ -312,7 +312,7 @@ class DefinitionPostorderValidator(abc.ABC):
             occupant = self._tracker.get_occupant(to_pos)
             self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
-                    position=to_pos.position,
+                    location=to_pos.position,
                     position_name=to_pos.chain.source_chained_name,
                     occupied_at=occupant.last_position.position,
                 )
@@ -350,7 +350,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
-                position=to_pos.chain.typed_names[0].position,
+                location=to_pos.chain.typed_names[0].position,
                 source_position=from_pos.chain.source_chained_name,
                 target_position=to_pos.chain.source_chained_name,
                 missing_qualities=sorted(missing),
@@ -384,7 +384,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if len(from_chain.typed_names) == len(to_chain.typed_names):
             self._diagnostics.append(
                 diagnostics.MoveToSamePositionDiagnostic(
-                    position=to_chain.typed_names[-1].position,
+                    location=to_chain.typed_names[-1].position,
                     position_name=to_chain.source_chained_name,
                 )
             )
@@ -392,7 +392,7 @@ class DefinitionPostorderValidator(abc.ABC):
             divergence = to_chain.typed_names[len(from_chain.typed_names)]
             self._diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
-                    position=divergence.position,
+                    location=divergence.position,
                     source_position=from_chain.source_chained_name,
                     target_position=to_chain.source_chained_name,
                 )
@@ -522,7 +522,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if element_name not in constraint_names:
             self._diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
-                    position=element.position,
+                    location=element.position,
                     element_name=element_name,
                     parent_name=parent_name,
                 )
@@ -539,7 +539,7 @@ class DefinitionPostorderValidator(abc.ABC):
         """Emit a diagnostic for a chain element not found in an action definition."""
         self._diagnostics.append(
             diagnostics.ChainElementNotInActionDiagnostic(
-                position=element.position,
+                location=element.position,
                 element_name=element.full_typed_name(in_universe=fqun),
                 parent_name=parent_name,
             )

@@ -39,8 +39,8 @@ def test_non_self_ref_global_in_action_body(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].position.line == 6
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 37
 
 
 def test_non_self_ref_global_in_position_init(
@@ -73,8 +73,8 @@ def test_non_self_ref_global_in_position_init(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].position.line == 3
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 37
 
 
 def test_constraint_does_not_make_global_available_as_chain_start(
@@ -110,8 +110,8 @@ def test_constraint_does_not_make_global_available_as_chain_start(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].position.line == 6
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 37
 
 
 def test_self_reference_in_position_init_is_valid(

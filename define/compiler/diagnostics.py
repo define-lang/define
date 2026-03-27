@@ -25,9 +25,7 @@ def _format_position(pos: ast.SourcePosition) -> str:
 class Diagnostic:
     """Base class for all validation diagnostics."""
 
-    # TODO: Rename this "location." It's too confusing because "position" is
-    # a Define concept.
-    position: ast.SourcePosition
+    location: ast.SourcePosition
     message_format: ClassVar[str] = ""
 
     @property
@@ -37,14 +35,14 @@ class Diagnostic:
 
     def format(self, source_lines: Sequence[str]) -> str:
         """Format the diagnostic with source context and caret pointer."""
-        line_idx = self.position.line - 1
+        line_idx = self.location.line - 1
         source_line = (
             source_lines[line_idx] if 0 <= line_idx < len(source_lines) else ""
         )
 
-        column = self.position.column
+        column = self.location.column
         caret_line = " " * (column - 1) + "^"
-        header = _format_position(self.position)
+        header = _format_position(self.location)
 
         return f"{header}\n{source_line}\n{caret_line}\n{self.message}"
 

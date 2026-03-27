@@ -103,8 +103,8 @@ def test_move_to_self_violates_constraints(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].position.line == 8
-    assert all_diags[0].position.column == 56
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 56
     assert all_diags[0].source_position == "position<local>"
     assert all_diags[0].target_position == "position</test>"
     assert all_diags[0].missing_qualities == [
@@ -136,8 +136,8 @@ def test_move_from_self_violates_constraints(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].position.line == 9
-    assert all_diags[0].position.column == 56
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 56
     assert all_diags[0].source_position == "position</test>"
     assert all_diags[0].target_position == "position<local>"
     assert all_diags[0].missing_qualities == [
@@ -166,8 +166,8 @@ def test_self_reference_mixed_with_other_reference(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-    assert all_diags[0].position.line == 4
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 37
 
 
 def test_chained_name_starting_with_self_two_items_valid(
@@ -209,8 +209,8 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
-    assert all_diags[0].position.line == 3
-    assert all_diags[0].position.column == 54
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 54
     assert all_diags[0].element_name == "position<my.domain.com:my_lib:/other>"
     assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/test>"
 
@@ -229,13 +229,13 @@ def test_chained_name_starting_with_self_two_items_invalid_local(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 54
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 54
     assert diags[0].local_name == "position<inner>"
     assert diags[0].preceding_name == "position<my.domain.com:my_lib:/test>"
     assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-    assert diags[1].position.line == 3
-    assert diags[1].position.column == 54
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 54
     assert diags[1].element_name == "position<inner>"
     assert diags[1].parent_name == "position<my.domain.com:my_lib:/test>"
 
@@ -304,8 +304,8 @@ def test_chained_name_starting_with_self_three_items_invalid(
     test_diags = result.program_result.file_results[0].diagnostics
     assert len(test_diags) == 1
     assert isinstance(test_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
-    assert test_diags[0].position.line == 6
-    assert test_diags[0].position.column == 70
+    assert test_diags[0].location.line == 6
+    assert test_diags[0].location.column == 70
     assert test_diags[0].element_name == "position<nonexistent>"
     assert test_diags[0].parent_name == "action<my.domain.com:my_lib:/other>"
 
@@ -347,5 +347,5 @@ def test_self_reference_in_constraint_block_is_still_circular(
         "position<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/test>",
     ]
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 20
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20

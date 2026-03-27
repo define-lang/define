@@ -420,16 +420,16 @@ class TestDimensionPointReferenceEdges:
         )
         assert result.diagnostics[0].segment == "Bad"
         assert result.diagnostics[0].char == "B"
-        assert result.diagnostics[0].position.line == 4
-        assert result.diagnostics[0].position.column == 34
+        assert result.diagnostics[0].location.line == 4
+        assert result.diagnostics[0].location.column == 34
         assert isinstance(
             result.diagnostics[1],
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         )
         assert result.diagnostics[1].segment == "Bad"
         assert result.diagnostics[1].char == "B"
-        assert result.diagnostics[1].position.line == 10
-        assert result.diagnostics[1].position.column == 65
+        assert result.diagnostics[1].location.line == 10
+        assert result.diagnostics[1].location.column == 65
         assert _reference_edges(result) == []
         assert _discovered_files(result) == []
 

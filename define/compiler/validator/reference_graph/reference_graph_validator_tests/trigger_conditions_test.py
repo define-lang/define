@@ -45,8 +45,8 @@ class TestTriggerConditionValidation:
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "position<unknown>"
-        assert diags[0].position.line == 3
-        assert diags[0].position.column == 22
+        assert diags[0].location.line == 3
+        assert diags[0].location.column == 22
 
     def test_valid_global_name(
         self,
@@ -72,8 +72,8 @@ class TestTriggerConditionValidation:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "position</other>"
         assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-        assert all_diags[0].position.line == 3
-        assert all_diags[0].position.column == 13
+        assert all_diags[0].location.line == 3
+        assert all_diags[0].location.column == 13
 
     def test_invalid_local_name_format(
         self,
@@ -94,13 +94,13 @@ class TestTriggerConditionValidation:
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "position<BAD>"
-        assert diags[0].position.line == 3
-        assert diags[0].position.column == 22
+        assert diags[0].location.line == 3
+        assert diags[0].location.column == 22
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[1].local_name == "BAD"
         assert diags[1].char == "B"
-        assert diags[1].position.line == 3
-        assert diags[1].position.column == 22
+        assert diags[1].location.line == 3
+        assert diags[1].location.column == 22
 
     def test_two_item_chain(
         self,
@@ -151,19 +151,19 @@ class TestTriggerConditionValidation:
         )
         assert diags[0].local_name == "action<act_b>"
         assert diags[0].preceding_name == "position<pos_a>"
-        assert diags[0].position.line == 4
+        assert diags[0].location.line == 4
         assert isinstance(diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
-        assert diags[1].position.line == 4
-        assert diags[1].position.column == 30
+        assert diags[1].location.line == 4
+        assert diags[1].location.column == 30
         assert isinstance(diags[2], diagnostics.ChainElementNotInConstraintsDiagnostic)
         assert diags[2].element_name == "action<act_b>"
         assert diags[2].parent_name == "position<pos_a>"
-        assert diags[2].position.line == 4
-        assert diags[2].position.column == 30
+        assert diags[2].location.line == 4
+        assert diags[2].location.column == 30
         assert isinstance(diags[3], diagnostics.LocalActionNameDiagnostic)
         assert diags[3].local_name == "act_b"
-        assert diags[3].position.line == 4
-        assert diags[3].position.column == 37
+        assert diags[3].location.line == 4
+        assert diags[3].location.column == 37
 
     def test_three_item_chain_valid(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -235,5 +235,5 @@ class TestTriggerConditionValidation:
         )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
-        assert all_diags[0].position.line == 8
-        assert all_diags[0].position.column == 48
+        assert all_diags[0].location.line == 8
+        assert all_diags[0].location.column == 48

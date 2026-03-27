@@ -116,8 +116,8 @@ def test_wrong_type_detected_without_deferral(
     assert len(result.file_results[3].diagnostics) == 1
     diag = result.file_results[3].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-    assert diag.position.line == 3
-    assert diag.position.column == 29
+    assert diag.location.line == 3
+    assert diag.location.column == 29
     assert diag.path == "/target"
     assert diag.expected_type == "position"
 
@@ -175,20 +175,20 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert len(result.file_results[0].diagnostics) == 2
     diag0 = result.file_results[0].diagnostics[0]
     assert isinstance(diag0, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
-    assert diag0.position.line == 3
-    assert diag0.position.column == 29
+    assert diag0.location.line == 3
+    assert diag0.location.column == 29
     assert diag0.path == "/lib/target"
     assert diag0.expected_type == "position"
     diag1 = result.file_results[0].diagnostics[1]
     assert isinstance(diag1, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diag1.position.line == 4
-    assert diag1.position.column == 29
+    assert diag1.location.line == 4
+    assert diag1.location.column == 29
     assert diag1.file_path == "target.def"
     assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
     assert len(result.file_results[1].diagnostics) == 1
     diag2 = result.file_results[1].diagnostics[0]
     assert isinstance(diag2, diagnostics.PathMismatchDiagnostic)
-    assert diag2.position.line == 1
-    assert diag2.position.column == 62
+    assert diag2.location.line == 1
+    assert diag2.location.column == 62
     assert diag2.expected_path == "/lib/target"
     assert diag2.actual_path == "/target"

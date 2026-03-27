@@ -136,8 +136,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         d0 = diags[0]
         assert isinstance(d0, diagnostics.IncorrectIndentationDiagnostic)
-        assert d0.position.line == 4
-        assert d0.position.column == 1
+        assert d0.location.line == 4
+        assert d0.location.column == 1
         assert d0.expected_indent == 4
         assert d0.actual_indent == 0
 
@@ -155,8 +155,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         d0 = diags[0]
         assert isinstance(d0, diagnostics.IncorrectIndentationDiagnostic)
-        assert d0.position.line == 3
-        assert d0.position.column == 1
+        assert d0.location.line == 3
+        assert d0.location.column == 1
         assert d0.expected_indent == 4
         assert d0.actual_indent == 0
 
@@ -174,8 +174,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         d0 = diags[0]
         assert isinstance(d0, diagnostics.IncorrectIndentationDiagnostic)
-        assert d0.position.line == 3
-        assert d0.position.column == 1
+        assert d0.location.line == 3
+        assert d0.location.column == 1
         assert d0.expected_indent == 4
         assert d0.actual_indent == 2
 
@@ -193,8 +193,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         d0 = diags[0]
         assert isinstance(d0, diagnostics.IncorrectIndentationDiagnostic)
-        assert d0.position.line == 3
-        assert d0.position.column == 1
+        assert d0.location.line == 3
+        assert d0.location.column == 1
         assert d0.expected_indent == 4
         assert d0.actual_indent == 8
 
@@ -212,8 +212,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         diag = diags[0]
         assert isinstance(diag, diagnostics.IncorrectIndentationDiagnostic)
-        assert diag.position.line == 7
-        assert diag.position.column == 1
+        assert diag.location.line == 7
+        assert diag.location.column == 1
         assert diag.expected_indent == 0
         assert diag.actual_indent == 4
 
@@ -223,8 +223,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         diag = diags[0]
         assert isinstance(diag, diagnostics.IncorrectIndentationDiagnostic)
-        assert diag.position.line == 1
-        assert diag.position.column == 1
+        assert diag.location.line == 1
+        assert diag.location.column == 1
         assert diag.expected_indent == 0
         assert diag.actual_indent == 4
 
@@ -243,8 +243,8 @@ class TestInvalidIndentation:
         assert len(diags) == 1
         diag = diags[0]
         assert isinstance(diag, diagnostics.IncorrectIndentationDiagnostic)
-        assert diag.position.line == 3
-        assert diag.position.column == 1
+        assert diag.location.line == 3
+        assert diag.location.column == 1
         assert diag.expected_indent == 4
         assert diag.actual_indent == 0
 
@@ -267,16 +267,16 @@ class TestInvalidIndentation:
         assert isinstance(d0, diagnostics.IncorrectIndentationDiagnostic)
         assert isinstance(d1, diagnostics.IncorrectIndentationDiagnostic)
         assert isinstance(d2, diagnostics.IncorrectIndentationDiagnostic)
-        assert d0.position.line == 1
-        assert d0.position.column == 1
+        assert d0.location.line == 1
+        assert d0.location.column == 1
         assert d0.expected_indent == 0
         assert d0.actual_indent == 2
-        assert d1.position.line == 4
-        assert d1.position.column == 1
+        assert d1.location.line == 4
+        assert d1.location.column == 1
         assert d1.expected_indent == 4
         assert d1.actual_indent == 2
-        assert d2.position.line == 8
-        assert d2.position.column == 1
+        assert d2.location.line == 8
+        assert d2.location.column == 1
         assert d2.expected_indent == 0
         assert d2.actual_indent == 2
 
@@ -303,24 +303,24 @@ class TestInvalidIndentation:
         assert isinstance(d2, diagnostics.IncorrectIndentationDiagnostic)
         assert isinstance(d3, diagnostics.IncorrectIndentationDiagnostic)
         assert isinstance(d4, diagnostics.IncorrectIndentationDiagnostic)
-        assert d0.position.line == 3
-        assert d0.position.column == 1
+        assert d0.location.line == 3
+        assert d0.location.column == 1
         assert d0.expected_indent == 4
         assert d0.actual_indent == 1
-        assert d1.position.line == 5
-        assert d1.position.column == 1
+        assert d1.location.line == 5
+        assert d1.location.column == 1
         assert d1.expected_indent == 1
         assert d1.actual_indent == 3
-        assert d2.position.line == 6
-        assert d2.position.column == 1
+        assert d2.location.line == 6
+        assert d2.location.column == 1
         assert d2.expected_indent == 7
         assert d2.actual_indent == 5
-        assert d3.position.line == 7
-        assert d3.position.column == 1
+        assert d3.location.line == 7
+        assert d3.location.column == 1
         assert d3.expected_indent == 3
         assert d3.actual_indent == 7
-        assert d4.position.line == 8
-        assert d4.position.column == 1
+        assert d4.location.line == 8
+        assert d4.location.column == 1
         assert d4.expected_indent == 0
         assert d4.actual_indent == 11
 
@@ -339,7 +339,7 @@ class TestUpToLine:
         diags = indentation_validator.validate_indentation(source, stop_before_line=5)
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.IncorrectIndentationDiagnostic)
-        assert diags[0].position.line == 3
+        assert diags[0].location.line == 3
 
     def test_none_checks_all_lines(self):
         source = (
@@ -356,7 +356,7 @@ class TestUpToLine:
         )
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.IncorrectIndentationDiagnostic)
-        assert diags[0].position.line == 3
+        assert diags[0].location.line == 3
 
 
 class TestRemoveComment:

@@ -42,8 +42,8 @@ def test_referenced_file_not_found(
     diag = result.diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.file_path == "missing.def"
-    assert diag.position.line == 3
-    assert diag.position.column == 29
+    assert diag.location.line == 3
+    assert diag.location.column == 29
 
 
 def test_non_filesystem_cross_universe_reference(
@@ -78,8 +78,8 @@ def test_non_filesystem_cross_universe_reference(
     diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.file_path == "lib/missing.def"
-    assert diag.position.line == 4
-    assert diag.position.column == 29
+    assert diag.location.line == 4
+    assert diag.location.column == 29
     assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
     assert result.file_results[1].root_prefix == PurePosixPath("lib")
     assert result.file_results[1].exception is None
@@ -160,8 +160,8 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].file_path == "missing.def"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[1].file_path == "missing.def"
-    assert diags[1].position.line == 9
-    assert diags[1].position.column == 33
+    assert diags[1].location.line == 9
+    assert diags[1].location.column == 33

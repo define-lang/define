@@ -37,7 +37,7 @@ class CodeGenerator:
                 position = entry_file_definitions[0].position
             else:
                 position = ast.start_of_file_position(file_path=entry_point_file_path)
-            return [diagnostics.EntryPointNotPositionDiagnostic(position=position)]
+            return [diagnostics.EntryPointNotPositionDiagnostic(location=position)]
 
         python_gen = python_generator.PythonLiteralCodeGenerator()
         python_gen.generate(graph, entry_point, output_dir)

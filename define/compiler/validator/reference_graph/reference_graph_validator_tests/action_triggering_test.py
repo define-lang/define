@@ -296,8 +296,8 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].definition_type == "action"
         assert result.program_result.all_diagnostics[0].path == "/test"
         assert result.program_result.all_diagnostics[0].first_definition_line == 1
-        assert result.program_result.all_diagnostics[0].position.line == 10
-        assert result.program_result.all_diagnostics[0].position.column == 1
+        assert result.program_result.all_diagnostics[0].location.line == 10
+        assert result.program_result.all_diagnostics[0].location.column == 1
         assert _edge_keys(result) == set()
 
     def test_trigger_positions_recorded(
@@ -458,8 +458,8 @@ class TestActionTriggering:
             diagnostics.MoveFromEmptyPositionDiagnostic,
         )
         assert result.program_result.all_diagnostics[0].position_name == "position<a>"
-        assert result.program_result.all_diagnostics[0].position.line == 8
-        assert result.program_result.all_diagnostics[0].position.column == 37
+        assert result.program_result.all_diagnostics[0].location.line == 8
+        assert result.program_result.all_diagnostics[0].location.column == 37
         all_body_effects = [
             effect
             for r in result.program_result.file_results
@@ -495,8 +495,8 @@ class TestActionTriggering:
             diagnostics.MoveFromEmptyPositionDiagnostic,
         )
         assert result.program_result.all_diagnostics[0].position_name == "position<a>"
-        assert result.program_result.all_diagnostics[0].position.line == 8
-        assert result.program_result.all_diagnostics[0].position.column == 37
+        assert result.program_result.all_diagnostics[0].location.line == 8
+        assert result.program_result.all_diagnostics[0].location.column == 37
         all_body_effects = [
             effect
             for r in result.program_result.file_results
@@ -755,8 +755,8 @@ class TestCircularDependencyTriggering:
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
-        assert all_diags[0].position.line == 3
-        assert all_diags[0].position.column == 20
+        assert all_diags[0].location.line == 3
+        assert all_diags[0].location.column == 20
         assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-        assert all_diags[1].position.line == 6
-        assert all_diags[1].position.column == 53
+        assert all_diags[1].location.line == 6
+        assert all_diags[1].location.column == 53

@@ -18,8 +18,8 @@ def test_standard_without_authority_ok():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].reserved_name == "standard"
-    assert diags[0].position.line == 1
-    assert diags[0].position.column == 31
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
 
 
 def test_non_standard_without_authority_error():
@@ -33,8 +33,8 @@ def test_non_standard_without_authority_error():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
     assert diags[0].universe_name == "my_universe"
-    assert diags[0].position.line == 1
-    assert diags[0].position.column == 31
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
 
 
 def test_with_authority_ok():
@@ -60,9 +60,9 @@ def test_case_insensitive_standard():
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
     assert diags[0].universe_name == "STANDARD"
     assert diags[0].char == "S"
-    assert diags[0].position.line == 1
-    assert diags[0].position.column == 31
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].reserved_name == "STANDARD"
-    assert diags[1].position.line == 1
-    assert diags[1].position.column == 31
+    assert diags[1].location.line == 1
+    assert diags[1].location.column == 31

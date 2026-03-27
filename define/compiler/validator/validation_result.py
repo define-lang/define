@@ -69,7 +69,7 @@ class DefinitionValidationResult:
         """Return diagnostics sorted by source position (line, then column)."""
         return sorted(
             self._diagnostics,
-            key=lambda d: (d.position.line, d.position.column),
+            key=lambda d: (d.location.line, d.location.column),
         )
 
 

@@ -254,7 +254,7 @@ class ProgramStructuralValidator:
                 self._path_tracker.mark_root_failed(discovered.root_prefix)
                 result.add_file_diagnostic(
                     diagnostics.ConfigLoadErrorDiagnostic(
-                        position=discovered.position,
+                        location=discovered.position,
                         error=e,
                     )
                 )
@@ -307,7 +307,7 @@ class ProgramStructuralValidator:
                     unknown_fquns.add(discovered.expected_fqun)
                     result.add_file_diagnostic(
                         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                            position=discovered.position,
+                            location=discovered.position,
                             universe=discovered.expected_fqun,
                             current_universe_name=current_fqun,
                         )
@@ -363,7 +363,7 @@ class ProgramStructuralValidator:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
-                    position=first_discovered.position,
+                    location=first_discovered.position,
                     universe=first_discovered.expected_fqun,
                     config_path=str(e.config_path),
                 )
@@ -373,7 +373,7 @@ class ProgramStructuralValidator:
             self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.ConfigLoadErrorDiagnostic(
-                    position=first_discovered.position,
+                    location=first_discovered.position,
                     error=e,
                 )
             )
@@ -396,7 +396,7 @@ class ProgramStructuralValidator:
             if detected is not None:
                 source_definition.add_diagnostic(
                     diagnostics.CircularGlobalReferenceDiagnostic(
-                        position=ref_edge.global_name_reference.position,
+                        location=ref_edge.global_name_reference.position,
                         cycle=detected.path,
                     )
                 )
@@ -472,7 +472,7 @@ class ProgramStructuralValidator:
 
         source_definition.add_diagnostic(
             diagnostics.PathInsideOtherUniverseDiagnostic(
-                position=edge.global_name_reference.name_content.position,
+                location=edge.global_name_reference.name_content.position,
                 path=str(target_file),
                 other_universe=self._path_tracker.fqun_for_root(actual_root) or "",
                 sub_root_path=str(actual_root),
@@ -493,7 +493,7 @@ class ProgramStructuralValidator:
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
             source_definition.add_diagnostic(
                 diagnostics.ReferencedFileNotFoundDiagnostic(
-                    position=global_name.position,
+                    location=global_name.position,
                     file_path=str(target_file),
                 )
             )
@@ -503,7 +503,7 @@ class ProgramStructuralValidator:
         if edge.target_full_typed_name not in self._definition_results:
             source_definition.add_diagnostic(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
-                    position=global_name.position,
+                    location=global_name.position,
                     path=global_name.path.name,
                     expected_type=edge.global_name_reference.name_type.value,
                 )
@@ -552,7 +552,7 @@ class ProgramStructuralValidator:
         if conflicting_path is not None:
             source_result.add_file_diagnostic(
                 diagnostics.SubRootAlreadyOccupiedDiagnostic(
-                    position=discovered.position,
+                    location=discovered.position,
                     universe=discovered.expected_fqun,
                     sub_root_path=str(discovered.root_prefix),
                     existing_file=str(conflicting_path),

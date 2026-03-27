@@ -49,14 +49,14 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
-    assert all_diags[0].position.line == 15
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 37
     assert all_diags[0].position_name == "position<src>"
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[1].position.file_path == PurePosixPath("test.def")
-    assert all_diags[1].position.line == 15
-    assert all_diags[1].position.column == 54
+    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.column == 54
     assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
@@ -105,9 +105,9 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 11
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 37
 
 
 def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
@@ -153,9 +153,9 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 11
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 37
 
 
 def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
@@ -202,9 +202,9 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 11
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 37
 
 
 def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
@@ -253,9 +253,9 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 14
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
 
 
 def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
@@ -305,9 +305,9 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 14
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
 
 
 def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
@@ -358,9 +358,9 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 14
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
 
 
 def test_unknown_from_move_to_occupied_interface_position(
@@ -404,9 +404,9 @@ def test_unknown_from_move_to_occupied_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 10
-    assert all_diags[0].position.column == 56
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.column == 56
 
 
 def test_unknown_from_constraint_violation_on_interface_position(
@@ -454,9 +454,9 @@ def test_unknown_from_constraint_violation_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 13
-    assert all_diags[0].position.column == 64
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 64
 
 
 def test_unknown_propagation_from_local_to_interface_position(
@@ -501,9 +501,9 @@ def test_unknown_propagation_from_local_to_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("other.def")
-    assert all_diags[0].position.line == 11
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 37
 
 
 def test_unknown_from_prefix_move_on_interface_position(
@@ -567,9 +567,9 @@ def test_unknown_from_prefix_move_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("outer.def")
-    assert all_diags[0].position.line == 12
-    assert all_diags[0].position.column == 73
+    assert all_diags[0].location.file_path == PurePosixPath("outer.def")
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 73
 
 
 def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
@@ -604,12 +604,12 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[0].position.line == 6
+    assert all_diags[0].location.line == 6
     assert isinstance(all_diags[1], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[1].position.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.def")
     assert all_diags[1].source_global_name == "action</other>"
     assert all_diags[1].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert all_diags[1].position.line == 7
+    assert all_diags[1].location.line == 7

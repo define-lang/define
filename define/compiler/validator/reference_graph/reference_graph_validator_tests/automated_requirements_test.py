@@ -87,9 +87,9 @@ def test_violate_occupied_requirement(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].position.line == 12
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].inferred_at.line == 8
@@ -137,9 +137,9 @@ def test_caller_violates_occupied_requirement(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].position.line == 12
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].inferred_at.line == 8
@@ -224,9 +224,9 @@ def test_caller_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].position.line == 15
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].filled_at.line == 14
@@ -278,9 +278,9 @@ def test_empty_requirement_with_unknown_state_is_silent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[1].position.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.def")
 
 
 def test_occupied_requirement_with_unknown_state_is_silent(
@@ -325,9 +325,9 @@ def test_occupied_requirement_with_unknown_state_is_silent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[1].position.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.def")
 
 
 def test_multiple_requirements_one_empty_one_occupied(
@@ -461,9 +461,9 @@ def test_position_init_violates_occupied_requirement(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].position.line == 6
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name == "position</test>::action</other>::position<item>"
@@ -495,9 +495,9 @@ def test_position_init_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].position.line == 7
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name == "position</test>::action</other>::position<item>"
@@ -678,9 +678,9 @@ def test_trigger_chain_occupied_requirement_violated(
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</y>"
     )
-    assert all_diags[0].position.line == 12
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].inferred_at.line == 15
     assert all_diags[0].inferred_at.column == 37
@@ -772,9 +772,9 @@ def test_trigger_chain_empty_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].position.line == 15
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name

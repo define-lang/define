@@ -32,8 +32,8 @@ def test_path_mismatch_error(validate_source_as_file: ValidateSourceAsFile):
     assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
     assert diags[0].expected_path == "/foo/bar"
     assert diags[0].actual_path == "/wrong/path"
-    assert diags[0].position.line == 1
-    assert diags[0].position.column == 52
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 52
 
 
 def test_no_file_path_skips_validation(validate_source_as_file: ValidateSourceAsFile):

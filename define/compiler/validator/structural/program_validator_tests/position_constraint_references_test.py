@@ -29,8 +29,8 @@ def test_position_constraint_reference_with_invalid_path():
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "Bad"
     assert diags[0].char == "B"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 30
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 30
 
 
 def test_same_fqun_constraint_reference_must_use_short_form():
@@ -50,8 +50,8 @@ def test_same_fqun_constraint_reference_must_use_short_form():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
 
 
 def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
@@ -79,8 +79,8 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "my.domain.com:my_lib"
-    assert diags[0].position.line == 4
-    assert diags[0].position.column == 33
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 33
 
 
 def test_invalid_constraint_does_not_skip_remaining_constraints(
@@ -106,8 +106,8 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].segment == "Bad"
     assert diags[0].char == "B"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 30
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 30
     assert result.file_results[1].file_path == PurePosixPath("valid.def")
     assert result.file_results[1].diagnostics == []
 
@@ -135,8 +135,8 @@ def test_referenced_global_name_wrong_type_position(
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert diags[0].path == "/target"
     assert diags[0].expected_type == "position"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
 
 
 def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
@@ -176,9 +176,9 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     assert isinstance(diags[1], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert diags[0].path == "/target"
     assert diags[0].expected_type == "position"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[1].path == "/target"
     assert diags[1].expected_type == "position"
-    assert diags[1].position.line == 9
-    assert diags[1].position.column == 33
+    assert diags[1].location.line == 9
+    assert diags[1].location.column == 33

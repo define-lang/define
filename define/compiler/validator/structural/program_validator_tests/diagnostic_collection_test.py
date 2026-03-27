@@ -20,12 +20,12 @@ def test_multiple_diagnostics_collected():
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
-    assert diags[0].position.line == 1
-    assert diags[0].position.column == 31
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
     assert diags[0].reserved_name == "standard"
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
-    assert diags[1].position.line == 2
-    assert diags[1].position.column == 31
+    assert diags[1].location.line == 2
+    assert diags[1].location.column == 31
     assert diags[1].reserved_name == "standard"
 
 
@@ -41,10 +41,10 @@ def test_diagnostics_in_source_order():
     )
     diags = results[0].diagnostics
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
-    assert diags[0].position.line == 1
-    assert diags[0].position.column == 31
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
     assert diags[0].reserved_name == "standard"
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
-    assert diags[1].position.line == 2
-    assert diags[1].position.column == 31
+    assert diags[1].location.line == 2
+    assert diags[1].location.column == 31
     assert diags[1].reserved_name == "standard"

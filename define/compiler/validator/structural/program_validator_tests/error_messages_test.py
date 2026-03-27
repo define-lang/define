@@ -83,7 +83,7 @@ def test_non_filesystem_diagnostics_have_no_file_name():
     )
     diags = results[0].diagnostics
     assert len(diags) == 1
-    assert diags[0].position.file_path is None
+    assert diags[0].location.file_path is None
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
         "line 2, column 1\n"

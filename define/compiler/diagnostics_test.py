@@ -7,7 +7,7 @@ _POS = ast.SourcePosition(line=3, column=5, end_line=3, end_column=12)
 
 def test_circular_reference_message_lists_each_name():
     diagnostic = diagnostics.CircularGlobalReferenceDiagnostic(
-        position=_POS,
+        location=_POS,
         cycle=[
             "position<my.domain.com:my_lib:/a>",
             "position<my.domain.com:my_lib:/b>",
@@ -25,7 +25,7 @@ def test_circular_reference_message_lists_each_name():
 
 def test_move_to_occupied_message_without_line_number():
     diagnostic = diagnostics.MoveToOccupiedPositionDiagnostic(
-        position=_POS,
+        location=_POS,
         position_name="position<target>",
     )
 
@@ -37,7 +37,7 @@ def test_move_to_occupied_message_without_line_number():
 
 def test_move_to_occupied_message_with_position():
     diagnostic = diagnostics.MoveToOccupiedPositionDiagnostic(
-        position=_POS,
+        location=_POS,
         position_name="position<target>",
         occupied_at=ast.SourcePosition(
             line=9,
@@ -57,7 +57,7 @@ def test_move_to_occupied_message_with_position():
 
 def test_move_from_empty_interface_position_default():
     diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-        position=_POS,
+        location=_POS,
         position_name="position<box>::action</other>::position<item>",
         inferred_at=None,
     )
@@ -72,7 +72,7 @@ def test_move_from_empty_interface_position_default():
 
 def test_move_from_empty_interface_position_with_inferred_at():
     diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-        position=_POS,
+        location=_POS,
         position_name="position<box>::action</other>::position<trigger_pos>",
         inferred_at=ast.SourcePosition(
             line=7,

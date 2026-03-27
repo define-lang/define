@@ -90,7 +90,7 @@ def _make_diagnostic(
     file_path: PurePosixPath | None = None,
 ) -> diagnostics.IncorrectIndentationDiagnostic:
     return diagnostics.IncorrectIndentationDiagnostic(
-        position=ast.SourcePosition(
+        location=ast.SourcePosition(
             line=line_number,
             column=1,
             end_line=line_number,

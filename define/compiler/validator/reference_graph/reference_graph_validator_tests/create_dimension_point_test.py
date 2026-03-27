@@ -39,8 +39,8 @@ def test_short_form_global_reference(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-    assert all_diags[0].position.line == 6
-    assert all_diags[0].position.column == 37
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 37
 
 
 def test_same_fqun_reference_must_use_short_form(
@@ -62,12 +62,12 @@ def test_same_fqun_reference_must_use_short_form(
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].source_global_name == "position<my.domain.com:my_lib:/other>"
     assert diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-    assert diags[0].position.line == 6
-    assert diags[0].position.column == 37
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 37
     assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[1].fqun == "my.domain.com:my_lib"
-    assert diags[1].position.line == 6
-    assert diags[1].position.column == 46
+    assert diags[1].location.line == 6
+    assert diags[1].location.column == 46
 
 
 def test_valid_local_name(
@@ -111,13 +111,13 @@ def test_cross_universe_not_configured(
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].source_global_name == "position<other.domain.com:other_lib:/dep>"
     assert diags[0].full_global_name == "position<other.domain.com:other_lib:/dep>"
-    assert diags[0].position.line == 6
-    assert diags[0].position.column == 37
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 37
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[1].universe == "other.domain.com:other_lib"
     assert diags[1].current_universe_name == "my.domain.com:my_lib"
-    assert diags[1].position.line == 6
-    assert diags[1].position.column == 46
+    assert diags[1].location.line == 6
+    assert diags[1].location.column == 46
 
 
 def test_undefined_local_position(
@@ -138,8 +138,8 @@ def test_undefined_local_position(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
-    assert diags[0].position.line == 6
-    assert diags[0].position.column == 46
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 46
 
 
 def test_local_position_defined_after_use(
@@ -161,8 +161,8 @@ def test_local_position_defined_after_use(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<later_pos>"
-    assert diags[0].position.line == 6
-    assert diags[0].position.column == 46
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 46
 
 
 def test_local_position_defined_in_action_statements_before_use(
@@ -227,16 +227,16 @@ def test_single_action_in_position_reference(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
-    assert diags[0].position.line == 6
-    assert diags[0].position.column == 37
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 37
     assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[1].local_name == "action<act_other>"
-    assert diags[1].position.line == 6
-    assert diags[1].position.column == 44
+    assert diags[1].location.line == 6
+    assert diags[1].location.column == 44
     assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
     assert diags[2].local_name == "act_other"
-    assert diags[2].position.line == 6
-    assert diags[2].position.column == 44
+    assert diags[2].location.line == 6
+    assert diags[2].location.column == 44
 
 
 def test_create_in_local_chained_position(
@@ -292,9 +292,9 @@ def test_create_twice_in_local_chained_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].position.line == 12
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<src>::position</x>"
     assert all_diags[0].created_at.line == 11
     assert all_diags[0].created_at.column == 37
@@ -344,9 +344,9 @@ def test_create_twice_in_chained_position_in_position_init(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].position.line == 7
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position</test>::position</x>"
     assert all_diags[0].created_at.line == 6
     assert all_diags[0].created_at.column == 37

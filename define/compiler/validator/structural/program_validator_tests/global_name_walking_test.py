@@ -90,8 +90,8 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     assert isinstance(
         result.file_results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic
     )
-    assert result.file_results[2].diagnostics[0].position.line == 1
-    assert result.file_results[2].diagnostics[0].position.column == 52
+    assert result.file_results[2].diagnostics[0].location.line == 1
+    assert result.file_results[2].diagnostics[0].location.column == 52
     assert result.file_results[2].diagnostics[0].expected_path == "/dup"
     assert result.file_results[2].diagnostics[0].actual_path == "/target"
 
@@ -124,8 +124,8 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     assert all_diags[0].definition_type == "position"
     assert all_diags[0].path == "/test"
     assert all_diags[0].first_definition_line == 1
-    assert all_diags[0].position.line == 2
-    assert all_diags[0].position.column == 1
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 1
 
 
 def test_self_cycle_emits_diagnostic(
@@ -147,8 +147,8 @@ def test_self_cycle_emits_diagnostic(
         "position<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/test>",
     ]
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 20
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20
     assert (
         diags[0].message
         == "circular references between definitions are not allowed in Define:\n"
@@ -191,8 +191,8 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
         "position<mv:define-lang.org:test_walk_cycle:/loop>",
         "position<mv:define-lang.org:test_walk_cycle:/test>",
     ]
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 20
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20
     assert (
         diags[0].message
         == "circular references between definitions are not allowed in Define:\n"
@@ -225,8 +225,8 @@ def test_external_universe_no_project_config(
     assert isinstance(
         diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].config_path == ".define/project/config.defcl"
 
@@ -257,8 +257,8 @@ def test_config_failure_still_validates_same_file_cycles(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert diags[0].position.line == 9
-    assert diags[0].position.column == 20
+    assert diags[0].location.line == 9
+    assert diags[0].location.column == 20
     assert diags[0].cycle == [
         "position<my.domain.com:my_lib:/a>",
         "position<my.domain.com:my_lib:/b>",
@@ -267,8 +267,8 @@ def test_config_failure_still_validates_same_file_cycles(
     assert isinstance(
         diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
-    assert diags[1].position.line == 3
-    assert diags[1].position.column == 29
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 29
     assert diags[1].universe == "other.example.com:other_universe"
 
 
@@ -285,8 +285,8 @@ def test_external_universe_without_local_deps(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -307,8 +307,8 @@ def test_external_universe_not_in_local_deps(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -337,8 +337,8 @@ def test_external_universe_invalid_local_deps(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.ConfigValidationError)
 
 
@@ -359,8 +359,8 @@ def test_external_universe_configured_but_no_sub_root_config(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
 
 
@@ -378,8 +378,8 @@ def test_unknown_universe_emits_diagnostic(
     diags = result.diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -399,8 +399,8 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     diags = result.diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
 
@@ -431,8 +431,8 @@ def test_unknown_universe_across_files_reported_per_file(
     assert len(all_diags) == 2
     for diag in all_diags:
         assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-        assert diag.position.line == 3
-        assert diag.position.column == 29
+        assert diag.location.line == 3
+        assert diag.location.column == 29
         assert diag.universe == "other.example.com:other_universe"
         assert diag.current_universe_name == "my.domain.com:my_lib"
 
@@ -498,13 +498,13 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
         "position<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/test>",
     ]
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 20
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20
     assert isinstance(diags[1], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
     assert diags[1].path == "/wrong_type"
     assert diags[1].expected_type == "position"
-    assert diags[1].position.line == 4
-    assert diags[1].position.column == 29
+    assert diags[1].location.line == 4
+    assert diags[1].location.column == 29
     assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
     assert result.file_results[1].diagnostics == []
 
@@ -540,8 +540,8 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diags[0].position.line == 4
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 29
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert result.file_results[1].file_path.name == "target_a.def"
@@ -572,9 +572,9 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[0].universe == "unknown.com:lib_a"
-    assert diags[0].position.line == 3
-    assert diags[0].position.column == 29
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     assert diags[1].universe == "unknown.com:lib_b"
-    assert diags[1].position.line == 5
-    assert diags[1].position.column == 29
+    assert diags[1].location.line == 5
+    assert diags[1].location.column == 29

@@ -195,9 +195,9 @@ def test_move_to_occupied_interface_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].position.line == 13
-    assert all_diags[0].position.column == 54
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 54
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<iface>::position</x>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 12
@@ -256,9 +256,9 @@ def test_create_twice_in_interface_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].position.line == 11
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<iface>::position</x>"
     assert all_diags[0].created_at.line == 10
     assert all_diags[0].created_at.column == 37
@@ -369,9 +369,9 @@ def test_create_twice_in_trigger_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].position.line == 11
-    assert all_diags[0].position.column == 37
-    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
     assert all_diags[0].created_at.line == 10
     assert all_diags[0].created_at.column == 37
