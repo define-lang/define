@@ -249,6 +249,42 @@ class ChainedName(ASTNode):
         """Return chained name text as it appears in the source."""
         return "::".join(elem.source_typed_name for elem in self.typed_names)
 
+    def get_first_action(self) -> GlobalTypedNameReference | None:
+        """Return the first action element in the chain, or None."""
+        for elem in self.typed_names:
+            if elem.name_type == NameType.ACTION and isinstance(
+                elem, GlobalTypedNameReference
+            ):
+                return elem
+        return None
+
+    def get_action_chain(self) -> ChainedName | None:
+        """Return everything up to and including the first action element, or None."""
+        for i, elem in enumerate(self.typed_names):
+            if elem.name_type == NameType.ACTION:
+                return ChainedName(
+                    position=self.position,
+                    typed_names=self.typed_names[: i + 1],
+                )
+        return None
+
+    def get_interface_position(self) -> PositionReference | None:
+        """Return everything after the first action element, or None."""
+        for i, elem in enumerate(self.typed_names):
+            if elem.name_type == NameType.ACTION:
+                tail = self.typed_names[i + 1 :]
+                if not tail:
+                    return None
+                chain = ChainedName(
+                    position=tail[0].position,
+                    typed_names=tail,
+                )
+                return PositionReference(
+                    position=tail[0].position,
+                    chain=chain,
+                )
+        return None
+
 
 @dataclass(frozen=True, slots=True)
 class PositionReference(ASTNode):
@@ -355,6 +391,8 @@ class ActionDefinition(QualityDefinition):
     definition_block: ActionDefinitionBlock | None
 
     # Computed properties
+    # TODO: interface_positions should be keyed by full typed name (e.g.,
+    # "position<item>") instead of bare local name (e.g., "item").
     interface_positions: dict[str, LocalPositionDefinition]
     interface_position_constraints: dict[str, frozenset[str]]
     trigger_position: LocalPositionDefinition | None

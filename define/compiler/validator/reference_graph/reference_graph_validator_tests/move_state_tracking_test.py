@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+from pathlib import PurePosixPath
+
 from define.compiler import conftest, diagnostics
 from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
 
@@ -478,7 +480,7 @@ def test_move_from_chained_to_occupied_local_position(
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
-                "        create a dimension point in position<src>.\n"
+                "        create a dimension point in position<src>::position</x>.\n"
                 "        create a dimension point in position<dest>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest>.\n"
                 "    }\n"
@@ -495,3 +497,200 @@ def test_move_from_chained_to_occupied_local_position(
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.column == 37
     assert all_diags[0].occupied_at.line == 13
+
+
+def test_move_from_empty_local_chained(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest>.\n"
+                "        move the dimension point in position<src>::position</x> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.line == 12
+    assert all_diags[0].position.column == 37
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].position_name == "position<src>::position</x>"
+
+
+def test_move_to_occupied_local_chained(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src>.\n"
+                "        define the position<dest> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<src>.\n"
+                "        create a dimension point in position<dest>::position</x>.\n"
+                "        move the dimension point in position<src> to position<dest>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].position.line == 14
+    assert all_diags[0].position.column == 54
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].position_name == "position<dest>::position</x>"
+    assert all_diags[0].occupied_at is not None
+    assert all_diags[0].occupied_at.line == 13
+    assert all_diags[0].occupied_at.column == 37
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.def")
+
+
+def test_double_move_from_local_chained_fails(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest_a>.\n"
+                "        define the position<dest_b>.\n"
+                "        create a dimension point in position<src>::position</x>.\n"
+                "        move the dimension point in position<src>::position</x> to position<dest_a>.\n"
+                "        move the dimension point in position<src>::position</x> to position<dest_b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.line == 15
+    assert all_diags[0].position.column == 37
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].position_name == "position<src>::position</x>"
+
+
+def test_move_from_local_chained_to_local(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest>.\n"
+                "        create a dimension point in position<src>::position</x>.\n"
+                "        move the dimension point in position<src>::position</x> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()
+
+
+def test_move_from_local_to_local_chained(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src>.\n"
+                "        define the position<dest> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<src>.\n"
+                "        move the dimension point in position<src> to position<dest>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()
+
+
+def test_move_between_local_chained(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</y>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<src>::position</x>.\n"
+                "        move the dimension point in position<src>::position</x> to position<dest>::position</y>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()

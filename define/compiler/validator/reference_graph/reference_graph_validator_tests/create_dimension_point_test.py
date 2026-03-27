@@ -4,7 +4,7 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -237,3 +237,117 @@ def test_single_action_in_position_reference(
     assert diags[2].local_name == "act_other"
     assert diags[2].position.line == 6
     assert diags[2].position.column == 44
+
+
+def test_create_in_local_chained_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<src>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()
+
+
+def test_create_twice_in_local_chained_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<src> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<src>::position</x>.\n"
+                "        create a dimension point in position<src>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].position.line == 12
+    assert all_diags[0].position.column == 37
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].position_name == "position<src>::position</x>"
+    assert all_diags[0].created_at.line == 11
+    assert all_diags[0].created_at.column == 37
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+
+
+def test_create_in_chained_position_in_position_init(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</x>.\n"
+                "    }\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</test>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()
+
+
+def test_create_twice_in_chained_position_in_position_init(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.def": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</x>.\n"
+                "    }\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</test>::position</x>.\n"
+                "        create a dimension point in position</test>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].position.line == 7
+    assert all_diags[0].position.column == 37
+    assert all_diags[0].position.file_path == PurePosixPath("test.def")
+    assert all_diags[0].position_name == "position</test>::position</x>"
+    assert all_diags[0].created_at.line == 6
+    assert all_diags[0].created_at.column == 37
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")

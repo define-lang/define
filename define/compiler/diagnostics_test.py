@@ -58,7 +58,6 @@ def test_move_to_occupied_message_with_position():
 def test_move_from_empty_interface_position_default():
     diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
         position=_POS,
-        action_name="action<my.domain.com:my_lib:/other>",
         position_name="position<box>::action</other>::position<item>",
         inferred_at=None,
     )
@@ -74,7 +73,6 @@ def test_move_from_empty_interface_position_default():
 def test_move_from_empty_interface_position_with_inferred_at():
     diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
         position=_POS,
-        action_name="action<my.domain.com:my_lib:/other>",
         position_name="position<box>::action</other>::position<trigger_pos>",
         inferred_at=ast.SourcePosition(
             line=7,

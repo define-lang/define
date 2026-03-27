@@ -25,6 +25,8 @@ def _format_position(pos: ast.SourcePosition) -> str:
 class Diagnostic:
     """Base class for all validation diagnostics."""
 
+    # TODO: Rename this "location." It's too confusing because "position" is
+    # a Define concept.
     position: ast.SourcePosition
     message_format: ClassVar[str] = ""
 
@@ -687,7 +689,6 @@ class ActionRequiresOccupiedPositionDiagnostic(ActionRequirementDiagnostic):
 class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
     """Diagnostic for moving from an empty action interface position."""
 
-    action_name: str
     position_name: str
     inferred_at: ast.SourcePosition | None
 

@@ -248,3 +248,58 @@ def test_global_position_without_constraints():
     parent = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
     quality = _make_global_typed_name("/child", ast.NameType.ACTION)
     assert tracker.definition_has_quality(parent, quality) is False
+
+
+def _make_position_ref(
+    elements: list[ast.TypedNameReference],
+) -> ast.PositionReference:
+    return ast.PositionReference(
+        chain=ast.ChainedName(typed_names=elements, position=_POS),
+        position=_POS,
+    )
+
+
+def test_is_defined_local_single_local_in_scope():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.add_definition(_make_local_def("my_pos"))
+    position = _make_position_ref([_make_local_typed_name("my_pos")])
+
+    assert tracker.is_defined_local(position) is True
+
+
+def test_is_defined_local_multi_item_chain():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.add_definition(_make_local_def("my_pos"))
+    position = _make_position_ref(
+        [
+            _make_local_typed_name("my_pos"),
+            _make_global_typed_name("/child", ast.NameType.POSITION),
+        ]
+    )
+
+    assert tracker.is_defined_local(position) is False
+
+
+def test_is_defined_local_global_reference():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    position = _make_position_ref(
+        [_make_global_typed_name("/some_pos", ast.NameType.POSITION)]
+    )
+
+    assert tracker.is_defined_local(position) is False
+
+
+def test_is_defined_local_not_in_scope():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    position = _make_position_ref([_make_local_typed_name("missing")])
+
+    assert tracker.is_defined_local(position) is False
+
+
+def test_is_defined_local_in_parent_scope():
+    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker.add_definition(_make_local_def("parent_pos"))
+    tracker.enter_child_scope()
+    position = _make_position_ref([_make_local_typed_name("parent_pos")])
+
+    assert tracker.is_defined_local(position) is True

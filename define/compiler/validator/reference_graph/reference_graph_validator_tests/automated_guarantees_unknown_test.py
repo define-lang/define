@@ -207,6 +207,162 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     assert all_diags[0].position.column == 37
 
 
+def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</x>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<sink>.\n"
+                "    define the position<sink2>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<trigger_pos>::position</x>.\n"
+                "        move the dimension point in position<trigger_pos>::position</x> to position<sink>.\n"
+                "        move the dimension point in position<trigger_pos>::position</x> to position<sink2>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
+    assert all_diags[0].position.line == 14
+    assert all_diags[0].position.column == 37
+
+
+def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</x>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<sink>.\n"
+                "    define the position<sink2>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<trigger_pos>::position</x>.\n"
+                "        move the dimension point in position<trigger_pos>::position</x> to position<sink>.\n"
+                "        move the dimension point in position<trigger_pos>::position</x> to position<sink2>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<trigger_pos>::position</x> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
+    assert all_diags[0].position.line == 14
+    assert all_diags[0].position.column == 37
+
+
+def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</x>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<sink>.\n"
+                "    define the position<sink2>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<trigger_pos>::position</x>.\n"
+                "        move the dimension point in position<trigger_pos>::position</x> to position<sink>.\n"
+                "        move the dimension point in position<trigger_pos>::position</x> to position<sink2>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<trigger_pos>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position.file_path == PurePosixPath("other.def")
+    assert all_diags[0].position.line == 14
+    assert all_diags[0].position.column == 37
+
+
 def test_unknown_from_move_to_occupied_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

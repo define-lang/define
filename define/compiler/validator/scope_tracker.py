@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
 from collections import ChainMap
 
-if typing.TYPE_CHECKING:
-    from define.compiler import ast
+from define.compiler import ast
 
 
 class ScopeTracker:
@@ -39,6 +37,15 @@ class ScopeTracker:
         """Return the line where a typed name was defined."""
         key = typed_name.full_typed_name(in_universe=self._enclosing_fqun)
         return self._definitions[key].position.line
+
+    def is_defined_local(self, position: ast.PositionReference) -> bool:
+        """Check if a position reference is a single local name defined in scope."""
+        if len(position.chain.typed_names) != 1:
+            return False
+        first = position.chain.typed_names[0]
+        if not isinstance(first, ast.LocalTypedNameReference):
+            return False
+        return self.is_defined(first)
 
     def is_defined(self, name: ast.TypedName) -> bool:
         """Check if a typed name reference is defined in scope."""

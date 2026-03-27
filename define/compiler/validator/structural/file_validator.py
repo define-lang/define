@@ -570,6 +570,7 @@ class DefinitionStructuralValidator:
                     position=chain.typed_names[-1].position,
                 )
             )
+            may_continue = False
 
         return may_continue
 
