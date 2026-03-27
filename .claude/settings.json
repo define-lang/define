@@ -70,7 +70,7 @@
     ]
   },
   "enabledPlugins": {
-    "bazel-basedpyright-lsp@define-plugins": true
+    "bazel-basedpyright-lsp@define-plugins": false
   },
   "extraKnownMarketplaces": {
     "define-plugins": {
