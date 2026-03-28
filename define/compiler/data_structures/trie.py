@@ -90,10 +90,17 @@ class StrictReparentingTrie[V]:
             raise KeyError(key)
         return result
 
+    def _walk_to_parent_for_setting(self, key: TrieKey) -> dict[str, _Node[V]]:
+        """Walk to the parent's children dict for a write operation.
+
+        Subclasses may override this to auto-create intermediate nodes.
+        """
+        return self._walk_to_parent(key)
+
     def __setitem__(self, key: TrieKey, value: V):
         """Set value at key. Parent must already exist (KeyError if not)."""
         self._validate_key(key)
-        parent_children = self._walk_to_parent(key)
+        parent_children = self._walk_to_parent_for_setting(key)
         last = key[-1]
         existing = parent_children.get(last)
         if existing is not None:
@@ -136,7 +143,7 @@ class StrictReparentingTrie[V]:
         source_last = source[-1]
         if source_last not in source_parent:
             raise KeyError(source)
-        target_parent = self._walk_to_parent(target)
+        target_parent = self._walk_to_parent_for_setting(target)
         target_last = target[-1]
         if target_last in target_parent:
             raise ValueError(f"target key already exists: {target}")
@@ -177,3 +184,31 @@ class StrictReparentingTrie[V]:
         """
         for key, _ in self.items():
             yield key
+
+
+class LenientReparentingTrie[V](StrictReparentingTrie[V]):
+    """A trie that auto-creates intermediate nodes on write operations.
+
+    When setting a value or moving a subtree to a target, missing
+    intermediate nodes are created with ``default_factory()`` values.
+    Reads, deletes, and move-source lookups remain strict.
+    """
+
+    _default_factory: typing.Callable[[], V]
+
+    def __init__(self, default_factory: typing.Callable[[], V]):
+        """Initialize with a factory for auto-created intermediate node values."""
+        super().__init__()
+        self._default_factory = default_factory
+
+    @typing.override
+    def _walk_to_parent_for_setting(self, key: TrieKey) -> dict[str, _Node[V]]:
+        """Walk to parent, auto-creating intermediate nodes with default values."""
+        children = self._root
+        for element in key[:-1]:
+            node = children.get(element)
+            if node is None:
+                node = _Node[V](self._default_factory())
+                children[element] = node
+            children = node.children
+        return children

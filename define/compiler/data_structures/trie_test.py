@@ -207,3 +207,59 @@ class TestIndependence:
         del t[("a", "b")]
         assert ("a", "b") not in t
         assert t[("a", "c")] == 2
+
+
+def _make_lenient() -> trie.LenientReparentingTrie[int]:
+    return trie.LenientReparentingTrie(default_factory=int)
+
+
+class TestLenientSetitem:
+    def test_auto_creates_intermediates(self):
+        t = _make_lenient()
+        t[("a", "b", "c")] = 42
+        assert t[("a", "b", "c")] == 42
+        assert t[("a",)] == 0
+        assert t[("a", "b")] == 0
+
+    def test_does_not_overwrite_existing_intermediate(self):
+        t = _make_lenient()
+        t[("a",)] = 10
+        t[("a", "b")] = 42
+        assert t[("a",)] == 10
+        assert t[("a", "b")] == 42
+
+    def test_overwrite_existing_value(self):
+        t = _make_lenient()
+        t[("a", "b")] = 1
+        t[("a", "b")] = 2
+        assert t[("a", "b")] == 2
+
+
+class TestLenientDelete:
+    def test_delete_does_not_auto_create(self):
+        t = _make_lenient()
+        with pytest.raises(KeyError):
+            del t[("a", "b")]
+
+
+class TestLenientMoveSubtree:
+    def test_move_source_does_not_auto_create(self):
+        t = _make_lenient()
+        t[("b",)] = 1
+        with pytest.raises(KeyError):
+            t.move_subtree(("a",), ("b", "c"))
+
+    def test_move_target_auto_creates_intermediates(self):
+        t = _make_lenient()
+        t[("a",)] = 1
+        t.move_subtree(("a",), ("x", "y"))
+        assert t[("x",)] == 0
+        assert t[("x", "y")] == 1
+
+    def test_move_target_auto_creates_preserves_existing(self):
+        t = _make_lenient()
+        t[("a",)] = 1
+        t[("x",)] = 10
+        t.move_subtree(("a",), ("x", "y"))
+        assert t[("x",)] == 10
+        assert t[("x", "y")] == 1
