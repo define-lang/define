@@ -127,12 +127,12 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         # source_prefix is for diagnostics, canonical_prefix is for key lookups.
         source_prefix = action_chain.source_chained_name
-        canonical_prefix = action_chain.canonical_chained_name(
+        canonical_prefix = action_chain.canonical_chained_name_tuple(
             in_universe=self._enclosing_fqun
         )
 
         for req_key, req in contract.requirements.items():
-            key = f"{canonical_prefix}::{req_key}"
+            key = canonical_prefix + req_key
 
             if self._tracker.has_unknown_state_by_key(key):
                 continue
@@ -585,7 +585,9 @@ class DefinitionPostorderValidator(abc.ABC):
 class ActionPostorderValidator(DefinitionPostorderValidator):
     """Validates an action definition during a DFS post-order walk."""
 
-    _inferred_requirements: dict[str, action_contract.InterfacePositionRequirement]
+    _inferred_requirements: dict[
+        tuple[str, ...], action_contract.InterfacePositionRequirement
+    ]
 
     def __init__(
         self,
@@ -694,7 +696,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         ):
             return
 
-        requirement_key = position.chain.canonical_chained_name(
+        requirement_key = position.chain.canonical_chained_name_tuple(
             in_universe=self._enclosing_fqun
         )
         if requirement_key in self._inferred_requirements:

@@ -133,7 +133,7 @@ def test_move():
 def test_move_from_empty_raises():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
 
-    with pytest.raises(ValueError, match="not occupied"):
+    with pytest.raises(KeyError):
         tracker.move(
             _make_position_ref([_make_local_ref("pos_a")]),
             _make_position_ref([_make_local_ref("pos_b")]),
@@ -227,7 +227,7 @@ def test_create_empty_qualities():
     assert tracker.get_occupant(ref).qualities == frozenset()
 
 
-def test_keys_use_double_colon_separator():
+def test_keys_use_separate_trie_levels():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_chain = _make_position_ref(
@@ -253,8 +253,10 @@ def test_move_preserves_origin_position():
 
 def test_create_at_global_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
+    tracker.create(parent_ref, frozenset())
     tracker.create(ref, frozenset(["position<x>"]))
 
     assert tracker.is_occupied(ref) is True
@@ -264,11 +266,13 @@ def test_create_at_global_chain():
 def test_move_from_local_to_global_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
+    dest_parent_ref = _make_position_ref([_make_local_ref("pos_b")])
     chain_ref = _make_position_ref(
-        [_make_local_ref("pos_a"), _make_global_ref("/child")]
+        [_make_local_ref("pos_b"), _make_global_ref("/child")]
     )
 
     tracker.create(local_ref, frozenset(["position<x>"]))
+    tracker.create(dest_parent_ref, frozenset())
     tracker.move(local_ref, chain_ref)
 
     assert tracker.is_occupied(local_ref) is False
@@ -279,10 +283,12 @@ def test_move_from_local_to_global_chain():
 def test_move_from_global_chain_to_local():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
+    chain_parent_ref = _make_position_ref([_make_local_ref("pos_b")])
     chain_ref = _make_position_ref(
         [_make_local_ref("pos_b"), _make_global_ref("/child")]
     )
 
+    tracker.create(chain_parent_ref, frozenset())
     tracker.create(chain_ref, frozenset(["position<x>"]))
     tracker.move(chain_ref, local_ref)
 
@@ -293,6 +299,8 @@ def test_move_from_global_chain_to_local():
 
 def test_move_between_global_chains():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_a = _make_position_ref([_make_local_ref("pos_a")])
+    parent_b = _make_position_ref([_make_local_ref("pos_b")])
     chain_a = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child_a")]
     )
@@ -300,6 +308,8 @@ def test_move_between_global_chains():
         [_make_local_ref("pos_b"), _make_global_ref("/child_b")]
     )
 
+    tracker.create(parent_a, frozenset())
+    tracker.create(parent_b, frozenset())
     tracker.create(chain_a, frozenset(["position<x>"]))
     tracker.move(chain_a, chain_b)
 
@@ -339,8 +349,10 @@ def test_move_between_interface_position_chains():
 
 def test_destroy_at_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
+    tracker.create(parent_ref, frozenset())
     tracker.create(ref, frozenset())
     tracker.destroy(ref)
 
@@ -377,10 +389,12 @@ def test_chain_and_local_are_independent():
 
 def test_emptied_by_at_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")], pos=_POS2
     )
 
+    tracker.create(parent_ref, frozenset())
     tracker.create(ref, frozenset())
     tracker.destroy(ref)
 
@@ -399,7 +413,7 @@ def _make_action_ref(path: str) -> ast.GlobalTypedNameReference:
     )
 
 
-_ACTION_KEY_PREFIX = "position<box>::action<my.domain.com:my_lib:/other>"
+_ACTION_KEY_PREFIX = ("position<box>", "action<my.domain.com:my_lib:/other>")
 
 
 def test_apply_guarantees_empty():
@@ -411,10 +425,10 @@ def test_apply_guarantees_empty():
 
     tracker.apply_guarantees(
         ref,
-        {"position<item>": action_contract.EmptyGuarantee()},
+        {("position<item>",): action_contract.EmptyGuarantee()},
     )
 
-    key = f"{_ACTION_KEY_PREFIX}::position<item>"
+    key = (*_ACTION_KEY_PREFIX, "position<item>")
     assert tracker.is_occupied_by_key(key) is False
     assert tracker.has_unknown_state_by_key(key) is False
 
@@ -428,14 +442,14 @@ def test_apply_guarantees_occupied_by_new():
     tracker.apply_guarantees(
         ref,
         {
-            "position<item>": action_contract.OccupiedByNewGuarantee(
+            ("position<item>",): action_contract.OccupiedByNewGuarantee(
                 qualities=frozenset(["position<x>"]),
                 caused_by=_POS2_REF,
             )
         },
     )
 
-    key = f"{_ACTION_KEY_PREFIX}::position<item>"
+    key = (*_ACTION_KEY_PREFIX, "position<item>")
     assert tracker.is_occupied_by_key(key) is True
     occupant = tracker.get_occupant_by_key(key)
     assert occupant.last_position.position == _POS2
@@ -468,19 +482,63 @@ def test_apply_guarantees_occupied_by_existing():
     tracker.apply_guarantees(
         ref,
         {
-            "position<dest>": action_contract.OccupiedByExistingGuarantee(
+            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
                 origin_position=_make_position_ref([_make_local_ref("item")]),
                 caused_by=_POS2_REF,
             ),
         },
     )
 
-    dest_key = f"{_ACTION_KEY_PREFIX}::position<dest>"
+    dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
     assert tracker.is_occupied_by_key(dest_key) is True
     occupant = tracker.get_occupant_by_key(dest_key)
     assert occupant.last_position.position == _POS2
     assert occupant.qualities == frozenset(["position<q>"])
     assert occupant.origin_position is item_ref
+
+
+@pytest.mark.xfail(
+    reason="apply_guarantees doesn't move children with OccupiedByExisting"
+)
+def test_apply_guarantees_occupied_by_existing_moves_children():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    item_ref = _make_position_ref(
+        [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
+    )
+    child_ref = _make_position_ref(
+        [
+            _make_local_ref("box"),
+            _make_action_ref("/other"),
+            _make_local_ref("item"),
+            _make_global_ref("/child"),
+        ]
+    )
+    trigger_ref = _make_position_ref(
+        [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("trigger")]
+    )
+    tracker.create(item_ref, frozenset(["position<q>"]))
+    tracker.create(child_ref, frozenset(["position<r>"]))
+    tracker.create(trigger_ref, frozenset())
+
+    tracker.apply_guarantees(
+        trigger_ref,
+        {
+            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
+                origin_position=_make_position_ref([_make_local_ref("item")]),
+                caused_by=_POS2_REF,
+            ),
+        },
+    )
+
+    new_child_key = (
+        *_ACTION_KEY_PREFIX,
+        "position<dest>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert tracker.is_occupied_by_key(new_child_key) is True
+    assert tracker.get_occupant_by_key(new_child_key).qualities == frozenset(
+        ["position<r>"]
+    )
 
 
 def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
@@ -496,14 +554,14 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
     tracker.apply_guarantees(
         ref,
         {
-            "position<dest>": action_contract.OccupiedByExistingGuarantee(
+            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
                 origin_position=_make_position_ref([_make_local_ref("item")]),
                 caused_by=_POS2_REF,
             ),
         },
     )
 
-    dest_key = f"{_ACTION_KEY_PREFIX}::position<dest>"
+    dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
     assert tracker.has_unknown_state_by_key(dest_key) is True
     assert tracker.is_occupied_by_key(dest_key) is False
 
@@ -517,10 +575,10 @@ def test_apply_guarantees_unknown():
 
     tracker.apply_guarantees(
         ref,
-        {"position<item>": action_contract.UnknownGuarantee()},
+        {("position<item>",): action_contract.UnknownGuarantee()},
     )
 
-    key = f"{_ACTION_KEY_PREFIX}::position<item>"
+    key = (*_ACTION_KEY_PREFIX, "position<item>")
     assert tracker.has_unknown_state_by_key(key) is True
     assert tracker.is_occupied_by_key(key) is False
 
@@ -545,7 +603,7 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
 
     tracker.apply_guarantees(
         ref,
-        {"position<trigger>": action_contract.EmptyGuarantee()},
+        {("position<trigger>",): action_contract.EmptyGuarantee()},
     )
 
     assert tracker.is_occupied(untouched_ref) is True

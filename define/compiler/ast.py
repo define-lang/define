@@ -244,6 +244,12 @@ class ChainedName(ASTNode):
             elem.full_typed_name(in_universe=in_universe) for elem in self.typed_names
         )
 
+    def canonical_chained_name_tuple(self, in_universe: Fqun) -> tuple[str, ...]:
+        """Return the canonical chained name as a tuple of typed-name strings."""
+        return tuple(
+            elem.full_typed_name(in_universe=in_universe) for elem in self.typed_names
+        )
+
     @property
     def source_chained_name(self) -> str:
         """Return chained name text as it appears in the source."""

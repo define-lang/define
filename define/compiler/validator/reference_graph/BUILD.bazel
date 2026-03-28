@@ -44,6 +44,7 @@ py_library(
     deps = [
         ":action_contract",
         "//define/compiler:ast",
+        "//define/compiler/data_structures:trie",
         "//define/compiler/validator:scope_tracker",
     ],
 )

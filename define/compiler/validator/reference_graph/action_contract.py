@@ -63,8 +63,8 @@ class UnknownGuarantee(InterfacePositionGuarantee):
 class ActionContract:
     """The automatically inferred requirements and guarantees for an action."""
 
-    requirements: dict[str, InterfacePositionRequirement]
-    guarantees: dict[str, InterfacePositionGuarantee]
+    requirements: dict[tuple[str, ...], InterfacePositionRequirement]
+    guarantees: dict[tuple[str, ...], InterfacePositionGuarantee]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
 

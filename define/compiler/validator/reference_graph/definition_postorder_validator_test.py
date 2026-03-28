@@ -41,12 +41,14 @@ class TestRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        assert "position<item>" in contract.requirements
+        assert ("position<item>",) in contract.requirements
         assert (
-            contract.requirements["position<item>"].required_state
+            contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
         )
-        assert contract.requirements["position<item>"].inferred_from.position.line == 7
+        assert (
+            contract.requirements[("position<item>",)].inferred_from.position.line == 7
+        )
 
     def test_move_source_infers_occupied(self):
         source = (
@@ -63,7 +65,7 @@ class TestRequirementInference:
         )
         contract = _get_contract(source)
         assert (
-            contract.requirements["position<item>"].required_state
+            contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.OCCUPIED
         )
 
@@ -82,7 +84,7 @@ class TestRequirementInference:
         )
         contract = _get_contract(source)
         assert (
-            contract.requirements["position<dest>"].required_state
+            contract.requirements[("position<dest>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
         )
 
@@ -99,7 +101,7 @@ class TestRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        assert "position<run>" not in contract.requirements
+        assert ("position<run>",) not in contract.requirements
         assert contract.trigger_position_name == "run"
 
     def test_first_reference_wins(self):
@@ -118,7 +120,7 @@ class TestRequirementInference:
         )
         contract = _get_contract(source)
         assert (
-            contract.requirements["position<item>"].required_state
+            contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
         )
 
@@ -135,7 +137,7 @@ class TestRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        assert "position<local_only>" not in contract.requirements
+        assert ("position<local_only>",) not in contract.requirements
 
     def test_no_body_returns_empty_contract(self):
         source = "define the potential action<my.domain.com:my_lib:/test>.\n"
@@ -158,7 +160,7 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee = contract.guarantees["position<item>"]
+        guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.position.line == 7
@@ -180,7 +182,7 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee = contract.guarantees["position<item>"]
+        guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.EmptyGuarantee)
         assert guarantee.caused_by is not None
         assert guarantee.caused_by.position.line == 9
@@ -200,7 +202,7 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee = contract.guarantees["position<run>"]
+        guarantee = contract.guarantees[("position<run>",)]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert guarantee.origin_position.chain.source_chained_name == "position<run>"
         assert guarantee.caused_by.position.line == 4
@@ -220,7 +222,7 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee = contract.guarantees["position<item>"]
+        guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.position.line == 7
@@ -241,7 +243,7 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee = contract.guarantees["position<b>"]
+        guarantee = contract.guarantees[("position<b>",)]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert guarantee.origin_position.chain.source_chained_name == "position<a>"
         assert guarantee.caused_by.position.line == 8
@@ -265,13 +267,13 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee_a = contract.guarantees["position<a>"]
+        guarantee_a = contract.guarantees[("position<a>",)]
         assert isinstance(guarantee_a, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_a.origin_position.chain.source_chained_name == "position<b>"
         assert guarantee_a.caused_by.position.line == 10
         assert guarantee_a.caused_by.position.column == 52
         assert guarantee_a.caused_by.chain.source_chained_name == "position<a>"
-        guarantee_b = contract.guarantees["position<b>"]
+        guarantee_b = contract.guarantees[("position<b>",)]
         assert isinstance(guarantee_b, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_b.origin_position.chain.source_chained_name == "position<a>"
         assert guarantee_b.caused_by.position.line == 11
@@ -291,7 +293,7 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        guarantee = contract.guarantees["position<item>"]
+        guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.position.line == 7
@@ -317,7 +319,7 @@ class TestChainedRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert chain_key in contract.requirements
         assert (
             contract.requirements[chain_key].required_state
@@ -343,7 +345,7 @@ class TestChainedRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert chain_key in contract.requirements
         assert (
             contract.requirements[chain_key].required_state
@@ -369,7 +371,7 @@ class TestChainedRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        assert "position<item>" not in contract.requirements
+        assert ("position<item>",) not in contract.requirements
 
     def test_move_dest_chain_infers_chain_empty(self):
         source = (
@@ -390,7 +392,7 @@ class TestChainedRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<dest>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
         assert chain_key in contract.requirements
         assert (
             contract.requirements[chain_key].required_state
@@ -415,7 +417,7 @@ class TestChainedRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert (
             contract.requirements[chain_key].inferred_from.chain.source_chained_name
             == "position<item>::position</x>"
@@ -441,7 +443,7 @@ class TestChainedGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == frozenset()
@@ -471,7 +473,7 @@ class TestChainedGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.EmptyGuarantee)
         assert guarantee.caused_by is not None
@@ -501,7 +503,7 @@ class TestChainedGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<dest>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert guarantee.origin_position.chain.source_chained_name == "position<src>"
@@ -532,7 +534,7 @@ class TestChainedGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert (
@@ -564,7 +566,7 @@ class TestChainedGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = "position<item>::position<my.domain.com:my_lib:/x>"
+        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == frozenset()
