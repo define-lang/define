@@ -10,6 +10,18 @@ if typing.TYPE_CHECKING:
 type TrieKey = tuple[str, ...] | list[str]
 
 
+class TrieError(Exception):
+    """Base exception for trie operations."""
+
+
+class EmptyKeyError(TrieError):
+    """Raised when a trie operation receives an empty key."""
+
+
+class TargetExistsError(TrieError):
+    """Raised when a move or graft target key already exists."""
+
+
 class _Node[V]:
     """Internal trie node. Every non-root node always has a value."""
 
@@ -51,7 +63,7 @@ class StrictReparentingTrie[V]:
 
     def _validate_key(self, key: TrieKey):
         if not key:
-            raise ValueError("key must not be empty")
+            raise EmptyKeyError("key must not be empty")
 
     def _walk(self, key: TrieKey) -> _Node[V] | None:
         """Walk to the node for key, returning None if the path doesn't exist."""
@@ -135,6 +147,11 @@ class StrictReparentingTrie[V]:
         Raises KeyError if source doesn't exist or target's parent doesn't exist.
         Raises ValueError if target already exists.
         """
+        # This could be implemented as just pop_subtree and then graft_subtree,
+        # but this implementation is slightly more efficient, and since this
+        # is a core primitive of Define (it backs the dimension point tracker)
+        # I decided to care about efficiency (perhaps unnecessarily so, though, so
+        # open to changing this in the future).
         self._validate_key(source)
         self._validate_key(target)
 
@@ -146,10 +163,42 @@ class StrictReparentingTrie[V]:
         target_parent = self._walk_to_parent_for_setting(target)
         target_last = target[-1]
         if target_last in target_parent:
-            raise ValueError(f"target key already exists: {target}")
+            raise TargetExistsError(f"target key already exists: {target}")
 
         # Both validated — perform the move.
         target_parent[target_last] = source_parent.pop(source_last)
+
+    def pop_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
+        """Detach the subtree at key and return it as a new trie.
+
+        The returned trie has a single root entry keyed by the last element
+        of key, containing the popped node and all its descendants.
+
+        Raises KeyError if key doesn't exist.
+        """
+        self._validate_key(key)
+        parent_children = self._walk_to_parent(key)
+        last = key[-1]
+        if last not in parent_children:
+            raise KeyError(key)
+        result: StrictReparentingTrie[V] = StrictReparentingTrie()
+        result._root[last] = parent_children.pop(last)
+        return result
+
+    def graft_subtree(self, key: TrieKey, subtree: StrictReparentingTrie[V]):
+        """Insert a standalone trie's root entries as children of key.
+
+        Each root entry in the subtree becomes a child of the node at key.
+        The key must already exist.
+
+        Raises KeyError if key doesn't exist.
+        """
+        self._validate_key(key)
+        node = self._walk(key)
+        if node is None:
+            raise KeyError(key)
+        for name, child in subtree._root.items():
+            node.children[name] = child
 
     def items(self) -> Generator[tuple[list[str], V]]:
         """Yield all (key, value) pairs in the trie.
