@@ -40,6 +40,17 @@ class _NodeState:
     emptied_by: ast.PositionReference | None = None
 
 
+@dataclass
+class _UnknownState:
+    """Wrapper for unknown-state trie values.
+
+    LenientReparentingTrie can't use None as a value, so we wrap
+    the caused_by reference in a dataclass.
+    """
+
+    caused_by: ast.PositionReference | None = None
+
+
 class DimensionPointTracker:
     """Tracks which positions contain dimension points.
 
@@ -65,17 +76,21 @@ class DimensionPointTracker:
         self._state: trie.LenientReparentingTrie[_NodeState] = (
             trie.LenientReparentingTrie(default_factory=_NodeState)
         )
-        self._unknown: trie.LenientReparentingTrie[bool] = trie.LenientReparentingTrie(
-            default_factory=bool
+        self._unknown: trie.LenientReparentingTrie[_UnknownState] = (
+            trie.LenientReparentingTrie(default_factory=_UnknownState)
         )
 
     def _key(self, position: ast.PositionReference) -> tuple[str, ...]:
         """Compute the canonical tuple key for a position reference."""
         return position.chain.canonical_chained_name_tuple(in_universe=self._fqun)
 
+    # TODO: Unknown state does not propagate to descendants. If a position
+    # is unknown, has_unknown_state on its children still returns False,
+    # allowing creates and moves on children to proceed as if the parent
+    # state were known. We should check ancestors when querying unknown state.
     def mark_unknown(self, in_position: ast.PositionReference):
         """Mark a position as having unknown occupancy state."""
-        self._unknown[self._key(in_position)] = True
+        self._unknown[self._key(in_position)] = _UnknownState(caused_by=in_position)
 
     def has_unknown_state(self, in_position: ast.PositionReference) -> bool:
         """Return whether a position has unknown occupancy state."""
@@ -83,7 +98,8 @@ class DimensionPointTracker:
 
     def has_unknown_state_by_key(self, key: tuple[str, ...]) -> bool:
         """Return whether a position has unknown occupancy state, by raw key."""
-        return bool(self._unknown.get(key))
+        state = self._unknown.get(key)
+        return state is not None and state.caused_by is not None
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a dimension point exists at this position."""
@@ -227,8 +243,8 @@ class DimensionPointTracker:
         for key, state in self._state.items():
             if state.dp_info is not None or state.emptied_by is not None:
                 all_keys.add(tuple(key))
-        for key, is_unknown in self._unknown.items():
-            if is_unknown:
+        for key, unknown_state in self._unknown.items():
+            if unknown_state.caused_by is not None:
                 all_keys.add(tuple(key))
 
         guarantees: dict[
@@ -249,8 +265,9 @@ class DimensionPointTracker:
         key: tuple[str, ...],
     ) -> action_contract.InterfacePositionGuarantee:
         """Build a guarantee from the current tracker state for a given key."""
-        if self.has_unknown_state_by_key(key):
-            return action_contract.UnknownGuarantee()
+        unknown_state = self._unknown.get(key)
+        if unknown_state is not None and unknown_state.caused_by is not None:
+            return action_contract.UnknownGuarantee(caused_by=unknown_state.caused_by)
         state = self._state.get(key)
         if state is not None and state.dp_info is not None:
             info = state.dp_info
@@ -264,6 +281,8 @@ class DimensionPointTracker:
                 caused_by=info.last_position,
             )
         caused_by = state.emptied_by if state is not None else None
+        if caused_by is None:
+            raise ValueError(f"no caused_by for empty position {key}")
         return action_contract.EmptyGuarantee(caused_by=caused_by)
 
     def apply_guarantees(
@@ -273,14 +292,11 @@ class DimensionPointTracker:
     ):
         """Apply action guarantees after an action completes.
 
-        The trigger_position should be the position reference that triggered the action.
-        Snapshots pre-trigger state, then updates each interface position
-        according to its guarantee. For OCCUPIED guarantees with an origin
-        position, resolves DP identity from the pre-trigger snapshot.
+        The trigger_position should be the position reference that triggered
+        the action. Updates each interface position according to its guarantee.
 
-        TODO: OccupiedByExisting guarantees should move the origin's children
-        along with the parent DP, not just copy the parent's dp_info. This
-        requires reworking the snapshot approach to use subtree operations.
+        OccupiedByExisting guarantees move entire subtrees (the origin's
+        children follow the parent DP).
         """
         action_chain = trigger_position.chain.get_action_chain()
         if action_chain is None:
@@ -294,76 +310,170 @@ class DimensionPointTracker:
         # outer action only creates position<iface>::action</other>::position<trigger>,
         # we currently do not surface /other's empty requirement on position<item>.
 
-        keys_to_snapshot: set[tuple[str, ...]] = set()
-        for name in guarantees:
-            keys_to_snapshot.add(key_prefix + name)
-        # An existing DP might be moved from one interface position to another
-        # (e.g., position<a> → position<b>). We need to read position<a>'s
-        # state before any guarantees clear it, so snapshot it here. We might
-        # not have made a guarantee about position<a> and so this is the only
-        # way to capture that we need to snapshot position<a>'s state.
-        for guarantee in guarantees.values():
+        # Parent-before-child ordering: Our first sort is by the key length
+        # (the number of names in a chain). To understand why this is necessary,
+        # imagine we do this:
+        #
+        #   move position<item> to position<dest>.
+        #   create a dimension point in position<dest>::position</child>.
+        #
+        # We have to process the move from item to dest first, to understand
+        # that what's in dest is the dimension point that was originally in
+        # item. Only _then_ should we process the creation in position</child>,
+        # so that we understand that we are creating a dimension point in a child
+        # of what was originally in "item." Sorting by key length guarantees this
+        # property.
+        #
+        # Execution order: Within the same key length, sorting
+        # by caused_by (source position) is also required. For example, if
+        # an action does:
+        #
+        #   move position<item>::position</child> to position<dest>.
+        #   move position<item> to position<_sink>.
+        #
+        # Both of these show up as guarantees in the final output about
+        # single-item positions: position<dest> has a guarantee that it
+        # contains what was originally in position<item>::position</child>,
+        # and position<item> has a guarantee that it's empty. (Remember that
+        # guarantees show up entirely using the names of the _final destinations_,
+        # so there is no guarantee emitted here about position<item>::position</child>---
+        # it's automatically emptied by position<item> being emptied.)
+        #
+        # Thus, we must process position</child> being in position<dest> before
+        # we process that position<item> is empty. Otherwise we would delete
+        # the dimension point in position</child> incorrectly.
+        sorted_items = sorted(
+            guarantees.items(),
+            key=lambda item: (
+                len(item[0]),
+                item[1].caused_by.position.line,
+                item[1].caused_by.position.column,
+            ),
+        )
+
+        # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
+        # We need this list later to know what to "save" before we apply guarantees.
+        origin_keys: set[tuple[str, ...]] = set()
+        for _name, guarantee in sorted_items:
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = (
                     guarantee.origin_position.chain.canonical_chained_name_tuple(
                         in_universe=self._fqun
                     )
                 )
-                keys_to_snapshot.add(key_prefix + origin_tuple)
+                origin_keys.add(key_prefix + origin_tuple)
 
-        pre_trigger: dict[tuple[str, ...], DimensionPointInfo] = {}
-        for key in keys_to_snapshot:
-            state = self._state.get(key)
-            if state is not None and state.dp_info is not None:
-                pre_trigger[key] = state.dp_info
+        # Saved subtrees for swap safety. Keyed by the origin's full key.
+        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]] = {}
+        saved_unknown: dict[
+            tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]
+        ] = {}
 
-        for name, guarantee in guarantees.items():
+        for name, guarantee in sorted_items:
             key = key_prefix + name
 
-            # Clear existing state for this position (without cascading to children).
-            existing_state = self._state.get(key)
-            if existing_state is not None:
-                existing_state.dp_info = None
-                existing_state.emptied_by = None
-            if key in self._unknown:
-                self._unknown[key] = False
+            if key in origin_keys:
+                # Save-before-overwrite: if this key is an origin for a later
+                # OccupiedByExisting, pop it and its children so the later guarantee
+                # can read from the saved copy.
+                #
+                # Two OccupiedByExisting guarantees can reference each other's positions
+                # as origins (e.g., the action swaps position<a> and position<b>). So we
+                # have to save the state of any position listed as an origin position
+                # that we _might_ be about to overwrite with any other guarantee. (Things
+                # like running OccupiedByNew accidentally before OccupiedByExisting are
+                # already handled by caused_by sorting, above.)
+                if key in self._state:
+                    saved_state[key] = self._state.pop_subtree(key)
+                if key in self._unknown:
+                    saved_unknown[key] = self._unknown.pop_subtree(key)
+                origin_keys.discard(key)
+            elif key in self._state:
+                # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
+                # or creates in position<item> (OccupiedByNewGuarantee), any children
+                # the caller had under position<item> must disappear. We achieve this
+                # by deleting each key's entire subtree before applying its guarantee.
+                del self._state[key]
+                if key in self._unknown:
+                    del self._unknown[key]
 
             match guarantee:
-                case action_contract.EmptyGuarantee():
-                    if guarantee.caused_by is not None:
-                        if existing_state is not None:
-                            existing_state.emptied_by = guarantee.caused_by
-                        else:
-                            self._state[key] = _NodeState(
-                                emptied_by=guarantee.caused_by
-                            )
                 case action_contract.OccupiedByExistingGuarantee():
-                    origin_tuple = (
-                        guarantee.origin_position.chain.canonical_chained_name_tuple(
-                            in_universe=self._fqun
-                        )
+                    self._apply_existing_guarantee(
+                        key,
+                        key_prefix,
+                        guarantee,
+                        saved_state,
+                        saved_unknown,
                     )
-                    origin_key = key_prefix + origin_tuple
-                    origin_info = pre_trigger.get(origin_key)
-                    if origin_info is not None:
-                        moved = origin_info.move_to(guarantee.caused_by)
-                        if existing_state is not None:
-                            existing_state.dp_info = moved
-                        else:
-                            self._state[key] = _NodeState(dp_info=moved)
-                    else:
-                        self._unknown[key] = True
+                case action_contract.EmptyGuarantee():
+                    self._state[key] = _NodeState(emptied_by=guarantee.caused_by)
                 case action_contract.OccupiedByNewGuarantee():
                     new_info = DimensionPointInfo(
                         last_position=guarantee.caused_by,
                         qualities=guarantee.qualities,
                         origin_position=guarantee.caused_by,
                     )
-                    if existing_state is not None:
-                        existing_state.dp_info = new_info
-                    else:
-                        self._state[key] = _NodeState(dp_info=new_info)
+                    self._state[key] = _NodeState(dp_info=new_info)
                 case action_contract.UnknownGuarantee():
-                    self._unknown[key] = True
+                    self._unknown[key] = _UnknownState(caused_by=guarantee.caused_by)
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
+
+    def _apply_existing_guarantee(
+        self,
+        dest_key: tuple[str, ...],
+        key_prefix: tuple[str, ...],
+        guarantee: action_contract.OccupiedByExistingGuarantee,
+        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]],
+        saved_unknown: dict[tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]],
+    ):
+        """Apply an OccupiedByExisting guarantee at dest_key."""
+        origin_tuple = guarantee.origin_position.chain.canonical_chained_name_tuple(
+            in_universe=self._fqun
+        )
+        origin_key = key_prefix + origin_tuple
+
+        # Get origin's dp_info — from saved copy if already processed,
+        # else from the live trie.
+        saved_tree = saved_state.pop(origin_key, None)
+        if saved_tree is not None:
+            origin_state = saved_tree[origin_tuple[-1:]]
+        elif origin_key in self._state:
+            origin_state = self._state[origin_key]
+        else:
+            # The caller never filled this interface position. There is no
+            # dimension point to move, so we mark dest as unknown. The caller
+            # already got an ActionRequiresOccupiedPositionDiagnostic from
+            # _check_requirements.
+            self._unknown[dest_key] = _UnknownState(caused_by=guarantee.caused_by)
+            return
+
+        # Only possible if the caller created a DP in a child position without
+        # creating a DP in the parent position (TODO: can delete this check when we
+        # get strict about this in the future).
+        if origin_state.dp_info is None:
+            self._unknown[dest_key] = _UnknownState(caused_by=guarantee.caused_by)
+            return
+
+        moved_info = origin_state.dp_info.move_to(guarantee.caused_by)
+        if saved_tree is not None:
+            # If we have a saved_tree, we have to graft back in the children of
+            # the popped subtree (the popped subtree starts with the dimension
+            # point that we are moving, and we need to re-create it with moved_info).
+            self._state[dest_key] = _NodeState(dp_info=moved_info)
+            self._state.graft_subtree(dest_key, saved_tree.root_children())
+        else:
+            self._state.move_subtree(origin_key, dest_key)
+            self._state[dest_key] = _NodeState(dp_info=moved_info)
+
+        saved_unk = saved_unknown.pop(origin_key, None)
+        # Guarantees reset the unknown state of dimension points they touch directly.
+        # If we guarantee a dimension point in a position, then we know that it has a
+        # dimension point. However, its _children_ might still be in some unknown state.
+        if saved_unk is not None:
+            self._unknown[dest_key] = _UnknownState()
+            self._unknown.graft_subtree(dest_key, saved_unk.root_children())
+        elif origin_key in self._unknown:
+            self._unknown.move_subtree(origin_key, dest_key)
+            self._unknown[dest_key] = _UnknownState()

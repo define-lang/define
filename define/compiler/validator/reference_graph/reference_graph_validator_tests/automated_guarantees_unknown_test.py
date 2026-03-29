@@ -613,3 +613,135 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
     assert all_diags[1].source_global_name == "action</other>"
     assert all_diags[1].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].location.line == 7
+
+
+def test_post_trigger_unknown_guarantee_on_child_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_sink>.\n"
+                "    define the position<_sink2>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item>::position</child_q> to position<_sink>.\n"
+                "        move the dimension point in position<item>::position</child_q> to position<_sink2>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
+
+
+def test_post_trigger_existing_guarantee_unknown_origin_with_children(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_sink>.\n"
+                "    define the position<_sink2>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item> to position<_sink>.\n"
+                "        move the dimension point in position<item> to position<_sink2>.\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.column == 37

@@ -191,8 +191,8 @@ class TestIteration:
         assert result == [("a",), ("a", "b")]
 
 
-class TestPopAndGraft:
-    def test_pop_subtree_returns_standalone_trie(self):
+class TestPopSubtree:
+    def test_returns_standalone_trie(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "x")] = 2
@@ -202,7 +202,7 @@ class TestPopAndGraft:
         assert popped[("a", "x")] == 2
         assert popped[("a", "y")] == 3
 
-    def test_pop_subtree_removes_from_source(self):
+    def test_removes_from_source(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "x")] = 2
@@ -210,76 +210,70 @@ class TestPopAndGraft:
         assert ("a",) not in t
         assert ("a", "x") not in t
 
-    def test_pop_subtree_missing_raises(self):
+    def test_missing_raises(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         with pytest.raises(KeyError):
             t.pop_subtree(("a",))
 
-    def test_graft_subtree_inserts_children(self):
+
+class TestRootChildren:
+    def test_returns_children(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "x")] = 2
+        t[("a", "x", "deep")] = 3
+        t[("a", "y")] = 4
+        children = t.root_children()
+        assert children[("x",)] == 2
+        assert children[("x", "deep")] == 3
+        assert children[("y",)] == 4
+
+    def test_no_children(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        children = t.root_children()
+        assert list(children.items()) == []
+
+    def test_multiple_roots(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "x")] = 2
+        t[("b",)] = 3
+        t[("b", "y")] = 4
+        children = t.root_children()
+        assert children[("x",)] == 2
+        assert children[("y",)] == 4
+
+
+class TestGraftSubtree:
+    def test_attaches_entries(self):
         source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        source[("a",)] = 1
-        source[("a", "x")] = 2
-        popped = source.pop_subtree(("a",))
+        source[("x",)] = 2
+        source[("x", "deep")] = 3
+        source[("y",)] = 4
         target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         target[("b",)] = 99
-        target.graft_subtree(("b",), popped)
+        target.graft_subtree(("b",), source)
         assert target[("b",)] == 99
-        assert target[("b", "a")] == 1
-        assert target[("b", "a", "x")] == 2
+        assert target[("b", "x")] == 2
+        assert target[("b", "x", "deep")] == 3
+        assert target[("b", "y")] == 4
 
-    def test_graft_subtree_missing_parent_raises(self):
+    def test_existing_child_raises(self):
         source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        source[("a",)] = 1
-        popped = source.pop_subtree(("a",))
+        source[("x",)] = 2
+        target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        target[("b",)] = 99
+        target[("b", "x")] = 50
+        with pytest.raises(trie.TargetExistsError):
+            target.graft_subtree(("b",), source)
+
+    def test_missing_key_raises(self):
+        source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        source[("x",)] = 1
         target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         with pytest.raises(KeyError):
-            target.graft_subtree(("b",), popped)
-
-    def test_graft_subtree_multiple_roots(self):
-        subtree: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        subtree[("a",)] = 1
-        subtree[("a", "x")] = 2
-        subtree[("b",)] = 3
-        subtree[("b", "y")] = 4
-        target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        target[("root",)] = 0
-        target.graft_subtree(("root",), subtree)
-        assert target[("root",)] == 0
-        assert target[("root", "a")] == 1
-        assert target[("root", "a", "x")] == 2
-        assert target[("root", "b")] == 3
-        assert target[("root", "b", "y")] == 4
-
-    def test_pop_and_graft_roundtrip(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        t[("a",)] = 1
-        t[("a", "b")] = 2
-        t[("a", "b", "c")] = 3
-        popped = t.pop_subtree(("a",))
-        t[("z",)] = 0
-        t.graft_subtree(("z",), popped)
-        assert ("a",) not in t
-        assert t[("z",)] == 0
-        assert t[("z", "a")] == 1
-        assert t[("z", "a", "b")] == 2
-        assert t[("z", "a", "b", "c")] == 3
-
-    def test_pop_and_graft_swap(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        t[("a",)] = 1
-        t[("a", "child_a")] = 10
-        t[("b",)] = 2
-        t[("b", "child_b")] = 20
-        popped_a = t.pop_subtree(("a",))
-        popped_b = t.pop_subtree(("b",))
-        t[("a",)] = 0
-        t[("b",)] = 0
-        t.graft_subtree(("a",), popped_b)
-        t.graft_subtree(("b",), popped_a)
-        assert t[("a", "b")] == 2
-        assert t[("a", "b", "child_b")] == 20
-        assert t[("b", "a")] == 1
-        assert t[("b", "a", "child_a")] == 10
+            target.graft_subtree(("b",), source)
 
 
 class TestIndependence:
@@ -359,13 +353,10 @@ class TestLenientMoveSubtree:
 class TestLenientPopAndGraft:
     def test_graft_auto_creates_intermediates(self):
         source = _make_lenient()
-        source[("a",)] = 1
-        source[("a", "child")] = 2
-        popped = source.pop_subtree(("a",))
+        source[("child",)] = 2
         target = _make_lenient()
         target[("x", "y")] = 99
-        target.graft_subtree(("x", "y"), popped)
+        target.graft_subtree(("x", "y"), source)
         assert target[("x",)] == 0
         assert target[("x", "y")] == 99
-        assert target[("x", "y", "a")] == 1
-        assert target[("x", "y", "a", "child")] == 2
+        assert target[("x", "y", "child")] == 2

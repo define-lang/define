@@ -30,12 +30,12 @@ class InterfacePositionRequirement:
 class InterfacePositionGuarantee:
     """An automatically inferred guarantee about an interface position after action completion."""
 
+    caused_by: ast.PositionReference
+
 
 @dataclass(frozen=True)
 class EmptyGuarantee(InterfacePositionGuarantee):
     """The position is guaranteed to be empty after the action completes."""
-
-    caused_by: ast.PositionReference | None = None
 
 
 @dataclass(frozen=True)
@@ -43,7 +43,6 @@ class OccupiedByExistingGuarantee(InterfacePositionGuarantee):
     """The position contains the same DP that was passed into another interface position."""
 
     origin_position: ast.PositionReference
-    caused_by: ast.PositionReference
 
 
 @dataclass(frozen=True)
@@ -51,7 +50,6 @@ class OccupiedByNewGuarantee(InterfacePositionGuarantee):
     """The position contains a new DP created by the action."""
 
     qualities: frozenset[str]
-    caused_by: ast.PositionReference
 
 
 @dataclass(frozen=True)

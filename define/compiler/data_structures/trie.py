@@ -185,19 +185,30 @@ class StrictReparentingTrie[V]:
         result._root[last] = parent_children.pop(last)
         return result
 
+    def root_children(self) -> StrictReparentingTrie[V]:
+        """Return a trie whose root entries are the children of all root nodes."""
+        result: StrictReparentingTrie[V] = StrictReparentingTrie()
+        for node in self._root.values():
+            result._root.update(node.children)
+        return result
+
     def graft_subtree(self, key: TrieKey, subtree: StrictReparentingTrie[V]):
-        """Insert a standalone trie's root entries as children of key.
+        """Attach a subtree's root entries as children of key.
 
         Each root entry in the subtree becomes a child of the node at key.
-        The key must already exist.
+        The node at key must already exist. The child keys must _not_ already
+        exist.
 
         Raises KeyError if key doesn't exist.
+        Raises TargetExistsError if any child already exists.
         """
         self._validate_key(key)
         node = self._walk(key)
         if node is None:
             raise KeyError(key)
         for name, child in subtree._root.items():
+            if name in node.children:
+                raise TargetExistsError(f"child key already exists: {name}")
             node.children[name] = child
 
     def items(self) -> Generator[tuple[list[str], V]]:

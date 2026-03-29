@@ -1137,9 +1137,17 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
             ),
         }
     )
+    # TODO: This test is flaky (~30% failure rate). When it fails, it produces
+    # a MoveFromEmptyInterfacePositionDiagnostic for
+    # position<box>::action</other>::position<trigger_pos>::position</x>
+    # on the final move statement, meaning the OccupiedByExisting guarantee
+    # for that child position wasn't applied before the caller tried to
+    # move from it. Likely a race in multi-threaded file validation causing
+    # non-deterministic file processing order.
     assert not result.program_result.has_errors()
 
 
+# TODO: Belongs in action_requirements_test.
 @pytest.mark.xfail(
     reason=(
         "Nested action-chain requirements and guarantees do not yet propagate "
@@ -1215,3 +1223,701 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+
+
+def test_post_trigger_existing_guarantee_on_child_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item>::position</child_q> to position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 23
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<dest>::position</child_q>"
+    )
+
+
+def test_post_trigger_empty_guarantee_on_child_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_sink>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>::position</child_q>.\n"
+                "        move the dimension point in position<item>::position</child_q> to position<_sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<sink>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<item>::position</child_q> to position<sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<item>::position</child_q>"
+    )
+
+
+def test_post_trigger_new_guarantee_on_child_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</x>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<item>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<item>::position</x>"
+    )
+
+
+def test_post_trigger_empty_guarantee_deletes_children(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_sink>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item> to position<_sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<sink>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<item>::position</child_q> to position<sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[0].location.line == 28
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<item>::position</child_q>"
+    )
+
+
+def test_post_trigger_new_guarantee_deletes_old_children(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "a.def": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "b.def": "define the potential position<my.domain.com:my_lib:/b>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_sink>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<iface> to position<_sink>.\n"
+                "        create a dimension point in position<iface>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "                it has the position</b>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "                it has the position</b>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare_a> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare_b> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</b>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<sink>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare_a>.\n"
+                "        create a dimension point in position<spare_b>.\n"
+                "        move the dimension point in position<spare> to position<local>.\n"
+                "        move the dimension point in position<spare_a> to position<local>::position</a>.\n"
+                "        move the dimension point in position<spare_b> to position<local>::position</b>.\n"
+                "        move the dimension point in position<local> to position<box>::action</other>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<iface>::position</a> to position<sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[0].location.line == 43
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<iface>::position</a>"
+    )
+
+
+def test_post_trigger_child_removed_before_parent_move(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_sink>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item>::position</child_q> to position<_sink>.\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()
+
+
+def test_post_trigger_parent_and_child_both_have_guarantees(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "        create a dimension point in position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<dest>::position</child_q>"
+    )
+
+
+def test_post_trigger_child_guarantee_follows_parent_move(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>::position</child_q>.\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<dest>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<dest>::position</child_q>"
+    )
+
+
+def test_post_trigger_existing_guarantee_empties_origin_children(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<iface_return>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<iface> to position<iface_return>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2>.\n"
+                "        define the position<sink>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        move the dimension point in position<spare> to position<local>.\n"
+                "        move the dimension point in position<spare2> to position<local>::position</child_q>.\n"
+                "        move the dimension point in position<local> to position<box>::action</other>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<iface>::position</child_q> to position<sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[0].location.line == 30
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<iface>::position</child_q>"
+    )
+
+
+def test_post_trigger_existing_guarantee_on_child_swap(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "quality_a.def": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
+            "quality_b.def": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<a> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<b> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<_tmp>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<a>::position</child_q> to position<_tmp>.\n"
+                "        move the dimension point in position<b>::position</child_q> to position<a>::position</child_q>.\n"
+                "        move the dimension point in position<_tmp> to position<b>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<sa> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</quality_a>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<sb> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</quality_b>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<needs_a> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</quality_a>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<needs_b> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</quality_b>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare2> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        create a dimension point in position<spare2>.\n"
+                "        create a dimension point in position<sa>.\n"
+                "        create a dimension point in position<sb>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<a>.\n"
+                "        move the dimension point in position<spare2> to position<box>::action</other>::position<b>.\n"
+                "        move the dimension point in position<sa> to position<box>::action</other>::position<a>::position</child_q>.\n"
+                "        move the dimension point in position<sb> to position<box>::action</other>::position<b>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<a>::position</child_q> to position<needs_b>.\n"
+                "        move the dimension point in position<box>::action</other>::position<b>::position</child_q> to position<needs_a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert not result.program_result.has_errors()
