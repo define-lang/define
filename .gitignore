@@ -4,12 +4,13 @@
 **/lark/lark_standalone.py
 /buf/
 
+/.claude/settings.local.json
+
 # Bazel
 /bazel-*
 
 # Define compiler output
 define-out/
-.bazelrc.user
 
 experimental/
 node_modules/
