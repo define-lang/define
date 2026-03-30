@@ -933,8 +933,7 @@ def test_trigger_chain_parent_requirement_violated(
     )
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
-        all_diags[0].position_name
-        == "position<box>::action</other>::position<iface>"
+        all_diags[0].position_name == "position<box>::action</other>::position<iface>"
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
