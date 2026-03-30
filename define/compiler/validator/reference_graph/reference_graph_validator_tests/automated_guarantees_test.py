@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
@@ -1151,13 +1149,6 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
     assert not result.program_result.has_errors()
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_post_trigger_existing_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1217,7 +1208,7 @@ def test_post_trigger_existing_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 24
+    assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert (
@@ -1226,13 +1217,6 @@ def test_post_trigger_existing_guarantee_on_child_position(
     )
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_post_trigger_empty_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1507,13 +1491,6 @@ def test_post_trigger_new_guarantee_deletes_old_children(
     )
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_post_trigger_child_removed_before_parent_move(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1643,13 +1620,6 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
     )
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_post_trigger_child_guarantee_follows_parent_move(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1787,13 +1757,6 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
     )
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_post_trigger_existing_guarantee_on_child_swap(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

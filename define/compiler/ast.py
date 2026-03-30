@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Self, override
 from define.compiler import constants
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from define.compiler.lark import lark_standalone
 
 
@@ -241,6 +243,9 @@ class LocalTypedNameReference(TypedName):
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
+# TODO: I've been thinking that maybe this should just be
+# a subclass of Sequence[TypedNameReference], to eliminate
+# the awkwardness of position.chained_names.typed_names[0]?
 @dataclass(frozen=True, slots=True)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
@@ -306,6 +311,25 @@ class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
 
     chain: ChainedName
+
+    def walk_parent_positions(self) -> Iterator[PositionReference]:
+        """Yield parent position prefixes from root toward this position.
+
+        For ``position<a>::action</x>::position</b>::position</c>``, yields
+        references for ``position<a>`` and
+        ``position<a>::action</x>::position</b>``, but not the full chain
+        itself. Actions are skipped (bundled with the next position).
+        """
+        names = self.chain.typed_names
+        for i, elem in enumerate(names[:-1]):
+            if elem.name_type != NameType.ACTION:
+                yield PositionReference(
+                    position=self.position,
+                    chain=ChainedName(
+                        position=self.chain.position,
+                        typed_names=names[: i + 1],
+                    ),
+                )
 
 
 @dataclass(frozen=True, slots=True)

@@ -78,6 +78,25 @@ class DefinitionPostorderValidator(abc.ABC):
         No-op for non-action definitions. Overridden by ActionPostorderValidator.
         """
 
+    def _maybe_infer_requirements_on_chain(
+        self,
+        required_state: action_contract.PositionOccupancyState,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Infer requirements for a position and all its parent positions.
+
+        The leaf position uses the given required_state; all parent positions
+        use OCCUPIED, since a parent must be occupied for its child to be
+        accessible. Walks root-to-leaf so the tracker trie has parent nodes
+        in place when children are inserted.
+        """
+        for parent in position.walk_parent_positions():
+            self._maybe_infer_requirement(
+                action_contract.PositionOccupancyState.OCCUPIED, parent, scope
+            )
+        self._maybe_infer_requirement(required_state, position, scope)
+
     def _check_trigger(
         self,
         position: ast.PositionReference,
@@ -203,7 +222,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if self._tracker.has_unknown_state(position):
             return
 
-        self._maybe_infer_requirement(
+        self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.EMPTY, position, scope
         )
         if self._tracker.is_occupied(position):
@@ -283,10 +302,10 @@ class DefinitionPostorderValidator(abc.ABC):
 
         Returns True if the move may proceed.
         """
-        self._maybe_infer_requirement(
+        self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, from_pos, scope
         )
-        self._maybe_infer_requirement(
+        self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.EMPTY, to_pos, scope
         )
 
@@ -688,18 +707,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         scope: scope_tracker.ScopeTracker,
     ):
         """Infer a requirement for an interface position on first reference."""
-        # TODO: When a child position is accessed (e.g.,
-        # position<item>::position</child>), we should also infer an
-        # OCCUPIED requirement on the parent position (position<item>),
-        # but only if the parent position has no pre-existing requirement.
-        # (as part of this, will need to think through what happens when
-        # we have conflicting requirements like empty on the parent and
-        # occupied on the child, which should be an error). Note that it
-        # is possible for requirements to be inferred in any order. Thus,
-        # it is possible that position<item>::position</child> is inferred
-        # before position<item>, and vice versa. (Also true for 3+ element chains
-        # that could be inferred in any order.)
-
         first = position.chain.typed_names[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return

@@ -1,7 +1,5 @@
 # pyright: reportUnusedCallResult=false
 
-import pytest
-
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
@@ -302,13 +300,6 @@ class TestGuaranteeGeneration:
         assert guarantee.caused_by.position.column == 37
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 class TestChainedRequirementInference:
     def test_create_at_chain_infers_chain_empty(self):
         source = (
@@ -361,7 +352,7 @@ class TestChainedRequirementInference:
             == action_contract.PositionOccupancyState.OCCUPIED
         )
 
-    def test_move_source_chain_does_not_infer_first_element_occupied(self):
+    def test_move_source_chain_infers_first_element_occupied(self):
         source = (
             "define the potential position<my.domain.com:my_lib:/x>.\n"
             "define the potential action<my.domain.com:my_lib:/test> {\n"
@@ -380,7 +371,11 @@ class TestChainedRequirementInference:
             "}\n"
         )
         contract = _get_contract(source)
-        assert ("position<item>",) not in contract.requirements
+        assert ("position<item>",) in contract.requirements
+        assert (
+            contract.requirements[("position<item>",)].required_state
+            == action_contract.PositionOccupancyState.OCCUPIED
+        )
 
     def test_move_dest_chain_infers_chain_empty(self):
         source = (
@@ -433,13 +428,6 @@ class TestChainedRequirementInference:
         )
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 class TestChainedGuaranteeGeneration:
     def test_create_at_chain_generates_occupied_guarantee(self):
         source = (

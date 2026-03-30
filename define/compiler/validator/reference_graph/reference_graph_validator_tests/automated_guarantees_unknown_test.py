@@ -510,8 +510,8 @@ def test_unknown_propagation_from_local_to_interface_position(
 
 @pytest.mark.xfail(
     reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
+        "apply_guarantees crashes when parent trie nodes for chained "
+        "guarantee keys don't exist in the caller's tracker."
     ),
     raises=KeyError,
 )
@@ -624,13 +624,6 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
     assert all_diags[1].location.line == 7
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_post_trigger_unknown_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

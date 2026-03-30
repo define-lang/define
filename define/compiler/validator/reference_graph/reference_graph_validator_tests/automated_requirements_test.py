@@ -573,13 +573,6 @@ def test_no_requirement_check_on_unknown_global_chain_start(
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
-    ),
-    raises=KeyError,
-)
 def test_trigger_chain_occupied_requirement_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -638,8 +631,8 @@ def test_trigger_chain_occupied_requirement_satisfied(
 
 @pytest.mark.xfail(
     reason=(
-        "Requires inferring OCCUPIED requirements on parent positions "
-        "when child positions are accessed."
+        "apply_guarantees crashes when parent trie nodes for chained "
+        "guarantee keys don't exist in the caller's tracker."
     ),
     raises=KeyError,
 )
@@ -885,3 +878,64 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+
+
+@pytest.mark.xfail(
+    reason=(
+        "apply_guarantees crashes when parent trie nodes for chained "
+        "guarantee keys don't exist in the caller's tracker."
+    ),
+    raises=KeyError,
+)
+def test_trigger_chain_parent_requirement_violated(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</x>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<iface>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<iface>"
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
