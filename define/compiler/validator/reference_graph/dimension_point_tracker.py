@@ -251,11 +251,8 @@ class DimensionPointTracker:
             tuple[str, ...], action_contract.InterfacePositionGuarantee
         ] = {}
         for key in all_keys:
-            # TODO: This manual name parsing goes away when interface_positions
-            # is keyed by full typed name instead of bare local name.
             first_element = key[0]
-            local_name = first_element.split("<")[1].rstrip(">")
-            if local_name not in interface_names:
+            if first_element not in interface_names:
                 continue
             guarantees[key] = self._guarantee_for_key(key)
         return guarantees

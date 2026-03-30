@@ -102,7 +102,7 @@ class TestRequirementInference:
         )
         contract = _get_contract(source)
         assert ("position<run>",) not in contract.requirements
-        assert contract.trigger_position_name == "run"
+        assert contract.trigger_position_name == "position<run>"
 
     def test_first_reference_wins(self):
         source = (

@@ -397,8 +397,6 @@ class ActionDefinition(QualityDefinition):
     definition_block: ActionDefinitionBlock | None
 
     # Computed properties
-    # TODO: interface_positions should be keyed by full typed name (e.g.,
-    # "position<item>") instead of bare local name (e.g., "item").
     interface_positions: dict[str, LocalPositionDefinition]
     interface_position_constraints: dict[str, frozenset[str]]
     trigger_position: LocalPositionDefinition | None
@@ -443,7 +441,7 @@ class ActionDefinition(QualityDefinition):
             return {}
         result: dict[str, LocalPositionDefinition] = {}
         for local_def in self.definition_block.interface_positions:
-            local_name = local_def.typed_name.name_content.name
+            local_name = local_def.typed_name.source_typed_name
             if local_name not in result:
                 result[local_name] = local_def
         return result
@@ -472,7 +470,7 @@ class ActionDefinition(QualityDefinition):
         first_ref = conditions[0].position_reference.chain.typed_names[0]
         if not isinstance(first_ref, LocalTypedNameReference):
             return None
-        trigger_name = first_ref.name_content.name
+        trigger_name = first_ref.source_typed_name
         return self.interface_positions.get(trigger_name)
 
 

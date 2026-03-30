@@ -289,8 +289,8 @@ class TestInterfacePositionConstraints:
             "}\n"
         )
         assert action.interface_position_constraints == {
-            "pos_a": frozenset({f"position<{_FQUN}:/child>"}),
-            "pos_b": frozenset(
+            "position<pos_a>": frozenset({f"position<{_FQUN}:/child>"}),
+            "position<pos_b>": frozenset(
                 {
                     f"position<{_FQUN}:/x>",
                     f"position<{_FQUN}:/y>",
@@ -311,7 +311,7 @@ class TestInterfacePositionConstraints:
             "}\n"
         )
         assert action.interface_position_constraints == {
-            "pos_a": frozenset(),
+            "position<pos_a>": frozenset(),
         }
 
     def test_ignore_later_duplicate_with_different_constraints(self):
@@ -336,7 +336,7 @@ class TestInterfacePositionConstraints:
             "}\n"
         )
         assert action.interface_position_constraints == {
-            "pos_a": frozenset({f"position<{_FQUN}:/first>"}),
+            "position<pos_a>": frozenset({f"position<{_FQUN}:/first>"}),
         }
 
     def test_ignore_later_duplicate_that_adds_constraints(self):
@@ -357,7 +357,7 @@ class TestInterfacePositionConstraints:
             "}\n"
         )
         assert action.interface_position_constraints == {
-            "pos_a": frozenset(),
+            "position<pos_a>": frozenset(),
         }
 
     def test_no_block(self):

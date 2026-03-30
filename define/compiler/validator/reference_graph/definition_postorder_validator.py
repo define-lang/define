@@ -106,7 +106,10 @@ class DefinitionPostorderValidator(abc.ABC):
         trigger_element = typing.cast(
             "ast.LocalTypedNameReference", interface_position.chain.typed_names[0]
         )
-        if trigger_element.name_content.name != contract.trigger_position_name:
+        if (
+            trigger_element.full_typed_name(in_universe=self._enclosing_fqun)
+            != contract.trigger_position_name
+        ):
             return
 
         self._check_requirements(position, contract)
@@ -493,7 +496,10 @@ class DefinitionPostorderValidator(abc.ABC):
         if child.name_type != ast.NameType.POSITION:
             self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
             return 0
-        if child.name_content.name not in action_def.interface_position_constraints:
+        if (
+            child.full_typed_name(in_universe=fqun)
+            not in action_def.interface_position_constraints
+        ):
             self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
             return 0
         # The caller guarantees child exists, but not that the child's child exists.
@@ -503,7 +509,9 @@ class DefinitionPostorderValidator(abc.ABC):
         self._check_chain_element_in_constraints(
             ref,
             next_child,
-            action_def.interface_position_constraints[child.name_content.name],
+            action_def.interface_position_constraints[
+                child.full_typed_name(in_universe=fqun)
+            ],
             child.full_typed_name(),
             fqun,
         )
@@ -567,7 +575,7 @@ class DefinitionPostorderValidator(abc.ABC):
             action_def = self._definition_results[parent_key].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
             return action_def.interface_position_constraints[
-                last_element.name_content.name
+                last_element.full_typed_name(in_universe=self._enclosing_fqun)
             ]
 
         lookup_key = last_element.full_typed_name(in_universe=self._enclosing_fqun)
@@ -664,7 +672,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             requirements=self._inferred_requirements,
             guarantees=self._tracker.generate_guarantees(self._action_definition),
             trigger_position_name=(
-                self._trigger_position.typed_name.name_content.name
+                self._trigger_position.typed_name.full_typed_name(
+                    in_universe=self._enclosing_fqun
+                )
                 if self._trigger_position is not None
                 else ""
             ),
@@ -683,8 +693,8 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             return
         if not scope.is_defined(first):
             return
-        local_name = first.name_content.name
-        if local_name not in self._interface_positions:
+        typed_name = first.full_typed_name(in_universe=self._enclosing_fqun)
+        if typed_name not in self._interface_positions:
             return
 
         # Trigger position population is handled elsewhere and doesn't
@@ -692,7 +702,10 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if (
             scope.is_defined_local(position)
             and self._trigger_position is not None
-            and local_name == self._trigger_position.typed_name.name_content.name
+            and typed_name
+            == self._trigger_position.typed_name.full_typed_name(
+                in_universe=self._enclosing_fqun
+            )
         ):
             return
 
