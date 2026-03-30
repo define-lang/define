@@ -329,7 +329,7 @@ class TestActionTriggering:
         assert len(all_trigger_positions) == 1
         tp = all_trigger_positions[0]
         assert (
-            tp.enclosing_typed_name.full_typed_name()
+            tp.enclosing_typed_name.source_typed_name
             == "action<my.domain.com:my_lib:/test>"
         )
         assert tp.checked_position.source_chained_name == "position<my_pos>"
@@ -377,7 +377,7 @@ class TestActionTriggering:
         ]
         assert len(all_body_effects) == 2
         effect_names = {
-            e.enclosing_typed_name.full_typed_name() for e in all_body_effects
+            e.enclosing_typed_name.source_typed_name for e in all_body_effects
         }
         assert effect_names == {
             "action<my.domain.com:my_lib:/test>",
@@ -386,7 +386,7 @@ class TestActionTriggering:
         test_effect = next(
             e
             for e in all_body_effects
-            if e.enclosing_typed_name.full_typed_name()
+            if e.enclosing_typed_name.source_typed_name
             == "action<my.domain.com:my_lib:/test>"
         )
         assert (

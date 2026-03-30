@@ -141,8 +141,8 @@ class NameContent(ASTNode, abc.ABC):
     """Base class for name content nodes (local or global)."""
 
     @abc.abstractmethod
-    def full_name(self, in_universe: Fqun | None = None) -> str:
-        """Return the full name text, optionally resolved against a universe."""
+    def full_name(self, in_universe: Fqun) -> str:
+        """Return the full name text, resolved against a universe."""
 
     @property
     @abc.abstractmethod
@@ -157,7 +157,7 @@ class LocalNameContent(NameContent):
     name: str
 
     @override
-    def full_name(self, in_universe: Fqun | None = None) -> str:
+    def full_name(self, in_universe: Fqun) -> str:
         """Return the local name."""
         return self.name
 
@@ -205,7 +205,7 @@ class TypedName(ASTNode):
     name_type: NameType
     name_content: NameContent
 
-    def full_typed_name(self, in_universe: Fqun | None = None) -> str:
+    def full_typed_name(self, in_universe: Fqun) -> str:
         """Return canonical typed-name text including effective FQUN and path."""
         return f"{self.name_type.value}<{self.name_content.full_name(in_universe=in_universe)}>"
 
@@ -238,7 +238,7 @@ class ChainedName(ASTNode):
 
     typed_names: list[TypedNameReference]
 
-    def canonical_chained_name(self, in_universe: Fqun | None = None) -> str:
+    def canonical_chained_name(self, in_universe: Fqun) -> str:
         """Return the canonical chained name string."""
         return "::".join(
             elem.full_typed_name(in_universe=in_universe) for elem in self.typed_names
@@ -530,11 +530,9 @@ class GlobalNameContent(NameContent):
     path: GlobalPathName
 
     @override
-    def full_name(self, in_universe: Fqun | None = None) -> str:
-        """Return canonical FQUN:path text, resolved against a universe if needed."""
+    def full_name(self, in_universe: Fqun) -> str:
+        """Return canonical FQUN:path text, resolved against a universe."""
         fqun = self.fqun or in_universe
-        if fqun is None:
-            raise ValueError("global name requires an effective FQUN")
         return f"{fqun.canonical}:{self.path.name}"
 
     @property
@@ -569,11 +567,11 @@ class GlobalTypedNameInDefinition(TypedName):
         object.__setattr__(
             self,
             "_source_typed_name",
-            super().full_typed_name(),
+            super().source_typed_name,
         )
 
     @override
-    def full_typed_name(self, in_universe: Fqun | None = None) -> str:
+    def full_typed_name(self, in_universe: Fqun) -> str:
         return self._source_typed_name
 
     @property

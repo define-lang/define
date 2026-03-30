@@ -46,7 +46,7 @@ class ReferenceGraphValidator:
         """
         call_graph = action_call_graph.ActionCallGraph()
         for definition in self._reference_graph.dfs_postorder_all():
-            name = definition.typed_name.full_typed_name()
+            name = definition.typed_name.source_typed_name
             definition_result = self._definition_results.get(name)
             # A node without a definition result means the target file was
             # not found or had a syntax error that prevented processing.

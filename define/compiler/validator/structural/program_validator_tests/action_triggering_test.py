@@ -32,10 +32,10 @@ class TestActionTriggering:
         assert len(all_trigger_positions) == 1
         tp = all_trigger_positions[0]
         assert (
-            tp.enclosing_typed_name.full_typed_name()
+            tp.enclosing_typed_name.source_typed_name
             == "action<my.domain.com:my_lib:/test>"
         )
         assert len(tp.checked_position.typed_names) == 1
         assert (
-            tp.checked_position.typed_names[0].full_typed_name() == "position<my_pos>"
+            tp.checked_position.typed_names[0].source_typed_name == "position<my_pos>"
         )

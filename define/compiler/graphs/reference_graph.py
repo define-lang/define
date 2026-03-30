@@ -32,7 +32,7 @@ class ReferenceEdge:
     @property
     def source_full_typed_name(self) -> str:
         """Return the fully qualified typed-name key for the edge source."""
-        return self.enclosing_definition.typed_name.full_typed_name()
+        return self.enclosing_definition.typed_name.source_typed_name
 
 
 @dataclass(frozen=True)
@@ -59,7 +59,7 @@ class ReferenceGraph:
     def add_definition(self, definition: ast.QualityDefinition):
         """Register a definition as a node in the graph."""
         self._graph.add_node(
-            definition.typed_name.full_typed_name(), definition=definition
+            definition.typed_name.source_typed_name, definition=definition
         )
 
     def try_add_edge(self, edge: ReferenceEdge) -> DetectedCycle | None:
@@ -90,7 +90,7 @@ class ReferenceGraph:
 
         Leaf nodes are yielded first, root last.
         """
-        root_key = root.typed_name.full_typed_name()
+        root_key = root.typed_name.source_typed_name
         for node_key in nx.dfs_postorder_nodes(self._graph, root_key):
             yield cast(
                 "ast.QualityDefinition", self._graph.nodes[node_key]["definition"]

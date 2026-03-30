@@ -23,7 +23,7 @@ class ScopeTracker:
 
     def add_definition(self, definition: ast.AnyPositionDefinition):
         """Add a position definition to scope, pre-computing constraint names."""
-        key = definition.typed_name.full_typed_name()
+        key = definition.typed_name.source_typed_name
         self._definitions[key] = definition
         if definition.constraints is not None:
             self._constraint_names[key] = frozenset(

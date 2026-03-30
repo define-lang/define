@@ -27,7 +27,7 @@ class TriggerPositionInfo:
         """Return the full chained name of the position the trigger condition is checking, prefixed with the action name."""
         fqun = self.enclosing_typed_name.name_content.fqun
         chain_str = self.checked_position.canonical_chained_name(in_universe=fqun)
-        return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
+        return f"{self.enclosing_typed_name.source_typed_name}::{chain_str}"
 
 
 @dataclass(frozen=True)
@@ -65,7 +65,7 @@ class ActionBodyEffect:
         """
         if self._action_boundary is not None:
             return self._action_boundary[1]
-        return self.enclosing_typed_name.full_typed_name()
+        return self.enclosing_typed_name.source_typed_name
 
     @cached_property
     def affected_position_qualified_chained_name(self) -> str:
@@ -74,7 +74,7 @@ class ActionBodyEffect:
         boundary = self._action_boundary
         if boundary is None:
             chain_str = self.modified_position.canonical_chained_name(in_universe=fqun)
-            return f"{self.enclosing_typed_name.full_typed_name()}::{chain_str}"
+            return f"{self.enclosing_typed_name.source_typed_name}::{chain_str}"
         idx = boundary[0]
         return "::".join(
             elem.full_typed_name(in_universe=fqun)
@@ -116,7 +116,7 @@ class ActionCallGraph:
         for tp in trigger_positions:
             self._trigger_position_to_action_name[
                 tp.checked_position_name_with_prefix
-            ] = tp.enclosing_typed_name.full_typed_name()
+            ] = tp.enclosing_typed_name.source_typed_name
 
     def register_effects(self, body_effects: Sequence[ActionBodyEffect]):
         """Register action body effects, resolving them against known triggers."""
@@ -126,7 +126,7 @@ class ActionCallGraph:
             )
             if target_action is None:
                 continue
-            source_action = effect.enclosing_typed_name.full_typed_name()
+            source_action = effect.enclosing_typed_name.source_typed_name
             _ = self._graph.add_edge(
                 source_action, target_action, statement=effect.statement
             )

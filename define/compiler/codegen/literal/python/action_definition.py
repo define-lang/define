@@ -34,7 +34,7 @@ class ActionDefinitionGenerator:
         if block is None:
             return template_context.ActionDefinitionContext(
                 class_name=class_name,
-                typed_name=self._definition.typed_name.full_typed_name(),
+                typed_name=self._definition.typed_name.source_typed_name,
                 module_name=module_name,
             )
 
@@ -69,7 +69,7 @@ class ActionDefinitionGenerator:
 
         return template_context.ActionDefinitionContext(
             class_name=class_name,
-            typed_name=self._definition.typed_name.full_typed_name(),
+            typed_name=self._definition.typed_name.source_typed_name,
             module_name=module_name,
             has_body=True,
             interface_positions=interface_positions,

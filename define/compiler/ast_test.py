@@ -4,8 +4,6 @@
 import sys
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import ast, parser, transformer
 
 _POS = ast.start_of_file_position()
@@ -119,12 +117,13 @@ class TestGlobalPathName:
 
 class TestGlobalNameContent:
     def test_full_name_with_explicit_fqun(self):
+        fqun = _make_fqun("my_lib", authority="my.domain.com")
         name = ast.GlobalNameContent(
             position=_POS,
-            fqun=_make_fqun("my_lib", authority="my.domain.com"),
+            fqun=fqun,
             path=ast.GlobalPathName(position=_POS, name="/thing"),
         )
-        assert name.full_name() == "my.domain.com:my_lib:/thing"
+        assert name.full_name(in_universe=fqun) == "my.domain.com:my_lib:/thing"
 
     def test_full_name_with_in_universe(self):
         name = ast.GlobalNameContent(
@@ -146,15 +145,6 @@ class TestGlobalNameContent:
         in_universe = _make_fqun("other_lib", authority="other.domain.com")
         assert name.full_name(in_universe=in_universe) == "my.domain.com:my_lib:/thing"
 
-    def test_full_name_requires_effective_fqun(self):
-        name = ast.GlobalNameContent(
-            position=_POS,
-            fqun=None,
-            path=ast.GlobalPathName(position=_POS, name="/thing"),
-        )
-        with pytest.raises(ValueError, match="requires an effective FQUN"):
-            _ = name.full_name()
-
 
 class TestGlobalTypedNameInDefinition:
     def test_full_typed_name(self):
@@ -167,21 +157,25 @@ class TestGlobalTypedNameInDefinition:
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        assert typed_name.full_typed_name() == "position<my.domain.com:my_lib:/thing>"
+        assert typed_name.source_typed_name == "position<my.domain.com:my_lib:/thing>"
 
 
 class TestGlobalTypedNameReference:
     def test_full_typed_name_with_explicit_fqun(self):
+        fqun = _make_fqun("my_lib", authority="my.domain.com")
         reference = ast.GlobalTypedNameReference(
             position=_POS,
             name_type=ast.NameType.ACTION,
             name_content=ast.ReferenceGlobalNameContent(
                 position=_POS,
-                fqun=_make_fqun("my_lib", authority="my.domain.com"),
+                fqun=fqun,
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        assert reference.full_typed_name() == "action<my.domain.com:my_lib:/thing>"
+        assert (
+            reference.full_typed_name(in_universe=fqun)
+            == "action<my.domain.com:my_lib:/thing>"
+        )
 
     def test_full_typed_name_with_short_name_uses_in_universe(self):
         reference = ast.GlobalTypedNameReference(
@@ -224,7 +218,7 @@ class TestCachedStrings:
         assert fqun.canonical is fqun2.canonical
         assert sys.intern(fqun.canonical) is fqun.canonical
 
-    def test_definition_full_typed_name_returns_same_object(self):
+    def test_definition_source_typed_name_returns_same_object(self):
         typed_name = ast.GlobalTypedNameInDefinition(
             position=_POS,
             name_type=ast.NameType.POSITION,
@@ -234,7 +228,7 @@ class TestCachedStrings:
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        assert typed_name.full_typed_name() is typed_name.full_typed_name()
+        assert typed_name.source_typed_name is typed_name.source_typed_name
 
     def test_definition_full_typed_name_ignores_in_universe(self):
         typed_name = ast.GlobalTypedNameInDefinition(
@@ -246,11 +240,11 @@ class TestCachedStrings:
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
+        own_fqun = typed_name.name_content.fqun
         other = _make_fqun("other_lib", authority="other.domain.com")
-        assert (
-            typed_name.full_typed_name(in_universe=other)
-            is typed_name.full_typed_name()
-        )
+        assert typed_name.full_typed_name(
+            in_universe=other
+        ) is typed_name.full_typed_name(in_universe=own_fqun)
 
     def test_definition_source_typed_name_matches_full(self):
         typed_name = ast.GlobalTypedNameInDefinition(
@@ -262,7 +256,10 @@ class TestCachedStrings:
                 path=ast.GlobalPathName(position=_POS, name="/thing"),
             ),
         )
-        assert typed_name.source_typed_name is typed_name.full_typed_name()
+        own_fqun = typed_name.name_content.fqun
+        assert typed_name.source_typed_name is typed_name.full_typed_name(
+            in_universe=own_fqun
+        )
 
 
 class TestInterfacePositionConstraints:

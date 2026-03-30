@@ -171,7 +171,7 @@ class TestFileStructuralValidatorDiagnostics:
             diagnostics.DuplicateDefinitionDiagnostic,
         ]
         assert [
-            definition_result.definition.typed_name.full_typed_name()
+            definition_result.definition.typed_name.source_typed_name
             for definition_result in result.definition_results
         ] == [
             "position<my.domain.com:my_lib:/test>",
@@ -212,7 +212,7 @@ class TestDefinitionStructuralValidator:
             context=_make_context(tmp_path),
             seen_definitions=seen_definitions,
         ).validate_definition()
-        seen_definitions[program.definitions[0].typed_name.full_typed_name()] = (
+        seen_definitions[program.definitions[0].typed_name.source_typed_name] = (
             program.definitions[0]
         )
         second_result = file_validator.DefinitionStructuralValidator(
@@ -246,7 +246,7 @@ class TestDefinitionStructuralValidator:
                 seen_definitions=seen_definitions,
             ).validate_definition()
             results.append(result)
-            seen_definitions[definition.typed_name.full_typed_name()] = definition
+            seen_definitions[definition.typed_name.source_typed_name] = definition
 
         assert len(results) == 2
         assert all(

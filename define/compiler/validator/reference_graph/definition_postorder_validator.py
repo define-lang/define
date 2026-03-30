@@ -512,7 +512,7 @@ class DefinitionPostorderValidator(abc.ABC):
             action_def.interface_position_constraints[
                 child.full_typed_name(in_universe=fqun)
             ],
-            child.full_typed_name(),
+            child.source_typed_name,
             fqun,
         )
         return 2

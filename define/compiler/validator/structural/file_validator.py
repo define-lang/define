@@ -181,7 +181,7 @@ class FileStructuralValidator:
                 seen_definitions=seen_definitions,
             ).validate_definition()
             definition_results.append(result)
-            definition_name = definition.typed_name.full_typed_name()
+            definition_name = definition.typed_name.source_typed_name
             if definition_name not in seen_definitions:
                 seen_definitions[definition_name] = definition
         tracker.mark_file_validation_finished()
@@ -313,7 +313,7 @@ class DefinitionStructuralValidator:
 
     def _validate_not_duplicate_in_file(self):
         """Check for within-file duplicates."""
-        key = self._definition.typed_name.full_typed_name()
+        key = self._definition.typed_name.source_typed_name
         if key in self._seen_definitions:
             first_def = self._seen_definitions[key]
             self._diagnostics.append(
@@ -498,14 +498,14 @@ class DefinitionStructuralValidator:
 
         is_self_reference = (
             first.full_typed_name(in_universe=fqun)
-            == self._definition.typed_name.full_typed_name()
+            == self._definition.typed_name.source_typed_name
         )
         is_chained_self_reference = is_self_reference and len(chain.typed_names) > 1
         if is_chained_self_reference and not allow_self_reference:
             self._diagnostics.append(
                 diagnostics.UnnecessarySelfReferenceDiagnostic(
                     location=first.position,
-                    definition_name=self._definition.typed_name.full_typed_name(),
+                    definition_name=self._definition.typed_name.source_typed_name,
                 )
             )
             # NOTE: Mutates the AST so downstream validation sees the corrected chain.
@@ -632,7 +632,7 @@ class DefinitionStructuralValidator:
         # In Position Initialization Blocks, self-references don't cause us
         # to do file loads. They are not actually external references.
         is_self_reference = (
-            edge.target_full_typed_name == self._definition.typed_name.full_typed_name()
+            edge.target_full_typed_name == self._definition.typed_name.source_typed_name
         )
         if is_self_reference and allow_self_reference:
             return

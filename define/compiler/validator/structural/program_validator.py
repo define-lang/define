@@ -216,7 +216,7 @@ class ProgramStructuralValidator:
         definition_result: validation_result.DefinitionValidationResult,
     ):
         """Handle one completed definition from a file result."""
-        name = definition_result.definition.typed_name.full_typed_name()
+        name = definition_result.definition.typed_name.source_typed_name
         # FileStructuralValidator preserves duplicate definitions in source order so
         # the later ones can still return diagnostics. Originally, I tried
         # to make all the later checks still run on duplicates, but it gets
