@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
 from dataclasses import dataclass
 
+from define.compiler import ast
 from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import action_contract
-
-if typing.TYPE_CHECKING:
-    from define.compiler import ast
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +48,9 @@ class _UnknownState:
     caused_by: ast.PositionReference | None = None
 
 
+_ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
+
+
 class DimensionPointTracker:
     """Tracks which positions contain dimension points.
 
@@ -70,11 +70,8 @@ class DimensionPointTracker:
     def __init__(self, enclosing_definition: ast.QualityDefinition):
         """Initialize with the enclosing definition's FQUN."""
         self._fqun = enclosing_definition.typed_name.name_content.fqun
-        # TODO: Switch to StrictReparentingTrie once intermediate position
-        # validation is implemented. Currently lenient because action chain
-        # elements in keys don't have DPs.
-        self._state: trie.LenientReparentingTrie[_NodeState] = (
-            trie.LenientReparentingTrie(default_factory=_NodeState)
+        self._state: trie.StrictReparentingTrie[_NodeState] = (
+            trie.StrictReparentingTrie()
         )
         self._unknown: trie.LenientReparentingTrie[_UnknownState] = (
             trie.LenientReparentingTrie(default_factory=_UnknownState)
@@ -83,6 +80,13 @@ class DimensionPointTracker:
     def _key(self, position: ast.PositionReference) -> tuple[str, ...]:
         """Compute the canonical tuple key for a position reference."""
         return position.chain.canonical_chained_name_tuple(in_universe=self._fqun)
+
+    def _ensure_action_parent(self, key: tuple[str, ...]):
+        """Create the action intermediate trie node if needed."""
+        if len(key) >= 2 and key[-2].startswith(_ACTION_KEY_PREFIX):
+            parent_key = key[:-1]
+            if parent_key not in self._state:
+                self._state[parent_key] = _NodeState()
 
     # TODO: Unknown state does not propagate to descendants. If a position
     # is unknown, has_unknown_state on its children still returns False,
@@ -151,6 +155,7 @@ class DimensionPointTracker:
         *,
         from_caller: bool = False,
     ):
+        self._ensure_action_parent(key)
         existing = self._state.get(key)
         if existing is not None and existing.dp_info is not None:
             raise ValueError(f"position {key} is already occupied")
@@ -208,6 +213,7 @@ class DimensionPointTracker:
         source: ast.PositionReference,
         target: ast.PositionReference,
     ):
+        self._ensure_action_parent(to_key)
         # TODO: Move last_position into _NodeState so that move_subtree
         # doesn't need this post-move fixup.
         moved_info = self._state[from_key].dp_info
@@ -368,6 +374,7 @@ class DimensionPointTracker:
 
         for name, guarantee in sorted_items:
             key = key_prefix + name
+            self._ensure_action_parent(key)
 
             if key in origin_keys:
                 # Save-before-overwrite: if this key is an origin for a later

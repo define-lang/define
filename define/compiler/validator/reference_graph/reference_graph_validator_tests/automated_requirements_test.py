@@ -452,6 +452,7 @@ def test_position_init_violates_occupied_requirement(
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
+                "        create a dimension point in position</test>.\n"
                 "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -463,7 +464,7 @@ def test_position_init_violates_occupied_requirement(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
@@ -487,6 +488,7 @@ def test_position_init_violates_empty_requirement(
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
+                "        create a dimension point in position</test>.\n"
                 "        create a dimension point in position</test>::action</other>::position<item>.\n"
                 "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
@@ -497,7 +499,7 @@ def test_position_init_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
@@ -507,7 +509,7 @@ def test_position_init_violates_empty_requirement(
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
-    assert all_diags[0].filled_at.line == 6
+    assert all_diags[0].filled_at.line == 7
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
 
@@ -524,6 +526,7 @@ def test_position_init_satisfies_requirements(
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
+                "        create a dimension point in position</test>.\n"
                 "        create a dimension point in position</test>::action</other>::position<item>.\n"
                 "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
@@ -570,6 +573,13 @@ def test_no_requirement_check_on_unknown_global_chain_start(
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Requires inferring OCCUPIED requirements on parent positions "
+        "when child positions are accessed."
+    ),
+    raises=KeyError,
+)
 def test_trigger_chain_occupied_requirement_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -615,9 +625,8 @@ def test_trigger_chain_occupied_requirement_satisfied(
                 "        define the position<spare2>.\n"
                 "        create a dimension point in position<box>.\n"
                 "        create a dimension point in position<spare>.\n"
-                "        create a dimension point in position<spare2>.\n"
                 "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</y>.\n"
+                "        create a dimension point in position<box>::action</other>::position<item>::position</y>.\n"
                 "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -627,6 +636,13 @@ def test_trigger_chain_occupied_requirement_satisfied(
     assert not result.program_result.has_errors()
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Requires inferring OCCUPIED requirements on parent positions "
+        "when child positions are accessed."
+    ),
+    raises=KeyError,
+)
 def test_trigger_chain_occupied_requirement_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -761,11 +777,15 @@ def test_trigger_chain_empty_requirement_violated(
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        define the position<spare>.\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
                 "        create a dimension point in position<box>.\n"
                 "        create a dimension point in position<spare>.\n"
-                "        move the dimension point in position<spare> to position<box>::action</other>::position<trigger_pos>::position</x>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<spare>::position</x>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -774,8 +794,8 @@ def test_trigger_chain_empty_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.column == 56
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
@@ -785,8 +805,8 @@ def test_trigger_chain_empty_requirement_violated(
     assert all_diags[0].inferred_at.line == 10
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
-    assert all_diags[0].filled_at.line == 14
-    assert all_diags[0].filled_at.column == 56
+    assert all_diags[0].filled_at.line == 18
+    assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
 
 

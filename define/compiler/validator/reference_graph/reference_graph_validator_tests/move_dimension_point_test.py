@@ -169,6 +169,7 @@ def test_same_fqun_must_use_short_form_in_from(
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
+                "        create a dimension point in position<gateway>.\n"
                 "        create a dimension point in position<gateway>::position</other>.\n"
                 "        move the dimension point in position<gateway>::position<my.domain.com:my_lib:/other> to position<to_pos>.\n"
                 "    }\n"
@@ -182,7 +183,7 @@ def test_same_fqun_must_use_short_form_in_from(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
     assert all_diags[0].fqun == "my.domain.com:my_lib"
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 65
 
 
@@ -206,6 +207,7 @@ def test_same_fqun_must_use_short_form_in_to(
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
+                "        create a dimension point in position<gateway>.\n"
                 "        move the dimension point in position<from_pos> to position<gateway>::position<my.domain.com:my_lib:/other>.\n"
                 "    }\n"
                 "}\n"
@@ -218,7 +220,7 @@ def test_same_fqun_must_use_short_form_in_to(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
     assert all_diags[0].fqun == "my.domain.com:my_lib"
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 87
 
 

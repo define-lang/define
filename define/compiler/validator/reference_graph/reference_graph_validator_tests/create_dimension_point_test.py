@@ -256,6 +256,7 @@ def test_create_in_local_chained_position(
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
+                "        create a dimension point in position<src>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
                 "    }\n"
                 "}\n"
@@ -282,6 +283,7 @@ def test_create_twice_in_local_chained_position(
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
+                "        create a dimension point in position<src>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
                 "    }\n"
@@ -292,11 +294,11 @@ def test_create_twice_in_local_chained_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<src>::position</x>"
-    assert all_diags[0].created_at.line == 11
+    assert all_diags[0].created_at.line == 12
     assert all_diags[0].created_at.column == 37
     assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
 
@@ -313,6 +315,7 @@ def test_create_in_chained_position_in_position_init(
                 "        it has the position</x>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
+                "        create a dimension point in position</test>.\n"
                 "        create a dimension point in position</test>::position</x>.\n"
                 "    }\n"
                 "}\n"
@@ -334,6 +337,7 @@ def test_create_twice_in_chained_position_in_position_init(
                 "        it has the position</x>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
+                "        create a dimension point in position</test>.\n"
                 "        create a dimension point in position</test>::position</x>.\n"
                 "        create a dimension point in position</test>::position</x>.\n"
                 "    }\n"
@@ -344,10 +348,10 @@ def test_create_twice_in_chained_position_in_position_init(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position</test>::position</x>"
-    assert all_diags[0].created_at.line == 6
+    assert all_diags[0].created_at.line == 7
     assert all_diags[0].created_at.column == 37
     assert all_diags[0].created_at.file_path == PurePosixPath("test.def")

@@ -231,6 +231,7 @@ class TestActionBodyEffect:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</other>::position<tp>.\n"
                     "    }\n"
                     "}\n"
@@ -238,8 +239,8 @@ class TestActionBodyEffect:
             },
         )
         act_result = result.program_result.definition_results[f"action<{_FQUN}:/act>"]
-        assert len(act_result.action_body_effects) == 1
-        effect = act_result.action_body_effects[0]
+        assert len(act_result.action_body_effects) == 2
+        effect = act_result.action_body_effects[1]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"
@@ -276,6 +277,7 @@ class TestActionBodyEffect:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<local>.\n"
                     "        create a dimension point in position<local>::action</other>::position<tp>.\n"
                     "    }\n"
                     "}\n"
@@ -283,8 +285,8 @@ class TestActionBodyEffect:
             },
         )
         act_result = result.program_result.definition_results[f"action<{_FQUN}:/act>"]
-        assert len(act_result.action_body_effects) == 1
-        effect = act_result.action_body_effects[0]
+        assert len(act_result.action_body_effects) == 2
+        effect = act_result.action_body_effects[1]
         assert isinstance(effect.statement, ast.CreateDimensionPointStatement)
         assert effect.modified_position is effect.statement.target_position.chain
         assert effect.target_action_name == f"action<{_FQUN}:/other>"

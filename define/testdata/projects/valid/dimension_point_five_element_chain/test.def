@@ -7,6 +7,7 @@ define the potential action<mv:define-lang.org:test_dim_five_chain:/test> {
     it happens when {
         the position<pos_a> has a dimension point.
     } and it does {
+        create a dimension point in position<pos_a>::action</act_a>::position<pos_b>.
         create a dimension point in position<pos_a>::action</act_a>::position<pos_b>::action</act_b>::position<pos_c>.
     }
 }

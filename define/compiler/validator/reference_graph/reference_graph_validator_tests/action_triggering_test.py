@@ -36,6 +36,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -54,7 +55,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _OTHER, 11)}
+        assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
 
     def test_create_and_move_trigger_other_action(
         self,
@@ -75,6 +76,7 @@ class TestActionTriggering:
                     "    } and it does {\n"
                     "        define the position<tmp>.\n"
                     "        create a dimension point in position<tmp>.\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        move the dimension point in position<tmp> to position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -93,7 +95,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _OTHER, 13)}
+        assert _edge_keys(result) == {(_TEST, _OTHER, 14)}
 
     def test_no_trigger_when_writing_to_non_trigger_position(
         self,
@@ -112,6 +114,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</other>::position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
@@ -150,6 +153,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</act_b>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -168,7 +172,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _ACT_B, 11)}
+        assert _edge_keys(result) == {(_TEST, _ACT_B, 12)}
 
     def test_trigger_chain(
         self,
@@ -187,6 +191,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</act_b>::position<trigger_b>.\n"
                     "    }\n"
                     "}\n"
@@ -202,6 +207,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<trigger_b> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</act_c>::position<trigger_c>.\n"
                     "    }\n"
                     "}\n"
@@ -220,7 +226,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _ACT_B, 11), (_ACT_B, _ACT_C, 11)}
+        assert _edge_keys(result) == {(_TEST, _ACT_B, 12), (_ACT_B, _ACT_C, 12)}
 
     def test_self_trigger(
         self,
@@ -351,6 +357,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</other>::position<pos>.\n"
                     "    }\n"
                     "}\n"
@@ -375,7 +382,7 @@ class TestActionTriggering:
             for dr in r.definition_results
             for effect in dr.action_body_effects
         ]
-        assert len(all_body_effects) == 2
+        assert len(all_body_effects) == 3
         effect_names = {
             e.enclosing_typed_name.source_typed_name for e in all_body_effects
         }
@@ -383,16 +390,20 @@ class TestActionTriggering:
             "action<my.domain.com:my_lib:/test>",
             "action<my.domain.com:my_lib:/other>",
         }
-        test_effect = next(
+        test_effects = [
             e
             for e in all_body_effects
             if e.enclosing_typed_name.source_typed_name
             == "action<my.domain.com:my_lib:/test>"
-        )
-        assert (
-            test_effect.modified_position.source_chained_name
-            == "position<gateway>::action</other>::position<pos>"
-        )
+        ]
+        assert len(test_effects) == 2
+        modified_positions = {
+            e.modified_position.source_chained_name for e in test_effects
+        }
+        assert modified_positions == {
+            "position<gateway>",
+            "position<gateway>::action</other>::position<pos>",
+        }
 
     def test_local_prefix_before_action_trigger(
         self,
@@ -411,6 +422,7 @@ class TestActionTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<local>.\n"
                     "        create a dimension point in position<local>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -429,7 +441,7 @@ class TestActionTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_TEST, _OTHER, 11)}
+        assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
 
     def test_no_body_effect_when_create_target_has_unknown_state(
         self,
@@ -570,6 +582,7 @@ class TestPositionInitTriggering:
                     "        it has the action</other>.\n"
                     "    }\n"
                     "    after it is assigned {\n"
+                    "        create a dimension point in position</test>.\n"
                     "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -578,7 +591,7 @@ class TestPositionInitTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 6)}
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 7)}
 
     def test_position_init_move_triggers_action(
         self,
@@ -594,6 +607,7 @@ class TestPositionInitTriggering:
                     "    after it is assigned {\n"
                     "        define the position<tmp>.\n"
                     "        create a dimension point in position<tmp>.\n"
+                    "        create a dimension point in position</test>.\n"
                     "        move the dimension point in position<tmp> to position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -602,7 +616,7 @@ class TestPositionInitTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 8)}
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
 
     def test_position_init_self_reference_no_trigger_edge(
         self,
@@ -634,6 +648,7 @@ class TestPositionInitTriggering:
                     "        it has the action</other>.\n"
                     "    }\n"
                     "    after it is assigned {\n"
+                    "        create a dimension point in position</test>.\n"
                     "        create a dimension point in position</test>::action</other>::position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
@@ -667,6 +682,7 @@ class TestPositionInitTriggering:
                     "        it has the action</other>.\n"
                     "    }\n"
                     "    after it is assigned {\n"
+                    "        create a dimension point in position</test>.\n"
                     "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -680,6 +696,7 @@ class TestPositionInitTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a dimension point.\n"
                     "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
                     "        create a dimension point in position<gateway>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -689,8 +706,8 @@ class TestPositionInitTriggering:
         )
         assert not result.program_result.has_errors()
         assert _edge_keys(result) == {
-            (_POS_TEST, _OTHER, 6),
-            (_TEST, _OTHER, 19),
+            (_POS_TEST, _OTHER, 7),
+            (_TEST, _OTHER, 21),
         }
 
     def test_position_init_chained_through_self_triggers_action(
@@ -707,6 +724,7 @@ class TestPositionInitTriggering:
                     "    after it is assigned {\n"
                     "        define the position<local>.\n"
                     "        create a dimension point in position<local>.\n"
+                    "        create a dimension point in position</test>.\n"
                     "        move the dimension point in position<local> to position</test>::action</other>::position<trigger_pos>.\n"
                     "    }\n"
                     "}\n"
@@ -715,7 +733,7 @@ class TestPositionInitTriggering:
             },
         )
         assert not result.program_result.has_errors()
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 8)}
+        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
 
 
 class TestCircularDependencyTriggering:
@@ -746,6 +764,7 @@ class TestCircularDependencyTriggering:
                     "        it has the action</test>.\n"
                     "    }\n"
                     "    after it is assigned {\n"
+                    "        create a dimension point in position</pos>.\n"
                     "        create a dimension point in position</pos>::action</test>::position<run>.\n"
                     "    }\n"
                     "}\n"
@@ -758,5 +777,5 @@ class TestCircularDependencyTriggering:
         assert all_diags[0].location.line == 3
         assert all_diags[0].location.column == 20
         assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-        assert all_diags[1].location.line == 6
+        assert all_diags[1].location.line == 7
         assert all_diags[1].location.column == 53

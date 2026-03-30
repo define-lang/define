@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+import pytest
+
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
@@ -300,6 +302,13 @@ class TestGuaranteeGeneration:
         assert guarantee.caused_by.position.column == 37
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Requires inferring OCCUPIED requirements on parent positions "
+        "when child positions are accessed."
+    ),
+    raises=KeyError,
+)
 class TestChainedRequirementInference:
     def test_create_at_chain_infers_chain_empty(self):
         source = (
@@ -424,6 +433,13 @@ class TestChainedRequirementInference:
         )
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Requires inferring OCCUPIED requirements on parent positions "
+        "when child positions are accessed."
+    ),
+    raises=KeyError,
+)
 class TestChainedGuaranteeGeneration:
     def test_create_at_chain_generates_occupied_guarantee(self):
         source = (

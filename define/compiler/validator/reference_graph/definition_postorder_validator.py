@@ -688,6 +688,18 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         scope: scope_tracker.ScopeTracker,
     ):
         """Infer a requirement for an interface position on first reference."""
+        # TODO: When a child position is accessed (e.g.,
+        # position<item>::position</child>), we should also infer an
+        # OCCUPIED requirement on the parent position (position<item>),
+        # but only if the parent position has no pre-existing requirement.
+        # (as part of this, will need to think through what happens when
+        # we have conflicting requirements like empty on the parent and
+        # occupied on the child, which should be an error). Note that it
+        # is possible for requirements to be inferred in any order. Thus,
+        # it is possible that position<item>::position</child> is inferred
+        # before position<item>, and vice versa. (Also true for 3+ element chains
+        # that could be inferred in any order.)
+
         first = position.chain.typed_names[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return

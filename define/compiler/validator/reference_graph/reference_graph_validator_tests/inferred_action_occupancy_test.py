@@ -158,6 +158,7 @@ def test_move_between_interface_chained(
                 "    it happens when {\n"
                 "        the position<src_iface> has a dimension point.\n"
                 "    } and it does {\n"
+                "        create a dimension point in position<dest_iface>.\n"
                 "        move the dimension point in position<src_iface>::position</x> to position<dest_iface>::position</y>.\n"
                 "    }\n"
                 "}\n"

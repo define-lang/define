@@ -125,6 +125,7 @@ def test_self_reference_in_position_init_is_valid(
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
+                "        create a dimension point in position</test>.\n"
                 "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"

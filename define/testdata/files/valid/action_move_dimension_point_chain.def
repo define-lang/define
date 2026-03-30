@@ -10,6 +10,7 @@ define the potential action<mv:define-lang.org:test_files:/valid/action_move_dim
     it happens when {
         the position<run> has a dimension point.
     } and it does {
+        create a dimension point in position<src>.
         move the dimension point in position<src>::position</valid/action_move_dimension_point_chain> to position<dest>.
     }
 }

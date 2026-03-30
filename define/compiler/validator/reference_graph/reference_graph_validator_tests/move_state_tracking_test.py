@@ -480,6 +480,7 @@ def test_move_from_chained_to_occupied_local_position(
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
+                "        create a dimension point in position<src>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
                 "        create a dimension point in position<dest>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest>.\n"
@@ -491,12 +492,12 @@ def test_move_from_chained_to_occupied_local_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 68
     assert all_diags[0].position_name == "position<dest>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.column == 37
-    assert all_diags[0].occupied_at.line == 13
+    assert all_diags[0].occupied_at.line == 14
 
 
 def test_move_from_empty_local_chained(
@@ -517,6 +518,7 @@ def test_move_from_empty_local_chained(
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
+                "        create a dimension point in position<src>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest>.\n"
                 "    }\n"
                 "}\n"
@@ -526,7 +528,7 @@ def test_move_from_empty_local_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<src>::position</x>"
@@ -551,6 +553,7 @@ def test_move_to_occupied_local_chained(
                 "            }\n"
                 "        }\n"
                 "        create a dimension point in position<src>.\n"
+                "        create a dimension point in position<dest>.\n"
                 "        create a dimension point in position<dest>::position</x>.\n"
                 "        move the dimension point in position<src> to position<dest>::position</x>.\n"
                 "    }\n"
@@ -561,12 +564,12 @@ def test_move_to_occupied_local_chained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 54
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<dest>::position</x>"
     assert all_diags[0].occupied_at is not None
-    assert all_diags[0].occupied_at.line == 13
+    assert all_diags[0].occupied_at.line == 14
     assert all_diags[0].occupied_at.column == 37
     assert all_diags[0].occupied_at.file_path == PurePosixPath("test.def")
 
@@ -590,6 +593,7 @@ def test_double_move_from_local_chained_fails(
                 "        }\n"
                 "        define the position<dest_a>.\n"
                 "        define the position<dest_b>.\n"
+                "        create a dimension point in position<src>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest_a>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest_b>.\n"
@@ -601,7 +605,7 @@ def test_double_move_from_local_chained_fails(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
     assert all_diags[0].position_name == "position<src>::position</x>"
@@ -625,6 +629,7 @@ def test_move_from_local_chained_to_local(
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
+                "        create a dimension point in position<src>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest>.\n"
                 "    }\n"
@@ -654,6 +659,7 @@ def test_move_from_local_to_local_chained(
                 "            }\n"
                 "        }\n"
                 "        create a dimension point in position<src>.\n"
+                "        create a dimension point in position<dest>.\n"
                 "        move the dimension point in position<src> to position<dest>::position</x>.\n"
                 "    }\n"
                 "}\n"
@@ -686,7 +692,9 @@ def test_move_between_local_chained(
                 "                it has the position</y>.\n"
                 "            }\n"
                 "        }\n"
+                "        create a dimension point in position<src>.\n"
                 "        create a dimension point in position<src>::position</x>.\n"
+                "        create a dimension point in position<dest>.\n"
                 "        move the dimension point in position<src>::position</x> to position<dest>::position</y>.\n"
                 "    }\n"
                 "}\n"

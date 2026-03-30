@@ -320,18 +320,76 @@ def test_move_between_global_chains():
 
 def test_create_at_interface_position_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("item")]
     )
 
+    tracker.create(box_ref, frozenset())
     tracker.create(ref, frozenset(["position<q>"]))
 
     assert tracker.is_occupied(ref) is True
     assert tracker.get_occupant(ref).qualities == frozenset(["position<q>"])
 
 
+def test_action_parent_auto_created_for_single_action_chain():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    item_ref = _make_position_ref([_make_local_ref("item")])
+    ref = _make_position_ref(
+        [_make_local_ref("item"), _make_action_ref("/foo"), _make_local_ref("trigger")]
+    )
+
+    tracker.create(item_ref, frozenset())
+    tracker.create(ref, frozenset())
+
+    assert tracker.is_occupied(ref) is True
+
+
+def test_chained_position_without_intermediate_fails():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    local_ref = _make_position_ref([_make_local_ref("local")])
+    ref = _make_position_ref(
+        [_make_local_ref("local"), _make_global_ref("/mid"), _make_global_ref("/last")]
+    )
+
+    tracker.create(local_ref, frozenset())
+
+    with pytest.raises(KeyError):
+        tracker.create(ref, frozenset())
+
+
+def test_action_chain_without_parent_position_fails():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    ref = _make_position_ref(
+        [_make_local_ref("local"), _make_action_ref("/foo"), _make_local_ref("iface")]
+    )
+
+    with pytest.raises(KeyError):
+        tracker.create(ref, frozenset())
+
+
+def test_nested_action_chain_without_intermediate_fails():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    item_ref = _make_position_ref([_make_local_ref("item")])
+    ref = _make_position_ref(
+        [
+            _make_local_ref("item"),
+            _make_action_ref("/foo"),
+            _make_local_ref("trigger"),
+            _make_action_ref("/bar"),
+            _make_local_ref("last"),
+        ]
+    )
+
+    tracker.create(item_ref, frozenset())
+
+    with pytest.raises(KeyError):
+        tracker.create(ref, frozenset())
+
+
 def test_move_between_interface_position_chains():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref_a = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("src")]
     )
@@ -339,6 +397,7 @@ def test_move_between_interface_position_chains():
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("dst")]
     )
 
+    tracker.create(box_ref, frozenset())
     tracker.create(ref_a, frozenset(["position<q>"]))
     tracker.move(ref_a, ref_b)
 
@@ -418,9 +477,11 @@ _ACTION_KEY_PREFIX = ("position<box>", "action<my.domain.com:my_lib:/other>")
 
 def test_apply_guarantees_empty():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
+    tracker.create(box_ref, frozenset())
     tracker.create(ref, frozenset())
 
     tracker.apply_guarantees(
@@ -435,10 +496,12 @@ def test_apply_guarantees_empty():
 
 def test_apply_guarantees_occupied_by_new():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
 
+    tracker.create(box_ref, frozenset())
     tracker.apply_guarantees(
         ref,
         {
@@ -459,6 +522,7 @@ def test_apply_guarantees_occupied_by_new():
 
 def test_apply_guarantees_occupied_by_existing():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
             _make_local_ref("box"),
@@ -476,6 +540,7 @@ def test_apply_guarantees_occupied_by_existing():
             _make_local_ref("trigger"),
         ]
     )
+    tracker.create(box_ref, frozenset())
     tracker.create(item_ref, frozenset(["position<q>"]))
     tracker.create(trigger_ref, frozenset())
 
@@ -499,6 +564,7 @@ def test_apply_guarantees_occupied_by_existing():
 
 def test_apply_guarantees_occupied_by_existing_moves_children():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     item_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
@@ -513,6 +579,7 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
     trigger_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("trigger")]
     )
+    tracker.create(box_ref, frozenset())
     tracker.create(item_ref, frozenset(["position<q>"]))
     tracker.create(child_ref, frozenset(["position<r>"]))
     tracker.create(trigger_ref, frozenset())
@@ -540,6 +607,7 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
 
 def test_apply_guarantees_occupied_by_existing_swap():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     item_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
@@ -565,6 +633,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
     trigger_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("trigger")]
     )
+    tracker.create(box_ref, frozenset())
     tracker.create(item_ref, frozenset(["position<q>"]))
     tracker.create(item_child_ref, frozenset(["position<r>"]))
     tracker.create(dest_ref, frozenset(["position<s>"]))
@@ -616,6 +685,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
 
 def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
             _make_local_ref("box"),
@@ -624,6 +694,7 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
         ]
     )
 
+    tracker.create(box_ref, frozenset())
     tracker.apply_guarantees(
         ref,
         {
@@ -641,9 +712,11 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
 
 def test_apply_guarantees_unknown():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
     )
+    tracker.create(box_ref, frozenset())
     tracker.create(ref, frozenset())
 
     tracker.apply_guarantees(
@@ -658,6 +731,7 @@ def test_apply_guarantees_unknown():
 
 def test_apply_guarantees_does_not_touch_unmentioned_positions():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
             _make_local_ref("box"),
@@ -672,6 +746,7 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
             _make_local_ref("untouched"),
         ]
     )
+    tracker.create(box_ref, frozenset())
     tracker.create(untouched_ref, frozenset())
 
     tracker.apply_guarantees(
