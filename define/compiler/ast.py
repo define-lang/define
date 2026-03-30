@@ -204,6 +204,15 @@ class TypedName(ASTNode):
 
     name_type: NameType
     name_content: NameContent
+    _source_typed_name: str = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        """Compute and cache the source typed name string."""
+        object.__setattr__(
+            self,
+            "_source_typed_name",
+            f"{self.name_type.value}<{self.name_content.source_name}>",
+        )
 
     def full_typed_name(self, in_universe: Fqun) -> str:
         """Return canonical typed-name text including effective FQUN and path."""
@@ -212,7 +221,7 @@ class TypedName(ASTNode):
     @property
     def source_typed_name(self) -> str:
         """Return typed-name text as it appears in the source."""
-        return f"{self.name_type.value}<{self.name_content.source_name}>"
+        return self._source_typed_name
 
 
 @dataclass(frozen=True, slots=True)
@@ -560,21 +569,7 @@ class GlobalTypedNameInDefinition(TypedName):
     """Represents a typed global name at a definition site."""
 
     name_content: DefinitionGlobalNameContent
-    _source_typed_name: str = field(init=False, repr=False, compare=False)
-
-    def __post_init__(self):
-        """Compute and cache the typed name string."""
-        object.__setattr__(
-            self,
-            "_source_typed_name",
-            super().source_typed_name,
-        )
 
     @override
     def full_typed_name(self, in_universe: Fqun) -> str:
-        return self._source_typed_name
-
-    @property
-    @override
-    def source_typed_name(self) -> str:
         return self._source_typed_name
