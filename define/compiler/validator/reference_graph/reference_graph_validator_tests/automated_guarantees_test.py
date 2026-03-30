@@ -1137,13 +1137,6 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
             ),
         }
     )
-    # TODO: This test is flaky (~30% failure rate). When it fails, it produces
-    # a MoveFromEmptyInterfacePositionDiagnostic for
-    # position<box>::action</other>::position<trigger_pos>::position</x>
-    # on the final move statement, meaning the OccupiedByExisting guarantee
-    # for that child position wasn't applied before the caller tried to
-    # move from it. Likely a race in multi-threaded file validation causing
-    # non-deterministic file processing order.
     assert not result.program_result.has_errors()
 
 
