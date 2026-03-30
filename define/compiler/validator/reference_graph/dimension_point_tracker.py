@@ -374,6 +374,10 @@ class DimensionPointTracker:
 
         for name, guarantee in sorted_items:
             key = key_prefix + name
+
+            if not self._check_key_exists_for_guarantee(key, guarantee):
+                continue
+
             self._ensure_action_parent(key)
 
             if key in origin_keys:
@@ -423,6 +427,39 @@ class DimensionPointTracker:
                     self._unknown[key] = _UnknownState(caused_by=guarantee.caused_by)
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
+
+    def _check_key_exists_for_guarantee(
+        self,
+        key: tuple[str, ...],
+        guarantee: action_contract.InterfacePositionGuarantee,
+    ) -> bool:
+        """Check whether the parent path for a guarantee key is present.
+
+        This happens only when the caller of an action did not fill a required
+        position and now we are trying to apply a guarantee to a child of that
+        position. If that happened for this key, we mark the first missing node
+        as unknown and return False to indicate the guarantee should be skipped.
+
+        Returns True when the parent path is fully in the state trie (or
+        could be completed by _ensure_action_parent).
+        """
+        ancestor_key = self._state.existing_prefix(key)
+        if len(ancestor_key) >= len(key) - 1:
+            return True
+        # Parent path is incomplete. _ensure_action_parent can fill
+        # exactly one gap when the missing node is an action
+        # intermediate and its own parent exists.
+        first_missing = key[len(ancestor_key)]
+        can_bridge = len(ancestor_key) == len(key) - 2 and first_missing.startswith(
+            _ACTION_KEY_PREFIX
+        )
+        if can_bridge:
+            return True
+        # The caller never filled a required position ancestor.
+        # Mark the first missing node as unknown.
+        missing_key = (*ancestor_key, first_missing)
+        self._unknown[missing_key] = _UnknownState(caused_by=guarantee.caused_by)
+        return False
 
     def _apply_existing_guarantee(
         self,

@@ -235,6 +235,19 @@ class StrictReparentingTrie[V]:
             yield from recurse(child)
             _ = path.pop()
 
+    def existing_prefix(self, key: TrieKey) -> list[str]:
+        """Return the longest prefix of key whose nodes all exist in the trie."""
+        self._validate_key(key)
+        result: list[str] = []
+        children = self._root
+        for element in key:
+            node = children.get(element)
+            if node is None:
+                break
+            result.append(element)
+            children = node.children
+        return result
+
     def keys(self) -> Generator[list[str]]:
         """Yield all keys that have values.
 

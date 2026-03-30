@@ -508,13 +508,6 @@ def test_unknown_propagation_from_local_to_interface_position(
     assert all_diags[0].location.column == 37
 
 
-@pytest.mark.xfail(
-    reason=(
-        "apply_guarantees crashes when parent trie nodes for chained "
-        "guarantee keys don't exist in the caller's tracker."
-    ),
-    raises=KeyError,
-)
 def test_unknown_from_prefix_move_on_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

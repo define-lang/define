@@ -629,13 +629,6 @@ def test_trigger_chain_occupied_requirement_satisfied(
     assert not result.program_result.has_errors()
 
 
-@pytest.mark.xfail(
-    reason=(
-        "apply_guarantees crashes when parent trie nodes for chained "
-        "guarantee keys don't exist in the caller's tracker."
-    ),
-    raises=KeyError,
-)
 def test_trigger_chain_occupied_requirement_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -681,14 +674,11 @@ def test_trigger_chain_occupied_requirement_violated(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert (
-        all_diags[0].position_name
-        == "position<box>::action</other>::position<item>::position</y>"
-    )
+    assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
@@ -696,6 +686,20 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[0].inferred_at.line == 15
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert isinstance(
+        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</other>::position<item>::position</y>"
+    )
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[1].inferred_at.line == 15
+    assert all_diags[1].inferred_at.column == 37
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.def")
 
 
 def test_trigger_chain_empty_requirement_satisfied(
@@ -880,13 +884,6 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
 
 
-@pytest.mark.xfail(
-    reason=(
-        "apply_guarantees crashes when parent trie nodes for chained "
-        "guarantee keys don't exist in the caller's tracker."
-    ),
-    raises=KeyError,
-)
 def test_trigger_chain_parent_requirement_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -938,3 +935,6 @@ def test_trigger_chain_parent_requirement_violated(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].inferred_at.line == 11
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")

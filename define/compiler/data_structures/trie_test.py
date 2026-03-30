@@ -276,6 +276,39 @@ class TestGraftSubtree:
             target.graft_subtree(("b",), source)
 
 
+class TestExistingPrefix:
+    def test_full_path_exists(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 2
+        t[("a", "b", "c")] = 3
+        assert t.existing_prefix(("a", "b", "c")) == ["a", "b", "c"]
+
+    def test_partial_path(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 2
+        assert t.existing_prefix(("a", "b", "c", "d")) == ["a", "b"]
+
+    def test_no_path(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        assert t.existing_prefix(("a", "b")) == []
+
+    def test_single_element_exists(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        assert t.existing_prefix(("a",)) == ["a"]
+
+    def test_single_element_missing(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        assert t.existing_prefix(("a",)) == []
+
+    def test_empty_key_raises(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        with pytest.raises(trie.EmptyKeyError):
+            t.existing_prefix(())
+
+
 class TestIndependence:
     def test_parent_and_child_are_independent_values(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
