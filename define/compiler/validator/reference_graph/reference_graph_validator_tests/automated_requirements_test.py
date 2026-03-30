@@ -2,6 +2,8 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
@@ -785,4 +787,81 @@ def test_trigger_chain_empty_requirement_violated(
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
     assert all_diags[0].filled_at.line == 14
     assert all_diags[0].filled_at.column == 56
+    assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+
+
+@pytest.mark.xfail(
+    reason=(
+        "Nested action-chain requirements and guarantees do not yet propagate "
+        "through the outer action."
+    ),
+    strict=True,
+)
+def test_trigger_chain_prefilled_item_fails_empty_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.def": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "ours.def": (
+                "define the potential action<my.domain.com:my_lib:/ours> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<iface>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.def": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</ours>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</ours>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</ours>::position<iface>::action</other>::position<item>.\n"
+                "        create a dimension point in position<box>::action</ours>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</ours>::position<iface>::action</other>::position<item>"
+    )
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].filled_at.line == 13
+    assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
