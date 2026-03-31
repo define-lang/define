@@ -384,8 +384,8 @@ class GlobalPathName(ASTNode):
         return PurePosixPath(self.name[1:])
 
     def file_path(self, root: PurePosixPath = constants.PROJECT_ROOT) -> PurePosixPath:
-        """Return the .def file path, prefixed by root."""
-        return root / self.relative_path.with_suffix(".def")
+        """Return the .dfn file path, prefixed by root."""
+        return root / self.relative_path.with_suffix(".dfn")
 
 
 @dataclass(frozen=True, slots=True)

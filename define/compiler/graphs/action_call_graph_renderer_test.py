@@ -129,8 +129,8 @@ class TestRenderMermaid:
     def test_single_edge(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         graph = _build_graph(
             {
-                "act_a.def": _ACTION_A,
-                "act_b.def": _ACTION_B_TRIGGERED,
+                "act_a.dfn": _ACTION_A,
+                "act_b.dfn": _ACTION_B_TRIGGERED,
             },
             tmp_path,
             monkeypatch,
@@ -167,8 +167,8 @@ class TestRenderMermaid:
         )
         graph = _build_graph(
             {
-                "act_a.def": source_a,
-                "act_b.def": _ACTION_B_TRIGGERED,
+                "act_a.dfn": source_a,
+                "act_b.dfn": _ACTION_B_TRIGGERED,
             },
             tmp_path,
             monkeypatch,
@@ -216,9 +216,9 @@ class TestRenderMermaid:
         )
         graph = _build_graph(
             {
-                "act_a.def": _ACTION_A,
-                "act_b.def": action_b_chains,
-                "act_c.def": action_c,
+                "act_a.dfn": _ACTION_A,
+                "act_b.dfn": action_b_chains,
+                "act_c.dfn": action_c,
             },
             tmp_path,
             monkeypatch,
@@ -265,8 +265,8 @@ class TestRenderMermaid:
         )
         graph = _build_graph(
             {
-                "foo.def": source_foo,
-                "bar.def": source_bar,
+                "foo.dfn": source_foo,
+                "bar.dfn": source_bar,
             },
             tmp_path,
             monkeypatch,
@@ -287,8 +287,8 @@ class TestRenderMermaid:
     ):
         graph = _build_graph(
             {
-                "color.def": _POS_COLOR_SOURCE,
-                "act_b.def": _ACTION_B_TRIGGERED,
+                "color.dfn": _POS_COLOR_SOURCE,
+                "act_b.dfn": _ACTION_B_TRIGGERED,
             },
             tmp_path,
             monkeypatch,

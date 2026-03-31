@@ -467,8 +467,8 @@ def test_move_from_chained_to_occupied_local_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -505,8 +505,8 @@ def test_move_from_empty_local_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -530,7 +530,7 @@ def test_move_from_empty_local_chained(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
 
 
@@ -539,8 +539,8 @@ def test_move_to_occupied_local_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -566,12 +566,12 @@ def test_move_to_occupied_local_chained(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 54
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<dest>::position</x>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 14
     assert all_diags[0].occupied_at.column == 37
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_double_move_from_local_chained_fails(
@@ -579,8 +579,8 @@ def test_double_move_from_local_chained_fails(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -607,7 +607,7 @@ def test_double_move_from_local_chained_fails(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
 
 
@@ -616,8 +616,8 @@ def test_move_from_local_chained_to_local(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -645,8 +645,8 @@ def test_move_from_local_to_local_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -674,9 +674,9 @@ def test_move_between_local_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"

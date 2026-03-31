@@ -54,7 +54,7 @@ class TestTriggerConditionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    it happens when {\n"
                     "        the position</other> has a dimension point.\n"
@@ -64,7 +64,7 @@ class TestTriggerConditionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
+                "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
             }
         )
         all_diags = result.program_result.all_diagnostics
@@ -108,7 +108,7 @@ class TestTriggerConditionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<my_pos> {\n"
                     "        it may only contain dimension points where {\n"
@@ -123,7 +123,7 @@ class TestTriggerConditionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "inner.def": "define the potential position<my.domain.com:my_lib:/inner>.\n",
+                "inner.dfn": "define the potential position<my.domain.com:my_lib:/inner>.\n",
             }
         )
         assert not result.program_result.has_errors()
@@ -170,7 +170,7 @@ class TestTriggerConditionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -185,14 +185,14 @@ class TestTriggerConditionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": (
+                "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
         assert not result.program_result.has_errors()
@@ -202,7 +202,7 @@ class TestTriggerConditionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -217,15 +217,15 @@ class TestTriggerConditionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": (
+                "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
         all_diags = result.program_result.all_diagnostics

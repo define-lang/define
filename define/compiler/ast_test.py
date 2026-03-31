@@ -102,16 +102,16 @@ class TestGlobalPathName:
 
     def test_file_path_default_root(self):
         path = ast.GlobalPathName(name="/foo", position=_POS)
-        assert path.file_path() == PurePosixPath("foo.def")
+        assert path.file_path() == PurePosixPath("foo.dfn")
 
     def test_file_path_multiple_segments(self):
         path = ast.GlobalPathName(name="/foo/bar/baz", position=_POS)
-        assert path.file_path() == PurePosixPath("foo/bar/baz.def")
+        assert path.file_path() == PurePosixPath("foo/bar/baz.dfn")
 
     def test_file_path_with_root(self):
         path = ast.GlobalPathName(name="/foo", position=_POS)
         assert path.file_path(PurePosixPath("lib/inner")) == PurePosixPath(
-            "lib/inner/foo.def"
+            "lib/inner/foo.dfn"
         )
 
 

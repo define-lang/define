@@ -86,21 +86,21 @@ def test_deferred_position_chain_error_format(
     )
     result = validate_project_with_reference_graph(
         {
-            "test.def": source,
-            "pos_b.def": (
+            "test.dfn": source,
+            "pos_b.dfn": (
                 "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</pos_c>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+            "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
         }
     )
     test_result = next(
         r
         for r in result.program_result.file_results
-        if r.file_path == PurePosixPath("test.def")
+        if r.file_path == PurePosixPath("test.dfn")
     )
     assert len(test_result.diagnostics) == 1
     assert isinstance(
@@ -118,7 +118,7 @@ def test_deferred_position_chain_error_format(
     )
     formatted = test_result.diagnostics[0].format(source.splitlines())
     assert formatted == (
-        'File "test.def", line 10, column 72\n'
+        'File "test.dfn", line 10, column 72\n'
         "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
         "                                                                       ^\n"
         "'position<my.domain.com:my_lib:/wrong>' is not declared as one of the"
@@ -146,8 +146,8 @@ def test_deferred_action_chain_error_format(
     )
     result = validate_project_with_reference_graph(
         {
-            "test.def": source,
-            "act_b.def": (
+            "test.dfn": source,
+            "act_b.dfn": (
                 "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                 "    define the position<pos_c>.\n"
                 "    it happens when {\n"
@@ -163,7 +163,7 @@ def test_deferred_action_chain_error_format(
     test_result = next(
         r
         for r in result.program_result.file_results
-        if r.file_path == PurePosixPath("test.def")
+        if r.file_path == PurePosixPath("test.dfn")
     )
     assert len(test_result.diagnostics) == 1
     assert isinstance(
@@ -177,7 +177,7 @@ def test_deferred_action_chain_error_format(
     )
     formatted = test_result.diagnostics[0].format(source.splitlines())
     assert formatted == (
-        'File "test.def", line 10, column 70\n'
+        'File "test.dfn", line 10, column 70\n'
         "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
         "                                                                     ^\n"
         "'position<no_such>' is not defined inside the definition of"
@@ -235,21 +235,21 @@ def test_move_into_defining_position_format(
     )
     result = validate_project_with_reference_graph(
         {
-            "test.def": source,
-            "mid_pos.def": (
+            "test.dfn": source,
+            "mid_pos.dfn": (
                 "define the potential position<my.domain.com:my_lib:/mid_pos> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</end_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "end_pos.def": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
+            "end_pos.dfn": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
         }
     )
     test_result = next(
         r
         for r in result.program_result.file_results
-        if r.file_path == PurePosixPath("test.def")
+        if r.file_path == PurePosixPath("test.dfn")
     )
     assert len(test_result.diagnostics) == 1
     assert isinstance(
@@ -264,7 +264,7 @@ def test_move_into_defining_position_format(
     )
     formatted = test_result.diagnostics[0].format(source.splitlines())
     assert formatted == (
-        'File "test.def", line 10, column 81\n'
+        'File "test.dfn", line 10, column 81\n'
         "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
         "                                                                                ^\n"
         "cannot move a dimension point\n"
@@ -297,7 +297,7 @@ def test_action_requires_empty_position_format(
     )
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -308,7 +308,7 @@ def test_action_requires_empty_position_format(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": test_source,
+            "test.dfn": test_source,
         }
     )
     all_diags = result.program_result.all_diagnostics
@@ -316,16 +316,16 @@ def test_action_requires_empty_position_format(
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     formatted = all_diags[0].format(test_source.splitlines())
     assert formatted == (
-        'File "test.def", line 13, column 37\n'
+        'File "test.dfn", line 13, column 37\n'
         "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
         "                                    ^\n"
         "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
         "However, 'position<box>::action</other>::position<item>'"
         " must be empty before that action runs, and it is not empty.\n"
         "It was filled at:\n"
-        'File "test.def", line 12, column 37\n\n'
+        'File "test.dfn", line 12, column 37\n\n'
         "This requirement happens because of this line of code inside of the action:\n"
-        'File "other.def", line 7, column 37'
+        'File "other.dfn", line 7, column 37'
     )
 
 
@@ -350,7 +350,7 @@ def test_action_requires_occupied_position_format(
     )
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -362,7 +362,7 @@ def test_action_requires_occupied_position_format(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": test_source,
+            "test.dfn": test_source,
         }
     )
     all_diags = result.program_result.all_diagnostics
@@ -372,14 +372,14 @@ def test_action_requires_occupied_position_format(
     )
     formatted = all_diags[0].format(test_source.splitlines())
     assert formatted == (
-        'File "test.def", line 12, column 37\n'
+        'File "test.dfn", line 12, column 37\n'
         "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
         "                                    ^\n"
         "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
         "However, 'position<box>::action</other>::position<item>'"
         " must be occupied before that action runs, and it not occupied.\n\n"
         "This requirement happens because of this line of code inside of the action:\n"
-        'File "other.def", line 8, column 37'
+        'File "other.dfn", line 8, column 37'
     )
 
 
@@ -406,9 +406,9 @@ def test_move_violates_constraints_error_message(
     )
     result = validate_project_with_reference_graph(
         {
-            "test.def": source,
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": (
+            "test.dfn": source,
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": (
                 "define the potential action<my.domain.com:my_lib:/y> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -434,7 +434,7 @@ def test_move_violates_constraints_error_message(
     ]
     formatted = all_diags[0].format(source.splitlines())
     assert formatted == (
-        'File "test.def", line 14, column 59\n'
+        'File "test.dfn", line 14, column 59\n'
         "        move the dimension point in position<from_pos> to position<to_pos>.\n"
         "                                                          ^\n"
         "cannot move a dimension point\n"

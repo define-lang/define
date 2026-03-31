@@ -13,7 +13,7 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -25,7 +25,7 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -51,12 +51,12 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 37
     assert all_diags[0].position_name == "position<src>"
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 54
     assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
@@ -70,7 +70,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -85,7 +85,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -107,7 +107,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
 
@@ -117,7 +117,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -132,7 +132,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -155,7 +155,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
 
@@ -165,7 +165,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -180,7 +180,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -204,7 +204,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
 
@@ -214,8 +214,8 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -233,7 +233,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -255,7 +255,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
 
@@ -265,8 +265,8 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -284,7 +284,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -307,7 +307,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
 
@@ -317,8 +317,8 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -336,7 +336,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -360,7 +360,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
 
@@ -370,7 +370,7 @@ def test_unknown_from_move_to_occupied_interface_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -384,7 +384,7 @@ def test_unknown_from_move_to_occupied_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -406,7 +406,7 @@ def test_unknown_from_move_to_occupied_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 56
 
@@ -416,8 +416,8 @@ def test_unknown_from_constraint_violation_on_interface_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "quality_a.def": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "other.def": (
+            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -434,7 +434,7 @@ def test_unknown_from_constraint_violation_on_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -456,7 +456,7 @@ def test_unknown_from_constraint_violation_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 64
 
@@ -466,7 +466,7 @@ def test_unknown_propagation_from_local_to_interface_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -481,7 +481,7 @@ def test_unknown_propagation_from_local_to_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -503,7 +503,7 @@ def test_unknown_propagation_from_local_to_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
 
@@ -513,7 +513,7 @@ def test_unknown_from_prefix_move_on_interface_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "inner.def": (
+            "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<tp>.\n"
                 "    it happens when {\n"
@@ -524,14 +524,14 @@ def test_unknown_from_prefix_move_on_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "mid.def": (
+            "mid.dfn": (
                 "define the potential position<my.domain.com:my_lib:/mid> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</inner>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "outer.def": (
+            "outer.dfn": (
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
@@ -547,7 +547,7 @@ def test_unknown_from_prefix_move_on_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -569,7 +569,7 @@ def test_unknown_from_prefix_move_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("outer.def")
+    assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 73
 
@@ -579,7 +579,7 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -590,7 +590,7 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -606,12 +606,12 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 6
     assert isinstance(all_diags[1], diagnostics.UnknownGlobalNameDiagnostic)
-    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].source_global_name == "action</other>"
     assert all_diags[1].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].location.line == 7
@@ -622,8 +622,8 @@ def test_post_trigger_unknown_guarantee_on_child_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -641,7 +641,7 @@ def test_post_trigger_unknown_guarantee_on_child_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -673,7 +673,7 @@ def test_post_trigger_unknown_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
 
@@ -690,8 +690,8 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -715,7 +715,7 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -745,6 +745,6 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("other.def")
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 37

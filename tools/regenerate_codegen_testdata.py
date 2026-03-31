@@ -16,14 +16,14 @@ TESTDATA_ROOT = REPO_ROOT / "define/compiler/codegen/testdata"
 
 def _regenerate_case(case_dir: Path) -> bool:
     """Regenerate expected output for a single test case. Returns True on success."""
-    if not (case_dir / "test.def").exists():
+    if not (case_dir / "test.dfn").exists():
         return True
 
     expected_dir = case_dir / "expected"
     if expected_dir.exists():
         shutil.rmtree(expected_dir)
     with contextlib.chdir(case_dir):
-        result = driver.Driver().compile_program(Path("test.def"), expected_dir)
+        result = driver.Driver().compile_program(Path("test.dfn"), expected_dir)
         if result.result.has_errors():
             print(f"  {case_dir.name}: FAILED")
             for exc in result.result.all_exceptions:
@@ -38,7 +38,7 @@ def _regenerate_case(case_dir: Path) -> bool:
 def main():
     """Regenerate all expected output files."""
     case_dirs = sorted(
-        d for d in TESTDATA_ROOT.iterdir() if d.is_dir() and (d / "test.def").exists()
+        d for d in TESTDATA_ROOT.iterdir() if d.is_dir() and (d / "test.dfn").exists()
     )
     print(f"Regenerating {len(case_dirs)} test cases...")
     success = True

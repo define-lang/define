@@ -21,7 +21,7 @@ def test_short_form_global_reference(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -31,7 +31,7 @@ def test_short_form_global_reference(
                 "    }\n"
                 "}\n"
             ),
-            "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
+            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
         }
     )
     all_diags = result.program_result.all_diagnostics
@@ -244,8 +244,8 @@ def test_create_in_local_chained_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -271,8 +271,8 @@ def test_create_twice_in_local_chained_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -296,11 +296,11 @@ def test_create_twice_in_local_chained_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
     assert all_diags[0].created_at.line == 12
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_create_in_chained_position_in_position_init(
@@ -308,8 +308,8 @@ def test_create_in_chained_position_in_position_init(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
@@ -330,8 +330,8 @@ def test_create_twice_in_chained_position_in_position_init(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
@@ -350,8 +350,8 @@ def test_create_twice_in_chained_position_in_position_init(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</test>::position</x>"
     assert all_diags[0].created_at.line == 7
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")

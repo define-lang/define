@@ -11,8 +11,8 @@ def test_cross_fqun_local_to_local_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/x.def": f"define the potential position<{_CHILD}:/x>.\n",
-            "test.def": (
+            "lib/x.dfn": f"define the potential position<{_CHILD}:/x>.\n",
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -46,9 +46,9 @@ def test_cross_fqun_local_to_local_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/x.def": f"define the potential position<{_CHILD}:/x>.\n",
-            "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.def": (
+            "lib/x.dfn": f"define the potential position<{_CHILD}:/x>.\n",
+            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -87,15 +87,15 @@ def test_cross_fqun_local_to_chained_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/x.def": (
+            "lib/x.dfn": (
                 f"define the potential position<{_CHILD}:/x> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position</y>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.def": (
+            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -130,15 +130,15 @@ def test_cross_fqun_local_to_chained_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/x.def": (
+            "lib/x.dfn": (
                 f"define the potential position<{_CHILD}:/x> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position</y>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.def": (
+            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -173,15 +173,15 @@ def test_cross_fqun_chained_to_local_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/x.def": (
+            "lib/x.dfn": (
                 f"define the potential position<{_CHILD}:/x> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position</y>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.def": (
+            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -216,9 +216,9 @@ def test_cross_fqun_chained_to_local_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/x.def": f"define the potential position<{_CHILD}:/x>.\n",
-            "lib/y.def": f"define the potential position<{_CHILD}:/y>.\n",
-            "test.def": (
+            "lib/x.dfn": f"define the potential position<{_CHILD}:/x>.\n",
+            "lib/y.dfn": f"define the potential position<{_CHILD}:/y>.\n",
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -258,8 +258,8 @@ def test_cross_fqun_move_to_chained_action_local_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
-            "lib/act.def": (
+            "lib/quality.dfn": f"define the potential position<{_CHILD}:/quality>.\n",
+            "lib/act.dfn": (
                 f"define the potential action<{_CHILD}:/act> {{\n"
                 f"    define the position<trigger>.\n"
                 f"    define the position<local_dest> {{\n"
@@ -274,7 +274,7 @@ def test_cross_fqun_move_to_chained_action_local_satisfies(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -309,8 +309,8 @@ def test_cross_fqun_move_to_chained_action_local_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
-            "lib/act.def": (
+            "lib/quality.dfn": f"define the potential position<{_CHILD}:/quality>.\n",
+            "lib/act.dfn": (
                 f"define the potential action<{_CHILD}:/act> {{\n"
                 f"    define the position<trigger>.\n"
                 f"    define the position<local_dest> {{\n"
@@ -325,7 +325,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -360,8 +360,8 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "lib/quality.def": f"define the potential position<{_CHILD}:/quality>.\n",
-            "lib/act.def": (
+            "lib/quality.dfn": f"define the potential position<{_CHILD}:/quality>.\n",
+            "lib/act.dfn": (
                 f"define the potential action<{_CHILD}:/act> {{\n"
                 f"    define the position<trigger>.\n"
                 f"    define the position<inner>.\n"
@@ -372,7 +372,7 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 f"define the potential action<{_PARENT}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    define the position<src> {{\n"

@@ -2,7 +2,7 @@
 """Integration tests for code generation.
 
 Each subdirectory under testdata/ is a valid Define project containing a
-test.def entry point and an expected/ directory with the expected generated
+test.dfn entry point and an expected/ directory with the expected generated
 output files. Simply adding a new directory to testdata/ will cause a new
 test to be generated here.
 """
@@ -71,7 +71,7 @@ def test_generates_expected_output(
 
     monkeypatch.chdir(test_case_dir)
     output_dir = Path(tempfile.mkdtemp())
-    result = driver.Driver().compile_program(Path("test.def"), output_dir)
+    result = driver.Driver().compile_program(Path("test.dfn"), output_dir)
 
     assert not result.result.has_errors()
     _assert_dirs_equal(expected_dir, output_dir)

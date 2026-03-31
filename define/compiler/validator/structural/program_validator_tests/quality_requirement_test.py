@@ -11,7 +11,7 @@ def test_non_self_ref_global_in_action_body(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -21,7 +21,7 @@ def test_non_self_ref_global_in_action_body(
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<x>.\n"
                 "    it happens when {\n"
@@ -48,14 +48,14 @@ def test_non_self_ref_global_in_position_init(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        create a dimension point in action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
@@ -82,7 +82,7 @@ def test_constraint_does_not_make_global_available_as_chain_start(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -92,7 +92,7 @@ def test_constraint_does_not_make_global_available_as_chain_start(
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
@@ -119,7 +119,7 @@ def test_self_reference_in_position_init_is_valid(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -130,7 +130,7 @@ def test_self_reference_in_position_init_is_valid(
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"

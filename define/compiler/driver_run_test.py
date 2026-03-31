@@ -27,7 +27,7 @@ class TestRun:
     ) -> None:
         project_root = tmp_path / "project"
         project_root.mkdir()
-        outside_path = tmp_path / "outside.def"
+        outside_path = tmp_path / "outside.dfn"
         monkeypatch.chdir(project_root)
 
         error_stream = io.StringIO()
@@ -47,13 +47,13 @@ class TestRun:
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
         _ = (config_dir / "config.defcl").write_text("project: {}\n")
-        _ = (tmp_path / "test.def").write_text(
+        _ = (tmp_path / "test.dfn").write_text(
             "define the potential position<x.com:lib:/test>.\n"
         )
         monkeypatch.chdir(tmp_path)
 
         error_stream = io.StringIO()
-        result = driver.Driver(_PARSER).run(Path("test.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
             'File ".define/project/config.defcl"\n'
@@ -70,12 +70,12 @@ class TestRun:
         config_dir = tmp_path / ".define" / "project"
         config_dir.mkdir(parents=True)
         _ = (config_dir / "config.defcl").write_text("project: {}\n")
-        _ = (tmp_path / "test.def").write_text(
+        _ = (tmp_path / "test.dfn").write_text(
             "define the potential position<x.com:lib:/test>.\n"
         )
         monkeypatch.chdir(tmp_path)
 
-        result = driver.Driver(_PARSER).run(Path("test.def"))
+        result = driver.Driver(_PARSER).run(Path("test.dfn"))
 
         captured = capsys.readouterr()
         assert result == driver.ExitCode.ERROR
@@ -89,7 +89,7 @@ class TestRun:
     def test_valid_file_returns_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         error_stream = io.StringIO()
-        result = driver.Driver(_PARSER).run(Path("test.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
         assert result == driver.ExitCode.SUCCESS
         assert error_stream.getvalue() == ""
 
@@ -98,17 +98,17 @@ class TestRun:
     ) -> None:
         project_root = tmp_path / "project"
         project_root.mkdir()
-        outside_path = tmp_path / "outside.def"
+        outside_path = tmp_path / "outside.dfn"
         monkeypatch.chdir(project_root)
 
         error_stream = io.StringIO()
         result = driver.Driver(_PARSER).run(
-            Path("../outside.def"), error_stream=error_stream
+            Path("../outside.dfn"), error_stream=error_stream
         )
 
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
-            "Relative path resolves to outside the project root: ../outside.def\n"
+            "Relative path resolves to outside the project root: ../outside.dfn\n"
             f"  Resolved to: {outside_path}\n"
             f"  Project root: {project_root}\n"
             f"For more information, see {constants.DOCS_ROOT}/project-root.md\n"
@@ -120,12 +120,12 @@ class TestRun:
         monkeypatch.chdir(FILES_ROOT)
         error_stream = io.StringIO()
         result = driver.Driver(_PARSER).run(
-            Path("invalid/syntax/keywords/misspelled_define.def"),
+            Path("invalid/syntax/keywords/misspelled_define.dfn"),
             error_stream=error_stream,
         )
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
-            'File "invalid/syntax/keywords/misspelled_define.def", line 1, column 1\n'
+            'File "invalid/syntax/keywords/misspelled_define.dfn", line 1, column 1\n'
             "defin the potential position<mv:define-l\n"
             "^\n"
             "Expected a global definition like 'define the potential ...'\n"
@@ -137,12 +137,12 @@ class TestRun:
         monkeypatch.chdir(PROJECTS_ROOT / "invalid" / "syntax" / "path_mismatch")
         error_stream = io.StringIO()
         result = driver.Driver(_PARSER).run(
-            Path("wrong_file.def"),
+            Path("wrong_file.dfn"),
             error_stream=error_stream,
         )
         assert result == driver.ExitCode.ERROR
         assert error_stream.getvalue() == (
-            'File "wrong_file.def", line 1, column 60\n'
+            'File "wrong_file.dfn", line 1, column 60\n'
             "define the potential position<mv:define-lang.org:test_path:/different>.\n"
             "                                                           ^\n"
             "definition path '/different' does not match file path '/wrong_file'\n"
@@ -154,7 +154,7 @@ class TestRun:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         stats_stream = io.StringIO()
         result = driver.Driver(_PARSER).run(
-            Path("test.def"),
+            Path("test.dfn"),
             stats_stream=stats_stream,
             stats_mode=overall_stats.StatsMode.OVERALL,
         )
@@ -169,7 +169,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         error_stream = io.StringIO()
-        result = driver.Driver(_PARSER).run(Path("test.def"), error_stream=error_stream)
+        result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
         assert result == driver.ExitCode.SUCCESS
         assert "Compilation Stats" not in error_stream.getvalue()
 
@@ -178,7 +178,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(PROJECTS_ROOT / "valid" / "position_definition")
         result = driver.Driver(_PARSER).run(
-            Path("test.def"),
+            Path("test.dfn"),
             mode=driver.DriverMode.COMPILE,
             output_dir=tmp_path,
         )
@@ -189,7 +189,7 @@ class TestRun:
     ) -> None:
         monkeypatch.chdir(FILES_ROOT)
         result = driver.Driver(_PARSER).run(
-            Path("invalid/syntax/keywords/misspelled_define.def"),
+            Path("invalid/syntax/keywords/misspelled_define.dfn"),
             mode=driver.DriverMode.COMPILE,
             error_stream=io.StringIO(),
             output_dir=tmp_path,

@@ -26,14 +26,14 @@ def test_error_message_without_path(p: parser.Parser) -> None:
 def test_error_message_with_path(p: parser.Parser) -> None:
     result = p.parse(
         "\ufeffdefine the potential position<standard:/path>.\n",
-        file_path=pathlib.PurePosixPath("test.def"),
+        file_path=pathlib.PurePosixPath("test.dfn"),
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.ByteOrderMarkError)
     assert result.exception.line == 1
     assert result.exception.column == 1
     assert str(result.exception) == (
-        'File "test.def", line 1, column 1\n'
+        'File "test.dfn", line 1, column 1\n'
         "\\ufeffdefine the potential position<standard:\n"
         "^\n"
         "UTF-8 Byte Order Marks (\\ufeff) are not allowed in Define source code files."
@@ -57,14 +57,14 @@ def test_char_error_message(p: parser.Parser) -> None:
 def test_char_error_message_with_path(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<standard:/path>.\r\n",
-        file_path=pathlib.PurePosixPath("test.def"),
+        file_path=pathlib.PurePosixPath("test.dfn"),
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.CarriageReturnError)
     assert result.exception.line == 1
     assert result.exception.column == 47
     assert str(result.exception) == (
-        'File "test.def", line 1, column 47\n'
+        'File "test.dfn", line 1, column 47\n'
         " the potential position<standard:/path>.\\r\n"
         "                                        ^\n"
         "Carriage return character (\\r) is not allowed."

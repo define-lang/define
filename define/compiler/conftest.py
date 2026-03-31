@@ -28,7 +28,7 @@ class FullValidationResult:
 type ParseAndValidateFile = Callable[
     [str | bytes], validation_result.FileValidationResult
 ]
-_DEFAULT_RELATIVE_PATH = PurePosixPath("path.def")
+_DEFAULT_RELATIVE_PATH = PurePosixPath("path.dfn")
 
 
 class ValidateProject(Protocol):
@@ -88,7 +88,7 @@ def _run_validation(
     max_workers: int | None = None,
     local_deps: dict[str, str] | None = None,
     sub_roots: dict[str, str] | None = None,
-    entry_file: str = "test.def",
+    entry_file: str = "test.dfn",
 ) -> validation_result.ProgramValidationResult:
     test_helpers.write_project_config(tmp_path, universe_name)
     if local_deps is not None:
@@ -120,7 +120,7 @@ def validate_project(
         max_workers: int | None = None,
         local_deps: dict[str, str] | None = None,
         sub_roots: dict[str, str] | None = None,
-        entry_file: str = "test.def",
+        entry_file: str = "test.dfn",
     ) -> validation_result.ProgramValidationResult:
         return _run_validation(
             tmp_path,
@@ -159,7 +159,7 @@ def parse_and_validate_file(
     """Parse and validate a single source string as a file in a temp project."""
 
     def _run(source: str | bytes) -> validation_result.FileValidationResult:
-        relative_path = PurePosixPath("test.def")
+        relative_path = PurePosixPath("test.dfn")
         source_path = tmp_path / relative_path
         test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
         if isinstance(source, str):
@@ -272,7 +272,7 @@ def validate_project_with_reference_graph(
         max_workers: int | None = None,
         local_deps: dict[str, str] | None = None,
         sub_roots: dict[str, str] | None = None,
-        entry_file: str = "test.def",
+        entry_file: str = "test.dfn",
     ) -> FullValidationResult:
         structural_result = _run_validation(
             tmp_path,

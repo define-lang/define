@@ -20,41 +20,41 @@ from define.compiler.validator.structural import program_validator
 def test_nested_file_path(validate_project: ValidateProject):
     result = validate_project(
         {
-            "sub/dir/leaf.def": "define the potential position<test.example.com:my_lib:/sub/dir/leaf>.\n",
+            "sub/dir/leaf.dfn": "define the potential position<test.example.com:my_lib:/sub/dir/leaf>.\n",
         },
         universe_name="test.example.com:my_lib",
-        entry_file="sub/dir/leaf.def",
+        entry_file="sub/dir/leaf.dfn",
     )
     assert len(result.file_results) == 1
     assert not result.has_errors()
-    assert result.file_results[0].file_path == PurePosixPath("sub/dir/leaf.def")
+    assert result.file_results[0].file_path == PurePosixPath("sub/dir/leaf.dfn")
 
 
 def test_walk_returns_results_in_encounter_order(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</middle>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "middle.def": (
+            "middle.dfn": (
                 "define the potential position<mv:define-lang.org:walk_order:/middle> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</leaf>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "leaf.def": "define the potential position<mv:define-lang.org:walk_order:/leaf>.\n",
+            "leaf.dfn": "define the potential position<mv:define-lang.org:walk_order:/leaf>.\n",
         },
         universe_name="mv:define-lang.org:walk_order",
     )
     assert [r.file_path for r in result.file_results] == [
-        PurePosixPath("test.def"),
-        PurePosixPath("middle.def"),
-        PurePosixPath("leaf.def"),
+        PurePosixPath("test.dfn"),
+        PurePosixPath("middle.dfn"),
+        PurePosixPath("leaf.dfn"),
     ]
 
 
@@ -63,7 +63,7 @@ def test_duplicate_does_not_corrupt_reference_resolution(
 ):
     result = validate_project(
         {
-            "root.def": (
+            "root.dfn": (
                 "define the potential position<my.domain.com:my_lib:/root> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</target>.\n"
@@ -71,21 +71,21 @@ def test_duplicate_does_not_corrupt_reference_resolution(
                 "    }\n"
                 "}\n"
             ),
-            "target.def": "define the potential position<my.domain.com:my_lib:/target>.\n",
-            "dup.def": (
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target>.\n",
+            "dup.dfn": (
                 "define the potential position<my.domain.com:my_lib:/target>.\n"
                 "define the potential position<my.domain.com:my_lib:/dup>.\n"
             ),
         },
-        entry_file="root.def",
+        entry_file="root.dfn",
         max_workers=1,
     )
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == PurePosixPath("root.def")
+    assert result.file_results[0].file_path == PurePosixPath("root.dfn")
     assert result.file_results[0].diagnostics == []
-    assert result.file_results[1].file_path == PurePosixPath("target.def")
+    assert result.file_results[1].file_path == PurePosixPath("target.dfn")
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("dup.def")
+    assert result.file_results[2].file_path == PurePosixPath("dup.dfn")
     assert len(result.file_results[2].diagnostics) == 1
     assert isinstance(
         result.file_results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic
@@ -101,7 +101,7 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test>.\n"
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
@@ -109,7 +109,7 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential position<my.domain.com:my_lib:/other> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</test>.\n"
@@ -160,14 +160,14 @@ def test_self_cycle_emits_diagnostic(
 def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</loop>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "loop.def": (
+            "loop.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/loop> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</test>.\n"
@@ -178,10 +178,10 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
         universe_name="mv:define-lang.org:test_walk_cycle",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert result.file_results[0].diagnostics == []
-    assert result.file_results[1].file_path == PurePosixPath("loop.def")
+    assert result.file_results[1].file_path == PurePosixPath("loop.dfn")
     assert result.file_results[1].exception is None
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
@@ -410,7 +410,7 @@ def test_unknown_universe_across_files_reported_per_file(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position<other.example.com:other_universe:/target>.\n"
@@ -418,7 +418,7 @@ def test_unknown_universe_across_files_reported_per_file(
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential position<my.domain.com:my_lib:/other> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position<other.example.com:other_universe:/another>.\n"
@@ -442,7 +442,7 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</middle>.\n"
@@ -450,7 +450,7 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
                 "    }\n"
                 "}\n"
             ),
-            "middle.def": (
+            "middle.dfn": (
                 "define the potential position<my.domain.com:my_lib:/middle> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</shared>.\n"
@@ -458,17 +458,17 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
                 "    }\n"
                 "}\n"
             ),
-            "shared.def": "define the potential position<my.domain.com:my_lib:/shared>.\n",
-            "leaf.def": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
+            "shared.dfn": "define the potential position<my.domain.com:my_lib:/shared>.\n",
+            "leaf.dfn": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
         },
         max_workers=1,
     )
     assert len(result.file_results) == 4
     assert [r.file_path for r in result.file_results] == [
-        PurePosixPath("test.def"),
-        PurePosixPath("middle.def"),
-        PurePosixPath("shared.def"),
-        PurePosixPath("leaf.def"),
+        PurePosixPath("test.dfn"),
+        PurePosixPath("middle.dfn"),
+        PurePosixPath("shared.dfn"),
+        PurePosixPath("leaf.dfn"),
     ]
     assert not result.has_errors()
 
@@ -478,7 +478,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</test>.\n"
@@ -486,11 +486,11 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
                 "    }\n"
                 "}\n"
             ),
-            "wrong_type.def": "define the potential action<my.domain.com:my_lib:/wrong_type>.\n",
+            "wrong_type.dfn": "define the potential action<my.domain.com:my_lib:/wrong_type>.\n",
         },
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -505,7 +505,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[1].expected_type == "position"
     assert diags[1].location.line == 4
     assert diags[1].location.column == 29
-    assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
+    assert result.file_results[1].file_path == PurePosixPath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -517,7 +517,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     test_helpers.write_local_deps_config(tmp_path, {child_a: "lib_a"})
     test_helpers.write_sub_root(tmp_path, "lib_a", child_a)
-    (tmp_path / "lib_a/target_a.def").write_text(
+    (tmp_path / "lib_a/target_a.dfn").write_text(
         f"define the potential position<{child_a}:/target_a>.\n",
         encoding="utf-8",
     )
@@ -544,7 +544,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     assert diags[0].location.column == 29
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
-    assert result.file_results[1].file_path.name == "target_a.def"
+    assert result.file_results[1].file_path.name == "target_a.dfn"
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 

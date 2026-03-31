@@ -70,7 +70,7 @@ parsing, and AST transformation.
 
 Here is an example of a multi-file program.
 
-`my_project/foo.def`:
+`my_project/foo.dfn`:
 
 ```
 define the quality<example.com:my_project:/foo> {
@@ -82,7 +82,7 @@ define the quality<example.com:my_project:/foo> {
 }
 ```
 
-`my_project/baz.def`:
+`my_project/baz.dfn`:
 
 ```
 define the quality<example.com:my_project:/baz> {
@@ -90,7 +90,7 @@ define the quality<example.com:my_project:/baz> {
 }
 ```
 
-In this example, when compiling `foo.def`, `baz.def` is loaded when encountering
+In this example, when compiling `foo.dfn`, `baz.dfn` is loaded when encountering
 the line `it has the quality<example.com:my_project:/baz>`.
 
 ## Why This is the Right Solution

@@ -65,7 +65,7 @@ names. If a reference to a name outside of the current file would cause a
 circular dependency, the compiler must throw an error. So this code is
 forbidden:
 
-`my_project/foo.def`:
+`my_project/foo.dfn`:
 
 ```
 define the quality<example.com:example:/foo> {
@@ -77,7 +77,7 @@ define the quality<example.com:example:/foo> {
 }
 ```
 
-`my_project/bar.def`:
+`my_project/bar.dfn`:
 
 ```
 define the quality<example.com:example:/bar> {
@@ -89,7 +89,7 @@ define the quality<example.com:example:/bar> {
 }
 ```
 
-`my_project/baz.def`:
+`my_project/baz.dfn`:
 
 ```
 define the quality<example.com:example:/baz> {
@@ -106,7 +106,7 @@ This creates the cycle `foo -> bar -> baz -> foo`, which would be forbidden.
 ### Within a File
 
 Within a file, the compiler requires that global names be defined before they
-are referenced. If the file `foo.def` contains
+are referenced. If the file `foo.dfn` contains
 `potential_form<example.com:example:/foo>` and
 `quality<example.com:example:/foo>`, then they may not circularly reference each
 other. If the `quality` wants to reference the `potential_form`, the

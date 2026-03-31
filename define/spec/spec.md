@@ -624,7 +624,7 @@ Define loads source code files only when it must resolve a global name.
 
 In a filesystem context, the path component of a global name must map directly
 to a path on the disk, relative to the project root. However, the source code
-file name ends in `.def` (which the global name does not contain).
+file name ends in `.dfn` (which the global name does not contain).
 
 ### Names Must Match Paths
 

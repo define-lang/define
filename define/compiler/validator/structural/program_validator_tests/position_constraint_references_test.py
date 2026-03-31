@@ -88,7 +88,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</Bad>.\n"
@@ -96,11 +96,11 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
                 "    }\n"
                 "}\n"
             ),
-            "valid.def": "define the potential position<my.domain.com:my_lib:/valid>.\n",
+            "valid.dfn": "define the potential position<my.domain.com:my_lib:/valid>.\n",
         }
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -108,7 +108,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
     assert diags[0].char == "B"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 30
-    assert result.file_results[1].file_path == PurePosixPath("valid.def")
+    assert result.file_results[1].file_path == PurePosixPath("valid.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -117,8 +117,8 @@ def test_referenced_global_name_wrong_type_position(
 ):
     result = validate_project(
         {
-            "target.def": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
-            "test.def": (
+            "target.dfn": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</target>.\n"
@@ -129,7 +129,7 @@ def test_referenced_global_name_wrong_type_position(
         universe_name="mv:define-lang.org:test_walk_wrong_type",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
@@ -144,8 +144,8 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
 ):
     result = validate_project(
         {
-            "target.def": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
-            "test.def": (
+            "target.dfn": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</target>.\n"
@@ -169,7 +169,7 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
         universe_name="mv:define-lang.org:test_walk_wrong_type",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)

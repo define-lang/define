@@ -57,7 +57,7 @@ class TestCalculateOverallStats:
     def test_single_file(self):
         results = [
             _make_result(
-                "test.def",
+                "test.dfn",
                 file_loading=100,
                 parse=200,
                 transform=300,
@@ -82,8 +82,8 @@ class TestCalculateOverallStats:
 
     def test_multiple_files(self):
         results = [
-            _make_result("a.def", parse=100, queue_wait=10),
-            _make_result("b.def", parse=200, queue_wait=30),
+            _make_result("a.dfn", parse=100, queue_wait=10),
+            _make_result("b.dfn", parse=200, queue_wait=30),
         ]
         overall = overall_stats.calculate_overall_stats(
             results, config_loading_time_ns=0
@@ -95,9 +95,9 @@ class TestCalculateOverallStats:
 
     def test_avg_queue_wait_truncates(self):
         results = [
-            _make_result("a.def", queue_wait=10),
-            _make_result("b.def", queue_wait=20),
-            _make_result("c.def", queue_wait=20),
+            _make_result("a.dfn", queue_wait=10),
+            _make_result("b.dfn", queue_wait=20),
+            _make_result("c.dfn", queue_wait=20),
         ]
         overall = overall_stats.calculate_overall_stats(
             results, config_loading_time_ns=0
@@ -124,7 +124,7 @@ def _format(
 
 class TestFormatStatsOverall:
     def test_contains_sections(self):
-        results = [_make_result("test.def", parse=5_000_000, transform=3_000_000)]
+        results = [_make_result("test.dfn", parse=5_000_000, transform=3_000_000)]
         output = _format(results, 1_000_000, overall_stats.StatsMode.OVERALL)
         assert "--- Compilation Stats ---" in output
         assert "-- Overall --" in output
@@ -132,12 +132,12 @@ class TestFormatStatsOverall:
         assert "-- Per File" not in output
 
     def test_shows_file_count(self):
-        results = [_make_result("a.def"), _make_result("b.def")]
+        results = [_make_result("a.dfn"), _make_result("b.dfn")]
         output = _format(results, 0, overall_stats.StatsMode.OVERALL)
         assert "Files compiled:  2" in output
 
     def test_overall_section_includes_config_loading(self):
-        results = [_make_result("test.def", parse=1_000_000)]
+        results = [_make_result("test.dfn", parse=1_000_000)]
         output = _format(results, 2_000_000, overall_stats.StatsMode.OVERALL)
         overall_section = output[
             output.index("-- Overall --") : output.index("-- Breakdown --")
@@ -145,7 +145,7 @@ class TestFormatStatsOverall:
         assert "Config loading:  2.00 ms" in overall_section
 
     def test_shows_breakdown_labels(self):
-        results = [_make_result("test.def", parse=1_000_000)]
+        results = [_make_result("test.dfn", parse=1_000_000)]
         output = _format(results, 0, overall_stats.StatsMode.OVERALL)
         breakdown_section = output[output.index("-- Breakdown --") :]
         assert "Config loading:" not in breakdown_section
@@ -158,7 +158,7 @@ class TestFormatStatsOverall:
     def test_formats_overall_output_exactly(self):
         results = [
             _make_result(
-                "test.def",
+                "test.dfn",
                 file_loading=2_000_000,
                 parse=5_000_000,
                 transform=3_000_000,
@@ -189,23 +189,23 @@ class TestFormatStatsOverall:
 
 class TestFormatStatsPerFile:
     def test_includes_per_file_section(self):
-        results = [_make_result("test.def", parse=5_000_000)]
+        results = [_make_result("test.dfn", parse=5_000_000)]
         output = _format(results, 0, overall_stats.StatsMode.PER_FILE)
         assert "-- Per File (slowest first) --" in output
-        assert "test.def" in output
+        assert "test.dfn" in output
 
     def test_sorted_slowest_first(self):
         results = [
-            _make_result("fast.def", parse=1_000_000),
-            _make_result("slow.def", parse=10_000_000),
+            _make_result("fast.dfn", parse=1_000_000),
+            _make_result("slow.dfn", parse=10_000_000),
         ]
         output = _format(results, 0, overall_stats.StatsMode.PER_FILE)
-        slow_pos = output.index("slow.def")
-        fast_pos = output.index("fast.def")
+        slow_pos = output.index("slow.dfn")
+        fast_pos = output.index("fast.dfn")
         assert slow_pos < fast_pos
 
     def test_per_file_includes_all_phase_labels(self):
-        results = [_make_result("test.def", parse=1_000_000)]
+        results = [_make_result("test.dfn", parse=1_000_000)]
         output = _format(results, 0, overall_stats.StatsMode.PER_FILE)
         per_file_section = output[output.index("-- Per File") :]
         assert "File loading:" in per_file_section
@@ -219,7 +219,7 @@ class TestFormatStatsPerFile:
     def test_formats_per_file_output_exactly(self):
         results = [
             _make_result(
-                "fast.def",
+                "fast.dfn",
                 file_loading=1_000_000,
                 parse=2_000_000,
                 transform=500_000,
@@ -228,7 +228,7 @@ class TestFormatStatsPerFile:
                 queue_wait=125_000,
             ),
             _make_result(
-                "slow.def",
+                "slow.dfn",
                 file_loading=4_000_000,
                 parse=8_000_000,
                 transform=2_000_000,
@@ -256,7 +256,7 @@ class TestFormatStatsPerFile:
             "Global validation:  1.25 ms\n"
             "\n"
             "-- Per File (slowest first) --\n"
-            "  slow.def\n"
+            "  slow.dfn\n"
             "      Overall compile:  18.00 ms\n"
             "         File loading:  4.00 ms\n"
             "                Parse:  8.00 ms\n"
@@ -264,7 +264,7 @@ class TestFormatStatsPerFile:
             "      File validation:  3.00 ms\n"
             "    Global validation:  1.00 ms\n"
             "           Queue wait:  0.75 ms\n"
-            "  fast.def\n"
+            "  fast.dfn\n"
             "      Overall compile:  4.25 ms\n"
             "         File loading:  1.00 ms\n"
             "                Parse:  2.00 ms\n"

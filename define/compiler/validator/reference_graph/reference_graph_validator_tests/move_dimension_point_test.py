@@ -30,7 +30,7 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -54,14 +54,14 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
                 "    }\n"
                 "}\n"
             ),
-            "dest.def": (
+            "dest.dfn": (
                 "define the potential position<my.domain.com:my_lib:/dest> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</required>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "required.def": (
+            "required.dfn": (
                 "define the potential action<my.domain.com:my_lib:/required>.\n"
             ),
         }
@@ -154,10 +154,10 @@ def test_same_fqun_must_use_short_form_in_from(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential position<my.domain.com:my_lib:/other>.\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<to_pos>.\n"
@@ -192,10 +192,10 @@ def test_same_fqun_must_use_short_form_in_to(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential position<my.domain.com:my_lib:/other>.\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<from_pos>.\n"
@@ -229,7 +229,7 @@ def test_valid_global_to_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<local_pos>.\n"
                 "    it happens when {\n"
@@ -239,7 +239,7 @@ def test_valid_global_to_position(
                 "    }\n"
                 "}\n"
             ),
-            "global_pos.def": "define the potential position<my.domain.com:my_lib:/global_pos>.\n",
+            "global_pos.dfn": "define the potential position<my.domain.com:my_lib:/global_pos>.\n",
         }
     )
     all_diags = result.program_result.all_diagnostics
@@ -280,8 +280,8 @@ def test_move_from_a_chained_position_to_itself(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -342,7 +342,7 @@ def test_move_to_chained_prefix_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<local_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -356,7 +356,7 @@ def test_move_to_chained_prefix_position(
                 "    }\n"
                 "}\n"
             ),
-            "target_pos.def": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
+            "target_pos.dfn": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
         }
     )
     all_diags = result.program_result.all_diagnostics
@@ -373,7 +373,7 @@ def test_move_to_chained_prefix_marks_unknown(
 ):
     result = validate_project_with_reference_graph(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<local_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -388,7 +388,7 @@ def test_move_to_chained_prefix_marks_unknown(
                 "    }\n"
                 "}\n"
             ),
-            "target_pos.def": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
+            "target_pos.dfn": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
         }
     )
     all_diags = result.program_result.all_diagnostics

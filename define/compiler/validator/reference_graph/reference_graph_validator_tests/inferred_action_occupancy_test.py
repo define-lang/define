@@ -88,8 +88,8 @@ def test_move_from_interface_chained_to_local(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -114,8 +114,8 @@ def test_move_from_local_to_interface_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -141,9 +141,9 @@ def test_move_between_interface_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<src_iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -173,8 +173,8 @@ def test_move_to_occupied_interface_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -198,12 +198,12 @@ def test_move_to_occupied_interface_chained(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 54
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<iface>::position</x>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 12
     assert all_diags[0].occupied_at.column == 37
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_create_in_interface_chained(
@@ -211,8 +211,8 @@ def test_create_in_interface_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -236,8 +236,8 @@ def test_create_twice_in_interface_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -259,11 +259,11 @@ def test_create_twice_in_interface_chained(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<iface>::position</x>"
     assert all_diags[0].created_at.line == 10
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_move_then_create_in_interface_chained(
@@ -271,8 +271,8 @@ def test_move_then_create_in_interface_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
@@ -298,8 +298,8 @@ def test_move_from_trigger_chained_to_local(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -324,8 +324,8 @@ def test_create_in_trigger_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -349,8 +349,8 @@ def test_create_twice_in_trigger_chained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -372,11 +372,11 @@ def test_create_twice_in_trigger_chained(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
     assert all_diags[0].created_at.line == 10
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_move_from_trigger_chained_then_create(
@@ -384,8 +384,8 @@ def test_move_from_trigger_chained_then_create(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"

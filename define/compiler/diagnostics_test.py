@@ -44,14 +44,14 @@ def test_move_to_occupied_message_with_position():
             column=37,
             end_line=9,
             end_column=37,
-            file_path=PurePosixPath("test.def"),
+            file_path=PurePosixPath("test.dfn"),
         ),
     )
 
     assert diagnostic.message == (
         "cannot move a dimension point to 'position<target>'"
         " because it already contains one; it was put there at:\n"
-        'File "test.def", line 9, column 37'
+        'File "test.dfn", line 9, column 37'
     )
 
 
@@ -79,7 +79,7 @@ def test_move_from_empty_interface_position_with_inferred_at():
             column=37,
             end_line=7,
             end_column=37,
-            file_path=PurePosixPath("other.def"),
+            file_path=PurePosixPath("other.dfn"),
         ),
     )
 
@@ -87,5 +87,5 @@ def test_move_from_empty_interface_position_with_inferred_at():
         "cannot move a dimension point from"
         " 'position<box>::action</other>::position<trigger_pos>'"
         " because it does not contain one; it was emptied at:\n"
-        'File "other.def", line 7, column 37'
+        'File "other.dfn", line 7, column 37'
     )

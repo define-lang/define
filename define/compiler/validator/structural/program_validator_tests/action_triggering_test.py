@@ -9,7 +9,7 @@ class TestActionTriggering:
     ):
         result = validate_project(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<my_pos>.\n"
                     "    it happens when {\n"

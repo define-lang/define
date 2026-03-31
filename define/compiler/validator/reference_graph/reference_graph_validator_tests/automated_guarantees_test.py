@@ -11,7 +11,7 @@ def test_create_in_interface_position_starts_empty(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -23,7 +23,7 @@ def test_create_in_interface_position_starts_empty(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -49,7 +49,7 @@ def test_create_twice_in_interface_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -61,7 +61,7 @@ def test_create_twice_in_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -85,11 +85,11 @@ def test_create_twice_in_interface_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].created_at.line == 12
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_untouched_interface_position_preserved_after_trigger(
@@ -97,7 +97,7 @@ def test_untouched_interface_position_preserved_after_trigger(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -109,7 +109,7 @@ def test_untouched_interface_position_preserved_after_trigger(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -134,11 +134,11 @@ def test_untouched_interface_position_preserved_after_trigger(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].created_at.line == 12
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_move_from_guarantee_emptied_interface_position(
@@ -146,7 +146,7 @@ def test_move_from_guarantee_emptied_interface_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<dest>.\n"
@@ -157,7 +157,7 @@ def test_move_from_guarantee_emptied_interface_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -184,7 +184,7 @@ def test_move_from_guarantee_emptied_interface_position(
     )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
@@ -192,7 +192,7 @@ def test_move_from_guarantee_emptied_interface_position(
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_post_trigger_guaranteed_empty_position_allows_create(
@@ -200,7 +200,7 @@ def test_post_trigger_guaranteed_empty_position_allows_create(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -212,7 +212,7 @@ def test_post_trigger_guaranteed_empty_position_allows_create(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -239,7 +239,7 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -250,7 +250,7 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -274,11 +274,11 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].created_at.line == 7
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_post_trigger_trigger_position_stays_occupied(
@@ -286,7 +286,7 @@ def test_post_trigger_trigger_position_stays_occupied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
@@ -297,7 +297,7 @@ def test_post_trigger_trigger_position_stays_occupied(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -321,14 +321,14 @@ def test_post_trigger_trigger_position_stays_occupied(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
     )
     assert all_diags[0].created_at.line == 4
     assert all_diags[0].created_at.column == 13
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_second_trigger_cycle_after_guarantee_empties_trigger(
@@ -336,7 +336,7 @@ def test_second_trigger_cycle_after_guarantee_empties_trigger(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
@@ -347,7 +347,7 @@ def test_second_trigger_cycle_after_guarantee_empties_trigger(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -374,7 +374,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -387,7 +387,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -413,10 +413,10 @@ def test_second_trigger_fails_when_guarantee_filled_position(
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].filled_at.line == 9
     assert all_diags[0].filled_at.column == 37
-    assert all_diags[0].filled_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].filled_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
@@ -424,7 +424,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -438,7 +438,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -470,10 +470,10 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].filled_at.line == 10
     assert all_diags[0].filled_at.column == 55
-    assert all_diags[0].filled_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].filled_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
@@ -481,7 +481,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -495,7 +495,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -526,22 +526,22 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].inferred_at.line == 10
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].position_name == "position<box>::action</other>::position<dest>"
     assert all_diags[1].location.line == 16
     assert all_diags[1].location.column == 37
-    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].filled_at.line == 10
     assert all_diags[1].filled_at.column == 55
-    assert all_diags[1].filled_at.file_path == PurePosixPath("other.def")
+    assert all_diags[1].filled_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[1].inferred_at.line == 10
     assert all_diags[1].inferred_at.column == 55
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_second_trigger_succeeds_with_proper_state_management(
@@ -549,7 +549,7 @@ def test_second_trigger_succeeds_with_proper_state_management(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -563,7 +563,7 @@ def test_second_trigger_succeeds_with_proper_state_management(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -598,9 +598,9 @@ def test_post_trigger_dp_identity_preserved_through_guarantee(
 ):
     result = validate_project_with_reference_graph(
         {
-            "quality_a.def": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "quality_b.def": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
-            "other.def": (
+            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
+            "quality_b.dfn": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -617,7 +617,7 @@ def test_post_trigger_dp_identity_preserved_through_guarantee(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -652,7 +652,7 @@ def test_post_trigger_guaranteed_empty_position_allows_move_to(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -664,7 +664,7 @@ def test_post_trigger_guaranteed_empty_position_allows_move_to(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -693,7 +693,7 @@ def test_post_trigger_occupied_by_new_allows_move_from(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -704,7 +704,7 @@ def test_post_trigger_occupied_by_new_allows_move_from(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -732,7 +732,7 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -743,7 +743,7 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -769,12 +769,12 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 56
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 7
     assert all_diags[0].occupied_at.column == 37
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_post_trigger_occupied_by_existing_rejects_create(
@@ -782,7 +782,7 @@ def test_post_trigger_occupied_by_existing_rejects_create(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -794,7 +794,7 @@ def test_post_trigger_occupied_by_existing_rejects_create(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -821,11 +821,11 @@ def test_post_trigger_occupied_by_existing_rejects_create(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
     assert all_diags[0].created_at.line == 8
     assert all_diags[0].created_at.column == 55
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_post_trigger_occupied_by_existing_rejects_move_to(
@@ -833,7 +833,7 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -845,7 +845,7 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -874,12 +874,12 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 57
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.line == 8
     assert all_diags[0].occupied_at.column == 55
-    assert all_diags[0].occupied_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_position_init_trigger_applies_empty_guarantee(
@@ -887,7 +887,7 @@ def test_position_init_trigger_applies_empty_guarantee(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<dest>.\n"
@@ -898,7 +898,7 @@ def test_position_init_trigger_applies_empty_guarantee(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -920,7 +920,7 @@ def test_position_init_trigger_applies_empty_guarantee(
     )
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position</test>::action</other>::position<trigger_pos>"
@@ -928,7 +928,7 @@ def test_position_init_trigger_applies_empty_guarantee(
     assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_position_init_trigger_applies_occupied_guarantee(
@@ -936,7 +936,7 @@ def test_position_init_trigger_applies_occupied_guarantee(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -947,7 +947,7 @@ def test_position_init_trigger_applies_occupied_guarantee(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -966,13 +966,13 @@ def test_position_init_trigger_applies_occupied_guarantee(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name == "position</test>::action</other>::position<item>"
     )
     assert all_diags[0].created_at.line == 7
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_trigger_chain_move_guarantee_empties_position(
@@ -980,8 +980,8 @@ def test_trigger_chain_move_guarantee_empties_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -996,7 +996,7 @@ def test_trigger_chain_move_guarantee_empties_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1029,8 +1029,8 @@ def test_trigger_chain_create_guarantee_fills_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -1044,7 +1044,7 @@ def test_trigger_chain_create_guarantee_fills_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1068,14 +1068,14 @@ def test_trigger_chain_create_guarantee_fills_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>::position</x>"
     )
     assert all_diags[0].created_at.line == 10
     assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
@@ -1083,16 +1083,16 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
 ):
     result = validate_project_with_reference_graph(
         {
-            "quality_a.def": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "quality_b.def": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
-            "x.def": (
+            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
+            "quality_b.dfn": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</quality_a>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -1108,7 +1108,7 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1154,8 +1154,8 @@ def test_post_trigger_existing_guarantee_on_child_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1176,7 +1176,7 @@ def test_post_trigger_existing_guarantee_on_child_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1210,7 +1210,7 @@ def test_post_trigger_existing_guarantee_on_child_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
@@ -1222,8 +1222,8 @@ def test_post_trigger_empty_guarantee_on_child_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1240,7 +1240,7 @@ def test_post_trigger_empty_guarantee_on_child_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1274,7 +1274,7 @@ def test_post_trigger_empty_guarantee_on_child_position(
     )
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</child_q>"
@@ -1286,8 +1286,8 @@ def test_post_trigger_new_guarantee_on_child_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1303,7 +1303,7 @@ def test_post_trigger_new_guarantee_on_child_position(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1327,7 +1327,7 @@ def test_post_trigger_new_guarantee_on_child_position(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</x>"
@@ -1339,8 +1339,8 @@ def test_post_trigger_empty_guarantee_deletes_children(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1356,7 +1356,7 @@ def test_post_trigger_empty_guarantee_deletes_children(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1397,7 +1397,7 @@ def test_post_trigger_empty_guarantee_deletes_children(
     )
     assert all_diags[0].location.line == 28
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</child_q>"
@@ -1409,9 +1409,9 @@ def test_post_trigger_new_guarantee_deletes_old_children(
 ):
     result = validate_project_with_reference_graph(
         {
-            "a.def": "define the potential position<my.domain.com:my_lib:/a>.\n",
-            "b.def": "define the potential position<my.domain.com:my_lib:/b>.\n",
-            "other.def": (
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "b.dfn": "define the potential position<my.domain.com:my_lib:/b>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
@@ -1428,7 +1428,7 @@ def test_post_trigger_new_guarantee_deletes_old_children(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1484,7 +1484,7 @@ def test_post_trigger_new_guarantee_deletes_old_children(
     )
     assert all_diags[0].location.line == 43
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<iface>::position</a>"
@@ -1496,8 +1496,8 @@ def test_post_trigger_child_removed_before_parent_move(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1519,7 +1519,7 @@ def test_post_trigger_child_removed_before_parent_move(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1560,8 +1560,8 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1582,7 +1582,7 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1613,7 +1613,7 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
@@ -1625,8 +1625,8 @@ def test_post_trigger_child_guarantee_follows_parent_move(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
@@ -1647,7 +1647,7 @@ def test_post_trigger_child_guarantee_follows_parent_move(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1678,7 +1678,7 @@ def test_post_trigger_child_guarantee_follows_parent_move(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
@@ -1690,8 +1690,8 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
@@ -1707,7 +1707,7 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -1750,7 +1750,7 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
     )
     assert all_diags[0].location.line == 30
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<iface>::position</child_q>"
@@ -1762,10 +1762,10 @@ def test_post_trigger_existing_guarantee_on_child_swap(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child_q.def": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
-            "quality_a.def": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
-            "quality_b.def": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
-            "other.def": (
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
+            "quality_b.dfn": "define the potential position<my.domain.com:my_lib:/quality_b>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<a> {\n"
@@ -1788,7 +1788,7 @@ def test_post_trigger_existing_guarantee_on_child_swap(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"

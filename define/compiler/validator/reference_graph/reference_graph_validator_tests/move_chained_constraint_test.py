@@ -9,8 +9,8 @@ def test_move_to_chained_dest_violates_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": (
                 "define the potential position<my.domain.com:my_lib:/y> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
@@ -18,7 +18,7 @@ def test_move_to_chained_dest_violates_constraints(
                 "}\n"
             ),
             # TODO: This should be failing because there is no DP in position<dest>.
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -51,15 +51,15 @@ def test_move_to_chained_dest_satisfies_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": (
                 "define the potential position<my.domain.com:my_lib:/y> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -91,8 +91,8 @@ def test_move_to_chained_dest_unconstrained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.def": (
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -120,9 +120,9 @@ def test_move_from_chained_to_local_violates_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -165,15 +165,15 @@ def test_move_from_chained_to_local_satisfies_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "q.def": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "x.def": (
+            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -212,15 +212,15 @@ def test_move_from_unconstrained_local_to_chained_constrained(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": (
                 "define the potential position<my.domain.com:my_lib:/y> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -253,15 +253,15 @@ def test_definition_local_to_chained_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": (
                 "define the potential position<my.domain.com:my_lib:/y> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<from_pos>.\n"
                 "    it happens when {\n"
@@ -292,15 +292,15 @@ def test_definition_local_to_chained_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": (
                 "define the potential position<my.domain.com:my_lib:/y> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<from_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -330,9 +330,9 @@ def test_chained_to_definition_local_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<dest> {\n"
@@ -375,15 +375,15 @@ def test_chained_to_definition_local_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "q.def": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "x.def": (
+            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<dest> {\n"
@@ -422,15 +422,15 @@ def test_move_from_multi_element_chain_to_unconstrained_local(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": (
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "test.def": (
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -459,22 +459,22 @@ def test_move_from_multi_element_chain_to_constrained_local(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": (
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "y.def": (
+            "y.dfn": (
                 "define the potential position<my.domain.com:my_lib:/y> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</z>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "z.def": "define the potential position<my.domain.com:my_lib:/z>.\n",
-            "test.def": (
+            "z.dfn": "define the potential position<my.domain.com:my_lib:/z>.\n",
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -507,22 +507,22 @@ def test_move_three_element_chain_to_three_element_chain_satisfies(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": (
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "z.def": (
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "z.dfn": (
                 "define the potential position<my.domain.com:my_lib:/z> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -557,29 +557,29 @@ def test_move_three_element_chain_to_three_element_chain_violates(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": (
+            "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "z.def": (
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "z.dfn": (
                 "define the potential position<my.domain.com:my_lib:/z> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</w>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "w.def": (
+            "w.dfn": (
                 "define the potential position<my.domain.com:my_lib:/w> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"

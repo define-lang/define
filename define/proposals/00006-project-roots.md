@@ -82,11 +82,11 @@ file structure looks like:
 
 ```
 /bobs-app
-  /src/main.def
+  /src/main.dfn
   /vendor
      /math-utils   <-- Alice's Code lives here now
         /core
-           /adder.def
+           /adder.dfn
 ```
 
 So now how is Bob's app supposed to refer to Alice's `core/adder`? He could
@@ -119,17 +119,17 @@ For example, imagine I have this directory and file layout in my project:
 ```
 my_project/
     src/
-        foo.def
+        foo.dfn
         foo/
-            bar.def
+            bar.dfn
             utils/
-                uri.def
+                uri.dfn
         core/
-            router.def
+            router.dfn
 ```
 
 In that layout, `my_project/src` is the project root. That means I would refer
-to something in the file `my_project/src/foo/bar.def` like:
+to something in the file `my_project/src/foo/bar.dfn` like:
 `quality<example.com:my_project:/foo/bar>`.
 
 ### Defining the Root
@@ -174,15 +174,15 @@ you could have this directory structure:
 ```
 my_project/
     .define/project/config.defcl
-    core/foo.def
+    core/foo.dfn
     lib/math-utils/.define/project/config.defcl
-    lib/math-utils/adder.def
+    lib/math-utils/adder.dfn
 ```
 
 The file `my_project/.define/project/config.defcl` would indicate that the
 subdirectory `lib/math-utils` is a sub-root.
 
-However, unless `my_project/core/foo.def` actually _references_ `adder.def`
+However, unless `my_project/core/foo.dfn` actually _references_ `adder.dfn`
 somehow, `lib/math-utils` would never be compiled, nor would its configuration
 ever be accessed.
 
@@ -241,7 +241,7 @@ ambiguity.
 ## Why This is the Right Solution
 
 If we know what directory the compiler is running in, it greatly simplifies
-filesystem traversals. We don't have to figure out where `foo/bar/baz.def` is,
+filesystem traversals. We don't have to figure out where `foo/bar/baz.dfn` is,
 it's in that exact subdirectory from where we are running. We just load files as
 we encounter them in code, without having to "hunt" to see what files might
 exist, where. Along with later proposals, it makes code loading deterministic

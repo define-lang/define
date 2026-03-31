@@ -28,7 +28,7 @@ def lark_parser() -> parser.Parser:
 
 def _make_context(
     tmp_path: Path,
-    file_name: str = "test.def",
+    file_name: str = "test.dfn",
     fqun: str = "my.domain.com:my_lib",
     sub_root_mappings: dict[str, PurePosixPath] | None = None,
 ) -> file_validator.FileValidationContext:
@@ -41,7 +41,7 @@ def _make_context(
 
 
 def _parse_program(source: str, lark_parser: parser.Parser) -> ast.Program:
-    parse_result = lark_parser.parse(source, file_path=PurePosixPath("/test.def"))
+    parse_result = lark_parser.parse(source, file_path=PurePosixPath("/test.dfn"))
     assert parse_result.exception is None
     assert parse_result.tree is not None
     return transformer.DefineTransformer().transform(parse_result.tree)
@@ -70,7 +70,7 @@ def _discovered_files(
 class TestFileStructuralValidatorSuccess:
     def test_valid_position(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -84,7 +84,7 @@ class TestFileStructuralValidatorSuccess:
 
     def test_valid_action(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential action<my.domain.com:my_lib:/test>.\n"
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -96,17 +96,17 @@ class TestFileStructuralValidatorSuccess:
 
 class TestFileStructuralValidatorErrors:
     def test_file_not_found(self, tmp_path: Path, lark_parser: parser.Parser):
-        ctx = _make_context(tmp_path, file_name="nonexistent.def")
+        ctx = _make_context(tmp_path, file_name="nonexistent.dfn")
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
         assert isinstance(result.exception, exceptions.SourceFileNotFoundError)
-        assert result.exception.filesystem_path == Path(tmp_path / "nonexistent.def")
+        assert result.exception.filesystem_path == Path(tmp_path / "nonexistent.dfn")
         assert result.definition_results == []
         assert _reference_edges(result) == []
         assert _discovered_files(result) == []
 
     def test_syntax_error(self, tmp_path: Path, lark_parser: parser.Parser):
-        (tmp_path / "test.def").write_text(
+        (tmp_path / "test.dfn").write_text(
             "not valid define syntax\n", encoding="utf-8"
         )
         ctx = _make_context(tmp_path)
@@ -116,7 +116,7 @@ class TestFileStructuralValidatorErrors:
         assert result.definition_results == []
 
     def test_encoding_error(self, tmp_path: Path, lark_parser: parser.Parser):
-        (tmp_path / "test.def").write_bytes(b"\x80\x81\x82")
+        (tmp_path / "test.dfn").write_bytes(b"\x80\x81\x82")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -126,7 +126,7 @@ class TestFileStructuralValidatorErrors:
         assert result.exception.char == "\\x80"
 
     def test_encoding_error_multiline(self, tmp_path: Path, lark_parser: parser.Parser):
-        (tmp_path / "test.def").write_bytes(b"first line\nsecond line\nthird\x80rest\n")
+        (tmp_path / "test.dfn").write_bytes(b"first line\nsecond line\nthird\x80rest\n")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -140,7 +140,7 @@ class TestFileStructuralValidatorErrors:
 class TestFileStructuralValidatorDiagnostics:
     def test_path_mismatch(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/wrong_path>.\n"
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -150,7 +150,7 @@ class TestFileStructuralValidatorDiagnostics:
 
     def test_fqun_mismatch(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<other.domain.com:other_lib:/test>.\n"
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -163,7 +163,7 @@ class TestFileStructuralValidatorDiagnostics:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -269,14 +269,14 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
         assert len(_reference_edges(result)) == 1
         assert len(_discovered_files(result)) == 1
         discovered = _discovered_files(result)[0]
-        assert discovered.path == PurePosixPath("other.def")
+        assert discovered.path == PurePosixPath("other.dfn")
         assert discovered.root_prefix == PurePosixPath(str(tmp_path))
         assert discovered.expected_fqun == "my.domain.com:my_lib"
 
@@ -290,7 +290,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(
             tmp_path,
             sub_root_mappings={
@@ -302,7 +302,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert len(_reference_edges(result)) == 1
         assert len(_discovered_files(result)) == 1
         discovered = _discovered_files(result)[0]
-        assert discovered.path == PurePosixPath("dep.def")
+        assert discovered.path == PurePosixPath("dep.dfn")
         assert discovered.root_prefix == PurePosixPath(str(tmp_path)) / "deps/other"
         assert discovered.expected_fqun == "other.domain.com:other_lib"
 
@@ -316,7 +316,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -335,7 +335,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -362,7 +362,7 @@ class TestDimensionPointReferenceEdges:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -384,7 +384,7 @@ class TestDimensionPointReferenceEdges:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -409,7 +409,7 @@ class TestDimensionPointReferenceEdges:
             "    }\n"
             "}\n"
         )
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
@@ -437,7 +437,7 @@ class TestDimensionPointReferenceEdges:
 class TestFileStructuralValidatorTimingStats:
     def test_stats_populated(self, tmp_path: Path, lark_parser: parser.Parser):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        (tmp_path / "test.def").write_text(source, encoding="utf-8")
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 

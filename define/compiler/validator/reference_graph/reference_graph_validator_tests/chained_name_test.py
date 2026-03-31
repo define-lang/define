@@ -238,7 +238,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -252,7 +252,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c>.\n"
                     "    it happens when {\n"
@@ -323,7 +323,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -337,7 +337,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "correct.def": (
+                "correct.dfn": (
                     "define the potential action<my.domain.com:my_lib:/correct> {\n"
                     "    define the position<end>.\n"
                     "    it happens when {\n"
@@ -348,7 +348,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "wrong.def": (
+                "wrong.dfn": (
                     "define the potential action<my.domain.com:my_lib:/wrong> {\n"
                     "    define the position<end>.\n"
                     "    it happens when {\n"
@@ -415,7 +415,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -429,7 +429,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "child.def": (
+                "child.dfn": (
                     "define the potential action<my.domain.com:my_lib:/child> {\n"
                     "    define the position<pos_end>.\n"
                     "    it happens when {\n"
@@ -449,7 +449,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -464,7 +464,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "child.def": (
+                "child.dfn": (
                     "define the potential action<my.domain.com:my_lib:/child> {\n"
                     "    define the position<pos_end>.\n"
                     "    it happens when {\n"
@@ -490,7 +490,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -513,7 +513,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "child.def": (
+                "child.dfn": (
                     "define the potential action<my.domain.com:my_lib:/child> {\n"
                     "    define the position<pos_end>.\n"
                     "    it happens when {\n"
@@ -684,7 +684,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -694,7 +694,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
+                "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
             },
         )
         all_diags = result.program_result.all_diagnostics
@@ -753,7 +753,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -768,14 +768,14 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": (
+                "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
         assert not result.program_result.has_errors()
@@ -785,7 +785,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -799,15 +799,15 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": (
+                "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
         all_diags = result.program_result.all_diagnostics
@@ -825,7 +825,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -839,8 +839,8 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": "define the potential position<my.domain.com:my_lib:/pos_b>.\n",
-                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "pos_b.dfn": "define the potential position<my.domain.com:my_lib:/pos_b>.\n",
+                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
         all_diags = result.program_result.all_diagnostics
@@ -858,7 +858,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -872,7 +872,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c>.\n"
                     "    it happens when {\n"
@@ -892,7 +892,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -906,7 +906,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c>.\n"
                     "    it happens when {\n"
@@ -932,7 +932,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -946,7 +946,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": "define the potential action<my.domain.com:my_lib:/act_b>.\n",
+                "act_b.dfn": "define the potential action<my.domain.com:my_lib:/act_b>.\n",
             }
         )
         all_diags = result.program_result.all_diagnostics
@@ -962,7 +962,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -977,7 +977,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c> {\n"
                     "        it may only contain dimension points where {\n"
@@ -992,7 +992,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_d.def": (
+                "act_d.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_d> {\n"
                     "    define the position<pos_e>.\n"
                     "    it happens when {\n"
@@ -1012,7 +1012,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1028,21 +1028,21 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": (
+                "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_c.def": (
+                "pos_c.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_c> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_d>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_d.def": "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
+                "pos_d.dfn": "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
             }
         )
         assert not result.program_result.has_errors()
@@ -1103,7 +1103,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1118,7 +1118,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "foo.def": (
+                "foo.dfn": (
                     "define the potential action<my.domain.com:my_lib:/foo> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
@@ -1129,7 +1129,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "bar.def": (
+                "bar.dfn": (
                     "define the potential action<my.domain.com:my_lib:/bar> {\n"
                     "    define the position<y>.\n"
                     "    it happens when {\n"
@@ -1145,7 +1145,7 @@ class TestCreateDimensionPoint:
         test_result = next(
             r
             for r in result.program_result.file_results
-            if r.file_path == PurePosixPath("test.def")
+            if r.file_path == PurePosixPath("test.dfn")
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.ChainElementNotInActionDiagnostic,
@@ -1162,7 +1162,7 @@ class TestCreateDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1177,7 +1177,7 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "a.def": (
+                "a.dfn": (
                     "define the potential action<my.domain.com:my_lib:/a> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
@@ -1188,13 +1188,13 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "b.def": "define the potential action<my.domain.com:my_lib:/b>.\n",
+                "b.dfn": "define the potential action<my.domain.com:my_lib:/b>.\n",
             }
         )
         test_result = next(
             r
             for r in result.program_result.file_results
-            if r.file_path == PurePosixPath("test.def")
+            if r.file_path == PurePosixPath("test.dfn")
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.PositionReferenceChainEndDiagnostic,
@@ -1218,7 +1218,7 @@ class TestMoveDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1234,7 +1234,7 @@ class TestMoveDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -1250,7 +1250,7 @@ class TestMoveDimensionPoint:
         test_result = next(
             r
             for r in result.program_result.file_results
-            if r.file_path == PurePosixPath("test.def")
+            if r.file_path == PurePosixPath("test.dfn")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1263,7 +1263,7 @@ class TestMoveDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1279,7 +1279,7 @@ class TestMoveDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -1295,7 +1295,7 @@ class TestMoveDimensionPoint:
         test_result = next(
             r
             for r in result.program_result.file_results
-            if r.file_path == PurePosixPath("test.def")
+            if r.file_path == PurePosixPath("test.dfn")
         )
         assert len(test_result.diagnostics) == 1
         assert isinstance(
@@ -1308,7 +1308,7 @@ class TestMoveDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<to_pos>.\n"
@@ -1320,7 +1320,7 @@ class TestMoveDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_x.def": (
+                "act_x.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_x> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -1336,7 +1336,7 @@ class TestMoveDimensionPoint:
         test_result = next(
             r
             for r in result.program_result.file_results
-            if r.file_path == PurePosixPath("test.def")
+            if r.file_path == PurePosixPath("test.dfn")
         )
         assert len(test_result.diagnostics) == 2
         assert isinstance(
@@ -1358,7 +1358,7 @@ class TestMoveDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<from_pos>.\n"
                     "    it happens when {\n"
@@ -1369,7 +1369,7 @@ class TestMoveDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_y.def": (
+                "act_y.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_y> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -1385,7 +1385,7 @@ class TestMoveDimensionPoint:
         test_result = next(
             r
             for r in result.program_result.file_results
-            if r.file_path == PurePosixPath("test.def")
+            if r.file_path == PurePosixPath("test.dfn")
         )
         assert len(test_result.diagnostics) == 2
         assert isinstance(
@@ -1407,7 +1407,7 @@ class TestMoveDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1426,7 +1426,7 @@ class TestMoveDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_middle.def": (
+                "act_middle.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_middle> {\n"
                     "    define the position<inner_pos>.\n"
                     "    it happens when {\n"
@@ -1446,7 +1446,7 @@ class TestMoveDimensionPoint:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1463,15 +1463,15 @@ class TestMoveDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "pos_b.def": (
+                "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "pos_c.def": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
+                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             }
         )
         all_diags = result.program_result.all_diagnostics
@@ -1588,7 +1588,7 @@ class TestUnknownGlobalChainStart:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -1598,7 +1598,7 @@ class TestUnknownGlobalChainStart:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<x>.\n"
                     "    it happens when {\n"
@@ -1626,7 +1626,7 @@ class TestChainActionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1640,7 +1640,7 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "a.def": (
+                "a.dfn": (
                     "define the potential action<my.domain.com:my_lib:/a> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
@@ -1656,9 +1656,9 @@ class TestChainActionValidation:
         )
         assert len(result.program_result.file_results) == 2
         assert result.program_result.file_results[0].file_path == PurePosixPath(
-            "test.def"
+            "test.dfn"
         )
-        assert result.program_result.file_results[1].file_path == PurePosixPath("a.def")
+        assert result.program_result.file_results[1].file_path == PurePosixPath("a.dfn")
         assert list(result.program_result.file_results[1].diagnostics) == []
         assert len(result.program_result.file_results[0].diagnostics) == 3
         assert isinstance(
@@ -1696,7 +1696,7 @@ class TestChainActionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1710,7 +1710,7 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "act.def": (
+                "act.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act> {\n"
                     "    define the position<inner> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1725,14 +1725,14 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "allowed.def": "define the potential position<my.domain.com:my_lib:/allowed>.\n",
-                "wrong.def": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
+                "allowed.dfn": "define the potential position<my.domain.com:my_lib:/allowed>.\n",
+                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
             },
             max_workers=1,
         )
         assert len(result.program_result.file_results) == 4
         assert result.program_result.file_results[0].file_path == PurePosixPath(
-            "test.def"
+            "test.dfn"
         )
         assert len(result.program_result.file_results[0].diagnostics) == 1
         diag = result.program_result.file_results[0].diagnostics[0]
@@ -1749,7 +1749,7 @@ class TestChainActionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1764,7 +1764,7 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "act.def": (
+                "act.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act> {\n"
                     "    define the position<inner> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1779,7 +1779,7 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "deeper.def": "define the potential position<my.domain.com:my_lib:/deeper>.\n",
+                "deeper.dfn": "define the potential position<my.domain.com:my_lib:/deeper>.\n",
             },
             max_workers=1,
         )
@@ -1791,7 +1791,7 @@ class TestChainActionValidation:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1805,7 +1805,7 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "act.def": (
+                "act.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act> {\n"
                     "    define the position<inner> {\n"
                     "        it may only contain dimension points where {\n"
@@ -1820,21 +1820,21 @@ class TestChainActionValidation:
                     "    }\n"
                     "}\n"
                 ),
-                "target.def": (
+                "target.dfn": (
                     "define the potential position<my.domain.com:my_lib:/target> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the position</allowed_leaf>.\n"
                     "    }\n"
                     "}\n"
                 ),
-                "leaf.def": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
-                "allowed_leaf.def": "define the potential position<my.domain.com:my_lib:/allowed_leaf>.\n",
+                "leaf.dfn": "define the potential position<my.domain.com:my_lib:/leaf>.\n",
+                "allowed_leaf.dfn": "define the potential position<my.domain.com:my_lib:/allowed_leaf>.\n",
             },
             max_workers=1,
         )
         assert len(result.program_result.file_results) == 5
         assert result.program_result.file_results[0].file_path == PurePosixPath(
-            "test.def"
+            "test.dfn"
         )
         assert len(result.program_result.file_results[0].diagnostics) == 1
         diag = result.program_result.file_results[0].diagnostics[0]
@@ -1853,7 +1853,7 @@ class TestMissingDefinitionInChain:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -1868,16 +1868,16 @@ class TestMissingDefinitionInChain:
                     "    }\n"
                     "}\n"
                 ),
-                "end.def": "define the potential position<my.domain.com:my_lib:/end>.\n",
+                "end.dfn": "define the potential position<my.domain.com:my_lib:/end>.\n",
             },
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-        assert all_diags[0].file_path == "middle.def"
+        assert all_diags[0].file_path == "middle.dfn"
         assert all_diags[0].location.line == 5
         assert all_diags[0].location.column == 33
         assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-        assert all_diags[1].file_path == "middle.def"
+        assert all_diags[1].file_path == "middle.dfn"
         assert all_diags[1].location.line == 11
         assert all_diags[1].location.column == 65

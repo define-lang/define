@@ -20,7 +20,7 @@ def _validate_single_file(
     monkeypatch: pytest.MonkeyPatch,
     source: str,
 ) -> validation_result.FileValidationResult:
-    relative_path = PurePosixPath("test.def")
+    relative_path = PurePosixPath("test.dfn")
     (tmp_path / relative_path).write_text(source, encoding="utf-8")
     test_helpers.write_project_config(tmp_path, _FQUN)
     monkeypatch.chdir(tmp_path)
@@ -43,7 +43,7 @@ def _parse(source: str) -> validation_result.FileValidationResult:
     return validation_result.FileValidationResult(
         exception=None,
         source=source,
-        file_path=PurePosixPath("test.def"),
+        file_path=PurePosixPath("test.dfn"),
         root_prefix=PurePosixPath("."),
         stats=stats.ValidationTimingStats(),
         file_diagnostics=[],
@@ -209,7 +209,7 @@ class TestActionBodyEffect:
     ):
         result = validate_project_with_reference_graph(
             {
-                "other.def": (
+                "other.dfn": (
                     f"define the potential action<{_FQUN}:/other> {{\n"
                     "    define the position<tp>.\n"
                     "    it happens when {\n"
@@ -220,7 +220,7 @@ class TestActionBodyEffect:
                     "    }\n"
                     "}\n"
                 ),
-                "test.def": (
+                "test.dfn": (
                     f"define the potential action<{_FQUN}:/act> {{\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -255,7 +255,7 @@ class TestActionBodyEffect:
     ):
         result = validate_project_with_reference_graph(
             {
-                "other.def": (
+                "other.dfn": (
                     f"define the potential action<{_FQUN}:/other> {{\n"
                     "    define the position<tp>.\n"
                     "    it happens when {\n"
@@ -266,7 +266,7 @@ class TestActionBodyEffect:
                     "    }\n"
                     "}\n"
                 ),
-                "test.def": (
+                "test.dfn": (
                     f"define the potential action<{_FQUN}:/act> {{\n"
                     "    define the position<run>.\n"
                     "    define the position<local> {\n"

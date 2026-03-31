@@ -25,7 +25,7 @@ class TestCodeGenerator:
     ):
         program_result = validate_project(
             {
-                "test.def": "define the potential position<my.domain.com:my_lib:/test>.\n"
+                "test.dfn": "define the potential position<my.domain.com:my_lib:/test>.\n"
             },
         )
 
@@ -37,7 +37,7 @@ class TestCodeGenerator:
         self, validate_project: ValidateProject, tmp_path: Path
     ):
         program_result = validate_project(
-            {"test.def": "define the potential action<my.domain.com:my_lib:/test>.\n"},
+            {"test.dfn": "define the potential action<my.domain.com:my_lib:/test>.\n"},
         )
 
         result = _generate(program_result, tmp_path)
@@ -52,7 +52,7 @@ class TestCodeGenerator:
     ):
         program_result = validate_project(
             {
-                "test.def": "define the potential position<my.domain.com:my_lib:/test>.\n"
+                "test.dfn": "define the potential position<my.domain.com:my_lib:/test>.\n"
                 + "define the potential action<my.domain.com:my_lib:/test>.\n",
             },
         )

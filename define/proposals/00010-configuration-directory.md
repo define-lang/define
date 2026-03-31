@@ -169,7 +169,7 @@ Consider a Define project with the following structure:
 ```
 my_project/src/.define/project/config.defcl
 my_project/src/.define/x/alice.com/math_utils/numbers.defcl
-my_project/src/main.def
+my_project/src/main.dfn
 ```
 
 At the time this proposal is being written, we have not yet specified the Define
@@ -189,7 +189,7 @@ project: {
 And then the `math_utils` library has a special config just for this codebase,
 in `my_project/src/.define/x/alice.com/math_utils/numbers.defcl`.
 
-Then when a developer does `define src/main.def` the compiler reads those
+Then when a developer does `define src/main.dfn` the compiler reads those
 configurations without the developer having to specify anything special on the
 command line.
 

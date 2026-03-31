@@ -13,7 +13,7 @@ def test_satisfy_requirements_then_trigger(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -25,7 +25,7 @@ def test_satisfy_requirements_then_trigger(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -54,7 +54,7 @@ def test_violate_occupied_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -66,7 +66,7 @@ def test_violate_occupied_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -91,12 +91,12 @@ def test_violate_occupied_requirement(
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_caller_violates_occupied_requirement(
@@ -104,7 +104,7 @@ def test_caller_violates_occupied_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -116,7 +116,7 @@ def test_caller_violates_occupied_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -141,12 +141,12 @@ def test_caller_violates_occupied_requirement(
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_caller_satisfies_empty_requirement(
@@ -154,7 +154,7 @@ def test_caller_satisfies_empty_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -165,7 +165,7 @@ def test_caller_satisfies_empty_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -191,7 +191,7 @@ def test_caller_violates_empty_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -202,7 +202,7 @@ def test_caller_violates_empty_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -228,15 +228,15 @@ def test_caller_violates_empty_requirement(
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].filled_at.line == 14
     assert all_diags[0].filled_at.column == 56
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_empty_requirement_with_unknown_state_is_silent(
@@ -244,7 +244,7 @@ def test_empty_requirement_with_unknown_state_is_silent(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -255,7 +255,7 @@ def test_empty_requirement_with_unknown_state_is_silent(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -280,9 +280,9 @@ def test_empty_requirement_with_unknown_state_is_silent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
 
 def test_occupied_requirement_with_unknown_state_is_silent(
@@ -290,7 +290,7 @@ def test_occupied_requirement_with_unknown_state_is_silent(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -302,7 +302,7 @@ def test_occupied_requirement_with_unknown_state_is_silent(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -327,9 +327,9 @@ def test_occupied_requirement_with_unknown_state_is_silent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
-    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
 
 def test_multiple_requirements_one_empty_one_occupied(
@@ -337,7 +337,7 @@ def test_multiple_requirements_one_empty_one_occupied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<src>.\n"
@@ -349,7 +349,7 @@ def test_multiple_requirements_one_empty_one_occupied(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -378,7 +378,7 @@ def test_caller_satisfies_occupied_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -390,7 +390,7 @@ def test_caller_satisfies_occupied_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -445,8 +445,8 @@ def test_position_init_violates_occupied_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": _OTHER_WITH_OCCUPIED_REQUIREMENT,
-            "test.def": (
+            "other.dfn": _OTHER_WITH_OCCUPIED_REQUIREMENT,
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -466,14 +466,14 @@ def test_position_init_violates_occupied_requirement(
     )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name == "position</test>::action</other>::position<item>"
     )
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_position_init_violates_empty_requirement(
@@ -481,8 +481,8 @@ def test_position_init_violates_empty_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": _OTHER_WITH_EMPTY_REQUIREMENT,
-            "test.def": (
+            "other.dfn": _OTHER_WITH_EMPTY_REQUIREMENT,
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -501,17 +501,17 @@ def test_position_init_violates_empty_requirement(
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name == "position</test>::action</other>::position<item>"
     )
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].filled_at.line == 7
     assert all_diags[0].filled_at.column == 37
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_position_init_satisfies_requirements(
@@ -519,8 +519,8 @@ def test_position_init_satisfies_requirements(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": _OTHER_WITH_OCCUPIED_REQUIREMENT,
-            "test.def": (
+            "other.dfn": _OTHER_WITH_OCCUPIED_REQUIREMENT,
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -542,7 +542,7 @@ def test_no_requirement_check_on_unknown_global_chain_start(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -554,7 +554,7 @@ def test_no_requirement_check_on_unknown_global_chain_start(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -578,9 +578,9 @@ def test_trigger_chain_occupied_requirement_satisfied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -599,7 +599,7 @@ def test_trigger_chain_occupied_requirement_satisfied(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -634,9 +634,9 @@ def test_trigger_chain_occupied_requirement_violated(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "y.def": "define the potential position<my.domain.com:my_lib:/y>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -655,7 +655,7 @@ def test_trigger_chain_occupied_requirement_violated(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -681,11 +681,11 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].inferred_at.line == 15
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert isinstance(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
@@ -695,11 +695,11 @@ def test_trigger_chain_occupied_requirement_violated(
     )
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 37
-    assert all_diags[1].location.file_path == PurePosixPath("test.def")
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].inferred_at.line == 15
     assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
 
 
 def test_trigger_chain_empty_requirement_satisfied(
@@ -707,8 +707,8 @@ def test_trigger_chain_empty_requirement_satisfied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -722,7 +722,7 @@ def test_trigger_chain_empty_requirement_satisfied(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -748,8 +748,8 @@ def test_trigger_chain_empty_requirement_violated(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
                 "        it may only contain dimension points where {\n"
@@ -763,7 +763,7 @@ def test_trigger_chain_empty_requirement_violated(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -793,7 +793,7 @@ def test_trigger_chain_empty_requirement_violated(
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 56
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name
@@ -801,10 +801,10 @@ def test_trigger_chain_empty_requirement_violated(
     )
     assert all_diags[0].inferred_at.line == 10
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].filled_at.line == 18
     assert all_diags[0].filled_at.column == 37
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
 
 
 @pytest.mark.xfail(
@@ -819,7 +819,7 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
@@ -830,7 +830,7 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "ours.def": (
+            "ours.dfn": (
                 "define the potential action<my.domain.com:my_lib:/ours> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
@@ -845,7 +845,7 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -870,7 +870,7 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
         all_diags[0].position_name
@@ -878,10 +878,10 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
     )
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.def")
+    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_trigger_chain_parent_requirement_violated(
@@ -889,8 +889,8 @@ def test_trigger_chain_parent_requirement_violated(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "other.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
@@ -905,7 +905,7 @@ def test_trigger_chain_parent_requirement_violated(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
@@ -934,7 +934,7 @@ def test_trigger_chain_parent_requirement_violated(
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.def")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.def")
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")

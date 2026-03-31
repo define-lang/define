@@ -27,7 +27,7 @@ def test_sub_root_redeclares_parent_fqun(
     test_helpers.write_sub_root(tmp_path, "lib", child_fqun)
     test_helpers.write_local_deps_config(tmp_path / "lib", {parent_fqun: "nested"})
     test_helpers.write_sub_root(tmp_path, "lib/nested", parent_fqun)
-    (tmp_path / "test.def").write_text(
+    (tmp_path / "test.dfn").write_text(
         (
             f"define the potential position<{parent_fqun}:/test> {{\n"
             + "    it may only contain dimension points where {\n"
@@ -37,7 +37,7 @@ def test_sub_root_redeclares_parent_fqun(
         ),
         encoding="utf-8",
     )
-    (tmp_path / "lib/target.def").write_text(
+    (tmp_path / "lib/target.dfn").write_text(
         (
             f"define the potential position<{child_fqun}:/target> {{\n"
             + "    it may only contain dimension points where {\n"
@@ -47,14 +47,14 @@ def test_sub_root_redeclares_parent_fqun(
         ),
         encoding="utf-8",
     )
-    (tmp_path / "lib/nested/leaf.def").write_text(
+    (tmp_path / "lib/nested/leaf.dfn").write_text(
         f"define the potential position<{parent_fqun}:/leaf>.\n",
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
 
     result = program_validator.ProgramStructuralValidator().validate_program(
-        PurePosixPath("test.def"), max_workers=1
+        PurePosixPath("test.dfn"), max_workers=1
     )
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
@@ -73,14 +73,14 @@ def test_sub_root_redeclares_parent_fqun(
 def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/target.def": f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
+            "lib/target.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
@@ -88,14 +88,14 @@ def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
     )
     assert len(result.file_results) == 2
     assert not result.has_errors()
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
 
 
 def test_cross_fqun_file_not_found(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/missing>.\n"
@@ -114,13 +114,13 @@ def test_cross_fqun_file_not_found(validate_project: ValidateProject):
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert diags[0].file_path == "lib/missing.def"
+    assert diags[0].file_path == "lib/missing.dfn"
 
 
 def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
@@ -146,7 +146,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
@@ -154,7 +154,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "other.def": (
+            "other.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/other> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/another>.\n"
@@ -177,14 +177,14 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
     wrong_universe = "mv:define-lang.org:wrong_universe"
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/target.def": f"define the potential position<{wrong_universe}:/target>.\n",
+            "lib/target.dfn": f"define the potential position<{wrong_universe}:/target>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
@@ -206,7 +206,7 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
     second_child = "mv:define-lang.org:second_child"
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
@@ -214,8 +214,8 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/target.def": f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
-            "lib/other.def": f"define the potential position<{_CHILD_UNIVERSE}:/other>.\n",
+            "lib/target.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/target>.\n",
+            "lib/other.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/other>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib", second_child: "lib"},
@@ -238,7 +238,7 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
 def test_sub_root_conflict(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position</lib/parent_target>.\n"
@@ -246,22 +246,22 @@ def test_sub_root_conflict(validate_project: ValidateProject):
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/parent_target.def": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
-            "lib/sub_root_target.def": f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
+            "lib/parent_target.dfn": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
+            "lib/sub_root_target.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 2
     path_diag = result.file_results[0].diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.location.line == 3
     assert path_diag.location.column == 29
-    assert path_diag.path.endswith("lib/parent_target.def")
+    assert path_diag.path.endswith("lib/parent_target.dfn")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
     sub_root_diag = result.file_results[0].diagnostics[1]
@@ -270,12 +270,12 @@ def test_sub_root_conflict(validate_project: ValidateProject):
     assert sub_root_diag.location.column == 29
     assert sub_root_diag.universe == _CHILD_UNIVERSE
     assert sub_root_diag.sub_root_path == "lib"
-    assert sub_root_diag.existing_file == "lib/parent_target.def"
+    assert sub_root_diag.existing_file == "lib/parent_target.dfn"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("lib/sub_root_target.def")
+    assert result.file_results[2].file_path == PurePosixPath("lib/sub_root_target.dfn")
     assert result.file_results[2].exception is None
     assert result.file_results[2].diagnostics == []
 
@@ -283,7 +283,7 @@ def test_sub_root_conflict(validate_project: ValidateProject):
 def test_sub_root_conflict_continues_validation(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position</lib/parent_target>.\n"
@@ -291,21 +291,21 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/parent_target.def": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
+            "lib/parent_target.dfn": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 3
     path_diag = result.file_results[0].diagnostics[0]
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.location.line == 3
     assert path_diag.location.column == 29
-    assert path_diag.path.endswith("lib/parent_target.def")
+    assert path_diag.path.endswith("lib/parent_target.dfn")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
     sub_root_diag = result.file_results[0].diagnostics[2]
@@ -314,14 +314,14 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
     assert sub_root_diag.location.column == 29
     assert sub_root_diag.universe == _CHILD_UNIVERSE
     assert sub_root_diag.sub_root_path == "lib"
-    assert sub_root_diag.existing_file == "lib/parent_target.def"
+    assert sub_root_diag.existing_file == "lib/parent_target.dfn"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
     not_found_diag = result.file_results[0].diagnostics[1]
     assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert not_found_diag.location.line == 4
     assert not_found_diag.location.column == 29
-    assert not_found_diag.file_path == "lib/missing_target.def"
-    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.def")
+    assert not_found_diag.file_path == "lib/missing_target.dfn"
+    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -329,7 +329,7 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
 def test_path_inside_other_universe(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
@@ -337,15 +337,15 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/sub_root_target.def": f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
-            "lib/parent_target.def": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
+            "lib/sub_root_target.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/sub_root_target>.\n",
+            "lib/parent_target.dfn": f"define the potential position<{_PARENT_UNIVERSE}:/lib/parent_target>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -354,13 +354,13 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
     )
     assert result.file_results[0].diagnostics[0].location.line == 4
     assert result.file_results[0].diagnostics[0].location.column == 29
-    assert result.file_results[0].diagnostics[0].path.endswith("lib/parent_target.def")
+    assert result.file_results[0].diagnostics[0].path.endswith("lib/parent_target.dfn")
     assert result.file_results[0].diagnostics[0].other_universe == _CHILD_UNIVERSE
     assert result.file_results[0].diagnostics[0].sub_root_path == "lib"
-    assert result.file_results[1].file_path == PurePosixPath("lib/sub_root_target.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/sub_root_target.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("lib/parent_target.def")
+    assert result.file_results[2].file_path == PurePosixPath("lib/parent_target.dfn")
     assert result.file_results[2].exception is None
     assert result.file_results[2].diagnostics == []
 
@@ -370,7 +370,7 @@ def test_path_inside_other_universe_skips_further_validation(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/child_action>.\n"
@@ -378,7 +378,7 @@ def test_path_inside_other_universe_skips_further_validation(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/child_action.def": (
+            "lib/child_action.dfn": (
                 f"define the potential action<{_CHILD_UNIVERSE}:/child_action> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -395,7 +395,7 @@ def test_path_inside_other_universe_skips_further_validation(
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 2
     wrong_type_diag = result.file_results[0].diagnostics[0]
@@ -410,10 +410,10 @@ def test_path_inside_other_universe_skips_further_validation(
     assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
     assert path_diag.location.line == 4
     assert path_diag.location.column == 29
-    assert path_diag.path.endswith("lib/child_action.def")
+    assert path_diag.path.endswith("lib/child_action.dfn")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    assert result.file_results[1].file_path == PurePosixPath("lib/child_action.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/child_action.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -422,21 +422,21 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
     wrong_fqun = "mv:define-lang.org:totally_wrong"
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/target.def": f"define the potential position<{wrong_fqun}:/target>.\n",
+            "lib/target.dfn": f"define the potential position<{wrong_fqun}:/target>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -447,7 +447,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
     assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path == "/target"
     assert result.file_results[0].diagnostics[0].expected_type == "position"
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
     assert result.file_results[1].exception is None
     assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
@@ -462,14 +462,14 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
 def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/target.def": (
+            "lib/target.dfn": (
                 f"define the potential action<{_CHILD_UNIVERSE}:/target> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
@@ -486,7 +486,7 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -497,7 +497,7 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
     assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path == "/target"
     assert result.file_results[0].diagnostics[0].expected_type == "position"
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -505,21 +505,21 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
 def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/entry>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/entry.def": (
+            "lib/entry.dfn": (
                 f"define the potential position<{_CHILD_UNIVERSE}:/entry> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position</leaf>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib/leaf.def": f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
+            "lib/leaf.dfn": f"define the potential position<{_CHILD_UNIVERSE}:/leaf>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
@@ -527,9 +527,9 @@ def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
     )
     assert len(result.file_results) == 3
     assert not result.has_errors()
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
-    assert result.file_results[1].file_path == PurePosixPath("lib/entry.def")
-    assert result.file_results[2].file_path == PurePosixPath("lib/leaf.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[1].file_path == PurePosixPath("lib/entry.dfn")
+    assert result.file_results[2].file_path == PurePosixPath("lib/leaf.dfn")
 
 
 def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -543,7 +543,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
     test_helpers.write_sub_root(tmp_path, "lib/inner", grandchild_universe)
     monkeypatch.chdir(tmp_path)
 
-    (tmp_path / "test.def").write_text(
+    (tmp_path / "test.dfn").write_text(
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
             f"    it may only contain dimension points where {{\n"
@@ -553,7 +553,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         ),
         encoding="utf-8",
     )
-    (tmp_path / "lib/target.def").write_text(
+    (tmp_path / "lib/target.dfn").write_text(
         (
             f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
             f"    it may only contain dimension points where {{\n"
@@ -563,19 +563,19 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         ),
         encoding="utf-8",
     )
-    (tmp_path / "lib/inner/leaf.def").write_text(
+    (tmp_path / "lib/inner/leaf.dfn").write_text(
         f"define the potential position<{grandchild_universe}:/leaf>.\n",
         encoding="utf-8",
     )
 
     result = program_validator.ProgramStructuralValidator().validate_program(
-        PurePosixPath("test.def")
+        PurePosixPath("test.dfn")
     )
     assert len(result.file_results) == 3
     assert not result.has_errors()
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
-    assert result.file_results[2].file_path == PurePosixPath("lib/inner/leaf.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
+    assert result.file_results[2].file_path == PurePosixPath("lib/inner/leaf.dfn")
 
 
 def test_partial_sub_root_failure_still_validates_successful_sub_roots(
@@ -585,7 +585,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     child_b = "mv:define-lang.org:child_b"
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{child_a}:/target_a>.\n"
@@ -593,14 +593,14 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib_a/target_a.def": f"define the potential position<{child_a}:/target_a>.\n",
+            "lib_a/target_a.dfn": f"define the potential position<{child_a}:/target_a>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={child_a: "lib_a", child_b: "lib_b"},
         sub_roots={"lib_a": child_a},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -608,7 +608,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     assert diags[0].location.line == 4
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
-    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -620,7 +620,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     child_b = "mv:define-lang.org:child_b"
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{child_a}:/target_a>.\n"
@@ -628,14 +628,14 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "lib_a/target_a.def": f"define the potential position<{child_a}:/target_a>.\n",
+            "lib_a/target_a.dfn": f"define the potential position<{child_a}:/target_a>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={child_a: "lib_a"},
         sub_roots={"lib_a": child_a},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -644,7 +644,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     assert diags[0].location.column == 29
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == _PARENT_UNIVERSE
-    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -654,7 +654,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target_a>.\n"
@@ -663,20 +663,20 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "local.def": f"define the potential position<{_PARENT_UNIVERSE}:/local>.\n",
+            "local.dfn": f"define the potential position<{_PARENT_UNIVERSE}:/local>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
-    assert result.file_results[1].file_path == PurePosixPath("local.def")
+    assert result.file_results[1].file_path == PurePosixPath("local.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -685,7 +685,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
                 f"    it may only contain dimension points where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
@@ -693,13 +693,13 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "wrong_type.def": f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type>.\n",
+            "wrong_type.dfn": f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type>.\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
@@ -711,5 +711,5 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert diags[1].location.line == 3
     assert diags[1].location.column == 29
     assert isinstance(diags[1].error, exceptions.NotProjectRootError)
-    assert result.file_results[1].file_path == PurePosixPath("wrong_type.def")
+    assert result.file_results[1].file_path == PurePosixPath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []

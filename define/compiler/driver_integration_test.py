@@ -28,282 +28,282 @@ TESTDATA_ROOT = Path("define/testdata")
 FILES_ROOT = TESTDATA_ROOT / "files"
 PROJECTS_ROOT = TESTDATA_ROOT / "projects"
 
-VALID_FILES = sorted((FILES_ROOT / "valid").rglob("*.def"))
-INVALID_FILES = sorted((FILES_ROOT / "invalid").rglob("*.def"))
+VALID_FILES = sorted((FILES_ROOT / "valid").rglob("*.dfn"))
+INVALID_FILES = sorted((FILES_ROOT / "invalid").rglob("*.dfn"))
 
 # Key: path relative to FILES_ROOT / "invalid" (as posix string)
 # Value: list of expected diagnostic types in order
 # Files NOT in this dict are expected to produce DefineSyntaxError.
 EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
-    "references/action_local_pos_requires_missing_global.def": [
+    "references/action_local_pos_requires_missing_global.dfn": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
-    "syntax/authority_path_empty_segment/empty_segment.def": [
+    "syntax/authority_path_empty_segment/empty_segment.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityPathEmptySegmentDiagnostic,
     ],
-    "syntax/fqun_format/universe_uppercase.def": [
+    "syntax/fqun_format/universe_uppercase.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.UniverseNameInvalidCharDiagnostic,
     ],
-    "syntax/fqun_validation/universe_without_authority.def": [
+    "syntax/fqun_validation/universe_without_authority.dfn": [
         diagnostics.UniverseWithoutAuthorityDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "syntax/invalid_authority_domain/authority_leading_dot.def": [
+    "syntax/invalid_authority_domain/authority_leading_dot.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
-    "syntax/invalid_authority_domain/authority_leading_hyphen.def": [
+    "syntax/invalid_authority_domain/authority_leading_hyphen.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
-    "syntax/invalid_authority_domain/authority_single_char.def": [
+    "syntax/invalid_authority_domain/authority_single_char.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainTooShortDiagnostic,
         diagnostics.DotlessAuthorityDomainDiagnostic,
     ],
-    "syntax/invalid_authority_domain/authority_trailing_dot.def": [
+    "syntax/invalid_authority_domain/authority_trailing_dot.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
-    "syntax/invalid_authority_domain/authority_trailing_hyphen.def": [
+    "syntax/invalid_authority_domain/authority_trailing_hyphen.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
-    "syntax/invalid_authority_domain/authority_uppercase.def": [
+    "syntax/invalid_authority_domain/authority_uppercase.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.AuthorityDomainInvalidCharDiagnostic,
     ],
-    "syntax/invalid_authority_path_segment/authority_path_leading_dot.def": [
+    "syntax/invalid_authority_path_segment/authority_path_leading_dot.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.InvalidAuthorityPathSegmentDiagnostic,
     ],
-    "syntax/invalid_global_name_path/hyphen.def": [
+    "syntax/invalid_global_name_path/hyphen.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
-    "syntax/invalid_global_name_path/leading_digit.def": [
+    "syntax/invalid_global_name_path/leading_digit.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
-    "syntax/invalid_global_name_path/path_leading_digit.def": [
+    "syntax/invalid_global_name_path/path_leading_digit.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
-    "syntax/invalid_global_name_path/path_uppercase.def": [
+    "syntax/invalid_global_name_path/path_uppercase.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
-    "syntax/invalid_global_name_path/special_characters.def": [
+    "syntax/invalid_global_name_path/special_characters.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
-    "syntax/invalid_global_name_path/uppercase_letter.def": [
+    "syntax/invalid_global_name_path/uppercase_letter.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     ],
-    "syntax/invalid_multiverse_name/multiverse_leading_underscore.def": [
+    "syntax/invalid_multiverse_name/multiverse_leading_underscore.dfn": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "syntax/invalid_multiverse_name/multiverse_single_char.def": [
+    "syntax/invalid_multiverse_name/multiverse_single_char.dfn": [
         diagnostics.MultiverseNameTooShortDiagnostic,
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "syntax/invalid_multiverse_name/multiverse_trailing_underscore.def": [
+    "syntax/invalid_multiverse_name/multiverse_trailing_underscore.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.MultiverseNameInvalidCharDiagnostic,
     ],
-    "syntax/invalid_multiverse_name/multiverse_uppercase.def": [
+    "syntax/invalid_multiverse_name/multiverse_uppercase.dfn": [
         diagnostics.MultiverseNameInvalidCharDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "syntax/invalid_universe_name_format/universe_leading_underscore.def": [
+    "syntax/invalid_universe_name_format/universe_leading_underscore.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.UniverseNameInvalidCharDiagnostic,
     ],
-    "syntax/invalid_universe_name_format/universe_single_char.def": [
+    "syntax/invalid_universe_name_format/universe_single_char.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.UniverseNameTooShortDiagnostic,
     ],
-    "syntax/invalid_universe_name_format/universe_trailing_underscore.def": [
+    "syntax/invalid_universe_name_format/universe_trailing_underscore.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.UniverseNameInvalidCharDiagnostic,
     ],
-    "syntax/local_names/duplicate.def": [diagnostics.LocalNameConflictDiagnostic],
-    "syntax/local_names/duplicate_across_scopes.def": [
+    "syntax/local_names/duplicate.dfn": [diagnostics.LocalNameConflictDiagnostic],
+    "syntax/local_names/duplicate_across_scopes.dfn": [
         diagnostics.LocalNameConflictDiagnostic,
     ],
-    "syntax/local_names/duplicate_inner_scope.def": [
+    "syntax/local_names/duplicate_inner_scope.dfn": [
         diagnostics.LocalNameConflictDiagnostic,
     ],
-    "syntax/local_names/hyphen.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "syntax/local_names/leading_digit.def": [
+    "syntax/local_names/hyphen.dfn": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/local_names/leading_digit.dfn": [
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
-    "syntax/local_names/space.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "syntax/local_names/special_characters.def": [
+    "syntax/local_names/space.dfn": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/local_names/special_characters.dfn": [
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
-    "syntax/local_names/uppercase.def": [diagnostics.InvalidLocalNameFormatDiagnostic],
-    "syntax/paths/double_slash.def": [
+    "syntax/local_names/uppercase.dfn": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/paths/double_slash.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.GlobalNamePathEmptySegmentDiagnostic,
     ],
-    "syntax/paths/empty_path.def": [
+    "syntax/paths/empty_path.dfn": [
         diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "syntax/paths/missing_leading_slash.def": [
+    "syntax/paths/missing_leading_slash.dfn": [
         diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
         diagnostics.PathMismatchDiagnostic,
     ],
-    "syntax/paths/path_leading_underscore.def": [diagnostics.PathMismatchDiagnostic],
-    "syntax/paths/trailing_slash.def": [
+    "syntax/paths/path_leading_underscore.dfn": [diagnostics.PathMismatchDiagnostic],
+    "syntax/paths/trailing_slash.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.GlobalNamePathTrailingSlashDiagnostic,
     ],
-    "syntax/reserved_names/reserved_authority_example_com.def": [
+    "syntax/reserved_names/reserved_authority_example_com.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.ReservedAuthorityDomainDiagnostic,
     ],
-    "syntax/reserved_names/reserved_authority_no_dot_local.def": [
+    "syntax/reserved_names/reserved_authority_no_dot_local.dfn": [
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.DotlessAuthorityDomainDiagnostic,
     ],
-    "syntax/reserved_names/reserved_authority_no_dot_mv.def": [
+    "syntax/reserved_names/reserved_authority_no_dot_mv.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.DotlessAuthorityDomainDiagnostic,
     ],
-    "syntax/reserved_names/reserved_multiverse_language.def": [
+    "syntax/reserved_names/reserved_multiverse_language.dfn": [
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "syntax/reserved_names/reserved_multiverse_package_repo.def": [
+    "syntax/reserved_names/reserved_multiverse_package_repo.dfn": [
         diagnostics.ReservedMultiverseNameDiagnostic,
         diagnostics.FqunMismatchDiagnostic,
     ],
-    "syntax/reserved_names/reserved_universe_case_insensitive.def": [
+    "syntax/reserved_names/reserved_universe_case_insensitive.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.UniverseNameInvalidCharDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
     ],
-    "syntax/reserved_names/reserved_universe_common_word.def": [
+    "syntax/reserved_names/reserved_universe_common_word.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
     ],
-    "syntax/reserved_names/reserved_universe_define.def": [
+    "syntax/reserved_names/reserved_universe_define.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
     ],
-    "syntax/reserved_names/reserved_universe_example.def": [
+    "syntax/reserved_names/reserved_universe_example.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
     ],
-    "syntax/reserved_names/reserved_universe_standard.def": [
+    "syntax/reserved_names/reserved_universe_standard.dfn": [
         diagnostics.FqunMismatchDiagnostic,
         diagnostics.ReservedUniverseNameDiagnostic,
     ],
-    "indentation/action_no_indentation.def": [
+    "indentation/action_no_indentation.dfn": [
         diagnostics.IncorrectIndentationDiagnostic,
         diagnostics.IncorrectIndentationDiagnostic,
     ],
-    "dimension_points/create/chain_ending_with_action.def": [
+    "dimension_points/create/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/create/duplicate_local_dimension_point.def": [
+    "dimension_points/create/duplicate_local_dimension_point.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
-    "dimension_points/create/single_action_reference.def": [
+    "dimension_points/create/single_action_reference.dfn": [
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/create/undefined_local_position.def": [
+    "dimension_points/create/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "dimension_points/move/chain_ending_with_action.def": [
+    "dimension_points/move/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/move/dest_occupied_after_move.def": [
+    "dimension_points/move/dest_occupied_after_move.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/from_empty_position.def": [
+    "dimension_points/move/from_empty_position.dfn": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
     ],
-    "dimension_points/move/move_to_same_position.def": [
+    "dimension_points/move/move_to_same_position.dfn": [
         diagnostics.MoveToSamePositionDiagnostic,
     ],
-    "dimension_points/move/repeated_same_direction.def": [
+    "dimension_points/move/repeated_same_direction.dfn": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/round_trip_fails.def": [
+    "dimension_points/move/round_trip_fails.dfn": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/single_action_reference.def": [
+    "dimension_points/move/single_action_reference.dfn": [
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/move/to_occupied_position.def": [
+    "dimension_points/move/to_occupied_position.dfn": [
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/undefined_local_position.def": [
+    "dimension_points/move/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "dimension_points/move/violates_dest_constraints.def": [
+    "dimension_points/move/violates_dest_constraints.dfn": [
         diagnostics.MoveViolatesConstraintsDiagnostic,
     ],
-    "dimension_points/move/violates_dest_constraints_unconstrained_source.def": [
+    "dimension_points/move/violates_dest_constraints_unconstrained_source.dfn": [
         diagnostics.MoveViolatesConstraintsDiagnostic,
     ],
-    "syntax/short_form_required/full_form_same_fqun.def": [
+    "syntax/short_form_required/full_form_same_fqun.dfn": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
-    "syntax/short_form_required/move_full_form_same_fqun.def": [
+    "syntax/short_form_required/move_full_form_same_fqun.dfn": [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
-    "trigger_conditions/chain_ending_with_action.def": [
+    "trigger_conditions/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "trigger_conditions/invalid_local_name_format.def": [
+    "trigger_conditions/invalid_local_name_format.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
-    "trigger_conditions/single_action_reference.def": [
+    "trigger_conditions/single_action_reference.dfn": [
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "trigger_conditions/undefined_local_position.def": [
+    "trigger_conditions/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "position_init/empty_init_block.def": [
+    "position_init/empty_init_block.dfn": [
         diagnostics.EmptyPositionInitBlockDiagnostic,
     ],
-    "position_init/undefined_local_in_init.def": [
+    "position_init/undefined_local_in_init.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "position_init/duplicate_create_in_init.def": [
+    "position_init/duplicate_create_in_init.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
-    "position_init/undefined_local_move_in_init.def": [
+    "position_init/undefined_local_move_in_init.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
@@ -380,12 +380,12 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
 
 
 def discover_projects(base_dir: Path) -> list[Path]:
-    """Discover Define project directories that contain a test.def entrypoint."""
+    """Discover Define project directories that contain a test.dfn entrypoint."""
     projects: list[Path] = []
     for config_file in base_dir.rglob("config.defcl"):
         if ".define/project" in str(config_file):
             project_dir = config_file.parent.parent.parent
-            if (project_dir / "test.def").exists():
+            if (project_dir / "test.dfn").exists():
                 projects.append(project_dir)
     return sorted(projects)
 
@@ -393,8 +393,8 @@ def discover_projects(base_dir: Path) -> list[Path]:
 VALID_PROJECTS = discover_projects(PROJECTS_ROOT / "valid")
 INVALID_PROJECTS = discover_projects(PROJECTS_ROOT / "invalid")
 PROJECT_CUSTOM_ENTRY_POINTS: dict[str, str] = {
-    "invalid/syntax/path_mismatch": "correct_path/test.def",
-    "valid/nested_paths": "nested/deep/test.def",
+    "invalid/syntax/path_mismatch": "correct_path/test.dfn",
+    "valid/nested_paths": "nested/deep/test.dfn",
 }
 
 
@@ -406,12 +406,12 @@ def test_lists_not_empty():
 
 
 def project_entrypoint(project_dir: Path) -> Path:
-    """Return the .def entrypoint that should be validated for a project."""
+    """Return the .dfn entrypoint that should be validated for a project."""
     project_rel_path = project_dir.relative_to(PROJECTS_ROOT).as_posix()
     custom_entrypoint = PROJECT_CUSTOM_ENTRY_POINTS.get(project_rel_path)
     if custom_entrypoint is not None:
         return Path(custom_entrypoint)
-    return Path("test.def")
+    return Path("test.dfn")
 
 
 def _type_sort_key(t: type[diagnostics.Diagnostic]) -> str:

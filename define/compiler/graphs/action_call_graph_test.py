@@ -57,7 +57,7 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -79,10 +79,10 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "act_b.def": _CALLER_ACT_B,
-                "act_a.def": _NOOP_ACTION_ACT_A,
+                "act_b.dfn": _CALLER_ACT_B,
+                "act_a.dfn": _NOOP_ACTION_ACT_A,
             },
-            entry_file="act_b.def",
+            entry_file="act_b.dfn",
         )
         assert not result.program_result.has_errors()
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
@@ -93,7 +93,7 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "act_a.def": (
+                "act_a.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_a> {\n"
                     "    define the position<my_pos>.\n"
                     "    define the position<other>.\n"
@@ -106,7 +106,7 @@ class TestActionCallGraph:
                     "}\n"
                 ),
             },
-            entry_file="act_a.def",
+            entry_file="act_a.dfn",
         )
         assert not result.program_result.has_errors()
         assert _edge_pairs(result) == {(_ACT_A, _ACT_A)}
@@ -117,8 +117,8 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": _ENTRY_POS_REFS_B_C,
-                "act_a.def": (
+                "test.dfn": _ENTRY_POS_REFS_B_C,
+                "act_a.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_a> {\n"
                     "    define the position<shared>.\n"
                     "    it happens when {\n"
@@ -129,7 +129,7 @@ class TestActionCallGraph:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pp>.\n"
                     "    define the position<gateway> {\n"
@@ -145,7 +145,7 @@ class TestActionCallGraph:
                     "    }\n"
                     "}\n"
                 ),
-                "act_c.def": (
+                "act_c.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_c> {\n"
                     "    define the position<shared>.\n"
                     "    it happens when {\n"
@@ -167,10 +167,10 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": _ENTRY_POS_REFS_B_C,
-                "act_a.def": _NOOP_ACTION_ACT_A,
-                "act_b.def": _CALLER_ACT_B,
-                "act_c.def": (
+                "test.dfn": _ENTRY_POS_REFS_B_C,
+                "act_a.dfn": _NOOP_ACTION_ACT_A,
+                "act_b.dfn": _CALLER_ACT_B,
+                "act_c.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_c> {\n"
                     "    define the position<pp>.\n"
                     "    define the position<gateway> {\n"
@@ -199,7 +199,7 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pp>.\n"
                     "    define the position<x> {\n"
@@ -215,9 +215,9 @@ class TestActionCallGraph:
                     "    }\n"
                     "}\n"
                 ),
-                "act_a.def": _NOOP_ACTION_ACT_A,
+                "act_a.dfn": _NOOP_ACTION_ACT_A,
             },
-            entry_file="act_b.def",
+            entry_file="act_b.dfn",
         )
         assert not result.program_result.has_errors()
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
@@ -228,7 +228,7 @@ class TestActionCallGraph:
     ):
         result = validate_project_with_reference_graph(
             {
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pp>.\n"
                     "    define the position<gateway> {\n"
@@ -244,7 +244,7 @@ class TestActionCallGraph:
                     "    }\n"
                     "}\n"
                 ),
-                "act_a.def": (
+                "act_a.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_a> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    define the position<other_pos>.\n"
@@ -257,7 +257,7 @@ class TestActionCallGraph:
                     "}\n"
                 ),
             },
-            entry_file="act_b.def",
+            entry_file="act_b.dfn",
         )
         assert not result.program_result.has_errors()
         assert _edge_pairs(result) == set()

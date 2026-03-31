@@ -16,7 +16,7 @@
         ],
         "extensions": [
           ".define",
-          ".def"
+          ".dfn"
         ],
         "configuration": "./language-configuration.json"
       }

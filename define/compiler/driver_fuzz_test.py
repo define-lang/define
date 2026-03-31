@@ -22,7 +22,7 @@ _PATH_SEGMENTS = ["path", "hello", "sub", "dir", "leaf", "foo", "bar"]
 _LOCAL_NAMES = ["x", "my_pos", "local", "inner", "_tmp", "pos2", "node_1"]
 _CHAIN_LOCALS_FOR_CREATE = ["src_pos", "src_pos2"]
 _MOVE_POSITION_NAMES = ["mv_a", "mv_b", "mv_c"]
-_ACTION_WITH_INNER_FILE = "action_with_inner.def"
+_ACTION_WITH_INNER_FILE = "action_with_inner.dfn"
 _INNER_POS_IN_ACTION = "inner_pos"
 _VALID_ROOT_UNIVERSES = [
     "mv:define-lang.org:fuzz_test",
@@ -651,7 +651,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             fragments.append(
                 _position_with_init_block(
                     _PROJECT_FQUN,
-                    "test.def",
+                    "test.dfn",
                     init_stmts,
                 )
             )
@@ -686,7 +686,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             fragments.append(
                 _position_with_init_block(
                     _PROJECT_FQUN,
-                    "test.def",
+                    "test.dfn",
                     init_stmts_c,
                     requirements,
                 )
@@ -696,7 +696,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             fragments.append(
                 _position_with_requirements(
                     _PROJECT_FQUN,
-                    "test.def",
+                    "test.dfn",
                     requirements,
                 )
             )
@@ -790,7 +790,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             fragments.append(
                 _action_with_block(
                     _PROJECT_FQUN,
-                    "test.def",
+                    "test.dfn",
                     outer_locals=outer_locals,
                     inner_locals=inner_locals,
                     indent=outer_indent,
@@ -951,13 +951,13 @@ def _build_same_universe_chain_project(
     use_nested_entrypoint: bool,
 ) -> ProjectCase:
     if use_nested_entrypoint:
-        entrypoint = "nested/deep/test.def"
-        middle_file = "nested/deep/middle.def"
-        leaf_file = "nested/deep/leaf.def"
+        entrypoint = "nested/deep/test.dfn"
+        middle_file = "nested/deep/middle.dfn"
+        leaf_file = "nested/deep/leaf.dfn"
     else:
-        entrypoint = "test.def"
-        middle_file = "middle.def"
-        leaf_file = "leaf.def"
+        entrypoint = "test.dfn"
+        middle_file = "middle.dfn"
+        leaf_file = "leaf.dfn"
     root_files = {
         entrypoint: _position_with_requirements(
             root_universe, entrypoint, [("position", _definition_path(middle_file))]
@@ -982,9 +982,9 @@ def _build_same_universe_chain_project(
 
 def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
     root_files = {
-        "test.def": _action_with_block(
+        "test.dfn": _action_with_block(
             root_universe,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_with_requirements(
                     "outer_pos",
@@ -1002,11 +1002,11 @@ def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
             include_trigger_comment=True,
             include_action_close_comment=True,
         ),
-        "target.def": _position_simple(root_universe, "target.def")
-        + _action_simple(root_universe, "target.def"),
+        "target.dfn": _position_simple(root_universe, "target.dfn")
+        + _action_simple(root_universe, "target.dfn"),
     }
     return ProjectCase(
-        entrypoint="test.def",
+        entrypoint="test.dfn",
         roots=(
             ProjectRootCase(
                 relative_path="",
@@ -1020,16 +1020,16 @@ def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
 
 def _build_dual_type_reference_project(root_universe: str) -> ProjectCase:
     root_files = {
-        "test.def": _position_with_requirements(
+        "test.dfn": _position_with_requirements(
             root_universe,
-            "test.def",
+            "test.dfn",
             [("position", "/shared"), ("action", "/shared")],
         ),
-        "shared.def": _position_simple(root_universe, "shared.def")
-        + _action_simple(root_universe, "shared.def"),
+        "shared.dfn": _position_simple(root_universe, "shared.dfn")
+        + _action_simple(root_universe, "shared.dfn"),
     }
     return ProjectCase(
-        entrypoint="test.def",
+        entrypoint="test.dfn",
         roots=(
             ProjectRootCase(
                 relative_path="",
@@ -1049,18 +1049,18 @@ def _build_cross_fqun_project(
 ) -> ProjectCase:
     child_path = "lib"
     root_files = {
-        "test.def": _position_with_requirements(
+        "test.dfn": _position_with_requirements(
             root_universe,
-            "test.def",
+            "test.dfn",
             [
                 (
                     "position",
-                    _global_name(child_universe, "target.def"),
+                    _global_name(child_universe, "target.dfn"),
                 )
             ],
         )
     }
-    child_files = {"target.def": _position_simple(child_universe, "target.def")}
+    child_files = {"target.dfn": _position_simple(child_universe, "target.dfn")}
     roots: list[ProjectRootCase] = [
         ProjectRootCase(
             relative_path="",
@@ -1078,13 +1078,13 @@ def _build_cross_fqun_project(
                 local_deps={},
             )
         )
-        return ProjectCase(entrypoint="test.def", roots=tuple(roots))
+        return ProjectCase(entrypoint="test.dfn", roots=tuple(roots))
 
     grandchild_universe = _VALID_GRANDCHILD_UNIVERSES[0]
-    child_files["target.def"] = _position_with_requirements(
+    child_files["target.dfn"] = _position_with_requirements(
         child_universe,
-        "target.def",
-        [("position", _global_name(grandchild_universe, "leaf.def"))],
+        "target.dfn",
+        [("position", _global_name(grandchild_universe, "leaf.dfn"))],
     )
     roots.extend(
         [
@@ -1097,12 +1097,12 @@ def _build_cross_fqun_project(
             ProjectRootCase(
                 relative_path="lib/inner",
                 universe_name=grandchild_universe,
-                files={"leaf.def": _position_simple(grandchild_universe, "leaf.def")},
+                files={"leaf.dfn": _position_simple(grandchild_universe, "leaf.dfn")},
                 local_deps={},
             ),
         ]
     )
-    return ProjectCase(entrypoint="test.def", roots=tuple(roots))
+    return ProjectCase(entrypoint="test.dfn", roots=tuple(roots))
 
 
 def _build_cross_fqun_action_statements_project(
@@ -1110,14 +1110,14 @@ def _build_cross_fqun_action_statements_project(
     child_universe: str,
 ) -> ProjectCase:
     root_files = {
-        "test.def": _action_with_block(
+        "test.dfn": _action_with_block(
             root_universe,
-            "test.def",
+            "test.dfn",
             outer_locals=[],
             inner_locals=[
                 _local_position_with_requirements(
                     "inner_pos",
-                    [("position", _global_name(child_universe, "target.def"))],
+                    [("position", _global_name(child_universe, "target.dfn"))],
                     indent="        ",
                 )
             ],
@@ -1125,11 +1125,11 @@ def _build_cross_fqun_action_statements_project(
         )
     }
     child_files = {
-        "target.def": _position_simple(child_universe, "target.def")
-        + _action_simple(child_universe, "target.def")
+        "target.dfn": _position_simple(child_universe, "target.dfn")
+        + _action_simple(child_universe, "target.dfn")
     }
     return ProjectCase(
-        entrypoint="test.def",
+        entrypoint="test.dfn",
         roots=(
             ProjectRootCase(
                 relative_path="",
@@ -1149,9 +1149,9 @@ def _build_cross_fqun_action_statements_project(
 
 def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
     root_files = {
-        "test.def": _action_with_block(
+        "test.dfn": _action_with_block(
             root_universe,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_simple("from_pos", indent="    "),
                 _local_position_simple("to_pos", indent="    "),
@@ -1167,7 +1167,7 @@ def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
         ),
     }
     return ProjectCase(
-        entrypoint="test.def",
+        entrypoint="test.dfn",
         roots=(ProjectRootCase("", root_universe, root_files, {}),),
     )
 
@@ -1175,20 +1175,20 @@ def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
 def _build_position_init_self_reference_project(
     root_universe: str,
 ) -> ProjectCase:
-    other_path = _definition_path("other.def")
+    other_path = _definition_path("other.dfn")
     root_files = {
-        "test.def": _position_with_init_block(
+        "test.dfn": _position_with_init_block(
             root_universe,
-            "test.def",
+            "test.dfn",
             [
                 _create_dimension_point_statement("position</test>", indent="        "),
             ],
             [("position", other_path)],
         ),
-        "other.def": _position_simple(root_universe, "other.def"),
+        "other.dfn": _position_simple(root_universe, "other.dfn"),
     }
     return ProjectCase(
-        entrypoint="test.def",
+        entrypoint="test.dfn",
         roots=(ProjectRootCase("", root_universe, root_files, {}),),
     )
 
@@ -1267,9 +1267,9 @@ def mutated_project_cases(draw: st.DrawFn) -> ProjectCase:
 @pytest.fixture
 def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _setup_project(tmp_path, _PROJECT_FQUN)
-    (tmp_path / "another_test.def").write_text(
-        _action_simple(_PROJECT_FQUN, "another_test.def")
-        + _position_simple(_PROJECT_FQUN, "another_test.def"),
+    (tmp_path / "another_test.dfn").write_text(
+        _action_simple(_PROJECT_FQUN, "another_test.dfn")
+        + _position_simple(_PROJECT_FQUN, "another_test.dfn"),
         encoding="utf-8",
     )
     (tmp_path / _ACTION_WITH_INNER_FILE).write_text(
@@ -1415,16 +1415,16 @@ def _global_name_context_template(context: str) -> str:
         return f"define the potential action<{_NAME_MARKER}>.\n"
     if context == "position_req":
         return _position_with_requirements(
-            _PROJECT_FQUN, "test.def", [("position", _NAME_MARKER)]
+            _PROJECT_FQUN, "test.dfn", [("position", _NAME_MARKER)]
         )
     if context == "action_req":
         return _position_with_requirements(
-            _PROJECT_FQUN, "test.def", [("action", _NAME_MARKER)]
+            _PROJECT_FQUN, "test.dfn", [("action", _NAME_MARKER)]
         )
     if context == "create_ref":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[],
             inner_locals=[
                 _create_dimension_point_statement(
@@ -1435,7 +1435,7 @@ def _global_name_context_template(context: str) -> str:
     if context == "move_from_ref":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_simple("from_pos", indent="    "),
                 _local_position_simple("to_pos", indent="    "),
@@ -1454,7 +1454,7 @@ def _global_name_context_template(context: str) -> str:
     if context == "move_to_ref":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_simple("from_pos", indent="    "),
             ],
@@ -1470,7 +1470,7 @@ def _global_name_context_template(context: str) -> str:
             ],
         )
     return _action_block_with_name(
-        _global_name(_PROJECT_FQUN, "test.def"),
+        _global_name(_PROJECT_FQUN, "test.dfn"),
         outer_locals=[],
         inner_locals=[
             _create_dimension_point_statement("position<run>", indent="        ")
@@ -1493,7 +1493,7 @@ def _local_name_context_template(context: str) -> str:
     if context == "local_def_simple":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[f"    define the position<{_NAME_MARKER}>.\n"],
             inner_locals=[
                 _create_dimension_point_statement("position<run>", indent="        ")
@@ -1502,7 +1502,7 @@ def _local_name_context_template(context: str) -> str:
     if context == "local_def_constrained":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_with_requirements(
                     _NAME_MARKER,
@@ -1517,7 +1517,7 @@ def _local_name_context_template(context: str) -> str:
     if context == "create_ref":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[],
             inner_locals=[
                 _create_dimension_point_statement(
@@ -1528,7 +1528,7 @@ def _local_name_context_template(context: str) -> str:
     if context == "move_from_ref":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_simple("from_pos", indent="    "),
                 _local_position_simple("to_pos", indent="    "),
@@ -1547,7 +1547,7 @@ def _local_name_context_template(context: str) -> str:
     if context == "move_to_ref":
         return _action_with_block(
             _PROJECT_FQUN,
-            "test.def",
+            "test.dfn",
             outer_locals=[
                 _local_position_simple("from_pos", indent="    "),
             ],
@@ -1563,7 +1563,7 @@ def _local_name_context_template(context: str) -> str:
             ],
         )
     return _action_block_with_name(
-        _global_name(_PROJECT_FQUN, "test.def"),
+        _global_name(_PROJECT_FQUN, "test.dfn"),
         outer_locals=[],
         inner_locals=[
             _create_dimension_point_statement("position<run>", indent="        ")
@@ -1617,10 +1617,10 @@ def _structured_random_global_name_bytes(draw: st.DrawFn) -> bytes:
 )
 @given(source=valid_sources())
 def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
-    file_path = fuzz_project / "test.def"
+    file_path = fuzz_project / "test.dfn"
     file_path.write_text(source, encoding="utf-8")
     d = driver.Driver(_PARSER)
-    results = d.validate_program(Path("test.def")).result.file_results
+    results = d.validate_program(Path("test.dfn")).result.file_results
     _assert_results_are_clean(results, _escape_content(source))
 
 
@@ -1651,9 +1651,9 @@ def test_valid_projects_validate_cleanly(
 )
 @given(source=mutated_sources())
 def test_mutated_syntax_no_unclassified_errors(fuzz_project: Path, source: str):
-    (fuzz_project / "test.def").write_text(source, encoding="utf-8")
+    (fuzz_project / "test.dfn").write_text(source, encoding="utf-8")
     d = driver.Driver(_PARSER)
-    results = d.validate_program(Path("test.def")).result.file_results
+    results = d.validate_program(Path("test.dfn")).result.file_results
     _assert_only_parser_syntax_exceptions(results, _escape_content(source))
 
 
@@ -1684,10 +1684,10 @@ def test_mutated_projects_no_unclassified_errors(
 )
 @given(data=st.binary(max_size=800))
 def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
-    file_path = fuzz_project / "test.def"
+    file_path = fuzz_project / "test.dfn"
     file_path.write_bytes(data)
     d = driver.Driver(_PARSER)
-    results = d.validate_program(Path("test.def")).result.file_results
+    results = d.validate_program(Path("test.dfn")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(data))
 
 
@@ -1705,9 +1705,9 @@ def test_random_local_name_bytes_no_unclassified_errors(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
     template = _local_name_context_template(context)
-    (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
+    (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver(_PARSER)
-    results = d.validate_program(Path("test.def")).result.file_results
+    results = d.validate_program(Path("test.dfn")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
 
 
@@ -1725,9 +1725,9 @@ def test_random_global_name_raw_bytes_no_unclassified_errors(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
     template = _global_name_context_template(context)
-    (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
+    (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver(_PARSER)
-    results = d.validate_program(Path("test.def")).result.file_results
+    results = d.validate_program(Path("test.dfn")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(name_bytes))
 
 
@@ -1745,7 +1745,7 @@ def test_random_global_name_structured_bytes_no_unclassified_errors(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
     template = _global_name_context_template(context)
-    (fuzz_project / "test.def").write_bytes(_splice_name_bytes(template, name_bytes))
+    (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver(_PARSER)
-    results = d.validate_program(Path("test.def")).result.file_results
+    results = d.validate_program(Path("test.dfn")).result.file_results
     _assert_only_parser_syntax_exceptions(results, repr(name_bytes))

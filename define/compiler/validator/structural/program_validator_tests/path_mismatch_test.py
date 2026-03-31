@@ -16,7 +16,7 @@ def test_path_matches_file_no_error(validate_source_as_file: ValidateSourceAsFil
     diags = validate_source_as_file(
         source,
         "my.domain.com:my_lib",
-        PurePosixPath("foo/bar.def"),
+        PurePosixPath("foo/bar.dfn"),
     )
     assert len(diags) == 0
 
@@ -26,7 +26,7 @@ def test_path_mismatch_error(validate_source_as_file: ValidateSourceAsFile):
     diags = validate_source_as_file(
         source,
         "my.domain.com:my_lib",
-        PurePosixPath("foo/bar.def"),
+        PurePosixPath("foo/bar.dfn"),
     )
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
@@ -41,7 +41,7 @@ def test_no_file_path_skips_validation(validate_source_as_file: ValidateSourceAs
     diags = validate_source_as_file(
         source,
         "my.domain.com:my_lib",
-        PurePosixPath("any/path.def"),
+        PurePosixPath("any/path.dfn"),
     )
     assert len(diags) == 0
 
@@ -51,6 +51,6 @@ def test_nested_path_matches(validate_source_as_file: ValidateSourceAsFile):
     diags = validate_source_as_file(
         source,
         "my.domain.com:my_lib",
-        PurePosixPath("a/b/c.def"),
+        PurePosixPath("a/b/c.dfn"),
     )
     assert len(diags) == 0

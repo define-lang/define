@@ -25,7 +25,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -41,7 +41,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    it happens when {\n"
@@ -63,7 +63,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -81,7 +81,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    it happens when {\n"
@@ -103,7 +103,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -119,7 +119,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<non_trigger>.\n"
                     "    define the position<actual_trigger>.\n"
@@ -142,7 +142,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -158,7 +158,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    it happens when {\n"
@@ -180,7 +180,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -196,7 +196,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.def": (
+                "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<trigger_b>.\n"
                     "    define the position<gateway> {\n"
@@ -212,7 +212,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "act_c.def": (
+                "act_c.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_c> {\n"
                     "    define the position<trigger_c>.\n"
                     "    it happens when {\n"
@@ -234,7 +234,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<my_pos>.\n"
                     "    define the position<other>.\n"
@@ -257,7 +257,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -281,7 +281,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    it happens when {\n"
@@ -312,7 +312,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<my_pos>.\n"
                     "    it happens when {\n"
@@ -346,7 +346,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
@@ -362,7 +362,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<pos>.\n"
                     "    it happens when {\n"
@@ -411,7 +411,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<local> {\n"
@@ -427,7 +427,7 @@ class TestActionTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    it happens when {\n"
@@ -449,7 +449,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -486,7 +486,7 @@ class TestActionTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -525,7 +525,7 @@ class TestUnknownGlobalNoTrigger:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
@@ -535,7 +535,7 @@ class TestUnknownGlobalNoTrigger:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<trigger_pos>.\n"
                     "    it happens when {\n"
@@ -576,7 +576,7 @@ class TestPositionInitTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the action</other>.\n"
@@ -587,7 +587,7 @@ class TestPositionInitTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": _OTHER_ACTION,
+                "other.dfn": _OTHER_ACTION,
             },
         )
         assert not result.program_result.has_errors()
@@ -599,7 +599,7 @@ class TestPositionInitTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the action</other>.\n"
@@ -612,7 +612,7 @@ class TestPositionInitTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": _OTHER_ACTION,
+                "other.dfn": _OTHER_ACTION,
             },
         )
         assert not result.program_result.has_errors()
@@ -624,7 +624,7 @@ class TestPositionInitTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
                     "    after it is assigned {\n"
                     "        create a dimension point in position</test>.\n"
@@ -642,7 +642,7 @@ class TestPositionInitTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the action</other>.\n"
@@ -653,7 +653,7 @@ class TestPositionInitTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": (
+                "other.dfn": (
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<non_trigger>.\n"
                     "    define the position<actual_trigger>.\n"
@@ -676,7 +676,7 @@ class TestPositionInitTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the action</other>.\n"
@@ -701,7 +701,7 @@ class TestPositionInitTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": _OTHER_ACTION,
+                "other.dfn": _OTHER_ACTION,
             },
         )
         assert not result.program_result.has_errors()
@@ -716,7 +716,7 @@ class TestPositionInitTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential position<my.domain.com:my_lib:/test> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the action</other>.\n"
@@ -729,7 +729,7 @@ class TestPositionInitTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "other.def": _OTHER_ACTION,
+                "other.dfn": _OTHER_ACTION,
             },
         )
         assert not result.program_result.has_errors()
@@ -743,7 +743,7 @@ class TestCircularDependencyTriggering:
     ):
         result = validate_project_with_reference_graph(
             {
-                "test.def": (
+                "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run> {\n"
                     "        it may only contain dimension points where {\n"
@@ -758,7 +758,7 @@ class TestCircularDependencyTriggering:
                     "    }\n"
                     "}\n"
                 ),
-                "pos.def": (
+                "pos.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos> {\n"
                     "    it may only contain dimension points where {\n"
                     "        it has the action</test>.\n"

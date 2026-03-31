@@ -18,7 +18,7 @@ from define.compiler.validator.structural import program_validator
 
 
 def test_entrypoint_file_not_found(validate_project: ValidateProject):
-    result = validate_project({}, entry_file="nonexistent.def")
+    result = validate_project({}, entry_file="nonexistent.dfn")
     assert len(result.file_results) == 1
     assert isinstance(
         result.file_results[0].exception, exceptions.SourceFileNotFoundError
@@ -41,7 +41,7 @@ def test_referenced_file_not_found(
     assert len(result.diagnostics) == 1
     diag = result.diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diag.file_path == "missing.def"
+    assert diag.file_path == "missing.dfn"
     assert diag.location.line == 3
     assert diag.location.column == 29
 
@@ -53,7 +53,7 @@ def test_non_filesystem_cross_universe_reference(
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
     test_helpers.write_local_deps_config(tmp_path, {child_universe: "lib"})
     test_helpers.write_sub_root(tmp_path, "lib", child_universe)
-    (tmp_path / "lib" / "target.def").write_text(
+    (tmp_path / "lib" / "target.dfn").write_text(
         f"define the potential position<{child_universe}:/target>.\n",
         encoding="utf-8",
     )
@@ -77,10 +77,10 @@ def test_non_filesystem_cross_universe_reference(
     assert len(result.file_results[0].diagnostics) == 1
     diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diag.file_path == "lib/missing.def"
+    assert diag.file_path == "lib/missing.dfn"
     assert diag.location.line == 4
     assert diag.location.column == 29
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.def")
+    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
     assert result.file_results[1].root_prefix == PurePosixPath("lib")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
@@ -93,7 +93,7 @@ def test_referenced_file_not_found_via_already_completed_target(
 ):
     result = validate_project(
         {
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</missing>.\n"
@@ -101,7 +101,7 @@ def test_referenced_file_not_found_via_already_completed_target(
                 "    }\n"
                 "}\n"
             ),
-            "target.def": (
+            "target.dfn": (
                 "define the potential position<my.domain.com:my_lib:/target> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</missing>.\n"
@@ -112,22 +112,22 @@ def test_referenced_file_not_found_via_already_completed_target(
         max_workers=1,
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
         result.file_results[0].diagnostics[0],
         diagnostics.ReferencedFileNotFoundDiagnostic,
     )
-    assert result.file_results[0].diagnostics[0].file_path == "missing.def"
-    assert result.file_results[1].file_path == PurePosixPath("target.def")
+    assert result.file_results[0].diagnostics[0].file_path == "missing.dfn"
+    assert result.file_results[1].file_path == PurePosixPath("target.dfn")
     assert result.file_results[1].exception is None
     assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
         result.file_results[1].diagnostics[0],
         diagnostics.ReferencedFileNotFoundDiagnostic,
     )
-    assert result.file_results[1].diagnostics[0].file_path == "missing.def"
+    assert result.file_results[1].diagnostics[0].file_path == "missing.dfn"
 
 
 def test_referenced_file_not_found_for_two_definitions_in_same_file(
@@ -159,9 +159,9 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[0].file_path == "missing.def"
+    assert diags[0].file_path == "missing.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert diags[1].file_path == "missing.def"
+    assert diags[1].file_path == "missing.dfn"
     assert diags[1].location.line == 9
     assert diags[1].location.column == 33

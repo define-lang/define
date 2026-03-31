@@ -34,15 +34,15 @@ def test_reserved_universe_name_format():
 def test_path_mismatch_format(validate_project: ValidateProject):
     source = "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
     result = validate_project(
-        {"foo/bar.def": source},
-        entry_file="foo/bar.def",
+        {"foo/bar.dfn": source},
+        entry_file="foo/bar.dfn",
     )
     assert len(result.file_results) == 1
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        'File "foo/bar.def", line 1, column 52\n'
+        'File "foo/bar.dfn", line 1, column 52\n'
         "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
         "                                                   ^\n"
         "definition path '/wrong/path' does not match file path '/foo/bar'"
@@ -109,8 +109,8 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     )
     result = validate_project(
         {
-            "test.def": source,
-            "lib/target.def": f"define the potential position<{wrong_child_universe}:/target>.\n",
+            "test.dfn": source,
+            "lib/target.dfn": f"define the potential position<{wrong_child_universe}:/target>.\n",
         },
         universe_name=parent_universe,
         local_deps={child_universe: "lib"},
@@ -126,7 +126,7 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
 
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        'File "test.def", line 3, column 29\n'
+        'File "test.dfn", line 3, column 29\n'
         + "        it has the position<mv:define-lang.org:child:/target>.\n"
         + "                            ^\n"
         + "an error occurred while loading the project configuration:\n"
@@ -142,7 +142,7 @@ def test_not_project_root_error_message_for_project_root(
     monkeypatch.chdir(tmp_path)
     results = (
         program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.def"))
+        .validate_program(PurePosixPath("test.dfn"))
         .file_results
     )
     assert len(results) == 1
@@ -168,7 +168,7 @@ def test_not_project_root_error_message_for_subroot(
         "}\n"
     )
     result = validate_project(
-        {"test.def": source},
+        {"test.dfn": source},
         universe_name=parent_universe,
         local_deps={child_universe: "lib"},
         max_workers=1,
@@ -202,8 +202,8 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     test_helpers.write_sub_root(tmp_path, "lib", child_fqun)
     test_helpers.write_local_deps_config(tmp_path / "lib", {parent_fqun: "nested"})
     test_helpers.write_sub_root(tmp_path, "lib/nested", parent_fqun)
-    _ = (tmp_path / "test.def").write_text(source, encoding="utf-8")
-    _ = (tmp_path / "lib" / "target.def").write_text(
+    _ = (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+    _ = (tmp_path / "lib" / "target.dfn").write_text(
         (
             f"define the potential position<{child_fqun}:/target> {{\n"
             "    it may only contain dimension points where {\n"
@@ -213,7 +213,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
         ),
         encoding="utf-8",
     )
-    _ = (tmp_path / "lib" / "nested" / "leaf.def").write_text(
+    _ = (tmp_path / "lib" / "nested" / "leaf.dfn").write_text(
         f"define the potential position<{parent_fqun}:/leaf>.\n",
         encoding="utf-8",
     )
@@ -221,13 +221,13 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
 
     results = (
         program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.def"), max_workers=1)
+        .validate_program(PurePosixPath("test.dfn"), max_workers=1)
         .file_results
     )
     assert len(results) == 2
-    assert results[0].file_path == PurePosixPath("test.def")
+    assert results[0].file_path == PurePosixPath("test.dfn")
     assert results[0].diagnostics == []
-    assert results[1].file_path == PurePosixPath("lib/target.def")
+    assert results[1].file_path == PurePosixPath("lib/target.dfn")
     diags = results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
@@ -242,12 +242,12 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
 def test_source_file_not_found_error_message(
     validate_project: ValidateProject,
 ):
-    result = validate_project({}, entry_file="nonexistent.def")
+    result = validate_project({}, entry_file="nonexistent.dfn")
     results = result.file_results
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, exceptions.SourceFileNotFoundError)
-    assert str(error) == "Source file not found: nonexistent.def"
+    assert str(error) == "Source file not found: nonexistent.dfn"
 
 
 def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -256,14 +256,14 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     _ = (config_dir / "config.defcl").write_text(
         'project: {\n  universe_name "bad"\n}\n', encoding="utf-8"
     )
-    _ = (tmp_path / "test.def").write_text(
+    _ = (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n", encoding="utf-8"
     )
     monkeypatch.chdir(tmp_path)
 
     results = (
         program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.def"))
+        .validate_program(PurePosixPath("test.dfn"))
         .file_results
     )
     assert len(results) == 1
@@ -278,14 +278,14 @@ def test_config_validation_error_message(
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text("project: {}\n", encoding="utf-8")
-    _ = (tmp_path / "test.def").write_text(
+    _ = (tmp_path / "test.dfn").write_text(
         "define the potential position<x.com:lib:/test>.\n", encoding="utf-8"
     )
     monkeypatch.chdir(tmp_path)
 
     results = (
         program_validator.ProgramStructuralValidator()
-        .validate_program(PurePosixPath("test.def"))
+        .validate_program(PurePosixPath("test.dfn"))
         .file_results
     )
     assert len(results) == 1

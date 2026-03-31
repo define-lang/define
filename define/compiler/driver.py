@@ -135,7 +135,7 @@ class Driver:
         """Validate (and optionally compile) a Define source file.
 
         Args:
-            path: Path to the .def file to validate.
+            path: Path to the .dfn file to validate.
             mode: Whether to only validate or also compile.
             error_stream: Where to write error messages (syntax errors, diagnostics).
                 Defaults to sys.stderr.

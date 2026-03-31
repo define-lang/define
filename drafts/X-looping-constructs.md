@@ -537,7 +537,7 @@ This proposal introduces entirely new syntax. No existing Define programs use
 looping constructs, so no refactoring is needed.
 
 The `repeat 500 times` syntax used in the
-[fibonacci example](../define/examples/fibonacci/fibonacci/generate.def) would
+[fibonacci example](../define/examples/fibonacci/fibonacci/generate.dfn) would
 be refactored to:
 
 ```

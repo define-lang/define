@@ -36,7 +36,7 @@ def test_returns_single_file_timing_stats(
     assert result.diagnostics == []
     assert result.exception is None
     assert result.source == source
-    assert result.file_path == PurePosixPath("test.def")
+    assert result.file_path == PurePosixPath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -59,7 +59,7 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
     assert result.source is not None
-    assert result.file_path == PurePosixPath("test.def")
+    assert result.file_path == PurePosixPath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -97,7 +97,7 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
     assert result.source is None
-    assert result.file_path == PurePosixPath("test.def")
+    assert result.file_path == PurePosixPath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -123,7 +123,7 @@ def test_transform_error_from_name_parser_populates_exceptions(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
     assert result.source == source
-    assert result.file_path == PurePosixPath("test.def")
+    assert result.file_path == PurePosixPath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -139,7 +139,7 @@ def test_transform_error_from_name_parser_populates_exceptions(
 def test_config_error_sets_later_phases_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    relative_path = PurePosixPath("test.def")
+    relative_path = PurePosixPath("test.dfn")
     source_path = tmp_path / relative_path
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",
@@ -155,7 +155,7 @@ def test_config_error_sets_later_phases_to_zero(
     result = results[0]
 
     assert isinstance(result.exception, exceptions.ConfigError)
-    assert result.file_path == PurePosixPath("test.def")
+    assert result.file_path == PurePosixPath("test.dfn")
     assert result.root_prefix == PurePosixPath(".")
 
     timings = result.stats
@@ -172,7 +172,7 @@ def test_file_not_found_sets_later_phases_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
-    relative_path = PurePosixPath("nonexistent.def")
+    relative_path = PurePosixPath("nonexistent.dfn")
     monkeypatch.chdir(tmp_path)
     results = (
         program_validator.ProgramStructuralValidator()
@@ -197,7 +197,7 @@ def test_file_not_found_sets_later_phases_to_zero(
 def test_config_loading_time_ns_tracks_successful_root_load(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    relative_path = PurePosixPath("test.def")
+    relative_path = PurePosixPath("test.dfn")
     source_path = tmp_path / relative_path
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",
@@ -215,7 +215,7 @@ def test_config_loading_time_ns_tracks_successful_root_load(
 def test_config_loading_time_ns_tracks_failing_root_load(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    relative_path = PurePosixPath("test.def")
+    relative_path = PurePosixPath("test.dfn")
     source_path = tmp_path / relative_path
     source_path.write_text(
         "define the potential position<my.domain.com:my_lib:/test>.\n",

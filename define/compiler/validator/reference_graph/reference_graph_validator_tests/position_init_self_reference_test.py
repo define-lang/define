@@ -30,8 +30,8 @@ def test_create_in_self_with_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
@@ -85,8 +85,8 @@ def test_move_to_self_violates_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</x>.\n"
@@ -117,8 +117,8 @@ def test_move_from_self_violates_constraints(
 ):
     result = validate_project_with_reference_graph(
         {
-            "x.def": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.def": (
+            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        define the position<local> {\n"
@@ -150,8 +150,8 @@ def test_self_reference_mixed_with_other_reference(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
-            "test.def": (
+            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        create a dimension point in position</test>.\n"
@@ -175,8 +175,8 @@ def test_chained_name_starting_with_self_two_items_valid(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
-            "test.def": (
+            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the position</other>.\n"
@@ -197,8 +197,8 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": "define the potential position<my.domain.com:my_lib:/other>.\n",
-            "test.def": (
+            "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        create a dimension point in position</test>::position</other>.\n"
@@ -246,7 +246,7 @@ def test_chained_name_starting_with_self_three_items_valid(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<local>.\n"
                 "    it happens when {\n"
@@ -257,7 +257,7 @@ def test_chained_name_starting_with_self_three_items_valid(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -278,7 +278,7 @@ def test_chained_name_starting_with_self_three_items_invalid(
 ):
     result = validate_project_with_reference_graph(
         {
-            "other.def": (
+            "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<local>.\n"
                 "    it happens when {\n"
@@ -289,7 +289,7 @@ def test_chained_name_starting_with_self_three_items_invalid(
                 "    }\n"
                 "}\n"
             ),
-            "test.def": (
+            "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</other>.\n"
@@ -302,7 +302,7 @@ def test_chained_name_starting_with_self_three_items_invalid(
         }
     )
     assert len(result.program_result.file_results) == 2
-    assert result.program_result.file_results[0].file_path == PurePosixPath("test.def")
+    assert result.program_result.file_results[0].file_path == PurePosixPath("test.dfn")
     test_diags = result.program_result.file_results[0].diagnostics
     assert len(test_diags) == 1
     assert isinstance(test_diags[0], diagnostics.ChainElementNotInActionDiagnostic)

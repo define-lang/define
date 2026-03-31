@@ -34,16 +34,16 @@ class TestPathFormats:
     ):
         _setup_project(tmp_path, "my.domain.com:my_lib")
         source = "define the potential position<my.domain.com:my_lib:/sub/test>.\n"
-        _write_source(tmp_path, "sub/test.def", source)
+        _write_source(tmp_path, "sub/test.dfn", source)
         monkeypatch.chdir(tmp_path)
 
         d = driver.Driver(_PARSER)
-        driver_result = d.validate_program(Path(PureWindowsPath("sub\\test.def")))
+        driver_result = d.validate_program(Path(PureWindowsPath("sub\\test.dfn")))
         assert len(driver_result.result.file_results) == 1
         result = driver_result.result.file_results[0]
 
         assert not driver_result.result.has_errors()
-        assert str(result.file_path) == "sub/test.def"
+        assert str(result.file_path) == "sub/test.dfn"
 
 
 class TestPathResolution:
@@ -53,7 +53,7 @@ class TestPathResolution:
         _setup_project(tmp_path, "test.example.com:my_lib")
         source_file = _write_source(
             tmp_path,
-            "hello.def",
+            "hello.dfn",
             "define the potential position<test.example.com:my_lib:/hello>.\n",
         )
         monkeypatch.chdir(tmp_path)
@@ -62,7 +62,7 @@ class TestPathResolution:
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
-            "hello.def"
+            "hello.dfn"
         )
 
     def test_absolute_path_outside_project_root_is_rejected(
@@ -73,7 +73,7 @@ class TestPathResolution:
         _setup_project(project, "test.example.com:my_lib")
         outside = tmp_path / "outside"
         outside.mkdir()
-        source_file = outside / "hello.def"
+        source_file = outside / "hello.dfn"
         monkeypatch.chdir(project)
 
         d = driver.Driver(_PARSER)
@@ -90,18 +90,18 @@ class TestPathResolution:
         (tmp_path / "sub").mkdir()
         _write_source(
             tmp_path,
-            "hello.def",
+            "hello.dfn",
             "define the potential position<test.example.com:my_lib:/hello>.\n",
         )
         monkeypatch.chdir(tmp_path)
 
         driver_result = driver.Driver(_PARSER).validate_program(
-            Path("sub/../hello.def")
+            Path("sub/../hello.dfn")
         )
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
-            "hello.def"
+            "hello.dfn"
         )
 
     def test_symlink_to_outside_without_dotdot_is_allowed(
@@ -114,17 +114,17 @@ class TestPathResolution:
         outside.mkdir()
         _write_source(
             outside,
-            "hello.def",
+            "hello.dfn",
             "define the potential position<test.example.com:my_lib:/link/hello>.\n",
         )
         (project / "link").symlink_to(outside)
         monkeypatch.chdir(project)
 
-        driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.def"))
+        driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.dfn"))
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
-            "link/hello.def"
+            "link/hello.dfn"
         )
 
     def test_symlink_with_dotdot_escaping_root_is_rejected(
@@ -140,8 +140,8 @@ class TestPathResolution:
 
         d = driver.Driver(_PARSER)
         with pytest.raises(exceptions.RelativePathError) as exc_info:
-            d.validate_program(Path("link/../hello.def"))
-        assert exc_info.value.input_path == Path("link/../hello.def")
+            d.validate_program(Path("link/../hello.dfn"))
+        assert exc_info.value.input_path == Path("link/../hello.dfn")
         assert exc_info.value.project_root == project.resolve()
 
     def test_symlink_with_dotdot_staying_in_root_is_allowed(
@@ -151,19 +151,19 @@ class TestPathResolution:
         (tmp_path / "real" / "sub").mkdir(parents=True)
         _write_source(
             tmp_path,
-            "real/hello.def",
+            "real/hello.dfn",
             "define the potential position<test.example.com:my_lib:/real/hello>.\n",
         )
         (tmp_path / "link").symlink_to(tmp_path / "real" / "sub")
         monkeypatch.chdir(tmp_path)
 
         driver_result = driver.Driver(_PARSER).validate_program(
-            Path("link/../hello.def")
+            Path("link/../hello.dfn")
         )
         assert len(driver_result.result.file_results) == 1
         assert not driver_result.result.has_errors()
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
-            "real/hello.def"
+            "real/hello.dfn"
         )
 
     def test_path_escaping_project_root_is_rejected(
@@ -174,6 +174,6 @@ class TestPathResolution:
 
         d = driver.Driver(_PARSER)
         with pytest.raises(exceptions.RelativePathError) as exc_info:
-            d.validate_program(Path("../hello.def"))
-        assert exc_info.value.input_path == Path("../hello.def")
+            d.validate_program(Path("../hello.dfn"))
+        assert exc_info.value.input_path == Path("../hello.dfn")
         assert exc_info.value.project_root == tmp_path.resolve()

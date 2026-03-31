@@ -11,50 +11,50 @@ from define.compiler.validator.structural import path_tracker
 class TestPathTracker:
     def test_is_tracked_unknown(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert not tracker.is_tracked(PurePosixPath("a.def"))
+        assert not tracker.is_tracked(PurePosixPath("a.dfn"))
 
     def test_mark_in_progress(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.def"))
-        assert tracker.is_tracked(PurePosixPath("a.def"))
+        tracker.mark_in_progress(PurePosixPath("a.dfn"))
+        assert tracker.is_tracked(PurePosixPath("a.dfn"))
 
     def test_set_and_get_result(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.def"))
-        tracker.set_result(PurePosixPath("a.def"), "ok")
-        assert tracker.get_result(PurePosixPath("a.def")) == "ok"
+        tracker.mark_in_progress(PurePosixPath("a.dfn"))
+        tracker.set_result(PurePosixPath("a.dfn"), "ok")
+        assert tracker.get_result(PurePosixPath("a.dfn")) == "ok"
 
     def test_get_result_raises_when_in_progress(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.def"))
+        tracker.mark_in_progress(PurePosixPath("a.dfn"))
         with pytest.raises(KeyError):
-            tracker.get_result(PurePosixPath("a.def"))
+            tracker.get_result(PurePosixPath("a.dfn"))
 
     def test_completed_results_excludes_in_progress(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.def"))
-        tracker.set_result(PurePosixPath("a.def"), "done")
-        tracker.mark_in_progress(PurePosixPath("b.def"))
+        tracker.mark_in_progress(PurePosixPath("a.dfn"))
+        tracker.set_result(PurePosixPath("a.dfn"), "done")
+        tracker.mark_in_progress(PurePosixPath("b.dfn"))
         assert tracker.completed_results() == ["done"]
 
     def test_completed_results_excludes_not_found(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.def"))
-        tracker.set_result(PurePosixPath("a.def"), "done")
-        tracker.mark_not_found(PurePosixPath("a.def"))
+        tracker.mark_in_progress(PurePosixPath("a.dfn"))
+        tracker.set_result(PurePosixPath("a.dfn"), "done")
+        tracker.mark_not_found(PurePosixPath("a.dfn"))
         assert tracker.completed_results() == []
 
     def test_completed_results_preserves_order(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        for name in ["c.def", "a.def", "b.def"]:
+        for name in ["c.dfn", "a.dfn", "b.dfn"]:
             tracker.mark_in_progress(PurePosixPath(name))
             tracker.set_result(PurePosixPath(name), name)
-        assert tracker.completed_results() == ["c.def", "a.def", "b.def"]
+        assert tracker.completed_results() == ["c.dfn", "a.dfn", "b.dfn"]
 
     def test_mark_not_found_does_not_affect_is_tracked(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_not_found(PurePosixPath("a.def"))
-        assert not tracker.is_tracked(PurePosixPath("a.def"))
+        tracker.mark_not_found(PurePosixPath("a.dfn"))
+        assert not tracker.is_tracked(PurePosixPath("a.dfn"))
 
 
 class TestSubRootTracking:
@@ -134,13 +134,13 @@ class TestConflictDetection:
     def test_find_enclosing_root_no_roots_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         with pytest.raises(KeyError, match="no project root registered"):
-            tracker.find_enclosing_root(PurePosixPath("foo/bar.def"))
+            tracker.find_enclosing_root(PurePosixPath("foo/bar.dfn"))
 
     def test_find_enclosing_root_returns_project_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(PurePosixPath(""), "root.uni", {})
         assert tracker.find_enclosing_root(
-            PurePosixPath("foo/bar.def")
+            PurePosixPath("foo/bar.dfn")
         ) == PurePosixPath(".")
 
     def test_find_enclosing_root_returns_nested(self):
@@ -148,7 +148,7 @@ class TestConflictDetection:
         tracker.register_project_root(PurePosixPath(""), "root.uni", {})
         tracker.register_project_root(PurePosixPath("lib"), "lib.uni", {})
         assert tracker.find_enclosing_root(
-            PurePosixPath("lib/foo.def")
+            PurePosixPath("lib/foo.dfn")
         ) == PurePosixPath("lib")
 
     def test_find_enclosing_root_returns_most_specific(self):
@@ -157,7 +157,7 @@ class TestConflictDetection:
         tracker.register_project_root(PurePosixPath("lib"), "lib.uni", {})
         tracker.register_project_root(PurePosixPath("lib/inner"), "inner.uni", {})
         assert tracker.find_enclosing_root(
-            PurePosixPath("lib/inner/x.def")
+            PurePosixPath("lib/inner/x.dfn")
         ) == PurePosixPath("lib/inner")
 
     def test_first_tracked_file_under_no_files(self):
@@ -168,14 +168,14 @@ class TestConflictDetection:
     def test_first_tracked_file_under_finds_conflict(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        tracker.mark_in_progress(PurePosixPath("lib/target.def"))
+        tracker.mark_in_progress(PurePosixPath("lib/target.dfn"))
         result = tracker.first_tracked_file_under(PurePosixPath("lib"))
-        assert result == (PurePosixPath("lib/target.def"), "root.uni")
+        assert result == (PurePosixPath("lib/target.dfn"), "root.uni")
 
     def test_first_tracked_file_under_returns_nested_sub_root_owner(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(PurePosixPath(""), "root.uni", {})
         tracker.register_project_root(PurePosixPath("lib/inner"), "inner.uni", {})
-        tracker.mark_in_progress(PurePosixPath("lib/inner/x.def"))
+        tracker.mark_in_progress(PurePosixPath("lib/inner/x.dfn"))
         result = tracker.first_tracked_file_under(PurePosixPath("lib"))
-        assert result == (PurePosixPath("lib/inner/x.def"), "inner.uni")
+        assert result == (PurePosixPath("lib/inner/x.dfn"), "inner.uni")
