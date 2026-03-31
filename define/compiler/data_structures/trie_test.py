@@ -309,6 +309,61 @@ class TestExistingPrefix:
             t.existing_prefix(())
 
 
+class TestFindShortestPrefixWhere:
+    def test_no_match(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 2
+        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) is None
+
+    def test_match_at_root_element(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 99
+        t[("a", "b")] = 2
+        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) == ["a"]
+
+    def test_match_at_intermediate(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 50
+        t[("a", "b", "c")] = 3
+        assert t.find_shortest_prefix_where(("a", "b", "c"), lambda v: v > 10) == [
+            "a",
+            "b",
+        ]
+
+    def test_match_at_leaf(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 2
+        t[("a", "b", "c")] = 99
+        assert t.find_shortest_prefix_where(("a", "b", "c"), lambda v: v > 10) == [
+            "a",
+            "b",
+            "c",
+        ]
+
+    def test_key_not_in_trie(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 99
+        assert t.find_shortest_prefix_where(("x", "y"), lambda v: v > 10) is None
+
+    def test_partial_path_match_before_missing(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 99
+        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) == ["a"]
+
+    def test_partial_path_no_match(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) is None
+
+    def test_empty_key_raises(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        with pytest.raises(trie.EmptyKeyError):
+            t.find_shortest_prefix_where((), lambda v: v > 0)
+
+
 class TestIndependence:
     def test_parent_and_child_are_independent_values(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()

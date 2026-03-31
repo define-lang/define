@@ -88,22 +88,22 @@ class DimensionPointTracker:
             if parent_key not in self._state:
                 self._state[parent_key] = _NodeState()
 
-    # TODO: Unknown state does not propagate to descendants. If a position
-    # is unknown, has_unknown_state on its children still returns False,
-    # allowing creates and moves on children to proceed as if the parent
-    # state were known. We should check ancestors when querying unknown state.
     def mark_unknown(self, in_position: ast.PositionReference):
         """Mark a position as having unknown occupancy state."""
         self._unknown[self._key(in_position)] = _UnknownState(caused_by=in_position)
 
     def has_unknown_state(self, in_position: ast.PositionReference) -> bool:
-        """Return whether a position has unknown occupancy state."""
+        """Return whether a position or any ancestor has unknown occupancy state."""
         return self.has_unknown_state_by_key(self._key(in_position))
 
     def has_unknown_state_by_key(self, key: tuple[str, ...]) -> bool:
-        """Return whether a position has unknown occupancy state, by raw key."""
-        state = self._unknown.get(key)
-        return state is not None and state.caused_by is not None
+        """Return whether a position or any ancestor has unknown occupancy state."""
+        return (
+            self._unknown.find_shortest_prefix_where(
+                key, lambda state: state.caused_by is not None
+            )
+            is not None
+        )
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a dimension point exists at this position."""

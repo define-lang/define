@@ -173,6 +173,20 @@ def test_unknown_state_does_not_affect_other_keys():
     )
 
 
+def test_unknown_state_propagates_to_descendants():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_ref = _make_position_ref([_make_local_ref("pos_a")])
+    child_ref = _make_position_ref(
+        [_make_local_ref("pos_a"), _make_global_ref("/child")]
+    )
+
+    tracker.create(parent_ref, frozenset())
+    tracker.mark_unknown(parent_ref)
+
+    assert tracker.has_unknown_state(parent_ref) is True
+    assert tracker.has_unknown_state(child_ref) is True
+
+
 def test_move_to_occupied_raises():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])

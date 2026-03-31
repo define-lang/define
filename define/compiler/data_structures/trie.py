@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
 type TrieKey = tuple[str, ...] | list[str]
 
@@ -247,6 +247,29 @@ class StrictReparentingTrie[V]:
             result.append(element)
             children = node.children
         return result
+
+    def find_shortest_prefix_where(
+        self, key: TrieKey, predicate: Callable[[V], bool]
+    ) -> list[str] | None:
+        """Return the shortest prefix of key whose node satisfies predicate.
+
+        Walks from the root toward the full key, checking each node's value.
+        Returns the key of the first node where predicate returns True,
+        or None if no prefix (including the full key) matches. Stops early
+        and returns None if a node along the path doesn't exist.
+        """
+        self._validate_key(key)
+        children = self._root
+        path: list[str] = []
+        for element in key:
+            node = children.get(element)
+            if node is None:
+                return None
+            path.append(element)
+            if predicate(node.value):
+                return path
+            children = node.children
+        return None
 
     def keys(self) -> Generator[list[str]]:
         """Yield all keys that have values.
