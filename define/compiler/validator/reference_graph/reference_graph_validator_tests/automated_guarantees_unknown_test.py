@@ -1,4 +1,7 @@
 # pyright: reportUnusedCallResult=false
+# Exception to CLAUDE.md "no docstrings in tests" rule: these tests have docstrings
+# because the automated guarantee/requirement scenarios are complex enough to need
+# prose explanations of what each test verifies.
 
 from pathlib import PurePosixPath
 
@@ -9,6 +12,7 @@ from define.compiler.conftest import ValidateProjectWithReferenceGraph
 def test_unknown_interface_position_stays_unknown_after_trigger(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """An interface position with unknown state from conflicting moves stays unknown after trigger."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -66,6 +70,7 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
 def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When an action's guarantee results in unknown state, creating after trigger is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -113,6 +118,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
 def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When an action's guarantee results in unknown state, moving from it after trigger is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -161,6 +167,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
 def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When an action's guarantee results in unknown state, moving to it after trigger is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -210,6 +217,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
 def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Unknown guarantee through a trigger chain suppresses create diagnostics."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -261,6 +269,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
 def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Unknown guarantee through a trigger chain suppresses move-from diagnostics."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -313,6 +322,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
 def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Unknown guarantee through a trigger chain suppresses move-to diagnostics."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -366,6 +376,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
 def test_unknown_from_move_to_occupied_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Moving to an already-occupied interface position makes the guarantee unknown but reports the internal error."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -412,6 +423,7 @@ def test_unknown_from_move_to_occupied_interface_position(
 def test_unknown_from_constraint_violation_on_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A constraint violation on an interface position makes the guarantee unknown but reports the violation."""
     result = validate_project_with_reference_graph(
         {
             "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
@@ -462,6 +474,7 @@ def test_unknown_from_constraint_violation_on_interface_position(
 def test_unknown_propagation_from_local_to_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Unknown state on a local position propagates to an interface position when the action moves it there."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -509,6 +522,7 @@ def test_unknown_propagation_from_local_to_interface_position(
 def test_unknown_from_prefix_move_on_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Moving an interface position DP into one of its own child positions reports MoveIntoDefiningPositionDiagnostic."""
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (
@@ -575,6 +589,7 @@ def test_unknown_from_prefix_move_on_interface_position(
 def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """An unknown global chain start treats all action guarantees as unknown."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -618,6 +633,7 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
 def test_post_trigger_unknown_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Unknown state on a child position from conflicting moves allows creating in it after trigger."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -679,6 +695,7 @@ def test_post_trigger_unknown_guarantee_on_child_position(
 def test_post_trigger_existing_guarantee_unknown_origin_with_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Unknown state on a parent position allows creating in a child at the destination after trigger."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",

@@ -1,4 +1,7 @@
 # pyright: reportUnusedCallResult=false
+# Exception to CLAUDE.md "no docstrings in tests" rule: these tests have docstrings
+# because the automated guarantee/requirement scenarios are complex enough to need
+# prose explanations of what each test verifies.
 
 from pathlib import PurePosixPath
 
@@ -12,6 +15,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 def test_satisfy_requirements_then_trigger(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Satisfying an action's occupied requirement before triggering succeeds."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -53,6 +57,7 @@ def test_satisfy_requirements_then_trigger(
 def test_violate_occupied_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering without filling a required occupied position produces ActionRequiresOccupiedPositionDiagnostic."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -103,6 +108,7 @@ def test_violate_occupied_requirement(
 def test_caller_violates_occupied_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Caller triggering without filling a required occupied position produces a diagnostic at the trigger site."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -153,6 +159,7 @@ def test_caller_violates_occupied_requirement(
 def test_caller_satisfies_empty_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering an action whose body creates in a position succeeds when the caller leaves it empty."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -190,6 +197,7 @@ def test_caller_satisfies_empty_requirement(
 def test_caller_violates_empty_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering an action whose body creates in a position fails when the caller already filled it."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -243,6 +251,7 @@ def test_caller_violates_empty_requirement(
 def test_empty_requirement_with_unknown_state_is_silent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When position state is unknown from a failed move, no empty requirement diagnostic is produced."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -289,6 +298,7 @@ def test_empty_requirement_with_unknown_state_is_silent(
 def test_occupied_requirement_with_unknown_state_is_silent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When position state is unknown from a failed move, no occupied requirement diagnostic is produced."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -336,6 +346,7 @@ def test_occupied_requirement_with_unknown_state_is_silent(
 def test_multiple_requirements_one_empty_one_occupied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """An action with both occupied and empty requirements succeeds when both are satisfied."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -377,6 +388,7 @@ def test_multiple_requirements_one_empty_one_occupied(
 def test_caller_satisfies_occupied_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Filling an action's required occupied position before triggering succeeds."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -444,6 +456,7 @@ _OTHER_WITH_EMPTY_REQUIREMENT = (
 def test_position_init_violates_occupied_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering from a position init block without filling the required occupied position fails."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": _OTHER_WITH_OCCUPIED_REQUIREMENT,
@@ -480,6 +493,7 @@ def test_position_init_violates_occupied_requirement(
 def test_position_init_violates_empty_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering from a position init block after filling a position the action requires empty fails."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": _OTHER_WITH_EMPTY_REQUIREMENT,
@@ -518,6 +532,7 @@ def test_position_init_violates_empty_requirement(
 def test_position_init_satisfies_requirements(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering from a position init block with all requirements satisfied succeeds."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": _OTHER_WITH_OCCUPIED_REQUIREMENT,
@@ -541,6 +556,7 @@ def test_position_init_satisfies_requirements(
 def test_no_requirement_check_on_unknown_global_chain_start(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When the chain starts with an unknown global name, requirement checking is skipped."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -577,6 +593,7 @@ def test_no_requirement_check_on_unknown_global_chain_start(
 def test_trigger_chain_occupied_requirement_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain's child occupied requirement is satisfied when the caller fills the child position."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -633,6 +650,7 @@ def test_trigger_chain_occupied_requirement_satisfied(
 def test_trigger_chain_occupied_requirement_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain's child occupied requirement is violated when the caller doesn't fill the child positions."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -706,6 +724,7 @@ def test_trigger_chain_occupied_requirement_violated(
 def test_trigger_chain_empty_requirement_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain's child empty requirement is satisfied when the caller leaves it empty."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -747,6 +766,7 @@ def test_trigger_chain_empty_requirement_satisfied(
 def test_trigger_chain_empty_requirement_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain's child empty requirement is violated when the caller fills it before triggering."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -815,9 +835,10 @@ def test_trigger_chain_empty_requirement_violated(
     ),
     strict=True,
 )
-def test_trigger_chain_prefilled_item_fails_empty_requirement(
+def test_inner_chained_action_requirement_propagates_up_the_stack(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Triggering a nested chained action fails when the caller pre-fills a position the inner action requires empty."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -888,6 +909,7 @@ def test_trigger_chain_prefilled_item_fails_empty_requirement(
 def test_trigger_chain_parent_requirement_violated(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain fails when the parent interface position is not occupied."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",

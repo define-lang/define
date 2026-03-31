@@ -1,4 +1,7 @@
 # pyright: reportUnusedCallResult=false
+# Exception to CLAUDE.md "no docstrings in tests" rule: these tests have docstrings
+# because the automated guarantee/requirement scenarios are complex enough to need
+# prose explanations of what each test verifies.
 
 from pathlib import PurePosixPath
 
@@ -10,6 +13,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 def test_create_in_interface_position_starts_empty(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Creating in an interface position that starts empty succeeds."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -48,6 +52,7 @@ def test_create_in_interface_position_starts_empty(
 def test_create_twice_in_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Creating twice in the same interface position produces CreateInOccupiedPositionDiagnostic."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -96,6 +101,7 @@ def test_create_twice_in_interface_position(
 def test_untouched_interface_position_preserved_after_trigger(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """An interface position's state is preserved through a trigger if the action doesn't touch it."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -145,6 +151,7 @@ def test_untouched_interface_position_preserved_after_trigger(
 def test_move_from_guarantee_emptied_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Moving from an interface position that the action's guarantee emptied produces MoveFromEmptyInterfacePositionDiagnostic."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -199,6 +206,7 @@ def test_move_from_guarantee_emptied_interface_position(
 def test_post_trigger_guaranteed_empty_position_allows_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position guaranteed empty by the action allows a create."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -238,6 +246,7 @@ def test_post_trigger_guaranteed_empty_position_allows_create(
 def test_post_trigger_guaranteed_occupied_position_rejects_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position guaranteed occupied by the action (via create) rejects a second create."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -285,6 +294,7 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
 def test_post_trigger_trigger_position_stays_occupied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """The trigger position remains occupied after the trigger fires; creating in it again fails."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -335,6 +345,7 @@ def test_post_trigger_trigger_position_stays_occupied(
 def test_second_trigger_cycle_after_guarantee_empties_trigger(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """When the action moves the trigger DP away, the trigger position is empty after trigger, allowing re-trigger."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -373,6 +384,7 @@ def test_second_trigger_cycle_after_guarantee_empties_trigger(
 def test_second_trigger_fails_when_guarantee_filled_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Second trigger fails when the action's guarantee filled a position the action requires empty."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -423,6 +435,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
 def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Second trigger fails when the dest position is still occupied from the first trigger's move guarantee."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -480,6 +493,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
 def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Second trigger fails both occupied and empty requirements due to the first trigger's move guarantees."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -548,6 +562,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
 def test_second_trigger_succeeds_with_proper_state_management(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Second trigger succeeds when the caller properly restores state between trigger cycles."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -597,6 +612,7 @@ def test_second_trigger_succeeds_with_proper_state_management(
 def test_post_trigger_dp_identity_preserved_through_guarantee(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a DP moved by the action's guarantee retains its constraint qualities."""
     result = validate_project_with_reference_graph(
         {
             "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
@@ -651,6 +667,7 @@ def test_post_trigger_dp_identity_preserved_through_guarantee(
 def test_post_trigger_guaranteed_empty_position_allows_move_to(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position guaranteed empty by the action allows move-to."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -692,6 +709,7 @@ def test_post_trigger_guaranteed_empty_position_allows_move_to(
 def test_post_trigger_occupied_by_new_allows_move_from(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position guaranteed occupied via the action's create allows move-from."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -731,6 +749,7 @@ def test_post_trigger_occupied_by_new_allows_move_from(
 def test_post_trigger_occupied_by_new_rejects_move_to(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position guaranteed occupied via the action's create rejects move-to."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -781,6 +800,7 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
 def test_post_trigger_occupied_by_existing_rejects_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position occupied by the action's move rejects create."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -832,6 +852,7 @@ def test_post_trigger_occupied_by_existing_rejects_create(
 def test_post_trigger_occupied_by_existing_rejects_move_to(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a position occupied by the action's move rejects another move-to."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -886,6 +907,7 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
 def test_position_init_trigger_applies_empty_guarantee(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Trigger from a position init block applies the action's empty guarantee."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -935,6 +957,7 @@ def test_position_init_trigger_applies_empty_guarantee(
 def test_position_init_trigger_applies_occupied_guarantee(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """Trigger from a position init block applies the action's occupied guarantee."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -979,6 +1002,7 @@ def test_position_init_trigger_applies_occupied_guarantee(
 def test_trigger_chain_move_guarantee_empties_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain correctly applies a child move guarantee, emptying the child position."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -1028,6 +1052,7 @@ def test_trigger_chain_move_guarantee_empties_position(
 def test_trigger_chain_create_guarantee_fills_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """A trigger chain correctly applies a child create guarantee, filling the child position."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -1082,6 +1107,7 @@ def test_trigger_chain_create_guarantee_fills_position(
 def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After a trigger chain move-then-return, the DP retains its original constraint qualities."""
     result = validate_project_with_reference_graph(
         {
             "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
@@ -1153,6 +1179,7 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
 def test_post_trigger_existing_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a child position filled by the action's move is guaranteed occupied."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1221,6 +1248,7 @@ def test_post_trigger_existing_guarantee_on_child_position(
 def test_post_trigger_empty_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a child position emptied by the action is guaranteed empty."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1285,6 +1313,7 @@ def test_post_trigger_empty_guarantee_on_child_position(
 def test_post_trigger_new_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a child position newly created by the action is guaranteed occupied."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -1338,6 +1367,7 @@ def test_post_trigger_new_guarantee_on_child_position(
 def test_post_trigger_empty_guarantee_deletes_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, moving a parent away guarantees its children are also empty."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1408,6 +1438,7 @@ def test_post_trigger_empty_guarantee_deletes_children(
 def test_post_trigger_new_guarantee_deletes_old_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, replacing a DP in a position deletes the old DP's children."""
     result = validate_project_with_reference_graph(
         {
             "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
@@ -1495,6 +1526,7 @@ def test_post_trigger_new_guarantee_deletes_old_children(
 def test_post_trigger_child_removed_before_parent_move(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, removing a child then moving the parent leaves the destination child empty."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1559,6 +1591,7 @@ def test_post_trigger_child_removed_before_parent_move(
 def test_post_trigger_parent_and_child_both_have_guarantees(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, parent move and child create guarantees both apply at the destination."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1624,6 +1657,7 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
 def test_post_trigger_child_guarantee_follows_parent_move(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, a child guarantee follows its parent when the parent is moved."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1689,6 +1723,7 @@ def test_post_trigger_child_guarantee_follows_parent_move(
 def test_post_trigger_existing_guarantee_empties_origin_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, moving a parent away empties the origin's children even if the caller filled them."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -1761,6 +1796,7 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
 def test_post_trigger_existing_guarantee_on_child_swap(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    """After trigger, swapping children between positions preserves each DP's qualities."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
