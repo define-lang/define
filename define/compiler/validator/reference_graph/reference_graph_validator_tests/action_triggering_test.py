@@ -1,5 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def _edge_keys(
@@ -54,7 +55,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
 
     def test_create_and_move_trigger_other_action(
@@ -94,7 +95,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _OTHER, 14)}
 
     def test_no_trigger_when_writing_to_non_trigger_position(
@@ -133,7 +134,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == set()
 
     def test_cross_file_triggering(
@@ -171,7 +172,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _ACT_B, 12)}
 
     def test_trigger_chain(
@@ -225,7 +226,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _ACT_B, 12), (_ACT_B, _ACT_C, 12)}
 
     def test_self_trigger(
@@ -248,7 +249,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _TEST, 8)}
 
     def test_duplicate_action_does_not_add_trigger_edges(
@@ -325,7 +326,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         all_trigger_positions = [
             tp
             for r in result.program_result.file_results
@@ -375,7 +376,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         all_body_effects = [
             effect
             for r in result.program_result.file_results
@@ -440,7 +441,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
 
     def test_no_body_effect_when_create_target_has_unknown_state(
@@ -590,7 +591,7 @@ class TestPositionInitTriggering:
                 "other.dfn": _OTHER_ACTION,
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 7)}
 
     def test_position_init_move_triggers_action(
@@ -615,7 +616,7 @@ class TestPositionInitTriggering:
                 "other.dfn": _OTHER_ACTION,
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
 
     def test_position_init_self_reference_no_trigger_edge(
@@ -633,7 +634,7 @@ class TestPositionInitTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == set()
 
     def test_position_init_no_edge_when_non_trigger_position(
@@ -667,7 +668,7 @@ class TestPositionInitTriggering:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == set()
 
     def test_position_init_and_action_both_trigger_same_target(
@@ -704,7 +705,7 @@ class TestPositionInitTriggering:
                 "other.dfn": _OTHER_ACTION,
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {
             (_POS_TEST, _OTHER, 7),
             (_TEST, _OTHER, 21),
@@ -732,7 +733,7 @@ class TestPositionInitTriggering:
                 "other.dfn": _OTHER_ACTION,
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
 
 

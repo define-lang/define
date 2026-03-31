@@ -5,6 +5,7 @@ from define.compiler.validator.reference_graph import (
     definition_postorder_validator,
 )
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def _get_contract(
@@ -16,7 +17,7 @@ def _get_contract(
             source
         )
     )
-    assert not result.has_errors(), result.all_diagnostics
+    assert_no_errors(result)
     definition_result = result.definition_results[action_name]
     validator = definition_postorder_validator.create_postorder_validator(
         definition_result, result.definition_results, {}

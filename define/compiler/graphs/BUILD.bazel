@@ -29,6 +29,7 @@ py_test(
     deps = [
         ":action_call_graph",
         ":action_call_graph_renderer",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "@rules_python//python/runfiles",
@@ -41,6 +42,7 @@ py_test(
     srcs = ["action_call_graph_test.py"],
     deps = [
         "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 

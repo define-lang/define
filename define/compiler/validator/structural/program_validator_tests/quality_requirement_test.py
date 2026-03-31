@@ -4,6 +4,7 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_non_self_ref_global_in_action_body(
@@ -143,4 +144,4 @@ def test_self_reference_in_position_init_is_valid(
             ),
         },
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)

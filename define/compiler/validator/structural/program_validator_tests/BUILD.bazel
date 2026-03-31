@@ -28,6 +28,7 @@ py_test(
     srcs = ["action_triggering_test.py"],
     deps = [
         "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 
@@ -129,6 +130,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:file_validator",
     ],
 )
@@ -205,6 +207,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 

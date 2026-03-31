@@ -1,5 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import conftest
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _ACT_A = "action<my.domain.com:my_lib:/act_a>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
@@ -70,7 +71,7 @@ class TestActionCallGraph:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == set()
 
     def test_single_trigger_edge(
@@ -84,7 +85,7 @@ class TestActionCallGraph:
             },
             entry_file="act_b.dfn",
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
 
     def test_self_trigger(
@@ -108,7 +109,7 @@ class TestActionCallGraph:
             },
             entry_file="act_a.dfn",
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_A, _ACT_A)}
 
     def test_duplicates_not_targeted_twice(
@@ -158,7 +159,7 @@ class TestActionCallGraph:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
 
     def test_multiple_effects_to_same_target(
@@ -190,7 +191,7 @@ class TestActionCallGraph:
                 ),
             },
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A), (_ACT_C, _ACT_A)}
 
     def test_local_prefix_before_action_reference(
@@ -219,7 +220,7 @@ class TestActionCallGraph:
             },
             entry_file="act_b.dfn",
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
 
     def test_no_edge_when_position_does_not_match(
@@ -259,5 +260,5 @@ class TestActionCallGraph:
             },
             entry_file="act_b.dfn",
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
         assert _edge_pairs(result) == set()

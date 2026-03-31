@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from define.compiler import driver
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _TESTDATA_ROOT = Path("define/compiler/codegen/testdata")
 
@@ -73,7 +74,7 @@ def test_generates_expected_output(
     output_dir = Path(tempfile.mkdtemp())
     result = driver.Driver().compile_program(Path("test.dfn"), output_dir)
 
-    assert not result.result.has_errors()
+    assert_no_errors(result.result)
     _assert_dirs_equal(expected_dir, output_dir)
 
 

@@ -12,6 +12,7 @@ from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import ValidateProject
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARENT_UNIVERSE = "mv:define-lang.org:parent_universe"
 _CHILD_UNIVERSE = "mv:define-lang.org:child_universe"
@@ -87,7 +88,7 @@ def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert not result.has_errors()
+    assert_no_errors(result)
     assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
 
@@ -526,7 +527,7 @@ def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 3
-    assert not result.has_errors()
+    assert_no_errors(result)
     assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[1].file_path == PurePosixPath("lib/entry.dfn")
     assert result.file_results[2].file_path == PurePosixPath("lib/leaf.dfn")
@@ -572,7 +573,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
         PurePosixPath("test.dfn")
     )
     assert len(result.file_results) == 3
-    assert not result.has_errors()
+    assert_no_errors(result)
     assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
     assert result.file_results[2].file_path == PurePosixPath("lib/inner/leaf.dfn")

@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
 from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_move_source_requirement_satisfied_no_error(
@@ -22,7 +23,7 @@ def test_move_source_requirement_satisfied_no_error(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_create_target_requirement_satisfied_no_error(
@@ -40,7 +41,7 @@ def test_create_target_requirement_satisfied_no_error(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_interface_position_first_used_as_move_source_then_create_is_valid(
@@ -60,7 +61,7 @@ def test_interface_position_first_used_as_move_source_then_create_is_valid(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_interface_position_first_used_as_create_then_move_is_valid(
@@ -80,7 +81,7 @@ def test_interface_position_first_used_as_create_then_move_is_valid(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_move_from_interface_chained_to_local(
@@ -106,7 +107,7 @@ def test_move_from_interface_chained_to_local(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_local_to_interface_chained(
@@ -133,7 +134,7 @@ def test_move_from_local_to_interface_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_between_interface_chained(
@@ -165,7 +166,7 @@ def test_move_between_interface_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_to_occupied_interface_chained(
@@ -228,7 +229,7 @@ def test_create_in_interface_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_interface_chained(
@@ -290,7 +291,7 @@ def test_move_then_create_in_interface_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_trigger_chained_to_local(
@@ -316,7 +317,7 @@ def test_move_from_trigger_chained_to_local(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_create_in_trigger_chained(
@@ -341,7 +342,7 @@ def test_create_in_trigger_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_trigger_chained(
@@ -403,4 +404,4 @@ def test_move_from_trigger_chained_then_create(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)

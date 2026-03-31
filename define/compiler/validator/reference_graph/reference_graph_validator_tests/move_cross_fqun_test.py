@@ -1,6 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARENT = "mv:define-lang.org:parent"
 _CHILD = "mv:define-lang.org:child"
@@ -38,7 +39,7 @@ def test_cross_fqun_local_to_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_local_to_local_violates(
@@ -122,7 +123,7 @@ def test_cross_fqun_local_to_chained_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_local_to_chained_violates(
@@ -208,7 +209,7 @@ def test_cross_fqun_chained_to_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_chained_to_local_violates(
@@ -301,7 +302,7 @@ def test_cross_fqun_move_to_chained_action_local_satisfies(
         local_deps={_CHILD: "lib"},
         sub_roots={"lib": _CHILD},
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_cross_fqun_move_to_chained_action_local_violates(

@@ -8,6 +8,7 @@ from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_create_in_self(
@@ -43,7 +44,7 @@ def test_create_in_self_with_constraints(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_local_to_self(
@@ -189,7 +190,7 @@ def test_chained_name_starting_with_self_two_items_valid(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_chained_name_starting_with_self_two_items_invalid_global(
@@ -270,7 +271,7 @@ def test_chained_name_starting_with_self_three_items_valid(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_chained_name_starting_with_self_three_items_invalid(

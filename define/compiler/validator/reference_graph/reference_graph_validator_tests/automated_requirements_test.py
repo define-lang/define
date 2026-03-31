@@ -6,6 +6,7 @@ import pytest
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_satisfy_requirements_then_trigger(
@@ -46,7 +47,7 @@ def test_satisfy_requirements_then_trigger(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_violate_occupied_requirement(
@@ -183,7 +184,7 @@ def test_caller_satisfies_empty_requirement(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_caller_violates_empty_requirement(
@@ -370,7 +371,7 @@ def test_multiple_requirements_one_empty_one_occupied(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_caller_satisfies_occupied_requirement(
@@ -411,7 +412,7 @@ def test_caller_satisfies_occupied_requirement(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 _OTHER_WITH_OCCUPIED_REQUIREMENT = (
@@ -534,7 +535,7 @@ def test_position_init_satisfies_requirements(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_no_requirement_check_on_unknown_global_chain_start(
@@ -626,7 +627,7 @@ def test_trigger_chain_occupied_requirement_satisfied(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_trigger_chain_occupied_requirement_violated(
@@ -740,7 +741,7 @@ def test_trigger_chain_empty_requirement_satisfied(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_trigger_chain_empty_requirement_violated(

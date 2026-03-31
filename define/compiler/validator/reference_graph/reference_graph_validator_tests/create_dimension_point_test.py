@@ -14,6 +14,7 @@ from define.compiler.conftest import (
     ValidateProjectWithReferenceGraph,
 )
 from define.compiler.validator import test_helpers
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_short_form_global_reference(
@@ -85,7 +86,7 @@ def test_valid_local_name(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_cross_universe_not_configured(
@@ -180,7 +181,7 @@ def test_local_position_defined_in_action_statements_before_use(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_two_actions_with_definition_block_local_positions(
@@ -207,7 +208,7 @@ def test_two_actions_with_definition_block_local_positions(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_single_action_in_position_reference(
@@ -263,7 +264,7 @@ def test_create_in_local_chained_position(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_local_chained_position(
@@ -322,7 +323,7 @@ def test_create_in_chained_position_in_position_init(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_chained_position_in_position_init(

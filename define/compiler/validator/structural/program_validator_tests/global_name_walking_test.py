@@ -15,6 +15,7 @@ from define.compiler.conftest import (
 )
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_nested_file_path(validate_project: ValidateProject):
@@ -26,7 +27,7 @@ def test_nested_file_path(validate_project: ValidateProject):
         entry_file="sub/dir/leaf.dfn",
     )
     assert len(result.file_results) == 1
-    assert not result.has_errors()
+    assert_no_errors(result)
     assert result.file_results[0].file_path == PurePosixPath("sub/dir/leaf.dfn")
 
 
@@ -470,7 +471,7 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
         PurePosixPath("shared.dfn"),
         PurePosixPath("leaf.dfn"),
     ]
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_circular_reference_does_not_skip_remaining_edge_validation(

@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from define.compiler import diagnostics, driver, parser, parser_exceptions
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARSER = parser.Parser()
 
@@ -428,7 +429,7 @@ def test_valid_files(def_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(FILES_ROOT)
 
     driver_result = driver.Driver(_PARSER).validate_program(def_file)
-    assert not driver_result.result.has_errors()
+    assert_no_errors(driver_result.result)
 
 
 @pytest.mark.parametrize(
@@ -472,7 +473,7 @@ def test_valid_projects(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
     entry_point = project_entrypoint(project_dir)
     driver_result = d.validate_program(entry_point)
-    assert not driver_result.result.has_errors()
+    assert_no_errors(driver_result.result)
 
 
 @pytest.mark.parametrize(

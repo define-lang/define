@@ -6,6 +6,7 @@ from define.compiler import diagnostics
 from define.compiler.codegen import generator
 from define.compiler.conftest import ValidateProject
 from define.compiler.validator import validation_result
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def _generate(
@@ -57,7 +58,7 @@ class TestCodeGenerator:
             },
         )
 
-        assert not program_result.has_errors()
+        assert_no_errors(program_result)
         assert _generate(program_result, tmp_path) == []
         main_file = tmp_path / "__main__.py"
         assert main_file.exists()

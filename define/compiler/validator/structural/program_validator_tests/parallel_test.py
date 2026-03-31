@@ -11,6 +11,7 @@ from unittest import mock
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
 from define.compiler.validator.structural import file_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _POSITION_WITH_REF = (
     "define the potential position<my.domain.com:my_lib:/{name}> {{\n"
@@ -58,7 +59,7 @@ def test_fan_out(validate_project: ValidateProject):
         files[f"{name}.dfn"] = _simple_position(name)
     result = validate_project(files, entry_file="root.dfn", max_workers=4)
     assert len(result.file_results) == 11
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_deep_chain(validate_project: ValidateProject):
@@ -69,7 +70,7 @@ def test_deep_chain(validate_project: ValidateProject):
     files[f"{chain[-1]}.dfn"] = _simple_position(chain[-1])
     result = validate_project(files, entry_file="a.dfn", max_workers=4)
     assert len(result.file_results) == 5
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_diamond_dependency(validate_project: ValidateProject):
@@ -84,7 +85,7 @@ def test_diamond_dependency(validate_project: ValidateProject):
         max_workers=4,
     )
     assert len(result.file_results) == 4
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_wrong_type_detected_without_deferral(

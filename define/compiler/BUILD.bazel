@@ -153,6 +153,7 @@ py_test(
         ":diagnostics",
         ":driver",
         ":parser",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
     ],
 )
@@ -179,6 +180,7 @@ py_test(
         ":exceptions",
         ":parser",
         ":parser_exceptions",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 

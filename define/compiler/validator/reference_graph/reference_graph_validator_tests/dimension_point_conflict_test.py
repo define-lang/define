@@ -6,6 +6,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_duplicate_local_position(
@@ -50,7 +51,7 @@ def test_different_local_positions(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_undefined_position_not_tracked_for_duplicates(
@@ -104,7 +105,7 @@ def test_two_actions_same_local_position_create_no_error(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_two_actions_same_name_one_duplicate_one_clean(
@@ -174,7 +175,7 @@ def test_three_actions_dimension_point_isolation(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_definition_block_position_enforced(

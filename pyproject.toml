@@ -69,6 +69,9 @@ known-first-party = ["define", "defcl", "tools"]
 "**/conftest.py" = [
     "S101", # Allow assert statements.
 ]
+"**/test_helpers.py" = [
+    "S101", # Allow assert statements in test helpers.
+]
 "define/compiler/parser_exceptions.py" = [
     "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
 ]

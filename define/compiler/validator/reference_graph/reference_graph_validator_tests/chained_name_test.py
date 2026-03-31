@@ -11,6 +11,7 @@ from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestCreateDimensionPoint:
@@ -265,7 +266,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_chain_second_element_not_in_constraints(
         self,
@@ -442,7 +443,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_duplicate_definition_preserves_first_constraints(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -778,7 +779,7 @@ class TestCreateDimensionPoint:
                 "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_chain_third_element_not_in_position_constraints(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -885,7 +886,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_chain_element_inside_action_not_found(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -1005,7 +1006,7 @@ class TestCreateDimensionPoint:
                 ),
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_four_element_chain_through_positions(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -1045,7 +1046,7 @@ class TestCreateDimensionPoint:
                 "pos_d.dfn": "define the potential position<my.domain.com:my_lib:/pos_d>.\n",
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_chain_third_element_skipped_when_second_fails(
         self,
@@ -1439,7 +1440,7 @@ class TestMoveDimensionPoint:
                 ),
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_chain_not_in_constraints(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph

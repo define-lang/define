@@ -4,6 +4,7 @@ from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestTriggerConditionValidation:
@@ -126,7 +127,7 @@ class TestTriggerConditionValidation:
                 "inner.dfn": "define the potential position<my.domain.com:my_lib:/inner>.\n",
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_chain_ending_with_action(
         self,
@@ -195,7 +196,7 @@ class TestTriggerConditionValidation:
                 "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             }
         )
-        assert not result.program_result.has_errors()
+        assert_no_errors(result.program_result)
 
     def test_three_item_chain_invalid(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph

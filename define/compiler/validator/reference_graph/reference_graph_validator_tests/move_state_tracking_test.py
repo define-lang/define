@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
 from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_move_from_empty_position(
@@ -78,7 +79,7 @@ def test_move_updates_state_allows_create_in_source(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_cannot_create_in_position_that_was_moved_into(
@@ -127,7 +128,7 @@ def test_double_move_works(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_same_move_twice_in_a_row(
@@ -300,7 +301,7 @@ def test_two_actions_with_move_same_local_names(
         "}\n"
     )
     result = validate_non_filesystem_with_reference_graph(source)
-    assert not result.has_errors()
+    assert_no_errors(result)
 
 
 def test_move_from_empty_marks_both_positions_unknown(
@@ -637,7 +638,7 @@ def test_move_from_local_chained_to_local(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_local_to_local_chained(
@@ -666,7 +667,7 @@ def test_move_from_local_to_local_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_between_local_chained(
@@ -701,4 +702,4 @@ def test_move_between_local_chained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)

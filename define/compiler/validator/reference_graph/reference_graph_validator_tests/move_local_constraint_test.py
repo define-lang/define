@@ -1,6 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_move_violates_dest_constraints(
@@ -113,7 +114,7 @@ def test_move_with_compatible_constraints(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_local_move_round_trip_with_constraint_subset(
@@ -151,7 +152,7 @@ def test_local_move_round_trip_with_constraint_subset(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_local_move_violates_constraints_marks_unknown(
@@ -223,7 +224,7 @@ def test_move_to_unconstrained_position(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_definition_local_to_statement_local_violates(
@@ -293,7 +294,7 @@ def test_definition_local_to_statement_local_satisfies(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_statement_local_to_definition_local_violates(
@@ -363,7 +364,7 @@ def test_statement_local_to_definition_local_satisfies(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_definition_local_to_definition_local_violates(
@@ -429,4 +430,4 @@ def test_definition_local_to_definition_local_satisfies(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)

@@ -8,6 +8,7 @@ import pytest
 from define.compiler.graphs import action_call_graph, action_call_graph_renderer
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def _write_project_config(tmp_path: Path, universe_name: str):
@@ -72,7 +73,7 @@ def _build_graph(
         program_result.definition_results,
     ).validate()
     if not expect_errors:
-        assert not program_result.has_errors()
+        assert_no_errors(program_result)
     return call_graph
 
 

@@ -1,5 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler.conftest import ValidateProject
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestActionTriggering:
@@ -22,7 +23,7 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert not result.has_errors()
+        assert_no_errors(result)
         all_trigger_positions = [
             tp
             for r in result.file_results

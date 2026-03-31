@@ -10,6 +10,7 @@ from define.compiler import (
     exceptions,
     parser,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARSER = parser.Parser()
 
@@ -42,7 +43,7 @@ class TestPathFormats:
         assert len(driver_result.result.file_results) == 1
         result = driver_result.result.file_results[0]
 
-        assert not driver_result.result.has_errors()
+        assert_no_errors(driver_result.result)
         assert str(result.file_path) == "sub/test.dfn"
 
 
@@ -60,7 +61,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver(_PARSER).validate_program(source_file)
         assert len(driver_result.result.file_results) == 1
-        assert not driver_result.result.has_errors()
+        assert_no_errors(driver_result.result)
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "hello.dfn"
         )
@@ -99,7 +100,7 @@ class TestPathResolution:
             Path("sub/../hello.dfn")
         )
         assert len(driver_result.result.file_results) == 1
-        assert not driver_result.result.has_errors()
+        assert_no_errors(driver_result.result)
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "hello.dfn"
         )
@@ -122,7 +123,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.dfn"))
         assert len(driver_result.result.file_results) == 1
-        assert not driver_result.result.has_errors()
+        assert_no_errors(driver_result.result)
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "link/hello.dfn"
         )
@@ -161,7 +162,7 @@ class TestPathResolution:
             Path("link/../hello.dfn")
         )
         assert len(driver_result.result.file_results) == 1
-        assert not driver_result.result.has_errors()
+        assert_no_errors(driver_result.result)
         assert driver_result.result.file_results[0].file_path == PurePosixPath(
             "real/hello.dfn"
         )

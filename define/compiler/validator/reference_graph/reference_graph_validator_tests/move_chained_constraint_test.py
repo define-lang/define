@@ -2,6 +2,7 @@
 
 from define.compiler import conftest, diagnostics
 from define.compiler.conftest import ValidateNonFilesystemWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_move_to_chained_dest_violates_constraints(
@@ -83,7 +84,7 @@ def test_move_to_chained_dest_satisfies_constraints(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_to_chained_dest_unconstrained(
@@ -112,7 +113,7 @@ def test_move_to_chained_dest_unconstrained(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_chained_to_local_violates_constraints(
@@ -204,7 +205,7 @@ def test_move_from_chained_to_local_satisfies_constraints(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_unconstrained_local_to_chained_constrained(
@@ -322,7 +323,7 @@ def test_definition_local_to_chained_satisfies(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_chained_to_definition_local_violates(
@@ -414,7 +415,7 @@ def test_chained_to_definition_local_satisfies(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_multi_element_chain_to_unconstrained_local(
@@ -451,7 +452,7 @@ def test_move_from_multi_element_chain_to_unconstrained_local(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_from_multi_element_chain_to_constrained_local(
@@ -499,7 +500,7 @@ def test_move_from_multi_element_chain_to_constrained_local(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_three_element_chain_to_three_element_chain_satisfies(
@@ -549,7 +550,7 @@ def test_move_three_element_chain_to_three_element_chain_satisfies(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_move_three_element_chain_to_three_element_chain_violates(

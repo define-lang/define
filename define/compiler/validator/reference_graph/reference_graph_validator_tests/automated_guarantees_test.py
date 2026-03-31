@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_create_in_interface_position_starts_empty(
@@ -41,7 +42,7 @@ def test_create_in_interface_position_starts_empty(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_create_twice_in_interface_position(
@@ -231,7 +232,7 @@ def test_post_trigger_guaranteed_empty_position_allows_create(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_guaranteed_occupied_position_rejects_create(
@@ -366,7 +367,7 @@ def test_second_trigger_cycle_after_guarantee_empties_trigger(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_second_trigger_fails_when_guarantee_filled_position(
@@ -590,7 +591,7 @@ def test_second_trigger_succeeds_with_proper_state_management(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_dp_identity_preserved_through_guarantee(
@@ -644,7 +645,7 @@ def test_post_trigger_dp_identity_preserved_through_guarantee(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_guaranteed_empty_position_allows_move_to(
@@ -685,7 +686,7 @@ def test_post_trigger_guaranteed_empty_position_allows_move_to(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_occupied_by_new_allows_move_from(
@@ -724,7 +725,7 @@ def test_post_trigger_occupied_by_new_allows_move_from(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_occupied_by_new_rejects_move_to(
@@ -1021,7 +1022,7 @@ def test_trigger_chain_move_guarantee_empties_position(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_trigger_chain_create_guarantee_fills_position(
@@ -1146,7 +1147,7 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_existing_guarantee_on_child_position(
@@ -1552,7 +1553,7 @@ def test_post_trigger_child_removed_before_parent_move(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)
 
 
 def test_post_trigger_parent_and_child_both_have_guarantees(
@@ -1846,4 +1847,4 @@ def test_post_trigger_existing_guarantee_on_child_swap(
             ),
         }
     )
-    assert not result.program_result.has_errors()
+    assert_no_errors(result.program_result)

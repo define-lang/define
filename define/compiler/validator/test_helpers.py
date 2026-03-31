@@ -2,6 +2,24 @@
 """Shared validator test helpers."""
 
 from pathlib import Path
+from pprint import pformat
+
+from define.compiler.validator import validation_result
+
+
+def assert_no_errors(result: validation_result.ProgramValidationResult) -> None:
+    """Assert that a validation result has no exceptions or diagnostics."""
+    __tracebackhide__ = True
+    exceptions = result.all_exceptions
+    assert not exceptions, (
+        f"Expected no exceptions, but got {len(exceptions)}:\n"
+        + "\n".join(f"  {type(e).__name__}: {e}" for e in exceptions)
+    )
+    all_diagnostics = result.all_diagnostics
+    assert not all_diagnostics, (
+        f"Expected no diagnostics, but got {len(all_diagnostics)}:\n"
+        + "\n".join(f"  {pformat(d)}" for d in all_diagnostics)
+    )
 
 
 def write_project_config(tmp_path: Path, universe_name: str) -> None:

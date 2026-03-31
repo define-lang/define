@@ -19,6 +19,7 @@ py_test(
     deps = [
         ":action_contract",
         ":definition_postorder_validator",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
