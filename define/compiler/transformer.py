@@ -15,7 +15,7 @@ class DefineTransformer(
     _file_path: PurePosixPath | None
 
     def __init__(self, file_path: PurePosixPath | None = None):
-        """Initialize with an optional file path for source positions."""
+        """Initialize with an optional file path for source locations."""
         super().__init__()
         self._file_path = file_path
 
@@ -26,7 +26,7 @@ class DefineTransformer(
         """Transform the root rule into a Program."""
         return ast.Program(
             definitions=items,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -56,7 +56,7 @@ class DefineTransformer(
             name=name,
             constraints=constraints,
             initialization=initialization,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -73,7 +73,7 @@ class DefineTransformer(
         return ast.ActionDefinition(
             name=name,
             definition_block=definition_block,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     def terminator(self, _items: list[object]) -> object:
@@ -166,7 +166,7 @@ class DefineTransformer(
         return ast.LocalPositionDefinition(
             local_name=local_name,
             constraints=constraints,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     def position_definition_terminator_or_block(
@@ -198,7 +198,7 @@ class DefineTransformer(
         """Transform a position init block."""
         return ast.PositionInitBlock(
             statements=items,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -208,7 +208,7 @@ class DefineTransformer(
         """Transform a position constraint block."""
         return ast.PositionConstraintBlock(
             requirements=items,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -218,7 +218,7 @@ class DefineTransformer(
         """Transform a position requirement statement."""
         return ast.PositionRequirementStatement(
             typed_global_name=items[0],
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     def NAME_TYPE(self, token: lark_standalone.Token) -> ast.NameType:  # noqa: N802
@@ -237,7 +237,7 @@ class DefineTransformer(
         return ast.GlobalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -252,7 +252,7 @@ class DefineTransformer(
         return ast.LocalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     def typed_name_reference(self, items: list[ast.TypedName]) -> ast.TypedName:
@@ -267,9 +267,9 @@ class DefineTransformer(
         return ast.PositionReference(
             chain=ast.ChainedName(
                 typed_names=items,
-                position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+                location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
             ),
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -279,7 +279,7 @@ class DefineTransformer(
         """Transform a create dimension point statement."""
         return ast.CreateDimensionPointStatement(
             target_position=items[0],
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -290,7 +290,7 @@ class DefineTransformer(
         return ast.MoveDimensionPointStatement(
             target_position=items[1],
             source_position=items[0],
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -300,7 +300,7 @@ class DefineTransformer(
         """Transform a trigger condition statement."""
         return ast.TriggerConditionStatement(
             position_reference=items[0],
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -310,7 +310,7 @@ class DefineTransformer(
         """Transform a trigger conditions block."""
         return ast.TriggerConditionsBlock(
             conditions=items,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -320,7 +320,7 @@ class DefineTransformer(
         """Transform an action statements block."""
         return ast.ActionStatementsBlock(
             statements=items,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
@@ -343,7 +343,7 @@ class DefineTransformer(
             interface_positions=interface_positions,
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,
-            position=ast.SourcePosition.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:

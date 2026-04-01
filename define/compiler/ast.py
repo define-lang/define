@@ -24,10 +24,9 @@ class NameType(enum.StrEnum):
     ACTION = "action"
 
 
-# TODO: Rename this to SourceLocation.
 @dataclass(frozen=True, slots=True)
-class SourcePosition:
-    """Represents a position in source code."""
+class SourceLocation:
+    """Represents a location in source code."""
 
     line: int
     column: int
@@ -39,7 +38,7 @@ class SourcePosition:
     def from_meta(
         cls, meta: lark_standalone.Meta, file_path: PurePosixPath | None = None
     ) -> Self:
-        """Create a SourcePosition from a Lark Meta object."""
+        """Create a SourceLocation from a Lark Meta object."""
         return cls(
             line=meta.line,
             column=meta.column,
@@ -52,14 +51,14 @@ class SourcePosition:
     def from_token(
         cls, token: lark_standalone.Token, file_path: PurePosixPath | None = None
     ) -> Self:
-        """Create a SourcePosition from a Lark Token."""
+        """Create a SourceLocation from a Lark Token."""
         if (
             token.line is None
             or token.column is None
             or token.end_line is None
             or token.end_column is None
         ):
-            raise ValueError(f"Token {token} is missing position information")
+            raise ValueError(f"Token {token} is missing location information")
         return cls(
             line=token.line,
             column=token.column,
@@ -69,11 +68,11 @@ class SourcePosition:
         )
 
 
-def start_of_file_position(
+def start_of_file_location(
     file_path: PurePosixPath | None = None,
-) -> SourcePosition:
-    """Return a SourcePosition pointing to the very start of a file."""
-    return SourcePosition(
+) -> SourceLocation:
+    """Return a SourceLocation pointing to the very start of a file."""
+    return SourceLocation(
         line=1, column=1, end_line=1, end_column=1, file_path=file_path
     )
 
@@ -82,7 +81,7 @@ def start_of_file_position(
 class ASTNode:
     """Base class for all AST nodes."""
 
-    position: SourcePosition
+    location: SourceLocation
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +109,7 @@ class PositionDefinition(QualityDefinition):
         self,
         *,
         name: DefinitionGlobalNameContent,
-        position: SourcePosition,
+        location: SourceLocation,
         constraints: PositionConstraintBlock | None = None,
         initialization: PositionInitBlock | None = None,
     ):
@@ -119,10 +118,10 @@ class PositionDefinition(QualityDefinition):
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.POSITION,
                 name_content=name,
-                # TODO: This is the wrong position.
-                position=name.position,
+                # TODO: This is the wrong location.
+                location=name.location,
             ),
-            position=position,
+            location=location,
         )
         object.__setattr__(self, "constraints", constraints)
         object.__setattr__(self, "initialization", initialization)
@@ -181,18 +180,18 @@ class LocalPositionDefinition(ASTNode):
         self,
         *,
         local_name: LocalNameContent,
-        position: SourcePosition,
+        location: SourceLocation,
         constraints: PositionConstraintBlock | None = None,
     ):
         """Initialize with a local name, wrapping it in a typed name."""
-        super().__init__(position=position)
+        super().__init__(location=location)
         object.__setattr__(
             self,
             "typed_name",
             LocalTypedNameReference(
                 name_type=NameType.POSITION,
                 name_content=local_name,
-                position=local_name.position,
+                location=local_name.location,
             ),
         )
         object.__setattr__(self, "constraints", constraints)
@@ -284,7 +283,7 @@ class ChainedName(ASTNode):
         for i, elem in enumerate(self.typed_names):
             if elem.name_type == NameType.ACTION:
                 return ChainedName(
-                    position=self.position,
+                    location=self.location,
                     typed_names=self.typed_names[: i + 1],
                 )
         return None
@@ -297,11 +296,11 @@ class ChainedName(ASTNode):
                 if not tail:
                     return None
                 chain = ChainedName(
-                    position=tail[0].position,
+                    location=tail[0].location,
                     typed_names=tail,
                 )
                 return PositionReference(
-                    position=tail[0].position,
+                    location=tail[0].location,
                     chain=chain,
                 )
         return None
@@ -329,9 +328,9 @@ class PositionReference(ASTNode):
         for i, elem in enumerate(names[:-1]):
             if elem.name_type != NameType.ACTION:
                 yield PositionReference(
-                    position=self.position,
+                    location=self.location,
                     chain=ChainedName(
-                        position=self.chain.position,
+                        location=self.chain.location,
                         typed_names=names[: i + 1],
                     ),
                 )
@@ -443,7 +442,7 @@ class ActionDefinition(QualityDefinition):
         self,
         *,
         name: DefinitionGlobalNameContent,
-        position: SourcePosition,
+        location: SourceLocation,
         definition_block: ActionDefinitionBlock | None = None,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
@@ -451,10 +450,10 @@ class ActionDefinition(QualityDefinition):
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.ACTION,
                 name_content=name,
-                # TODO: This is the wrong position.
-                position=name.position,
+                # TODO: This is the wrong location.
+                location=name.location,
             ),
-            position=position,
+            location=location,
         )
         object.__setattr__(self, "definition_block", definition_block)
         # Instead of making these into properties, we compute them up front for two

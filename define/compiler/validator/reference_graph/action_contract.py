@@ -61,12 +61,12 @@ class InterfacePositionRequirement:
             return chain.source_chained_name
         return chain.canonical_chained_name(in_universe=fqun)
 
-    def propagated_from_locations(self) -> list[ast.SourcePosition]:
+    def propagated_from_locations(self) -> list[ast.SourceLocation]:
         """Collect source locations from the propagated_from chain."""
-        chain: list[ast.SourcePosition] = []
+        chain: list[ast.SourceLocation] = []
         current = self.propagated_from
         while current is not None:
-            chain.append(current.inferred_from.position)
+            chain.append(current.inferred_from.location)
             current = current.propagated_from
         return chain
 

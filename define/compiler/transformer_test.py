@@ -23,23 +23,23 @@ def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:
 def test_position_definition_transforms_to_program():
     program = _parse_and_transform("define the potential position<standard:/path>.\n")
     assert isinstance(program, ast.Program)
-    assert program.position.line == 1
-    assert program.position.column == 1
+    assert program.location.line == 1
+    assert program.location.column == 1
     assert len(program.definitions) == 1
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
     fqun = _require_fqun(definition.typed_name.name_content)
-    assert definition.position.line == 1
-    assert definition.position.column == 1
+    assert definition.location.line == 1
+    assert definition.location.column == 1
     assert fqun.universe.name == "standard"
-    assert fqun.universe.position.line == 1
-    assert fqun.universe.position.column == 31
+    assert fqun.universe.location.line == 1
+    assert fqun.universe.location.column == 31
     assert definition.typed_name.name_content.path.relative_path == Path("path")
     assert definition.typed_name.name_content.path.name == "/path"
-    assert definition.typed_name.name_content.path.position.line == 1
-    assert definition.typed_name.name_content.path.position.column == 40
-    assert definition.typed_name.name_content.position.line == 1
-    assert definition.typed_name.name_content.position.column == 31
+    assert definition.typed_name.name_content.path.location.line == 1
+    assert definition.typed_name.name_content.path.location.column == 40
+    assert definition.typed_name.name_content.location.line == 1
+    assert definition.typed_name.name_content.location.column == 31
 
 
 def test_action_definition_transforms_to_program():
@@ -49,7 +49,7 @@ def test_action_definition_transforms_to_program():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
     fqun = _require_fqun(definition.typed_name.name_content)
-    assert definition.position.line == 1
+    assert definition.location.line == 1
     assert fqun.universe.name == "standard"
     assert definition.typed_name.name_content.path.relative_path == Path("path")
 
@@ -62,16 +62,16 @@ def test_global_name_full_fqun():
     fqun = _require_fqun(name)
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "my_mv"
-    assert fqun.multiverse.position.line == 1
-    assert fqun.multiverse.position.column == 31
+    assert fqun.multiverse.location.line == 1
+    assert fqun.multiverse.location.column == 31
     assert fqun.universe.name == "my_lib"
-    assert fqun.universe.position.line == 1
-    assert fqun.universe.position.column == 49
+    assert fqun.universe.location.line == 1
+    assert fqun.universe.location.column == 49
     assert name.path.relative_path == Path("some/path")
     assert fqun.authority is not None
     assert fqun.authority.name == "example.com"
-    assert fqun.authority.position.line == 1
-    assert fqun.authority.position.column == 37
+    assert fqun.authority.location.line == 1
+    assert fqun.authority.location.column == 37
 
 
 def test_global_name_authority_universe():
@@ -82,12 +82,12 @@ def test_global_name_authority_universe():
     fqun = _require_fqun(name)
     assert fqun.multiverse is None
     assert fqun.universe.name == "my_lib"
-    assert fqun.universe.position.line == 1
-    assert fqun.universe.position.column == 43
+    assert fqun.universe.location.line == 1
+    assert fqun.universe.location.column == 43
     assert name.path.relative_path == Path("some/path")
     assert fqun.authority is not None
     assert fqun.authority.name == "example.com"
-    assert fqun.authority.position.line == 1
+    assert fqun.authority.location.line == 1
 
 
 def test_global_name_authority_with_path_universe():
@@ -112,10 +112,10 @@ def test_global_name_universe_only():
     assert fqun.multiverse is None
     assert fqun.authority is None
     assert fqun.universe.name == "standard"
-    assert fqun.universe.position.line == 1
-    assert fqun.universe.position.column == 31
-    assert fqun.position.line == 1
-    assert fqun.position.column == 31
+    assert fqun.universe.location.line == 1
+    assert fqun.universe.location.column == 31
+    assert fqun.location.line == 1
+    assert fqun.location.column == 31
     assert name.path.relative_path == Path("some/path")
 
 
@@ -133,8 +133,8 @@ def test_multiple_definitions_position_and_action():
     assert program.definitions[1].typed_name.name_content.path.relative_path == Path(
         "act"
     )
-    assert program.definitions[0].position.line == 1
-    assert program.definitions[1].position.line == 2
+    assert program.definitions[0].location.line == 1
+    assert program.definitions[1].location.line == 2
 
 
 def test_action_definition_terminator_has_no_block():
@@ -225,9 +225,9 @@ def test_action_definition_block_source_positions():
     assert isinstance(definition, ast.ActionDefinition)
     block = definition.definition_block
     assert block is not None
-    assert block.position.line == 1
-    assert block.trigger_conditions.position.line == 3
-    assert block.action_statements.position.line == 5
+    assert block.location.line == 1
+    assert block.trigger_conditions.location.line == 3
+    assert block.action_statements.location.line == 5
     assert block.action_statements.statements == []
 
 
@@ -246,8 +246,8 @@ def test_action_definition_block_interface_position_source_position():
     block = definition.definition_block
     assert block is not None
     local_def = block.interface_positions[0]
-    assert local_def.position.line == 2
-    assert local_def.position.column == 5
+    assert local_def.location.line == 2
+    assert local_def.location.column == 5
 
 
 def test_action_definition_block_with_action_statement_local_definition():
@@ -269,8 +269,8 @@ def test_action_definition_block_with_action_statement_local_definition():
     local_def = block.action_statements.statements[0]
     assert isinstance(local_def, ast.LocalPositionDefinition)
     assert local_def.typed_name.name_content.name == "inner_pos"
-    assert local_def.position.line == 6
-    assert local_def.position.column == 9
+    assert local_def.location.line == 6
+    assert local_def.location.column == 9
 
 
 def test_action_definition_block_with_multiple_action_statement_local_definitions():
@@ -296,8 +296,8 @@ def test_action_definition_block_with_multiple_action_statement_local_definition
     assert isinstance(second_local_def, ast.LocalPositionDefinition)
     assert first_local_def.typed_name.name_content.name == "first_inner"
     assert second_local_def.typed_name.name_content.name == "second_inner"
-    assert first_local_def.position.line == 6
-    assert second_local_def.position.line == 7
+    assert first_local_def.location.line == 6
+    assert second_local_def.location.line == 7
 
 
 def test_position_definition_with_constraints_block_transforms():
@@ -324,9 +324,9 @@ def test_position_definition_with_constraints_block_transforms():
     assert second_requirement.typed_global_name.name_content.path.relative_path == Path(
         "other"
     )
-    assert definition.constraints.position.line == 2
-    assert first_requirement.position.line == 3
-    assert second_requirement.position.line == 4
+    assert definition.constraints.location.line == 2
+    assert first_requirement.location.line == 3
+    assert second_requirement.location.line == 4
 
 
 def test_create_dimension_point_with_local_position():
@@ -734,9 +734,9 @@ def test_action_definition_block_with_constrained_interface_position():
     assert requirement.typed_global_name.name_content.path.relative_path == Path(
         "child"
     )
-    assert local_def.position.line == 2
-    assert local_def.constraints.position.line == 3
-    assert requirement.position.line == 4
+    assert local_def.location.line == 2
+    assert local_def.constraints.location.line == 3
+    assert requirement.location.line == 4
 
 
 def test_trigger_condition_statement_transforms_local_position():
@@ -831,8 +831,8 @@ def test_trigger_condition_statement_source_positions():
     assert block is not None
     assert len(block.trigger_conditions.conditions) == 1
     condition = block.trigger_conditions.conditions[0]
-    assert condition.position.line == 4
-    assert condition.position.column == 9
+    assert condition.location.line == 4
+    assert condition.location.column == 9
 
 
 def test_position_definition_with_init_block_only():
@@ -972,8 +972,8 @@ def test_init_block_source_positions():
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
     assert definition.initialization is not None
-    assert definition.initialization.position.line == 2
+    assert definition.initialization.location.line == 2
     stmt = definition.initialization.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    assert stmt.position.line == 3
-    assert stmt.position.column == 9
+    assert stmt.location.line == 3
+    assert stmt.location.column == 9

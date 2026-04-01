@@ -87,7 +87,7 @@ def validate_multiverse_name_format(
     if len(name) < 2:
         result.append(
             diagnostics.MultiverseNameTooShortDiagnostic(
-                location=multiverse.position,
+                location=multiverse.location,
                 multiverse_name=name,
             )
         )
@@ -97,16 +97,16 @@ def validate_multiverse_name_format(
         else:
             allowed = _MULTIVERSE_CONTINUE_CHARS
         if char not in allowed:
-            pos = ast.SourcePosition(
-                line=multiverse.position.line,
-                column=multiverse.position.column + i,
-                end_line=multiverse.position.end_line,
-                end_column=multiverse.position.end_column,
-                file_path=multiverse.position.file_path,
+            location = ast.SourceLocation(
+                line=multiverse.location.line,
+                column=multiverse.location.column + i,
+                end_line=multiverse.location.end_line,
+                end_column=multiverse.location.end_column,
+                file_path=multiverse.location.file_path,
             )
             result.append(
                 diagnostics.MultiverseNameInvalidCharDiagnostic(
-                    location=pos,
+                    location=location,
                     multiverse_name=name,
                     char=char,
                 )
@@ -122,7 +122,7 @@ def validate_multiverse_name_reserved(
     if multiverse.name.lower() in _RESERVED_MULTIVERSE_NAMES:
         return [
             diagnostics.ReservedMultiverseNameDiagnostic(
-                location=multiverse.position,
+                location=multiverse.location,
                 reserved_name=multiverse.name,
             )
         ]
@@ -149,7 +149,7 @@ def _validate_authority_domain_format(
     if len(domain) < 2:
         result.append(
             diagnostics.AuthorityDomainTooShortDiagnostic(
-                location=authority.position,
+                location=authority.location,
                 domain=domain,
             )
         )
@@ -159,16 +159,16 @@ def _validate_authority_domain_format(
         else:
             allowed = _AUTHORITY_DOMAIN_CONTINUE_CHARS
         if char not in allowed:
-            pos = ast.SourcePosition(
-                line=authority.position.line,
-                column=authority.position.column + i,
-                end_line=authority.position.end_line,
-                end_column=authority.position.end_column,
-                file_path=authority.position.file_path,
+            location = ast.SourceLocation(
+                line=authority.location.line,
+                column=authority.location.column + i,
+                end_line=authority.location.end_line,
+                end_column=authority.location.end_column,
+                file_path=authority.location.file_path,
             )
             result.append(
                 diagnostics.AuthorityDomainInvalidCharDiagnostic(
-                    location=pos,
+                    location=location,
                     domain=domain,
                     char=char,
                 )
@@ -185,9 +185,9 @@ def _validate_authority_path_format(
 ) -> list[diagnostics.Diagnostic]:
     result: list[diagnostics.Diagnostic] = []
 
-    col = authority.position.column + len(domain)
-    line = authority.position.line
-    file_path = authority.position.file_path
+    col = authority.location.column + len(domain)
+    line = authority.location.line
+    file_path = authority.location.file_path
     for segment in path.split("/"):
         col += 1  # skip '/' separator in source text
         diagnostic = _validate_authority_path_segment(
@@ -208,7 +208,7 @@ def _validate_authority_path_segment(
 ) -> diagnostics.Diagnostic | None:
     if segment == "":
         return diagnostics.AuthorityPathEmptySegmentDiagnostic(
-            location=ast.SourcePosition(
+            location=ast.SourceLocation(
                 line=line,
                 column=column - 1,
                 end_line=line,
@@ -223,7 +223,7 @@ def _validate_authority_path_segment(
         )
         if char not in allowed:
             return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
-                location=ast.SourcePosition(
+                location=ast.SourceLocation(
                     line=line,
                     column=column + i,
                     end_line=line,
@@ -247,7 +247,7 @@ def validate_authority_reserved(
     if lowered_domain in _RESERVED_AUTHORITY_DOMAINS:
         return [
             diagnostics.ReservedAuthorityDomainDiagnostic(
-                location=authority.position,
+                location=authority.location,
                 reserved_name=domain,
             )
         ]
@@ -261,7 +261,7 @@ def validate_authority_reserved(
     ):
         return [
             diagnostics.DotlessAuthorityDomainDiagnostic(
-                location=authority.position,
+                location=authority.location,
                 reserved_name=domain,
                 multiverse_name=effective_multiverse,
             )
@@ -296,7 +296,7 @@ def validate_universe_name_format(
     if len(name) < 2:
         result.append(
             diagnostics.UniverseNameTooShortDiagnostic(
-                location=universe.position,
+                location=universe.location,
                 universe_name=name,
             )
         )
@@ -306,16 +306,16 @@ def validate_universe_name_format(
         else:
             allowed = _UNIVERSE_CONTINUE_CHARS
         if char not in allowed:
-            pos = ast.SourcePosition(
-                line=universe.position.line,
-                column=universe.position.column + i,
-                end_line=universe.position.end_line,
-                end_column=universe.position.end_column,
-                file_path=universe.position.file_path,
+            location = ast.SourceLocation(
+                line=universe.location.line,
+                column=universe.location.column + i,
+                end_line=universe.location.end_line,
+                end_column=universe.location.end_column,
+                file_path=universe.location.file_path,
             )
             result.append(
                 diagnostics.UniverseNameInvalidCharDiagnostic(
-                    location=pos,
+                    location=location,
                     universe_name=name,
                     char=char,
                 )
@@ -331,7 +331,7 @@ def validate_universe_name_reserved(
     if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
         return [
             diagnostics.ReservedUniverseNameDiagnostic(
-                location=universe.position,
+                location=universe.location,
                 reserved_name=universe.name,
             )
         ]
@@ -354,7 +354,7 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
         if fqun.universe.name.lower() != "standard":
             result.append(
                 diagnostics.UniverseWithoutAuthorityDiagnostic(
-                    location=fqun.universe.position,
+                    location=fqun.universe.location,
                     universe_name=fqun.universe.name,
                 )
             )
@@ -385,7 +385,7 @@ def validate_global_name(
         ):
             result.append(
                 diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
-                    location=name.fqun.position,
+                    location=name.fqun.location,
                     fqun=must_use_short_form.canonical,
                 )
             )
@@ -406,19 +406,19 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
     if not path_name.startswith("/"):
         result.append(
             diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic(
-                location=path.position,
+                location=path.location,
                 path=path_name,
             )
         )
     if path_name.endswith("/"):
         result.append(
             diagnostics.GlobalNamePathTrailingSlashDiagnostic(
-                location=ast.SourcePosition(
-                    line=path.position.line,
-                    column=path.position.column + len(path_name) - 1,
-                    end_line=path.position.end_line,
-                    end_column=path.position.end_column,
-                    file_path=path.position.file_path,
+                location=ast.SourceLocation(
+                    line=path.location.line,
+                    column=path.location.column + len(path_name) - 1,
+                    end_line=path.location.end_line,
+                    end_column=path.location.end_column,
+                    file_path=path.location.file_path,
                 ),
                 path=path_name,
             )
@@ -432,12 +432,12 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
         if segment == "":
             result.append(
                 diagnostics.GlobalNamePathEmptySegmentDiagnostic(
-                    location=ast.SourcePosition(
-                        line=path.position.line,
-                        column=path.position.column + segment_start - 1,
-                        end_line=path.position.end_line,
-                        end_column=path.position.end_column,
-                        file_path=path.position.file_path,
+                    location=ast.SourceLocation(
+                        line=path.location.line,
+                        column=path.location.column + segment_start - 1,
+                        end_line=path.location.end_line,
+                        end_column=path.location.end_column,
+                        file_path=path.location.file_path,
                     ),
                     path=path_name,
                 )
@@ -449,12 +449,12 @@ def validate_global_name_path(path: ast.GlobalPathName) -> list[diagnostics.Diag
             if char not in allowed:
                 result.append(
                     diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
-                        location=ast.SourcePosition(
-                            line=path.position.line,
-                            column=path.position.column + segment_start + i,
-                            end_line=path.position.end_line,
-                            end_column=path.position.end_column,
-                            file_path=path.position.file_path,
+                        location=ast.SourceLocation(
+                            line=path.location.line,
+                            column=path.location.column + segment_start + i,
+                            end_line=path.location.end_line,
+                            end_column=path.location.end_column,
+                            file_path=path.location.file_path,
                         ),
                         segment=segment,
                         char=char,
@@ -481,16 +481,16 @@ def validate_local_name_format(
     for i, char in enumerate(name):
         allowed = _LOCAL_NAME_START_CHARS if i == 0 else _LOCAL_NAME_CONTINUE_CHARS
         if char not in allowed:
-            pos = ast.SourcePosition(
-                line=local_name.position.line,
-                column=local_name.position.column + i,
-                end_line=local_name.position.end_line,
-                end_column=local_name.position.end_column,
-                file_path=local_name.position.file_path,
+            location = ast.SourceLocation(
+                line=local_name.location.line,
+                column=local_name.location.column + i,
+                end_line=local_name.location.end_line,
+                end_column=local_name.location.end_column,
+                file_path=local_name.location.file_path,
             )
             return [
                 diagnostics.InvalidLocalNameFormatDiagnostic(
-                    location=pos,
+                    location=location,
                     local_name=name,
                     char=char,
                 )

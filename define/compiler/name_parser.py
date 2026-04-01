@@ -19,7 +19,7 @@ def parse_local_name(
     """Parse local name content into an AST local-name node."""
     return ast.LocalNameContent(
         name=token,
-        position=ast.SourcePosition.from_token(token, file_path=file_path),
+        location=ast.SourceLocation.from_token(token, file_path=file_path),
     )
 
 
@@ -36,7 +36,7 @@ def parse_global_name_definition(
             None,
         )
     return ast.DefinitionGlobalNameContent(
-        position=ast.SourcePosition.from_token(token, file_path=file_path),
+        location=ast.SourceLocation.from_token(token, file_path=file_path),
         fqun=parsed.fqun,
         path=parsed.path,
     )
@@ -48,7 +48,7 @@ def parse_global_name_reference(
     """Parse reference-site global name content into an AST node."""
     parsed = _parse_global_name(token, file_path)
     return ast.ReferenceGlobalNameContent(
-        position=ast.SourcePosition.from_token(token, file_path=file_path),
+        location=ast.SourceLocation.from_token(token, file_path=file_path),
         fqun=parsed.fqun,
         path=parsed.path,
     )
@@ -77,7 +77,7 @@ def _parse_global_name(
 
     global_path = ast.GlobalPathName(
         name=path_text,
-        position=_position_for_offsets(
+        location=_position_for_offsets(
             token, path_start, path_start + len(path_text), file_path
         ),
     )
@@ -103,7 +103,7 @@ def _parse_fqun(
     if len(parts) == 1:
         universe = ast.Universe(
             name=parts[0],
-            position=fqun_position,
+            location=fqun_position,
         )
     elif len(parts) == 2:
         authority_text, universe_text = parts
@@ -113,13 +113,13 @@ def _parse_fqun(
         universe_end = universe_start + len(universe_text)
         authority = ast.Authority(
             name=authority_text,
-            position=_position_for_offsets(
+            location=_position_for_offsets(
                 token, authority_start, authority_start + len(authority_text), file_path
             ),
         )
         universe = ast.Universe(
             name=universe_text,
-            position=_position_for_offsets(
+            location=_position_for_offsets(
                 token, universe_start, universe_end, file_path
             ),
         )
@@ -133,19 +133,19 @@ def _parse_fqun(
         universe_end = universe_start + len(universe_text)
         multiverse = ast.Multiverse(
             name=multiverse_text,
-            position=_position_for_offsets(
+            location=_position_for_offsets(
                 token, multiverse_start, multiverse_end, file_path
             ),
         )
         authority = ast.Authority(
             name=authority_text,
-            position=_position_for_offsets(
+            location=_position_for_offsets(
                 token, authority_start, authority_start + len(authority_text), file_path
             ),
         )
         universe = ast.Universe(
             name=universe_text,
-            position=_position_for_offsets(
+            location=_position_for_offsets(
                 token, universe_start, universe_end, file_path
             ),
         )
@@ -154,7 +154,7 @@ def _parse_fqun(
         multiverse=multiverse,
         authority=authority,
         universe=universe,
-        position=fqun_position,
+        location=fqun_position,
     )
 
 
@@ -177,10 +177,10 @@ def _position_for_offsets(
     start_offset: int,
     end_offset: int,
     file_path: PurePosixPath | None = None,
-) -> ast.SourcePosition:
+) -> ast.SourceLocation:
     line = _line(token)
     base_column = _column(token)
-    return ast.SourcePosition(
+    return ast.SourceLocation(
         line=line,
         column=base_column + start_offset,
         end_line=line,

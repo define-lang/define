@@ -3,12 +3,12 @@
 from define.compiler import ast
 from define.compiler.graphs import reference_graph
 
-_POS = ast.start_of_file_position()
+_LOC = ast.start_of_file_location()
 _FQUN = ast.Fqun(
     multiverse=None,
-    authority=ast.Authority(name="a.com", position=_POS),
-    universe=ast.Universe(name="lib", position=_POS),
-    position=_POS,
+    authority=ast.Authority(name="a.com", location=_LOC),
+    universe=ast.Universe(name="lib", location=_LOC),
+    location=_LOC,
 )
 
 
@@ -19,22 +19,22 @@ def _p(path: str) -> str:
 def _make_position(path_name: str) -> ast.PositionDefinition:
     return ast.PositionDefinition(
         name=ast.DefinitionGlobalNameContent(
-            path=ast.GlobalPathName(name=path_name, position=_POS),
+            path=ast.GlobalPathName(name=path_name, location=_LOC),
             fqun=_FQUN,
-            position=_POS,
+            location=_LOC,
         ),
-        position=_POS,
+        location=_LOC,
     )
 
 
 def _make_action(path_name: str) -> ast.ActionDefinition:
     return ast.ActionDefinition(
         name=ast.DefinitionGlobalNameContent(
-            path=ast.GlobalPathName(name=path_name, position=_POS),
+            path=ast.GlobalPathName(name=path_name, location=_LOC),
             fqun=_FQUN,
-            position=_POS,
+            location=_LOC,
         ),
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -49,10 +49,10 @@ def _make_edge(
             name_type=target_type,
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=None,
-                path=ast.GlobalPathName(name=target_path, position=_POS),
-                position=_POS,
+                path=ast.GlobalPathName(name=target_path, location=_LOC),
+                location=_LOC,
             ),
-            position=_POS,
+            location=_LOC,
         ),
     )
 

@@ -14,18 +14,18 @@ if typing.TYPE_CHECKING:
 from define.compiler import constants
 
 
-def _format_position(pos: ast.SourcePosition) -> str:
-    """Format a source position as a human-readable location string."""
-    if pos.file_path is not None:
-        return f'File "{pos.file_path}", line {pos.line}, column {pos.column}'
-    return f"line {pos.line}, column {pos.column}"
+def _format_location(location: ast.SourceLocation) -> str:
+    """Format a source location as a human-readable string."""
+    if location.file_path is not None:
+        return f'File "{location.file_path}", line {location.line}, column {location.column}'
+    return f"line {location.line}, column {location.column}"
 
 
 @dataclass
 class Diagnostic:
     """Base class for all validation diagnostics."""
 
-    location: ast.SourcePosition
+    location: ast.SourceLocation
     message_format: ClassVar[str] = ""
 
     @property
@@ -42,7 +42,7 @@ class Diagnostic:
 
         column = self.location.column
         caret_line = " " * (column - 1) + "^"
-        header = _format_position(self.location)
+        header = _format_location(self.location)
 
         return f"{header}\n{source_line}\n{caret_line}\n{self.message}"
 
@@ -465,7 +465,7 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a dimension point is created in a position that already has one."""
 
     position_name: str
-    created_at: ast.SourcePosition
+    created_at: ast.SourceLocation
     message_format: ClassVar[str] = (
         "a dimension point already exists in '{self.position_name}';"
         " it was put there at:\n{self.formatted_created_at}"
@@ -473,8 +473,8 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
 
     @property
     def formatted_created_at(self) -> str:
-        """Format the created_at position as a human-readable location string."""
-        return _format_position(self.created_at)
+        """Format the created_at location as a human-readable string."""
+        return _format_location(self.created_at)
 
 
 @dataclass
@@ -482,18 +482,18 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination position already contains a dimension point."""
 
     position_name: str
-    occupied_at: ast.SourcePosition | None = None
+    occupied_at: ast.SourceLocation | None = None
 
     @property
     @typing.override
     def message(self) -> str:
-        """Render the diagnostic message, optionally including the occupied-at position."""
+        """Render the diagnostic message, optionally including the occupied-at location."""
         base = (
             f"cannot move a dimension point to '{self.position_name}'"
             " because it already contains one"
         )
         if self.occupied_at is not None:
-            return f"{base}; it was put there at:\n{_format_position(self.occupied_at)}"
+            return f"{base}; it was put there at:\n{_format_location(self.occupied_at)}"
         return base
 
 
@@ -643,8 +643,8 @@ class ActionRequirementDiagnostic(Diagnostic):
 
     action_name: str
     position_name: str
-    inferred_at: ast.SourcePosition
-    propagated_from_locations: list[ast.SourcePosition]
+    inferred_at: ast.SourceLocation
+    propagated_from_locations: list[ast.SourceLocation]
 
     # TODO: This really needs to be able to show all the relevant
     # source lines. I think we could do that by passing in a
@@ -655,13 +655,13 @@ class ActionRequirementDiagnostic(Diagnostic):
     # to access source_lines for all files.
     @property
     def formatted_inferred_at(self) -> str:
-        """Format the inferred_at position and any propagation chain."""
+        """Format the inferred_at location and any propagation chain."""
         lines: list[str] = []
         lines.append("This requirement happens because of:")
-        lines.append(_format_position(self.inferred_at))
-        for i, pos in enumerate(self.propagated_from_locations):
+        lines.append(_format_location(self.inferred_at))
+        for i, location in enumerate(self.propagated_from_locations):
             indent = "  " * (i + 1)
-            lines.append(f"{indent}{_format_position(pos)}")
+            lines.append(f"{indent}{_format_location(location)}")
         return "\n".join(lines)
 
 
@@ -669,7 +669,7 @@ class ActionRequirementDiagnostic(Diagnostic):
 class ActionRequiresEmptyPositionDiagnostic(ActionRequirementDiagnostic):
     """Diagnostic for when an action requires an interface position to be empty but it is not."""
 
-    filled_at: ast.SourcePosition
+    filled_at: ast.SourceLocation
     message_format: ClassVar[str] = (
         "this line is triggering `{self.action_name}` to run.\n"
         "However, '{self.position_name}' must be empty before that action runs, and it is not empty.\n"
@@ -679,8 +679,8 @@ class ActionRequiresEmptyPositionDiagnostic(ActionRequirementDiagnostic):
 
     @property
     def formatted_filled_at(self) -> str:
-        """Format the filled_at position as a human-readable location string."""
-        return _format_position(self.filled_at)
+        """Format the filled_at location as a human-readable string."""
+        return _format_location(self.filled_at)
 
 
 @dataclass
@@ -700,7 +700,7 @@ class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
     """Diagnostic for moving from an empty action interface position."""
 
     position_name: str
-    inferred_at: ast.SourcePosition | None
+    inferred_at: ast.SourceLocation | None
 
     @property
     @typing.override
@@ -711,5 +711,5 @@ class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
             f" because it does not contain one"
         )
         if self.inferred_at is not None:
-            return f"{base}; it was emptied at:\n{_format_position(self.inferred_at)}"
+            return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
         return f"{base}; action interface positions are empty by default"

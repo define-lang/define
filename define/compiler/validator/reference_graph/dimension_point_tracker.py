@@ -349,8 +349,8 @@ class DimensionPointTracker:
             guarantees.items(),
             key=lambda item: (
                 len(item[0]),
-                item[1].caused_by.position.line,
-                item[1].caused_by.position.column,
+                item[1].caused_by.location.line,
+                item[1].caused_by.location.column,
             ),
         )
 

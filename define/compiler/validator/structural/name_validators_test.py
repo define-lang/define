@@ -4,27 +4,27 @@
 from define.compiler import ast, diagnostics
 from define.compiler.validator.structural import name_validators
 
-_POS = ast.SourcePosition(line=1, column=10, end_line=1, end_column=20)
+_LOC = ast.SourceLocation(line=1, column=10, end_line=1, end_column=20)
 
 
 def _multiverse(name: str) -> ast.Multiverse:
-    return ast.Multiverse(name=name, position=_POS)
+    return ast.Multiverse(name=name, location=_LOC)
 
 
 def _authority(name: str) -> ast.Authority:
-    return ast.Authority(name=name, position=_POS)
+    return ast.Authority(name=name, location=_LOC)
 
 
 def _universe(name: str) -> ast.Universe:
-    return ast.Universe(name=name, position=_POS)
+    return ast.Universe(name=name, location=_LOC)
 
 
 def _global_path_name(name: str) -> ast.GlobalPathName:
-    return ast.GlobalPathName(name=name, position=_POS)
+    return ast.GlobalPathName(name=name, location=_LOC)
 
 
 def _local_name(name: str) -> ast.LocalNameContent:
-    return ast.LocalNameContent(name=name, position=_POS)
+    return ast.LocalNameContent(name=name, location=_LOC)
 
 
 def _fqun(
@@ -36,7 +36,7 @@ def _fqun(
         multiverse=multiverse,
         authority=authority,
         universe=_universe(universe),
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -47,7 +47,7 @@ def _global_name(
     return ast.DefinitionGlobalNameContent(
         fqun=fqun,
         path=_global_path_name(path_name),
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -685,7 +685,7 @@ class TestValidateGlobalName:
         name = ast.ReferenceGlobalNameContent(
             fqun=None,
             path=_global_path_name("/valid_path"),
-            position=_POS,
+            location=_LOC,
         )
         result = name_validators.validate_global_name(name)
         assert not result
@@ -695,7 +695,7 @@ class TestValidateGlobalName:
         name = ast.ReferenceGlobalNameContent(
             fqun=fqun,
             path=_global_path_name("/valid_path"),
-            position=_POS,
+            location=_LOC,
         )
         result = name_validators.validate_global_name(name, must_use_short_form=fqun)
         assert len(result) == 1
@@ -711,7 +711,7 @@ class TestValidateGlobalName:
         name = ast.ReferenceGlobalNameContent(
             fqun=name_fqun,
             path=_global_path_name("/valid_path"),
-            position=_POS,
+            location=_LOC,
         )
         result = name_validators.validate_global_name(
             name, must_use_short_form=enclosing_fqun
@@ -723,7 +723,7 @@ class TestValidateGlobalName:
         name = ast.ReferenceGlobalNameContent(
             fqun=None,
             path=_global_path_name("/valid_path"),
-            position=_POS,
+            location=_LOC,
         )
         result = name_validators.validate_global_name(
             name, must_use_short_form=enclosing_fqun
@@ -736,9 +736,9 @@ def _enclosing_definition() -> ast.PositionDefinition:
         name=ast.DefinitionGlobalNameContent(
             fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
             path=_global_path_name("/test"),
-            position=_POS,
+            location=_LOC,
         ),
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -749,9 +749,9 @@ class TestValidateTypedName:
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=None,
                 path=_global_path_name("/other"),
-                position=_POS,
+                location=_LOC,
             ),
-            position=_POS,
+            location=_LOC,
         )
         result = name_validators.validate_typed_name(ref, _enclosing_definition())
         assert not result
@@ -762,9 +762,9 @@ class TestValidateTypedName:
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
                 path=_global_path_name("/other"),
-                position=_POS,
+                location=_LOC,
             ),
-            position=_POS,
+            location=_LOC,
         )
         result = name_validators.validate_typed_name(ref, _enclosing_definition())
         assert len(result) == 1
@@ -775,8 +775,8 @@ class TestValidateTypedName:
     def test_local_reference_valid(self):
         ref = ast.LocalTypedNameReference(
             name_type=ast.NameType.POSITION,
-            name_content=ast.LocalNameContent(name="my_pos", position=_POS),
-            position=_POS,
+            name_content=ast.LocalNameContent(name="my_pos", location=_LOC),
+            location=_LOC,
         )
         result = name_validators.validate_typed_name(ref, _enclosing_definition())
         assert not result
@@ -784,8 +784,8 @@ class TestValidateTypedName:
     def test_local_reference_invalid_char(self):
         ref = ast.LocalTypedNameReference(
             name_type=ast.NameType.POSITION,
-            name_content=ast.LocalNameContent(name="My-pos", position=_POS),
-            position=_POS,
+            name_content=ast.LocalNameContent(name="My-pos", location=_LOC),
+            location=_LOC,
         )
         result = name_validators.validate_typed_name(ref, _enclosing_definition())
         assert len(result) == 1

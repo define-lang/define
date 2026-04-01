@@ -5,13 +5,13 @@ import pytest
 from define.compiler import ast
 from define.compiler.validator import scope_tracker
 
-_POS = ast.start_of_file_position()
+_LOC = ast.start_of_file_location()
 
 _FQUN = ast.Fqun(
     multiverse=None,
-    authority=ast.Authority(name="my.domain.com", position=_POS),
-    universe=ast.Universe(name="my_lib", position=_POS),
-    position=_POS,
+    authority=ast.Authority(name="my.domain.com", location=_LOC),
+    universe=ast.Universe(name="my_lib", location=_LOC),
+    location=_LOC,
 )
 
 
@@ -20,9 +20,9 @@ def _make_local_def(
     constraints: ast.PositionConstraintBlock | None = None,
 ) -> ast.LocalPositionDefinition:
     return ast.LocalPositionDefinition(
-        local_name=ast.LocalNameContent(name=name, position=_POS),
+        local_name=ast.LocalNameContent(name=name, location=_LOC),
         constraints=constraints,
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -37,30 +37,30 @@ def _make_constraint_block(
                     name_type=name_type,
                     name_content=ast.ReferenceGlobalNameContent(
                         fqun=None,
-                        path=ast.GlobalPathName(name=path, position=_POS),
-                        position=_POS,
+                        path=ast.GlobalPathName(name=path, location=_LOC),
+                        location=_LOC,
                     ),
-                    position=_POS,
+                    location=_LOC,
                 ),
-                position=_POS,
+                location=_LOC,
             )
         )
-    return ast.PositionConstraintBlock(requirements=requirements, position=_POS)
+    return ast.PositionConstraintBlock(requirements=requirements, location=_LOC)
 
 
 def _make_global_position_def(
     path: str,
     constraints: ast.PositionConstraintBlock | None = None,
-    position: ast.SourcePosition = _POS,
+    location: ast.SourceLocation = _LOC,
 ) -> ast.PositionDefinition:
     return ast.PositionDefinition(
         name=ast.DefinitionGlobalNameContent(
             fqun=_FQUN,
-            path=ast.GlobalPathName(name=path, position=position),
-            position=position,
+            path=ast.GlobalPathName(name=path, location=location),
+            location=location,
         ),
         constraints=constraints,
-        position=position,
+        location=location,
     )
 
 
@@ -69,8 +69,8 @@ def _make_local_typed_name(
 ) -> ast.LocalTypedNameReference:
     return ast.LocalTypedNameReference(
         name_type=name_type,
-        name_content=ast.LocalNameContent(name=name, position=_POS),
-        position=_POS,
+        name_content=ast.LocalNameContent(name=name, location=_LOC),
+        location=_LOC,
     )
 
 
@@ -81,10 +81,10 @@ def _make_global_typed_name(
         name_type=name_type,
         name_content=ast.ReferenceGlobalNameContent(
             fqun=None,
-            path=ast.GlobalPathName(name=path, position=_POS),
-            position=_POS,
+            path=ast.GlobalPathName(name=path, location=_LOC),
+            location=_LOC,
         ),
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -223,9 +223,9 @@ def test_add_global_position_definition():
 
 
 def test_global_position_defined_on_line():
-    pos = ast.SourcePosition(line=5, column=1, end_line=5, end_column=1)
+    location = ast.SourceLocation(line=5, column=1, end_line=5, end_column=1)
     tracker = scope_tracker.ScopeTracker(_FQUN)
-    tracker.add_definition(_make_global_position_def("/my_pos", position=pos))
+    tracker.add_definition(_make_global_position_def("/my_pos", location=location))
 
     ref = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
     assert tracker.defined_on_line(ref) == 5
@@ -254,8 +254,8 @@ def _make_position_ref(
     elements: list[ast.TypedNameReference],
 ) -> ast.PositionReference:
     return ast.PositionReference(
-        chain=ast.ChainedName(typed_names=elements, position=_POS),
-        position=_POS,
+        chain=ast.ChainedName(typed_names=elements, location=_LOC),
+        location=_LOC,
     )
 
 

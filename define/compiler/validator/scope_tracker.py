@@ -36,7 +36,7 @@ class ScopeTracker:
     def defined_on_line(self, typed_name: ast.TypedName) -> int:
         """Return the line where a typed name was defined."""
         key = typed_name.full_typed_name(in_universe=self._enclosing_fqun)
-        return self._definitions[key].position.line
+        return self._definitions[key].location.line
 
     def is_defined_local(self, position: ast.PositionReference) -> bool:
         """Check if a position reference is a single local name defined in scope."""

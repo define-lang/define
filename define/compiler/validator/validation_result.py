@@ -29,7 +29,7 @@ class DiscoveredFile:
     path: pathlib.PurePosixPath
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str
-    position: ast.SourcePosition
+    location: ast.SourceLocation
 
 
 @dataclass(frozen=True)
@@ -66,7 +66,7 @@ class DefinitionValidationResult:
 
     @property
     def diagnostics(self) -> list[diagnostics.Diagnostic]:
-        """Return diagnostics sorted by source position (line, then column)."""
+        """Return diagnostics sorted by source location (line, then column)."""
         return sorted(
             self._diagnostics,
             key=lambda d: (d.location.line, d.location.column),

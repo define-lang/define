@@ -291,7 +291,7 @@ class DefinitionStructuralValidator:
         if definition_path != expected_path:
             self._diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
-                    location=self._definition.typed_name.name_content.path.position,
+                    location=self._definition.typed_name.name_content.path.location,
                     expected_path=expected_path,
                     actual_path=definition_path,
                 )
@@ -305,7 +305,7 @@ class DefinitionStructuralValidator:
         if actual != expected_fqun:
             self._diagnostics.append(
                 diagnostics.FqunMismatchDiagnostic(
-                    location=self._definition.typed_name.name_content.fqun.position,
+                    location=self._definition.typed_name.name_content.fqun.location,
                     expected=expected_fqun,
                     actual=actual,
                 )
@@ -318,10 +318,10 @@ class DefinitionStructuralValidator:
             first_def = self._seen_definitions[key]
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
-                    location=self._definition.position,
+                    location=self._definition.location,
                     definition_type=self._definition.typed_name.name_type.value,
                     path=self._definition.typed_name.name_content.path.name,
-                    first_definition_line=first_def.position.line,
+                    first_definition_line=first_def.location.line,
                 )
             )
 
@@ -383,13 +383,13 @@ class DefinitionStructuralValidator:
             if isinstance(action_statements, ast.PositionInitBlock):
                 self._diagnostics.append(
                     diagnostics.EmptyPositionInitBlockDiagnostic(
-                        location=action_statements.position,
+                        location=action_statements.location,
                     )
                 )
             else:
                 self._diagnostics.append(
                     diagnostics.EmptyActionStatementsBlockDiagnostic(
-                        location=action_statements.position,
+                        location=action_statements.location,
                     )
                 )
         for stmt in action_statements.statements:
@@ -428,7 +428,7 @@ class DefinitionStructuralValidator:
         if scope.is_defined(local_def.typed_name):
             self._diagnostics.append(
                 diagnostics.LocalNameConflictDiagnostic(
-                    location=local_def.typed_name.name_content.position,
+                    location=local_def.typed_name.name_content.location,
                     local_name=name,
                     first_definition_line=scope.defined_on_line(local_def.typed_name),
                 )
@@ -504,7 +504,7 @@ class DefinitionStructuralValidator:
         if is_chained_self_reference and not allow_self_reference:
             self._diagnostics.append(
                 diagnostics.UnnecessarySelfReferenceDiagnostic(
-                    location=first.position,
+                    location=first.location,
                     definition_name=self._definition.typed_name.source_typed_name,
                 )
             )
@@ -520,7 +520,7 @@ class DefinitionStructuralValidator:
         ):
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
-                    location=first.name_content.position,
+                    location=first.name_content.location,
                     local_name=first.full_typed_name(in_universe=fqun),
                 )
             )
@@ -529,7 +529,7 @@ class DefinitionStructuralValidator:
         if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
             self._diagnostics.append(
                 diagnostics.UnknownGlobalNameDiagnostic(
-                    location=first.position,
+                    location=first.location,
                     source_global_name=first.source_typed_name,
                     full_global_name=first.full_typed_name(in_universe=fqun),
                 )
@@ -552,7 +552,7 @@ class DefinitionStructuralValidator:
             ):
                 self._diagnostics.append(
                     diagnostics.ChainedLocalNameRequiresActionDiagnostic(
-                        location=typed_name.position,
+                        location=typed_name.location,
                         local_name=typed_name.full_typed_name(in_universe=fqun),
                         preceding_name=previous_element.full_typed_name(
                             in_universe=fqun
@@ -567,7 +567,7 @@ class DefinitionStructuralValidator:
         if chain.typed_names[-1].name_type != ast.NameType.POSITION:
             self._diagnostics.append(
                 diagnostics.PositionReferenceChainEndDiagnostic(
-                    location=chain.typed_names[-1].position,
+                    location=chain.typed_names[-1].location,
                 )
             )
             may_continue = False
@@ -598,7 +598,7 @@ class DefinitionStructuralValidator:
         elif chain_element.name_type == ast.NameType.ACTION:
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
-                    location=chain_element.name_content.position,
+                    location=chain_element.name_content.location,
                     local_name=chain_element.name_content.name,
                 )
             )
@@ -672,7 +672,7 @@ class DefinitionStructuralValidator:
             self._unknown_fquns.add(fqun_string)
             self._diagnostics.append(
                 diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                    location=global_name.fqun.position,
+                    location=global_name.fqun.location,
                     universe=fqun_string,
                     current_universe_name=self._context.expected_fqun,
                 )
@@ -699,6 +699,6 @@ class DefinitionStructuralValidator:
                 path=global_name.path.file_path(),
                 root_prefix=root_prefix,
                 expected_fqun=expected_fqun.canonical,
-                position=global_name.position,
+                location=global_name.location,
             )
         )

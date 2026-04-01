@@ -8,37 +8,37 @@ from define.compiler.validator.reference_graph import (
     dimension_point_tracker,
 )
 
-_POS = ast.start_of_file_position()
-_POS2 = ast.SourcePosition(line=2, column=1, end_line=2, end_column=1)
+_LOC = ast.start_of_file_location()
+_LOC2 = ast.SourceLocation(line=2, column=1, end_line=2, end_column=1)
 _POS2_REF = ast.PositionReference(
-    chain=ast.ChainedName(typed_names=[], position=_POS2),
-    position=_POS2,
+    chain=ast.ChainedName(typed_names=[], location=_LOC2),
+    location=_LOC2,
 )
 
 _FQUN = ast.Fqun(
     multiverse=None,
-    authority=ast.Authority(name="my.domain.com", position=_POS),
-    universe=ast.Universe(name="my_lib", position=_POS),
-    position=_POS,
+    authority=ast.Authority(name="my.domain.com", location=_LOC),
+    universe=ast.Universe(name="my_lib", location=_LOC),
+    location=_LOC,
 )
 
 _ENCLOSING_DEF = ast.ActionDefinition(
     name=ast.DefinitionGlobalNameContent(
         fqun=_FQUN,
-        path=ast.GlobalPathName(name="/my_action", position=_POS),
-        position=_POS,
+        path=ast.GlobalPathName(name="/my_action", location=_LOC),
+        location=_LOC,
     ),
-    position=_POS,
+    location=_LOC,
 )
 
 
 def _make_local_ref(
-    name: str, pos: ast.SourcePosition = _POS
+    name: str, location: ast.SourceLocation = _LOC
 ) -> ast.LocalTypedNameReference:
     return ast.LocalTypedNameReference(
         name_type=ast.NameType.POSITION,
-        name_content=ast.LocalNameContent(name=name, position=pos),
-        position=pos,
+        name_content=ast.LocalNameContent(name=name, location=location),
+        location=location,
     )
 
 
@@ -47,20 +47,20 @@ def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
         name_type=ast.NameType.POSITION,
         name_content=ast.ReferenceGlobalNameContent(
             fqun=None,
-            path=ast.GlobalPathName(name=path, position=_POS),
-            position=_POS,
+            path=ast.GlobalPathName(name=path, location=_LOC),
+            location=_LOC,
         ),
-        position=_POS,
+        location=_LOC,
     )
 
 
 def _make_position_ref(
     elements: list[ast.TypedNameReference],
-    pos: ast.SourcePosition = _POS,
+    location: ast.SourceLocation = _LOC,
 ) -> ast.PositionReference:
     return ast.PositionReference(
-        chain=ast.ChainedName(typed_names=elements, position=pos),
-        position=pos,
+        chain=ast.ChainedName(typed_names=elements, location=location),
+        location=location,
     )
 
 
@@ -87,7 +87,7 @@ def test_get_occupant():
     occupant = tracker.get_occupant(ref)
 
     assert isinstance(occupant, dimension_point_tracker.DimensionPointInfo)
-    assert occupant.last_position.position == _POS
+    assert occupant.last_position.location == _LOC
     assert occupant.qualities == frozenset(["position<x>"])
 
 
@@ -223,13 +223,15 @@ def test_move_preserves_qualities():
 def test_move_updates_ref():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
-    ref_b = _make_position_ref([_make_local_ref("pos_b", pos=_POS2)], pos=_POS2)
+    ref_b = _make_position_ref(
+        [_make_local_ref("pos_b", location=_LOC2)], location=_LOC2
+    )
 
     tracker.create(ref_a, frozenset())
-    assert tracker.get_occupant(ref_a).last_position.position == _POS
+    assert tracker.get_occupant(ref_a).last_position.location == _LOC
 
     tracker.move(ref_a, ref_b)
-    assert tracker.get_occupant(ref_b).last_position.position == _POS2
+    assert tracker.get_occupant(ref_b).last_position.location == _LOC2
 
 
 def test_create_empty_qualities():
@@ -464,7 +466,7 @@ def test_emptied_by_at_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref(
-        [_make_local_ref("pos_a"), _make_global_ref("/child")], pos=_POS2
+        [_make_local_ref("pos_a"), _make_global_ref("/child")], location=_LOC2
     )
 
     tracker.create(parent_ref, frozenset())
@@ -479,10 +481,10 @@ def _make_action_ref(path: str) -> ast.GlobalTypedNameReference:
         name_type=ast.NameType.ACTION,
         name_content=ast.ReferenceGlobalNameContent(
             fqun=None,
-            path=ast.GlobalPathName(name=path, position=_POS),
-            position=_POS,
+            path=ast.GlobalPathName(name=path, location=_LOC),
+            location=_LOC,
         ),
-        position=_POS,
+        location=_LOC,
     )
 
 
@@ -529,7 +531,7 @@ def test_apply_guarantees_occupied_by_new():
     key = (*_ACTION_KEY_PREFIX, "position<item>")
     assert tracker.is_occupied_by_key(key) is True
     occupant = tracker.get_occupant_by_key(key)
-    assert occupant.last_position.position == _POS2
+    assert occupant.last_position.location == _LOC2
     assert occupant.qualities == frozenset(["position<x>"])
     assert occupant.origin_position is _POS2_REF
 
@@ -571,7 +573,7 @@ def test_apply_guarantees_occupied_by_existing():
     dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
     assert tracker.is_occupied_by_key(dest_key) is True
     occupant = tracker.get_occupant_by_key(dest_key)
-    assert occupant.last_position.position == _POS2
+    assert occupant.last_position.location == _LOC2
     assert occupant.qualities == frozenset(["position<q>"])
     assert occupant.origin_position is item_ref
 

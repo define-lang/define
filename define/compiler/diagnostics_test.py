@@ -2,12 +2,12 @@ from pathlib import PurePosixPath
 
 from define.compiler import ast, diagnostics
 
-_POS = ast.SourcePosition(line=3, column=5, end_line=3, end_column=12)
+_LOC = ast.SourceLocation(line=3, column=5, end_line=3, end_column=12)
 
 
 def test_circular_reference_message_lists_each_name():
     diagnostic = diagnostics.CircularGlobalReferenceDiagnostic(
-        location=_POS,
+        location=_LOC,
         cycle=[
             "position<my.domain.com:my_lib:/a>",
             "position<my.domain.com:my_lib:/b>",
@@ -25,7 +25,7 @@ def test_circular_reference_message_lists_each_name():
 
 def test_move_to_occupied_message_without_line_number():
     diagnostic = diagnostics.MoveToOccupiedPositionDiagnostic(
-        location=_POS,
+        location=_LOC,
         position_name="position<target>",
     )
 
@@ -37,9 +37,9 @@ def test_move_to_occupied_message_without_line_number():
 
 def test_move_to_occupied_message_with_position():
     diagnostic = diagnostics.MoveToOccupiedPositionDiagnostic(
-        location=_POS,
+        location=_LOC,
         position_name="position<target>",
-        occupied_at=ast.SourcePosition(
+        occupied_at=ast.SourceLocation(
             line=9,
             column=37,
             end_line=9,
@@ -57,7 +57,7 @@ def test_move_to_occupied_message_with_position():
 
 def test_move_from_empty_interface_position_default():
     diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-        location=_POS,
+        location=_LOC,
         position_name="position<box>::action</other>::position<item>",
         inferred_at=None,
     )
@@ -72,9 +72,9 @@ def test_move_from_empty_interface_position_default():
 
 def test_move_from_empty_interface_position_with_inferred_at():
     diagnostic = diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-        location=_POS,
+        location=_LOC,
         position_name="position<box>::action</other>::position<trigger_pos>",
-        inferred_at=ast.SourcePosition(
+        inferred_at=ast.SourceLocation(
             line=7,
             column=37,
             end_line=7,
@@ -93,10 +93,10 @@ def test_move_from_empty_interface_position_with_inferred_at():
 
 def test_formatted_inferred_at_without_propagation():
     diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
-        location=_POS,
+        location=_LOC,
         action_name="action<my.domain.com:my_lib:/other>",
         position_name="position<box>::action</other>::position<item>",
-        inferred_at=ast.SourcePosition(
+        inferred_at=ast.SourceLocation(
             line=7,
             column=37,
             end_line=7,
@@ -104,7 +104,7 @@ def test_formatted_inferred_at_without_propagation():
             file_path=PurePosixPath("other.dfn"),
         ),
         propagated_from_locations=[],
-        filled_at=_POS,
+        filled_at=_LOC,
     )
 
     assert diagnostic.formatted_inferred_at == (
@@ -114,10 +114,10 @@ def test_formatted_inferred_at_without_propagation():
 
 def test_formatted_inferred_at_with_propagated_from_locations():
     diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
-        location=_POS,
+        location=_LOC,
         action_name="action<my.domain.com:my_lib:/inner>",
         position_name="position<box>::action</outer>::position<iface>::action</inner>::position<item>",
-        inferred_at=ast.SourcePosition(
+        inferred_at=ast.SourceLocation(
             line=11,
             column=37,
             end_line=11,
@@ -125,14 +125,14 @@ def test_formatted_inferred_at_with_propagated_from_locations():
             file_path=PurePosixPath("outer.dfn"),
         ),
         propagated_from_locations=[
-            ast.SourcePosition(
+            ast.SourceLocation(
                 line=11,
                 column=37,
                 end_line=11,
                 end_column=95,
                 file_path=PurePosixPath("middle.dfn"),
             ),
-            ast.SourcePosition(
+            ast.SourceLocation(
                 line=7,
                 column=37,
                 end_line=7,
@@ -140,7 +140,7 @@ def test_formatted_inferred_at_with_propagated_from_locations():
                 file_path=PurePosixPath("inner.dfn"),
             ),
         ],
-        filled_at=_POS,
+        filled_at=_LOC,
     )
 
     assert diagnostic.formatted_inferred_at == (

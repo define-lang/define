@@ -7,7 +7,7 @@ def _edge_keys(
     result: conftest.FullValidationResult,
 ) -> set[tuple[str, str, int]]:
     return {
-        (e.source, e.target, e.statement.position.line)
+        (e.source, e.target, e.statement.location.line)
         for e in result.action_call_graph.edges()
     }
 

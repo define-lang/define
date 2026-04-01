@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import ast, parser, transformer
 
-_POS = ast.start_of_file_position()
+_LOC = ast.start_of_file_location()
 _FQUN = "my.domain.com:my_lib"
 
 
@@ -39,20 +39,20 @@ def _make_fqun(
 ) -> ast.Fqun:
     return ast.Fqun(
         multiverse=(
-            ast.Multiverse(name=multiverse, position=_POS)
+            ast.Multiverse(name=multiverse, location=_LOC)
             if multiverse is not None
             else None
         ),
         authority=(
             ast.Authority(
                 name=authority,
-                position=_POS,
+                location=_LOC,
             )
             if authority is not None
             else None
         ),
-        universe=ast.Universe(name=universe, position=_POS),
-        position=_POS,
+        universe=ast.Universe(name=universe, location=_LOC),
+        location=_LOC,
     )
 
 
@@ -93,23 +93,23 @@ class TestFqunCanonical:
 
 class TestGlobalPathName:
     def test_relative_path_single_segment(self):
-        path = ast.GlobalPathName(name="/foo", position=_POS)
+        path = ast.GlobalPathName(name="/foo", location=_LOC)
         assert path.relative_path == PurePosixPath("foo")
 
     def test_relative_path_multiple_segments(self):
-        path = ast.GlobalPathName(name="/foo/bar/baz", position=_POS)
+        path = ast.GlobalPathName(name="/foo/bar/baz", location=_LOC)
         assert path.relative_path == PurePosixPath("foo/bar/baz")
 
     def test_file_path_default_root(self):
-        path = ast.GlobalPathName(name="/foo", position=_POS)
+        path = ast.GlobalPathName(name="/foo", location=_LOC)
         assert path.file_path() == PurePosixPath("foo.dfn")
 
     def test_file_path_multiple_segments(self):
-        path = ast.GlobalPathName(name="/foo/bar/baz", position=_POS)
+        path = ast.GlobalPathName(name="/foo/bar/baz", location=_LOC)
         assert path.file_path() == PurePosixPath("foo/bar/baz.dfn")
 
     def test_file_path_with_root(self):
-        path = ast.GlobalPathName(name="/foo", position=_POS)
+        path = ast.GlobalPathName(name="/foo", location=_LOC)
         assert path.file_path(PurePosixPath("lib/inner")) == PurePosixPath(
             "lib/inner/foo.dfn"
         )
@@ -119,17 +119,17 @@ class TestGlobalNameContent:
     def test_full_name_with_explicit_fqun(self):
         fqun = _make_fqun("my_lib", authority="my.domain.com")
         name = ast.GlobalNameContent(
-            position=_POS,
+            location=_LOC,
             fqun=fqun,
-            path=ast.GlobalPathName(position=_POS, name="/thing"),
+            path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
         assert name.full_name(in_universe=fqun) == "my.domain.com:my_lib:/thing"
 
     def test_full_name_with_in_universe(self):
         name = ast.GlobalNameContent(
-            position=_POS,
+            location=_LOC,
             fqun=None,
-            path=ast.GlobalPathName(position=_POS, name="/thing"),
+            path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
         assert (
             name.full_name(in_universe=_make_fqun("my_lib", authority="my.domain.com"))
@@ -138,9 +138,9 @@ class TestGlobalNameContent:
 
     def test_full_name_own_fqun_takes_precedence_over_in_universe(self):
         name = ast.GlobalNameContent(
-            position=_POS,
+            location=_LOC,
             fqun=_make_fqun("my_lib", authority="my.domain.com"),
-            path=ast.GlobalPathName(position=_POS, name="/thing"),
+            path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
         in_universe = _make_fqun("other_lib", authority="other.domain.com")
         assert name.full_name(in_universe=in_universe) == "my.domain.com:my_lib:/thing"
@@ -149,12 +149,12 @@ class TestGlobalNameContent:
 class TestGlobalTypedNameInDefinition:
     def test_full_typed_name(self):
         typed_name = ast.GlobalTypedNameInDefinition(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         assert typed_name.source_typed_name == "position<my.domain.com:my_lib:/thing>"
@@ -164,12 +164,12 @@ class TestGlobalTypedNameReference:
     def test_full_typed_name_with_explicit_fqun(self):
         fqun = _make_fqun("my_lib", authority="my.domain.com")
         reference = ast.GlobalTypedNameReference(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.ACTION,
             name_content=ast.ReferenceGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=fqun,
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         assert (
@@ -179,12 +179,12 @@ class TestGlobalTypedNameReference:
 
     def test_full_typed_name_with_short_name_uses_in_universe(self):
         reference = ast.GlobalTypedNameReference(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=None,
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         assert (
@@ -196,12 +196,12 @@ class TestGlobalTypedNameReference:
 
     def test_full_typed_name_own_fqun_takes_precedence(self):
         reference = ast.GlobalTypedNameReference(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         in_universe = _make_fqun("other_lib", authority="other.domain.com")
@@ -220,24 +220,24 @@ class TestCachedStrings:
 
     def test_definition_source_typed_name_returns_same_object(self):
         typed_name = ast.GlobalTypedNameInDefinition(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         assert typed_name.source_typed_name is typed_name.source_typed_name
 
     def test_definition_full_typed_name_ignores_in_universe(self):
         typed_name = ast.GlobalTypedNameInDefinition(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         own_fqun = typed_name.name_content.fqun
@@ -248,12 +248,12 @@ class TestCachedStrings:
 
     def test_definition_source_typed_name_matches_full(self):
         typed_name = ast.GlobalTypedNameInDefinition(
-            position=_POS,
+            location=_LOC,
             name_type=ast.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
-                position=_POS,
+                location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
-                path=ast.GlobalPathName(position=_POS, name="/thing"),
+                path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
         own_fqun = typed_name.name_content.fqun

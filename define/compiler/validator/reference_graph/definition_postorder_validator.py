@@ -178,12 +178,12 @@ class DefinitionPostorderValidator(abc.ABC):
                 occupant = self._tracker.get_occupant_by_key(key)
                 self._diagnostics.append(
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        location=dp.last_position.position,
+                        location=dp.last_position.location,
                         action_name=req.root_cause_action_name(),
                         position_name=f"{source_prefix}::{req.resolved_chained_name(self._enclosing_fqun)}",
-                        inferred_at=req.inferred_from.position,
+                        inferred_at=req.inferred_from.location,
                         propagated_from_locations=req.propagated_from_locations(),
-                        filled_at=occupant.last_position.position,
+                        filled_at=occupant.last_position.location,
                     )
                 )
             elif (
@@ -192,10 +192,10 @@ class DefinitionPostorderValidator(abc.ABC):
             ):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        location=dp.last_position.position,
+                        location=dp.last_position.location,
                         action_name=req.root_cause_action_name(),
                         position_name=f"{source_prefix}::{req.resolved_chained_name(self._enclosing_fqun)}",
-                        inferred_at=req.inferred_from.position,
+                        inferred_at=req.inferred_from.location,
                         propagated_from_locations=req.propagated_from_locations(),
                     )
                 )
@@ -236,11 +236,11 @@ class DefinitionPostorderValidator(abc.ABC):
         if self._tracker.is_occupied(position):
             self._diagnostics.append(
                 diagnostics.CreateInOccupiedPositionDiagnostic(
-                    location=position.position,
+                    location=position.location,
                     position_name=position.chain.source_chained_name,
                     created_at=self._tracker.get_occupant(
                         position
-                    ).last_position.position,
+                    ).last_position.location,
                 )
             )
             return
@@ -326,15 +326,15 @@ class DefinitionPostorderValidator(abc.ABC):
                 emptied_by = self._tracker.get_emptied_by(from_pos)
                 self._diagnostics.append(
                     diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-                        location=from_pos.position,
+                        location=from_pos.location,
                         position_name=from_pos.chain.source_chained_name,
-                        inferred_at=emptied_by.position if emptied_by else None,
+                        inferred_at=emptied_by.location if emptied_by else None,
                     )
                 )
             else:
                 self._diagnostics.append(
                     diagnostics.MoveFromEmptyPositionDiagnostic(
-                        location=from_pos.position,
+                        location=from_pos.location,
                         position_name=from_pos.chain.source_chained_name,
                     )
                 )
@@ -342,9 +342,9 @@ class DefinitionPostorderValidator(abc.ABC):
             occupant = self._tracker.get_occupant(to_pos)
             self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
-                    location=to_pos.position,
+                    location=to_pos.location,
                     position_name=to_pos.chain.source_chained_name,
-                    occupied_at=occupant.last_position.position,
+                    occupied_at=occupant.last_position.location,
                 )
             )
 
@@ -380,7 +380,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
-                location=to_pos.chain.typed_names[0].position,
+                location=to_pos.chain.typed_names[0].location,
                 source_position=from_pos.chain.source_chained_name,
                 target_position=to_pos.chain.source_chained_name,
                 missing_qualities=sorted(missing),
@@ -414,7 +414,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if len(from_chain.typed_names) == len(to_chain.typed_names):
             self._diagnostics.append(
                 diagnostics.MoveToSamePositionDiagnostic(
-                    location=to_chain.typed_names[-1].position,
+                    location=to_chain.typed_names[-1].location,
                     position_name=to_chain.source_chained_name,
                 )
             )
@@ -422,7 +422,7 @@ class DefinitionPostorderValidator(abc.ABC):
             divergence = to_chain.typed_names[len(from_chain.typed_names)]
             self._diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
-                    location=divergence.position,
+                    location=divergence.location,
                     source_position=from_chain.source_chained_name,
                     target_position=to_chain.source_chained_name,
                 )
@@ -557,7 +557,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if element_name not in constraint_names:
             self._diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
-                    location=element.position,
+                    location=element.location,
                     element_name=element_name,
                     parent_name=parent_name,
                 )
@@ -574,7 +574,7 @@ class DefinitionPostorderValidator(abc.ABC):
         """Emit a diagnostic for a chain element not found in an action definition."""
         self._diagnostics.append(
             diagnostics.ChainElementNotInActionDiagnostic(
-                location=element.position,
+                location=element.location,
                 element_name=element.full_typed_name(in_universe=fqun),
                 parent_name=parent_name,
             )
@@ -780,7 +780,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             raise ValueError("not an action")
         # TODO: ChainedName.parent_position
         parent_chain = ast.ChainedName(
-            position=action_chain.position,
+            location=action_chain.location,
             typed_names=action_chain.typed_names[:-1],
         )
         parent_key = parent_chain.canonical_chained_name_tuple(
@@ -840,11 +840,11 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             if propagated_key in self._inferred_requirements:
                 continue
             prefix_chain = ast.ChainedName(
-                position=trigger_position.position,
+                location=trigger_position.location,
                 typed_names=chain_prefix_elements,
             )
             new_inferred_from = ast.PositionReference(
-                position=trigger_position.position,
+                location=trigger_position.location,
                 chain=prefix_chain,
             )
             self._inferred_requirements[propagated_key] = (

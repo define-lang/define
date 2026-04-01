@@ -28,8 +28,8 @@ def test_parse_local_name():
     local_name = name_parser.parse_local_name(token)
 
     assert local_name.name == "my_local"
-    assert local_name.position.line == 2
-    assert local_name.position.column == 10
+    assert local_name.location.line == 2
+    assert local_name.location.column == 10
 
 
 def test_parse_global_name_definition_standard_form():
@@ -38,11 +38,11 @@ def test_parse_global_name_definition_standard_form():
     fqun = _require_fqun(name)
 
     assert name.path.name == "/root/path"
-    assert name.path.position.column == 14
-    assert name.path.position.end_column == 24
+    assert name.path.location.column == 14
+    assert name.path.location.end_column == 24
     assert fqun.universe.name == "standard"
-    assert fqun.universe.position.column == 5
-    assert fqun.universe.position.end_column == 13
+    assert fqun.universe.location.column == 5
+    assert fqun.universe.location.end_column == 13
     assert fqun.authority is None
     assert fqun.multiverse is None
 
@@ -58,15 +58,15 @@ def test_parse_global_name_definition_three_part_fqun():
 
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
-    assert fqun.multiverse.position.column == 1
-    assert fqun.multiverse.position.end_column == 3
+    assert fqun.multiverse.location.column == 1
+    assert fqun.multiverse.location.end_column == 3
     assert fqun.authority is not None
     assert fqun.authority.name == "define-lang.org"
-    assert fqun.authority.position.column == 4
-    assert fqun.authority.position.end_column == 19
+    assert fqun.authority.location.column == 4
+    assert fqun.authority.location.end_column == 19
     assert fqun.universe.name == "runtime"
-    assert fqun.universe.position.column == 20
-    assert fqun.universe.position.end_column == 27
+    assert fqun.universe.location.column == 20
+    assert fqun.universe.location.end_column == 27
     assert name.path.name == "/do/work"
 
 
@@ -81,11 +81,11 @@ def test_parse_global_name_definition_two_part_fqun():
 
     assert fqun.authority is not None
     assert fqun.authority.name == "my.domain.com"
-    assert fqun.authority.position.column == 5
-    assert fqun.authority.position.end_column == 18
+    assert fqun.authority.location.column == 5
+    assert fqun.authority.location.end_column == 18
     assert fqun.universe.name == "my_lib"
-    assert fqun.universe.position.column == 19
-    assert fqun.universe.position.end_column == 25
+    assert fqun.universe.location.column == 19
+    assert fqun.universe.location.end_column == 25
     assert fqun.multiverse is None
     assert name.path.name == "/some/path"
 
@@ -126,18 +126,18 @@ def test_parse_global_name_reference_full_form():
 
     assert fqun.multiverse is not None
     assert fqun.multiverse.name == "mv"
-    assert fqun.multiverse.position.column == 4
-    assert fqun.multiverse.position.end_column == 6
+    assert fqun.multiverse.location.column == 4
+    assert fqun.multiverse.location.end_column == 6
     assert fqun.authority is not None
     assert fqun.authority.name == "acme.dev"
-    assert fqun.authority.position.column == 7
-    assert fqun.authority.position.end_column == 15
+    assert fqun.authority.location.column == 7
+    assert fqun.authority.location.end_column == 15
     assert fqun.universe.name == "tooling"
-    assert fqun.universe.position.column == 16
-    assert fqun.universe.position.end_column == 23
+    assert fqun.universe.location.column == 16
+    assert fqun.universe.location.end_column == 23
     assert name.path.name == "/action/run"
-    assert name.path.position.column == 24
-    assert name.path.position.end_column == 35
+    assert name.path.location.column == 24
+    assert name.path.location.end_column == 35
 
 
 def test_parse_global_name_reference_full_form_authority_with_path():
@@ -184,6 +184,6 @@ def test_positions_for_fqun_and_path():
     fqun = _require_fqun(name)
     assert token.column is not None
     assert isinstance(name, ast.DefinitionGlobalNameContent)
-    assert fqun.universe.position.column > token.column
-    assert name.path.position.line == 9
-    assert name.path.position.column > token.column
+    assert fqun.universe.location.column > token.column
+    assert name.path.location.line == 9
+    assert name.path.location.column > token.column

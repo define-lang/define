@@ -309,7 +309,7 @@ class TestPropagatedFromLocations:
         )
         locs = propagated.propagated_from_locations()
         assert len(locs) == 1
-        assert locs[0].line == _get_create_ref(_INNER).position.line
+        assert locs[0].line == _get_create_ref(_INNER).location.line
 
     def test_double_propagation(self):
         leaf = action_contract.InterfacePositionRequirement(
@@ -331,5 +331,5 @@ class TestPropagatedFromLocations:
         )
         locs = outer.propagated_from_locations()
         assert len(locs) == 2
-        assert locs[0].line == _get_create_ref(_MIDDLE).position.line
-        assert locs[1].line == _get_create_ref(_INNER).position.line
+        assert locs[0].line == _get_create_ref(_MIDDLE).location.line
+        assert locs[1].line == _get_create_ref(_INNER).location.line
