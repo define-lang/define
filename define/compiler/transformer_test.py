@@ -347,8 +347,8 @@ def test_create_dimension_point_with_local_position():
     assert len(block.action_statements.statements) == 1
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    assert len(stmt.target_position.chain.typed_names) == 1
-    ref = stmt.target_position.chain.typed_names[0]
+    assert len(stmt.target_position.typed_names) == 1
+    ref = stmt.target_position.typed_names[0]
     assert isinstance(ref, ast.LocalTypedNameReference)
     assert ref.name_type == ast.NameType.POSITION
     assert ref.name_content.name == "run"
@@ -371,7 +371,7 @@ def test_create_dimension_point_with_short_global_position():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    ref = stmt.target_position.chain.typed_names[0]
+    ref = stmt.target_position.typed_names[0]
     assert isinstance(ref, ast.GlobalTypedNameReference)
     assert ref.name_type == ast.NameType.POSITION
     assert ref.name_content.fqun is None
@@ -395,7 +395,7 @@ def test_create_dimension_point_with_full_fqun_position():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    ref = stmt.target_position.chain.typed_names[0]
+    ref = stmt.target_position.typed_names[0]
     assert isinstance(ref, ast.GlobalTypedNameReference)
     assert ref.name_type == ast.NameType.POSITION
     fqun = ref.name_content.fqun
@@ -425,7 +425,7 @@ def test_chained_position_reference_with_local_names():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    chain = stmt.target_position.chain.typed_names
+    chain = stmt.target_position.typed_names
     assert len(chain) == 3
     assert isinstance(chain[0], ast.LocalTypedNameReference)
     assert chain[0].name_type == ast.NameType.POSITION
@@ -455,7 +455,7 @@ def test_chained_position_reference_with_global_names():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    chain = stmt.target_position.chain.typed_names
+    chain = stmt.target_position.typed_names
     assert len(chain) == 3
     assert isinstance(chain[0], ast.GlobalTypedNameReference)
     assert chain[0].name_content.path.name == "/to"
@@ -482,7 +482,7 @@ def test_chained_position_reference_mixed_types():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    chain = stmt.target_position.chain.typed_names
+    chain = stmt.target_position.typed_names
     assert len(chain) == 3
     assert isinstance(chain[0], ast.GlobalTypedNameReference)
     assert chain[0].name_type == ast.NameType.ACTION
@@ -538,13 +538,13 @@ def test_move_dimension_point_with_local_positions():
     assert len(block.action_statements.statements) == 1
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
-    assert len(stmt.source_position.chain.typed_names) == 1
-    from_ref = stmt.source_position.chain.typed_names[0]
+    assert len(stmt.source_position.typed_names) == 1
+    from_ref = stmt.source_position.typed_names[0]
     assert isinstance(from_ref, ast.LocalTypedNameReference)
     assert from_ref.name_type == ast.NameType.POSITION
     assert from_ref.name_content.name == "source"
-    assert len(stmt.target_position.chain.typed_names) == 1
-    to_ref = stmt.target_position.chain.typed_names[0]
+    assert len(stmt.target_position.typed_names) == 1
+    to_ref = stmt.target_position.typed_names[0]
     assert isinstance(to_ref, ast.LocalTypedNameReference)
     assert to_ref.name_type == ast.NameType.POSITION
     assert to_ref.name_content.name == "dest"
@@ -567,12 +567,12 @@ def test_move_dimension_point_with_short_global_positions():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
-    from_ref = stmt.source_position.chain.typed_names[0]
+    from_ref = stmt.source_position.typed_names[0]
     assert isinstance(from_ref, ast.GlobalTypedNameReference)
     assert from_ref.name_type == ast.NameType.POSITION
     assert from_ref.name_content.fqun is None
     assert from_ref.name_content.path.name == "/source"
-    to_ref = stmt.target_position.chain.typed_names[0]
+    to_ref = stmt.target_position.typed_names[0]
     assert isinstance(to_ref, ast.GlobalTypedNameReference)
     assert to_ref.name_type == ast.NameType.POSITION
     assert to_ref.name_content.fqun is None
@@ -596,12 +596,12 @@ def test_move_dimension_point_with_full_fqun_positions():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
-    from_ref = stmt.source_position.chain.typed_names[0]
+    from_ref = stmt.source_position.typed_names[0]
     assert isinstance(from_ref, ast.GlobalTypedNameReference)
     assert from_ref.name_content.fqun is not None
     assert from_ref.name_content.fqun.canonical == "mv:authority.com:universe"
     assert from_ref.name_content.path.name == "/source"
-    to_ref = stmt.target_position.chain.typed_names[0]
+    to_ref = stmt.target_position.typed_names[0]
     assert isinstance(to_ref, ast.GlobalTypedNameReference)
     assert to_ref.name_content.fqun is not None
     assert to_ref.name_content.fqun.canonical == "mv:authority.com:universe"
@@ -625,25 +625,17 @@ def test_move_dimension_point_with_chained_source():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
-    assert len(stmt.source_position.chain.typed_names) == 3
-    assert isinstance(
-        stmt.source_position.chain.typed_names[0], ast.LocalTypedNameReference
-    )
-    assert stmt.source_position.chain.typed_names[0].name_content.name == "src"
-    assert isinstance(
-        stmt.source_position.chain.typed_names[1], ast.LocalTypedNameReference
-    )
-    assert stmt.source_position.chain.typed_names[1].name_type == ast.NameType.ACTION
-    assert stmt.source_position.chain.typed_names[1].name_content.name == "deposit"
-    assert isinstance(
-        stmt.source_position.chain.typed_names[2], ast.LocalTypedNameReference
-    )
-    assert stmt.source_position.chain.typed_names[2].name_content.name == "inner"
-    assert len(stmt.target_position.chain.typed_names) == 1
-    assert isinstance(
-        stmt.target_position.chain.typed_names[0], ast.LocalTypedNameReference
-    )
-    assert stmt.target_position.chain.typed_names[0].name_content.name == "dest"
+    assert len(stmt.source_position.typed_names) == 3
+    assert isinstance(stmt.source_position.typed_names[0], ast.LocalTypedNameReference)
+    assert stmt.source_position.typed_names[0].name_content.name == "src"
+    assert isinstance(stmt.source_position.typed_names[1], ast.LocalTypedNameReference)
+    assert stmt.source_position.typed_names[1].name_type == ast.NameType.ACTION
+    assert stmt.source_position.typed_names[1].name_content.name == "deposit"
+    assert isinstance(stmt.source_position.typed_names[2], ast.LocalTypedNameReference)
+    assert stmt.source_position.typed_names[2].name_content.name == "inner"
+    assert len(stmt.target_position.typed_names) == 1
+    assert isinstance(stmt.target_position.typed_names[0], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[0].name_content.name == "dest"
 
 
 def test_move_dimension_point_with_chained_destination():
@@ -663,25 +655,17 @@ def test_move_dimension_point_with_chained_destination():
     assert block is not None
     stmt = block.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
-    assert len(stmt.source_position.chain.typed_names) == 1
-    assert isinstance(
-        stmt.source_position.chain.typed_names[0], ast.LocalTypedNameReference
-    )
-    assert stmt.source_position.chain.typed_names[0].name_content.name == "src"
-    assert len(stmt.target_position.chain.typed_names) == 3
-    assert isinstance(
-        stmt.target_position.chain.typed_names[0], ast.LocalTypedNameReference
-    )
-    assert stmt.target_position.chain.typed_names[0].name_content.name == "dest"
-    assert isinstance(
-        stmt.target_position.chain.typed_names[1], ast.LocalTypedNameReference
-    )
-    assert stmt.target_position.chain.typed_names[1].name_type == ast.NameType.ACTION
-    assert stmt.target_position.chain.typed_names[1].name_content.name == "deposit"
-    assert isinstance(
-        stmt.target_position.chain.typed_names[2], ast.LocalTypedNameReference
-    )
-    assert stmt.target_position.chain.typed_names[2].name_content.name == "inner"
+    assert len(stmt.source_position.typed_names) == 1
+    assert isinstance(stmt.source_position.typed_names[0], ast.LocalTypedNameReference)
+    assert stmt.source_position.typed_names[0].name_content.name == "src"
+    assert len(stmt.target_position.typed_names) == 3
+    assert isinstance(stmt.target_position.typed_names[0], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[0].name_content.name == "dest"
+    assert isinstance(stmt.target_position.typed_names[1], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[1].name_type == ast.NameType.ACTION
+    assert stmt.target_position.typed_names[1].name_content.name == "deposit"
+    assert isinstance(stmt.target_position.typed_names[2], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[2].name_content.name == "inner"
 
 
 def test_mixed_action_statements_with_move():
@@ -756,8 +740,8 @@ def test_trigger_condition_statement_transforms_local_position():
     assert len(block.trigger_conditions.conditions) == 1
     condition = block.trigger_conditions.conditions[0]
     assert isinstance(condition, ast.TriggerConditionStatement)
-    assert len(condition.position_reference.chain.typed_names) == 1
-    ref = condition.position_reference.chain.typed_names[0]
+    assert len(condition.position_reference.typed_names) == 1
+    ref = condition.position_reference.typed_names[0]
     assert isinstance(ref, ast.LocalTypedNameReference)
     assert ref.name_type == ast.NameType.POSITION
     assert ref.name_content.name == "run"
@@ -779,8 +763,8 @@ def test_trigger_condition_statement_transforms_global_position():
     assert len(block.trigger_conditions.conditions) == 1
     condition = block.trigger_conditions.conditions[0]
     assert isinstance(condition, ast.TriggerConditionStatement)
-    assert len(condition.position_reference.chain.typed_names) == 1
-    ref = condition.position_reference.chain.typed_names[0]
+    assert len(condition.position_reference.typed_names) == 1
+    ref = condition.position_reference.typed_names[0]
     assert isinstance(ref, ast.GlobalTypedNameReference)
     assert ref.name_type == ast.NameType.POSITION
     assert ref.name_content.fqun is None
@@ -802,7 +786,7 @@ def test_trigger_condition_chained_position_reference():
     block = definition.definition_block
     assert block is not None
     condition = block.trigger_conditions.conditions[0]
-    chain = condition.position_reference.chain.typed_names
+    chain = condition.position_reference.typed_names
     assert len(chain) == 3
     assert isinstance(chain[0], ast.LocalTypedNameReference)
     assert chain[0].name_type == ast.NameType.POSITION
@@ -886,7 +870,7 @@ def test_init_block_with_create_statement():
     assert definition.initialization is not None
     stmt = definition.initialization.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
-    ref = stmt.target_position.chain.typed_names[0]
+    ref = stmt.target_position.typed_names[0]
     assert isinstance(ref, ast.GlobalTypedNameReference)
     assert ref.name_content.path.name == "/other"
 
@@ -904,10 +888,10 @@ def test_init_block_with_move_statement():
     assert definition.initialization is not None
     stmt = definition.initialization.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
-    from_ref = stmt.source_position.chain.typed_names[0]
+    from_ref = stmt.source_position.typed_names[0]
     assert isinstance(from_ref, ast.GlobalTypedNameReference)
     assert from_ref.name_content.path.name == "/source"
-    to_ref = stmt.target_position.chain.typed_names[0]
+    to_ref = stmt.target_position.typed_names[0]
     assert isinstance(to_ref, ast.GlobalTypedNameReference)
     assert to_ref.name_content.path.name == "/dest"
 

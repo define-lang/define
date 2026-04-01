@@ -265,10 +265,7 @@ class DefineTransformer(
     ) -> ast.PositionReference:
         """Transform a position reference (possibly chained with ::)."""
         return ast.PositionReference(
-            chain=ast.ChainedName(
-                typed_names=items,
-                location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
-            ),
+            typed_names=items,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 

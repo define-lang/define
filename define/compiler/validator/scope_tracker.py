@@ -40,9 +40,9 @@ class ScopeTracker:
 
     def is_defined_local(self, position: ast.PositionReference) -> bool:
         """Check if a position reference is a single local name defined in scope."""
-        if len(position.chain.typed_names) != 1:
+        if len(position.typed_names) != 1:
             return False
-        first = position.chain.typed_names[0]
+        first = position.typed_names[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return False
         return self.is_defined(first)

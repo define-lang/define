@@ -166,7 +166,7 @@ class TestGuaranteeGeneration:
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 37
-        assert guarantee.caused_by.chain.source_chained_name == "position<item>"
+        assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_moved_away_position_empty_at_end(self):
         source = (
@@ -188,7 +188,7 @@ class TestGuaranteeGeneration:
         assert guarantee.caused_by is not None
         assert guarantee.caused_by.location.line == 9
         assert guarantee.caused_by.location.column == 37
-        assert guarantee.caused_by.chain.source_chained_name == "position<item>"
+        assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_trigger_position_retains_origin(self):
         source = (
@@ -205,10 +205,10 @@ class TestGuaranteeGeneration:
         contract = _get_contract(source)
         guarantee = contract.guarantees[("position<run>",)]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee.origin_position.chain.source_chained_name == "position<run>"
+        assert guarantee.origin_position.source_chained_name == "position<run>"
         assert guarantee.caused_by.location.line == 4
         assert guarantee.caused_by.location.column == 13
-        assert guarantee.caused_by.chain.source_chained_name == "position<run>"
+        assert guarantee.caused_by.source_chained_name == "position<run>"
 
     def test_created_dp_is_new(self):
         source = (
@@ -228,7 +228,7 @@ class TestGuaranteeGeneration:
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 37
-        assert guarantee.caused_by.chain.source_chained_name == "position<item>"
+        assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_origin_preserved_through_moves(self):
         source = (
@@ -246,10 +246,10 @@ class TestGuaranteeGeneration:
         contract = _get_contract(source)
         guarantee = contract.guarantees[("position<b>",)]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee.origin_position.chain.source_chained_name == "position<a>"
+        assert guarantee.origin_position.source_chained_name == "position<a>"
         assert guarantee.caused_by.location.line == 8
         assert guarantee.caused_by.location.column == 52
-        assert guarantee.caused_by.chain.source_chained_name == "position<b>"
+        assert guarantee.caused_by.source_chained_name == "position<b>"
 
     def test_swap_origins(self):
         source = (
@@ -270,16 +270,16 @@ class TestGuaranteeGeneration:
         contract = _get_contract(source)
         guarantee_a = contract.guarantees[("position<a>",)]
         assert isinstance(guarantee_a, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_a.origin_position.chain.source_chained_name == "position<b>"
+        assert guarantee_a.origin_position.source_chained_name == "position<b>"
         assert guarantee_a.caused_by.location.line == 10
         assert guarantee_a.caused_by.location.column == 52
-        assert guarantee_a.caused_by.chain.source_chained_name == "position<a>"
+        assert guarantee_a.caused_by.source_chained_name == "position<a>"
         guarantee_b = contract.guarantees[("position<b>",)]
         assert isinstance(guarantee_b, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_b.origin_position.chain.source_chained_name == "position<a>"
+        assert guarantee_b.origin_position.source_chained_name == "position<a>"
         assert guarantee_b.caused_by.location.line == 11
         assert guarantee_b.caused_by.location.column == 55
-        assert guarantee_b.caused_by.chain.source_chained_name == "position<b>"
+        assert guarantee_b.caused_by.source_chained_name == "position<b>"
 
     def test_new_dp_qualities(self):
         source = (
@@ -424,7 +424,7 @@ class TestChainedRequirementInference:
         contract = _get_contract(source)
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert (
-            contract.requirements[chain_key].inferred_from.chain.source_chained_name
+            contract.requirements[chain_key].inferred_from.source_chained_name
             == "position<item>::position</x>"
         )
 
@@ -454,10 +454,7 @@ class TestChainedGuaranteeGeneration:
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 37
-        assert (
-            guarantee.caused_by.chain.source_chained_name
-            == "position<item>::position</x>"
-        )
+        assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
 
     def test_move_away_from_chain_generates_empty_guarantee(self):
         source = (
@@ -484,10 +481,7 @@ class TestChainedGuaranteeGeneration:
         assert guarantee.caused_by is not None
         assert guarantee.caused_by.location.line == 13
         assert guarantee.caused_by.location.column == 37
-        assert (
-            guarantee.caused_by.chain.source_chained_name
-            == "position<item>::position</x>"
-        )
+        assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
 
     def test_move_to_chain_generates_occupied_guarantee(self):
         source = (
@@ -511,13 +505,10 @@ class TestChainedGuaranteeGeneration:
         chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee.origin_position.chain.source_chained_name == "position<src>"
+        assert guarantee.origin_position.source_chained_name == "position<src>"
         assert guarantee.caused_by.location.line == 13
         assert guarantee.caused_by.location.column == 54
-        assert (
-            guarantee.caused_by.chain.source_chained_name
-            == "position<dest>::position</x>"
-        )
+        assert guarantee.caused_by.source_chained_name == "position<dest>::position</x>"
 
     def test_move_from_chain_away_and_back_preserves_existing_origin(self):
         source = (
@@ -543,15 +534,12 @@ class TestChainedGuaranteeGeneration:
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert (
-            guarantee.origin_position.chain.source_chained_name
+            guarantee.origin_position.source_chained_name
             == "position<item>::position</x>"
         )
         assert guarantee.caused_by.location.line == 14
         assert guarantee.caused_by.location.column == 54
-        assert (
-            guarantee.caused_by.chain.source_chained_name
-            == "position<item>::position</x>"
-        )
+        assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
 
     def test_chain_guarantee_qualities(self):
         source = (

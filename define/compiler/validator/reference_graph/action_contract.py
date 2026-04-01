@@ -43,15 +43,13 @@ class InterfacePositionRequirement:
         its enclosing action's FQUN. Uses source form for same-FQUN elements
         and canonical form for cross-FQUN elements.
         """
-        # Each propagation level's inferred_from.chain contains only that
+        # Each propagation level's inferred_from contains only that
         # level's prefix (e.g., [iface, action] or [iface, position</y>, action]).
         # The leaf level's chain is the original requirement's chain.
         parts: list[str] = []
         current = self
         while current is not None:
-            parts.append(
-                current._resolved_chain(current.inferred_from.chain, caller_fqun)
-            )
+            parts.append(current._resolved_chain(current.inferred_from, caller_fqun))
             current = current.propagated_from
         return "::".join(parts)
 

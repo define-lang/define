@@ -79,7 +79,7 @@ class DimensionPointTracker:
 
     def _key(self, position: ast.PositionReference) -> tuple[str, ...]:
         """Compute the canonical tuple key for a position reference."""
-        return position.chain.canonical_chained_name_tuple(in_universe=self._fqun)
+        return position.canonical_chained_name_tuple(in_universe=self._fqun)
 
     def _ensure_action_parent(self, key: tuple[str, ...]):
         """Create the action intermediate trie node if needed."""
@@ -301,10 +301,10 @@ class DimensionPointTracker:
         OccupiedByExisting guarantees move entire subtrees (the origin's
         children follow the parent DP).
         """
-        action_chain = trigger_position.chain.get_action_chain()
+        action_chain = trigger_position.get_action_chain()
         if action_chain is None:
             raise ValueError(
-                f"no action in chain: {trigger_position.chain.source_chained_name}"
+                f"no action in chain: {trigger_position.source_chained_name}"
             )
         key_prefix = action_chain.canonical_chained_name_tuple(in_universe=self._fqun)
         # TODO: Nested action chains still do not propagate callee requirements
@@ -359,10 +359,8 @@ class DimensionPointTracker:
         origin_keys: set[tuple[str, ...]] = set()
         for _name, guarantee in sorted_items:
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
-                origin_tuple = (
-                    guarantee.origin_position.chain.canonical_chained_name_tuple(
-                        in_universe=self._fqun
-                    )
+                origin_tuple = guarantee.origin_position.canonical_chained_name_tuple(
+                    in_universe=self._fqun
                 )
                 origin_keys.add(key_prefix + origin_tuple)
 
@@ -470,7 +468,7 @@ class DimensionPointTracker:
         saved_unknown: dict[tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]],
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""
-        origin_tuple = guarantee.origin_position.chain.canonical_chained_name_tuple(
+        origin_tuple = guarantee.origin_position.canonical_chained_name_tuple(
             in_universe=self._fqun
         )
         origin_key = key_prefix + origin_tuple

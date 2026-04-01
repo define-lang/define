@@ -113,16 +113,16 @@ class DefinitionPostorderValidator(abc.ABC):
         Only triggers when the chain ends with action<...>::position<trigger>,
         i.e., we're directly filling an action's interface position.
         """
-        interface_position = position.chain.get_interface_position()
+        interface_position = position.get_interface_position()
         if interface_position is None:
             return
         # Only trigger when filling a single interface position directly.
         # TODO: Consider whether to support triggering on chained positions.
-        if len(interface_position.chain.typed_names) != 1:
+        if len(interface_position.typed_names) != 1:
             return
         # Never None, because interface_position is not None.
         action_ref = typing.cast(
-            "ast.GlobalTypedNameReference", position.chain.get_first_action()
+            "ast.GlobalTypedNameReference", position.get_first_action()
         )
         action_name = action_ref.full_typed_name(in_universe=self._enclosing_fqun)
         # The action's file may have failed to load or parse.
@@ -130,7 +130,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if contract is None:
             return
         trigger_element = typing.cast(
-            "ast.LocalTypedNameReference", interface_position.chain.typed_names[0]
+            "ast.LocalTypedNameReference", interface_position.typed_names[0]
         )
         if (
             trigger_element.full_typed_name(in_universe=self._enclosing_fqun)
@@ -152,10 +152,10 @@ class DefinitionPostorderValidator(abc.ABC):
         """Check that all action requirements are satisfied before triggering."""
         dp = self._tracker.get_occupant(trigger_position)
 
-        action_chain = trigger_position.chain.get_action_chain()
+        action_chain = trigger_position.get_action_chain()
         if action_chain is None:
             raise ValueError(
-                f"no action in chain: {trigger_position.chain.source_chained_name}"
+                f"no action in chain: {trigger_position.source_chained_name}"
             )
         # source_prefix is for diagnostics, canonical_prefix is for key lookups.
         source_prefix = action_chain.source_chained_name
@@ -237,7 +237,7 @@ class DefinitionPostorderValidator(abc.ABC):
             self._diagnostics.append(
                 diagnostics.CreateInOccupiedPositionDiagnostic(
                     location=position.location,
-                    position_name=position.chain.source_chained_name,
+                    position_name=position.source_chained_name,
                     created_at=self._tracker.get_occupant(
                         position
                     ).last_position.location,
@@ -317,7 +317,7 @@ class DefinitionPostorderValidator(abc.ABC):
             action_contract.PositionOccupancyState.EMPTY, to_pos, scope
         )
 
-        from_action = from_pos.chain.get_first_action()
+        from_action = from_pos.get_first_action()
         from_occupied = self._tracker.is_occupied(from_pos)
         to_empty = not self._tracker.is_occupied(to_pos)
 
@@ -327,7 +327,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 self._diagnostics.append(
                     diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
                         location=from_pos.location,
-                        position_name=from_pos.chain.source_chained_name,
+                        position_name=from_pos.source_chained_name,
                         inferred_at=emptied_by.location if emptied_by else None,
                     )
                 )
@@ -335,7 +335,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 self._diagnostics.append(
                     diagnostics.MoveFromEmptyPositionDiagnostic(
                         location=from_pos.location,
-                        position_name=from_pos.chain.source_chained_name,
+                        position_name=from_pos.source_chained_name,
                     )
                 )
         if not to_empty:
@@ -343,7 +343,7 @@ class DefinitionPostorderValidator(abc.ABC):
             self._diagnostics.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
                     location=to_pos.location,
-                    position_name=to_pos.chain.source_chained_name,
+                    position_name=to_pos.source_chained_name,
                     occupied_at=occupant.last_position.location,
                 )
             )
@@ -380,9 +380,9 @@ class DefinitionPostorderValidator(abc.ABC):
 
         self._diagnostics.append(
             diagnostics.MoveViolatesConstraintsDiagnostic(
-                location=to_pos.chain.typed_names[0].location,
-                source_position=from_pos.chain.source_chained_name,
-                target_position=to_pos.chain.source_chained_name,
+                location=to_pos.typed_names[0].location,
+                source_position=from_pos.source_chained_name,
+                target_position=to_pos.source_chained_name,
                 missing_qualities=sorted(missing),
             )
         )
@@ -399,32 +399,32 @@ class DefinitionPostorderValidator(abc.ABC):
         Returns True if a prefix relationship was detected (and diagnostics emitted).
         """
         fqun = self._enclosing_fqun
-        from_chain = stmt.source_position.chain
-        to_chain = stmt.target_position.chain
-        if len(from_chain.typed_names) > len(to_chain.typed_names):
+        from_pos = stmt.source_position
+        to_pos = stmt.target_position
+        if len(from_pos.typed_names) > len(to_pos.typed_names):
             return False
         for from_name, to_name in zip(
-            from_chain.typed_names, to_chain.typed_names, strict=False
+            from_pos.typed_names, to_pos.typed_names, strict=False
         ):
             if from_name.full_typed_name(in_universe=fqun) != to_name.full_typed_name(
                 in_universe=fqun
             ):
                 return False
 
-        if len(from_chain.typed_names) == len(to_chain.typed_names):
+        if len(from_pos.typed_names) == len(to_pos.typed_names):
             self._diagnostics.append(
                 diagnostics.MoveToSamePositionDiagnostic(
-                    location=to_chain.typed_names[-1].location,
-                    position_name=to_chain.source_chained_name,
+                    location=to_pos.typed_names[-1].location,
+                    position_name=to_pos.source_chained_name,
                 )
             )
         else:
-            divergence = to_chain.typed_names[len(from_chain.typed_names)]
+            divergence = to_pos.typed_names[len(from_pos.typed_names)]
             self._diagnostics.append(
                 diagnostics.MoveIntoDefiningPositionDiagnostic(
                     location=divergence.location,
-                    source_position=from_chain.source_chained_name,
-                    target_position=to_chain.source_chained_name,
+                    source_position=from_pos.source_chained_name,
+                    target_position=to_pos.source_chained_name,
                 )
             )
             self._tracker.mark_unknown(stmt.source_position)
@@ -440,11 +440,10 @@ class DefinitionPostorderValidator(abc.ABC):
 
         Marks the chain's position as UNKNOWN in the tracker if validation fails.
         """
-        chain = ref.chain
-        if len(chain.typed_names) < 2:
+        if len(ref.typed_names) < 2:
             return
         enclosing_fqun = self._enclosing_fqun
-        elements = chain.typed_names
+        elements = ref.typed_names
 
         # Check the second element against the first element's constraints
         # using the scope tracker. This works also for position-self references
@@ -588,16 +587,16 @@ class DefinitionPostorderValidator(abc.ABC):
     ) -> frozenset[str] | None:
         """Resolve the constraint qualities required at a position."""
         if scope.is_defined_local(position):
-            return scope.get_constraint_names(position.chain.typed_names[0])
+            return scope.get_constraint_names(position.typed_names[0])
 
-        last_element = position.chain.typed_names[-1]
+        last_element = position.typed_names[-1]
 
         if isinstance(last_element, ast.LocalTypedNameReference):
             # Local position inside an action — look up the parent action's
             # interface_position_constraints. Chain validation guarantees the
             # parent is a global action reference whose definition exists and
             # contains this interface position.
-            parent = position.chain.typed_names[-2]
+            parent = position.typed_names[-2]
             parent_key = parent.full_typed_name(in_universe=self._enclosing_fqun)
             action_def = self._definition_results[parent_key].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
@@ -679,7 +678,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             self._validate_chained_name(condition.position_reference, scope)
             if scope.is_defined_local(condition.position_reference):
                 qualities = scope.get_constraint_names(
-                    condition.position_reference.chain.typed_names[0]
+                    condition.position_reference.typed_names[0]
                 )
                 # DLP 37: We assume trigger points are occupied upon the start
                 # of the action, but we can only assume they have the qualities
@@ -715,7 +714,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         scope: scope_tracker.ScopeTracker,
     ):
         """Infer a requirement for an interface position the first time it is referenced."""
-        first = position.chain.typed_names[0]
+        first = position.typed_names[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return
         if not scope.is_defined(first):
@@ -740,7 +739,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         ):
             return
 
-        requirement_key = position.chain.canonical_chained_name_tuple(
+        requirement_key = position.canonical_chained_name_tuple(
             in_universe=self._enclosing_fqun
         )
         if requirement_key in self._inferred_requirements:
@@ -775,7 +774,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # positions. Thus, requirements must propagate. If the parent DP is NOT
         # from_caller (created internally by this action), the caller's access
         # was severed, so requirements don't propagate.
-        action_chain = trigger_position.chain.get_action_chain()
+        action_chain = trigger_position.get_action_chain()
         if action_chain is None:
             raise ValueError("not an action")
         # TODO: ChainedName.parent_position
@@ -789,7 +788,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         dp_info = self._tracker.get_occupant_by_key(parent_key)
         if not dp_info.from_caller:
             return None
-        origin_first = dp_info.origin_position.chain.typed_names[0]
+        origin_first = dp_info.origin_position.typed_names[0]
         origin_key = origin_first.full_typed_name(in_universe=self._enclosing_fqun)
         return self._interface_positions.get(origin_key)
 
@@ -839,13 +838,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             # it ourselves and don't propagate it to our caller.
             if propagated_key in self._inferred_requirements:
                 continue
-            prefix_chain = ast.ChainedName(
-                location=trigger_position.location,
-                typed_names=chain_prefix_elements,
-            )
             new_inferred_from = ast.PositionReference(
                 location=trigger_position.location,
-                chain=prefix_chain,
+                typed_names=chain_prefix_elements,
             )
             self._inferred_requirements[propagated_key] = (
                 action_contract.InterfacePositionRequirement(

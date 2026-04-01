@@ -40,7 +40,7 @@ class ActionBodyEffect:
     @property
     def modified_position(self) -> ast.ChainedName:
         """Return the position chain that this statement writes into."""
-        return self.statement.target_position.chain
+        return self.statement.target_position
 
     @cached_property
     def _action_boundary(self) -> tuple[int, str] | None:

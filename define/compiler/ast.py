@@ -243,9 +243,6 @@ class LocalTypedNameReference(TypedName):
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
-# TODO: I've been thinking that maybe this should just be
-# a subclass of Sequence[TypedNameReference], to eliminate
-# the awkwardness of position.chained_names.typed_names[0]?
 @dataclass(frozen=True, slots=True)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
@@ -295,26 +292,11 @@ class ChainedName(ASTNode):
                 tail = self.typed_names[i + 1 :]
                 if not tail:
                     return None
-                chain = ChainedName(
+                return PositionReference(
                     location=tail[0].location,
                     typed_names=tail,
                 )
-                return PositionReference(
-                    location=tail[0].location,
-                    chain=chain,
-                )
         return None
-
-
-# TODO: Logically this and ChainedName are actually similar; this just
-# ends in a position always. We will at some point possibly have ActionReference
-# also, and so probably what we really need is ChainedNameReference as a superclass
-# of this.
-@dataclass(frozen=True, slots=True)
-class PositionReference(ASTNode):
-    """Represents a position reference, possibly chained with ::."""
-
-    chain: ChainedName
 
     def walk_parent_positions(self) -> Iterator[PositionReference]:
         """Yield parent position prefixes from root toward this position.
@@ -324,16 +306,18 @@ class PositionReference(ASTNode):
         ``position<a>::action</x>::position</b>``, but not the full chain
         itself. Actions are skipped (bundled with the next position).
         """
-        names = self.chain.typed_names
+        names = self.typed_names
         for i, elem in enumerate(names[:-1]):
             if elem.name_type != NameType.ACTION:
                 yield PositionReference(
                     location=self.location,
-                    chain=ChainedName(
-                        location=self.chain.location,
-                        typed_names=names[: i + 1],
-                    ),
+                    typed_names=names[: i + 1],
                 )
+
+
+@dataclass(frozen=True, slots=True)
+class PositionReference(ChainedName):
+    """Represents a position reference, possibly chained with ::."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -504,7 +488,7 @@ class ActionDefinition(QualityDefinition):
         conditions = self.definition_block.trigger_conditions.conditions
         if not conditions:
             return None
-        first_ref = conditions[0].position_reference.chain.typed_names[0]
+        first_ref = conditions[0].position_reference.typed_names[0]
         if not isinstance(first_ref, LocalTypedNameReference):
             return None
         trigger_name = first_ref.source_typed_name

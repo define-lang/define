@@ -62,8 +62,7 @@ class ActionStatementsBlockGenerator:
     ) -> template_context.PositionExpr:
         """Build a position expression from a position reference chain."""
         fqun = self._defining_typed_name.name_content.fqun
-        chain = ref.chain
-        first = chain.typed_names[0]
+        first = ref.typed_names[0]
         if isinstance(first, ast.LocalTypedNameReference):
             if first.source_typed_name in self._interface_position_names:
                 start = "self"
@@ -79,8 +78,8 @@ class ActionStatementsBlockGenerator:
         else:
             start = "self"
             chain_elements = []
-        for i, elem in enumerate(chain.typed_names[1:]):
-            prev = chain.typed_names[i]
+        for i, elem in enumerate(ref.typed_names[1:]):
+            prev = ref.typed_names[i]
             chain_elements.append(
                 template_context.ChainElement(
                     accessor=_chain_accessor(prev.name_type, elem.name_type),

@@ -10,10 +10,7 @@ from define.compiler.validator.reference_graph import (
 
 _LOC = ast.start_of_file_location()
 _LOC2 = ast.SourceLocation(line=2, column=1, end_line=2, end_column=1)
-_POS2_REF = ast.PositionReference(
-    chain=ast.ChainedName(typed_names=[], location=_LOC2),
-    location=_LOC2,
-)
+_POS2_REF = ast.PositionReference(typed_names=[], location=_LOC2)
 
 _FQUN = ast.Fqun(
     multiverse=None,
@@ -58,10 +55,7 @@ def _make_position_ref(
     elements: list[ast.TypedNameReference],
     location: ast.SourceLocation = _LOC,
 ) -> ast.PositionReference:
-    return ast.PositionReference(
-        chain=ast.ChainedName(typed_names=elements, location=location),
-        location=location,
-    )
+    return ast.PositionReference(typed_names=elements, location=location)
 
 
 def test_create_and_is_occupied():

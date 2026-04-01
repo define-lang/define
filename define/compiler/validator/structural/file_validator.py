@@ -362,13 +362,13 @@ class DefinitionStructuralValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         for condition in trigger_conditions.conditions:
-            chain = condition.position_reference.chain
-            if not self._validate_full_chained_name(chain, scope):
+            pos_ref = condition.position_reference
+            if not self._validate_full_chained_name(pos_ref, scope):
                 continue
             self._trigger_positions.append(
                 action_call_graph.TriggerPositionInfo(
                     enclosing_typed_name=self._definition.typed_name,
-                    checked_position=chain,
+                    checked_position=pos_ref,
                 )
             )
 
@@ -444,7 +444,7 @@ class DefinitionStructuralValidator:
         allow_self_reference: bool = False,
     ):
         target_ok = self._validate_full_chained_name(
-            stmt.target_position.chain,
+            stmt.target_position,
             scope,
             allow_self_reference=allow_self_reference,
         )
@@ -464,12 +464,12 @@ class DefinitionStructuralValidator:
         allow_self_reference: bool = False,
     ):
         source_ok = self._validate_full_chained_name(
-            stmt.source_position.chain,
+            stmt.source_position,
             scope,
             allow_self_reference=allow_self_reference,
         )
         target_ok = self._validate_full_chained_name(
-            stmt.target_position.chain,
+            stmt.target_position,
             scope,
             allow_self_reference=allow_self_reference,
         )

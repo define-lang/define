@@ -253,10 +253,7 @@ def test_global_position_without_constraints():
 def _make_position_ref(
     elements: list[ast.TypedNameReference],
 ) -> ast.PositionReference:
-    return ast.PositionReference(
-        chain=ast.ChainedName(typed_names=elements, location=_LOC),
-        location=_LOC,
-    )
+    return ast.PositionReference(typed_names=elements, location=_LOC)
 
 
 def test_is_defined_local_single_local_in_scope():

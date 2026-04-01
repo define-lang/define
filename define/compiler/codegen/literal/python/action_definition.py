@@ -51,7 +51,7 @@ class ActionDefinitionGenerator:
 
         trigger_position_name = (
             block.trigger_conditions.conditions[0]
-            .position_reference.chain.typed_names[0]
+            .position_reference.typed_names[0]
             .source_typed_name
         )
 
