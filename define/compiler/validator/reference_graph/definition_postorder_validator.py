@@ -17,11 +17,6 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
-# TODO: Chains like position<local>::action</foo>::position<iface>::action</bar>::position<iface>
-# are not handled. The nested action's interface positions create requirements
-# and guarantees that we don't propagate through the outer action's contract, and it's not clear
-# how they are supposed to propagate to callees.
-
 
 class DefinitionPostorderValidator(abc.ABC):
     """Validates a single definition during a DFS post-order walk of the reference graph."""
@@ -74,6 +69,18 @@ class DefinitionPostorderValidator(abc.ABC):
         scope: scope_tracker.ScopeTracker,  # pyright: ignore[reportUnusedParameter]
     ):
         """Infer a requirement for an interface position on first reference.
+
+        No-op for non-action definitions. Overridden by ActionPostorderValidator.
+        """
+
+    def _propagate_inner_requirements(  # noqa: B027
+        self,
+        _triggered_action: ast.GlobalTypedNameReference,
+        _triggered_action_name: str,
+        _contract: action_contract.ActionContract,
+        _trigger_position: ast.PositionReference,
+    ):
+        """Propagate inner action requirements into this action's contract.
 
         No-op for non-action definitions. Overridden by ActionPostorderValidator.
         """
@@ -131,6 +138,9 @@ class DefinitionPostorderValidator(abc.ABC):
         ):
             return
 
+        # We only propagate inner requirements if actions actually get called.
+        # (That's why this happens here in _check_trigger.)
+        self._propagate_inner_requirements(action_ref, action_name, contract, position)
         self._check_requirements(position, contract)
         self._tracker.apply_guarantees(position, contract.guarantees)
 
@@ -169,11 +179,10 @@ class DefinitionPostorderValidator(abc.ABC):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
                         location=dp.last_position.position,
-                        action_name=action_chain.typed_names[-1].full_typed_name(
-                            in_universe=self._enclosing_fqun
-                        ),
-                        position_name=f"{source_prefix}::{req.inferred_from.chain.source_chained_name}",
+                        action_name=req.root_cause_action_name(),
+                        position_name=f"{source_prefix}::{req.resolved_chained_name(self._enclosing_fqun)}",
                         inferred_at=req.inferred_from.position,
+                        propagated_from_locations=req.propagated_from_locations(),
                         filled_at=occupant.last_position.position,
                     )
                 )
@@ -184,11 +193,10 @@ class DefinitionPostorderValidator(abc.ABC):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
                         location=dp.last_position.position,
-                        action_name=action_chain.typed_names[-1].full_typed_name(
-                            in_universe=self._enclosing_fqun
-                        ),
-                        position_name=f"{source_prefix}::{req.inferred_from.chain.source_chained_name}",
+                        action_name=req.root_cause_action_name(),
+                        position_name=f"{source_prefix}::{req.resolved_chained_name(self._enclosing_fqun)}",
                         inferred_at=req.inferred_from.position,
+                        propagated_from_locations=req.propagated_from_locations(),
                     )
                 )
 
@@ -706,12 +714,16 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Infer a requirement for an interface position on first reference."""
+        """Infer a requirement for an interface position the first time it is referenced."""
         first = position.chain.typed_names[0]
         if not isinstance(first, ast.LocalTypedNameReference):
             return
         if not scope.is_defined(first):
             return
+        # TODO: This is missing an important case: we can move an interface position
+        # to a local and then do something to a child position of it, and that needs
+        # to create a requirement in the caller. Instead (or perhaps in addition to)
+        # this check, we should check if any parent DP came from the caller.
         typed_name = first.full_typed_name(in_universe=self._enclosing_fqun)
         if typed_name not in self._interface_positions:
             return
@@ -737,6 +749,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             action_contract.InterfacePositionRequirement(
                 required_state=required_state,
                 inferred_from=position,
+                enclosing_action=self._action_definition,
             )
         )
 
@@ -750,6 +763,98 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
             qualities = self._get_required_qualities(position, scope) or frozenset()
             self._tracker.create(position, qualities, from_caller=True)
+
+    def _action_parent_comes_from_interface_position(
+        self,
+        trigger_position: ast.PositionReference,
+    ) -> ast.LocalPositionDefinition | None:
+        """Return the interface position definition if the action's parent DP is from the caller."""
+        # Only the action's immediate parent position matters. If the parent
+        # DP is from_caller, the caller injected it, so the caller has access
+        # to the rest of the chain and could have pre-filled the action's interface
+        # positions. Thus, requirements must propagate. If the parent DP is NOT
+        # from_caller (created internally by this action), the caller's access
+        # was severed, so requirements don't propagate.
+        action_chain = trigger_position.chain.get_action_chain()
+        if action_chain is None:
+            raise ValueError("not an action")
+        # TODO: ChainedName.parent_position
+        parent_chain = ast.ChainedName(
+            position=action_chain.position,
+            typed_names=action_chain.typed_names[:-1],
+        )
+        parent_key = parent_chain.canonical_chained_name_tuple(
+            in_universe=self._enclosing_fqun
+        )
+        dp_info = self._tracker.get_occupant_by_key(parent_key)
+        if not dp_info.from_caller:
+            return None
+        origin_first = dp_info.origin_position.chain.typed_names[0]
+        origin_key = origin_first.full_typed_name(in_universe=self._enclosing_fqun)
+        return self._interface_positions.get(origin_key)
+
+    @typing.override
+    def _propagate_inner_requirements(
+        self,
+        triggered_action: ast.GlobalTypedNameReference,
+        triggered_action_name: str,
+        contract: action_contract.ActionContract,
+        trigger_position: ast.PositionReference,
+    ):
+        """Propagate inner action requirements into this action's contract."""
+        iface_def = self._action_parent_comes_from_interface_position(trigger_position)
+        if iface_def is None:
+            return
+
+        # The caller sees only the interface position and the action, not any
+        # internal positions the DP may have been moved through.
+        chain_prefix_elements = [iface_def.typed_name, triggered_action]
+        canonical_key_prefix = tuple(
+            elem.full_typed_name(in_universe=self._enclosing_fqun)
+            for elem in chain_prefix_elements
+        )
+        for req_key, inner_req in contract.requirements.items():
+            # Only EMPTY requirements propagate. OCCUPIED requirements
+            # must be satisfied by the action that directly triggers
+            # the inner action. This does create a limitation in the language:
+            # you can't pre-fill interface positions and "ship them off" to
+            # another action, even though the code generator could generate that.
+            # There's no way to perform modular analysis on that case, and in any
+            # case, it seems particularly confusing and strange to do that. In a
+            # traditional language, that would be like filling in one argument of
+            # a function in one caller, and filling in the other argumet of a
+            # function in a different caller. It's both hard to reason about and
+            # doesn't seem that useful.
+            #
+            # TODO: However, I believe we could propagate OCCUPIED for intermediate
+            # positions that are not filled on interface position children.
+            if (
+                inner_req.required_state
+                == action_contract.PositionOccupancyState.OCCUPIED
+            ):
+                continue
+            propagated_key = (*canonical_key_prefix, *req_key)
+            # If we already inferred a requirement for this key (i.e.,
+            # our own code references this position first), we satisfy
+            # it ourselves and don't propagate it to our caller.
+            if propagated_key in self._inferred_requirements:
+                continue
+            prefix_chain = ast.ChainedName(
+                position=trigger_position.position,
+                typed_names=chain_prefix_elements,
+            )
+            new_inferred_from = ast.PositionReference(
+                position=trigger_position.position,
+                chain=prefix_chain,
+            )
+            self._inferred_requirements[propagated_key] = (
+                action_contract.InterfacePositionRequirement(
+                    required_state=inner_req.required_state,
+                    inferred_from=new_inferred_from,
+                    enclosing_action=self._action_definition,
+                    propagated_from=inner_req,
+                )
+            )
 
 
 class PositionPostorderValidator(DefinitionPostorderValidator):

@@ -644,11 +644,25 @@ class ActionRequirementDiagnostic(Diagnostic):
     action_name: str
     position_name: str
     inferred_at: ast.SourcePosition
+    propagated_from_locations: list[ast.SourcePosition]
 
+    # TODO: This really needs to be able to show all the relevant
+    # source lines. I think we could do that by passing in a
+    # source_map to format() and providing some sort of get_context
+    # method on the base Diagnostic. The alternative is passing in
+    # a source_map on construction of the Diagnostic, but then that
+    # means that everything in all of the compiler has to be able
+    # to access source_lines for all files.
     @property
     def formatted_inferred_at(self) -> str:
-        """Format the inferred_at position as a human-readable location string."""
-        return _format_position(self.inferred_at)
+        """Format the inferred_at position and any propagation chain."""
+        lines: list[str] = []
+        lines.append("This requirement happens because of:")
+        lines.append(_format_position(self.inferred_at))
+        for i, pos in enumerate(self.propagated_from_locations):
+            indent = "  " * (i + 1)
+            lines.append(f"{indent}{_format_position(pos)}")
+        return "\n".join(lines)
 
 
 @dataclass
@@ -660,7 +674,6 @@ class ActionRequiresEmptyPositionDiagnostic(ActionRequirementDiagnostic):
         "this line is triggering `{self.action_name}` to run.\n"
         "However, '{self.position_name}' must be empty before that action runs, and it is not empty.\n"
         "It was filled at:\n{self.formatted_filled_at}\n\n"
-        "This requirement happens because of this line of code inside of the action:\n"
         "{self.formatted_inferred_at}"
     )
 
@@ -677,7 +690,6 @@ class ActionRequiresOccupiedPositionDiagnostic(ActionRequirementDiagnostic):
     message_format: ClassVar[str] = (
         "this line is triggering `{self.action_name}` to run.\n"
         "However, '{self.position_name}' must be occupied before that action runs, and it not occupied.\n\n"
-        "This requirement happens because of this line of code inside of the action:\n"
         "{self.formatted_inferred_at}"
     )
 

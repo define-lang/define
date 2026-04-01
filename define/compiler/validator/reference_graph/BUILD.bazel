@@ -3,6 +3,18 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+py_test(
+    name = "action_contract_test",
+    size = "small",
+    srcs = ["action_contract_test.py"],
+    deps = [
+        ":action_contract",
+        "//define/compiler:ast",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
 py_library(
     name = "action_contract",
     srcs = ["action_contract.py"],
@@ -19,6 +31,7 @@ py_test(
     deps = [
         ":action_contract",
         ":definition_postorder_validator",
+        "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
     ],
@@ -93,6 +106,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_contract",
+        ":action_contract_test",
         ":definition_postorder_validator",
         ":definition_postorder_validator_test",
         ":dimension_point_tracker",

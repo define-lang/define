@@ -89,3 +89,63 @@ def test_move_from_empty_interface_position_with_inferred_at():
         " because it does not contain one; it was emptied at:\n"
         'File "other.dfn", line 7, column 37'
     )
+
+
+def test_formatted_inferred_at_without_propagation():
+    diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
+        location=_POS,
+        action_name="action<my.domain.com:my_lib:/other>",
+        position_name="position<box>::action</other>::position<item>",
+        inferred_at=ast.SourcePosition(
+            line=7,
+            column=37,
+            end_line=7,
+            end_column=51,
+            file_path=PurePosixPath("other.dfn"),
+        ),
+        propagated_from_locations=[],
+        filled_at=_POS,
+    )
+
+    assert diagnostic.formatted_inferred_at == (
+        'This requirement happens because of:\nFile "other.dfn", line 7, column 37'
+    )
+
+
+def test_formatted_inferred_at_with_propagated_from_locations():
+    diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
+        location=_POS,
+        action_name="action<my.domain.com:my_lib:/inner>",
+        position_name="position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+        inferred_at=ast.SourcePosition(
+            line=11,
+            column=37,
+            end_line=11,
+            end_column=91,
+            file_path=PurePosixPath("outer.dfn"),
+        ),
+        propagated_from_locations=[
+            ast.SourcePosition(
+                line=11,
+                column=37,
+                end_line=11,
+                end_column=95,
+                file_path=PurePosixPath("middle.dfn"),
+            ),
+            ast.SourcePosition(
+                line=7,
+                column=37,
+                end_line=7,
+                end_column=51,
+                file_path=PurePosixPath("inner.dfn"),
+            ),
+        ],
+        filled_at=_POS,
+    )
+
+    assert diagnostic.formatted_inferred_at == (
+        "This requirement happens because of:\n"
+        'File "outer.dfn", line 11, column 37\n'
+        '  File "middle.dfn", line 11, column 37\n'
+        '    File "inner.dfn", line 7, column 37'
+    )

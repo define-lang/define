@@ -324,7 +324,7 @@ def test_action_requires_empty_position_format(
         " must be empty before that action runs, and it is not empty.\n"
         "It was filled at:\n"
         'File "test.dfn", line 12, column 37\n\n'
-        "This requirement happens because of this line of code inside of the action:\n"
+        "This requirement happens because of:\n"
         'File "other.dfn", line 7, column 37'
     )
 
@@ -378,8 +378,95 @@ def test_action_requires_occupied_position_format(
         "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
         "However, 'position<box>::action</other>::position<item>'"
         " must be occupied before that action runs, and it not occupied.\n\n"
-        "This requirement happens because of this line of code inside of the action:\n"
+        "This requirement happens because of:\n"
         'File "other.dfn", line 8, column 37'
+    )
+
+
+def test_propagated_action_requires_empty_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "inner.dfn": (
+            "define the potential action<my.domain.com:my_lib:/inner> {\n"
+            "    define the position<trigger_pos>.\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        the position<trigger_pos> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "middle.dfn": (
+            "define the potential action<my.domain.com:my_lib:/middle> {\n"
+            "    define the position<trigger_pos>.\n"
+            "    define the position<mid_iface> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</inner>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<trigger_pos> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "outer.dfn": (
+            "define the potential action<my.domain.com:my_lib:/outer> {\n"
+            "    define the position<trigger_pos>.\n"
+            "    define the position<out_iface> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</middle>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<trigger_pos> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the action</outer>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<box>.\n"
+            "        create a dimension point in position<box>::action</outer>::position<out_iface>.\n"
+            "        create a dimension point in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
+            "        create a dimension point in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
+            "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == (
+        'File "test.dfn", line 15, column 37\n'
+        "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+        "                                    ^\n"
+        "this line is triggering `action<my.domain.com:my_lib:/inner>` to run.\n"
+        "However, 'position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>'"
+        " must be empty before that action runs, and it is not empty.\n"
+        "It was filled at:\n"
+        'File "test.dfn", line 14, column 37\n'
+        "\n"
+        "This requirement happens because of:\n"
+        'File "outer.dfn", line 11, column 37\n'
+        '  File "middle.dfn", line 11, column 37\n'
+        '    File "inner.dfn", line 7, column 37'
     )
 
 

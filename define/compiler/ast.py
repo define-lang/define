@@ -24,6 +24,7 @@ class NameType(enum.StrEnum):
     ACTION = "action"
 
 
+# TODO: Rename this to SourceLocation.
 @dataclass(frozen=True, slots=True)
 class SourcePosition:
     """Represents a position in source code."""
@@ -306,6 +307,10 @@ class ChainedName(ASTNode):
         return None
 
 
+# TODO: Logically this and ChainedName are actually similar; this just
+# ends in a position always. We will at some point possibly have ActionReference
+# also, and so probably what we really need is ChainedNameReference as a superclass
+# of this.
 @dataclass(frozen=True, slots=True)
 class PositionReference(ASTNode):
     """Represents a position reference, possibly chained with ::."""
