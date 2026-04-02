@@ -405,3 +405,111 @@ def test_move_from_trigger_chained_then_create(
         }
     )
     assert_no_errors(result.program_result)
+
+
+def test_3_item_position_chain_via_moved_local_infers_occupied(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "x.dfn": (
+                "define the potential position<my.domain.com:my_lib:/x> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</y>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</x>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</x>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position<iface> to position<local>.\n"
+                "        create a dimension point in position<local>::position</x>::position</y>.\n"
+                "        create a dimension point in position<local>::position</x>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<local>::position</x>"
+    assert all_diags[0].created_at.line == 17
+    assert all_diags[0].created_at.column == 37
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+
+
+def test_4_depth_action_chain_via_moved_local_infers_occupied(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</y>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position<iface> to position<local>.\n"
+                "        create a dimension point in position<local>::action</inner>::position<item>::position</y>.\n"
+                "        create a dimension point in position<local>::action</inner>::position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name == "position<local>::action</inner>::position<item>"
+    )
+    assert all_diags[0].created_at.line == 17
+    assert all_diags[0].created_at.column == 37
+    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")

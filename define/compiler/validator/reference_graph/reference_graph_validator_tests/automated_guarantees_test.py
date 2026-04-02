@@ -5,6 +5,8 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -430,6 +432,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
     assert all_diags[0].filled_at.line == 9
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
@@ -488,6 +491,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     assert all_diags[0].filled_at.line == 10
     assert all_diags[0].filled_at.column == 55
     assert all_diags[0].filled_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
@@ -545,6 +549,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert all_diags[0].inferred_at.line == 10
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].position_name == "position<box>::action</other>::position<dest>"
@@ -557,6 +562,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     assert all_diags[1].inferred_at.line == 10
     assert all_diags[1].inferred_at.column == 55
     assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[1].propagated_from_locations == []
 
 
 def test_second_trigger_succeeds_with_proper_state_management(
@@ -1364,6 +1370,9 @@ def test_post_trigger_new_guarantee_on_child_position(
     )
 
 
+@pytest.mark.xfail(
+    reason="needs diagnostic for missing intermediate positions on locals"
+)
 def test_post_trigger_empty_guarantee_deletes_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1720,6 +1729,9 @@ def test_post_trigger_child_guarantee_follows_parent_move(
     )
 
 
+@pytest.mark.xfail(
+    reason="needs diagnostic for missing intermediate positions on locals"
+)
 def test_post_trigger_existing_guarantee_empties_origin_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

@@ -14,6 +14,10 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
+# TODO: We need a mode that forces a fake position init block as the parent
+# caller of any top-level action in this graph, to make sure that caller
+# requirements are detected. (Otherwise developers can write bad action
+# code and not realize it.)
 class ReferenceGraphValidator:
     """Runs post-order analysis for all definitions in the reference graph.
 

@@ -314,6 +314,17 @@ class ChainedName(ASTNode):
                     typed_names=names[: i + 1],
                 )
 
+    def parent_position(self) -> PositionReference | None:
+        """Return the nearest parent position, or None for single-element chains."""
+        names = self.typed_names
+        for i in range(len(names) - 2, -1, -1):
+            if names[i].name_type != NameType.ACTION:
+                return PositionReference(
+                    location=self.location,
+                    typed_names=names[: i + 1],
+                )
+        return None
+
 
 @dataclass(frozen=True, slots=True, init=False)
 class PositionReference(ChainedName):
@@ -425,6 +436,7 @@ class ActionDefinitionBlock(ASTNode):
     action_statements: ActionStatementsBlock
 
 
+# TODO: I think we should ban empty actions. I can't think of a use case for them.
 @dataclass(frozen=True, slots=True, init=False)
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""

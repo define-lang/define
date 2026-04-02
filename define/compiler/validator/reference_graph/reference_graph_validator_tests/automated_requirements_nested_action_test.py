@@ -219,6 +219,7 @@ def test_inner_chained_action_occupied_requirement_not_propagated(
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_inner_chained_action_occupied_requirement_caller_fill_does_not_help(
@@ -294,6 +295,7 @@ def test_inner_chained_action_occupied_requirement_caller_fill_does_not_help(
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_doubly_nested_action_requirement_propagates(
@@ -392,6 +394,7 @@ def test_doubly_nested_action_requirement_propagates(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     # /test fills position<item> which /inner requires empty (propagated through /middle and /outer)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
@@ -507,6 +510,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     # /test fills position<item> which /outer requires empty (it creates there)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
@@ -523,6 +527,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].propagated_from_locations == []
     # /outer fills position<item> which /inner requires empty (propagated through /middle)
     assert isinstance(all_diags[2], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[2].location.line == 13
@@ -663,6 +668,7 @@ def test_four_deep_action_chain_requirement_propagates(
     assert all_diags[1].inferred_at.line == 11
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("b.dfn")
+    assert all_diags[1].propagated_from_locations == []
     # /b triggers /c without filling position<c_iface>
     assert isinstance(
         all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
@@ -676,6 +682,7 @@ def test_four_deep_action_chain_requirement_propagates(
     assert all_diags[2].inferred_at.line == 11
     assert all_diags[2].inferred_at.column == 37
     assert all_diags[2].inferred_at.file_path == PurePosixPath("c.dfn")
+    assert all_diags[2].propagated_from_locations == []
 
 
 def test_only_empty_requirement_propagates_when_inner_has_both(
@@ -765,6 +772,7 @@ def test_only_empty_requirement_propagates_when_inner_has_both(
     assert all_diags[1].inferred_at.line == 8
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[1].propagated_from_locations == []
 
 
 def test_trigger_position_child_requirement_propagates(
@@ -848,6 +856,7 @@ def test_trigger_position_child_requirement_propagates(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     # /test fills position<trigger_pos>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
@@ -1047,6 +1056,7 @@ def test_doubly_nested_requirement_propagates_after_move(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 37
@@ -1223,6 +1233,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     # /test fills position<item>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
@@ -1339,6 +1350,7 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[0].filled_at.line == 14
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 16
     assert all_diags[1].location.column == 37
@@ -1461,6 +1473,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[0].filled_at.line == 14
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 37
@@ -1490,3 +1503,4 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[2].inferred_at.line == 11
     assert all_diags[2].inferred_at.column == 37
     assert all_diags[2].inferred_at.file_path == PurePosixPath("lib/bar.dfn")
+    assert all_diags[2].propagated_from_locations == []

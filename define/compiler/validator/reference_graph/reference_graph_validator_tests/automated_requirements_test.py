@@ -101,6 +101,7 @@ def test_violate_occupied_requirement(
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_caller_violates_occupied_requirement(
@@ -152,6 +153,7 @@ def test_caller_violates_occupied_requirement(
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_caller_satisfies_empty_requirement(
@@ -244,6 +246,7 @@ def test_caller_violates_empty_requirement(
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_empty_requirement_with_unknown_state_is_silent(
@@ -486,6 +489,7 @@ def test_position_init_violates_occupied_requirement(
     assert all_diags[0].inferred_at.line == 8
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_position_init_violates_empty_requirement(
@@ -525,6 +529,7 @@ def test_position_init_violates_empty_requirement(
     assert all_diags[0].filled_at.line == 7
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_position_init_satisfies_requirements(
@@ -703,6 +708,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[0].inferred_at.line == 15
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
     assert isinstance(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
@@ -717,6 +723,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[1].inferred_at.line == 15
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[1].propagated_from_locations == []
 
 
 def test_trigger_chain_empty_requirement_satisfied(
@@ -824,6 +831,7 @@ def test_trigger_chain_empty_requirement_violated(
     assert all_diags[0].filled_at.line == 18
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_trigger_chain_parent_requirement_violated(
@@ -881,3 +889,4 @@ def test_trigger_chain_parent_requirement_violated(
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []

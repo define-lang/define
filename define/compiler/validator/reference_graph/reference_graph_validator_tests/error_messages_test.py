@@ -327,6 +327,7 @@ def test_action_requires_empty_position_format(
         "This requirement happens because of:\n"
         'File "other.dfn", line 7, column 37'
     )
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_action_requires_occupied_position_format(
@@ -381,6 +382,7 @@ def test_action_requires_occupied_position_format(
         "This requirement happens because of:\n"
         'File "other.dfn", line 8, column 37'
     )
+    assert all_diags[0].propagated_from_locations == []
 
 
 def test_propagated_action_requires_empty_position_format(

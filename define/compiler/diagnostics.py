@@ -460,6 +460,8 @@ class LocalActionNameDiagnostic(Diagnostic):
     )
 
 
+# TODO: Inform the developer if the creation ocurred due to an inferred requirement
+# from the caller.
 @dataclass
 class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a dimension point is created in a position that already has one."""
