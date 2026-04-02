@@ -5,8 +5,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -1370,9 +1368,6 @@ def test_post_trigger_new_guarantee_on_child_position(
     )
 
 
-@pytest.mark.xfail(
-    reason="needs diagnostic for missing intermediate positions on locals"
-)
 def test_post_trigger_empty_guarantee_deletes_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1432,15 +1427,17 @@ def test_post_trigger_empty_guarantee_deletes_children(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 28
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</child_q>"
+    )
+    assert (
+        all_diags[0].parent_position_name
+        == "position<box>::action</other>::position<item>"
     )
 
 
@@ -1729,9 +1726,6 @@ def test_post_trigger_child_guarantee_follows_parent_move(
     )
 
 
-@pytest.mark.xfail(
-    reason="needs diagnostic for missing intermediate positions on locals"
-)
 def test_post_trigger_existing_guarantee_empties_origin_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1793,15 +1787,17 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 30
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<iface>::position</child_q>"
+    )
+    assert (
+        all_diags[0].parent_position_name
+        == "position<box>::action</other>::position<iface>"
     )
 
 

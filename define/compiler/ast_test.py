@@ -5,6 +5,7 @@ import sys
 from pathlib import PurePosixPath
 
 from define.compiler import ast, parser, transformer
+from define.compiler.conftest import PositionReferenceFor
 
 _LOC = ast.start_of_file_location()
 _FQUN = "my.domain.com:my_lib"
@@ -382,3 +383,190 @@ class TestPositionConstraintNames:
     def test_no_constraints(self):
         position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
         assert position.constraint_names == frozenset()
+
+
+_FQUN_OBJ = _make_fqun(_FQUN)
+
+
+class TestChainedNameCanonical:
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>")
+        assert pos.canonical_chained_name(in_universe=_FQUN_OBJ) == "position<local>"
+
+    def test_two_elements(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::position</x>")
+        assert (
+            pos.canonical_chained_name(in_universe=_FQUN_OBJ)
+            == f"position<local>::position<{_FQUN}:/x>"
+        )
+
+    def test_with_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::action</act>::position<iface>")
+        assert (
+            pos.canonical_chained_name(in_universe=_FQUN_OBJ)
+            == f"position<local>::action<{_FQUN}:/act>::position<iface>"
+        )
+
+
+class TestChainedNameCanonicalTuple:
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>")
+        assert pos.canonical_chained_name_tuple(in_universe=_FQUN_OBJ) == (
+            "position<local>",
+        )
+
+    def test_three_elements(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::action</act>::position<iface>")
+        assert pos.canonical_chained_name_tuple(in_universe=_FQUN_OBJ) == (
+            "position<local>",
+            f"action<{_FQUN}:/act>",
+            "position<iface>",
+        )
+
+
+class TestSourceChainedName:
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>")
+        assert pos.source_chained_name == "position<local>"
+
+    def test_chained_with_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for(
+            "position<local>::action</act>::position<iface>::position</child>"
+        )
+        assert (
+            pos.source_chained_name
+            == "position<local>::action</act>::position<iface>::position</child>"
+        )
+
+
+class TestGetFirstAction:
+    def test_no_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::position</x>")
+        assert pos.get_first_action() is None
+
+    def test_with_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::action</act>::position<iface>")
+        result = pos.get_first_action()
+        assert result is not None
+        assert result.source_typed_name == "action</act>"
+
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        assert position_reference_for("position<local>").get_first_action() is None
+
+
+class TestGetActionChain:
+    def test_no_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::position</x>")
+        assert pos.get_action_chain() is None
+
+    def test_with_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::action</act>::position<iface>")
+        result = pos.get_action_chain()
+        assert result is not None
+        assert result.source_chained_name == "position<local>::action</act>"
+
+
+class TestGetInterfacePosition:
+    def test_no_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::position</x>")
+        assert pos.get_interface_position() is None
+
+    def test_with_action_and_interface(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for(
+            "position<local>::action</act>::position<iface>::position</child>"
+        )
+        result = pos.get_interface_position()
+        assert result is not None
+        assert result.source_chained_name == "position<iface>::position</child>"
+
+    def test_action_at_end(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::action</act>")
+        assert pos.get_interface_position() is None
+
+
+class TestWalkParentPositions:
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>")
+        assert list(pos.walk_parent_positions()) == []
+
+    def test_two_positions(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::position</x>")
+        parents = [p.source_chained_name for p in pos.walk_parent_positions()]
+        assert parents == ["position<local>"]
+
+    def test_position_action_position_position(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for(
+            "position<local>::action</act>::position<iface>::position</child>"
+        )
+        parents = [p.source_chained_name for p in pos.walk_parent_positions()]
+        assert parents == [
+            "position<local>",
+            "position<local>::action</act>::position<iface>",
+        ]
+
+    def test_three_positions_no_action(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for("position<local>::position</x>::position</y>")
+        parents = [p.source_chained_name for p in pos.walk_parent_positions()]
+        assert parents == [
+            "position<local>",
+            "position<local>::position</x>",
+        ]
+
+
+class TestParentPosition:
+    def test_single_element(self, position_reference_for: PositionReferenceFor):
+        assert position_reference_for("position<local>").parent_position() is None
+
+    def test_two_positions(self, position_reference_for: PositionReferenceFor):
+        parent = position_reference_for(
+            "position<local>::position</x>"
+        ).parent_position()
+        assert parent is not None
+        assert parent.source_chained_name == "position<local>"
+
+    def test_three_positions(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::position</x>::position</y>")
+        parent = pos.parent_position()
+        assert parent is not None
+        assert parent.source_chained_name == "position<local>::position</x>"
+
+    def test_skips_action(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for("position<local>::action</act>::position<iface>")
+        parent = pos.parent_position()
+        assert parent is not None
+        assert parent.source_chained_name == "position<local>"
+
+    def test_nearest_parent_includes_action(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for(
+            "position<local>::action</act>::position<iface>::position</child>"
+        )
+        parent = pos.parent_position()
+        assert parent is not None
+        assert (
+            parent.source_chained_name
+            == "position<local>::action</act>::position<iface>"
+        )
+
+    def test_iterative_walk_leaf_to_root(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for(
+            "position<local>::action</act>::position<iface>::position</child>"
+        )
+        parents: list[str] = []
+        current = pos.parent_position()
+        while current is not None:
+            parents.append(current.source_chained_name)
+            current = current.parent_position()
+        assert parents == [
+            "position<local>::action</act>::position<iface>",
+            "position<local>",
+        ]

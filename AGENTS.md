@@ -64,6 +64,7 @@ See [define/spec/spec.md] for the language specification.
 
 ## Code Style
 
+- Avoid non-descriptive variable names like `ref`.
 - Prefer positive booleans. For example: `enable_feature=False` rather than
   `disable_feature=True`.
 - Do not add `-> None` return annotations unless a type checker explicitly

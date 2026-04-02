@@ -756,3 +756,265 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 37
+
+
+def test_caller_prefills_child_without_parent_then_triggers(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Caller pre-fills a child interface position without the parent, then triggers.
+
+    The parent check fires for the child create, marking it unknown.
+    The subsequent trigger and guarantee application handle the
+    unknown state gracefully with no spurious errors.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<item>::position</child_q>"
+    )
+    assert (
+        all_diags[0].parent_position_name
+        == "position<box>::action</other>::position<item>"
+    )
+
+
+def test_action_creates_child_but_caller_omits_parent(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Action's body creates a DP in both parent and child interface positions.
+
+    The caller doesn't fill position<item> or its child — the action
+    fills them internally, generating OccupiedByNew guarantees for both.
+    The guarantee application should succeed even though the caller
+    never set up the parent, because both are created by the action.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "        create a dimension point in position<item>::position</child_q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 0
+
+
+def test_swap_guarantee_both_positions_unfilled(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Swapping two interface positions when the caller fills neither.
+
+    Both positions get OCCUPIED requirements. When guarantees apply,
+    each OccupiedByExisting tries to read its origin (the other
+    position), which was never filled. Both should end up unknown.
+    Subsequent operations on both positions are silently allowed.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<a>.\n"
+                "    define the position<b>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<tmp>.\n"
+                "        move the dimension point in position<a> to position<tmp>.\n"
+                "        move the dimension point in position<b> to position<a>.\n"
+                "        move the dimension point in position<tmp> to position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<a>.\n"
+                "        create a dimension point in position<box>::action</other>::position<a>.\n"
+                "        create a dimension point in position<box>::action</other>::position<b>.\n"
+                "        create a dimension point in position<box>::action</other>::position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
+    assert all_diags[0].inferred_at.line == 9
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert isinstance(
+        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
+    assert all_diags[1].inferred_at.line == 10
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[1].propagated_from_locations == []
+
+
+def test_swap_guarantee_one_position_unfilled(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Swapping two interface positions when the caller fills only one.
+
+    Only position<b> is unfilled. After the swap, position<a> should
+    be unknown (its origin position<b> was never filled) and
+    position<b> should contain what was in position<a>.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<a>.\n"
+                "    define the position<b>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<tmp>.\n"
+                "        move the dimension point in position<a> to position<tmp>.\n"
+                "        move the dimension point in position<b> to position<a>.\n"
+                "        move the dimension point in position<tmp> to position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<a>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<a>.\n"
+                "        create a dimension point in position<box>::action</other>::position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position_name == "position<box>::action</other>::position<b>"
+    assert all_diags[0].inferred_at.line == 10
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    # position<b> is now occupied: the swap moved position<a>'s DP there.
+    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 17
+    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
+    assert all_diags[1].created_at.line == 11
+    assert all_diags[1].created_at.column == 54
+    assert all_diags[1].created_at.file_path == PurePosixPath("other.dfn")

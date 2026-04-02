@@ -93,6 +93,17 @@ py_test(
 )
 
 py_test(
+    name = "create_without_parent_test",
+    size = "small",
+    srcs = ["create_without_parent_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "dimension_point_conflict_test",
     size = "small",
     srcs = ["dimension_point_conflict_test.py"],
@@ -140,6 +151,17 @@ py_test(
     name = "move_cross_fqun_test",
     size = "small",
     srcs = ["move_cross_fqun_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "move_without_parent_test",
+    size = "small",
+    srcs = ["move_without_parent_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -227,6 +249,7 @@ pyright_test(
         ":automated_requirements_test",
         ":chained_name_test",
         ":create_dimension_point_test",
+        ":create_without_parent_test",
         ":dimension_point_conflict_test",
         ":error_messages_test",
         ":inferred_action_occupancy_test",
@@ -235,6 +258,7 @@ pyright_test(
         ":move_dimension_point_test",
         ":move_local_constraint_test",
         ":move_state_tracking_test",
+        ":move_without_parent_test",
         ":position_init_self_reference_test",
         ":reference_graph_validator_tests",
         ":trigger_conditions_test",

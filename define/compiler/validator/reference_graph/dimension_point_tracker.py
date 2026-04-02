@@ -481,16 +481,14 @@ class DimensionPointTracker:
         elif origin_key in self._state:
             origin_state = self._state[origin_key]
         else:
-            # The caller never filled this interface position. There is no
-            # dimension point to move, so we mark dest as unknown. The caller
-            # already got an ActionRequiresOccupiedPositionDiagnostic from
-            # _check_requirements.
+            # The caller never filled the position, and we are executing an OccupiedByExisting
+            # guarnatee on the same position that a dimension point was passed in on.
             self._unknown[dest_key] = _UnknownState(caused_by=guarantee.caused_by)
             return
 
-        # Only possible if the caller created a DP in a child position without
-        # creating a DP in the parent position (TODO: can delete this check when we
-        # get strict about this in the future).
+        # The caller never filled the input interface position. The callee moves the DP to
+        # another position. Thus, the origin_state _exists_ but the position got EmptyGuarantee
+        # instead of being filled by something (and there's nothing in saved_state).
         if origin_state.dp_info is None:
             self._unknown[dest_key] = _UnknownState(caused_by=guarantee.caused_by)
             return

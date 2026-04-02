@@ -22,6 +22,7 @@ py_test(
     srcs = ["ast_test.py"],
     deps = [
         ":ast",
+        ":conftest",
         ":parser",
         ":transformer",
     ],

@@ -104,6 +104,36 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         self._maybe_infer_requirement(required_state, position, scope)
 
+    def _check_parents_occupied(
+        self,
+        position: ast.PositionReference,
+    ) -> bool:
+        """Check that all parent positions contain dimension points.
+
+        Walks leaf-to-root. Emits a separate diagnostic for each unoccupied
+        parent.
+
+        Does NOT mark the position unknown — the caller handles that.
+        """
+        ok = True
+        current = position.parent_position()
+        while current is not None:
+            if self._tracker.has_unknown_state(current):
+                current = current.parent_position()
+                continue
+            if self._tracker.is_occupied(current):
+                break
+            self._diagnostics.append(
+                diagnostics.ParentPositionNotOccupiedDiagnostic(
+                    location=position.location,
+                    position_name=position.source_chained_name,
+                    parent_position_name=current.source_chained_name,
+                )
+            )
+            ok = False
+            current = current.parent_position()
+        return ok
+
     def _check_trigger(
         self,
         position: ast.PositionReference,
@@ -233,6 +263,9 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.EMPTY, position, scope
         )
+        if not self._check_parents_occupied(position):
+            self._tracker.mark_unknown(position)
+            return
         if self._tracker.is_occupied(position):
             self._diagnostics.append(
                 diagnostics.CreateInOccupiedPositionDiagnostic(
@@ -316,6 +349,13 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.EMPTY, to_pos, scope
         )
+
+        from_parent_ok = self._check_parents_occupied(from_pos)
+        to_parent_ok = self._check_parents_occupied(to_pos)
+        if not (from_parent_ok and to_parent_ok):
+            self._tracker.mark_unknown(from_pos)
+            self._tracker.mark_unknown(to_pos)
+            return False
 
         from_action = from_pos.get_first_action()
         from_occupied = self._tracker.is_occupied(from_pos)
@@ -778,6 +818,13 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         parent_key = parent.canonical_chained_name_tuple(
             in_universe=self._enclosing_fqun
         )
+        # This check is necessary because we have to run _maybe_infer_reqiuirement
+        # before we run _check_parents_occupied, so we can run into situations where
+        # the developer has written a statement that operates on the child of a non-existent
+        # dimension point. Later, _chck_parents_occupied will detect this situation, emit
+        # a diagnostic, and mark the relevant position unknown.
+        if not self._tracker.is_occupied_by_key(parent_key):
+            return None
         dp_info = self._tracker.get_occupant_by_key(parent_key)
         if not dp_info.from_caller:
             return None

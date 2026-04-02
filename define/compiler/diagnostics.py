@@ -480,6 +480,20 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
 
 
 @dataclass
+class ParentPositionNotOccupiedDiagnostic(Diagnostic):
+    """Diagnostic for when a position is accessed but its parent has no dimension point."""
+
+    position_name: str
+    parent_position_name: str
+    message_format: ClassVar[str] = (
+        "cannot access '{self.position_name}'"
+        " because '{self.parent_position_name}' does not contain a dimension point.\n"
+        "To fix this, either create a dimension point in '{self.parent_position_name}'"
+        " or move an existing dimension point there."
+    )
+
+
+@dataclass
 class MoveToOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination position already contains a dimension point."""
 
