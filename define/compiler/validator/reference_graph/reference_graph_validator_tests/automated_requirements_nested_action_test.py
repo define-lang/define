@@ -5,8 +5,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -1253,20 +1251,16 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert len(all_diags[1].propagated_from_locations) == 1
 
 
-@pytest.mark.xfail(
-    reason="Propagation not yet supported when the action's parent DP was created internally",
-    strict=True,
-)
 def test_complex_chain_same_fqun_position_name(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     """A deeply-chained trigger path through nested actions in the same FQUN.
 
     /test triggers /foo through position<local>::position</x>::action</foo>::position<trigger_pos>.
-    /foo has interface position<iface> with constraint on /bar, and triggers /bar through
-    position<iface>::position</y>::action</bar>::position<trigger_pos>. /bar requires
-    position<item> to be empty. The propagated position_name should be:
-    position<local>::position</x>::action</foo>::position<iface>::position</y>::action</bar>::position<item>
+    /foo triggers /middle through position<iface>::action</middle>::position<trigger_pos>.
+    /middle triggers /bar through position<mid_iface>::action</bar>::position<trigger_pos>.
+    /bar requires position<item> to be empty. The propagated position_name should be:
+    position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>
     """
     result = validate_project_with_reference_graph(
         {
@@ -1282,21 +1276,28 @@ def test_complex_chain_same_fqun_position_name(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
-                "            it has the position</y>.\n"
+                "            it has the action</middle>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::position</y>.\n"
-                "        create a dimension point in position<iface>::position</y>::action</bar>::position<trigger_pos>.\n"
+                "        create a dimension point in position<iface>::action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "y.dfn": (
-                "define the potential position<my.domain.com:my_lib:/y> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the action</bar>.\n"
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<mid_iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</bar>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<mid_iface>::action</bar>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1325,8 +1326,8 @@ def test_complex_chain_same_fqun_position_name(
                 "        create a dimension point in position<local>.\n"
                 "        create a dimension point in position<local>::position</x>.\n"
                 "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::position</y>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::position</y>::action</bar>::position<item>.\n"
+                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.\n"
+                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>.\n"
                 "        create a dimension point in position<local>::position</x>::action</foo>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -1339,48 +1340,45 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/foo>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/bar>"
     assert (
         all_diags[0].position_name
-        == "position<local>::position</x>::action</foo>::position<iface>::position</y>"
+        == "position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>"
     )
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("foo.dfn")
-    assert all_diags[0].filled_at.line == 14
+    assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].propagated_from_locations == []
-    assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[1].location.line == 16
+    assert len(all_diags[0].propagated_from_locations) == 2
+    assert isinstance(
+        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[1].location.line == 11
     assert all_diags[1].location.column == 37
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/bar>"
+    assert all_diags[1].location.file_path == PurePosixPath("foo.dfn")
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/middle>"
     assert (
         all_diags[1].position_name
-        == "position<local>::position</x>::action</foo>::position<iface>::position</y>::action</bar>::position<item>"
+        == "position<iface>::action</middle>::position<mid_iface>"
     )
-    assert all_diags[1].inferred_at.line == 12
+    assert all_diags[1].inferred_at.line == 11
     assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("foo.dfn")
-    assert all_diags[1].filled_at.line == 15
-    assert all_diags[1].filled_at.column == 37
-    assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[1].propagated_from_locations == []
 
 
-@pytest.mark.xfail(
-    reason="Propagation not yet supported when the action's parent DP was created internally",
-    strict=True,
-)
 def test_complex_chain_cross_fqun_position_name(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     """Same structure as the same-FQUN complex chain, but /bar lives in a different FQUN.
 
     /bar is in dep_lib and has an interface position with a constraint on position</x>,
-    requiring position<item>::position</x> to be empty. The propagated position_name
+    requiring position<item>::position</x> to be empty. /middle fills /bar's
+    position<item> to satisfy the occupied requirement. The propagated position_name
     should render /bar and its positions with canonical FQUN names:
-    position<local>::position</x>::action</foo>::position<iface>::position</y>::action<dep_fqun:/bar>::position<item>::position<dep_fqun:/x>
+    position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<dep_fqun:/bar>::position<item>::position<dep_fqun:/x>
     """
     result = validate_project_with_reference_graph(
         {
@@ -1388,13 +1386,6 @@ def test_complex_chain_cross_fqun_position_name(
                 f"define the potential position<{_MAIN_FQUN}:/x> {{\n"
                 "    it may only contain dimension points where {\n"
                 "        it has the action</foo>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "y.dfn": (
-                f"define the potential position<{_MAIN_FQUN}:/y> {{\n"
-                "    it may only contain dimension points where {\n"
-                f"        it has the action<{_DEP_FQUN}:/bar>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1414,19 +1405,34 @@ def test_complex_chain_cross_fqun_position_name(
                 "    }\n"
                 "}\n"
             ),
-            "foo.dfn": (
-                f"define the potential action<{_MAIN_FQUN}:/foo> {{\n"
+            "middle.dfn": (
+                f"define the potential action<{_MAIN_FQUN}:/middle> {{\n"
                 "    define the position<trigger_pos>.\n"
-                "    define the position<iface> {\n"
+                "    define the position<mid_iface> {\n"
                 "        it may only contain dimension points where {\n"
-                "            it has the position</y>.\n"
+                f"            it has the action<{_DEP_FQUN}:/bar>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::position</y>.\n"
-                f"        create a dimension point in position<iface>::position</y>::action<{_DEP_FQUN}:/bar>::position<trigger_pos>.\n"
+                f"        create a dimension point in position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
+                f"        create a dimension point in position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "foo.dfn": (
+                f"define the potential action<{_MAIN_FQUN}:/foo> {{\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</middle>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<iface>::action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1444,9 +1450,9 @@ def test_complex_chain_cross_fqun_position_name(
                 "        create a dimension point in position<local>.\n"
                 "        create a dimension point in position<local>::position</x>.\n"
                 "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::position</y>.\n"
-                f"        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::position</y>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
-                f"        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::position</y>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>.\n"
+                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.\n"
+                f"        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
+                f"        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>.\n"
                 "        create a dimension point in position<local>::position</x>::action</foo>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -1462,18 +1468,18 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/foo>"
+    assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/middle>"
     assert (
         all_diags[0].position_name
-        == "position<local>::position</x>::action</foo>::position<iface>::position</y>"
+        == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>"
     )
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("foo.dfn")
-    assert all_diags[0].filled_at.line == 14
+    assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert len(all_diags[0].propagated_from_locations) == 1
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 37
@@ -1481,26 +1487,27 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[1].action_name == f"action<{_DEP_FQUN}:/bar>"
     assert (
         all_diags[1].position_name
-        == f"position<local>::position</x>::action</foo>::position<iface>::position</y>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>"
+        == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>"
     )
-    assert all_diags[1].inferred_at.line == 12
+    assert all_diags[1].inferred_at.line == 11
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("foo.dfn")
     assert all_diags[1].filled_at.line == 16
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(all_diags[1].propagated_from_locations) == 2
     assert isinstance(
         all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[2].location.line == 12
+    assert all_diags[2].location.line == 11
     assert all_diags[2].location.column == 37
     assert all_diags[2].location.file_path == PurePosixPath("foo.dfn")
-    assert all_diags[2].action_name == f"action<{_DEP_FQUN}:/bar>"
+    assert all_diags[2].action_name == f"action<{_MAIN_FQUN}:/middle>"
     assert (
         all_diags[2].position_name
-        == f"position<iface>::position</y>::action<{_DEP_FQUN}:/bar>::position<item>"
+        == "position<iface>::action</middle>::position<mid_iface>"
     )
     assert all_diags[2].inferred_at.line == 11
     assert all_diags[2].inferred_at.column == 37
-    assert all_diags[2].inferred_at.file_path == PurePosixPath("lib/bar.dfn")
+    assert all_diags[2].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert all_diags[2].propagated_from_locations == []
