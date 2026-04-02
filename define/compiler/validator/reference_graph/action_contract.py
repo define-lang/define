@@ -23,9 +23,8 @@ class InterfacePositionRequirement:
     """An automatically inferred requirement on an action interface position."""
 
     required_state: PositionOccupancyState
-    inferred_from: (
-        ast.PositionReference
-    )  # TODO: Actually can also be an action reference.
+    # Can be either a position reference or an action reference.
+    inferred_from: ast.ChainedName
     enclosing_action: ast.ActionDefinition
     propagated_from: InterfacePositionRequirement | None = None
 

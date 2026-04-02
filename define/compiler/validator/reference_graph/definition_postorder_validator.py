@@ -838,7 +838,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             # it ourselves and don't propagate it to our caller.
             if propagated_key in self._inferred_requirements:
                 continue
-            new_inferred_from = ast.PositionReference(
+            new_inferred_from = ast.ChainedName(
                 location=trigger_position.location,
                 typed_names=chain_prefix_elements,
             )

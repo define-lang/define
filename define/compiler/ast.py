@@ -315,9 +315,23 @@ class ChainedName(ASTNode):
                 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class PositionReference(ChainedName):
     """Represents a position reference, possibly chained with ::."""
+
+    def __init__(
+        self,
+        *,
+        typed_names: list[TypedNameReference],
+        location: SourceLocation,
+        from_source: bool = False,
+    ):
+        """Initialize, optionally validating that the chain ends with a position."""
+        super().__init__(typed_names=typed_names, location=location)
+        if not from_source and typed_names[-1].name_type != NameType.POSITION:
+            raise ValueError(
+                f"Last element of a PositionReference must be a position: {self.source_chained_name}"
+            )
 
 
 @dataclass(frozen=True, slots=True)

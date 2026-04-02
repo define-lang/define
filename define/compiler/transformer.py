@@ -267,6 +267,7 @@ class DefineTransformer(
         return ast.PositionReference(
             typed_names=items,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            from_source=True,
         )
 
     @lark_standalone.v_args(meta=True)

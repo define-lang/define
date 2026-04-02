@@ -10,7 +10,16 @@ from define.compiler.validator.reference_graph import (
 
 _LOC = ast.start_of_file_location()
 _LOC2 = ast.SourceLocation(line=2, column=1, end_line=2, end_column=1)
-_POS2_REF = ast.PositionReference(typed_names=[], location=_LOC2)
+_POS2_REF = ast.PositionReference(
+    typed_names=[
+        ast.LocalTypedNameReference(
+            name_type=ast.NameType.POSITION,
+            name_content=ast.LocalNameContent(name="dummy", location=_LOC2),
+            location=_LOC2,
+        )
+    ],
+    location=_LOC2,
+)
 
 _FQUN = ast.Fqun(
     multiverse=None,
