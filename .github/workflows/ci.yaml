@@ -6,9 +6,7 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  # Needed for the buf action to leave a comment explaining what's wrong.
-  pull-requests: write
+permissions: {}
 
 jobs:
   coverage:
@@ -81,5 +79,6 @@ jobs:
       - uses: bufbuild/buf-action@v1
         with:
           breaking: false
-          push: false
           format: false
+          pr_comment: false
+          push: false
