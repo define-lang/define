@@ -22,7 +22,8 @@ def _get_contract(
     validator = definition_postorder_validator.create_postorder_validator(
         definition_result, result.definition_results, {}
     )
-    _, _, contract = validator.analyze()
+    result = validator.analyze()
+    contract = result.contract
     if contract is None:
         raise ValueError(f"No contract for {action_name}")
     return contract

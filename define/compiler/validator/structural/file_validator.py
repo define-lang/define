@@ -25,7 +25,7 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
-from define.compiler.graphs import action_call_graph, reference_graph
+from define.compiler.graphs import reference_graph
 from define.compiler.lark import lark_standalone
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
@@ -230,7 +230,6 @@ class DefinitionStructuralValidator:
     _definition: ast.QualityDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
     _discovered_files: list[validation_result.DiscoveredFile]
-    _trigger_positions: list[action_call_graph.TriggerPositionInfo]
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
@@ -247,7 +246,6 @@ class DefinitionStructuralValidator:
         self._diagnostics = []
         self._reference_edges = []
         self._discovered_files = []
-        self._trigger_positions = []
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
@@ -279,7 +277,6 @@ class DefinitionStructuralValidator:
             _diagnostics=self._diagnostics,
             reference_edges=self._reference_edges,
             discovered_files=self._discovered_files,
-            trigger_positions=self._trigger_positions,
             dp_statement_validity=self._dp_statement_validity,
         )
 
@@ -363,14 +360,7 @@ class DefinitionStructuralValidator:
     ):
         for condition in trigger_conditions.conditions:
             pos_ref = condition.position_reference
-            if not self._validate_full_chained_name(pos_ref, scope):
-                continue
-            self._trigger_positions.append(
-                action_call_graph.TriggerPositionInfo(
-                    enclosing_typed_name=self._definition.typed_name,
-                    checked_position=pos_ref,
-                )
-            )
+            _ = self._validate_full_chained_name(pos_ref, scope)
 
     def _validate_action_statements(
         self,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import abc
 import typing
+from dataclasses import dataclass, field
 from functools import cached_property
 
 from define.compiler import ast, diagnostics
@@ -18,6 +19,15 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
+@dataclass
+class PostorderValidationResult:
+    """Result of validating a single definition during the DFS post-order walk."""
+
+    diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+    edges: list[action_call_graph.ActionGraphEdge] = field(default_factory=list)
+    contract: action_contract.ActionContract | None = None
+
+
 class DefinitionPostorderValidator(abc.ABC):
     """Validates a single definition during a DFS post-order walk of the reference graph."""
 
@@ -25,7 +35,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _action_contracts: dict[str, action_contract.ActionContract]
     _diagnostics: list[diagnostics.Diagnostic]
-    _action_body_effects: list[action_call_graph.ActionBodyEffect]
+    _action_edges: list[action_call_graph.ActionGraphEdge]
 
     def __init__(
         self,
@@ -38,7 +48,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._definition_results = definition_results
         self._action_contracts = action_contracts
         self._diagnostics = []
-        self._action_body_effects = []
+        self._action_edges = []
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -53,14 +63,8 @@ class DefinitionPostorderValidator(abc.ABC):
         return dimension_point_tracker.DimensionPointTracker(self._definition)
 
     @abc.abstractmethod
-    def analyze(
-        self,
-    ) -> tuple[
-        list[diagnostics.Diagnostic],
-        list[action_call_graph.ActionBodyEffect],
-        action_contract.ActionContract | None,
-    ]:
-        """Run post-order validation and return diagnostics, effects, and contract."""
+    def analyze(self) -> PostorderValidationResult:
+        """Run post-order validation and return diagnostics, edges, and contract."""
 
     def _maybe_infer_requirement(  # noqa: B027
         self,
@@ -173,6 +177,12 @@ class DefinitionPostorderValidator(abc.ABC):
         self._propagate_inner_requirements(action_ref, action_name, contract, position)
         self._check_requirements(position, contract)
         self._tracker.apply_guarantees(position, contract.guarantees)
+        self._action_edges.append(
+            action_call_graph.ActionGraphEdge(
+                source=self._definition.typed_name.source_typed_name,
+                target=action_name,
+            )
+        )
 
     def _check_requirements(
         self,
@@ -282,15 +292,6 @@ class DefinitionPostorderValidator(abc.ABC):
         self._tracker.create(position, qualities)
         self._check_trigger(position)
 
-        # TODO: I'm not sure we need this anymore, I think we have a more direct
-        # mechanism we could use to build the action graph.
-        self._action_body_effects.append(
-            action_call_graph.ActionBodyEffect(
-                enclosing_typed_name=self._definition.typed_name,
-                statement=stmt,
-            )
-        )
-
     def _analyze_move(
         self,
         stmt: ast.MoveDimensionPointStatement,
@@ -304,14 +305,6 @@ class DefinitionPostorderValidator(abc.ABC):
         if not (validity.source_ok and validity.target_ok):
             return
         self._execute_move(stmt.source_position, stmt.target_position, scope)
-        if self._tracker.has_unknown_state(stmt.target_position):
-            return
-        self._action_body_effects.append(
-            action_call_graph.ActionBodyEffect(
-                enclosing_typed_name=self._definition.typed_name,
-                statement=stmt,
-            )
-        )
 
     def _execute_move(
         self,
@@ -690,20 +683,44 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         return None
 
     @typing.override
-    def analyze(
-        self,
-    ) -> tuple[
-        list[diagnostics.Diagnostic],
-        list[action_call_graph.ActionBodyEffect],
-        action_contract.ActionContract | None,
-    ]:
-        """Run post-order validation and return diagnostics, effects, and contract."""
+    def analyze(self) -> PostorderValidationResult:
+        """Run post-order validation and return diagnostics, edges, and contract."""
         action_def = self._action_definition
         if action_def.definition_block is not None:
             contract = self._analyze_action_definition(action_def.definition_block)
         else:
             contract = action_contract.EmptyContract()
-        return self._diagnostics, self._action_body_effects, contract
+        return PostorderValidationResult(
+            diagnostics=self._diagnostics,
+            edges=self._action_edges,
+            contract=contract,
+        )
+
+    @typing.override
+    def _check_trigger(
+        self,
+        position: ast.PositionReference,
+    ):
+        """Check trigger, detecting self-triggering as an error."""
+        if position.get_interface_position() is not None:
+            super()._check_trigger(position)
+            return
+        if self._trigger_position_name is None:
+            return
+        if len(position.typed_names) != 1:
+            return
+        pos_name = position.typed_names[0].full_typed_name(
+            in_universe=self._enclosing_fqun
+        )
+        if pos_name != self._trigger_position_name:
+            return
+        self._diagnostics.append(
+            diagnostics.ActionSelfTriggerDiagnostic(
+                location=position.location,
+                action_name=self._definition.typed_name.source_typed_name,
+                position_name=position.source_chained_name,
+            )
+        )
 
     def _analyze_action_definition(
         self,
@@ -926,19 +943,16 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
     """Validates a position definition during a DFS post-order walk."""
 
     @typing.override
-    def analyze(
-        self,
-    ) -> tuple[
-        list[diagnostics.Diagnostic],
-        list[action_call_graph.ActionBodyEffect],
-        action_contract.ActionContract | None,
-    ]:
-        """Run post-order validation and return diagnostics and effects."""
+    def analyze(self) -> PostorderValidationResult:
+        """Run post-order validation and return diagnostics and edges."""
         definition = self._definition
         if not isinstance(definition, ast.PositionDefinition):
             raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
         self._analyze_position_definition(definition)
-        return self._diagnostics, self._action_body_effects, None
+        return PostorderValidationResult(
+            diagnostics=self._diagnostics,
+            edges=self._action_edges,
+        )
 
     def _analyze_position_definition(self, definition: ast.PositionDefinition):
         if definition.initialization is None:

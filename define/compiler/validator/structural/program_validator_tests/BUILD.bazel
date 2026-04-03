@@ -23,16 +23,6 @@ py_test(
 )
 
 py_test(
-    name = "action_triggering_test",
-    size = "small",
-    srcs = ["action_triggering_test.py"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
     name = "cross_fqun_walking_test",
     size = "small",
     srcs = ["cross_fqun_walking_test.py"],
@@ -230,7 +220,6 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_statements_block_test",
-        ":action_triggering_test",
         ":cross_fqun_walking_test",
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",

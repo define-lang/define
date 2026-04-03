@@ -14,6 +14,9 @@ def assert_action_calls(
     """Assert that the given action call chain exists in the call graph."""
     __tracebackhide__ = True
     assert len(actions) >= 2, "Need at least two actions to form a call chain"
+    # We use edges() (not unique_edges()) so that the error message
+    # displays edges in graph insertion order, making failures easier
+    # to diagnose.
     all_edges = [(e.source, e.target) for e in call_graph.edges()]
     edge_set = set(all_edges)
     for i in range(len(actions) - 1):

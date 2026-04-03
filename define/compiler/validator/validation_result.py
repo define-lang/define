@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
     import pathlib
     from collections.abc import Sequence
 
-    from define.compiler.graphs import action_call_graph, reference_graph
+    from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
@@ -50,12 +50,6 @@ class DefinitionValidationResult:
 
     reference_edges: list[reference_graph.ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
-    trigger_positions: list[action_call_graph.TriggerPositionInfo] = field(
-        default_factory=list
-    )
-    action_body_effects: list[action_call_graph.ActionBodyEffect] = field(
-        default_factory=list
-    )
     dp_statement_validity: list[DimensionPointStatementValidity] = field(
         default_factory=list
     )

@@ -1,5 +1,5 @@
 # pyright: reportUnusedCallResult=false
-from define.compiler import conftest
+from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 _ACT_A = "action<my.domain.com:my_lib:/act_a>"
@@ -48,7 +48,7 @@ _ENTRY_POS_REFS_B_C = (
 def _edge_pairs(
     result: conftest.FullValidationResult,
 ) -> set[tuple[str, str]]:
-    return {(e.source, e.target) for e in result.action_call_graph.edges()}
+    return result.action_call_graph.unique_edges()
 
 
 class TestActionCallGraph:
@@ -110,9 +110,12 @@ class TestActionCallGraph:
             },
             entry_file="act_a.dfn",
         )
-        assert_no_errors(result.program_result)
-        assert _edge_pairs(result) == {(_ACT_A, _ACT_A)}
-        assert_action_calls(result.action_call_graph, _ACT_A, _ACT_A)
+        assert len(result.program_result.all_diagnostics) == 1
+        assert isinstance(
+            result.program_result.all_diagnostics[0],
+            diagnostics.ActionSelfTriggerDiagnostic,
+        )
+        assert _edge_pairs(result) == set()
 
     def test_duplicates_not_targeted_twice(
         self,

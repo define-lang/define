@@ -3,13 +3,10 @@ from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 
-def _edge_keys(
+def _edge_pairs(
     result: conftest.FullValidationResult,
-) -> set[tuple[str, str, int]]:
-    return {
-        (e.source, e.target, e.statement.location.line)
-        for e in result.action_call_graph.edges()
-    }
+) -> set[tuple[str, str]]:
+    return result.action_call_graph.unique_edges()
 
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -56,7 +53,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
+        assert _edge_pairs(result) == {(_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_create_and_move_trigger_other_action(
@@ -97,7 +94,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_TEST, _OTHER, 14)}
+        assert _edge_pairs(result) == {(_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_no_trigger_when_writing_to_non_trigger_position(
@@ -137,7 +134,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == set()
+        assert _edge_pairs(result) == set()
 
     def test_cross_file_triggering(
         self,
@@ -175,7 +172,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_TEST, _ACT_B, 12)}
+        assert _edge_pairs(result) == {(_TEST, _ACT_B)}
         assert_action_calls(result.action_call_graph, _TEST, _ACT_B)
 
     def test_trigger_chain(
@@ -230,7 +227,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_TEST, _ACT_B, 12), (_ACT_B, _ACT_C, 12)}
+        assert _edge_pairs(result) == {(_TEST, _ACT_B), (_ACT_B, _ACT_C)}
         assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _ACT_C)
 
     def test_self_trigger(
@@ -253,9 +250,12 @@ class TestActionTriggering:
                 ),
             },
         )
-        assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_TEST, _TEST, 8)}
-        assert_action_calls(result.action_call_graph, _TEST, _TEST)
+        assert len(result.program_result.all_diagnostics) == 1
+        assert isinstance(
+            result.program_result.all_diagnostics[0],
+            diagnostics.ActionSelfTriggerDiagnostic,
+        )
+        assert _edge_pairs(result) == set()
 
     def test_duplicate_action_does_not_add_trigger_edges(
         self,
@@ -310,106 +310,7 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].first_definition_line == 1
         assert result.program_result.all_diagnostics[0].location.line == 10
         assert result.program_result.all_diagnostics[0].location.column == 1
-        assert _edge_keys(result) == set()
-
-    def test_trigger_positions_recorded(
-        self,
-        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<my_pos>.\n"
-                    "    it happens when {\n"
-                    "        the position<my_pos> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            },
-        )
-        assert_no_errors(result.program_result)
-        all_trigger_positions = [
-            tp
-            for r in result.program_result.file_results
-            for dr in r.definition_results
-            for tp in dr.trigger_positions
-        ]
-        assert len(all_trigger_positions) == 1
-        tp = all_trigger_positions[0]
-        assert (
-            tp.enclosing_typed_name.source_typed_name
-            == "action<my.domain.com:my_lib:/test>"
-        )
-        assert tp.checked_position.source_chained_name == "position<my_pos>"
-
-    def test_action_body_effects_recorded(
-        self,
-        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<run>.\n"
-                    "    define the position<gateway> {\n"
-                    "        it may only contain dimension points where {\n"
-                    "            it has the action</other>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        create a dimension point in position<gateway>.\n"
-                    "        create a dimension point in position<gateway>::action</other>::position<pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "other.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/other> {\n"
-                    "    define the position<pos>.\n"
-                    "    it happens when {\n"
-                    "        the position<pos> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            },
-        )
-        assert_no_errors(result.program_result)
-        all_body_effects = [
-            effect
-            for r in result.program_result.file_results
-            for dr in r.definition_results
-            for effect in dr.action_body_effects
-        ]
-        assert len(all_body_effects) == 3
-        effect_names = {
-            e.enclosing_typed_name.source_typed_name for e in all_body_effects
-        }
-        assert effect_names == {
-            "action<my.domain.com:my_lib:/test>",
-            "action<my.domain.com:my_lib:/other>",
-        }
-        test_effects = [
-            e
-            for e in all_body_effects
-            if e.enclosing_typed_name.source_typed_name
-            == "action<my.domain.com:my_lib:/test>"
-        ]
-        assert len(test_effects) == 2
-        modified_positions = {
-            e.modified_position.source_chained_name for e in test_effects
-        }
-        assert modified_positions == {
-            "position<gateway>",
-            "position<gateway>::action</other>::position<pos>",
-        }
+        assert _edge_pairs(result) == set()
 
     def test_local_prefix_before_action_trigger(
         self,
@@ -447,7 +348,7 @@ class TestActionTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
+        assert _edge_pairs(result) == {(_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_no_body_effect_when_create_target_has_unknown_state(
@@ -479,13 +380,6 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].position_name == "position<a>"
         assert result.program_result.all_diagnostics[0].location.line == 8
         assert result.program_result.all_diagnostics[0].location.column == 37
-        all_body_effects = [
-            effect
-            for r in result.program_result.file_results
-            for dr in r.definition_results
-            for effect in dr.action_body_effects
-        ]
-        assert all_body_effects == []
 
     def test_no_body_effect_when_move_target_has_unknown_state(
         self,
@@ -516,13 +410,6 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].position_name == "position<a>"
         assert result.program_result.all_diagnostics[0].location.line == 8
         assert result.program_result.all_diagnostics[0].location.column == 37
-        all_body_effects = [
-            effect
-            for r in result.program_result.file_results
-            for dr in r.definition_results
-            for effect in dr.action_body_effects
-        ]
-        assert all_body_effects == []
 
 
 class TestUnknownGlobalNoTrigger:
@@ -560,7 +447,7 @@ class TestUnknownGlobalNoTrigger:
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</other>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-        assert _edge_keys(result) == set()
+        assert _edge_pairs(result) == set()
 
 
 _OTHER_ACTION = (
@@ -598,7 +485,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 7)}
+        assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_position_init_move_triggers_action(
@@ -624,7 +511,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
+        assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_position_init_self_reference_no_trigger_edge(
@@ -643,7 +530,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == set()
+        assert _edge_pairs(result) == set()
 
     def test_position_init_no_edge_when_non_trigger_position(
         self,
@@ -677,7 +564,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == set()
+        assert _edge_pairs(result) == set()
 
     def test_position_init_and_action_both_trigger_same_target(
         self,
@@ -714,9 +601,9 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {
-            (_POS_TEST, _OTHER, 7),
-            (_TEST, _OTHER, 21),
+        assert _edge_pairs(result) == {
+            (_POS_TEST, _OTHER),
+            (_TEST, _OTHER),
         }
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
@@ -744,7 +631,7 @@ class TestPositionInitTriggering:
             },
         )
         assert_no_errors(result.program_result)
-        assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
+        assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
 

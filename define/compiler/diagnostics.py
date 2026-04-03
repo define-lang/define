@@ -729,3 +729,15 @@ class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
         if self.inferred_at is not None:
             return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
         return f"{base}; action interface positions are empty by default"
+
+
+@dataclass
+class ActionSelfTriggerDiagnostic(Diagnostic):
+    """Diagnostic for when an action writes to its own trigger position."""
+
+    action_name: str
+    position_name: str
+    message_format: ClassVar[str] = (
+        "'{self.action_name}' cannot trigger itself"
+        " by writing to its own trigger position '{self.position_name}'"
+    )

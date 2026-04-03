@@ -56,15 +56,14 @@ class ReferenceGraphValidator:
             # not found or had a syntax error that prevented processing.
             if definition_result is None:
                 continue
-            call_graph.register_triggers(definition_result.trigger_positions)
             analyzer = definition_postorder_validator.create_postorder_validator(
                 definition_result, self._definition_results, self._action_contracts
             )
-            diagnostics, effects, contract = analyzer.analyze()
-            for d in diagnostics:
+            result = analyzer.analyze()
+            for d in result.diagnostics:
                 definition_result.add_diagnostic(d)
-            definition_result.action_body_effects.extend(effects)
-            call_graph.register_effects(effects)
-            if contract is not None:
-                self._action_contracts[name] = contract
+            for edge in result.edges:
+                call_graph.add_edge(edge.source, edge.target)
+            if result.contract is not None:
+                self._action_contracts[name] = result.contract
         return call_graph
