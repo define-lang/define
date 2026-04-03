@@ -796,13 +796,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             )
         )
 
-        # TODO: These checks exists here only because of a bug in how guarantees
-        # are applied (they don't create requirements when they should).
-        if self._tracker.is_occupied(position) or self._tracker.has_unknown_state(
-            position
-        ):
-            return
-
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
             qualities = self._get_required_qualities(position, scope) or frozenset()
             self._tracker.create(position, qualities, from_caller=True)

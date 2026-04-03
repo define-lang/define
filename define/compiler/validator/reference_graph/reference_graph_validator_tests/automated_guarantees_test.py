@@ -1969,3 +1969,80 @@ def test_long_inner_chained_action_fills_positions_in_caller(
         }
     )
     assert_no_errors(result.program_result)
+
+
+def test_long_chain_inner_requirement_enforced_through_nested_trigger(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/inner creates in position<item>, requiring it empty.
+
+    /outer triggers /inner internally. /test pre-fills the deeply nested
+    position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>,
+    then triggers /outer. The inner requirement that position<item> be empty
+    produces ActionRequiresEmptyPositionDiagnostic.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<outer_iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<outer_iface>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<local>.\n"
+                "        create a dimension point in position<local>::action</outer>::position<outer_iface>.\n"
+                "        create a dimension point in position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<local>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert (
+        all_diags[0].position_name
+        == "position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>"
+    )
+    assert all_diags[0].inferred_at.line == 11
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[0].filled_at.line == 13
+    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")

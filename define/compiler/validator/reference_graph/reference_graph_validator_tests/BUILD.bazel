@@ -26,6 +26,17 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_nested_action_test",
+    size = "small",
+    srcs = ["automated_guarantees_nested_action_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "automated_guarantees_unknown_test",
     size = "small",
     srcs = ["automated_guarantees_unknown_test.py"],
@@ -242,6 +253,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_triggering_test",
+        ":automated_guarantees_nested_action_test",
         ":automated_guarantees_test",
         ":automated_guarantees_unknown_test",
         ":automated_requirements_move_test",
