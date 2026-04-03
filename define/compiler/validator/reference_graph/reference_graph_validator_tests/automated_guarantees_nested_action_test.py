@@ -7,7 +7,11 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
+
+_TEST = "action<my.domain.com:my_lib:/test>"
+_OUTER = "action<my.domain.com:my_lib:/outer>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
 
 
 def test_inner_empty_guarantee_propagates_through_outer(
@@ -70,6 +74,7 @@ def test_inner_empty_guarantee_propagates_through_outer(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_inner_occupied_guarantee_propagates_through_outer(
@@ -131,6 +136,7 @@ def test_inner_occupied_guarantee_propagates_through_outer(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_occupied_guarantee_creates_empty_requirement(
@@ -200,6 +206,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     assert all_diags[0].filled_at.line == 11
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_move_guarantee_creates_occupied_in_distant_caller(
@@ -265,3 +272,4 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)

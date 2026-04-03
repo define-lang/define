@@ -1,6 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import conftest, diagnostics
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 
 def _edge_keys(
@@ -57,6 +57,7 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
+        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_create_and_move_trigger_other_action(
         self,
@@ -97,6 +98,7 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _OTHER, 14)}
+        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_no_trigger_when_writing_to_non_trigger_position(
         self,
@@ -174,6 +176,7 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _ACT_B, 12)}
+        assert_action_calls(result.action_call_graph, _TEST, _ACT_B)
 
     def test_trigger_chain(
         self,
@@ -228,6 +231,7 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _ACT_B, 12), (_ACT_B, _ACT_C, 12)}
+        assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _ACT_C)
 
     def test_self_trigger(
         self,
@@ -251,6 +255,7 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _TEST, 8)}
+        assert_action_calls(result.action_call_graph, _TEST, _TEST)
 
     def test_duplicate_action_does_not_add_trigger_edges(
         self,
@@ -443,6 +448,7 @@ class TestActionTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_TEST, _OTHER, 12)}
+        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_no_body_effect_when_create_target_has_unknown_state(
         self,
@@ -593,6 +599,7 @@ class TestPositionInitTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 7)}
+        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_position_init_move_triggers_action(
         self,
@@ -618,6 +625,7 @@ class TestPositionInitTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
+        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
     def test_position_init_self_reference_no_trigger_edge(
         self,
@@ -710,6 +718,8 @@ class TestPositionInitTriggering:
             (_POS_TEST, _OTHER, 7),
             (_TEST, _OTHER, 21),
         }
+        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+        assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
     def test_position_init_chained_through_self_triggers_action(
         self,
@@ -735,6 +745,7 @@ class TestPositionInitTriggering:
         )
         assert_no_errors(result.program_result)
         assert _edge_keys(result) == {(_POS_TEST, _OTHER, 9)}
+        assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
 
 class TestCircularDependencyTriggering:

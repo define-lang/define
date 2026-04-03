@@ -248,6 +248,9 @@ class TestActionBodyEffect:
             effect.affected_position_qualified_chained_name
             == f"action<{_FQUN}:/other>::position<tp>"
         )
+        test_helpers.assert_action_calls(
+            result.action_call_graph, f"action<{_FQUN}:/act>", f"action<{_FQUN}:/other>"
+        )
 
     def test_create_through_local_prefix(
         self,
@@ -293,4 +296,7 @@ class TestActionBodyEffect:
         assert (
             effect.affected_position_qualified_chained_name
             == f"action<{_FQUN}:/other>::position<tp>"
+        )
+        test_helpers.assert_action_calls(
+            result.action_call_graph, f"action<{_FQUN}:/act>", f"action<{_FQUN}:/other>"
         )

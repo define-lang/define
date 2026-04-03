@@ -4,7 +4,7 @@ from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateProjectWithReferenceGraph,
 )
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 
 def test_non_self_ref_global_in_action_body(
@@ -145,3 +145,8 @@ def test_self_reference_in_position_init_is_valid(
         },
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(
+        result.action_call_graph,
+        "position<my.domain.com:my_lib:/test>",
+        "action<my.domain.com:my_lib:/other>",
+    )

@@ -7,6 +7,11 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_action_calls
+
+_TEST = "action<my.domain.com:my_lib:/test>"
+_OTHER = "action<my.domain.com:my_lib:/other>"
+_OUTER = "action<my.domain.com:my_lib:/outer>"
 
 
 def test_unknown_interface_position_stays_unknown_after_trigger(
@@ -65,6 +70,7 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
     assert all_diags[1].occupied_at.column == 54
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
@@ -113,6 +119,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
@@ -162,6 +169,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
@@ -212,6 +220,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
@@ -264,6 +273,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
@@ -317,6 +327,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
@@ -371,6 +382,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_unknown_from_move_to_occupied_interface_position(
@@ -418,6 +430,7 @@ def test_unknown_from_move_to_occupied_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 56
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_unknown_from_constraint_violation_on_interface_position(
@@ -469,6 +482,7 @@ def test_unknown_from_constraint_violation_on_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 64
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_unknown_propagation_from_local_to_interface_position(
@@ -517,6 +531,7 @@ def test_unknown_propagation_from_local_to_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_unknown_from_prefix_move_on_interface_position(
@@ -584,6 +599,7 @@ def test_unknown_from_prefix_move_on_interface_position(
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 73
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
 
 
 def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
@@ -690,6 +706,7 @@ def test_post_trigger_unknown_guarantee_on_child_position(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_post_trigger_existing_guarantee_unknown_origin_with_children(
@@ -756,6 +773,7 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 37
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_caller_prefills_child_without_parent_then_triggers(
@@ -819,6 +837,7 @@ def test_caller_prefills_child_without_parent_then_triggers(
         all_diags[0].parent_position_name
         == "position<box>::action</other>::position<item>"
     )
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_action_creates_child_but_caller_omits_parent(
@@ -870,6 +889,7 @@ def test_action_creates_child_but_caller_omits_parent(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 0
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_swap_guarantee_both_positions_unfilled(
@@ -945,6 +965,7 @@ def test_swap_guarantee_both_positions_unfilled(
     assert all_diags[1].inferred_at.line == 10
     assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[1].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_swap_guarantee_one_position_unfilled(
@@ -1018,3 +1039,4 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[1].created_at.line == 11
     assert all_diags[1].created_at.column == 54
     assert all_diags[1].created_at.file_path == PurePosixPath("other.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)

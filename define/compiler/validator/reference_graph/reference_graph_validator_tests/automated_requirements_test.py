@@ -7,7 +7,11 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
+
+_TEST = "action<my.domain.com:my_lib:/test>"
+_OTHER = "action<my.domain.com:my_lib:/other>"
+_POS_TEST = "position<my.domain.com:my_lib:/test>"
 
 
 def test_satisfy_requirements_then_trigger(
@@ -50,6 +54,7 @@ def test_satisfy_requirements_then_trigger(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_violate_occupied_requirement(
@@ -102,6 +107,7 @@ def test_violate_occupied_requirement(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_caller_violates_occupied_requirement(
@@ -154,6 +160,7 @@ def test_caller_violates_occupied_requirement(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_caller_satisfies_empty_requirement(
@@ -192,6 +199,7 @@ def test_caller_satisfies_empty_requirement(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_caller_violates_empty_requirement(
@@ -247,6 +255,7 @@ def test_caller_violates_empty_requirement(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_empty_requirement_with_unknown_state_is_silent(
@@ -294,6 +303,7 @@ def test_empty_requirement_with_unknown_state_is_silent(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_occupied_requirement_with_unknown_state_is_silent(
@@ -342,6 +352,7 @@ def test_occupied_requirement_with_unknown_state_is_silent(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_multiple_requirements_one_empty_one_occupied(
@@ -384,6 +395,7 @@ def test_multiple_requirements_one_empty_one_occupied(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_caller_satisfies_occupied_requirement(
@@ -426,6 +438,7 @@ def test_caller_satisfies_occupied_requirement(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 _OTHER_WITH_OCCUPIED_REQUIREMENT = (
@@ -490,6 +503,7 @@ def test_position_init_violates_occupied_requirement(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
 
 def test_position_init_violates_empty_requirement(
@@ -530,6 +544,7 @@ def test_position_init_violates_empty_requirement(
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
 
 def test_position_init_satisfies_requirements(
@@ -554,6 +569,7 @@ def test_position_init_satisfies_requirements(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
 
 def test_no_requirement_check_on_unknown_global_chain_start(
@@ -648,6 +664,7 @@ def test_trigger_chain_occupied_requirement_satisfied(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_trigger_chain_occupied_requirement_violated(
@@ -724,6 +741,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[1].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_trigger_chain_empty_requirement_satisfied(
@@ -766,6 +784,7 @@ def test_trigger_chain_empty_requirement_satisfied(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_trigger_chain_empty_requirement_violated(
@@ -832,6 +851,7 @@ def test_trigger_chain_empty_requirement_violated(
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_trigger_chain_parent_requirement_violated(
@@ -890,3 +910,4 @@ def test_trigger_chain_parent_requirement_violated(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)

@@ -7,6 +7,11 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_action_calls
+
+_TEST = "action<my.domain.com:my_lib:/test>"
+_OUTER = "action<my.domain.com:my_lib:/outer>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
 
 
 def test_caller_sees_requirement_when_interface_moved_to_local(
@@ -91,6 +96,7 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_local(
@@ -177,6 +183,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_requirement_inferred_when_trigger_moved_to_local(
@@ -269,3 +276,4 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert diag.propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)

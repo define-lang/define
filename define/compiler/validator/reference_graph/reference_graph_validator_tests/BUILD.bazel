@@ -132,6 +132,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
     ],

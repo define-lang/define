@@ -1,6 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from define.compiler import conftest
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 _ACT_A = "action<my.domain.com:my_lib:/act_a>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
@@ -87,6 +87,7 @@ class TestActionCallGraph:
         )
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+        assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
 
     def test_self_trigger(
         self,
@@ -111,6 +112,7 @@ class TestActionCallGraph:
         )
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_A, _ACT_A)}
+        assert_action_calls(result.action_call_graph, _ACT_A, _ACT_A)
 
     def test_duplicates_not_targeted_twice(
         self,
@@ -161,6 +163,7 @@ class TestActionCallGraph:
         )
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+        assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
 
     def test_multiple_effects_to_same_target(
         self,
@@ -193,6 +196,8 @@ class TestActionCallGraph:
         )
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A), (_ACT_C, _ACT_A)}
+        assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
+        assert_action_calls(result.action_call_graph, _ACT_C, _ACT_A)
 
     def test_local_prefix_before_action_reference(
         self,
@@ -222,6 +227,7 @@ class TestActionCallGraph:
         )
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
+        assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
 
     def test_no_edge_when_position_does_not_match(
         self,

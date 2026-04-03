@@ -7,6 +7,13 @@ from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.validator.test_helpers import assert_action_calls
+
+_TEST = "action<my.domain.com:my_lib:/test>"
+_OTHER = "action<my.domain.com:my_lib:/other>"
+_OUTER = "action<my.domain.com:my_lib:/outer>"
+_MIDDLE = "action<my.domain.com:my_lib:/middle>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
 
 
 def test_local_duplicate_dimension_point_format(
@@ -328,6 +335,7 @@ def test_action_requires_empty_position_format(
         'File "other.dfn", line 7, column 37'
     )
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_action_requires_occupied_position_format(
@@ -470,6 +478,7 @@ def test_propagated_action_requires_empty_position_format(
         '  File "middle.dfn", line 11, column 37\n'
         '    File "inner.dfn", line 7, column 37'
     )
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
 def test_move_violates_constraints_error_message(

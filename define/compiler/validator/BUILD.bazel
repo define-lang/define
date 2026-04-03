@@ -28,6 +28,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":validation_result",
+        "//define/compiler/graphs:action_call_graph",
     ],
 )
 

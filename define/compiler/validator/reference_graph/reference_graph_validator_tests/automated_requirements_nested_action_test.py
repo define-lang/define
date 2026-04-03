@@ -7,7 +7,12 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
+
+_TEST = "action<my.domain.com:my_lib:/test>"
+_OUTER = "action<my.domain.com:my_lib:/outer>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
+_MIDDLE = "action<my.domain.com:my_lib:/middle>"
 
 
 def test_inner_chained_action_empty_requirement_propagates(
@@ -85,6 +90,7 @@ def test_inner_chained_action_empty_requirement_propagates(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_inner_chained_action_empty_requirement_satisfied(
@@ -143,6 +149,7 @@ def test_inner_chained_action_empty_requirement_satisfied(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_inner_chained_action_occupied_requirement_not_propagated(
@@ -218,6 +225,7 @@ def test_inner_chained_action_occupied_requirement_not_propagated(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_inner_chained_action_occupied_requirement_caller_fill_does_not_help(
@@ -294,6 +302,7 @@ def test_inner_chained_action_occupied_requirement_caller_fill_does_not_help(
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_doubly_nested_action_requirement_propagates(
@@ -410,6 +419,7 @@ def test_doubly_nested_action_requirement_propagates(
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert len(all_diags[1].propagated_from_locations) == 2
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
 def test_doubly_nested_both_outer_and_caller_fill(
@@ -543,6 +553,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[2].filled_at.column == 37
     assert all_diags[2].filled_at.file_path == PurePosixPath("outer.dfn")
     assert len(all_diags[2].propagated_from_locations) == 1
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
 def test_four_deep_action_chain_requirement_propagates(
@@ -681,6 +692,14 @@ def test_four_deep_action_chain_requirement_propagates(
     assert all_diags[2].inferred_at.column == 37
     assert all_diags[2].inferred_at.file_path == PurePosixPath("c.dfn")
     assert all_diags[2].propagated_from_locations == []
+    assert_action_calls(
+        result.action_call_graph,
+        _TEST,
+        "action<my.domain.com:my_lib:/a>",
+        "action<my.domain.com:my_lib:/b>",
+        "action<my.domain.com:my_lib:/c>",
+        "action<my.domain.com:my_lib:/d>",
+    )
 
 
 def test_only_empty_requirement_propagates_when_inner_has_both(
@@ -771,6 +790,7 @@ def test_only_empty_requirement_propagates_when_inner_has_both(
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert all_diags[1].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_trigger_position_child_requirement_propagates(
@@ -872,6 +892,7 @@ def test_trigger_position_child_requirement_propagates(
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert len(all_diags[1].propagated_from_locations) == 1
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_inner_action_requirement_propagates_after_move(
@@ -954,6 +975,7 @@ def test_inner_action_requirement_propagates_after_move(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 def test_doubly_nested_requirement_propagates_after_move(
@@ -1071,6 +1093,7 @@ def test_doubly_nested_requirement_propagates_after_move(
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert len(all_diags[1].propagated_from_locations) == 2
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
 def test_no_propagation_when_action_not_triggered_on_interface_position(
@@ -1139,6 +1162,7 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
         }
     )
     assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
 _MAIN_FQUN = "mv:define-lang.org:main_lib"
@@ -1249,6 +1273,12 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert len(all_diags[1].propagated_from_locations) == 1
+    assert_action_calls(
+        result.action_call_graph,
+        f"action<{_MAIN_FQUN}:/test>",
+        f"action<{_MAIN_FQUN}:/outer>",
+        f"action<{_DEP_FQUN}:/inner>",
+    )
 
 
 def test_complex_chain_same_fqun_position_name(
@@ -1367,6 +1397,13 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert all_diags[1].propagated_from_locations == []
+    assert_action_calls(
+        result.action_call_graph,
+        _TEST,
+        "action<my.domain.com:my_lib:/foo>",
+        _MIDDLE,
+        "action<my.domain.com:my_lib:/bar>",
+    )
 
 
 def test_complex_chain_cross_fqun_position_name(
@@ -1511,3 +1548,10 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[2].inferred_at.column == 37
     assert all_diags[2].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert all_diags[2].propagated_from_locations == []
+    assert_action_calls(
+        result.action_call_graph,
+        f"action<{_MAIN_FQUN}:/test>",
+        f"action<{_MAIN_FQUN}:/foo>",
+        f"action<{_MAIN_FQUN}:/middle>",
+        f"action<{_DEP_FQUN}:/bar>",
+    )
