@@ -483,6 +483,13 @@ class ActionDefinition(QualityDefinition):
         )
         object.__setattr__(self, "trigger_position", self._compute_trigger_position())
 
+    @property
+    def interface_position_names(self) -> list[TypedName]:
+        """Return the TypedName objects for all interface positions."""
+        if self.definition_block is None:
+            return []
+        return [pos.typed_name for pos in self.definition_block.interface_positions]
+
     def _compute_interface_positions(self) -> dict[str, LocalPositionDefinition]:
         if self.definition_block is None:
             return {}

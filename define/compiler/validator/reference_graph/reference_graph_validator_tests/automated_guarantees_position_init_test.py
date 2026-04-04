@@ -1,0 +1,338 @@
+# pyright: reportUnusedCallResult=false
+# Exception to CLAUDE.md "no docstrings in tests" rule: these tests have docstrings
+# because the position init guarantee scenarios are complex enough to need
+# prose explanations of what each test verifies.
+
+from define.compiler import diagnostics
+from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
+
+
+def test_self_create_guarantee_visible_to_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Position /a creates in itself. Action creates DP requiring /a, then creating in child gives error."""
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<box>::position</a>"
+
+
+def test_nested_init_block_guarantees(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/a requires /dep. Both create in themselves. Both child positions are occupied after create."""
+    result = validate_project_with_reference_graph(
+        {
+            "dep.dfn": (
+                "define the potential position<my.domain.com:my_lib:/dep> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</dep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</dep>.\n"
+                "    }\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</a>.\n"
+                "        create a dimension point in position<box>::position</a>::position</dep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    # Both creates should fail because the init blocks already filled them.
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<box>::position</a>"
+    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[1].position_name == "position<box>::position</a>::position</dep>"
+
+
+def test_init_block_overrides_inner_guarantee(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/a requires /dep. /dep creates in itself. /a moves DP out of /dep to a sink. Caller sees /dep empty."""
+    result = validate_project_with_reference_graph(
+        {
+            "dep.dfn": (
+                "define the potential position<my.domain.com:my_lib:/dep> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</dep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</dep>.\n"
+                "    }\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</a>.\n"
+                "        define the position<_sink>.\n"
+                "        move the dimension point in position</a>::position</dep> to position<_sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</a>::position</dep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # /dep was moved out by /a's init block, so creating there should succeed.
+    assert_no_errors(result.program_result)
+
+
+def test_no_init_block_no_effect(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Quality without init block produces no extra guarantees when assigned."""
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": "define the potential position<my.domain.com:my_lib:/a>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</a>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # position</a> has no init block, so creating in the child succeeds.
+    assert_no_errors(result.program_result)
+
+
+def test_inferred_occupied_does_not_apply_init_guarantees(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Inferred OCCUPIED with init block qualities does NOT apply init block effects."""
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    # position<item> is inferred OCCUPIED (from the move source).
+    # Its quality /a has an init block, but the caller may have already
+    # emptied position</a>, so we don't assume it's filled.
+    # The create succeeds because we infer an EMPTY requirement.
+    assert_no_errors(result.program_result)
+
+
+def test_caller_sees_init_block_child_guarantees_through_action(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/inner has interface position<item> requiring /a. /a creates in itself. /outer calls /inner and sees /a's guarantee."""
+    result = validate_project_with_reference_graph(
+        {
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</inner>::position<item>::position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    # /inner created a DP in position<item>, which assigned quality /a.
+    # /a's init block filled position</a>. That guarantee should propagate
+    # through /inner's contract to /test. The create should fail.
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</inner>::position<item>::position</a>"
+    )
+
+
+def test_nested_quality_guarantees_visible_through_action_chain(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/a requires /dep. Both create in themselves. /inner creates DP requiring /a. /outer sees full chain."""
+    result = validate_project_with_reference_graph(
+        {
+            "dep.dfn": (
+                "define the potential position<my.domain.com:my_lib:/dep> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</dep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "a.dfn": (
+                "define the potential position<my.domain.com:my_lib:/a> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</dep>.\n"
+                "    }\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</a>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</a>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</inner>::position<item>::position</a>::position</dep>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    # /inner created DP in position<item> requiring /a.
+    # /a's init block filled position</a>. /a requires /dep.
+    # /dep's init block filled position</dep>.
+    # So the full chain ...::position</a>::position</dep> is occupied.
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</inner>::position<item>::position</a>::position</dep>"
+    )

@@ -62,6 +62,12 @@ class ScopeTracker:
         key = name.full_typed_name(in_universe=self._enclosing_fqun)
         return self._constraint_names.get(key, frozenset())
 
+    def get_definition(self, name: ast.TypedName) -> ast.AnyPositionDefinition:
+        """Return the position definition for a typed name."""
+        key = name.full_typed_name(in_universe=self._enclosing_fqun)
+        return self._definitions[key]
+
+    # TODO: dead code
     def definition_has_quality(
         self, parent: ast.TypedName, quality: ast.TypedName
     ) -> bool:

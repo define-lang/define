@@ -1,5 +1,7 @@
 # pyright: reportUnusedCallResult=false
 
+import typing
+
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
@@ -20,13 +22,13 @@ def _get_contract(
     assert_no_errors(result)
     definition_result = result.definition_results[action_name]
     validator = definition_postorder_validator.create_postorder_validator(
-        definition_result, result.definition_results, {}
+        definition_result, result.definition_results, {}, {}
     )
     result = validator.analyze()
     contract = result.contract
     if contract is None:
         raise ValueError(f"No contract for {action_name}")
-    return contract
+    return typing.cast("action_contract.ActionContract", contract)
 
 
 class TestRequirementInference:
@@ -566,3 +568,98 @@ class TestChainedGuaranteeGeneration:
         assert guarantee.qualities == frozenset()
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 37
+
+
+_POS_TEST = "position<my.domain.com:my_lib:/test>"
+_POS_DEP = "position<my.domain.com:my_lib:/dep>"
+
+
+def _get_position_contract(
+    source: str,
+    position_name: str = _POS_TEST,
+) -> action_contract.PositionInitBlockContract:
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert_no_errors(result)
+    definition_result = result.definition_results[position_name]
+    validator = definition_postorder_validator.create_postorder_validator(
+        definition_result, result.definition_results, {}, {}
+    )
+    result = validator.analyze()
+    contract = result.contract
+    if contract is None:
+        raise ValueError(f"No contract for {position_name}")
+    return typing.cast("action_contract.PositionInitBlockContract", contract)
+
+
+class TestPositionInitBlockContract:
+    def test_no_init_block_returns_no_contract(self):
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+        result = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+        assert_no_errors(result)
+        definition_result = result.definition_results[_POS_TEST]
+        validator = definition_postorder_validator.create_postorder_validator(
+            definition_result, result.definition_results, {}, {}
+        )
+        result = validator.analyze()
+        assert result.contract is None
+
+    def test_init_block_creates_in_self(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    after it is assigned {\n"
+            "        create a dimension point in position</test>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        assert set(contract.guarantees.keys()) == {(_POS_TEST,)}
+        guarantee = contract.guarantees[(_POS_TEST,)]
+        assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
+        assert guarantee.qualities == frozenset()
+        assert guarantee.caused_by.location.line == 3
+        assert guarantee.caused_by.location.column == 37
+
+    def test_local_only_produces_empty_guarantees(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    after it is assigned {\n"
+            "        define the position<local>.\n"
+            "        create a dimension point in position<local>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        assert contract.guarantees == {}
+
+    def test_init_block_with_constraint_child(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/dep>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</dep>.\n"
+            "    }\n"
+            "    after it is assigned {\n"
+            "        create a dimension point in position</test>.\n"
+            "        create a dimension point in position</test>::position</dep>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        assert set(contract.guarantees.keys()) == {
+            (_POS_TEST,),
+            (_POS_TEST, _POS_DEP),
+        }
+        self_guarantee = contract.guarantees[(_POS_TEST,)]
+        assert isinstance(self_guarantee, action_contract.OccupiedByNewGuarantee)
+        assert self_guarantee.qualities == frozenset({_POS_DEP})
+        assert self_guarantee.caused_by.location.line == 7
+        dep_guarantee = contract.guarantees[(_POS_TEST, _POS_DEP)]
+        assert isinstance(dep_guarantee, action_contract.OccupiedByNewGuarantee)
+        assert dep_guarantee.qualities == frozenset()
+        assert dep_guarantee.caused_by.location.line == 8

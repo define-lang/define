@@ -25,7 +25,7 @@ class PostorderValidationResult:
 
     diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
     edges: list[action_call_graph.ActionGraphEdge] = field(default_factory=list)
-    contract: action_contract.ActionContract | None = None
+    contract: action_contract.ActionStatementsBlockContract | None = None
 
 
 class DefinitionPostorderValidator(abc.ABC):
@@ -34,6 +34,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _definition_result: validation_result.DefinitionValidationResult
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _action_contracts: dict[str, action_contract.ActionContract]
+    _position_contracts: dict[str, action_contract.PositionInitBlockContract]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
 
@@ -42,11 +43,13 @@ class DefinitionPostorderValidator(abc.ABC):
         definition_result: validation_result.DefinitionValidationResult,
         definition_results: dict[str, validation_result.DefinitionValidationResult],
         action_contracts: dict[str, action_contract.ActionContract],
+        position_contracts: dict[str, action_contract.PositionInitBlockContract],
     ):
         """Initialize with the definition to validate and the full results map."""
         self._definition_result = definition_result
         self._definition_results = definition_results
         self._action_contracts = action_contracts
+        self._position_contracts = position_contracts
         self._diagnostics = []
         self._action_edges = []
 
@@ -137,6 +140,24 @@ class DefinitionPostorderValidator(abc.ABC):
             ok = False
             current = current.parent_position()
         return ok
+
+    def _apply_position_init_guarantees(
+        self,
+        position: ast.PositionReference,
+        constraints: ast.PositionConstraintBlock | None,
+    ):
+        """Apply position init block guarantees for each assigned quality in source order."""
+        if constraints is None:
+            return
+        for requirement in constraints.requirements:
+            if requirement.typed_global_name.name_type != ast.NameType.POSITION:
+                continue
+            applied_position_name = requirement.typed_global_name.full_typed_name(
+                in_universe=self._enclosing_fqun
+            )
+            init_block_contract = self._position_contracts.get(applied_position_name)
+            if init_block_contract is not None:
+                self._tracker.apply_guarantees(position, init_block_contract.guarantees)
 
     def _check_trigger(
         self,
@@ -290,6 +311,9 @@ class DefinitionPostorderValidator(abc.ABC):
 
         qualities = self._get_required_qualities(position, scope) or frozenset()
         self._tracker.create(position, qualities)
+        self._apply_position_init_guarantees(
+            position, self._get_constraint_block(position, scope)
+        )
         self._check_trigger(position)
 
     def _analyze_move(
@@ -613,6 +637,38 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         self._tracker.mark_unknown(ref)
 
+    # TODO: _get_constraint_block and _get_required_qualities share the same
+    # position-resolution logic and should be refactored to use a common helper.
+    def _get_constraint_block(
+        self,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> ast.PositionConstraintBlock | None:
+        """Resolve the constraint block for the position definition."""
+        if scope.is_defined_local(position):
+            return scope.get_definition(position.typed_names[0]).constraints
+
+        last_element = position.typed_names[-1]
+
+        if isinstance(last_element, ast.LocalTypedNameReference):
+            parent = position.typed_names[-2]
+            parent_key = parent.full_typed_name(in_universe=self._enclosing_fqun)
+            action_def = self._definition_results[parent_key].definition
+            action_def = typing.cast("ast.ActionDefinition", action_def)
+            local_pos_name = last_element.full_typed_name(
+                in_universe=self._enclosing_fqun
+            )
+            return action_def.interface_positions[local_pos_name].constraints
+
+        lookup_key = last_element.full_typed_name(in_universe=self._enclosing_fqun)
+        definition_result = self._definition_results.get(lookup_key)
+        if definition_result is None:
+            return None
+        position_def = typing.cast(
+            "ast.PositionDefinition", definition_result.definition
+        )
+        return position_def.constraints
+
     def _get_required_qualities(
         self,
         position: ast.PositionReference,
@@ -661,9 +717,15 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         definition_result: validation_result.DefinitionValidationResult,
         definition_results: dict[str, validation_result.DefinitionValidationResult],
         action_contracts: dict[str, action_contract.ActionContract],
+        position_contracts: dict[str, action_contract.PositionInitBlockContract],
     ):
         """Initialize with the action definition to validate and the full results map."""
-        super().__init__(definition_result, definition_results, action_contracts)
+        super().__init__(
+            definition_result,
+            definition_results,
+            action_contracts,
+            position_contracts,
+        )
         self._inferred_requirements = {}
 
     @property
@@ -757,7 +819,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         """Generate the action contract from inferred requirements and final tracker state."""
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
-            guarantees=self._tracker.generate_guarantees(self._action_definition),
+            guarantees=self._tracker.generate_guarantees(
+                self._action_definition.interface_position_names
+            ),
             trigger_position_name=self._trigger_position_name or "",
         )
 
@@ -916,8 +980,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             # function in a different caller. It's both hard to reason about and
             # doesn't seem that useful.
             #
-            # TODO: However, I believe we could propagate OCCUPIED for intermediate
-            # positions that are not filled on interface position children.
+            # TODO: Actually, I've thought this through more and I think we both
+            # can and should do this propagation, even though it's a bad coding
+            # pattern. It would just mean we have to do a from_caller create here.
             if (
                 inner_req.required_state
                 == action_contract.PositionOccupancyState.OCCUPIED
@@ -948,32 +1013,45 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         definition = self._definition
         if not isinstance(definition, ast.PositionDefinition):
             raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
-        self._analyze_position_definition(definition)
+        contract = self._analyze_position_definition(definition)
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
             edges=self._action_edges,
+            contract=contract,
         )
 
-    def _analyze_position_definition(self, definition: ast.PositionDefinition):
+    def _analyze_position_definition(
+        self, definition: ast.PositionDefinition
+    ) -> action_contract.PositionInitBlockContract | None:
         if definition.initialization is None:
-            return
+            return None
         scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
         scope.add_definition(definition)
         self._analyze_statements(definition.initialization, scope)
+        return action_contract.PositionInitBlockContract(
+            guarantees=self._tracker.generate_guarantees([definition.typed_name]),
+        )
 
 
 def create_postorder_validator(
     definition_result: validation_result.DefinitionValidationResult,
     definition_results: dict[str, validation_result.DefinitionValidationResult],
     action_contracts: dict[str, action_contract.ActionContract],
+    position_contracts: dict[str, action_contract.PositionInitBlockContract],
 ) -> DefinitionPostorderValidator:
     """Create the appropriate postorder validator for the given definition."""
     if isinstance(definition_result.definition, ast.ActionDefinition):
         return ActionPostorderValidator(
-            definition_result, definition_results, action_contracts
+            definition_result,
+            definition_results,
+            action_contracts,
+            position_contracts,
         )
     if isinstance(definition_result.definition, ast.PositionDefinition):
         return PositionPostorderValidator(
-            definition_result, definition_results, action_contracts
+            definition_result,
+            definition_results,
+            action_contracts,
+            position_contracts,
         )
     raise TypeError(f"Unexpected definition type: {type(definition_result.definition)}")

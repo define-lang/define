@@ -239,10 +239,12 @@ class DimensionPointTracker:
 
     def generate_guarantees(
         self,
-        action_def: ast.ActionDefinition,
+        for_names: list[ast.TypedName],
     ) -> dict[tuple[str, ...], action_contract.InterfacePositionGuarantee]:
-        """Generate guarantees for all interface positions that have tracker state."""
-        interface_names = set(action_def.interface_positions.keys())
+        """Generate guarantees for positions whose first key element matches for_names."""
+        include_names = {
+            name.full_typed_name(in_universe=self._fqun) for name in for_names
+        }
 
         # Collect keys that have interesting state from both tries.
         all_keys: set[tuple[str, ...]] = set()
@@ -258,7 +260,7 @@ class DimensionPointTracker:
         ] = {}
         for key in all_keys:
             first_element = key[0]
-            if first_element not in interface_names:
+            if first_element not in include_names:
                 continue
             guarantees[key] = self._guarantee_for_key(key)
         return guarantees
@@ -290,23 +292,27 @@ class DimensionPointTracker:
 
     def apply_guarantees(
         self,
-        trigger_position: ast.PositionReference,
+        for_position: ast.PositionReference,
         guarantees: dict[tuple[str, ...], action_contract.InterfacePositionGuarantee],
     ):
-        """Apply action guarantees after an action completes.
+        """Apply guarantees after an action completes or a quality is assigned.
 
-        The trigger_position should be the position reference that triggered
-        the action. Updates each interface position according to its guarantee.
+        For action triggers, the key prefix is the chain up to the action.
+        For position init blocks (no action in chain), the key prefix is
+        the position's own canonical key.
 
         OccupiedByExisting guarantees move entire subtrees (the origin's
         children follow the parent DP).
         """
-        action_chain = trigger_position.get_chain_to_last_action()
-        if action_chain is None:
-            raise ValueError(
-                f"no action in chain: {trigger_position.source_chained_name}"
+        action_chain = for_position.get_chain_to_last_action()
+        if action_chain is not None:
+            key_prefix = action_chain.canonical_chained_name_tuple(
+                in_universe=self._fqun
             )
-        key_prefix = action_chain.canonical_chained_name_tuple(in_universe=self._fqun)
+        else:
+            key_prefix = for_position.canonical_chained_name_tuple(
+                in_universe=self._fqun
+            )
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,

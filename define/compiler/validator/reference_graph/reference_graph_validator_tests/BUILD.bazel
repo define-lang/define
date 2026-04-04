@@ -225,6 +225,17 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_position_init_test",
+    size = "small",
+    srcs = ["automated_guarantees_position_init_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "position_init_self_reference_test",
     size = "small",
     srcs = ["position_init_self_reference_test.py"],
@@ -284,6 +295,7 @@ pyright_test(
         ":move_local_constraint_test",
         ":move_state_tracking_test",
         ":move_without_parent_test",
+        ":automated_guarantees_position_init_test",
         ":position_init_self_reference_test",
         ":reference_graph_validator_tests",
         ":trigger_conditions_test",

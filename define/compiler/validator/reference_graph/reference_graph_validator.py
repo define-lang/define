@@ -29,6 +29,7 @@ class ReferenceGraphValidator:
     _reference_graph: reference_graph.ReferenceGraph
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _action_contracts: dict[str, action_contract.ActionContract]
+    _position_contracts: dict[str, action_contract.PositionInitBlockContract]
 
     def __init__(
         self,
@@ -39,6 +40,7 @@ class ReferenceGraphValidator:
         self._reference_graph = graph
         self._definition_results = definition_results
         self._action_contracts = {}
+        self._position_contracts = {}
 
     def validate(self) -> action_call_graph.ActionCallGraph:
         """Run analysis for all definitions in DFS post-order.
@@ -57,13 +59,18 @@ class ReferenceGraphValidator:
             if definition_result is None:
                 continue
             analyzer = definition_postorder_validator.create_postorder_validator(
-                definition_result, self._definition_results, self._action_contracts
+                definition_result,
+                self._definition_results,
+                self._action_contracts,
+                self._position_contracts,
             )
             result = analyzer.analyze()
             for d in result.diagnostics:
                 definition_result.add_diagnostic(d)
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
-            if result.contract is not None:
+            if isinstance(result.contract, action_contract.ActionContract):
                 self._action_contracts[name] = result.contract
+            elif isinstance(result.contract, action_contract.PositionInitBlockContract):
+                self._position_contracts[name] = result.contract
         return call_graph

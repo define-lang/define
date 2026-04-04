@@ -100,13 +100,24 @@ class UnknownGuarantee(InterfacePositionGuarantee):
 
 
 @dataclass(frozen=True)
-class ActionContract:
+class ActionStatementsBlockContract:
+    """Base contract for any block containing action statements."""
+
+    guarantees: dict[tuple[str, ...], InterfacePositionGuarantee]
+
+
+@dataclass(frozen=True)
+class ActionContract(ActionStatementsBlockContract):
     """The automatically inferred requirements and guarantees for an action."""
 
     requirements: dict[tuple[str, ...], InterfacePositionRequirement]
-    guarantees: dict[tuple[str, ...], InterfacePositionGuarantee]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
+
+
+@dataclass(frozen=True)
+class PositionInitBlockContract(ActionStatementsBlockContract):
+    """Contract for a position initialization block."""
 
 
 @dataclass(frozen=True, init=False)
