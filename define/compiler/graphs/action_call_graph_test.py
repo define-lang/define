@@ -5,6 +5,7 @@ from define.compiler.validator.test_helpers import assert_action_calls, assert_n
 _ACT_A = "action<my.domain.com:my_lib:/act_a>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
 _ACT_C = "action<my.domain.com:my_lib:/act_c>"
+_SHARED = "action<my.domain.com:my_lib:/shared>"
 
 _NOOP_ACTION_ACT_A = (
     "define the potential action<my.domain.com:my_lib:/act_a> {\n"
@@ -231,6 +232,91 @@ class TestActionCallGraph:
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_ACT_B, _ACT_A)}
         assert_action_calls(result.action_call_graph, _ACT_B, _ACT_A)
+
+    def test_diamond_dependency(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "act_a.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/act_a> {\n"
+                    "    define the position<my_pos>.\n"
+                    "    define the position<box_b> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    define the position<box_c> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_c>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<my_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<box_b>.\n"
+                    "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
+                    "        create a dimension point in position<box_c>.\n"
+                    "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<pp>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</shared>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
+                    "        create a dimension point in position<gateway>::action</shared>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_c.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/act_c> {\n"
+                    "    define the position<pp>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</shared>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
+                    "        create a dimension point in position<gateway>::action</shared>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "shared.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/shared> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+            entry_file="act_a.dfn",
+        )
+        assert_no_errors(result.program_result)
+        assert _edge_pairs(result) == {
+            (_ACT_A, _ACT_B),
+            (_ACT_A, _ACT_C),
+            (_ACT_B, _SHARED),
+            (_ACT_C, _SHARED),
+        }
+        assert_action_calls(result.action_call_graph, _ACT_A, _ACT_B, _SHARED)
+        assert_action_calls(result.action_call_graph, _ACT_A, _ACT_C, _SHARED)
 
     def test_no_edge_when_position_does_not_match(
         self,
