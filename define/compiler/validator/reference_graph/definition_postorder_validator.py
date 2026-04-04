@@ -912,7 +912,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             # There's no way to perform modular analysis on that case, and in any
             # case, it seems particularly confusing and strange to do that. In a
             # traditional language, that would be like filling in one argument of
-            # a function in one caller, and filling in the other argumet of a
+            # a function in one caller, and filling in the other argument of a
             # function in a different caller. It's both hard to reason about and
             # doesn't seem that useful.
             #
