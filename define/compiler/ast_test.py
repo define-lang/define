@@ -439,37 +439,56 @@ class TestSourceChainedName:
         )
 
 
-class TestGetFirstAction:
+class TestGetLastAction:
     def test_no_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::position</x>")
-        assert pos.get_first_action() is None
+        assert pos.get_last_action() is None
 
     def test_with_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::action</act>::position<iface>")
-        result = pos.get_first_action()
+        result = pos.get_last_action()
         assert result is not None
         assert result.source_typed_name == "action</act>"
 
     def test_single_element(self, position_reference_for: PositionReferenceFor):
-        assert position_reference_for("position<local>").get_first_action() is None
+        assert position_reference_for("position<local>").get_last_action() is None
+
+    def test_two_actions(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for(
+            "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
+        )
+        result = pos.get_last_action()
+        assert result is not None
+        assert result.source_typed_name == "action</inner>"
 
 
-class TestGetActionChain:
+class TestGetChainToLastAction:
     def test_no_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::position</x>")
-        assert pos.get_action_chain() is None
+        assert pos.get_chain_to_last_action() is None
 
     def test_with_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::action</act>::position<iface>")
-        result = pos.get_action_chain()
+        result = pos.get_chain_to_last_action()
         assert result is not None
         assert result.source_chained_name == "position<local>::action</act>"
 
+    def test_two_actions(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for(
+            "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
+        )
+        result = pos.get_chain_to_last_action()
+        assert result is not None
+        assert (
+            result.source_chained_name
+            == "position<local>::action</outer>::position<iface>::action</inner>"
+        )
 
-class TestGetInterfacePosition:
+
+class TestGetLastActionChildren:
     def test_no_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::position</x>")
-        assert pos.get_interface_position() is None
+        assert pos.get_last_action_children() is None
 
     def test_with_action_and_interface(
         self, position_reference_for: PositionReferenceFor
@@ -477,13 +496,21 @@ class TestGetInterfacePosition:
         pos = position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
-        result = pos.get_interface_position()
+        result = pos.get_last_action_children()
         assert result is not None
         assert result.source_chained_name == "position<iface>::position</child>"
 
     def test_action_at_end(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::action</act>")
-        assert pos.get_interface_position() is None
+        assert pos.get_last_action_children() is None
+
+    def test_two_actions(self, position_reference_for: PositionReferenceFor):
+        pos = position_reference_for(
+            "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
+        )
+        result = pos.get_last_action_children()
+        assert result is not None
+        assert result.source_chained_name == "position<trigger>"
 
 
 class TestWalkParentPositions:

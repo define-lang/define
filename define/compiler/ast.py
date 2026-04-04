@@ -266,29 +266,29 @@ class ChainedName(ASTNode):
         """Return chained name text as it appears in the source."""
         return "::".join(elem.source_typed_name for elem in self.typed_names)
 
-    def get_first_action(self) -> GlobalTypedNameReference | None:
-        """Return the first action element in the chain, or None."""
-        for elem in self.typed_names:
+    def get_last_action(self) -> GlobalTypedNameReference | None:
+        """Return the last action element in the chain, or None."""
+        for elem in reversed(self.typed_names):
             if elem.name_type == NameType.ACTION and isinstance(
                 elem, GlobalTypedNameReference
             ):
                 return elem
         return None
 
-    def get_action_chain(self) -> ChainedName | None:
-        """Return everything up to and including the first action element, or None."""
-        for i, elem in enumerate(self.typed_names):
-            if elem.name_type == NameType.ACTION:
+    def get_chain_to_last_action(self) -> ChainedName | None:
+        """Return everything up to and including the last action element, or None."""
+        for i in range(len(self.typed_names) - 1, -1, -1):
+            if self.typed_names[i].name_type == NameType.ACTION:
                 return ChainedName(
                     location=self.location,
                     typed_names=self.typed_names[: i + 1],
                 )
         return None
 
-    def get_interface_position(self) -> PositionReference | None:
-        """Return everything after the first action element, or None."""
-        for i, elem in enumerate(self.typed_names):
-            if elem.name_type == NameType.ACTION:
+    def get_last_action_children(self) -> PositionReference | None:
+        """Return everything after the last action element, or None."""
+        for i in range(len(self.typed_names) - 1, -1, -1):
+            if self.typed_names[i].name_type == NameType.ACTION:
                 tail = self.typed_names[i + 1 :]
                 if not tail:
                     return None

@@ -301,17 +301,12 @@ class DimensionPointTracker:
         OccupiedByExisting guarantees move entire subtrees (the origin's
         children follow the parent DP).
         """
-        action_chain = trigger_position.get_action_chain()
+        action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError(
                 f"no action in chain: {trigger_position.source_chained_name}"
             )
         key_prefix = action_chain.canonical_chained_name_tuple(in_universe=self._fqun)
-        # TODO: Nested action chains still do not propagate callee requirements
-        # and guarantees through the outer action. For example, if
-        # position<iface>::action</other>::position<item> is prefilled and the
-        # outer action only creates position<iface>::action</other>::position<trigger>,
-        # we currently do not surface /other's empty requirement on position<item>.
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,

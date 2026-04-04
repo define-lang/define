@@ -5,8 +5,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
@@ -1933,26 +1931,64 @@ def test_post_trigger_existing_guarantee_on_child_swap(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "When the caller fills a nested action chain"
-        " (iface::action</inner>::trigger_pos), the inner trigger does not fire"
-        " and the inner action's guarantees are not applied. The move from the"
-        " guarantee-filled position fails because the position appears empty."
-    ),
-)
+def test_long_chain_trigger_fires_and_applies_guarantee(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<output>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<output>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<dest>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<output> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+
+
 def test_long_inner_chained_action_fills_positions_in_caller(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """/inner creates in position<output>, guaranteeing it occupied.
-
-    /outer triggers /inner internally. When /test fills the nested trigger position
-    (position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>),
-    the inner trigger should fire at /test's level, applying /inner's guarantee
-    so that position<output> is occupied. /test then moves from position<output>,
-    which should succeed because the guarantee filled it.
-    """
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (

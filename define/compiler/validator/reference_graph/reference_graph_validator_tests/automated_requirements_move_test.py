@@ -17,13 +17,6 @@ _INNER = "action<my.domain.com:my_lib:/inner>"
 def test_caller_sees_requirement_when_interface_moved_to_local(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """/outer moves iface to local and triggers /inner via local.
-
-    The EMPTY requirement on trigger_pos is NOT in /inner's contract (trigger
-    positions are excluded), so _propagate_inner_requirements doesn't catch it.
-    Only _maybe_infer_requirement with from_caller tracking creates this
-    requirement in /outer's contract, remapped through position<iface>.
-    """
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (
@@ -34,6 +27,8 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
+                "        define the position<_sink>.\n"
+                "        move the dimension point in position<trigger_pos> to position<_sink>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -79,23 +74,22 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
         }
     )
     all_diags = result.program_result.all_diagnostics
+    # Filling the nested trigger at line 13 fires /inner, which fills
+    # position<item> via guarantee. When /outer triggers at line 14 and
+    # tries to trigger /inner again, position<item> is already occupied.
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>"
+        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
     assert all_diags[0].inferred_at.line == 17
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 37
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 

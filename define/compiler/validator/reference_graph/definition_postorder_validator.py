@@ -147,16 +147,16 @@ class DefinitionPostorderValidator(abc.ABC):
         Only triggers when the chain ends with action<...>::position<trigger>,
         i.e., we're directly filling an action's interface position.
         """
-        interface_position = position.get_interface_position()
+        interface_position = position.get_last_action_children()
         if interface_position is None:
             return
-        # Only trigger when filling a single interface position directly.
-        # TODO: Consider whether to support triggering on chained positions.
+        # Only trigger when filling a single interface position directly,
+        # not children of interface positions.
         if len(interface_position.typed_names) != 1:
             return
         # Never None, because interface_position is not None.
         action_ref = typing.cast(
-            "ast.GlobalTypedNameReference", position.get_first_action()
+            "ast.GlobalTypedNameReference", position.get_last_action()
         )
         action_name = action_ref.full_typed_name(in_universe=self._enclosing_fqun)
         # The action's file may have failed to load or parse.
@@ -192,7 +192,7 @@ class DefinitionPostorderValidator(abc.ABC):
         """Check that all action requirements are satisfied before triggering."""
         dp = self._tracker.get_occupant(trigger_position)
 
-        action_chain = trigger_position.get_action_chain()
+        action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError(
                 f"no action in chain: {trigger_position.source_chained_name}"
@@ -350,7 +350,7 @@ class DefinitionPostorderValidator(abc.ABC):
             self._tracker.mark_unknown(to_pos)
             return False
 
-        from_action = from_pos.get_first_action()
+        from_action = from_pos.get_last_action()
         from_occupied = self._tracker.is_occupied(from_pos)
         to_empty = not self._tracker.is_occupied(to_pos)
 
@@ -702,7 +702,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         position: ast.PositionReference,
     ):
         """Check trigger, detecting self-triggering as an error."""
-        if position.get_interface_position() is not None:
+        if position.get_last_action_children() is not None:
             super()._check_trigger(position)
             return
         if self._trigger_position_name is None:
@@ -874,7 +874,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         from_caller (created internally by this action), the caller's access
         was severed, so requirements don't propagate.
         """
-        action_chain = trigger_position.get_action_chain()
+        action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError("not an action")
         return (action_chain, self._parent_comes_from_interface_position(action_chain))
