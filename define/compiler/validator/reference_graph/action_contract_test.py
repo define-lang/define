@@ -31,7 +31,6 @@ def _get_fqun(action: ast.ActionDefinition) -> ast.Fqun:
 def _get_create_ref(
     action: ast.ActionDefinition, index: int = 0
 ) -> ast.PositionReference:
-    assert action.definition_block is not None
     creates = [
         stmt
         for stmt in action.definition_block.action_statements.statements
@@ -44,7 +43,15 @@ _EMPTY = action_contract.PositionOccupancyState.EMPTY
 
 _OUTER = _parse_action(
     (
-        f"define the potential action<{_MAIN_FQUN_NAME}:/middle>.\n"
+        f"define the potential action<{_MAIN_FQUN_NAME}:/middle> {{\n"
+        f"    define the position<_noop>.\n"
+        f"    it happens when {{\n"
+        f"        the position<_noop> has a dimension point.\n"
+        f"    }} and it does {{\n"
+        f"        define the position<__noop>.\n"
+        f"        create a dimension point in position<__noop>.\n"
+        f"    }}\n"
+        f"}}\n"
         f"define the potential action<{_MAIN_FQUN_NAME}:/outer> {{\n"
         "    define the position<trigger_pos>.\n"
         "    define the position<iface> {\n"
@@ -64,7 +71,15 @@ _OUTER = _parse_action(
 
 _MIDDLE = _parse_action(
     (
-        f"define the potential action<{_MAIN_FQUN_NAME}:/inner>.\n"
+        f"define the potential action<{_MAIN_FQUN_NAME}:/inner> {{\n"
+        f"    define the position<_noop>.\n"
+        f"    it happens when {{\n"
+        f"        the position<_noop> has a dimension point.\n"
+        f"    }} and it does {{\n"
+        f"        define the position<__noop>.\n"
+        f"        create a dimension point in position<__noop>.\n"
+        f"    }}\n"
+        f"}}\n"
         f"define the potential action<{_MAIN_FQUN_NAME}:/middle> {{\n"
         "    define the position<trigger_pos>.\n"
         "    define the position<mid_iface> {\n"

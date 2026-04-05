@@ -8,12 +8,27 @@ from define.compiler import diagnostics, parser, parser_exceptions
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
-def test_action_definition_parses(p: parser.Parser) -> None:
+def test_action_definition_without_body_is_error(p: parser.Parser) -> None:
     result = p.parse("define the potential action<standard:/path>.\n")
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.MissingOpenBrace)
+
+
+def test_action_definition_with_body_parses(p: parser.Parser) -> None:
+    result = p.parse(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<pp>.\n"
+        + "    it happens when {\n"
+        + "        the position<pp> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<noop>.\n"
+        + "        create a dimension point in position<noop>.\n"
+        + "    }\n"
+        + "}\n"
+    )
     assert result.diagnostics == []
     assert result.tree is not None
     assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == []
 
 
 def test_action_definition_missing_open_angle(p: parser.Parser) -> None:
@@ -489,7 +504,7 @@ def test_action_block_extra_space_before_brace(p: parser.Parser) -> None:
         + "}\n"
     )
     assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.MissingTerminatorOrBrace)
+    assert isinstance(result.exception, parser_exceptions.ExtraWhitespace)
     assert result.exception.line == 1
     assert result.exception.column == 61
 

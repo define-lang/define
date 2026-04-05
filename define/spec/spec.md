@@ -978,7 +978,7 @@ Proposals:
 - [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
 
 A potential action is defined by a quality definition statement with the type
-`action`, followed by a terminator or an Action Definition Block.
+`action`, followed by an Action Definition Block.
 
 An Action Definition Block may contain any number of local position definitions
 (which are optional) followed by two other blocks: the Trigger Conditions Block
@@ -988,7 +988,7 @@ The Action Definition Block creates a new local scope.
 
 ```ebnf
 action_name = "action", "<", global_name, ">" ;
-action_definition = "define the potential", " ", action_name, ( terminator | action_definition_block ) ;
+action_definition = "define the potential", " ", action_name, action_definition_block ;
 action_definition_block = block_open, { local_position_definition }, trigger_and_action, block_close ;
 ```
 

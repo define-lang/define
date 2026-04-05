@@ -261,10 +261,7 @@ class DefinitionStructuralValidator:
         self._validate_fqun_matches_expected()
         self._validate_not_duplicate_in_file()
 
-        if (
-            isinstance(self._definition, ast.ActionDefinition)
-            and self._definition.definition_block is not None
-        ):
+        if isinstance(self._definition, ast.ActionDefinition):
             self._validate_action_definition_block(self._definition.definition_block)
         if isinstance(self._definition, ast.PositionDefinition):
             self._validate_global_position_definition_block(self._definition)

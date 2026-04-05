@@ -3,7 +3,6 @@
 
 class {{ definition.class_name }}(literal.Action):
     _typed_name: ClassVar[str] = "{{ definition.typed_name }}"
-{% if definition.has_body %}
 
     def __init__(self):
         super().__init__(
@@ -30,4 +29,3 @@ class {{ definition.class_name }}(literal.Action):
     def execute(self):
 {% set statements = definition.body_statements %}
 {% include "action_statements.j2" %}
-{% endif %}

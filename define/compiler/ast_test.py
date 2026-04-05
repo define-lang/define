@@ -358,10 +358,6 @@ class TestInterfacePositionConstraints:
             "position<pos_a>": frozenset(),
         }
 
-    def test_no_block(self):
-        action = _parse_action(f"define the potential action<{_FQUN}:/act>.\n")
-        assert action.interface_position_constraints == {}
-
 
 class TestPositionConstraintNames:
     def test_with_constraints(self):

@@ -43,8 +43,24 @@ def test_duplicate_position_error():
 
 def test_duplicate_action_error():
     source = (
-        "define the potential action<my.domain.com:my_lib:/same>.\n"
-        "define the potential action<my.domain.com:my_lib:/same>.\n"
+        "define the potential action<my.domain.com:my_lib:/same> {\n"
+        "    define the position<_noop>.\n"
+        "    it happens when {\n"
+        "        the position<_noop> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<__noop>.\n"
+        "        create a dimension point in position<__noop>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/same> {\n"
+        "    define the position<_noop>.\n"
+        "    it happens when {\n"
+        "        the position<_noop> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<__noop>.\n"
+        "        create a dimension point in position<__noop>.\n"
+        "    }\n"
+        "}\n"
     )
     results = (
         program_validator.ProgramStructuralValidator()
@@ -57,14 +73,22 @@ def test_duplicate_action_error():
     assert diags[0].definition_type == "action"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
-    assert diags[0].location.line == 2
+    assert diags[0].location.line == 10
     assert diags[0].location.column == 1
 
 
 def test_same_path_different_types_ok():
     source = (
         "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "define the potential action<my.domain.com:my_lib:/same>.\n"
+        "define the potential action<my.domain.com:my_lib:/same> {\n"
+        "    define the position<_noop>.\n"
+        "    it happens when {\n"
+        "        the position<_noop> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<__noop>.\n"
+        "        create a dimension point in position<__noop>.\n"
+        "    }\n"
+        "}\n"
     )
     results = (
         program_validator.ProgramStructuralValidator()

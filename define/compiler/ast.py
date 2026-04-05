@@ -449,12 +449,11 @@ class ActionDefinitionBlock(ASTNode):
     action_statements: ActionStatementsBlock
 
 
-# TODO: I think we should ban empty actions. I can't think of a use case for them.
 @dataclass(frozen=True, slots=True, init=False)
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
-    definition_block: ActionDefinitionBlock | None
+    definition_block: ActionDefinitionBlock
 
     # Computed properties
     interface_positions: dict[str, LocalPositionDefinition]
@@ -466,7 +465,7 @@ class ActionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        definition_block: ActionDefinitionBlock | None = None,
+        definition_block: ActionDefinitionBlock,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
         super().__init__(
@@ -499,13 +498,9 @@ class ActionDefinition(QualityDefinition):
     @property
     def interface_position_names(self) -> list[TypedName]:
         """Return the TypedName objects for all interface positions."""
-        if self.definition_block is None:
-            return []
         return [pos.typed_name for pos in self.definition_block.interface_positions]
 
     def _compute_interface_positions(self) -> dict[str, LocalPositionDefinition]:
-        if self.definition_block is None:
-            return {}
         result: dict[str, LocalPositionDefinition] = {}
         for local_def in self.definition_block.interface_positions:
             local_name = local_def.typed_name.source_typed_name
@@ -514,8 +509,6 @@ class ActionDefinition(QualityDefinition):
         return result
 
     def _compute_interface_position_constraints(self) -> dict[str, frozenset[str]]:
-        if self.definition_block is None:
-            return {}
         fqun = self.typed_name.name_content.fqun
         result: dict[str, frozenset[str]] = {}
         for local_name, local_def in self.interface_positions.items():
@@ -529,18 +522,15 @@ class ActionDefinition(QualityDefinition):
         return result
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:
-        if self.definition_block is None:
-            return None
-        conditions = self.definition_block.trigger_conditions.conditions
-        if not conditions:
-            return None
-        trigger_name = conditions[0].typed_name.source_typed_name
+        trigger_name = self.definition_block.trigger_conditions.conditions[
+            0
+        ].typed_name.source_typed_name
         return self.interface_positions.get(trigger_name)
 
     @property
     def trigger_position_reference(self) -> PositionReference | None:
         """Return the trigger condition's PositionReference, if valid."""
-        if self.definition_block is None or self.trigger_position is None:
+        if self.trigger_position is None:
             return None
         return self.definition_block.trigger_conditions.conditions[0].position_reference
 

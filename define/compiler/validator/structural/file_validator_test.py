@@ -83,7 +83,17 @@ class TestFileStructuralValidatorSuccess:
         )
 
     def test_valid_action(self, tmp_path: Path, lark_parser: parser.Parser):
-        source = "define the potential action<my.domain.com:my_lib:/test>.\n"
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<_noop>.\n"
+            "    it happens when {\n"
+            "        the position<_noop> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<__noop>.\n"
+            "        create a dimension point in position<__noop>.\n"
+            "    }\n"
+            "}\n"
+        )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
         ctx = _make_context(tmp_path)
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)

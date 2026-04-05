@@ -62,7 +62,15 @@ def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
                 "}\n"
             ),
             "required.dfn": (
-                "define the potential action<my.domain.com:my_lib:/required>.\n"
+                "define the potential action<my.domain.com:my_lib:/required> {\n"
+                "    define the position<_noop>.\n"
+                "    it happens when {\n"
+                "        the position<_noop> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<__noop>.\n"
+                "        create a dimension point in position<__noop>.\n"
+                "    }\n"
+                "}\n"
             ),
         }
     )

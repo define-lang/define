@@ -79,7 +79,6 @@ class ActionDefinitionContext:
     class_name: str
     typed_name: str
     module_name: str
-    has_body: bool = False
     interface_positions: list[InterfacePositionContext] = field(default_factory=list)
     trigger_position_name: str = ""
     body_statements: list[ActionStatementContext] = field(default_factory=list)
@@ -87,7 +86,7 @@ class ActionDefinitionContext:
     @property
     def needs_override(self) -> bool:
         """Whether the generated class needs the @override decorator."""
-        return self.has_body
+        return True
 
     @property
     def imports(self) -> list[naming.ClassReference]:

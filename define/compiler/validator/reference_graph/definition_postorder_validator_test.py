@@ -146,12 +146,6 @@ class TestRequirementInference:
         contract = _get_contract(source)
         assert ("position<local_only>",) not in contract.requirements
 
-    def test_no_body_returns_empty_contract(self):
-        source = "define the potential action<my.domain.com:my_lib:/test>.\n"
-        contract = _get_contract(source)
-        assert contract.requirements == {}
-        assert contract.guarantees == {}
-
 
 class TestGuaranteeGeneration:
     def test_created_position_occupied_at_end(self):

@@ -23,8 +23,24 @@ def test_multiple_position_definitions(p: parser.Parser) -> None:
 
 def test_multiple_action_definitions(p: parser.Parser) -> None:
     result = p.parse(
-        "define the potential action<my_mv:example.com:my_lib:/first>.\n"
-        + "define the potential action<my_mv:example.com:my_lib:/second>.\n"
+        "define the potential action<my_mv:example.com:my_lib:/first> {\n"
+        + "    define the position<_noop>.\n"
+        + "    it happens when {\n"
+        + "        the position<_noop> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<__noop>.\n"
+        + "        create a dimension point in position<__noop>.\n"
+        + "    }\n"
+        + "}\n"
+        + "define the potential action<my_mv:example.com:my_lib:/second> {\n"
+        + "    define the position<_noop>.\n"
+        + "    it happens when {\n"
+        + "        the position<_noop> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<__noop>.\n"
+        + "        create a dimension point in position<__noop>.\n"
+        + "    }\n"
+        + "}\n"
     )
     assert result.diagnostics == []
     assert result.tree is not None
@@ -37,7 +53,15 @@ def test_multiple_action_definitions(p: parser.Parser) -> None:
 def test_mixed_position_and_action_definitions(p: parser.Parser) -> None:
     result = p.parse(
         "define the potential position<example.com:my_lib:/pos>.\n"
-        + "define the potential action<my_mv:example.com:my_lib:/act>.\n"
+        + "define the potential action<my_mv:example.com:my_lib:/act> {\n"
+        + "    define the position<_noop>.\n"
+        + "    it happens when {\n"
+        + "        the position<_noop> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<__noop>.\n"
+        + "        create a dimension point in position<__noop>.\n"
+        + "    }\n"
+        + "}\n"
     )
     assert result.diagnostics == []
     assert result.tree is not None

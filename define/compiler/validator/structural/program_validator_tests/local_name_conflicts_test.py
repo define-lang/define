@@ -118,7 +118,17 @@ def test_three_same_name_two_diagnostics():
 
 
 def test_terminated_action_no_error():
-    source = "define the potential action<my.domain.com:my_lib:/act>.\n"
+    source = (
+        "define the potential action<my.domain.com:my_lib:/act> {\n"
+        "    define the position<_noop>.\n"
+        "    it happens when {\n"
+        "        the position<_noop> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<__noop>.\n"
+        "        create a dimension point in position<__noop>.\n"
+        "    }\n"
+        "}\n"
+    )
     results = (
         program_validator.ProgramStructuralValidator()
         .validate_program_non_filesystem(source)

@@ -54,7 +54,6 @@ def _make_position_reference(chained_name: str) -> ast.PositionReference:
     program = transformer.DefineTransformer().transform(parse_result.tree)
     action_def = program.definitions[0]
     assert isinstance(action_def, ast.ActionDefinition)
-    assert action_def.definition_block is not None
     for stmt in action_def.definition_block.action_statements.statements:
         if isinstance(stmt, ast.CreateDimensionPointStatement):
             return stmt.target_position

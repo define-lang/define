@@ -117,7 +117,17 @@ def test_referenced_global_name_wrong_type_position(
 ):
     result = validate_project(
         {
-            "target.dfn": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            "target.dfn": (
+                "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target> {\n"
+                "    define the position<_noop>.\n"
+                "    it happens when {\n"
+                "        the position<_noop> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<__noop>.\n"
+                "        create a dimension point in position<__noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
                 "    it may only contain dimension points where {\n"
@@ -144,7 +154,17 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
 ):
     result = validate_project(
         {
-            "target.dfn": "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target>.\n",
+            "target.dfn": (
+                "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target> {\n"
+                "    define the position<_noop>.\n"
+                "    it happens when {\n"
+                "        the position<_noop> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<__noop>.\n"
+                "        create a dimension point in position<__noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
                 "    it may only contain dimension points where {\n"

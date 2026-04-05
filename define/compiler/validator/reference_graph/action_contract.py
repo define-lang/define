@@ -132,12 +132,3 @@ class ActionContract(ActionStatementsBlockContract):
 @dataclass(frozen=True)
 class PositionInitBlockContract(ActionStatementsBlockContract):
     """Contract for a position initialization block."""
-
-
-@dataclass(frozen=True, init=False)
-class EmptyContract(ActionContract):
-    """An action contract with no requirements, guarantees, or trigger."""
-
-    def __init__(self):
-        """Initialize with empty requirements, guarantees, and no trigger."""
-        super().__init__(requirements={}, guarantees={}, trigger_position_name="")

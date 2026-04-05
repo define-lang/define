@@ -67,9 +67,7 @@ class DefineTransformer(
     ) -> ast.ActionDefinition:
         """Transform an action definition."""
         name = cast("ast.DefinitionGlobalNameContent", items[0])
-        definition_block = (
-            cast("ast.ActionDefinitionBlock", items[1]) if len(items) > 1 else None
-        )
+        definition_block = cast("ast.ActionDefinitionBlock", items[1])
         return ast.ActionDefinition(
             name=name,
             definition_block=definition_block,

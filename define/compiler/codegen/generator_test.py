@@ -38,7 +38,19 @@ class TestCodeGenerator:
         self, validate_project: ValidateProject, tmp_path: Path
     ):
         program_result = validate_project(
-            {"test.dfn": "define the potential action<my.domain.com:my_lib:/test>.\n"},
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pp>.\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<noop>.\n"
+                    "        create a dimension point in position<noop>.\n"
+                    "    }\n"
+                    "}\n"
+                )
+            },
         )
 
         result = _generate(program_result, tmp_path)
@@ -53,8 +65,18 @@ class TestCodeGenerator:
     ):
         program_result = validate_project(
             {
-                "test.dfn": "define the potential position<my.domain.com:my_lib:/test>.\n"
-                + "define the potential action<my.domain.com:my_lib:/test>.\n",
+                "test.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/test>.\n"
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pp>.\n"
+                    "    it happens when {\n"
+                    "        the position<pp> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<noop>.\n"
+                    "        create a dimension point in position<noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
             },
         )
 

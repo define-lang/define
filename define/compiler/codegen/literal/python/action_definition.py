@@ -31,12 +31,6 @@ class ActionDefinitionGenerator:
         module_name = self._converter.module_name(name_content)
 
         block = self._definition.definition_block
-        if block is None:
-            return template_context.ActionDefinitionContext(
-                class_name=class_name,
-                typed_name=self._definition.typed_name.source_typed_name,
-                module_name=module_name,
-            )
 
         interface_positions = [
             template_context.InterfacePositionContext(
@@ -69,7 +63,6 @@ class ActionDefinitionGenerator:
             class_name=class_name,
             typed_name=self._definition.typed_name.source_typed_name,
             module_name=module_name,
-            has_body=True,
             interface_positions=interface_positions,
             trigger_position_name=trigger_position_name,
             body_statements=block_gen.generate(),

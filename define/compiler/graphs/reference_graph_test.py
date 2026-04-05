@@ -27,6 +27,25 @@ def _make_position(path_name: str) -> ast.PositionDefinition:
     )
 
 
+_TRIGGER_REF = ast.LocalTypedNameReference(
+    name_type=ast.NameType.POSITION,
+    name_content=ast.LocalNameContent(name="pp", location=_LOC),
+    location=_LOC,
+)
+
+_MINIMAL_ACTION_BLOCK = ast.ActionDefinitionBlock(
+    interface_positions=[],
+    trigger_conditions=ast.TriggerConditionsBlock(
+        conditions=[
+            ast.TriggerConditionStatement(typed_name=_TRIGGER_REF, location=_LOC)
+        ],
+        location=_LOC,
+    ),
+    action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
+    location=_LOC,
+)
+
+
 def _make_action(path_name: str) -> ast.ActionDefinition:
     return ast.ActionDefinition(
         name=ast.DefinitionGlobalNameContent(
@@ -34,6 +53,7 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
             fqun=_FQUN,
             location=_LOC,
         ),
+        definition_block=_MINIMAL_ACTION_BLOCK,
         location=_LOC,
     )
 

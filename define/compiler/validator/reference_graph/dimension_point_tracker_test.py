@@ -28,12 +28,31 @@ _FQUN = ast.Fqun(
     location=_LOC,
 )
 
+_TRIGGER_REF = ast.LocalTypedNameReference(
+    name_type=ast.NameType.POSITION,
+    name_content=ast.LocalNameContent(name="pp", location=_LOC),
+    location=_LOC,
+)
+
+_MINIMAL_ACTION_BLOCK = ast.ActionDefinitionBlock(
+    interface_positions=[],
+    trigger_conditions=ast.TriggerConditionsBlock(
+        conditions=[
+            ast.TriggerConditionStatement(typed_name=_TRIGGER_REF, location=_LOC)
+        ],
+        location=_LOC,
+    ),
+    action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
+    location=_LOC,
+)
+
 _ENCLOSING_DEF = ast.ActionDefinition(
     name=ast.DefinitionGlobalNameContent(
         fqun=_FQUN,
         path=ast.GlobalPathName(name="/my_action", location=_LOC),
         location=_LOC,
     ),
+    definition_block=_MINIMAL_ACTION_BLOCK,
     location=_LOC,
 )
 

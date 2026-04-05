@@ -78,8 +78,17 @@ def _position_simple(universe_name: str, rel_def_file: str) -> str:
 
 
 def _action_simple(universe_name: str, rel_def_file: str) -> str:
+    name = _global_name(universe_name, rel_def_file)
     return (
-        f"define the potential action<{_global_name(universe_name, rel_def_file)}>.\n"
+        f"define the potential action<{name}> {{\n"
+        f"    define the position<_noop>.\n"
+        f"    it happens when {{\n"
+        f"        the position<_noop> has a dimension point.\n"
+        f"    }} and it does {{\n"
+        f"        define the position<__noop>.\n"
+        f"        create a dimension point in position<__noop>.\n"
+        f"    }}\n"
+        f"}}\n"
     )
 
 
@@ -462,7 +471,17 @@ def position_definitions(draw: st.DrawFn) -> str:
 @st.composite
 def action_definitions_simple(draw: st.DrawFn) -> str:
     name = draw(global_names())
-    return f"define the potential action<{name}>.\n"
+    return (
+        f"define the potential action<{name}> {{\n"
+        f"    define the position<_noop>.\n"
+        f"    it happens when {{\n"
+        f"        the position<_noop> has a dimension point.\n"
+        f"    }} and it does {{\n"
+        f"        define the position<__noop>.\n"
+        f"        create a dimension point in position<__noop>.\n"
+        f"    }}\n"
+        f"}}\n"
+    )
 
 
 @st.composite
@@ -704,7 +723,9 @@ def valid_sources(draw: st.DrawFn) -> str:
     if include_action:
         action_kind = draw(st.sampled_from(["simple", "block"]))
         if action_kind == "simple":
-            fragments.append(f"define the potential action<{_VALID_NAME}>.\n")
+            fragments.append(
+                f"define the potential action<{_VALID_NAME}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a dimension point.\n    }} and it does {{\n        define the position<__noop>.\n        create a dimension point in position<__noop>.\n    }}\n}}\n"
+            )
         else:
             outer_indent = "    "
             inner_indent = "        "
@@ -1412,7 +1433,7 @@ def _global_name_context_template(context: str) -> str:
     if context == "position_def":
         return f"define the potential position<{_NAME_MARKER}>.\n"
     if context == "action_def":
-        return f"define the potential action<{_NAME_MARKER}>.\n"
+        return f"define the potential action<{_NAME_MARKER}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a dimension point.\n    }} and it does {{\n        define the position<__noop>.\n        create a dimension point in position<__noop>.\n    }}\n}}\n"
     if context == "position_req":
         return _position_with_requirements(
             _PROJECT_FQUN, "test.dfn", [("position", _NAME_MARKER)]

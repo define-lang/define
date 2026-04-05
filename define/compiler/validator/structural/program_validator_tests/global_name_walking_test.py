@@ -487,7 +487,17 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
                 "    }\n"
                 "}\n"
             ),
-            "wrong_type.dfn": "define the potential action<my.domain.com:my_lib:/wrong_type>.\n",
+            "wrong_type.dfn": (
+                "define the potential action<my.domain.com:my_lib:/wrong_type> {\n"
+                "    define the position<_noop>.\n"
+                "    it happens when {\n"
+                "        the position<_noop> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<__noop>.\n"
+                "        create a dimension point in position<__noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
         },
     )
     assert len(result.file_results) == 2

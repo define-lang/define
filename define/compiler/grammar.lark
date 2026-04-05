@@ -82,7 +82,7 @@ move_dimension_point_statement: MOVE_THE_DIMENSION_POINT_IN position_reference T
 
 # Action Definition Syntax
 
-action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content (terminator | action_definition_block)
+action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content action_definition_block
 
 local_position_definition: DEFINE_THE_POSITION local_name_content position_definition_terminator_or_block
 trigger_condition_statement: THE typed_local_name_reference HAS_A_DIMENSION_POINT terminator

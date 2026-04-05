@@ -100,7 +100,17 @@ def test_wrong_type_detected_without_deferral(
                     "it has the position</checker>.",
                 ]
             ),
-            "target.dfn": "define the potential action<my.domain.com:my_lib:/target>.\n",
+            "target.dfn": (
+                "define the potential action<my.domain.com:my_lib:/target> {\n"
+                "    define the position<_noop>.\n"
+                "    it happens when {\n"
+                "        the position<_noop> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<__noop>.\n"
+                "        create a dimension point in position<__noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "checker.dfn": _position_with_ref("checker", "target"),
         },
         entry_file="root.dfn",

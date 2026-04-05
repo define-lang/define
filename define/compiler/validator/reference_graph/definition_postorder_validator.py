@@ -752,10 +752,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, edges, and contract."""
         action_def = self._action_definition
-        if action_def.definition_block is not None:
-            contract = self._analyze_action_definition(action_def.definition_block)
-        else:
-            contract = action_contract.EmptyContract()
+        contract = self._analyze_action_definition(action_def.definition_block)
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
             edges=self._action_edges,

@@ -1,1 +1,9 @@
-define the potential action<my.domain.com:my_lib:/start>.
+define the potential action<my.domain.com:my_lib:/start> {
+    define the position<pp>.
+    it happens when {
+        the position<pp> has a dimension point.
+    } and it does {
+        define the position<noop>.
+        create a dimension point in position<noop>.
+    }
+}

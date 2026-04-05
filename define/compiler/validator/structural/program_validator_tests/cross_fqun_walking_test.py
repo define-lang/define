@@ -694,7 +694,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
                 f"    }}\n"
                 f"}}\n"
             ),
-            "wrong_type.dfn": f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type>.\n",
+            "wrong_type.dfn": f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a dimension point.\n    }} and it does {{\n        define the position<__noop>.\n        create a dimension point in position<__noop>.\n    }}\n}}\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},

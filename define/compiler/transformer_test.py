@@ -43,7 +43,17 @@ def test_position_definition_transforms_to_program():
 
 
 def test_action_definition_transforms_to_program():
-    program = _parse_and_transform("define the potential action<standard:/path>.\n")
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<_noop>.\n"
+        + "    it happens when {\n"
+        + "        the position<_noop> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<__noop>.\n"
+        + "        create a dimension point in position<__noop>.\n"
+        + "    }\n"
+        + "}\n"
+    )
     assert isinstance(program, ast.Program)
     assert len(program.definitions) == 1
     definition = program.definitions[0]
@@ -122,7 +132,15 @@ def test_global_name_universe_only():
 def test_multiple_definitions_position_and_action():
     program = _parse_and_transform(
         "define the potential position<standard:/pos>.\n"
-        + "define the potential action<standard:/act>.\n"
+        + "define the potential action<standard:/act> {\n"
+        + "    define the position<_noop>.\n"
+        + "    it happens when {\n"
+        + "        the position<_noop> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<__noop>.\n"
+        + "        create a dimension point in position<__noop>.\n"
+        + "    }\n"
+        + "}\n"
     )
     assert len(program.definitions) == 2
     assert isinstance(program.definitions[0], ast.PositionDefinition)
@@ -137,13 +155,6 @@ def test_multiple_definitions_position_and_action():
     assert program.definitions[1].location.line == 2
 
 
-def test_action_definition_terminator_has_no_block():
-    program = _parse_and_transform("define the potential action<standard:/path>.\n")
-    definition = program.definitions[0]
-    assert isinstance(definition, ast.ActionDefinition)
-    assert definition.definition_block is None
-
-
 def test_action_definition_block_transforms():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
@@ -156,7 +167,6 @@ def test_action_definition_block_transforms():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert definition.definition_block is not None
     assert len(definition.definition_block.interface_positions) == 1
     assert (
         definition.definition_block.interface_positions[0].typed_name.name_content.name
@@ -178,7 +188,6 @@ def test_action_definition_block_with_interface_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert definition.definition_block is not None
     assert len(definition.definition_block.interface_positions) == 1
     assert (
         definition.definition_block.interface_positions[0].typed_name.name_content.name
@@ -199,7 +208,6 @@ def test_action_definition_block_with_multiple_interface_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert definition.definition_block is not None
     assert len(definition.definition_block.interface_positions) == 2
     assert (
         definition.definition_block.interface_positions[0].typed_name.name_content.name

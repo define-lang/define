@@ -947,7 +947,17 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "act_b.dfn": "define the potential action<my.domain.com:my_lib:/act_b>.\n",
+                "act_b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<_noop>.\n"
+                    "    it happens when {\n"
+                    "        the position<_noop> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<__noop>.\n"
+                    "        create a dimension point in position<__noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
             }
         )
         all_diags = result.program_result.all_diagnostics
@@ -1189,7 +1199,17 @@ class TestCreateDimensionPoint:
                     "    }\n"
                     "}\n"
                 ),
-                "b.dfn": "define the potential action<my.domain.com:my_lib:/b>.\n",
+                "b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/b> {\n"
+                    "    define the position<_noop>.\n"
+                    "    it happens when {\n"
+                    "        the position<_noop> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<__noop>.\n"
+                    "        create a dimension point in position<__noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
             }
         )
         test_result = next(
