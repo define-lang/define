@@ -740,63 +740,9 @@ def test_trigger_condition_statement_transforms_local_position():
     assert len(block.trigger_conditions.conditions) == 1
     condition = block.trigger_conditions.conditions[0]
     assert isinstance(condition, ast.TriggerConditionStatement)
-    assert len(condition.position_reference.typed_names) == 1
-    ref = condition.position_reference.typed_names[0]
-    assert isinstance(ref, ast.LocalTypedNameReference)
-    assert ref.name_type == ast.NameType.POSITION
-    assert ref.name_content.name == "run"
-
-
-def test_trigger_condition_statement_transforms_global_position():
-    program = _parse_and_transform(
-        "define the potential action<standard:/path> {\n"
-        + "    it happens when {\n"
-        + "        the position</some_pos> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    definition = program.definitions[0]
-    assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.trigger_conditions.conditions) == 1
-    condition = block.trigger_conditions.conditions[0]
-    assert isinstance(condition, ast.TriggerConditionStatement)
-    assert len(condition.position_reference.typed_names) == 1
-    ref = condition.position_reference.typed_names[0]
-    assert isinstance(ref, ast.GlobalTypedNameReference)
-    assert ref.name_type == ast.NameType.POSITION
-    assert ref.name_content.fqun is None
-    assert ref.name_content.path.name == "/some_pos"
-
-
-def test_trigger_condition_chained_position_reference():
-    program = _parse_and_transform(
-        "define the potential action<standard:/path> {\n"
-        + "    define the position<run>.\n"
-        + "    it happens when {\n"
-        + "        the position<run>::action</act>::position</inner> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    definition = program.definitions[0]
-    assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    condition = block.trigger_conditions.conditions[0]
-    chain = condition.position_reference.typed_names
-    assert len(chain) == 3
-    assert isinstance(chain[0], ast.LocalTypedNameReference)
-    assert chain[0].name_type == ast.NameType.POSITION
-    assert chain[0].name_content.name == "run"
-    assert isinstance(chain[1], ast.GlobalTypedNameReference)
-    assert chain[1].name_type == ast.NameType.ACTION
-    assert chain[1].name_content.path.name == "/act"
-    assert isinstance(chain[2], ast.GlobalTypedNameReference)
-    assert chain[2].name_type == ast.NameType.POSITION
-    assert chain[2].name_content.path.name == "/inner"
+    assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
+    assert condition.typed_name.name_type == ast.NameType.POSITION
+    assert condition.typed_name.name_content.name == "run"
 
 
 def test_trigger_condition_statement_source_positions():

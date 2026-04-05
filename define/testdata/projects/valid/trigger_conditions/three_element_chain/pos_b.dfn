@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_trigger_three_chain:/pos_b> {
-    it may only contain dimension points where {
-        it has the position</pos_c>.
-    }
-}

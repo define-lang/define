@@ -277,12 +277,6 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
     ],
-    "trigger_conditions/chain_ending_with_action.dfn": [
-        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
-        diagnostics.PositionReferenceChainEndDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
-        diagnostics.LocalActionNameDiagnostic,
-    ],
     "trigger_conditions/invalid_local_name_format.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.InvalidLocalNameFormatDiagnostic,
@@ -365,9 +359,6 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/fqun_mismatch": [diagnostics.FqunMismatchDiagnostic],
     "syntax/path_mismatch": [diagnostics.PathMismatchDiagnostic],
     "syntax/universe_uppercase": [diagnostics.UniverseNameInvalidCharDiagnostic],
-    "trigger_conditions/chain_not_in_constraints": [
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
-    ],
     "position_init/self_reference_in_constraints": [
         diagnostics.CircularGlobalReferenceDiagnostic,
     ],

@@ -802,18 +802,15 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
-        for condition in definition_block.trigger_conditions.conditions:
-            self._validate_chained_name(condition.position_reference, scope)
-            if scope.is_defined_local(condition.position_reference):
-                qualities = scope.get_constraint_names(
-                    condition.position_reference.typed_names[0]
-                )
+        trigger_ref = self._action_definition.trigger_position_reference
+        if trigger_ref is not None:
+            typed_name = trigger_ref.typed_names[0]
+            if scope.is_defined(typed_name):
+                qualities = scope.get_constraint_names(typed_name)
                 # DLP 37: We assume trigger points are occupied upon the start
                 # of the action, but we can only assume they have the qualities
                 # they are declared with.
-                self._tracker.create(
-                    condition.position_reference, qualities, from_caller=True
-                )
+                self._tracker.create(trigger_ref, qualities, from_caller=True)
 
         scope.enter_child_scope()
         self._analyze_statements(definition_block.action_statements, scope)

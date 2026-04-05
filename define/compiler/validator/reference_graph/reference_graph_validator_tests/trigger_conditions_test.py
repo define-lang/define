@@ -2,9 +2,7 @@
 from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
-    ValidateProjectWithReferenceGraph,
 )
-from define.compiler.validator.test_helpers import assert_no_errors
 
 
 class TestTriggerConditionValidation:
@@ -49,33 +47,6 @@ class TestTriggerConditionValidation:
         assert diags[0].location.line == 3
         assert diags[0].location.column == 22
 
-    def test_valid_global_name(
-        self,
-        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    it happens when {\n"
-                    "        the position</other> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
-            }
-        )
-        all_diags = result.program_result.all_diagnostics
-        assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
-        assert all_diags[0].source_global_name == "position</other>"
-        assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
-        assert all_diags[0].location.line == 3
-        assert all_diags[0].location.column == 13
-
     def test_invalid_local_name_format(
         self,
         validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
@@ -102,139 +73,3 @@ class TestTriggerConditionValidation:
         assert diags[1].char == "B"
         assert diags[1].location.line == 3
         assert diags[1].location.column == 22
-
-    def test_two_item_chain(
-        self,
-        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<my_pos> {\n"
-                    "        it may only contain dimension points where {\n"
-                    "            it has the position</inner>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<my_pos>::position</inner> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "inner.dfn": "define the potential position<my.domain.com:my_lib:/inner>.\n",
-            }
-        )
-        assert_no_errors(result.program_result)
-
-    def test_chain_ending_with_action(
-        self,
-        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
-    ):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<pos_a>.\n"
-            "    it happens when {\n"
-            "        the position<pos_a>::action<act_b> has a dimension point.\n"
-            "    } and it does {\n"
-            "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
-            "    }\n"
-            "}\n"
-        )
-        results = validate_non_filesystem_with_reference_graph(source).file_results
-        diags = results[0].diagnostics
-        assert len(diags) == 4
-        assert isinstance(
-            diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
-        )
-        assert diags[0].local_name == "action<act_b>"
-        assert diags[0].preceding_name == "position<pos_a>"
-        assert diags[0].location.line == 4
-        assert isinstance(diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
-        assert diags[1].location.line == 4
-        assert diags[1].location.column == 30
-        assert isinstance(diags[2], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[2].element_name == "action<act_b>"
-        assert diags[2].parent_name == "position<pos_a>"
-        assert diags[2].location.line == 4
-        assert diags[2].location.column == 30
-        assert isinstance(diags[3], diagnostics.LocalActionNameDiagnostic)
-        assert diags[3].local_name == "act_b"
-        assert diags[3].location.line == 4
-        assert diags[3].location.column == 37
-
-    def test_three_item_chain_valid(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
-                    "            it has the position</pos_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a>::position</pos_b>::position</pos_c> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_b.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain dimension points where {\n"
-                    "        it has the position</pos_c>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-            }
-        )
-        assert_no_errors(result.program_result)
-
-    def test_three_item_chain_invalid(
-        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
-    ):
-        result = validate_project_with_reference_graph(
-            {
-                "test.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/test> {\n"
-                    "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
-                    "            it has the position</pos_b>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<pos_a>::position</pos_b>::position</wrong> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_b.dfn": (
-                    "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain dimension points where {\n"
-                    "        it has the position</pos_c>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
-                "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
-            }
-        )
-        all_diags = result.program_result.all_diagnostics
-        assert len(all_diags) == 1
-        assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
-        )
-        assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
-        assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
-        assert all_diags[0].location.line == 8
-        assert all_diags[0].location.column == 48

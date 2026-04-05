@@ -49,11 +49,9 @@ class ActionDefinitionGenerator:
             for local_def in block.interface_positions
         ]
 
-        trigger_position_name = (
-            block.trigger_conditions.conditions[0]
-            .position_reference.typed_names[0]
-            .source_typed_name
-        )
+        trigger_position_name = block.trigger_conditions.conditions[
+            0
+        ].typed_name.source_typed_name
 
         interface_position_names = {
             local_def.typed_name.source_typed_name

@@ -405,7 +405,20 @@ class GlobalPathName(ASTNode):
 class TriggerConditionStatement(ASTNode):
     """Represents a trigger condition statement."""
 
-    position_reference: PositionReference
+    typed_name: LocalTypedNameReference
+    position_reference: PositionReference = field(init=False)
+
+    def __post_init__(self):
+        """Pre-compute the position_reference from the typed name."""
+        object.__setattr__(
+            self,
+            "position_reference",
+            PositionReference(
+                typed_names=[self.typed_name],
+                location=self.typed_name.location,
+                from_source=True,
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -521,11 +534,15 @@ class ActionDefinition(QualityDefinition):
         conditions = self.definition_block.trigger_conditions.conditions
         if not conditions:
             return None
-        first_ref = conditions[0].position_reference.typed_names[0]
-        if not isinstance(first_ref, LocalTypedNameReference):
-            return None
-        trigger_name = first_ref.source_typed_name
+        trigger_name = conditions[0].typed_name.source_typed_name
         return self.interface_positions.get(trigger_name)
+
+    @property
+    def trigger_position_reference(self) -> PositionReference | None:
+        """Return the trigger condition's PositionReference, if valid."""
+        if self.definition_block is None or self.trigger_position is None:
+            return None
+        return self.definition_block.trigger_conditions.conditions[0].position_reference
 
 
 @dataclass(frozen=True, slots=True)

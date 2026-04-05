@@ -359,8 +359,7 @@ class DefinitionStructuralValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         for condition in trigger_conditions.conditions:
-            pos_ref = condition.position_reference
-            _ = self._validate_full_chained_name(pos_ref, scope)
+            _ = self._validate_full_chained_name(condition.position_reference, scope)
 
     def _validate_action_statements(
         self,
@@ -508,6 +507,7 @@ class DefinitionStructuralValidator:
         if not scope.is_defined(first) and isinstance(
             first, ast.LocalTypedNameReference
         ):
+            # TODO: Use first.location instead of name_content.location.
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
                     location=first.name_content.location,
@@ -586,6 +586,7 @@ class DefinitionStructuralValidator:
                 chain_element, allow_self_reference=allow_self_reference
             )
         elif chain_element.name_type == ast.NameType.ACTION:
+            # TODO: Use chain_element.location instead of name_content.location.
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
                     location=chain_element.name_content.location,

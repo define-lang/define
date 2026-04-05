@@ -1027,14 +1027,16 @@ A Trigger Conditions Block contains one Trigger Condition Statement.
 <!-- TODO: Update for multiple statements. -->
 
 The one current Trigger Condition Statement is the Position Presence Statement:
-`the position<name> has a dimension point.`
+`the position<name> has a dimension point.` It may only refer to a single local
+name that is an interface position of the current action. (The syntax does not
+accept chained names.)
 
 When compiling an action, the compiler treats the requirements specified by that
 action's Trigger Conditions Block as being satisfied.
 
 ```ebnf
 trigger_conditions = trigger_condition_statement ;
-trigger_condition_statement = "the", " ", position_reference, " has a dimension point", terminator ;
+trigger_condition_statement = "the", " ", typed_local_name_reference, " has a dimension point", terminator ;
 ```
 
 ### Action Triggering Semantics
