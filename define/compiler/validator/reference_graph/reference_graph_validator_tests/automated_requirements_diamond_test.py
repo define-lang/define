@@ -14,6 +14,19 @@ _ACT_B = "action<my.domain.com:my_lib:/act_b>"
 _ACT_C = "action<my.domain.com:my_lib:/act_c>"
 _SHARED = "action<my.domain.com:my_lib:/shared>"
 
+_SHARED_OCCUPIED_REQ = (
+    "define the potential action<my.domain.com:my_lib:/shared> {\n"
+    "    define the position<trigger_pos>.\n"
+    "    define the position<item>.\n"
+    "    define the position<dest>.\n"
+    "    it happens when {\n"
+    "        the position<trigger_pos> has a dimension point.\n"
+    "    } and it does {\n"
+    "        move the dimension point in position<item> to position<dest>.\n"
+    "    }\n"
+    "}\n"
+)
+
 _SHARED_EMPTY_REQ = (
     "define the potential action<my.domain.com:my_lib:/shared> {\n"
     "    define the position<trigger_pos>.\n"
@@ -222,9 +235,10 @@ def test_diamond_occupied_requirement_independent_per_path(
     """/shared requires position<item> occupied (first reference is a move-from).
 
     /act_b fills position<item> before triggering /shared — satisfying the
-    OCCUPIED requirement. /act_c does NOT fill position<item> — violating
-    the OCCUPIED requirement. The error is on /act_c, not on /test, because
-    OCCUPIED requirements do not propagate to callers.
+    OCCUPIED requirement internally, so it does NOT propagate to /test.
+    /act_c does NOT fill position<item>, so the OCCUPIED requirement
+    propagates through /act_c to /test. The error is on test.dfn because
+    /test does not fill position<item> for /act_c's path either.
     """
     result = validate_project_with_reference_graph(
         {
@@ -306,8 +320,220 @@ def test_diamond_occupied_requirement_independent_per_path(
     assert all_diags[0].action_name == _SHARED
     assert (
         all_diags[0].position_name
-        == "position<gateway>::action</shared>::position<item>"
+        == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
     )
-    assert all_diags[0].location.file_path == PurePosixPath("act_c.dfn")
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].inferred_at.line == 11
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("act_c.dfn")
+    assert len(all_diags[0].propagated_from_locations) == 1
+    assert all_diags[0].propagated_from_locations[0].line == 8
+    assert all_diags[0].propagated_from_locations[0].column == 37
+    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
+        "shared.dfn"
+    )
+    assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
+    assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)
+
+
+def test_diamond_top_caller_satisfies_occupied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/shared requires position<item> occupied (first reference is a move-from).
+
+    Neither /act_b nor /act_c fill position<item>, so the OCCUPIED requirement
+    propagates through both to /test. /test fills position<item> for both paths
+    before triggering, satisfying both propagated requirements.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "shared.dfn": _SHARED_OCCUPIED_REQ,
+            "act_b.dfn": _ACT_B_TRIGGERS_SHARED,
+            "act_c.dfn": _ACT_C_TRIGGERS_SHARED,
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box_b> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_b>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<box_c> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_c>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box_b>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a dimension point in position<box_c>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
+    assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)
+
+
+def test_diamond_one_path_violates_occupied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/shared requires position<item> occupied.
+
+    /test fills position<item> for /act_b's path but not for /act_c's path.
+    One ActionRequiresOccupiedPositionDiagnostic for the /act_c path at /test.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "shared.dfn": _SHARED_OCCUPIED_REQ,
+            "act_b.dfn": _ACT_B_TRIGGERS_SHARED,
+            "act_c.dfn": _ACT_C_TRIGGERS_SHARED,
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box_b> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_b>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<box_c> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_c>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box_b>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a dimension point in position<box_c>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].action_name == _SHARED
+    assert (
+        all_diags[0].position_name
+        == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
+    )
+    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].inferred_at.line == 11
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("act_c.dfn")
+    assert len(all_diags[0].propagated_from_locations) == 1
+    assert all_diags[0].propagated_from_locations[0].line == 8
+    assert all_diags[0].propagated_from_locations[0].column == 37
+    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
+        "shared.dfn"
+    )
+    assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
+    assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)
+
+
+def test_diamond_neither_path_satisfies_occupied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/shared requires position<item> occupied.
+
+    Neither /act_b nor /act_c fill position<item>, and /test doesn't fill it
+    for either path. Two ActionRequiresOccupiedPositionDiagnostics at /test.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "shared.dfn": _SHARED_OCCUPIED_REQ,
+            "act_b.dfn": _ACT_B_TRIGGERS_SHARED,
+            "act_c.dfn": _ACT_C_TRIGGERS_SHARED,
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box_b> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_b>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<box_c> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</act_c>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box_b>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a dimension point in position<box_c>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].action_name == _SHARED
+    assert (
+        all_diags[0].position_name
+        == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
+    )
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].inferred_at.line == 11
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("act_b.dfn")
+    assert len(all_diags[0].propagated_from_locations) == 1
+    assert all_diags[0].propagated_from_locations[0].line == 8
+    assert all_diags[0].propagated_from_locations[0].column == 37
+    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
+        "shared.dfn"
+    )
+    assert isinstance(
+        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[1].action_name == _SHARED
+    assert (
+        all_diags[1].position_name
+        == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
+    )
+    assert all_diags[1].location.line == 21
+    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].inferred_at.line == 11
+    assert all_diags[1].inferred_at.column == 37
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("act_c.dfn")
+    assert len(all_diags[1].propagated_from_locations) == 1
+    assert all_diags[1].propagated_from_locations[0].line == 8
+    assert all_diags[1].propagated_from_locations[0].column == 37
+    assert all_diags[1].propagated_from_locations[0].file_path == PurePosixPath(
+        "shared.dfn"
+    )
     assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
     assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)

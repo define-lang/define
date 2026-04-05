@@ -58,6 +58,20 @@ class InterfacePositionRequirement:
             return chain.source_chained_name
         return chain.canonical_chained_name(in_universe=fqun)
 
+    def propagation_chain_typed_names(self) -> list[ast.TypedNameReference]:
+        """Collect typed names from this requirement's full propagation chain.
+
+        Each propagation level's inferred_from contains only that level's
+        prefix. The concatenation gives the full position within the
+        innermost action's context.
+        """
+        result: list[ast.TypedNameReference] = list(self.inferred_from.typed_names)
+        current = self.propagated_from
+        while current is not None:
+            result.extend(current.inferred_from.typed_names)
+            current = current.propagated_from
+        return result
+
     def propagated_from_locations(self) -> list[ast.SourceLocation]:
         """Collect source locations from the propagated_from chain."""
         chain: list[ast.SourceLocation] = []

@@ -1,7 +1,10 @@
 # pyright: reportUnusedCallResult=false
 
 import typing
+import unittest.mock
+from pathlib import PurePosixPath
 
+from define.compiler import conftest
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
@@ -663,3 +666,166 @@ class TestPositionInitBlockContract:
         assert isinstance(dep_guarantee, action_contract.OccupiedByNewGuarantee)
         assert dep_guarantee.qualities == frozenset()
         assert dep_guarantee.caused_by.location.line == 8
+
+
+_INNER_ACTION = "action<my.domain.com:my_lib:/inner>"
+_MIDDLE_ACTION = "action<my.domain.com:my_lib:/middle>"
+_OUTER_ACTION = "action<my.domain.com:my_lib:/outer>"
+
+
+def test_interface_position_requirement_integration(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    captured_contracts: dict[str, action_contract.ActionContract] = {}
+    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+
+    def spy_analyze(
+        validator_self: definition_postorder_validator.ActionPostorderValidator,
+    ) -> definition_postorder_validator.PostorderValidationResult:
+        result = original_analyze(validator_self)
+        if isinstance(result.contract, action_contract.ActionContract):
+            name = validator_self._definition.typed_name.source_typed_name  # pyright: ignore[reportPrivateUsage]
+            captured_contracts[name] = result.contract
+        return result
+
+    with unittest.mock.patch.object(
+        definition_postorder_validator.ActionPostorderValidator,
+        "analyze",
+        autospec=True,
+        side_effect=spy_analyze,
+    ):
+        validate_project_with_reference_graph(
+            {
+                "inner.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    define the position<item>.\n"
+                    "    define the position<dest>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        move the dimension point in position<item> to position<dest>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "middle.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    define the position<mid_iface> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</inner>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "outer.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    define the position<out_iface> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</middle>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+            entry_file="outer.dfn",
+        )
+
+    outer_contract = captured_contracts[_OUTER_ACTION]
+    req_key = (
+        "position<out_iface>",
+        "action<my.domain.com:my_lib:/middle>",
+        "position<mid_iface>",
+        "action<my.domain.com:my_lib:/inner>",
+        "position<item>",
+    )
+    req = outer_contract.requirements[req_key]
+
+    # Fields on the outermost requirement
+    assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+    assert req.enclosing_action.typed_name.source_typed_name == _OUTER_ACTION
+    assert (
+        req.inferred_from.source_chained_name == "position<out_iface>::action</middle>"
+    )
+    assert req.inferred_from.location.line == 11
+    assert req.inferred_from.location.file_path == PurePosixPath("outer.dfn")
+
+    # Middle level of propagation chain
+    assert req.propagated_from is not None
+    mid_req = req.propagated_from
+    assert mid_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+    assert mid_req.enclosing_action.typed_name.source_typed_name == _MIDDLE_ACTION
+    assert (
+        mid_req.inferred_from.source_chained_name
+        == "position<mid_iface>::action</inner>"
+    )
+    assert mid_req.inferred_from.location.line == 11
+    assert mid_req.inferred_from.location.file_path == PurePosixPath("middle.dfn")
+
+    # Leaf level — the original requirement from /inner
+    assert mid_req.propagated_from is not None
+    inner_req = mid_req.propagated_from
+    assert inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+    assert inner_req.enclosing_action.typed_name.source_typed_name == _INNER_ACTION
+    assert inner_req.inferred_from.source_chained_name == "position<item>"
+    assert inner_req.inferred_from.location.line == 8
+    assert inner_req.inferred_from.location.file_path == PurePosixPath("inner.dfn")
+    assert inner_req.propagated_from is None
+
+    # Methods on the outermost requirement
+    assert req.root_cause_action_name() == _INNER_ACTION
+    outer_fqun = req.enclosing_action.typed_name.name_content.fqun
+    assert req.resolved_chained_name(outer_fqun) == (
+        "position<out_iface>::action</middle>"
+        "::position<mid_iface>::action</inner>"
+        "::position<item>"
+    )
+    assert [n.source_typed_name for n in req.propagation_chain_typed_names()] == [
+        "position<out_iface>",
+        "action</middle>",
+        "position<mid_iface>",
+        "action</inner>",
+        "position<item>",
+    ]
+    outer_locs = req.propagated_from_locations()
+    assert len(outer_locs) == 2
+    assert outer_locs[0].line == 11
+    assert outer_locs[0].file_path == PurePosixPath("middle.dfn")
+    assert outer_locs[1].line == 8
+    assert outer_locs[1].file_path == PurePosixPath("inner.dfn")
+
+    # Methods on the middle requirement
+    assert mid_req.root_cause_action_name() == _INNER_ACTION
+    middle_fqun = mid_req.enclosing_action.typed_name.name_content.fqun
+    assert mid_req.resolved_chained_name(middle_fqun) == (
+        "position<mid_iface>::action</inner>::position<item>"
+    )
+    assert [n.source_typed_name for n in mid_req.propagation_chain_typed_names()] == [
+        "position<mid_iface>",
+        "action</inner>",
+        "position<item>",
+    ]
+    mid_locs = mid_req.propagated_from_locations()
+    assert len(mid_locs) == 1
+    assert mid_locs[0].line == 8
+    assert mid_locs[0].file_path == PurePosixPath("inner.dfn")
+
+    # Methods on the leaf requirement
+    assert inner_req.root_cause_action_name() == _INNER_ACTION
+    inner_fqun = inner_req.enclosing_action.typed_name.name_content.fqun
+    assert inner_req.resolved_chained_name(inner_fqun) == "position<item>"
+    assert [n.source_typed_name for n in inner_req.propagation_chain_typed_names()] == [
+        "position<item>"
+    ]
+    assert inner_req.propagated_from_locations() == []

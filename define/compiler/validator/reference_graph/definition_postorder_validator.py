@@ -86,6 +86,7 @@ class DefinitionPostorderValidator(abc.ABC):
         _triggered_action_name: str,
         _contract: action_contract.ActionContract,
         _trigger_position: ast.PositionReference,
+        _scope: scope_tracker.ScopeTracker,
     ):
         """Propagate inner action requirements into this action's contract.
 
@@ -162,6 +163,7 @@ class DefinitionPostorderValidator(abc.ABC):
     def _check_trigger(
         self,
         position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ):
         """Check if filling this interface position triggers the named action.
 
@@ -195,7 +197,9 @@ class DefinitionPostorderValidator(abc.ABC):
 
         # We only propagate inner requirements if actions actually get called.
         # (That's why this happens here in _check_trigger.)
-        self._propagate_inner_requirements(action_ref, action_name, contract, position)
+        self._propagate_inner_requirements(
+            action_ref, action_name, contract, position, scope
+        )
         self._check_requirements(position, contract)
         self._tracker.apply_guarantees(position, contract.guarantees)
         self._action_edges.append(
@@ -314,7 +318,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._apply_position_init_guarantees(
             position, self._get_constraint_block(position, scope)
         )
-        self._check_trigger(position)
+        self._check_trigger(position, scope)
 
     def _analyze_move(
         self,
@@ -348,7 +352,7 @@ class DefinitionPostorderValidator(abc.ABC):
             return
 
         self._tracker.move(from_pos, to_pos)
-        self._check_trigger(to_pos)
+        self._check_trigger(to_pos, scope)
 
     def _validate_move_preconditions(
         self,
@@ -762,10 +766,11 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     def _check_trigger(
         self,
         position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ):
         """Check trigger, detecting self-triggering as an error."""
         if position.get_last_action_children() is not None:
-            super()._check_trigger(position)
+            super()._check_trigger(position, scope)
             return
         if self._trigger_position_name is None:
             return
@@ -950,6 +955,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         triggered_action_name: str,
         contract: action_contract.ActionContract,
         trigger_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ):
         """Propagate inner action requirements into this action's contract."""
         (action_chain, iface_def) = self._action_parent_comes_from_interface_position(
@@ -968,26 +974,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             in_universe=self._enclosing_fqun
         )
         for req_key, inner_req in contract.requirements.items():
-            # Only EMPTY requirements propagate. OCCUPIED requirements
-            # must be satisfied by the action that directly triggers
-            # the inner action. This does create a limitation in the language:
-            # you can't pre-fill interface positions and "ship them off" to
-            # another action, even though the code generator could generate that.
-            # There's no way to perform modular analysis on that case, and in any
-            # case, it seems particularly confusing and strange to do that. In a
-            # traditional language, that would be like filling in one argument of
-            # a function in one caller, and filling in the other argument of a
-            # function in a different caller. It's both hard to reason about and
-            # doesn't seem that useful.
-            #
-            # TODO: Actually, I've thought this through more and I think we both
-            # can and should do this propagation, even though it's a bad coding
-            # pattern. It would just mean we have to do a from_caller create here.
-            if (
-                inner_req.required_state
-                == action_contract.PositionOccupancyState.OCCUPIED
-            ):
-                continue
             propagated_key = (*canonical_key_prefix, *req_key)
             # If we already inferred a requirement for this key (i.e.,
             # our own code references this position first), we satisfy
@@ -1002,6 +988,25 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                     propagated_from=inner_req,
                 )
             )
+            if (
+                inner_req.required_state
+                == action_contract.PositionOccupancyState.OCCUPIED
+            ):
+                propagated_position = ast.PositionReference(
+                    location=remapped_prefix.location,
+                    typed_names=remapped_prefix.typed_names
+                    + inner_req.propagation_chain_typed_names(),
+                )
+                qualities = (
+                    self._get_required_qualities(propagated_position, scope)
+                    or frozenset()
+                )
+                self._tracker.create_by_key(
+                    propagated_key,
+                    propagated_position,
+                    qualities,
+                    from_caller=True,
+                )
 
 
 class PositionPostorderValidator(DefinitionPostorderValidator):

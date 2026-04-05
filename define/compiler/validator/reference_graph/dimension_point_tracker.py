@@ -143,11 +143,11 @@ class DimensionPointTracker:
 
         Raises ValueError if the position is already occupied.
         """
-        self._create_by_key(
+        self.create_by_key(
             self._key(in_position), in_position, qualities, from_caller=from_caller
         )
 
-    def _create_by_key(
+    def create_by_key(
         self,
         key: tuple[str, ...],
         position: ast.PositionReference,
@@ -155,6 +155,12 @@ class DimensionPointTracker:
         *,
         from_caller: bool = False,
     ):
+        """Record a new dimension point using an explicit canonical key.
+
+        Use this instead of create() when the position's typed names contain
+        cross-universe relative references that would resolve incorrectly
+        against the tracker's own FQUN.
+        """
         self._ensure_action_parent(key)
         existing = self._state.get(key)
         if existing is not None and existing.dp_info is not None:

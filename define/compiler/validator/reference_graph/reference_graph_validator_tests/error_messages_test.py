@@ -460,7 +460,7 @@ def test_propagated_action_requires_empty_position_format(
     }
     result = validate_project_with_reference_graph(files)
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == (
