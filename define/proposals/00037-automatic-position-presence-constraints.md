@@ -327,6 +327,48 @@ empty. Only after it is called do its guarantees apply.
 An action's trigger positions are also automatically considered constraints on
 positions that are treated as satisfied when compiling any individual action.
 
+### Position Init Block Guarantees
+
+In addition to generating guarantees on referenced quality-required positions,
+Position Initialization Blocks also have one special guarantee they create that
+other Action Statement Blocks cannot create: they create guarantees when they
+affect dimension points in their self-referenced position or children of that
+position.
+
+Let's take an example where `position</a>` has an init block that creates a
+dimenension point in itself. `position</a>` has the contract:
+`it has the position</dep>`, and `position</dep>` also has an init block that
+creates a dimension point in itself. So when I do:
+
+```define
+define the position<local> {
+    it may only contain dimension points where {
+        it has the position</a>.
+    }
+}
+create a dimension point in position<local>.
+```
+
+Then I can _guarantee_ that `position<local>::position</a>` is filled, and also
+that `position<local>::position</a>::position</dep>` is filled. Also, the
+position init block of `position</a>` itself can guarantee that `position</dep>`
+filled and could actually move or destroy that position, thus creating a
+_different_ guarantee than what `position</dep>` normally provides.
+
+### Requirements Follow Dimension Points
+
+Above I described how _positions_ are affected, but the reality is that
+requirements follow dimension points, not actually positions. If I move a
+dimension point from an interface position into a local position and then do
+something with one of the children of that dimension point, it still creates a
+requireemnt in the caller. This is true for all forms of requirements.
+
+So if I have `position<interface_pos>` and I move the dimension point of that
+into `position<some_local>` and then do
+`create a dimension point in position<some_local>::position</should_be_filled>`,
+that creates a requirement for the caller to fill
+`position<interface_pos>::position</should_be_filled>`.
+
 ### Error States from External Interactions
 
 This system means that actions assume that callers have satisfied their implicit
@@ -379,7 +421,7 @@ upward in this way. Guarantees about local positions and all chained names
 attached to them remain internal implementation details of the action that
 defines them. Guarantees about this action's interface positions are only
 provided to its direct caller. It is only when quality-requirement syntax comes
-into play that we have to do transitive chaining.
+into play that we have to do explicit transitive chaining.
 
 ### Upward Chaining of Requirements for Quality-Required Positions
 
@@ -406,9 +448,36 @@ chain of the requirement that was violated and exact code locations where it's
 being checked in every action in the chain, to be as helpful as possible when
 such requirements are not fulfilled.
 
-As with guarantees, this transitive upward chaining only applies to external
-positions, such as quality-required positions and the interface positions of
-quality-required actions.
+### Upward Chaining of Empty Requirements on Interface Positions
+
+Unlike with guarantees, requirements on interface positions _do_ chain upward
+transitively on the call chain. For example, imagine you have a call tree like
+this:
+
+```mermaid
+graph TD
+      A["Action A"] --> B["Action B"]
+      B --> C["Action C"]
+```
+
+Action C has an interface position named `position<c_iface>` with a child
+position like `position<c_iface>::position</should_be_empty>`. In its body, it
+does
+`create a dimension point in position<c_iface>::position</should_be_empty>`.
+Action B doesn't fill this, correctly. However, Action A does fill it. That's an
+error! So Action A has to know that Action C creates a transitive requirement
+thorugh Action B.
+
+Now imagine that instead, Action C had
+`position<c_iface>::position</should_be_filled>` and was doing
+`destroy the dimension point in position<c_iface>::position</should_be_filled>`.
+In that case, either Action A _or_ Action B must fill
+`position</should_be_filled>`. Honestly, it is probably bad software design to
+force Action A to fill an interface position in a deeply-nested action, but if
+we _didn't_ propagate requiements like this, it would be logically inconsistent
+with how we propagate empty requirements (which is necessary for correctness).
+Also, perhaps there is some valid reason for this pattern (though I am
+skeptical).
 
 ## A Real Program
 
