@@ -1268,6 +1268,89 @@ required qualities of the destination position.
 This rule must be enforced statically at compile time and must never be a
 runtime check.
 
+## Destroying Dimension Points
+
+Proposals:
+
+- [DLP 31: Destroying Dimension Points](../proposals/00031-destroying-dimension-points.md)
+
+A Destroy Dimension Point Statement starts with
+`destroy the dimension point in`, followed by exactly one space and a position
+reference, ending with a statement terminator.
+
+It is an error to attempt to destroy a dimension point that does not exist, and
+the compiler will forbid it.
+
+```ebnf
+destroy_dimension_point_statement =
+    "destroy the dimension point in", " ", position_reference, terminator ;
+```
+
+### Cascading Destruction
+
+When a dimension point is destroyed, all of the dimension points in the
+positions it defines are also destroyed.
+
+Qualities are unassigned from the dimension point in reverse order to how they
+were assigned to it. (Because requirement statements assign qualities
+topologically in order according to their dependency tree, qualities are
+inherently removed in reverse topological order.)
+
+Before a position quality is unassigned, its dimension point is destroyed.
+
+All position constraints defined by a position's definition are suspended at the
+start of destruction until destruction completes.
+
+Before removing an action from a dimension point, all dimension points that are
+still contained in interface positions of that action are destroyed in reverse
+order of when the positions were defined. Once removal of an action begins (and
+thus its defined dimension points must be destroyed), the action may no longer
+trigger or check its conditions.
+
+Destruction completes as though it were a written series of unassignment and
+destruction statements. Any action that triggers due to destruction of a child
+dimension point fires immediately after that child's destruction is complete.
+This means that a child dimension point's destruction may trigger an action
+asynchronously before the destruction of the parent dimension point is complete.
+
+Actions that would trigger due to the removal of a quality from a dimension
+point do not fire due to the automatic quality removal process that happens
+during destruction.
+
+The compiler may optimize this process and does not have to actually unassign
+every quality, as long as it ensures identical behavior occurs as if it had done
+so.
+
+### Automatic Destruction
+
+Dimension points that can no longer possibly be referenced are automatically
+destroyed.
+
+At the end of an Action Statements Block, any dimension points still existing in
+positions that are only defined locally within that Action Statements Block are
+automatically destroyed in reverse order of their position definition
+statements.
+
+The compiler behaves as through there were destruction statements at the end of
+an Action Statements Block to implement this. If the compiler is uncertain about
+whether a position still contains a dimension point, it only destroys the
+dimension point if one is present.
+
+Hitting a `wait until` statement does not count as exiting the Action Statements
+Block, and does not trigger automatic destruction.
+
+### Optimization of Destruction
+
+When the compiler knows that destruction is free of side effects (there are no
+action triggers watching for the destruction of that dimension point, including
+no triggers watching any of the other positions that dimension point
+transitively defines), the compiler may automatically destroy local dimension
+points within an Action Statements Block the instant they are no longer
+relevant.
+
+When safe, the compiler may destroy multiple dimension points simultaneously (in
+parallel).
+
 ## Starting Define Programs
 
 Proposals:
