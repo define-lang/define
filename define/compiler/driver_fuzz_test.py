@@ -193,6 +193,10 @@ def _move_dimension_point_statement(from_ref: str, to_ref: str, *, indent: str) 
     return f"{indent}move the dimension point in {from_ref} to {to_ref}.\n"
 
 
+def _destroy_dimension_point_statement(position_reference: str, *, indent: str) -> str:
+    return f"{indent}destroy the dimension point in {position_reference}.\n"
+
+
 @st.composite
 def _global_chain_valid_references(draw: st.DrawFn) -> str:
     chain_length = draw(st.integers(min_value=1, max_value=3))
@@ -544,6 +548,12 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         inner_locals.append(
             _move_dimension_point_statement(from_ref, to_ref, indent=inner_indent)
         )
+    destroy_count = draw(st.integers(min_value=0, max_value=2))
+    for _ in range(destroy_count):
+        position_reference = draw(create_dimension_point_references())
+        inner_locals.append(
+            _destroy_dimension_point_statement(position_reference, indent=inner_indent)
+        )
     trigger_condition_ref = draw(create_dimension_point_references())
     return _action_block_with_name(
         name,
@@ -892,6 +902,7 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "action",
             "create a dimension point in",
             "move the dimension point in",
+            "destroy the dimension point in",
             "it happens when",
             "and it does",
             "after it is assigned",
@@ -946,6 +957,10 @@ def mutated_sources(draw: st.DrawFn) -> str:
     if "move the dimension point in " in mutated:
         return mutated.replace(
             "move the dimension point in ", "move the dimension point in", 1
+        )
+    if "destroy the dimension point in " in mutated:
+        return mutated.replace(
+            "destroy the dimension point in ", "destroy the dimension point in", 1
         )
     return mutated
 
@@ -1423,6 +1438,7 @@ _GLOBAL_NAME_CONTEXTS = [
     "create_ref",
     "move_from_ref",
     "move_to_ref",
+    "destroy_ref",
     "trigger_ref",
 ]
 
@@ -1488,6 +1504,17 @@ def _global_name_context_template(context: str) -> str:
                 ),
             ],
         )
+    if context == "destroy_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.dfn",
+            outer_locals=[],
+            inner_locals=[
+                _destroy_dimension_point_statement(
+                    f"position<{_NAME_MARKER}>", indent="        "
+                )
+            ],
+        )
     return _action_block_with_name(
         _global_name(_PROJECT_FQUN, "test.dfn"),
         outer_locals=[],
@@ -1504,6 +1531,7 @@ _LOCAL_NAME_CONTEXTS = [
     "create_ref",
     "move_from_ref",
     "move_to_ref",
+    "destroy_ref",
     "trigger_ref",
 ]
 
@@ -1579,6 +1607,17 @@ def _local_name_context_template(context: str) -> str:
                     f"position<{_NAME_MARKER}>",
                     indent="        ",
                 ),
+            ],
+        )
+    if context == "destroy_ref":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.dfn",
+            outer_locals=[],
+            inner_locals=[
+                _destroy_dimension_point_statement(
+                    f"position<{_NAME_MARKER}>", indent="        "
+                )
             ],
         )
     return _action_block_with_name(
