@@ -20,6 +20,7 @@ IT_HAPPENS_WHEN: "it happens when"
 AND_IT_DOES: " and it does"
 CREATE_A_DIMENSION_POINT_IN: "create a dimension point in "
 MOVE_THE_DIMENSION_POINT_IN: "move the dimension point in "
+DESTROY_THE_DIMENSION_POINT_IN: "destroy the dimension point in "
 THE: "the "
 HAS_A_DIMENSION_POINT: " has a dimension point"
 # TODO: Removing the spaces from this terminal and putting them in the grammar
@@ -69,7 +70,7 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 # Potential Position Definition Syntax
 
-_action_statements: (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement)*
+_action_statements: (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement | destroy_dimension_point_statement)*
 position_initialization_block: AFTER_IT_IS_ASSIGNED _block_open _action_statements _block_close
 potential_position_definition_block: _block_open NEWLINE* (position_constraint_block NEWLINE* [position_initialization_block NEWLINE*] | position_initialization_block NEWLINE*) _block_close
 position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content (terminator | potential_position_definition_block)
@@ -79,6 +80,7 @@ position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_conten
 position_reference: typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
 create_dimension_point_statement: CREATE_A_DIMENSION_POINT_IN position_reference terminator
 move_dimension_point_statement: MOVE_THE_DIMENSION_POINT_IN position_reference TO position_reference terminator
+destroy_dimension_point_statement: DESTROY_THE_DIMENSION_POINT_IN position_reference terminator
 
 # Action Definition Syntax
 

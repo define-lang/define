@@ -399,6 +399,108 @@ def test_name_content_forbids_double_colon_in_create_reference(
     assert result.exception.column == 50
 
 
+def test_destroy_dimension_point_missing_reference(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.InvalidActionStatementsBlock)
+    assert result.exception.line == 6
+    assert result.exception.column == 9
+
+
+def test_destroy_dimension_point_reference_missing_name_after_chain_separator(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position<foo>::.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
+    assert result.exception.token == "."
+    assert result.exception.line == 6
+    assert result.exception.column == 55
+
+
+def test_destroy_dimension_point_reference_chain_separator_then_newline(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position<foo>::\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.ExpectedNameType)
+    assert result.exception.token == "\n"
+    assert result.exception.line == 6
+    assert result.exception.column == 55
+
+
+def test_destroy_dimension_point_reference_single_colon_then_newline(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "define the position<run>.\n"
+        + "it happens when {\n"
+        + "the position<run> has a dimension point.\n"
+        + "} and it does {\n"
+        + "destroy the dimension point in position<foo>:\n"
+        + "}\n"
+        + "}\n"
+    )
+    assert isinstance(
+        result.exception, parser_exceptions.ExpectedChainSeparatorOrTerminator
+    )
+    assert result.exception.token == ":"
+    assert result.exception.token.type == "GLOBAL_NAME_CONTENT"
+    assert result.exception.line == 6
+    assert result.exception.column == 45
+
+
+def test_name_content_forbids_double_colon_in_destroy_reference(
+    p: parser.Parser,
+) -> None:
+    result = p.parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position</foo::bar>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.MissingCloseAngleBracket)
+    assert result.exception.token == "::"
+    assert result.exception.name == "/foo"
+    assert result.exception.line == 6
+    assert result.exception.column == 53
+
+
 def test_name_chain_invalid_item(
     p: parser.Parser,
 ) -> None:

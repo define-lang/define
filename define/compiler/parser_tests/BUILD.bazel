@@ -39,6 +39,17 @@ py_test(
     ],
 )
 
+py_test(
+    name = "destroy_dimension_point_test",
+    size = "small",
+    srcs = ["destroy_dimension_point_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser",
+    ],
+)
+
 py_library(
     name = "conftest",
     srcs = ["conftest.py"],
@@ -200,6 +211,7 @@ pyright_test(
         ":blocks_test",
         ":comments_test",
         ":conftest",
+        ":destroy_dimension_point_test",
         ":error_messages_test",
         ":extra_whitespace_test",
         ":file_encoding_test",
