@@ -364,10 +364,16 @@ class MoveDimensionPointStatement(DimensionPointStatement):
     source_position: PositionReference
 
 
+@dataclass(frozen=True, slots=True)
+class DestroyDimensionPointStatement(DimensionPointStatement):
+    """Represents a 'destroy the dimension point in' statement."""
+
+
 type ActionStatement = (
     LocalPositionDefinition
     | CreateDimensionPointStatement
     | MoveDimensionPointStatement
+    | DestroyDimensionPointStatement
 )
 
 

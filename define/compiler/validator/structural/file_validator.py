@@ -390,6 +390,8 @@ class DefinitionStructuralValidator:
                     self._validate_move_dimension_point(
                         stmt, scope, allow_self_reference=allow_self_reference
                     )
+                case ast.DestroyDimensionPointStatement():
+                    pass
 
     def _validate_local_position_definition(
         self,

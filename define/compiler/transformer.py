@@ -134,6 +134,10 @@ class DefineTransformer(
         """Discard the move-dimension-point keyword token."""
         return lark_standalone.Discard
 
+    def DESTROY_THE_DIMENSION_POINT_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the destroy-dimension-point keyword token."""
+        return lark_standalone.Discard
+
     def TO(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard the 'to' keyword token."""
         return lark_standalone.Discard
@@ -286,6 +290,16 @@ class DefineTransformer(
         return ast.MoveDimensionPointStatement(
             target_position=items[1],
             source_position=items[0],
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+        )
+
+    @lark_standalone.v_args(meta=True)
+    def destroy_dimension_point_statement(
+        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
+    ) -> ast.DestroyDimensionPointStatement:
+        """Transform a destroy dimension point statement."""
+        return ast.DestroyDimensionPointStatement(
+            target_position=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 

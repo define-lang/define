@@ -281,6 +281,8 @@ class DefinitionPostorderValidator(abc.ABC):
                 case ast.MoveDimensionPointStatement():
                     validity = next(validity_iter)
                     self._analyze_move(stmt, validity, scope)
+                case ast.DestroyDimensionPointStatement():
+                    pass
 
     def _analyze_create(
         self,

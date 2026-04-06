@@ -51,6 +51,8 @@ class ActionStatementsBlockGenerator:
                 kind=template_context.StatementKind.CREATE_DIMENSION_POINT,
                 position=self._build_position_expr(stmt.target_position),
             )
+        if isinstance(stmt, ast.DestroyDimensionPointStatement):
+            raise NotImplementedError("destroy dimension point codegen")
         return template_context.ActionStatementContext(
             kind=template_context.StatementKind.MOVE_DIMENSION_POINT,
             position=self._build_position_expr(stmt.source_position),

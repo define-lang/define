@@ -700,6 +700,132 @@ def test_mixed_action_statements_with_move():
     assert isinstance(stmts[2], ast.LocalPositionDefinition)
 
 
+def test_destroy_dimension_point_with_local_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    assert len(block.action_statements.statements) == 1
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.DestroyDimensionPointStatement)
+    assert len(stmt.target_position.typed_names) == 1
+    target_ref = stmt.target_position.typed_names[0]
+    assert isinstance(target_ref, ast.LocalTypedNameReference)
+    assert target_ref.name_type == ast.NameType.POSITION
+    assert target_ref.name_content.name == "run"
+
+
+def test_destroy_dimension_point_with_short_global_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position</run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.DestroyDimensionPointStatement)
+    target_ref = stmt.target_position.typed_names[0]
+    assert isinstance(target_ref, ast.GlobalTypedNameReference)
+    assert target_ref.name_type == ast.NameType.POSITION
+    assert target_ref.name_content.fqun is None
+    assert target_ref.name_content.path.name == "/run"
+
+
+def test_destroy_dimension_point_with_full_fqun_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position<mv:authority.com:universe:/target>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.DestroyDimensionPointStatement)
+    target_ref = stmt.target_position.typed_names[0]
+    assert isinstance(target_ref, ast.GlobalTypedNameReference)
+    assert target_ref.name_content.fqun is not None
+    assert target_ref.name_content.fqun.canonical == "mv:authority.com:universe"
+    assert target_ref.name_content.path.name == "/target"
+
+
+def test_destroy_dimension_point_with_chained_position():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position<src>::action<deposit>::position<inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmt = block.action_statements.statements[0]
+    assert isinstance(stmt, ast.DestroyDimensionPointStatement)
+    assert len(stmt.target_position.typed_names) == 3
+    assert isinstance(stmt.target_position.typed_names[0], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[0].name_content.name == "src"
+    assert isinstance(stmt.target_position.typed_names[1], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[1].name_type == ast.NameType.ACTION
+    assert stmt.target_position.typed_names[1].name_content.name == "deposit"
+    assert isinstance(stmt.target_position.typed_names[2], ast.LocalTypedNameReference)
+    assert stmt.target_position.typed_names[2].name_content.name == "inner"
+
+
+def test_mixed_action_statements_with_destroy():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<run>.\n"
+        + "        destroy the dimension point in position<run>.\n"
+        + "        define the position<inner_pos>.\n"
+        + "        move the dimension point in position<source> to position<dest>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert block is not None
+    stmts = block.action_statements.statements
+    assert len(stmts) == 4
+    assert isinstance(stmts[0], ast.CreateDimensionPointStatement)
+    assert isinstance(stmts[1], ast.DestroyDimensionPointStatement)
+    assert isinstance(stmts[2], ast.LocalPositionDefinition)
+    assert isinstance(stmts[3], ast.MoveDimensionPointStatement)
+
+
 def test_action_definition_block_with_constrained_interface_position():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
