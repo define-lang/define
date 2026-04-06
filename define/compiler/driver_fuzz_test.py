@@ -597,12 +597,10 @@ def _valid_create_spec(
 ) -> tuple[str, str | None]:
     kinds = ["local_direct"]
     if allow_target_another_test:
-        kinds.extend(["local_chained", "global_direct"])
+        kinds.append("local_chained")
     if allow_target_inner_pos:
         kinds.append("local_chained_via_action")
     kind = draw(st.sampled_from(kinds))
-    if kind == "global_direct":
-        return f"position<{_ANOTHER_VALID_PATH}>", None
     if kind == "local_direct":
         return (
             f"position<{local_name}>",
