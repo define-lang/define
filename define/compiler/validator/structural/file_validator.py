@@ -391,7 +391,9 @@ class DefinitionStructuralValidator:
                         stmt, scope, allow_self_reference=allow_self_reference
                     )
                 case ast.DestroyDimensionPointStatement():
-                    pass
+                    self._validate_destroy_dimension_point(
+                        stmt, scope, allow_self_reference=allow_self_reference
+                    )
 
     def _validate_local_position_definition(
         self,
@@ -439,7 +441,6 @@ class DefinitionStructuralValidator:
         self._dp_statement_validity.append(
             validation_result.DimensionPointStatementValidity(
                 statement=stmt,
-                source_ok=True,
                 target_ok=target_ok,
             )
         )
@@ -465,6 +466,25 @@ class DefinitionStructuralValidator:
             validation_result.DimensionPointStatementValidity(
                 statement=stmt,
                 source_ok=source_ok,
+                target_ok=target_ok,
+            )
+        )
+
+    def _validate_destroy_dimension_point(
+        self,
+        stmt: ast.DestroyDimensionPointStatement,
+        scope: scope_tracker.ScopeTracker,
+        *,
+        allow_self_reference: bool = False,
+    ):
+        target_ok = self._validate_full_chained_name(
+            stmt.target_position,
+            scope,
+            allow_self_reference=allow_self_reference,
+        )
+        self._dp_statement_validity.append(
+            validation_result.DimensionPointStatementValidity(
+                statement=stmt,
                 target_ok=target_ok,
             )
         )
