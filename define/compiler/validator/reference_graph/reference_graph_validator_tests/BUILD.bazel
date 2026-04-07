@@ -126,6 +126,17 @@ py_test(
 )
 
 py_test(
+    name = "destroy_dimension_point_test",
+    size = "small",
+    srcs = ["destroy_dimension_point_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "dimension_point_conflict_test",
     size = "small",
     srcs = ["dimension_point_conflict_test.py"],
@@ -287,6 +298,7 @@ pyright_test(
         ":chained_name_test",
         ":create_dimension_point_test",
         ":create_without_parent_test",
+        ":destroy_dimension_point_test",
         ":dimension_point_conflict_test",
         ":error_messages_test",
         ":inferred_action_occupancy_test",
