@@ -4,14 +4,14 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
-from define.compiler import parser
+from define.compiler.parser_tests.conftest import Parse
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_action_statements_block_with_move_dimension_point_local_positions(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -21,12 +21,10 @@ def test_action_statements_block_with_move_dimension_point_local_positions(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "source",
@@ -35,9 +33,9 @@ def test_action_statements_block_with_move_dimension_point_local_positions(
 
 
 def test_action_statements_block_with_move_dimension_point_short_global_positions(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -47,20 +45,18 @@ def test_action_statements_block_with_move_dimension_point_short_global_position
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/source",
         "/dest",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_move_dimension_point_full_global_positions(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -70,20 +66,18 @@ def test_action_statements_block_with_move_dimension_point_full_global_positions
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "mv:define-lang.org:parser:/source",
         "mv:define-lang.org:parser:/dest",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_move_dimension_point_chained_source(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -93,13 +87,11 @@ def test_action_statements_block_with_move_dimension_point_chained_source(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/deposit",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "src",
@@ -109,9 +101,9 @@ def test_action_statements_block_with_move_dimension_point_chained_source(
 
 
 def test_action_statements_block_with_move_dimension_point_chained_destination(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -121,13 +113,11 @@ def test_action_statements_block_with_move_dimension_point_chained_destination(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/deposit",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "src",
@@ -137,9 +127,9 @@ def test_action_statements_block_with_move_dimension_point_chained_destination(
 
 
 def test_action_statements_block_with_move_dimension_point_both_chained(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -149,14 +139,12 @@ def test_action_statements_block_with_move_dimension_point_both_chained(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/a1",
         "/a2",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "src",
@@ -165,9 +153,9 @@ def test_action_statements_block_with_move_dimension_point_both_chained(
 
 
 def test_action_statements_block_with_mixed_create_and_move_statements(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -178,12 +166,10 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "run",
@@ -193,9 +179,9 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
 
 
 def test_action_statements_block_with_move_dimension_point_mixed_local_and_global(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -205,13 +191,11 @@ def test_action_statements_block_with_move_dimension_point_mixed_local_and_globa
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/global_dest",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "local_src",

@@ -3,6 +3,11 @@
 When adding or updating tests in `define/compiler/parser_tests/`, follow these
 rules:
 
+- Use the `parse` fixture (type `Parse` from `conftest`) instead of calling
+  `parser.Parser` directly. It asserts `diagnostics == []`, raises any parse
+  exception, and returns the tree. Use `pytest.raises` for tests that expect a
+  parse error. Only use the `p` fixture when you need access to the raw
+  `ParseResult` (e.g. to check non-empty diagnostics).
 - Tests that check invalid syntax must assert a specific subclass of
   `DefineSyntaxError`, not `DefineSyntaxError` itself.
 - Tests that check invalid syntax must assert relevant fields on the raised

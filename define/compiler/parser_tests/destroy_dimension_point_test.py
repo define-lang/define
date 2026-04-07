@@ -4,14 +4,14 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
-from define.compiler import parser
+from define.compiler.parser_tests.conftest import Parse
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_action_statements_block_with_destroy_dimension_point_local_position(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -21,12 +21,10 @@ def test_action_statements_block_with_destroy_dimension_point_local_position(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "run",
@@ -34,9 +32,9 @@ def test_action_statements_block_with_destroy_dimension_point_local_position(
 
 
 def test_action_statements_block_with_destroy_dimension_point_short_global_position(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -46,19 +44,17 @@ def test_action_statements_block_with_destroy_dimension_point_short_global_posit
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/run",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_destroy_dimension_point_full_global_position(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -68,19 +64,17 @@ def test_action_statements_block_with_destroy_dimension_point_full_global_positi
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "mv:define-lang.org:parser:/run",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_destroy_dimension_point_chained_position(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -90,13 +84,11 @@ def test_action_statements_block_with_destroy_dimension_point_chained_position(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/deposit",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "to",
@@ -105,9 +97,9 @@ def test_action_statements_block_with_destroy_dimension_point_chained_position(
 
 
 def test_action_statements_block_with_destroy_dimension_point_short_global_chain(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -117,21 +109,19 @@ def test_action_statements_block_with_destroy_dimension_point_short_global_chain
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/to",
         "/deposit",
         "/run",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
 def test_action_statements_block_with_destroy_dimension_point_any_typed_chain(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -141,14 +131,12 @@ def test_action_statements_block_with_destroy_dimension_point_any_typed_chain(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/start",
         "/end",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "mid",
@@ -156,9 +144,9 @@ def test_action_statements_block_with_destroy_dimension_point_any_typed_chain(
 
 
 def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -170,12 +158,10 @@ def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "run",
@@ -186,9 +172,9 @@ def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
 
 
 def test_action_statements_block_with_mixed_statements_and_multiple_destroy_dimension_points(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -200,14 +186,12 @@ def test_action_statements_block_with_mixed_statements_and_multiple_destroy_dime
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/global_run",
         "/deposit",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "inner_pos",
@@ -217,9 +201,9 @@ def test_action_statements_block_with_mixed_statements_and_multiple_destroy_dime
 
 
 def test_action_statements_block_with_destroy_dimension_point_mixed_local_and_global(
-    p: parser.Parser,
+    parse: Parse,
 ) -> None:
-    result = p.parse(
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
@@ -229,13 +213,11 @@ def test_action_statements_block_with_destroy_dimension_point_mixed_local_and_gl
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/my_action",
         "/global_act",
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "run",
         "run",
         "local_pos",

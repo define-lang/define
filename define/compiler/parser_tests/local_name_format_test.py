@@ -4,12 +4,15 @@
 Follow parser test authoring rules in parser_tests/AGENTS.md.
 """
 
-from define.compiler import parser, parser_exceptions
+import pytest
+
+from define.compiler import parser_exceptions
+from define.compiler.parser_tests.conftest import Parse
 from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
-def test_local_name_simple(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_simple(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
@@ -18,16 +21,14 @@ def test_local_name_simple(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_local_name_underscore_start(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_underscore_start(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<_private>.\n"
         + "    it happens when {\n"
@@ -36,19 +37,17 @@ def test_local_name_underscore_start(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
         "_private",
         "_private",
     ]
 
 
-def test_local_name_with_digits(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_with_digits(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<pos_1>.\n"
         + "    it happens when {\n"
@@ -57,16 +56,14 @@ def test_local_name_with_digits(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["pos_1", "pos_1"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["pos_1", "pos_1"]
 
 
-def test_local_name_single_char(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_single_char(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<x>.\n"
         + "    it happens when {\n"
@@ -75,16 +72,14 @@ def test_local_name_single_char(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["x", "x"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["x", "x"]
 
 
-def test_local_name_single_underscore(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_single_underscore(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<_>.\n"
         + "    it happens when {\n"
@@ -93,16 +88,14 @@ def test_local_name_single_underscore(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["_", "_"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["_", "_"]
 
 
-def test_local_name_starting_with_digit(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_starting_with_digit(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<2bad>.\n"
         + "    it happens when {\n"
@@ -111,16 +104,14 @@ def test_local_name_starting_with_digit(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["2bad", "2bad"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["2bad", "2bad"]
 
 
-def test_local_name_uppercase(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_uppercase(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<MyPos>.\n"
         + "    it happens when {\n"
@@ -129,125 +120,117 @@ def test_local_name_uppercase(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["MyPos", "MyPos"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["MyPos", "MyPos"]
 
 
-def test_local_name_missing_open_angle(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    define the position<run>.\n"
-        + "    define the positionmy_pos>.\n"
-        + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.MissingOpenAngleBracket)
-    assert str(result.exception.token) == "my_pos"
-    assert result.exception.line == 3
-    assert result.exception.column == 24
-    assert result.exception.name == "my_pos"
+def test_local_name_missing_open_angle(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the positionmy_pos>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == "my_pos"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 24
+    assert exc_info.value.name == "my_pos"
 
 
-def test_local_name_empty(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    define the position<run>.\n"
-        + "    define the position<>.\n"
-        + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.EmptyName)
-    assert str(result.exception.token) == ">"
-    assert result.exception.line == 3
-    assert result.exception.column == 25
+def test_local_name_empty(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.EmptyName) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position<>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == ">"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
 
 
-def test_local_name_with_slash(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    define the position<run>.\n"
-        + "    define the position<my/pos>.\n"
-        + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.InvalidLocalNameCharacter)
-    assert result.exception.char == "/"
-    assert result.exception.line == 3
-    assert result.exception.column == 25
+def test_local_name_with_slash(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position<my/pos>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "/"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
 
 
-def test_local_name_with_colon(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    define the position<run>.\n"
-        + "    define the position<my:pos>.\n"
-        + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.InvalidLocalNameCharacter)
-    assert result.exception.char == ":"
-    assert result.exception.line == 3
-    assert result.exception.column == 25
+def test_local_name_with_colon(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position<my:pos>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == ":"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
 
 
-def test_local_name_with_global_short_form(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    define the position<run>.\n"
-        + "    define the position</mypos>.\n"
-        + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.InvalidLocalNameCharacter)
-    assert result.exception.char == "/"
-    assert result.exception.line == 3
-    assert result.exception.column == 25
+def test_local_name_with_global_short_form(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position</mypos>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "/"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
 
 
-def test_local_name_with_global_long_form(p: parser.Parser) -> None:
-    result = p.parse(
-        "define the potential action<mv:define-lang.org:parser:/act> {\n"
-        + "    define the position<run>.\n"
-        + "    define the position<mv:define-lang.org:other_universe:/mypos>.\n"
-        + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
-        + "    } and it does {\n"
-        + "    }\n"
-        + "}\n"
-    )
-    assert result.diagnostics == []
-    assert isinstance(result.exception, parser_exceptions.InvalidLocalNameCharacter)
-    assert result.exception.char == ":"
-    assert result.exception.line == 3
-    assert result.exception.column == 25
+def test_local_name_with_global_long_form(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position<mv:define-lang.org:other_universe:/mypos>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == ":"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
 
 
-def test_local_name_with_hyphen(p: parser.Parser) -> None:
-    result = p.parse(
+def test_local_name_with_hyphen(parse: Parse) -> None:
+    tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<my-pos>.\n"
         + "    it happens when {\n"
@@ -256,9 +239,7 @@ def test_local_name_with_hyphen(p: parser.Parser) -> None:
         + "    }\n"
         + "}\n"
     )
-    assert result.diagnostics == []
-    assert result.tree is not None
-    assert get_tokens_by_type(result.tree, "GLOBAL_NAME_CONTENT") == [
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/act"
     ]
-    assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["my-pos", "my-pos"]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my-pos", "my-pos"]
