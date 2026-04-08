@@ -26,6 +26,7 @@ class StatementKind(enum.Enum):
     LOCAL_POSITION = enum.auto()
     CREATE_DIMENSION_POINT = enum.auto()
     MOVE_DIMENSION_POINT = enum.auto()
+    DESTROY_DIMENSION_POINT = enum.auto()
 
 
 class ChainAccessor(enum.Enum):

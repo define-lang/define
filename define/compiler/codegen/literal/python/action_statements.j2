@@ -32,6 +32,8 @@
 {% endif %}
 {% elif stmt.kind == StatementKind.CREATE_DIMENSION_POINT %}
         {{ pos(stmt.position) }}.create_dimension_point()
+{% elif stmt.kind == StatementKind.DESTROY_DIMENSION_POINT %}
+        {{ pos(stmt.position) }}.destroy_dimension_point()
 {% elif stmt.kind == StatementKind.MOVE_DIMENSION_POINT %}
 {% if stmt.to_position.chain_elements %}
         {{ pos(stmt.position) }}.move_dimension_point_to(

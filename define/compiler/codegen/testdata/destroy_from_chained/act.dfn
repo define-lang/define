@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/act> {
+    define the position<trigger>.
+    define the position<chain_src> {
+        it may only contain dimension points where {
+            it has the position</mid>.
+        }
+    }
+    it happens when {
+        the position<trigger> has a dimension point.
+    } and it does {
+        destroy the dimension point in position<chain_src>::position</mid>::position</end>.
+    }
+}

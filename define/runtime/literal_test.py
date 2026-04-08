@@ -274,6 +274,32 @@ class TestMovePosition:
         assert not dest.has_dimension_point
 
 
+class TestDestroyDimensionPoint:
+    def test_destroy_dimension_point(self):
+        pos = literal.LocalPosition("test")
+        pos.create_dimension_point()
+
+        pos.destroy_dimension_point()
+
+        assert not pos.has_dimension_point
+
+    def test_destroy_from_empty_raises(self):
+        pos = literal.LocalPosition("test")
+
+        with pytest.raises(literal.NoDimensionPointError) as exc_info:
+            pos.destroy_dimension_point()
+        assert exc_info.value.position_name == "test"
+
+    def test_destroy_then_create_succeeds(self):
+        pos = literal.LocalPosition("test")
+        pos.create_dimension_point()
+        pos.destroy_dimension_point()
+
+        pos.create_dimension_point()
+
+        assert pos.has_dimension_point
+
+
 class TestStart:
     def test_start_triggers_after_assigned(self):
         triggered: list[str] = []

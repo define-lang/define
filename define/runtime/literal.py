@@ -142,6 +142,12 @@ class Position(Quality, ABC):
         self._dimension_point = None
         destination._after_dimension_point_arrived()
 
+    def destroy_dimension_point(self):
+        """Destroy the dimension point in this position."""
+        if self._dimension_point is None:
+            raise NoDimensionPointError(self.name)
+        self._dimension_point = None
+
     def _after_dimension_point_arrived(self):
         """Run after a dimension point arrives. Override in subclasses."""
 
