@@ -188,8 +188,11 @@ class DimensionPointTracker:
         existing = self._state.get(key)
         if existing is None or existing.dp_info is None:
             raise ValueError(f"position {key} is not occupied")
-        existing.dp_info = None
-        existing.emptied_by = position
+        del self._state[key]
+        # Destroying puts all children back into a known state (they don't exist).
+        if key in self._unknown:
+            del self._unknown[key]
+        self._state[key] = _NodeState(emptied_by=position)
 
     def get_emptied_by(
         self, ref: ast.PositionReference

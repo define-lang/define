@@ -282,8 +282,8 @@ class DefinitionPostorderValidator(abc.ABC):
                     validity = next(validity_iter)
                     self._analyze_move(stmt, validity, scope)
                 case ast.DestroyDimensionPointStatement():
-                    _ = next(validity_iter)
-                    self._validate_chained_name(stmt.target_position, scope)
+                    validity = next(validity_iter)
+                    self._analyze_destroy(stmt, validity, scope)
 
     def _analyze_create(
         self,
@@ -322,6 +322,48 @@ class DefinitionPostorderValidator(abc.ABC):
             position, self._get_constraint_block(position, scope)
         )
         self._check_trigger(position, scope)
+
+    def _analyze_destroy(
+        self,
+        stmt: ast.DestroyDimensionPointStatement,
+        validity: validation_result.DimensionPointStatementValidity,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        self._validate_chained_name(stmt.target_position, scope)
+        position = stmt.target_position
+        if not validity.target_ok:
+            return
+        if self._tracker.has_unknown_state(position):
+            return
+
+        self._maybe_infer_requirements_on_chain(
+            action_contract.PositionOccupancyState.OCCUPIED, position, scope
+        )
+        if not self._check_parents_occupied(position):
+            self._tracker.mark_unknown(position)
+            return
+        if not self._tracker.is_occupied(position):
+            from_action = position.get_last_action()
+            if from_action is not None:
+                emptied_by = self._tracker.get_emptied_by(position)
+                self._diagnostics.append(
+                    diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
+                        location=position.location,
+                        position_name=position.source_chained_name,
+                        inferred_at=emptied_by.location if emptied_by else None,
+                    )
+                )
+            else:
+                self._diagnostics.append(
+                    diagnostics.DestroyInEmptyPositionDiagnostic(
+                        location=position.location,
+                        position_name=position.source_chained_name,
+                    )
+                )
+            self._tracker.mark_unknown(position)
+            return
+
+        self._tracker.destroy(position)
 
     def _analyze_move(
         self,

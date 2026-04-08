@@ -456,6 +456,21 @@ def test_destroy_at_chain():
     assert tracker.is_occupied(ref) is False
 
 
+def test_destroy_prunes_children():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_ref = _make_position_ref([_make_local_ref("pos_a")])
+    child_ref = _make_position_ref(
+        [_make_local_ref("pos_a"), _make_global_ref("/child")]
+    )
+
+    tracker.create(parent_ref, frozenset())
+    tracker.create(child_ref, frozenset())
+    tracker.destroy(parent_ref)
+
+    assert tracker.is_occupied(parent_ref) is False
+    assert tracker.is_occupied(child_ref) is False
+
+
 def test_mark_unknown_at_chain():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
@@ -465,7 +480,25 @@ def test_mark_unknown_at_chain():
     assert tracker.has_unknown_state(ref) is True
 
 
-def test_chain_and_local_are_independent():
+def test_destroy_clears_unknown_children():
+    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    parent_ref = _make_position_ref([_make_local_ref("pos_a")])
+    child_ref = _make_position_ref(
+        [_make_local_ref("pos_a"), _make_global_ref("/child")]
+    )
+
+    tracker.create(parent_ref, frozenset())
+    tracker.create(child_ref, frozenset())
+    tracker.mark_unknown(child_ref)
+
+    assert tracker.has_unknown_state(child_ref) is True
+
+    tracker.destroy(parent_ref)
+
+    assert tracker.has_unknown_state(child_ref) is False
+
+
+def test_destroy_parent_also_destroys_child():
     tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     chain_ref = _make_position_ref(
@@ -481,7 +514,7 @@ def test_chain_and_local_are_independent():
     tracker.destroy(local_ref)
 
     assert tracker.is_occupied(local_ref) is False
-    assert tracker.is_occupied(chain_ref) is True
+    assert tracker.is_occupied(chain_ref) is False
 
 
 def test_emptied_by_at_chain():

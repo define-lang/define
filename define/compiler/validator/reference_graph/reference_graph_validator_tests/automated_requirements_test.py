@@ -911,3 +911,58 @@ def test_trigger_chain_parent_requirement_violated(
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+
+
+def test_destroy_infers_occupied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Destroying an interface position infers an OCCUPIED requirement.
+
+    Triggering without filling it produces ActionRequiresOccupiedPositionDiagnostic.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == _OTHER
+    assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)

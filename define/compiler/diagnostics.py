@@ -525,6 +525,17 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
 
 
 @dataclass
+class DestroyInEmptyPositionDiagnostic(Diagnostic):
+    """Diagnostic for when a destroy statement's target position has no dimension point."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "cannot destroy a dimension point in '{self.position_name}'"
+        " because it does not contain one"
+    )
+
+
+@dataclass
 class MoveToSamePositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement's from and to positions are the same."""
 
@@ -724,6 +735,26 @@ class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
         """Render the diagnostic message."""
         base = (
             f"cannot move a dimension point from '{self.position_name}'"
+            f" because it does not contain one"
+        )
+        if self.inferred_at is not None:
+            return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
+        return f"{base}; action interface positions are empty by default"
+
+
+@dataclass
+class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
+    """Diagnostic for destroying from an empty action interface position."""
+
+    position_name: str
+    inferred_at: ast.SourceLocation | None
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render the diagnostic message."""
+        base = (
+            f"cannot destroy a dimension point in '{self.position_name}'"
             f" because it does not contain one"
         )
         if self.inferred_at is not None:

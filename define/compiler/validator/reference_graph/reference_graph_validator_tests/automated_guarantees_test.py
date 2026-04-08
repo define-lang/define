@@ -2120,3 +2120,118 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+def test_destroy_produces_empty_guarantee(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When an action destroys an interface position, the caller sees it as empty afterward."""
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare>.\n"
+                "        define the position<dest>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a dimension point in position<box>::action</other>::position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+
+
+def test_destroy_prunes_children_from_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Destroy prunes children from the caller's perspective.
+
+    When an action destroys an interface position, child positions filled by
+    the caller are also destroyed. Trying to move from the child afterward fails.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child_q>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<spare> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child_q>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<sink>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<spare>.\n"
+                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a dimension point in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the dimension point in position<box>::action</other>::position<item>::position</child_q> to position<sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</other>::position<item>::position</child_q>"
+    )
+    assert (
+        all_diags[0].parent_position_name
+        == "position<box>::action</other>::position<item>"
+    )
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
