@@ -1,13 +1,24 @@
 %import common.LF -> NEWLINE
 
 # Name Terminals
-GLOBAL_NAME_CONTENT.-2: /(?:[^:>\n]|:(?!:))+/
+
+# Both GLOBAL_NAME_CONTENT and LOCAL_NAME_CONTENT have negative priority
+# so that keyword string terminals (priority 0) always win over them. This
+# creates much better parser error messages and error classification.
+# Otherwise, the parser thinks that every invalid state matches one
+# of these two terminals, greatly reducing the accuracy of parser error
+# states.
+
+GLOBAL_NAME_CONTENT.-1: /([^> \n]+:){0,3}\/[^>\n]+/
 # We have to make LOCAL_NAME_CONTENT exclude : and / in order to
 # successfully differentiate it in circumstances where both local
-# and global names are accepted. We also have to give it higher priority
-# than GLOBAL_NAME_CONTENT so it wins when both match. Both are negative
-# so keyword string terminals (priority 0) always win over them.
-LOCAL_NAME_CONTENT.-1: /(?![^>\n]*[:\/])[^>\n]+/
+# and global names are accepted.
+#
+# We also exclude space because it produces clearer error messages
+# most of the time and I'm concerned about the code-generation security
+# implications of allowing spaces in names (because the languages we
+# transpile down to could do something unsafe with names with spaces in them).
+LOCAL_NAME_CONTENT.-2: /[^:\/> \n]+/
 
 # Syntax Terminals
 DEFINE_THE_POSITION: "define the position"

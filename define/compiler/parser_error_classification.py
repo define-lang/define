@@ -8,11 +8,10 @@ from __future__ import annotations
 import typing
 
 from define.compiler import parser_exceptions
+from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    from define.compiler.lark import lark_standalone
 
 _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
@@ -39,10 +38,49 @@ def _classify_invalid_char(
     return None
 
 
-def _is_space_followed_only_by_whitespace(source: str, line: int, column: int) -> bool:
-    """Return whether the space is followed only by whitespace on its line."""
+def _stripped_context(source: str, line: int, column: int) -> str:
     error_line = source.split("\n")[line - 1]
-    return not error_line[column:].strip()
+    return error_line[column:].strip()
+
+
+def raise_character_error(
+    e: lark_standalone.UnexpectedCharacters,
+    source: str,
+    file_path: pathlib.PurePosixPath | None,
+):
+    """Classify a character error into a specific exception type."""
+    # Presently this error can only occur when an invalid name parse occurs.
+    # TODO: Handle escaping invalid characters.
+    if (
+        e.allowed == {"MORETHAN"}
+        and e.token_history
+        and e.token_history[-1].type == "LOCAL_NAME_CONTENT"
+    ) or e.allowed == {"LOCAL_NAME_CONTENT"}:
+        # MORETHAN happens when we encounter an invalid character
+        # after valid characters. LOCAL_NAME_CONTENT happens when we
+        # encounter an invalid character as the first character in
+        # a name.
+        raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
+            e, source, e.char, file_path
+        )
+
+    # : and / require special handling because they excluded from our broadest
+    # terminal (LOCAL_NAME_CONTENT) and so match no terminals at all.
+    if e.char in (":", "/"):
+        # We have to do something special here to get the right error
+        # messages: we have to force the parser to produce an UnexpectedToken
+        # and then feed the context back into raise_token_error. That's the
+        # only way to get the right error for the context in which the wrong
+        # character was written.
+        ip = e.interactive_parser
+        fake_token = lark_standalone.Token("INVALID", e.char)
+        fake_token.line = e.line
+        fake_token.column = e.column
+        try:
+            ip.feed_token(fake_token)
+        except lark_standalone.UnexpectedToken as token_error:
+            token_error.interactive_parser = ip
+            raise_token_error(token_error, source, file_path)
 
 
 def raise_token_error(
@@ -62,9 +100,8 @@ def raise_token_error(
         if char_error:
             raise char_error.from_lark_exception(e, source, e.token[0], file_path)
 
-    if e.token.startswith(" ") and _is_space_followed_only_by_whitespace(
-        source, e.line, e.column
-    ):
+    # If there's a space followed only by other spaces.
+    if e.token.startswith(" ") and not _stripped_context(source, e.line, e.column):
         raise parser_exceptions.TrailingWhitespaceError.from_lark_exception(
             e, source, e.token, file_path
         )
@@ -72,14 +109,6 @@ def raise_token_error(
     ###############################
     ## e.accepts Classification ##
     ###############################
-
-    # If we see we need a >, that means we are parsing a name and forgot
-    # the closing bracket. We check e.token_history just to make the type
-    # checker happy---we always have a token history here.
-    if e.accepts == {"MORETHAN"} and e.token_history:
-        raise parser_exceptions.MissingCloseAngleBracket(
-            e, source, file_path, e.token_history[-1]
-        )
 
     # Same for <, which means the previous token was the start of a definition
     # and we expect a name and didn't get <.
@@ -92,11 +121,26 @@ def raise_token_error(
     ):
         raise parser_exceptions.EmptyName(e, source, file_path)
 
-    if e.accepts == {"LOCAL_NAME_CONTENT"} and ("/" in e.token or ":" in e.token):
-        invalid_char = next(c for c in e.token if c in {"/", ":"})
+    if e.accepts == {"LOCAL_NAME_CONTENT"}:
         raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
-            e, source, invalid_char, file_path
+            e, source, e.token[0], file_path
         )
+
+    if e.accepts == {"GLOBAL_NAME_CONTENT"}:
+        raise parser_exceptions.InvalidGlobalName(e, source, file_path)
+
+    if e.accepts == {"MORETHAN"}:
+        # This happens when you write something like "standard:/foo" in a local name
+        # position.
+        if e.token.type == "GLOBAL_NAME_CONTENT":
+            raise parser_exceptions.GlobalNameWhereLocalNameExpected(
+                e, source, file_path
+            )
+        # This should always be set at this point, but the type checker doesn't know that.
+        if e.token_history:
+            raise parser_exceptions.MissingCloseAngleBracket(
+                e, source, file_path, e.token_history[-1]
+            )
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE", "DOT"}:
         if e.token == "{":
@@ -199,7 +243,7 @@ def raise_token_error(
     # TODO: Ideally, we would actually throw this _before_ all other errors, because it's
     # more helpful in many cases. However, due to the way Lark works, that would require
     # re-lexing and re-parsing the entire file with fixed syntax.
-    if "  " in e.token.strip(" "):
+    if "  " in _stripped_context(source, e.line, e.column):
         raise parser_exceptions.ExtraWhitespace(e, source, file_path)
 
     # Because the top-level syntax is so constrained, if we expect a global definition,

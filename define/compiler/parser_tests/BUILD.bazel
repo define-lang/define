@@ -96,6 +96,7 @@ py_test(
     srcs = ["incomplete_statements_test.py"],
     deps = [
         ":conftest",
+        ":test_helpers",
         "//define/compiler:parser",
         "//define/compiler:parser_exceptions",
     ],

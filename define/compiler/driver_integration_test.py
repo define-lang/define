@@ -144,7 +144,6 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/local_names/leading_digit.dfn": [
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
-    "syntax/local_names/space.dfn": [diagnostics.InvalidLocalNameFormatDiagnostic],
     "syntax/local_names/special_characters.dfn": [
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
@@ -152,14 +151,6 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/paths/double_slash.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.GlobalNamePathEmptySegmentDiagnostic,
-    ],
-    "syntax/paths/empty_path.dfn": [
-        diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
-        diagnostics.PathMismatchDiagnostic,
-    ],
-    "syntax/paths/missing_leading_slash.dfn": [
-        diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
-        diagnostics.PathMismatchDiagnostic,
     ],
     "syntax/paths/path_leading_underscore.dfn": [diagnostics.PathMismatchDiagnostic],
     "syntax/paths/trailing_slash.dfn": [

@@ -330,6 +330,13 @@ class TestGlobalNamePath:
         assert result[0].path == "invalid/path"
         assert result[0].location.column == 10
 
+    def test_bare_slash(self):
+        result = name_validators.validate_global_name_path(_global_path_name("/"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+        assert result[0].path == "/"
+        assert result[0].location.column == 10
+
     def test_trailing_slash(self):
         result = name_validators.validate_global_name_path(
             _global_path_name("/invalid/path/")

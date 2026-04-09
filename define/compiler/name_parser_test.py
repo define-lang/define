@@ -155,6 +155,25 @@ def test_parse_global_name_reference_full_form_authority_with_path():
     assert name.path.name == "/action/run"
 
 
+def test_parse_global_name_reference_bare_slash():
+    token = _make_name_content_token("/", line=1, column=1)
+    name = name_parser.parse_global_name_reference(token)
+
+    assert name.fqun is None
+    assert name.path.name == "/"
+
+
+def test_global_name_definition_rejects_bare_slash():
+    token = _make_name_content_token("/", line=1, column=10)
+    with pytest.raises(
+        parser_exceptions.DefinitionGlobalNameContentRequiresFqun
+    ) as error:
+        name_parser.parse_global_name_definition(token)
+    assert error.value.context == "/"
+    assert error.value.line == 1
+    assert error.value.column == 10
+
+
 def test_global_name_definition_requires_fqun():
     token = _make_name_content_token("/path/only", line=1, column=30)
     with pytest.raises(

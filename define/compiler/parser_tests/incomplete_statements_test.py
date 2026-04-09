@@ -8,6 +8,7 @@ import pytest
 
 from define.compiler import parser_exceptions
 from define.compiler.parser_tests.conftest import Parse
+from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 
 
 def test_empty_file(parse: Parse) -> None:
@@ -29,9 +30,79 @@ def test_file_all_newlines(parse: Parse) -> None:
 def test_define_the_potential_incomplete_global_prefix(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential\n")
-    assert exc_info.value.token == "define the potential"
+    assert exc_info.value.token == "define"
     assert exc_info.value.line == 1
     assert exc_info.value.column == 1
+
+
+def test_bare_colon_at_top_level(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse(":\n")
+    assert exc_info.value.token == ":"
+    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_bare_slash_at_top_level(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("/\n")
+    assert exc_info.value.token == "/"
+    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 1
+
+
+def test_bare_colon_between_definitions(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define the potential position<standard:/path>.\n" + ":\n")
+    assert exc_info.value.token == ":"
+    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 1
+
+
+def test_bare_slash_between_definitions(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("define the potential position<standard:/path>.\n" + "/\n")
+    assert exc_info.value.token == "/"
+    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 1
+
+
+def test_close_angle_colon_in_action_statements_block(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "        >:\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.line == 6
+    assert exc_info.value.column == 9
+
+
+def test_missing_open_angle_with_close_angle_colon(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "        define the positionrun>:\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "run"
+    assert exc_info.value.name == "run"
+    assert exc_info.value.line == 6
+    assert exc_info.value.column == 28
 
 
 def test_global_position_block_open_without_content(parse: Parse) -> None:
@@ -353,29 +424,50 @@ def test_create_dimension_point_reference_single_colon_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 50
 
 
-def test_name_content_forbids_double_colon_in_create_reference(
+def test_create_dimension_point_reference_single_slash_then_newline(
     parse: Parse,
 ) -> None:
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
+    with pytest.raises(
+        parser_exceptions.ExpectedChainSeparatorOrTerminator
+    ) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
             + "        the position<run> has a dimension point.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in position</foo::bar>.\n"
+            + "        create a dimension point in position<foo>/\n"
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "::"
-    assert exc_info.value.name == "/foo"
+    assert exc_info.value.token == "/"
+    assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 50
+
+
+def test_double_colon_in_create_reference_parses_as_global_name(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position</foo::bar>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path",
+        "/foo::bar",
+    ]
 
 
 def test_destroy_dimension_point_missing_reference(
@@ -451,29 +543,28 @@ def test_destroy_dimension_point_reference_single_colon_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 53
 
 
-def test_name_content_forbids_double_colon_in_destroy_reference(
+def test_double_colon_in_destroy_reference_parses_as_global_name(
     parse: Parse,
 ) -> None:
-    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
-        parse(
-            "define the potential action<mv:define-lang.org:parser:/path> {\n"
-            + "    define the position<run>.\n"
-            + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
-            + "    } and it does {\n"
-            + "        destroy the dimension point in position</foo::bar>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert exc_info.value.token == "::"
-    assert exc_info.value.name == "/foo"
-    assert exc_info.value.line == 6
-    assert exc_info.value.column == 53
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        destroy the dimension point in position</foo::bar>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path",
+        "/foo::bar",
+    ]
 
 
 def test_name_chain_invalid_item(
@@ -509,7 +600,7 @@ def test_move_dimension_point_missing_source_reference(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "move the dimension point in."
+    assert exc_info.value.token == "move"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 9
@@ -650,7 +741,7 @@ def test_move_dimension_point_single_colon_after_source(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 50
 
@@ -672,7 +763,7 @@ def test_move_dimension_point_single_colon_after_destination(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "GLOBAL_NAME_CONTENT"
+    assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 68
 
@@ -691,7 +782,7 @@ def test_move_dimension_point_no_space_before_to(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "to position<dest"
+    assert exc_info.value.token == "to"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 50
@@ -742,7 +833,7 @@ def test_move_dimension_point_missing_terminator_after_destination(
 def test_move_dimension_point_missing_close_angle_bracket_before_to(
     parse: Parse,
 ) -> None:
-    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -753,10 +844,10 @@ def test_move_dimension_point_missing_close_angle_bracket_before_to(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "."
-    assert exc_info.value.token.type == "DOT"
+    assert exc_info.value.token == " to "
+    assert exc_info.value.token.type == "TO"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 74
+    assert exc_info.value.column == 54
 
 
 def test_move_keyword_then_newline(

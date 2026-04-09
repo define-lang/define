@@ -64,15 +64,20 @@ class UnexpectedInput(Exception):
         use_accepts: bool = True,
     ) -> _Label_T | None: ...
 
+class InteractiveParser:
+    def feed_token(self, token: Token) -> None: ...
+
 class UnexpectedCharacters(UnexpectedInput):
     allowed: set[str]
     char: str
     token_history: list[Token] | None
+    interactive_parser: InteractiveParser
 
 class UnexpectedToken(UnexpectedInput):
     token: Token
     expected: set[str]
     token_history: list[Token] | None
+    interactive_parser: InteractiveParser | None
 
     @property
     def accepts(self) -> set[str]: ...

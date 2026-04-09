@@ -173,7 +173,7 @@ class InvalidCharacterError(DefineCharError):
 
 
 class InvalidLocalNameCharacter(DefineCharError):
-    """Wrote / or : where only a local name is accepted."""
+    """Wrote something invalid where only a local name is accepted."""
 
     message_format: ClassVar[str] = "'{escaped_char}' is not allowed in local names."
 
@@ -478,4 +478,20 @@ class GlobalNameInvalidFqunFormat(DefineNameSyntaxError):
         "Fully qualified universe name format is invalid. "
         "Use '<multiverse:authority:universe:/path>' or "
         "'<authority:universe:/path>' or '<standard:/path>'."
+    )
+
+
+class GlobalNameWhereLocalNameExpected(DefineTokenError):
+    """Wrote something with : and / where a local name was expected."""
+
+    message_format: ClassVar[str] = (
+        "This is a global name, but a local name is expected here."
+    )
+
+
+class InvalidGlobalName(DefineTokenError):
+    """Wrote something that isn't a global name where only a global name is accepted."""
+
+    message_format: ClassVar[str] = (
+        "This is not a valid global name (like 'multiverse:authority:universe:/name')."
     )

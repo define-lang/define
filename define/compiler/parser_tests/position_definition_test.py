@@ -22,9 +22,12 @@ def test_position_definition_parses(parse: Parse) -> None:
 def test_position_definition_with_local_style_name_is_global_terminal(
     parse: Parse,
 ) -> None:
-    tree = parse("define the potential position<foo>.\n")
-    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["foo"]
-    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
+    with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
+        parse("define the potential position<foo>.\n")
+    assert exc_info.value.token == "foo"
+    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 31
 
 
 def test_position_definition_missing_open_angle(parse: Parse) -> None:
@@ -120,7 +123,7 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
             + "}\n"
             + "define the potential position<my_lib:/path>.\n"
         )
-    assert str(exc_info.value.token).startswith("t has the")
+    assert str(exc_info.value.token) == "t"
     assert exc_info.value.line == 4
     assert exc_info.value.column == 9
 
@@ -471,7 +474,7 @@ def test_invalid_content_in_init_block(parse: Parse) -> None:
             + "    }\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "nonsense here"
+    assert str(exc_info.value.token) == "nonsense"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.line == 3
     assert exc_info.value.column == 9
@@ -496,7 +499,7 @@ def test_invalid_content_in_potential_position_block(parse: Parse) -> None:
             + "    nonsense here\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "nonsense here"
+    assert str(exc_info.value.token) == "nonsense"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.line == 2
     assert exc_info.value.column == 5
@@ -532,7 +535,7 @@ def test_invalid_content_in_local_position_definition_block(parse: Parse) -> Non
             + "    }\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "nonsense here"
+    assert str(exc_info.value.token) == "nonsense"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.line == 3
     assert exc_info.value.column == 9
