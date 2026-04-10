@@ -19,7 +19,7 @@ bazel_dep(name = "rules_buf", version = "0.5.2")
 bazel_dep(name = "rules_multitool", version = "1.11.1")
 bazel_dep(name = "aspect_rules_lint", version = "2.5.0")
 bazel_dep(name = "aspect_rules_js", version = "3.0.3")
-bazel_dep(name = "rules_nodejs", version = "6.7.3")
+bazel_dep(name = "rules_nodejs", version = "6.7.4")
 
 # Transitive overrides
 bazel_dep(name = "rules_android", version = "0.7.1")  # Fix build breakage
