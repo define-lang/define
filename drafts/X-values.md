@@ -14,6 +14,19 @@ are very few actions they can take without using values in some way.
 The [Concepts](../spec/concepts.md) describe a value as a meaning assigned to a
 dimension point, essentially an opinion about a dimension point.
 
+Define will be theoretically capable of doing computation without assigning any
+values to dimension points, purely by checking presence or absence on dimension
+points in positions (which would represent bits). Define could in this way model
+any circuits or any real computation mechanism for discrete data that could
+exist in the physical universe. (And in the future, Define Approximately would
+be able to represent infinite math as well, giving us the power to represent any
+possible form of computation that could _actually_ exist.) However, most
+practical programs will want to rely on the simulator (the computer) to do
+computation, as it's much more efficient and able to respond to situations from
+outside the program (like user input) more dynamically.
+
+Thus, we do need to hae a way to assign meaning (values) to dimension points.
+
 ### 1: Infinite Complexity
 
 The problem with opinions, in the world of computer programming, is that
@@ -79,26 +92,35 @@ We could solve the electromagnetic state problem in the future with Define
 Approximately. For now, with Define Exactly, the practical realities of the
 world require us to focus on binary data.
 
-### 3: Types of Values
-
-All programming languages in existence today have to deal with the fact that the
-number 97 sometimes means the letter "A," sometimes means the abstract concept
-of the decimal number 97, sometimes means a special code for which fruit the
-user has purchased, sometimes means the number of cents in a price, and so on
-and so forth.
-
-If you have a 97 that is supposed to be a number, you don't want to allow adding
-the letter "A" to it, because that would be a mistake (it doesn't make sense).
-
-Most languages solve this via a system of types, whereby you say that "this
-binary data represents a letter," and then you constrain every operation in the
-entire program by saying what operations can occur on what types. (Or in some
-languages, what _happens_ when an operation is executed on certain types, like
-in languages that allow you to append numbers to strings by using `+`.)
-
 ## Solution
 
-In a computer program, there is only one _real_ value: binary data.
+In a Define program, there is only one _real_ type of value: binary data.
+Dimension points can only be given the meaning "a sequence of bits."
+
+Developers can indicate that a dimension point accepts a value by adding this as
+a line in the definition of a position:
+
+`it has a binary value.`
+
+Dimension points may have only a single value. That value _may_ be an infinite
+number of bits (though later proposals will explain how to constrain this), but
+those bits all conceptually represent a single value: a single number, a single
+character, etc.
+
+A value may be set on a dimension point via this syntax in an Action Statements
+Block:
+
+`set the value of position<recipient> to position<source>.`
+
+That makes `position<recipient>` have the same value that is curently in
+`position<source>`. It does not create a reference to `position<source>` but
+creates an entirely new value.
+
+Once a dimension point is placed into a position with a value, it is considered
+logically to always have a default value. If not specified, that value is
+logically a 1-bit 0. However, most often the code the compiler generates will
+actually assume that the first value that the dimension gets set to in the
+program is actually its initial value.
 
 ## A Real Program
 
