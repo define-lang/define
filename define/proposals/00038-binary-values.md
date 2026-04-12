@@ -1,8 +1,8 @@
-# Define Language Proposal X: Values
+# Define Language Proposal 38: Binary Values
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
-- **Date Proposed:** April 10, 2026
+- **Date Proposed:** April 12, 2026
 - **Date Finalized:**
 
 ## Problems
@@ -97,24 +97,27 @@ world require us to focus on binary data.
 In a Define program, there is only one _real_ type of value: binary data.
 Dimension points can only be given the meaning "a sequence of bits."
 
-Developers can indicate that a dimension point accepts a value by adding this as
-a line in the definition of a position:
-
-`it has a binary value.`
-
 Dimension points may have only a single value. That value _may_ be an infinite
 number of bits (though later proposals will explain how to constrain this), but
 those bits all conceptually represent a single value: a single number, a single
 character, etc.
 
-A value may be set on a dimension point via this syntax in an Action Statements
-Block:
+### Declaring that a Dimension Point May Have a Value
 
-`set the value of position<recipient> to position<source>.`
+Developers can indicate that a dimension point accepts a binary value by adding
+this as a line in the definition of a position:
 
-That makes `position<recipient>` have the same value that is curently in
-`position<source>`. It does not create a reference to `position<source>` but
-creates an entirely new value.
+`it has a value.`
+
+This is called a Value Declaration.
+
+There is no syntax to add this property to a dimension point later; it must be
+assigned at the creation of a dimension point. If a dimension point moves
+through a position that does not have a value, the dimension point does not lose
+its value. However, referring to the dimension point via that position does not
+allow accessing or interacting with its value.
+
+### Initial Values of Dimension Points
 
 Once a dimension point is placed into a position with a value, it is considered
 logically to always have a default value. If not specified, that value is
@@ -122,10 +125,113 @@ logically a 1-bit 0. However, most often the code the compiler generates will
 actually assume that the first value that the dimension gets set to in the
 program is actually its initial value.
 
+### Setting a Value on a Dimension Point
+
+A value may be set on a dimension point via this syntax in an Action Statements
+Block:
+
+`set the value of position<recipient> to position<source>.`
+
+This is called a Value Setting Statement. It makes `position<recipient>` have
+the same value that is curently in `position<source>`. It does not create a
+reference to `position<source>` but simply changes the value on
+`position<recipient>` to be identical to the value that is currently on
+`position<source>`.
+
+Both positions must be declared as having values, otherwise the compiler must
+throw an error.
+
+### Memory Layout
+
+It is worth noting that this proposal is not an instruction to the compiler
+about what to do with _memory_. For example, if the same value exists in
+multiple places in the program and does not change, the compiler may choose to
+make all usages of that value in the program point to the same memory location.
+
+### Automated Requirements
+
+Referring to any interface position or quality-required position in a Value
+Setting Statement infers that that position must be occupied. (In other words,
+it creates an automated requirement in an action for that position to be
+occupied.)
+
 ## A Real Program
+
+```define
+define the potential action<example.com:example:/set_value> {
+    define the position<recipient> {
+        it has a value.
+    }
+    define the position<has_a_value> {
+        it has a value.
+    }
+    it happens when {
+        the position<has_a_value> has a dimension point.
+    } and it does {
+        set the value of position<recipient> to position<has_a_value>.
+    }
+}
+```
 
 ## Why This is the Right Solution
 
+This is one of the parts of Define that I have done the most reasoning and
+research about.
+
+The first key breakthrough was that assigning a value to a dimension point makes
+that dimension point into a symbol: a particle with meaning. However, real
+living beings can assign any possible meaning to any particle, which creates an
+infinite complexity that can't be reasoned about via a programming language.
+
+Thus, I had to create some framework in which values could live and relate to
+each other. To start this, I had to reason through _why_ we want to assign
+meaning to dimension points in a program, and I determined that it's because we
+want to actually _use_ the "simulator" (the computer), like provide actual
+concrete instructions to it, not just reason through abstract things inside the
+universe of the program itself. Thinking through that further, it became
+apparent that computers only care about electromagnetic states, which they
+translate into binary. Thus, with most current computers, the only "meaning"
+that anything can actually have in a program is "this binary data."
+
+Also, information theory, specifically Claude Shannon's work, dictates that any
+discrete information can be losslessy encoded into binary digits (bits). So we
+are in pretty safe terrirory here.
+
+It actually would be nice to be able to reason about non-binary electromagnetic
+states in a computer program, to help with analog controllers and signal
+processors, but those use cases are rare today for programmers and so they
+aren't my top priority. Define Approximately will handle these, although we
+could also handle them as an incremental improvement to Define Exactly in the
+future, by just adding some sort of different value type.
+
+Quantum computing would also need different types of values, potentially.
+
 ## Forward Compatibility
 
+Since we have defined both the default state and the way that values transition,
+and we can determine that deterministically, theoretically we should be able to
+change both the syntax and the semantics here in the future.
+
+The potential danger is if that future change would involve inserting behavior
+at _runtime_ into the program. Since we have chosen the current fundamental of
+computers (binary data) as the "meaning" of dimension points, it seems unlikely
+that we would encounter such a difficult transition in the future. I'm
+optimistic that even if such a transition occurred, we would be able to
+deterministically transform Define programs in a way that still preserved
+optimal performance characteristics.
+
+If we need new types of values (electromagnetic states, quantum states) in the
+future, it doesn't seem to hard to create a new value system or additional
+syntax alongside the existing system in this proposal.
+
 ## Refactoring Existing Systems
+
+There are no Define systems that have a different value system than this,
+because this is the first proposal for a value system.
+
+All existing programs that deal with discrete data could be translated into this
+form of data. The one exception is that today Define does not allow programmers
+to explicitly refer to addresses in memory (pointers) and so programs that
+absolutely depend on direct memory manipulation would not be portable to Define.
+However, that's not a limitation of this proposal---we could still use binary
+data to refer to a memory location if we wanted to.
