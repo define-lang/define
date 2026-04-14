@@ -3,6 +3,16 @@
 This document describes the concepts that Define is based around. It is senior
 to the [spec](spec.md)---it guides how we design the spec.
 
+**WARNING**: Of all the documents I have ever written, this is the one in which
+I have held myself back the _least_ in terms of diving into philosophy, using
+every inch of my technical knowledge, and using whatever words I thought were
+actually best for describing the relevant concepts. It's not intentionally hard
+to read, but it's also not designed to be read by people without extensive
+programming experience and some willingness to dive into some pretty abstract
+philosophy. I would strongly recommend keeping a pad of paper by your side and
+sketching out diagrams or drawings of the various concepts as you go through
+this document.
+
 ## A Program is a Universe
 
 A universe is defined as "a whole system of created things."
@@ -1944,6 +1954,125 @@ This is helpful to us as designers of programming languages, because it allows
 us to reason through how a language should allow interaction with values---that
 they represent positional state of dimension points, and the reason we use them
 is actually to cause state _changes_ in a physical computer.
+
+### The Form (Representation) of Values
+
+In order for a symbol to be _useful_ to more than one person, it must have an
+agreed-upon meaning. Above when I mentioned that the letter "K" has a meaning
+that is fundamentally your opinion, I omitted one important fact: that opinion
+is only _useful_ if other people share the same opinion.
+
+This means that there are actually two concepts: the _form_ of the symbol and
+the _concept_ the symbol represents. One concept can (and does) have multiple
+representations. The letters "d" and "D" both make the same sound. The number 9
+can be written as `9` in decimal, `1001` in binary, or `10` in octal, but it's
+always _logically_ the number nine.
+
+Many programming languages hide this distinction from the developer, just
+telling them that they have "an integer" and not differentiating between "you
+have the _concept_ of an integer" and "you have the _representation_ of an
+integer." Very concretely, the reality of programming is that the decimal number
+`10` could actually be represented in multiple different binary formats. The
+computer cares about the binary bits, the programmer (usually) only cares about
+the concept of the number. In reality, _neither_ of those are the abstract
+concept of "the number ten." They are both different representations that
+translate into each other via a deterministic algorithm.
+
+### A Philosophical View of Representations
+
+In the universe we live in, the "computer" is the human mind. Each mind may have
+a different internal representation of a symbol even though we all have a shared
+reality of the _perception_ of some physical object _and_ a shared concept of
+what that symbol means.
+
+Bob might think of `1` as a single apple, while Alice thinks of `1` as a single
+line drawn in one-dimensional space. Still, to both of them, they both saw the
+written digit `1` and both have the shared concept of "a single discrete thing."
+
+This gives us the idea that external perception, internal representation, and
+understood concept are actually separate things with definable relationships
+between them.
+
+### Symbols as Communication
+
+What is the process by which external perceptions translate into internal
+representations and concepts? Fundamentally, this process is _communication_.
+
+Communication is fully described by
+[Axiom 28](https://www.scientologyreligion.org/background-and-beliefs/the-axioms-of-scientology.html).
+It is not necessary for you to understand that Axiom in order to understand this
+document, nor is this document an interpretation of Axiom 28. However, I wanted
+to provide credit to the system that has helped me think through this problem.
+
+What do we mean by "communication?" Well, in order to cross the boundary from a
+physical reality to a perceived meaning, there must be some process that occurs.
+In fact, this process could be thought of as some sort of interpretation that
+occurs between universes: we see the number `1` as a symbol in the physical
+universe, that light reaches our eyes, and we somehow interpret that into a
+concept in our "own universe."
+
+Imagine a person verbally saying "Hello" to another person. They have a concept
+in their mind of wanting to greet a person. They translate that concept in their
+mind into the idea of the word "hello." That translates to electrical impulses
+in their nerves that become motions of their mouth. Those motions cause motion
+in the air, which form waves that travel through space.
+
+On the listener's side, the sound waves cause movements of the cilia in the ear,
+which are interpreted as nerve signals. Those nerve signals are then translated
+into the listener's mind first as the sound of the word "hello," and then as an
+interpretation of the sound: a concept of being greeted.
+
+### A Series of Translations
+
+The interesting thing in the above sequence, for computer programming, is that
+each phase of that process could be thought of as a translation, interpretation,
+or conversion. Thoughts convert into nerve signals, mouth motions convert into
+sound, and so forth.
+
+There is also a _direction_ for translations: the source of a communication must
+convert _to_ other forms, and the recipient must convert _from_ other forms.
+
+### The Need for Standards
+
+Given all of the above, we could be more specific about our definition: **a
+value is a symbolic representation of a set of dimension points that exist
+elsewhere that is used to communicate from one universe to another**.
+
+In order for that communication to happen, both the source of the communication
+and the recipient must agree on the meaning of a value: how it is supposed to
+translate into concepts. That is, each translation must be explicitly defined.
+This means that there must be a standard for representation so that all parties
+involved understand what the representation means.
+
+CPUs usually use twos-complement form to represent signed integers, IEEE 754
+floating point for most decimal math, and so on. These are standards for binary
+representations where the CPU "agrees" with the program code about what will
+happen when we use them. Programs usually write literal numeric values using
+ASCII digits: `1234567890`. These only work because the compiler designers have
+"agreed" with the programmer about how those representations translate into
+other forms.
+
+### Representations vs Concepts
+
+Funnily enough, all the different representaions of a number are _all_
+representations of the _same concept_. So the concept doesn't change through
+translation layers, just the representation.
+
+The programmer's intention is often split between the concept and the
+representation, though they don't realize it because most programming languages
+make them combine these (`int32` is both the concept of an integer and a
+specific representation of it). The programmer has a logical intention (count
+the number of applies in this basket) and a physical intention (cause the CPU to
+perform addition). Of those two, the logical intention is the most senior---the
+programmer cares about the physical intention only because they want the program
+to be fast, fit well within memory, have a smaller binary size, or have some
+other physical property.
+
+It would be better if the programming language could guarantee for them that the
+most efficient thing possible would always be done in order to accomplish the
+logical intention they have. This isn't always possible, but it should be
+possible to do it far better than existing programming languages have
+accomplished.
 
 ## Similarities and Differences
 
