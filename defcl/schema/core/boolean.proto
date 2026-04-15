@@ -1,5 +1,5 @@
 // TODO(https://github.com/bufbuild/buf/issues/4193): Upgrade to edition 2024 when buf supports it
-edition = "2023";
+edition = "2024";
 
 package defcl.schema.core;
 

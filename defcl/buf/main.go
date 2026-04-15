@@ -8,6 +8,7 @@ import (
 
 	"buf.build/go/bufplugin/check"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func main() {
@@ -36,7 +37,6 @@ var spec = &check.Spec{
 
 // Rule specifications
 
-// TODO(https://github.com/bufbuild/buf/issues/4193): Upgrade to edition 2024 when buf supports it
 var editionRule = &check.RuleSpec{
 	ID:          "DEFCL_EDITION",
 	CategoryIDs: []string{"DEFCL"},
@@ -109,19 +109,17 @@ var timeFieldSuffixRule = &check.RuleSpec{
 	Handler:     check.RuleHandlerFunc(checkTimeFieldSuffix),
 }
 
-// checkEdition verifies that files use edition 2023.
-// TODO(https://github.com/bufbuild/buf/issues/4193): Upgrade to edition 2024 when buf supports it
+// checkEdition verifies that files use edition 2024.
 func checkEdition(_ context.Context, responseWriter check.ResponseWriter, request check.Request) error {
 	for _, file := range request.FileDescriptors() {
 		if file.IsImport() {
 			continue
 		}
-		fd := file.ProtoreflectFileDescriptor()
-		syntax := fd.Syntax()
-		if syntax != protoreflect.Editions {
+		edition := file.FileDescriptorProto().GetEdition()
+		if edition != descriptorpb.Edition_EDITION_2024 {
 			responseWriter.AddAnnotation(
-				check.WithMessagef("file must use edition 2023, got %v", syntax),
-				check.WithDescriptor(fd),
+				check.WithMessagef("file must use edition 2024, got %v", edition),
+				check.WithDescriptor(file.ProtoreflectFileDescriptor()),
 			)
 		}
 	}

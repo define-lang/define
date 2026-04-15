@@ -1,0 +1,7 @@
+edition = "2024";
+
+package buf.testdata.valid;
+
+message Edition2024Config {
+  string name = 1;
+}
