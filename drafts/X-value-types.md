@@ -204,6 +204,58 @@ fact that this was happening until I was researching for this proposal.
 
 ## Solution
 
+The Values section of the [Concepts](../spec/concepts.md) (which I actually
+mostly wrote _after_ writing out the Problems above) provides a framework that I
+believe successfully solves all of the problems above. We simply need to
+describe what our concrete implementation of those concepts will be in Define.
+In brief:
+
+1. **Concept** of a Value: You can assign qualities like
+   `value<standard:/number/integer>` or `value<standard:/number/natural>` to a
+   dimension point. These behave according to the rules of mathematics, as far
+   as Define is concerned, unless their type definition indicates otherwise.
+2. **Representation** of a Value: The actual implementation of a value is
+   dictated by an _encoding_, which is also a quality you can assign to a value.
+   Often the encoding is inferred by the compiler, except at the boundaries of a
+   program where the encoding type is enforced by something external and must be
+   specified explicitly. This is a quality you can assign like
+   `encoding<standard:/integer/unsigned/cpu/64bit>` or
+   `encoding<standard:/integer/twos_complement/32bit>` or various other things
+   with more or less specificity.
+3. **Intentions** about a Value: These are operations that you can execute. We
+   define `potential operations` on `value` types, which get concrete
+   `operation` types in `encoding` types. That is, values define the _contract_
+   and _name_ of the operation, and encodings specify the _implementaion_ of the
+   operation. Operations are named like `operation<standard:/integer/add>` and
+   are a property of the value type assigned to a dimension point.
+4. **Translations** between representations: These are mechanisms to translate
+   between representations, even translations like "a string of ASCII digits" to
+   "binary 64-bit int." Encodings can specify what they can convert _to_ and
+   _from_ using a special name type `converter`. Define's circular name
+   reference controls prevent developers from writing the same converter twice
+   (a converter in the "32-bit int" encoding to convert to 64 bits, and a
+   converter in the "64-bit int" encoding to convert _from_ 32 bits would cause
+   a circular reference error between those encodings).
+
+This should give Define more power, abstraction, _and_ explicit control over
+computer behavior (when desired) than any other programming language I know of.
+It lets the compiler designers create a very powerful system that allows for
+deep optimization while still allowing programmers to create their own types of
+values, encodings, operations on those values, along with full translations from
+and to any other encoding the programmer needs to interact with.
+
+It even allows (in the compiler frontend, at least) programmers to create custom
+operations for obscure hardware that can still be plugged into Define's
+fully-verified system.
+
+Values will have relationships to other values, encodings will have
+relationships to values, and operations will have relationships to both values
+and encodings. Converters are properties of encodings.
+
+The full details of this system will require separate proposals for each
+component, as each deserves a very deep dive into its reasoning and
+construction.
+
 ## A Real Program
 
 ## Why This is the Right Solution
