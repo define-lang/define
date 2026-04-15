@@ -47,7 +47,7 @@ use_repo(pypi, "pypi")
 # --- Go SDK ---
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
-go_sdk.download(version = "1.26.1")
+go_sdk.download(version = "1.26.2")
 
 # --- Go dependencies from go.mod ---
 
@@ -65,8 +65,8 @@ use_repo(go_deps, "build_buf_go_bufplugin", "org_golang_google_protobuf")
 
 buf = use_extension("@rules_buf//buf:extensions.bzl", "buf")
 buf.toolchains(
-    sha256 = "ad03958491a1cad0796fecf8ce8c6c74afcdc33f964c77d251babd65e311cfaf",
-    version = "v1.66.1",
+    sha256 = "387282dcab4ace0df8e78b31d20e47fb205100293059a0cc5ebd24c6da3352dc",
+    version = "v1.68.1",
 )
 use_repo(buf, "rules_buf_toolchains")
 
@@ -79,7 +79,7 @@ use_repo(multitool, "multitool")
 # --- NodeJS ---
 
 node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
-node.toolchain(node_version = "24.13.0")
+node.toolchain(node_version = "24.14.0")
 
 # Translate the pnpm-lock.yaml file to bazel targets
 npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")

@@ -4,33 +4,33 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Linux-aarch64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.68.1/buf-Linux-aarch64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "157806788e82216d4ea6010a9d21e61130225d0d61c37904a4fad675fe446d94",
+        "sha256": "78867da40e1e20ba2a7853b044cf66bf71e5a11489c84f5f906a3e044eeafd85",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Linux-x86_64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.68.1/buf-Linux-x86_64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "9ad6fcfb208646476f020ee84eaea0563fe94debe9337763d404f267b6d85d03",
+        "sha256": "098e5ba95b26f1806ed47c672c3fb8a5d1f76c9a1278cbc0788661321d11f04b",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Darwin-arm64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.68.1/buf-Darwin-arm64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "e5e3a80dc1bc3dd374ecfcbc250c731a05dbb01d382117d3d420bca7875d9977",
+        "sha256": "364d578e821c6f8397e30929e4fa36146954087d7663aaab0244cdcc75e58258",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/bufbuild/buf/releases/download/v1.66.1/buf-Darwin-x86_64.tar.gz",
+        "url": "https://github.com/bufbuild/buf/releases/download/v1.68.1/buf-Darwin-x86_64.tar.gz",
         "file": "buf/bin/buf",
-        "sha256": "fd055cd83595039b9d05cf587b5460281b4a7ff0b86f7584cccba17ec1860e88",
+        "sha256": "388082f67d8d14818c8eeb67257f3c3c46797b8109f1612a578b07447506277f",
         "os": "macos",
         "cpu": "x86_64"
       }
@@ -123,41 +123,41 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.10/ruff-aarch64-unknown-linux-musl.tar.gz",
         "file": "ruff-aarch64-unknown-linux-musl/ruff",
-        "sha256": "750164384c78e208b5e5bf764916f23270844c6a6ea0057dec1f7951bce02fca",
+        "sha256": "84754f0e58f58fb123ea49b8d22b8ce2cc96e4046b7c1b1ed99f6af7fe76f8ef",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.10/ruff-x86_64-unknown-linux-musl.tar.gz",
         "file": "ruff-x86_64-unknown-linux-musl/ruff",
-        "sha256": "7ca0d590da2274429e8033cdaae1d923229ad19b2df7d8c2c3b94451527ab45c",
+        "sha256": "8b0a16bae81e371c9b6176a27fdb9db1deaa04c4cfe87e8604a898cc31686500",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-aarch64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.10/ruff-aarch64-apple-darwin.tar.gz",
         "file": "ruff-aarch64-apple-darwin/ruff",
-        "sha256": "e90a351ddc2e5e411168b5cbfc7d694231e793948d0a29aa82618ea6f17225f1",
+        "sha256": "77c1df502dcfaaec52c6ce203b504b8554c88ab66ac01313410fa68ad9aafd5b",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-x86_64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.10/ruff-x86_64-apple-darwin.tar.gz",
         "file": "ruff-x86_64-apple-darwin/ruff",
-        "sha256": "aef752bd803e58a732651d7ecd8434288f2ce7f252e415ecfa5b4a1518aea218",
+        "sha256": "7210e06196de876771cc0bad0f1d57678e709d039f184b491fdaa600d6a95a5e",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.6/ruff-x86_64-pc-windows-msvc.zip",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.15.10/ruff-x86_64-pc-windows-msvc.zip",
         "file": "ruff.exe",
-        "sha256": "34548ff94a9f52c96c75672d34eee6068a4bf4fdcb3ca12d10e9f4b8abedad96",
+        "sha256": "6f8f9a445102107ee3c0a05c8f386bacb32238199ecbc0983b9b06c5ea3d7c5e",
         "os": "windows",
         "cpu": "x86_64"
       }
@@ -167,49 +167,49 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-aarch64-unknown-linux-musl.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.11.6/uv-aarch64-unknown-linux-musl.tar.gz",
         "file": "uv-aarch64-unknown-linux-musl/uv",
-        "sha256": "d08c08b82cdcaf2bd3d928ffe844d3558dda53f90066db6ef9174157cc763252",
+        "sha256": "d14ebd6f200047264152daaf97b8bd36c7885a5033e9e8bba8366cb0049c0d00",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-x86_64-unknown-linux-gnu.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.11.6/uv-x86_64-unknown-linux-gnu.tar.gz",
         "file": "uv-x86_64-unknown-linux-gnu/uv",
-        "sha256": "3e1027f26ce8c7e4c32e2277a7fed2cb410f2f1f9320d3df97653d40e21f415b",
+        "sha256": "0c6bab77a67a445dc849ed5e8ee8d3cb333b6e2eba863643ce1e228075f27943",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-aarch64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.11.6/uv-aarch64-apple-darwin.tar.gz",
         "file": "uv-aarch64-apple-darwin/uv",
-        "sha256": "8a09f0ef51ee7f7170731b4cb8bde5bf9ba6da5304f49a7df6cdab42a1f37b5d",
+        "sha256": "4b69a4e366ec38cd5f305707de95e12951181c448679a00dce2a78868dfc9f5b",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-x86_64-apple-darwin.tar.gz",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.11.6/uv-x86_64-apple-darwin.tar.gz",
         "file": "uv-x86_64-apple-darwin/uv",
-        "sha256": "dd18420591d625f9b4ca2b57a7a6fe3cce43910f02e02d90e47a4101428de14a",
+        "sha256": "8e0ed5035eaa28c7c8cd2a46b5b9a05bfff1ef01dbdc090a010eb8fdf193a457",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-aarch64-pc-windows-msvc.zip",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.11.6/uv-aarch64-pc-windows-msvc.zip",
         "file": "uv.exe",
-        "sha256": "2c6fe113f14574bc27f085751c68d3485589fcc3c3c64ed85dd1eecc2f87cffc",
+        "sha256": "bee7b25a7a999f17291810242b47565c3ef2b9205651a0fd02a086f261a7e167",
         "os": "windows",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.10.10/uv-x86_64-pc-windows-msvc.zip",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.11.6/uv-x86_64-pc-windows-msvc.zip",
         "file": "uv.exe",
-        "sha256": "d31a30f1dfb96e630a08d5a9b3f3f551254b7ed6e9b7e495f46a4232661c7252",
+        "sha256": "99aa60edd017a256dbf378f372d1cff3292dbc6696e0ea01716d9158d773ab77",
         "os": "windows",
         "cpu": "x86_64"
       }
