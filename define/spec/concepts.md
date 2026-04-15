@@ -2074,6 +2074,19 @@ logical intention they have. This isn't always possible, but it should be
 possible to do it far better than existing programming languages have
 accomplished.
 
+### The Components of a Value
+
+From the above we can see that there are four different concepts involved with
+values:
+
+1. The concept of the value.
+2. The representation(s) of the value.
+3. Translations between representations.
+4. An intention of what we are going to _do_ with a value.
+
+A programming language ideally needs some way to explicitly describe all four of
+these concepts as separate entities.
+
 ## Similarities and Differences
 
 The principles we have described so far give us some very powerful mechanisms
