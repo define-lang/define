@@ -2,6 +2,6 @@ edition = "2023";
 
 package buf.testdata.invalid.edition;
 
-message Config {
+message EditionConfig {
   string name = 1;
 }
