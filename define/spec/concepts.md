@@ -1924,13 +1924,12 @@ distinction and do not have clear design principles around when values should be
 used vs when inherent constructs of the programming language should be used to
 represent some state or logic of the program.
 
-### Arithmetic Does Not Exist
+### Discrete Arithmetic Does Not Exist
 
 Okay, hold on to your seats for this one. When trying to puzzle out what a value
-really _is_ in a program, I had a shocking realization: arithmetic, the math
-that we were all taught is the fundamental of calculation, that we were all told
-is the basic activity of a computer, does not, in fact, actually exist in the
-physical universe.
+really _is_ in a program, I had a shocking realization: integer arithmetic, the
+math that we were all taught as children, where you add up countable numbers of
+things, does not, in fact, actually exist in the physical universe.
 
 If you study the history of computing in detail, you will discover that in order
 to make a machine "do math," you have to go through _wild contortions_. All the
@@ -1940,20 +1939,43 @@ it _look_ like a machine is "doing arithmetic," when really what it's doing is
 moving objects around in space with defined patterns and then showing you the
 symbols you expected based on those patterns.
 
-Modern computers are no different in this respect. They cannot "do arithmetic,"
+Modern computers are no different in this respect. They do not "do arithmetic,"
 in fact. What they are really doing in the physical universe, when you study how
 logic gates really work, is essentially moving particles around. They _can_
 create complex patterns and routes for particles. That "arithmetic" is happening
 is simply an opinion of the observer.
 
-What this means is that, in all universes, the thing that a value _actually
-represents_ is simply a configuration of dimension points with specific
-positional relationships to each other.
+_Quantity_ exists. There are a certain number of protons and neutrons in an
+atom. You have a certain number of apples or oranges. But the universe isn't
+fundamentally built on counting discrete objects and then doing addition,
+subtraction, multiplication, and division with them.
+
+What this means is that what a value _actually represents_ is simply a
+configuration of dimension points with specific positional relationships to each
+other.
 
 This is helpful to us as designers of programming languages, because it allows
 us to reason through how a language should allow interaction with values---that
 they represent positional state of dimension points, and the reason we use them
 is actually to cause state _changes_ in a physical computer.
+
+#### Infinite Arithmetic _Does_ Exist
+
+After writing the above, I read
+[Hamilton's first lecture on quaternions](https://babel.hathitrust.org/cgi/pt?id=hvd.hnvn9q&seq=143),
+which caused me to realize that there actually _is_ a form of arithmetic that
+exists in the physical universe: distances between dimension points. You can
+take two points and then compare the distance of another two points and say that
+they are closer or further than other points. However, this math is inexact and
+only relative. But you can describe addition as adding an amount of space
+between points, subtraction as removing it, and multiplication/division as being
+about the ratio of how much space there is between two things.
+
+This does help us with designing a programming language, but only in ways
+described later in this document. It also gives us a clue that perhaps modern
+computers are not designed the right way, as there is perhaps a simpler way to
+make the physical universe do math if you are willing to accept non-absolute
+values.
 
 ### The Form (Representation) of Values
 
