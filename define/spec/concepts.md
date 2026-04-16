@@ -1977,6 +1977,15 @@ computers are not designed the right way, as there is perhaps a simpler way to
 make the physical universe do math if you are willing to accept non-absolute
 values.
 
+The reality of existing computer programs is that they are all designed to
+calculate exact values, and in order to be able to translate those programs into
+Define and execute against existing hardware, we have to be able to model exact
+math, so we are still stuck with that problem. Theoretically, you could imagine
+a universe where all points are only allowed to be unit distances away from each
+other, and you could do integer math that way, although I'm not sure that
+provides us any practical insight in how to design a math system in a
+programming language.
+
 ### The Form (Representation) of Values
 
 In order for a symbol to be _useful_ to more than one person, it must have an
