@@ -3,7 +3,7 @@ module github.com/define-lang/define/defcl/buf
 go 1.26.2
 
 require (
-	buf.build/go/bufplugin v0.9.0
+	buf.build/go/bufplugin v0.10.0
 	google.golang.org/protobuf v1.36.11
 )
 
