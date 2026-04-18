@@ -79,7 +79,7 @@ use_repo(multitool, "multitool")
 # --- NodeJS ---
 
 node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
-node.toolchain(node_version = "24.14.0")
+node.toolchain(node_version = "24.14.1")
 
 # Translate the pnpm-lock.yaml file to bazel targets
 npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")

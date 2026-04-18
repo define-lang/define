@@ -92,22 +92,54 @@ def _update_go_sdk(latest: str) -> bool:
     return changed
 
 
-def _fetch_latest_node_lts_version() -> str:
-    """Fetch the latest LTS Node.js version from nodejs.org.
+def _locate_node_versions_bzl() -> Path:
+    """Absolute path to rules_nodejs's node_versions.bzl via local Bazel.
 
-    Returns the version as "major.minor.0" since rules_nodejs only
-    includes .0 patch versions in its known-version list.
+    Uses `bazelisk query --output=location`, which also materialises the
+    external repo on first run.
     """
+    cmd = [
+        "bazelisk",
+        "query",
+        "--output=location",
+        "@rules_nodejs//nodejs/private:node_versions.bzl",
+    ]
+    result = subprocess.run(
+        cmd,
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    match = re.match(r"^(.+?):\d+:\d+:", result.stdout.strip())
+    if match is None:
+        raise RuntimeError(f"Unexpected bazelisk query output: {result.stdout!r}")
+    return Path(match.group(1))
+
+
+def _load_rules_nodejs_supported_versions() -> set[str]:
+    """Node.js X.Y.Z versions rules_nodejs has pre-computed hashes for."""
+    text = _locate_node_versions_bzl().read_text()
+    # Dict keys are "<version>-<platform>" (e.g. "24.14.1-darwin_arm64"); every
+    # version has one entry per platform, so set() dedupes across platforms.
+    return set(re.findall(r'"(\d+\.\d+\.\d+)-\w+"', text))
+
+
+def _pick_latest_node_lts_version(supported: set[str]) -> str:
+    """Latest LTS version from nodejs.org that rules_nodejs also supports."""
     resp = requests.get(_NODE_DL_API, timeout=30)
     resp.raise_for_status()
     releases = cast("list[dict[str, object]]", json.loads(resp.text))
     # Releases are newest-first; lts is a codename string when active, False otherwise.
     for release in releases:
-        if release.get("lts"):
-            version_str = cast("str", release["version"]).lstrip("v")
-            major, minor, _ = version_str.split(".")
-            return f"{major}.{minor}.0"
-    raise RuntimeError("No LTS release found in Node.js dist index")
+        if not release.get("lts"):
+            continue
+        version_str = cast("str", release["version"]).lstrip("v")
+        if version_str in supported:
+            return version_str
+    raise RuntimeError(
+        "No supported LTS Node.js version found; consider bumping rules_nodejs"
+    )
 
 
 def _update_node_toolchain(version: str) -> bool:
@@ -187,7 +219,8 @@ def main() -> int:
         print(f"  Already at latest ({buf_tag})")
 
     print("\nChecking Node.js toolchain...")
-    latest_node = _fetch_latest_node_lts_version()
+    supported = _load_rules_nodejs_supported_versions()
+    latest_node = _pick_latest_node_lts_version(supported)
     if _update_node_toolchain(latest_node):
         print(f"  Updated Node.js to {latest_node}")
     else:
