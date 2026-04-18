@@ -227,7 +227,10 @@ In brief:
    `operation` types in `encoding` types. That is, values define the _contract_
    and _name_ of the operation, and encodings specify the _implementaion_ of the
    operation. Operations are named like `operation<standard:/integer/add>` and
-   are a property of the value type assigned to a dimension point.
+   are a property of the value type assigned to a dimension point. While actions
+   are "physical" machines in our universe that operate on dimension points,
+   operations are _symbolic_ machines. they operate entirely on values, not on
+   positions.
 4. **Translations** between representations: These are mechanisms to translate
    between representations, even translations like "a string of ASCII digits" to
    "binary 64-bit int." Encodings can specify what they can convert _to_ and
@@ -257,6 +260,65 @@ component, as each deserves a very deep dive into its reasoning and
 construction.
 
 ## A Real Program
+
+```define
+# Logically defined as an arbitrary-precision signed integer. Limiting
+# it to ranges of integers would be done by constraints.
+define the potential value<standard:/number/integer>.
+
+# Logically defined as a checked add where the compiler will ensure
+# that overflow is impossible before running it. There would be separate
+# saturating and wrapping adds.
+define the operation<standard:/number/integer/add> {
+    define the argument<a> {
+        it has the value<standard:/number/integer>.
+    }
+    define the argument<b> {
+        it has the value<standard:/number/integer>.
+    }
+    define the argument<sum> {
+        it has the value<standard:/number/integer>.
+    }
+    it does {
+        set argument<sum>::value<standard:/number/integer> by the computer.
+    }
+}
+
+# Somewhere inside of an Action Statements Block
+execute the operation<standard:/number/add> {
+    with argument<a> set to position<augend>::value<standard:/number>.
+    with argument<b> set to position<addend>::value<standard:/number>.
+    with argument<sum> set to position<result>::value<standard:/number>.
+}
+
+# Defined as whatever binary encoding the target CPU uses.
+define the encoding<standard:/number/integer/cpu/32bit/signed> {
+    this dimension point must have the value<standard:/number/integer>.
+    # Imaginary syntax for quality-requiring a constraint.
+    this dimension point must have the constraint<standard:/number/integer/32bit>.
+
+    define the converter to encoding<standard:/number/integer/cpu/32bit/unsigned> {
+        it is implemented by the compiler.
+    }
+    define the converter to encoding<standard:/number/integer/cpu/64bit/signed> {
+        it is implemented by the compiler.
+    }
+    define the converter to encoding<standard:/number/float/cpu/64bit> {
+        it is implemented by the compiler.
+    }
+    define the converter to encoding<standard:/number/integer/cpu/16bit> {
+        # Imaginary syntax, at this point.
+        require that {
+            # This perhaps will end up using operation syntax when we actually
+            # implement it, not sure yet.
+            the value<standard:/number/integer> is less than number<2^15>.
+            AND
+            the value<standard:/number/integer> is greater than number<-2^15>.
+        }
+        it is implemented by the compiler.
+    }
+}
+```
 
 ## Why This is the Right Solution
 
