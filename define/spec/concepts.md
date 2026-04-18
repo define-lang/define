@@ -1871,7 +1871,7 @@ sound" is purely something you personally believe.
 
 The "B" that you are reading right there is not the sound. The sound you hear
 (air particles vibrating in space) is not the insect ("bee"). The insect is real
-and has no meaning.
+and has no meaning. A bee is a _fact_, not an opinion.
 
 ### Values In a Computer Program
 
@@ -1966,10 +1966,10 @@ After writing the above, I read
 which caused me to realize that there actually _is_ a form of arithmetic that
 exists in the physical universe: distances between dimension points. You can
 take two points and then compare the distance of another two points and say that
-they are closer or further than other points. However, this math is inexact and
-only relative. But you can describe addition as adding an amount of space
-between points, subtraction as removing it, and multiplication/division as being
-about the ratio of how much space there is between two things.
+they are closer or further together than first set of points. However, this math
+is inexact and only relative. But you can describe addition as adding an amount
+of space between points, subtraction as removing it, and multiplication/division
+as being about the ratio of how much space there is between two things.
 
 This does help us with designing a programming language, but only in ways
 described later in this document. It also gives us a clue that perhaps modern
@@ -1985,6 +1985,36 @@ a universe where all points are only allowed to be unit distances away from each
 other, and you could do integer math that way, although I'm not sure that
 provides us any practical insight in how to design a math system in a
 programming language.
+
+### Computers Are Different From Each Other
+
+On top of the problem of needing to represent some form in the physical universe
+via a symbol (a "meaning" or "value" on a dimension point), we have to contend
+with the fact that programs run on different types of computers, and that
+commputers themselves evolve over time. Thus, you actually have multiple
+problems to contend with in a value system:
+
+1. The abstract _idea_ of a computer. It does math, but you don't know how. It
+   can give you values and you can send it values, but you don't know how that
+   happens.
+2. The concrete physical reality of the actual computer on which a program is
+   currently running. It has a CPU, memory, registers, network cards, video
+   outputs, keyboards, etc.
+
+I can write `1 + 2` in a computer program and expect that to be `3`, but how
+different computers do that could be wildly different. And yet, from a _logical_
+perspective, the exact same thing is happening in my program regardless of _how_
+the computer did it.
+
+Programming languages must deal with both sides of this problem: they must
+present a logical form of operations to the programmer, but also be able to
+deterministically translate that into the instructions that get sent to the
+computer, ideally in a way that allows the computer to execute them efficently.
+
+In a sense, this actually gives you two different machines that you have to
+consider: (1) an imaginary machine that executes pure logic (2) a physical
+machine that takes real actions in the physical universe that represent that
+logical pattern.
 
 ### The Form (Representation) of Values
 
