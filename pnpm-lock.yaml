@@ -10,7 +10,7 @@ importers:
     devDependencies:
       basedpyright:
         specifier: latest
-        version: 1.39.0
+        version: 1.39.2
 
   tools:
     devDependencies:
@@ -19,7 +19,7 @@ importers:
         version: 1.0.0
       prettier:
         specifier: latest
-        version: 3.8.2
+        version: 3.8.3
 
 packages:
 
@@ -30,8 +30,8 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
-  basedpyright@1.39.0:
-    resolution: {integrity: sha512-qUXr14Gp2QFwDBgN6HngdshGNbCQMLEecA63YZFQROQpnfQMQaoXdVRrz3E3wnA5R+SzdeDdzpb1Gn20iNzpjg==}
+  basedpyright@1.39.2:
+    resolution: {integrity: sha512-IV5deqNGRPHcuZl7S7niYHCeUXghdT58cFosu+9qaI1nuUx0z5L59mRyDqXbBQIab00BnGUWo4UcRLljx1dErA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -44,8 +44,8 @@ packages:
     resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
     hasBin: true
 
-  prettier@3.8.2:
-    resolution: {integrity: sha512-8c3mgTe0ASwWAJK+78dpviD+A8EqhndQPUBpNUIPt6+xWlIigCwfN01lWr9MAede4uqXGTEKeQWTvzb3vjia0Q==}
+  prettier@3.8.3:
+    resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -57,7 +57,7 @@ snapshots:
 
   argparse@2.0.1: {}
 
-  basedpyright@1.39.0:
+  basedpyright@1.39.2:
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -68,4 +68,4 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  prettier@3.8.2: {}
+  prettier@3.8.3: {}
