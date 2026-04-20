@@ -391,17 +391,18 @@ further with formal verification and type safety than most traditional
 object-oriented languages. Some version of these two principles are what make
 functional languages "feel" more correct to programmers who use them.
 
-There are only a few languages that _fully_ implement CHC: mostly languages
-designed for full formal verification like Rocq or Lean. Why is that?
+There are only a few languages that _fully_ implement CHC (using
+[Dependent Type Theory](https://gemini.google.com/share/af2ee26bbca8)): mostly
+languages designed for full formal verification like Rocq or Lean. Why is that?
 
 ### The Difficulties of Implementing the Curry-Howard Correspondence
 
-The traditional difficulties of implementing CHC in a programming language have
-been:
+The traditional difficulties of implementing the full power of CHC in a
+programming language have been:
 
 1. It requires proofs of termination. Forcing a developer to prove that their
    complex web server or UI loop terminates is a hurdle that most languages
-   aren't willing to impose.
+   aren't willing to impose on developers.
 2. To get the full power of CHC, it requires you to write a whole other language
    (type expressions) inside of the language you're writing. This can be tedious
    and complex.
@@ -500,6 +501,10 @@ logical values into concrete encodings and take concrete operations on them on
 real hardware. This is the one categorization that a language _must_ perform, so
 that should be our starting point.
 
+We may need to solve this for aspects of Define beyond just values in the
+future, but starting with values gives us the foundation we need in order to
+progress logically forward from here.
+
 ### Values and Operations as Communication
 
 The other breakthrough was realizing that symbols are actually used as a form of
@@ -513,14 +518,26 @@ program's universe and the computer's universe is communication.
 
 ### Curry-Howard in Define
 
-My belief is that we will, eventually, get most or all of the power of CHC in
-Define without the logical-reasoning complexity, the need to think of your
-program as math, or the need to write out explicit proofs of things that are
-obvious from the structure of the program. It will come from multiple different
-components of the system rather than encoding everything into a single type
-system. I believe it will also get us more compositional flexibility than a
-traditional CHC system, because you will be able to encode constraints inside of
-qualities and then assign those qualities however you wish.
+My belief is that we will, eventually, get most of the power of CHC in Define
+without the logical-reasoning complexity, the need to think of your program as
+math, or the need to write out explicit proofs of things that are obvious from
+the structure of the program. It will come from multiple different components of
+the system rather than encoding everything into a single type system. I believe
+it will also get us more compositional flexibility than a traditional CHC
+system, because you will be able to encode constraints inside of qualities and
+then assign those qualities however you wish.
+
+We will never have the _full_ power of CHC, because it relies on higher-order
+logic (essentially, the idea that you can have logical propositions that are
+_about_ other logical propositions, or in the case of a programming language,
+types that are about things in the program itself like "a type that represents a
+function") which, as I've worked it out so far, would get us into situations
+where static analysis of the program become very difficult, implemnetation of
+the compiler becomes complex, compile performance becomes harder to manage, etc.
+
+All that said, I haven't finished designing the language yet, so who knows. We
+have found our way around a lot of other problems so far, maybe we will find a
+way around this one.
 
 ### Hindley-Milner Type Inference
 
@@ -556,6 +573,28 @@ HM can also produce confusing error messages. The compiler could point to line
 X with Type Y." The developer looks, sees perfectly fine code on line 500 and
 has no idea that the actual mistake happened 490 lines ago. There are
 mitigations for this, but it's fundamentally pretty tough to solve sometimes.
+
+### So Why These Parts?
+
+So now we understand the background and the other possibilities that I didn't
+choose. Why choose the pattern that I _did_ choose? Some of it's described
+above: the corespondence between universes, and modeling values as
+communications.
+
+However, once you have those principles in place, you need solutions for these
+components of a value system:
+
+1. The logical concept of a value.
+2. Logical operations on that value.
+3. The real physical encoding of the value in the physical universe.
+4. The real operations that the computer is doing with the real encodings.
+5. A system of converters between (a) logical values and their encodings and (b)
+   between different equivalent encodings.
+
+The solution in this proposal gives a basic outline of a solution that
+encompasses exactly that. It doesn't exactly specify how all of those parts will
+work or exactly how each of the proposed pieces solves all of the problems, but
+it gives us the basic building blocks on which we can write later proposals.
 
 ## Forward Compatibility
 
