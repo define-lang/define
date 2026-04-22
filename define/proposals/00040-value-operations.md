@@ -25,13 +25,13 @@ compiler to magically figure out how to translate that into machine code.
 This is all fine, until we get into a situation where what I _logically expect_
 to happen isn't what the computer actually does. This is most often encountered
 by programmers with IEEE 754 Floating Point numbers. If you do `x = 0.1 + 0.2`
-in Python, the resulting value in `x` will actually be `0.3000000000004`.
+in Python, the resulting value in `x` will actually be `0.30000000000000004`.
 
 This has two real issues for programming in general:
 
 1. When people think of writing a test or a verified program, they tend to
    expect numbers to behave like numbers do in math.
-2. That extra `0.0000000000004` almost never matters in any real, practical
+2. That extra `0.00000000000000004` almost never matters in any real, practical
    situation. Logically, it's essentially "noise."
 
 For Define, it creates an especially difficult problem, because the compiler
@@ -40,7 +40,7 @@ time---behavior that differs logically from what the hardware does. Also in
 Define, some operations are actually being performed by the compiler (the parts
 that prove the program's validity) while others are being performed at runtime.
 
-So first and most obviously, this tells us is that there are two separate
+So first and most obviously, what this tells us is that there are two separate
 concepts we have to deal with: (1) how the programmer and the compiler "think"
 of operations logically, ideally in some way that makes sense across platforms,
 and (2) how operations actually work in the hardware.
@@ -105,7 +105,7 @@ An operation is somewhat similar to an action, with the following differences:
 1. It operates only on values.
 2. It may only call other operations.
 3. It is considered to always execute synchronously.
-4. It is considered logically to execute atomically (though it may not actualy
+4. It is considered logically to execute atomically (though it may not actually
    execute atomically on the hardware, the compiler guarantees its logical
    behavior is as though it were so executed).
 
@@ -160,7 +160,7 @@ on C.
 This is the one place in Define where we _reference_ positions without _moving_
 them, because we need some way to talk about the positions we are modifying.
 
-We define a new name type, `view` that uses only _local_ names. It is defined
+We define a new name type, `view`, that uses only _local_ names. It is defined
 only inside of `operation` and `encoding_operation` definitions. It has syntax
 identical to a local position definition except that its constraints may not
 contain other positions or actions.
@@ -170,9 +170,9 @@ to how we name an action's interface positions). They are defined only in the
 Definition Block of an `operation` or `encoding_operation` before the Statements
 Block.
 
-#### The Operations Statement Block of a Logical Operation
+#### The Operation Statements Block of a Logical Operation
 
-The Operations Statement Block may contain only two types of statements:
+The Operation Statements Block may contain only two types of statements:
 
 1. Executions of other logical operations (as described in a later section).
 2. The statement `execute the encoding operation.` which can be logically
@@ -188,7 +188,7 @@ operations," as they are operations that only know about and operate on values
 that have concrete encodings. The syntax for an encoding operation looks like:
 
 ```
-define the encoding_operation<mv:example:example:/my/operation/encoded> {
+define the encoding_operation<mv:example.com:example:/my/operation/encoded> {
     # Operation Definition Block
     it implements the operation<mv:example.com:example:/my/operation>.
 
@@ -228,7 +228,7 @@ Encoding Operation Interface Views must:
 1. Have the exact same names as the views in the implemented operation or
    operations. (In the future, we will probably allow encoding operations to say
    their view names alias to the names in logical operations so that logical
-   operations can use different namess where it makes sense.)
+   operations can use different names where it makes sense.)
 2. Specify encodings as their only explicit constraints.
 3. Be defined in the same number and order as the logical operation. That is,
    there has to be one interface view definition for every interface view
@@ -326,19 +326,19 @@ define the operation<standard:/number/integer/add> {
 }
 
 define the encoding_operation<standard:/number/cpu/integer/64bit/add> {
-    it implements operation<standard:/number/integer/add>.
+    it implements the operation<standard:/number/integer/add>.
 
-    extend the view<a> {
+    define the view<a> {
         it may only contain dimension points where {
             it has the encoding<standard:/number/cpu/integer/64bit>.
         }
     }
-    extend the view<b> {
+    define the view<b> {
         it may only contain dimension points where {
             it has the encoding<standard:/number/cpu/integer/64bit>.
         }
     }
-    extend the view<sum> {
+    define the view<sum> {
         it may only contain dimension points where {
             it has the encoding<standard:/number/cpu/integer/64bit>.
         }
@@ -370,9 +370,9 @@ define the potential action<mv:example.com:example:/add_numbers> {
         the position<result> has a dimension point.
     } and it does {
         execute the operation<standard:/number/integer/add> {
-            with view<a> set to position<augend>.
-            with view<b> set to position<addend>.
-            with view<sum> set to position<result>.
+            with view<a> looking at position<augend>.
+            with view<b> looking at position<addend>.
+            with view<sum> looking at position<result>.
         }
     }
 }
@@ -398,7 +398,7 @@ its leftmost input. There are some operations that are fundamentally about the
 full set of inputs and are not tied to any of them. Almost all programming
 languages eventually have to acknowledge this if they want to allow you to write
 `3 + 4.2` and have the result be a floating point number. Or they choose not to
-acknowlege it and leave programmers in some very confusing situations when they
+acknowledge it and leave programmers in some very confusing situations when they
 write something opaque like `x + y` and then don't understand that `+` is really
 a _method_ of `x` and it's not the same somehow as `y + x`. (Not to mention that
 this kills the compiler's ability to reassociate or vectorize operations.)
@@ -415,7 +415,7 @@ taking an action).
 
 One option I considered was to have a dimension point that represented the
 computer, and have operations be attached to it. I may still change my mind and
-go down that path. The akward part of that is, where does the "computer"
+go down that path. The awkward part of that is, where does the "computer"
 dimension point come from? Does every action have to create it? It actually
 exists in another universe, so it wouldn't even be a normal type of position.
 And what does having the "computer" dimension point get us? It can't be created,
@@ -504,6 +504,7 @@ extremely clear---it makes the intent of the program blindingly obvious.
 It will also be very optimizable (although existing languages mostly don't
 suffer in this respect from their operations syntax) because we will know
 exactly the developer's intention about ordering, and (in the future) we will
+know the constraints we've specified on the operation and the values.
 
 ## Forward Compatibility
 
