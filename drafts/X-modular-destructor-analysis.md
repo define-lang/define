@@ -251,25 +251,66 @@ For Action C, there are two possible situations:
    this is the contract for the path `Action C --> Action D`, but it doesn't
    copy any dictionaries or data structures.
 
-### Additional Restrictions on Destructors
+### Verfification for Added or Deleted Destructors
 
-`TODO: Handle adding destructors by creating or moving DPs during destruction.`
+A destructor could change the state of other destructors on sibling positions.
+Those sibling positions could later be destroyed, either directly or by having
+their parents destroyed. Thus, a destructor at any level of the call tree could
+change the analysis we have to do for later destructions.
 
-Destructors may not use quality assignment statements. This would allow them to
-assign new destructors to dimension points in quality-required positions beyond
-what is specified in position constraints, which leads to some very confusing
-and complex semantics that I don't want to implement at this time. We have to
-restrict _all_ quality assignment because any quality _could_ quality-require a
-destructor.
+These changes could happen in four ways:
 
-This restriction may be lifted in the future; at this time it simply creates too
-much analysis complexity for the initial implementation.
+1. A destructor creates a dimension point in a position which has a destructor
+   as part of its definition. This is actually a completely new destructor that
+   didn't exist anywhere before.
+2. The destructor moves a dimension point into a new position. This new position
+   now has a destructor that it didn't have before. The old position is now
+   empty, so its destructor will no longer run at the moment of destruction if
+   you destroy its parent.
+3. A destructor explicitly destroys another dimension point. This both (a)
+   immediately and synchronously triggers the destructors on that dimension
+   point and its children in a cascade and (b) empties all of those positions,
+   so their destructors no longer run when their parents are destroyed.
+4. A destructor could use a Quality Assignment Statement to add a new destructor
+   to a sibling dimension point.
+
+Thus earlier destructors could change the contract of later destructors while we
+are processing them. Callers (like Action B and Action A in our above examples)
+could change entirely what destructors actually occur.
+
+It's also worth keeping in mind that this could all happen while we are
+destroying a parent position and children add destructors to their siblings
+during the cascade, so even within a single cascade we have to account for this.
+
+### Runtime Implementations
+
+The above algorithm only describes the verification that the compiler must do at
+compile time to prove that destructors are safe. However, the algorithm does
+expose the complexity of how destructors run in different call chains. While the
+runtime behavior could use a dictionary (similar to a vtable lookup system in
+object-oriented languages) to determine when to run destructors, in some
+circumstances the compiler could choose to simply emit different functions in
+the code for different call chains and "hard-code" the destructor behaviors
+inside of that code. The later solution (monomorphization) is logically
+preferable, because it eliminates the concept of the destructor quality from the
+compiled code, but could lead to exploding binary sizes.
+
+This is mostly noted here as the subject of a future proposal around compiler
+optimization.
 
 ## A Real Program
 
 ## Why This is the Right Solution
 
-First let's talk about why the algorithm works.
+Essentially, this algorithm uses more memory in exchange for tractable
+computation times in large programs. The other potential algorithms that I'm
+aware of involve either whole-program analysis or an O(N^2) or O(N^3) analysis
+that re-analyzes the original destruction context every time. I presently
+believe this is the right trade-off, although there are pathological situations
+in which the memory requirements of this grow beyond what is reasonable, so we
+will have to see how this works over time.
+
+### Why The Algorithm Works
 
 To start with, keep in mind that a destructor can only reference
 quality-required positions on the _same dimension point_. It can affect only
@@ -301,6 +342,21 @@ This leaves us with only two problems to solve:
    the destructor from Action B moves some dimension point out of a
    quality-required position that Action D's internal code expects to be filled.
 
+That should make it clear why we specified the solution above as we did.
+
 ## Forward Compatibility
 
+This solution, like the destructor cascade, is somewhat dangerous in terms of
+forward compatibility because it involves _ordering_ in a way that can be hard
+to change. That said, everything about the ordering can be reasoned about
+statically. So if we do have to make a change to how the system works, at the
+very least we will be able to reason about the current behavior.
+
 ## Refactoring Existing Systems
+
+To my knowledge there is no other programming language that has a
+similarly-powerful automatic destructor system. Thus, I believe that all
+destructors in all languages would be able to be translated into this system.
+The one tricky part will be the inability of a destructor to self-reference the
+dimension point to which it is assigned, which could dictate aspects of how you
+have to design Define programs when translating them from other languages.
