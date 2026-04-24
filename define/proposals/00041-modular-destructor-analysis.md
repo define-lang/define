@@ -1,4 +1,4 @@
-# Define Language Proposal X: Modular Destructor Analysis
+# Define Language Proposal 41: Modular Destructor Analysis
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
@@ -42,40 +42,7 @@ However, interface positions on actions don't have to specify their constraints
 in the same _order_ that the caller did. So how do we know what order the
 destructors are going to be run in, at compile time?
 
-### 3: Siblings Will Survive
-
-Imagine that you have a position hierarchy that looks like:
-
-```mermaid
-flowchart LR
-    A --> B
-    A --> C (C (has destructor))
-    C --> D
-```
-
-When C's destructor runs, it will destroy D and C, but A and B will survive.
-
-Let's imagine that `A` was passed in to an interface position of an action
-called `action</clean_room>`, and `action</clean_room>` does
-`destroy the dimension point in position<a>::position</c>.` Then later it does
-something like:
-`move the dimension point in position<a>::position</b> to position<my_local>.`
-So it depends on there being a dimension point in B.
-
-Now let's imagine we have a caller called `action</clean_building>` that
-triggers `action</clean_room>`. It happens to know that the dimension point in
-`position</c>` has an additional destructor on it that will destroy
-`position</b>`. Uh oh, that makes `action</clean_room>` unsafe! But
-`action</clean_room>` doesn't know about that. Only `action</clean_building>`
-knows about it, and it's only true when `action</clean_building>` is the caller!
-
-Essentially the problem is:
-
-1. Destruction of sibling positions is not guaranteed.
-2. Other destructors could also affect sibling positions, including destructors
-   that are only known about higher up in the call chain.
-
-### 4: Callees Can Make Changes
+### 3: Callees Can Make Changes
 
 When verifying a destructor, what matters is the state of positions at the time
 of destruction. However, let's go back to the problem of "callees don't know
@@ -86,7 +53,7 @@ the safety of running a destructor. So somehow we need to be able to do modular
 analysis even though the necessary information to do it is split into multiple
 locations.
 
-### 5: Destructors Can Modify Quality-Required Positions
+### 4: Destructors Can Modify Quality-Required Positions
 
 A destructor can quality-require another position, which will automatically mean
 that position gets destroyed only after the destructor runs. However, this adds
@@ -133,13 +100,13 @@ There are four ways that a destructor could modify the state of another
 dimension point that would cause us to have to do this recomputation: they could
 **create** dimension points in quality-required positions, **move** dimension
 points into or out of quality-required positions, **destroy** dimension points
-in quality-required positions,or **assign** new qualities to a quality-required
+in quality-required positions, or **assign** new qualities to a quality-required
 dimension point. Some of these actions actually can be done, as long as the
 state the dimension points were in at the end of the destructor is identical to
 the state they were in at the start.
 
 Using the system of
-[DLP 37 (Automatic Position Presence Constraints)](0037-automatic-position-presence-constraints.md),
+[DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md),
 we can translate this into a relatively simple requirement:
 
 **Destructors may not create any Automated Guarantees other than "this dimension
@@ -191,7 +158,7 @@ Thus, each action in the call chain actually has its own, separate cumulative
 Child State for the destruction contract of that dimension point.
 
 Note that there is a more memory-efficient version of this possible, too, where
-we do a forward pass through the refrence graph that lets called actions know
+we do a forward pass through the reference graph that lets called actions know
 which positions destructors added in the callers can actually affect, and so
 callees only have to return the state of those positions. (However, if you want
 to ship a compiled library, you would have to expose the full data for all
@@ -203,7 +170,7 @@ to add.)
 Destructors have automated requirements just like any other action does. Their
 requirements must be checked by the compiler before they run. Thus, whenever an
 action adds a destructor to a dimension point that has a destruction contract,
-it must use the Child State to validate that the destructor's requiremnts are
+it must use the Child State to validate that the destructor's requirements are
 fulfilled. This also happens within the action that actually does the
 destruction, if the action that does the destruction either (a) created the
 dimension point or (b) assigned a destructor to that dimension point.
@@ -259,17 +226,9 @@ define the potential position<mv:example.com:example:/file_name> {
     }
 }
 
-define the potential position<mv:example.com:example:/file_handle> {
-    it may only contain dimension points where {
-        it has the value<standard:/number/integer>.
-    }
-}
-
-# /file bundles a file name and handle together.
 define the potential position<mv:example.com:example:/file> {
     it may only contain dimension points where {
         it has the position</file_name>.
-        it has the position</file_handle>.
     }
 }
 
@@ -340,11 +299,11 @@ define the potential action<mv:example.com:example:/make_and_close> {
 
 Essentially, this algorithm uses extra memory (child state) in exchange for
 tractable computation times in large programs. The other potential algorithms
-that I'm aware of involve either whole-program analysis or an O(N^2) or O(N^3)
-analysis that re-analyzes the original destruction context every time. I
-presently believe this is the right trade-off, although there are pathological
-situations in which the memory requirements of this grow beyond what is
-reasonable, so we will have to see how this works over time.
+that I'm aware of involve either whole-program analysis (EXPTIME-Complete) or an
+O(N^2) or O(N^3) analysis that re-analyzes the original destruction context
+every time. I presently believe this is the right trade-off, although there are
+pathological situations in which the memory requirements of this grow beyond
+what is reasonable, so we will have to see how this works over time.
 
 ### Why Forbid Destructors From Creating Guarantees?
 
@@ -363,7 +322,7 @@ solve it in an efficient way. The previous algorithms all involved very long
 descriptions and diagrams of how actions would have to interact, and then I
 would realize there was some fatal flaw in the algorithm and have to start over.
 
-Eventually I relized: there are no legitimate case where a destructor actually
+Eventually I realized: there are no legitimate cases where a destructor actually
 _needs_ to create guarantees outside of itself (at least, none that I can think
 of). Destructors do need to be able to trigger actions and move things around
 outside of themselves, but as long as they "clean up after themselves" and put
