@@ -86,6 +86,20 @@ the safety of running a destructor. So somehow we need to be able to do modular
 analysis even though the necessary information to do it is split into multiple
 locations.
 
+### 5: Destructors Can Modify Quality-Required Positions
+
+A destructor can quality-require another position, which will automatically mean
+that position gets destroyed only after the destructor runs. However, this adds
+tremendous complexity to the destruction cascade, because it means that one
+destructor could change what's actually going to _run_ on another destructor.
+
+A destructor could move, create, or destroy dimension points in another
+position. It could assign a new quality to any position in another position.
+This includes all children of quality-required positions.
+
+This adds a potentially enormous computational cost to calculating whether
+destructors are safe, because they can change things that happen after them.
+
 ## Solution
 
 Each action checks only the destructors that _it_ added. However, it checks them
@@ -98,6 +112,39 @@ ran synchronously.
 
 The complexity of the solution comes in when you have to deal with destructors
 that were added by the caller.
+
+### Forbidden Actions In Destructors
+
+Once an action becomes a destructor (that is, it has the Destructor Condition on
+it) it gains certain restrictions.
+
+**Upon completion, a destructor must leave all quality-required positions in the
+state they were in when the action started.**
+
+Before we had this restriction, I wrote out an enormously complex algorithm to
+deal with the fact that destructors could modify the state of quality-required
+positions, including adding or removing destructors to positions that would get
+destroyed later in the cascade. Not only was it extremely hard to reason
+through, it had an unacceptable computational complexity where every action in a
+call chain would have to fully recompute the safety of every destructor in the
+entire cascade for every destroyed dimension point.
+
+There are four ways that a destructor could modify the state of another
+dimension point that would cause us to have to do this recomputation: they could
+**create** dimension points in quality-required positions, **move** dimension
+points into or out of quality-required positions, **destroy** dimension points
+in quality-required positions,or **assign** new qualities to a quality-required
+dimension point. Some of these actions actually can be done, as long as the
+state the dimension points were in at the end of the destructor is identical to
+the state they were in at the start.
+
+Using the system of
+[DLP 37 (Automatic Position Presence Constraints)](0037-automatic-position-presence-constraints.md),
+we can translate this into a relatively simple requirement:
+
+**Destructors may not create any Automated Guarantees other than "this dimension
+point will be in exactly the same position as it was with the exact same
+qualities it had when we started."**
 
 ### Destruction Contracts
 
@@ -119,198 +166,91 @@ Destructions must be contained in the contract in the order they were executed,
 so that we know that the requirements of later destructions are fulfilled by the
 guarantees of earlier destructions.
 
-#### Sibling State
+#### Child State
 
-Action contracts must contain anything known about the state of any sibling
-positions of destroyed dimension points immediately before destruction started.
-This is needed because a caller could add a destructor that quality-requires one
-of those positions and it will need to know the state of those positions to know
-whether what it _does_ with those positions is valid.
+Action contracts must contain anything known about the state of all children of
+destroyed dimension points immediately before destruction started. This is
+needed because a caller could add a destructor that quality-requires one of the
+other children of the destroyed point, and it will need to know the state of
+that position to know whether what it _does_ with that position is valid.
 
-This must include anything known about the state of all known child positions of
-those siblings as well.
+To be clear, this is the full state of all transitive child positions that would
+be destroyed. It's not just the state of direct child dimension points. What we
+need to know is whether or not there are dimension points in all transitive
+child positions, right before destruction happens.
 
 Because the action that is performing the destruction may not be aware of every
-quality on the destroyed dimension point and may not know the state of every
-dimension point in every sibling, this state summary must be updated by every
-caller in the chain. In particular, callers may know about more siblings and
-will have more information about the state of siblings than the callee.
+quality on the destroyed dimension point, it may not _know_ the state of every
+dimension point in every child. For example, you might have an interface
+position with just `value<standard:/number/integer>` on it, but really that
+position also had a bunch of child positions when it was passed in. Thus, each
+Action in a call chain must update the destruction contract if it knows about
+the last update to a position before its parent was destroyed.
 
-Note that there is probably a more memory-efficient version of this possible,
-too, where we do a forward pass through the refrence graph that lets actions
-know which positions destructors can actually affect, and so callees only have
-to return the state of those. (However, if you want to ship a compiled library,
-you would have to expose the full data for all sibling positions anyway, since
-you can't know what destructors your callers are going to add.)
+Thus, each action in the call chain actually has its own, separate cumulative
+Child State for the destruction contract of that dimension point.
 
-#### Sibling Required Guarantees
+Note that there is a more memory-efficient version of this possible, too, where
+we do a forward pass through the refrence graph that lets called actions know
+which positions destructors added in the callers can actually affect, and so
+callees only have to return the state of those positions. (However, if you want
+to ship a compiled library, you would have to expose the full data for all
+positions anyway, since you can't know what destructors your callers are going
+to add.)
 
-Actions can affect sibling positions after you destroy a position. However,
-destructors can also affect sibling positions. So we have a question: what state
-do sibling positions affected by the callee (the action that destroyed the
-dimension point) have to stay in _after_ destruction in order for safety to be
-assured?
+### Destructor Requirement Verification
 
-Thus, we have to expose a set of "required guarantees." This is just a statement
-of what any caller destructors _must_ guarantee (or not affect).
+Destructors have automated requirements just like any other action does. Their
+requirements must be checked by the compiler before they run. Thus, whenever an
+action adds a destructor to a dimension point that has a destruction contract,
+it must use the Child State to validate that the destructor's requiremnts are
+fulfilled. This also happens within the action that actually does the
+destruction, if the action that does the destruction either (a) created the
+dimension point or (b) assigned a destructor to that dimension point.
 
-This accumulates transitively as we walk up the call tree. If we have an action
-call chain like `Action A --> Action B --> Action C`, and B takes some action on
-one of those sibling postions _after_ calling Action C, that information must
-appear in the contract of Action B that will be seen by Action A and any other
-callers of Action B.
+Since we forbid destructors creating Automated Guarantees, each destructor's
+requirements can be independently verified.
 
-Note that auto-destroyed positions will never generate this and auto-destruction
-is thus more efficient than manual destruction.
-
-### The Destructor Verification Algorithm
-
-The heart of destructor verification is "check it as though it were running at
-the moment of destruction."
-
-In order to talk about this, we are going to imagine that we have this chain of
-action calls:
-
-```mermaid
-flowchart LR
-    A --> B
-    A --> C
-    B --> D
-    C --> D
-```
-
-Action A calls B and C, and both B and C call D. Action D is the one that
-contains the statement
-`destroy the dimension point in position<interface>::position</child>.` or
-something like that.
-
-Analyzing Action D itself is straightforward, as described above. You simply
-treat any destructors that were _assigned_ to the dimension point in
-`position<interface>::position</child>` inside of Action D as running
-immediately upon destruction and analyze action requirements and guarantees for
-that destructor. This is simply [DLP 34 (Destructors)](00034-destructors.md).
-
-However, let us imagine that the dimension point in
-`position<interface>::position<interface>` was actually created inside of Action
-A (which Action D cannot "know" when we are validating action contracts per
-[DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md)).
-
-Thus, Action D exposes the additional Action Contract information described
-above, which it captures right at the moment of destruction of the dimension
-point in `position<interface>::position</child>`. For example, let's imagine it
-has a destructor named
-`position<interface>::position</child>::action</d_destructor>`.
-
-For example, let's imagine that there is an additional sibling on
-`position<interface>` that Action D knows about, called
-`position<interface>::position</younger_brother>`. We have to tell the callers
-about the state of that position.
-
-Now we look at Action B. Action B could have added a destructor to the dimension
-point in Action D's `position<interface>::position</child>`. Let's call the new
-destructor `position<interface>::position</child>::action</b_destructor>`.
-Action B also knows about another sibling,
-`position<interface>::position</older_brother>`. `/b_destructor` could have
-interacted with both `/younger_brother` and `/older_brother`.
-
-As such, when Action D is triggered inside of Action B, Action B analyzes the
-requirements and guarantees of `/b_destructor` to make sure they are satisfied
-by the destruction contract information returned by Action D. It then amends
-that destruction contract as the destruction contract for specifically the path
-`Action B --> Action D` and exposes that as part of Action B's destruction
-contract to Action A. This contains both the requiements and guarantees that
-`/b_destructor` added as well as the state of additional sibling positions that
-`Action B` knew about. To be clear, it doesn't modify Action D's contract for
-every caller, but only for callers of Action B. Action A will still know that it
-is Action D that does the destruction, including what line of code does the
-destruction (so that it can explain the problem in error messages) but it knows
-about this from the viewpoint of Action B.
-
-Now we get to Action A, which created the dimension point and which does not
-expose that dimension point back through its own interface positions. However,
-it also knows about a new destructor
-`position<interface>::position</child>::action</a_destructor>` and a new
-sibling, `position<interface>::position</oldest_brother>`. `/a_destructor` could
-have referenced `/oldest_brother`, `/older_brother`, or `/youngest_brother`.
-Thus, when Action A triggers Action B, it must check the requirements and
-guarantees of `/a_destructor` as though it were executed _before_
-`/b_destructor` and `/d_destructor` right at the moment of destruction in Action
-D, using the destruction contract exposed via `Action B --> Action D`.
-
-However, as Action A is the original creator of this dimension point, it does
-not have to amend the destruction contract in any way or expose any further
-destruction contract about this dimension point.
-
-For Action C, there are two possible situations:
-
-1. It knows about different siblings and assigned different destructors than
-   Action B. In this case, it exposes a new and different destruction contract
-   for `Action C --> Action D`.
-2. It does not know about any siblings / assign any destructors other than the
-   ones that Action D already knew about. In this case, it just re-exposes
-   Action D's destruction contract directly instead of making any amendments.
-   For the sake of error-message reporting, Action C does "inform" Action A that
-   this is the contract for the path `Action C --> Action D`, but it doesn't
-   copy any dictionaries or data structures.
-
-### Verfification for Added or Deleted Destructors
-
-A destructor could change the state of other destructors on sibling positions.
-Those sibling positions could later be destroyed, either directly or by having
-their parents destroyed. Thus, a destructor at any level of the call tree could
-change the analysis we have to do for later destructions.
-
-These changes could happen in four ways:
-
-1. A destructor creates a dimension point in a position which has a destructor
-   as part of its definition. This is actually a completely new destructor that
-   didn't exist anywhere before.
-2. The destructor moves a dimension point into a new position. This new position
-   now has a destructor that it didn't have before. The old position is now
-   empty, so its destructor will no longer run at the moment of destruction if
-   you destroy its parent.
-3. A destructor explicitly destroys another dimension point. This both (a)
-   immediately and synchronously triggers the destructors on that dimension
-   point and its children in a cascade and (b) empties all of those positions,
-   so their destructors no longer run when their parents are destroyed.
-4. A destructor could use a Quality Assignment Statement to add a new destructor
-   to a sibling dimension point.
-
-Thus earlier destructors could change the contract of later destructors while we
-are processing them. Callers (like Action B and Action A in our above examples)
-could change entirely what destructors actually occur.
-
-It's also worth keeping in mind that this could all happen while we are
-destroying a parent position and children add destructors to their siblings
-during the cascade, so even within a single cascade we have to account for this.
+It is worth noting that an action might not _know_ the state of the dimension
+points a destructor depends on (because they aren't yet populated in the Child
+State---a caller higher up the chain needs to populate them). In this case the
+destructor creates a new Automatic Requirement for the action in which it is
+added, which behaves just like a normal Automatic Requirement from
+[DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md).
+It should, however, note in any error messages where the requirement comes from
+and why (ideally indicating where the dimension point gets destroyed).
 
 ### Runtime Implementations
 
 The above algorithm only describes the verification that the compiler must do at
 compile time to prove that destructors are safe. However, the algorithm does
-expose the complexity of how destructors run in different call chains. While the
-runtime behavior could use a dictionary (similar to a vtable lookup system in
-object-oriented languages) to determine when to run destructors, in some
-circumstances the compiler could choose to simply emit different functions in
-the code for different call chains and "hard-code" the destructor behaviors
-inside of that code. The later solution (monomorphization) is logically
-preferable, because it eliminates the concept of the destructor quality from the
-compiled code, but could lead to exploding binary sizes.
+expose the complexity that different destructors run based on different call
+chains. There are three ways a compiler could implement this in code generation:
 
-This is mostly noted here as the subject of a future proposal around compiler
-optimization.
+1. **Tables**: Use some lookup mechanism to "attach" destructors to dimension
+   points at runtime. When the dimension point is freed, inject code to check if
+   it has destructors and do a lookup. This is inefficient and adds a mandatory
+   "runtime library" to Define programs that I would like to avoid.
+2. **Branching**: Use branching to say "run Destructor B if a special flag is
+   set on this function" and then always pass in to that function whether it
+   needs to run Destructor B. This is more efficient than the "runtime library"
+   situation, but adds additional tracking and overhead at runtime to track a
+   concept from the universe of reflection.
+3. **Monomorphization**: Generate a separate set of functions for each call
+   chain that has a different destructor stack. This should usually work but
+   sometimes will result in a combinatorial blowup of functions to generate.
+
+Thus, the compiler will need to make this trade-off intelligently, probably
+between Branching and Monomorphization. This is mostly noted here as the subject
+of a future proposal around compiler optimization and code generation.
 
 ## A Real Program
 
 Note that some syntax is imaginary below, especially around dealing with
-external state outside of the program or the specifics of value types.
-
-### Example 1: Destruction Fact and Sibling State
-
-The simplest case: a caller attaches a destructor the callee has no knowledge
-of. The callee's contract must expose both the destruction fact (which DP got
-destroyed) and the presence/absence of the destroyed DP's qualities immediately
-before destruction, so the caller's verifier can check its own destructor.
+external state outside of the program or the specifics of value types. This
+example demonstrates just the simplest case: a caller attaches a single
+destructor the callee has no knowledge of, and that caller knows everything
+about the Child State.
 
 ```
 define the potential position<mv:example.com:example:/file_name> {
@@ -333,9 +273,9 @@ define the potential position<mv:example.com:example:/file> {
     }
 }
 
-# Action D. Generic utility that destroys any DP carrying /file. It
-# has no destructors of its own and cannot see what destructors
-# callers have baked into their local positions.
+# Generic utility that destroys any DP carrying /file. It
+# adds no destructors of its own and cannot see what destructors
+# callers have baked into the dimension point.
 define the potential action<mv:example.com:example:/close_file> {
     define the position<target> {
         it may only contain dimension points where {
@@ -345,24 +285,16 @@ define the potential action<mv:example.com:example:/close_file> {
     it happens when {
         the position<target> has a dimension point.
     } and it does {
-        # The destruction event. D's contract records only the
-        # Destruction Fact: the <target> DP was destroyed.
-        # Without this, callers only see "position empty after
-        # I return", which does not say which DP got destroyed
-        # nor whether caller destructors got a chance to fire.
+        # The destruction event. We record the  Destruction Fact:
+        # the DP in position<target> was destroyed.
         #
-        # No Sibling State is recorded because this action does
-        # not know anything about Sibling State (it creates no inferred
-        # requirements about siblings, does not directly update any siblings, etc.)
-        #
-        # There is no code after this destruction, so we don't have to provide
-        # any Sibling Required Guarantees.
+        # No Child State is recorded because this action does
+        # not know anything about Child State.
         destroy the dimension point in position<target>.
     }
 }
 
-# Caller-attached destructor. /close_file has no visibility into
-# this; only /make_and_close (its caller) does.
+# Caller-attached destructor.
 define the potential action<mv:example.com:example:/delete_file_destructor> {
     this dimension point must have the position</file>.
     it happens when {
@@ -373,7 +305,7 @@ define the potential action<mv:example.com:example:/delete_file_destructor> {
     }
 }
 
-# Action A (caller).
+# The caller that adds the destructor.
 define the potential action<mv:example.com:example:/make_and_close> {
     define the position<run>.
     it happens when {
@@ -388,25 +320,17 @@ define the potential action<mv:example.com:example:/make_and_close> {
         create a dimension point in position<my_file>.
         create a dimension point in position<my_file>::position</file>.
         create a dimension point in position<my_file>::position</file>::position</file_name>.
-        create a dimension point in position<my_file>::position</file>::position</file_handle>.
 
-        # We trigger /close_file which causes us to read its contract,
-        # indicating position<target> gets destroyed. /close_file
-        # knows nothing about Sibling State.
+        # We trigger /close_file which causes us to read its destruction contract,
+        # indicating position<target> gets destroyed.
         #
-        # We know about the sibling state, however, so we can update
-        # that contract with sibling state information.
+        # We know that that dimension point had action</delete_file_destructor>
+        # assigned to it. We also know that action</delete_file_destructor>
+        # has a contract that says that position</file> and
+        # position</file>::position</file_name> must be occupied.
         #
-        # We also know that /delete_file_destructor is going to run
-        # when position<target> is destroyed.
-        #
-        # /delete_file_destructor's requirement (</file> present,
-        # with </file_name> present inside it so the destructor's
-        # body can reference it) is now checked against that snapshot.
-        #
-        # /make_and_close is the original creator of this dimension point,
-        # so it does not have to re-expose any destruction contract through
-        # its own interface.
+        # We know from our own dimension point state that those positions
+        # are occupied, so the verification passes!
         move the dimension point in position<my_file> to action</close_file>::position<target>.
     }
 }
@@ -414,55 +338,48 @@ define the potential action<mv:example.com:example:/make_and_close> {
 
 ## Why This is the Right Solution
 
-Essentially, this algorithm uses more memory in exchange for tractable
-computation times in large programs. The other potential algorithms that I'm
-aware of involve either whole-program analysis or an O(N^2) or O(N^3) analysis
-that re-analyzes the original destruction context every time. I presently
-believe this is the right trade-off, although there are pathological situations
-in which the memory requirements of this grow beyond what is reasonable, so we
-will have to see how this works over time.
+Essentially, this algorithm uses extra memory (child state) in exchange for
+tractable computation times in large programs. The other potential algorithms
+that I'm aware of involve either whole-program analysis or an O(N^2) or O(N^3)
+analysis that re-analyzes the original destruction context every time. I
+presently believe this is the right trade-off, although there are pathological
+situations in which the memory requirements of this grow beyond what is
+reasonable, so we will have to see how this works over time.
 
-### Why The Algorithm Works
+### Why Forbid Destructors From Creating Guarantees?
 
-To start with, keep in mind that a destructor can only reference
-quality-required positions on the _same dimension point_. It can affect only
-that dimension point and its children (in particular, the children that the
-destructor itself knows exist via constraints---a fact we can determine
-statically).
+I went through numerous other attempts at this algorithm. You can see most of
+those historical attempts in the commit history of this file. I think I rewrote
+nearly this whole proposal about four times across a period of weeks.
 
-Also keep in mind that a destruction statement is guaranteed to destroy every
-dimension point in all of those children and the dimension point itself. This
-means that all actions taken on the destroyed position (and its children)
-_after_ destruction in Action D are always safe. Destruction returns things to a
-fixed, known state---they don't exist. We don't need to reason about the any
-guarantees about the dimension point that was destroyed---its guarantee is
-always that it no longer exists.
+Originally I did not forbid destructors from creating Automated Guarantees, and
+that led to both enormous spec complexity, implementation complexity, and
+computational complexity. In general, this problem is super hard to reason
+through to start with. You can see in the commit history of this file that I
+kept designing algorithms where I had misunderstood the semantics of my _own
+programming language_. The problem of "destructors can modify external
+positions" was making it nearly impossible to solve the problem, especially to
+solve it in an efficient way. The previous algorithms all involved very long
+descriptions and diagrams of how actions would have to interact, and then I
+would realize there was some fatal flaw in the algorithm and have to start over.
 
-Also, we know the deterministic order in which destructors run: destructors that
-were added to a dimension point later always run before destructors that were
-added earlier. Last in, first out. Thus, Destructor D always runs before
-Destructor B.
+Eventually I relized: there are no legitimate case where a destructor actually
+_needs_ to create guarantees outside of itself (at least, none that I can think
+of). Destructors do need to be able to trigger actions and move things around
+outside of themselves, but as long as they "clean up after themselves" and put
+things back just like they found them, they can do everything they actually need
+to do in the real world.
 
-This leaves us with only two problems to solve:
-
-1. **During Destruction**: If Action D added a destructor that Action B did not
-   have, and Destructor B's requirements are violated by Destructor C running
-   first. For example, Destructor D moved a dimension point from some
-   quality-required position that Destructor B expects to be filled.
-2. **After Destruction**: If Action B's destructor creates a state in _sibling_
-   positions that violates later requirements inside of Action D. For example,
-   the destructor from Action B moves some dimension point out of a
-   quality-required position that Action D's internal code expects to be filled.
-
-That should make it clear why we specified the solution above as we did.
+So, I threw away something valueless in order to get the properties that Define
+needs.
 
 ## Forward Compatibility
 
-This solution, like the destructor cascade, is somewhat dangerous in terms of
-forward compatibility because it involves _ordering_ in a way that can be hard
-to change. That said, everything about the ordering can be reasoned about
-statically. So if we do have to make a change to how the system works, at the
-very least we will be able to reason about the current behavior.
+One of the cool things about this proposal is that destructors are independent
+of each other. In fact, I'm not even sure we _need_ ordering guarantees for them
+anymore. Thus, not only can we statically know everything about destructors at
+compile time, we could theoretically safely reorder them in the future (at
+least, from the perspective of the compiler's verifier).
 
 ## Refactoring Existing Systems
 
