@@ -2,7 +2,7 @@
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
-- **Date Proposed:** April 22, 2026
+- **Date Proposed:** April 24, 2026
 - **Date Finalized:**
 
 ## Problems
@@ -121,18 +121,20 @@ guarantees of earlier destructions.
 
 #### Sibling State
 
-Action contracts must contain the state of any sibling positions of destroyed
-dimension points immediately before destruction started. This is needed because
-a caller could add a destructor that quality-requires one of those positions and
-it will need to know the state of those positions to know whether what it _does_
-with those positions is valid.
+Action contracts must contain anything known about the state of any sibling
+positions of destroyed dimension points immediately before destruction started.
+This is needed because a caller could add a destructor that quality-requires one
+of those positions and it will need to know the state of those positions to know
+whether what it _does_ with those positions is valid.
 
-This must include the state of all known child positions of those siblings as
-well.
+This must include anything known about the state of all known child positions of
+those siblings as well.
 
 Because the action that is performing the destruction may not be aware of every
-quality on the destroyed dimension point, this state summary must be updated by
-every caller in the chain.
+quality on the destroyed dimension point and may not know the state of every
+dimension point in every sibling, this state summary must be updated by every
+caller in the chain. In particular, callers may know about more siblings and
+will have more information about the state of siblings than the callee.
 
 Note that there is probably a more memory-efficient version of this possible,
 too, where we do a forward pass through the refrence graph that lets actions
@@ -299,6 +301,116 @@ This is mostly noted here as the subject of a future proposal around compiler
 optimization.
 
 ## A Real Program
+
+Note that some syntax is imaginary below, especially around dealing with
+external state outside of the program or the specifics of value types.
+
+### Example 1: Destruction Fact and Sibling State
+
+The simplest case: a caller attaches a destructor the callee has no knowledge
+of. The callee's contract must expose both the destruction fact (which DP got
+destroyed) and the presence/absence of the destroyed DP's qualities immediately
+before destruction, so the caller's verifier can check its own destructor.
+
+```
+define the potential position<mv:example.com:example:/file_name> {
+    it may only contain dimension points where {
+        it has the value<standard:/string>.
+    }
+}
+
+define the potential position<mv:example.com:example:/file_handle> {
+    it may only contain dimension points where {
+        it has the value<standard:/number/integer>.
+    }
+}
+
+# /file bundles a file name and handle together.
+define the potential position<mv:example.com:example:/file> {
+    it may only contain dimension points where {
+        it has the position</file_name>.
+        it has the position</file_handle>.
+    }
+}
+
+# Action D. Generic utility that destroys any DP carrying /file. It
+# has no destructors of its own and cannot see what destructors
+# callers have baked into their local positions.
+define the potential action<mv:example.com:example:/close_file> {
+    define the position<target> {
+        it may only contain dimension points where {
+            it has the position</file>.
+        }
+    }
+    it happens when {
+        the position<target> has a dimension point.
+    } and it does {
+        # The destruction event. D's contract records only the
+        # Destruction Fact: the <target> DP was destroyed.
+        # Without this, callers only see "position empty after
+        # I return", which does not say which DP got destroyed
+        # nor whether caller destructors got a chance to fire.
+        #
+        # No Sibling State is recorded because this action does
+        # not know anything about Sibling State (it creates no inferred
+        # requirements about siblings, does not directly update any siblings, etc.)
+        #
+        # There is no code after this destruction, so we don't have to provide
+        # any Sibling Required Guarantees.
+        destroy the dimension point in position<target>.
+    }
+}
+
+# Caller-attached destructor. /close_file has no visibility into
+# this; only /make_and_close (its caller) does.
+define the potential action<mv:example.com:example:/delete_file_destructor> {
+    this dimension point must have the position</file>.
+    it happens when {
+        this dimension point is being destroyed.
+    } and it does {
+        # Imaginary syntax.
+        delete the file at the value in position</file>::position</file_name>.
+    }
+}
+
+# Action A (caller).
+define the potential action<mv:example.com:example:/make_and_close> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        define the position<my_file> {
+            it may only contain dimension points where {
+                it has the position</file>.
+                it has the action</delete_file_destructor>.
+            }
+        }
+        create a dimension point in position<my_file>.
+        create a dimension point in position<my_file>::position</file>.
+        create a dimension point in position<my_file>::position</file>::position</file_name>.
+        create a dimension point in position<my_file>::position</file>::position</file_handle>.
+
+        # We trigger /close_file which causes us to read its contract,
+        # indicating position<target> gets destroyed. /close_file
+        # knows nothing about Sibling State.
+        #
+        # We know about the sibling state, however, so we can update
+        # that contract with sibling state information.
+        #
+        # We also know that /delete_file_destructor is going to run
+        # when position<target> is destroyed.
+        #
+        # /delete_file_destructor's requirement (</file> present,
+        # with </file_name> present inside it so the destructor's
+        # body can reference it) is now checked against that snapshot.
+        #
+        # /make_and_close is the original creator of this dimension point,
+        # so it does not have to re-expose any destruction contract through
+        # its own interface.
+        move the dimension point in position<my_file> to action</close_file>::position<target>.
+    }
+}
+```
 
 ## Why This is the Right Solution
 
