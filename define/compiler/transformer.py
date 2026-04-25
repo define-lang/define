@@ -1,10 +1,19 @@
 """Lark transformer to convert parse tree to AST nodes."""
 
+from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import cast
 
 from define.compiler import ast, name_parser
 from define.compiler.lark import lark_standalone
+
+
+@dataclass(frozen=True, slots=True)
+class _ActionDefinitionBlockData:
+    quality_requirements: list[ast.QualityRequirementStatement]
+    interface_positions: list[ast.LocalPositionDefinition]
+    trigger_conditions: ast.TriggerConditionsBlock
+    action_statements: ast.ActionStatementsBlock
 
 
 class DefineTransformer(
@@ -71,14 +80,17 @@ class DefineTransformer(
     def action_definition(
         self,
         meta: lark_standalone.Meta,
-        items: list[ast.DefinitionGlobalNameContent | ast.ActionDefinitionBlock],
+        items: list[ast.DefinitionGlobalNameContent | _ActionDefinitionBlockData],
     ) -> ast.ActionDefinition:
         """Transform an action definition."""
         name = cast("ast.DefinitionGlobalNameContent", items[0])
-        definition_block = cast("ast.ActionDefinitionBlock", items[1])
+        block_data = cast("_ActionDefinitionBlockData", items[1])
         return ast.ActionDefinition(
             name=name,
-            definition_block=definition_block,
+            quality_requirements=block_data.quality_requirements,
+            interface_positions=block_data.interface_positions,
+            trigger_conditions=block_data.trigger_conditions,
+            action_statements=block_data.action_statements,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
@@ -366,17 +378,15 @@ class DefineTransformer(
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
-    @lark_standalone.v_args(meta=True)
     def action_definition_block(
         self,
-        meta: lark_standalone.Meta,
         items: list[
             ast.QualityRequirementStatement
             | ast.LocalPositionDefinition
             | ast.TriggerConditionsBlock
             | ast.ActionStatementsBlock
         ],
-    ) -> ast.ActionDefinitionBlock:
+    ) -> _ActionDefinitionBlockData:
         """Transform an action definition block."""
         action_statements = cast("ast.ActionStatementsBlock", items[-1])
         trigger_conditions = cast("ast.TriggerConditionsBlock", items[-2])
@@ -387,12 +397,11 @@ class DefineTransformer(
                 quality_requirements.append(item)
             else:
                 interface_positions.append(cast("ast.LocalPositionDefinition", item))
-        return ast.ActionDefinitionBlock(
+        return _ActionDefinitionBlockData(
             quality_requirements=quality_requirements,
             interface_positions=interface_positions,
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:

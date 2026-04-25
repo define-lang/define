@@ -707,7 +707,7 @@ class DefinitionPostorderValidator(abc.ABC):
             local_pos_name = last_element.full_typed_name(
                 in_universe=self._enclosing_fqun
             )
-            return action_def.interface_positions[local_pos_name].constraints
+            return action_def.interface_positions_by_name[local_pos_name].constraints
 
         lookup_key = last_element.full_typed_name(in_universe=self._enclosing_fqun)
         definition_result = self._definition_results.get(lookup_key)
@@ -783,7 +783,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 
     @property
     def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
-        return self._action_definition.interface_positions
+        return self._action_definition.interface_positions_by_name
 
     @property
     def _trigger_position_name(self) -> str | None:
@@ -797,7 +797,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, edges, and contract."""
         action_def = self._action_definition
-        contract = self._analyze_action_definition(action_def.definition_block)
+        contract = self._analyze_action_definition(action_def)
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
             edges=self._action_edges,
@@ -833,10 +833,10 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 
     def _analyze_action_definition(
         self,
-        definition_block: ast.ActionDefinitionBlock,
+        definition: ast.ActionDefinition,
     ) -> action_contract.ActionContract:
         scope = scope_tracker.ScopeTracker(self._enclosing_fqun)
-        for pos in definition_block.interface_positions:
+        for pos in definition.interface_positions:
             # Skip duplicates so the first definition's constraints are preserved,
             # matching file_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
@@ -855,7 +855,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 self._tracker.create(trigger_ref, qualities, from_caller=True)
 
         scope.enter_child_scope()
-        self._analyze_statements(definition_block.action_statements, scope)
+        self._analyze_statements(definition.action_statements, scope)
 
         return self._generate_contract()
 

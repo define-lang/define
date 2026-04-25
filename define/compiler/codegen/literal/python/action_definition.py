@@ -30,8 +30,6 @@ class ActionDefinitionGenerator:
         class_name = self._converter.class_name(name_content.path.relative_path)
         module_name = self._converter.module_name(name_content)
 
-        block = self._definition.definition_block
-
         interface_positions = [
             template_context.InterfacePositionContext(
                 typed_name=local_def.typed_name.source_typed_name,
@@ -40,20 +38,20 @@ class ActionDefinitionGenerator:
                     enclosing_fqun,
                 ),
             )
-            for local_def in block.interface_positions
+            for local_def in self._definition.interface_positions
         ]
 
-        trigger_position_name = block.trigger_conditions.conditions[
+        trigger_position_name = self._definition.trigger_conditions.conditions[
             0
         ].typed_name.source_typed_name
 
         interface_position_names = {
             local_def.typed_name.source_typed_name
-            for local_def in block.interface_positions
+            for local_def in self._definition.interface_positions
         }
 
         block_gen = action_statements.ActionStatementsBlockGenerator(
-            block.action_statements,
+            self._definition.action_statements,
             self._definition.typed_name,
             self._converter,
             interface_position_names=interface_position_names,

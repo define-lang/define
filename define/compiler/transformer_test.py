@@ -167,13 +167,10 @@ def test_action_definition_block_transforms():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert len(definition.definition_block.interface_positions) == 1
-    assert (
-        definition.definition_block.interface_positions[0].typed_name.name_content.name
-        == "run"
-    )
-    assert definition.definition_block.trigger_conditions is not None
-    assert definition.definition_block.action_statements.statements == []
+    assert len(definition.interface_positions) == 1
+    assert definition.interface_positions[0].typed_name.name_content.name == "run"
+    assert definition.trigger_conditions is not None
+    assert definition.action_statements.statements == []
 
 
 def test_action_definition_block_with_interface_position():
@@ -188,11 +185,8 @@ def test_action_definition_block_with_interface_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert len(definition.definition_block.interface_positions) == 1
-    assert (
-        definition.definition_block.interface_positions[0].typed_name.name_content.name
-        == "my_pos"
-    )
+    assert len(definition.interface_positions) == 1
+    assert definition.interface_positions[0].typed_name.name_content.name == "my_pos"
 
 
 def test_action_definition_block_with_multiple_interface_positions():
@@ -208,14 +202,10 @@ def test_action_definition_block_with_multiple_interface_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert len(definition.definition_block.interface_positions) == 2
+    assert len(definition.interface_positions) == 2
+    assert definition.interface_positions[0].typed_name.name_content.name == "first_pos"
     assert (
-        definition.definition_block.interface_positions[0].typed_name.name_content.name
-        == "first_pos"
-    )
-    assert (
-        definition.definition_block.interface_positions[1].typed_name.name_content.name
-        == "second_pos"
+        definition.interface_positions[1].typed_name.name_content.name == "second_pos"
     )
 
 
@@ -231,12 +221,10 @@ def test_action_definition_block_source_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert block.location.line == 1
-    assert block.trigger_conditions.location.line == 3
-    assert block.action_statements.location.line == 5
-    assert block.action_statements.statements == []
+    assert definition.location.line == 1
+    assert definition.trigger_conditions.location.line == 3
+    assert definition.action_statements.location.line == 5
+    assert definition.action_statements.statements == []
 
 
 def test_action_definition_block_interface_position_source_position():
@@ -251,9 +239,7 @@ def test_action_definition_block_interface_position_source_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    local_def = block.interface_positions[0]
+    local_def = definition.interface_positions[0]
     assert local_def.location.line == 2
     assert local_def.location.column == 5
 
@@ -271,10 +257,8 @@ def test_action_definition_block_with_action_statement_local_definition():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.action_statements.statements) == 1
-    local_def = block.action_statements.statements[0]
+    assert len(definition.action_statements.statements) == 1
+    local_def = definition.action_statements.statements[0]
     assert isinstance(local_def, ast.LocalPositionDefinition)
     assert local_def.typed_name.name_content.name == "inner_pos"
     assert local_def.location.line == 6
@@ -295,11 +279,9 @@ def test_action_definition_block_with_multiple_action_statement_local_definition
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.action_statements.statements) == 2
-    first_local_def = block.action_statements.statements[0]
-    second_local_def = block.action_statements.statements[1]
+    assert len(definition.action_statements.statements) == 2
+    first_local_def = definition.action_statements.statements[0]
+    second_local_def = definition.action_statements.statements[1]
     assert isinstance(first_local_def, ast.LocalPositionDefinition)
     assert isinstance(second_local_def, ast.LocalPositionDefinition)
     assert first_local_def.typed_name.name_content.name == "first_inner"
@@ -350,10 +332,8 @@ def test_create_dimension_point_with_local_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.action_statements.statements) == 1
-    stmt = block.action_statements.statements[0]
+    assert len(definition.action_statements.statements) == 1
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     assert len(stmt.target_position.typed_names) == 1
     ref = stmt.target_position.typed_names[0]
@@ -375,9 +355,7 @@ def test_create_dimension_point_with_short_global_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     ref = stmt.target_position.typed_names[0]
     assert isinstance(ref, ast.GlobalTypedNameReference)
@@ -399,9 +377,7 @@ def test_create_dimension_point_with_full_fqun_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     ref = stmt.target_position.typed_names[0]
     assert isinstance(ref, ast.GlobalTypedNameReference)
@@ -429,9 +405,7 @@ def test_chained_position_reference_with_local_names():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     chain = stmt.target_position.typed_names
     assert len(chain) == 3
@@ -459,9 +433,7 @@ def test_chained_position_reference_with_global_names():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     chain = stmt.target_position.typed_names
     assert len(chain) == 3
@@ -486,9 +458,7 @@ def test_chained_position_reference_mixed_types():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     chain = stmt.target_position.typed_names
     assert len(chain) == 3
@@ -518,9 +488,7 @@ def test_mixed_action_statements():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmts = block.action_statements.statements
+    stmts = definition.action_statements.statements
     assert len(stmts) == 3
     assert isinstance(stmts[0], ast.LocalPositionDefinition)
     assert stmts[0].typed_name.name_content.name == "inner_pos"
@@ -541,10 +509,8 @@ def test_move_dimension_point_with_local_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.action_statements.statements) == 1
-    stmt = block.action_statements.statements[0]
+    assert len(definition.action_statements.statements) == 1
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
     assert len(stmt.source_position.typed_names) == 1
     from_ref = stmt.source_position.typed_names[0]
@@ -571,9 +537,7 @@ def test_move_dimension_point_with_short_global_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
     from_ref = stmt.source_position.typed_names[0]
     assert isinstance(from_ref, ast.GlobalTypedNameReference)
@@ -600,9 +564,7 @@ def test_move_dimension_point_with_full_fqun_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
     from_ref = stmt.source_position.typed_names[0]
     assert isinstance(from_ref, ast.GlobalTypedNameReference)
@@ -629,9 +591,7 @@ def test_move_dimension_point_with_chained_source():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
     assert len(stmt.source_position.typed_names) == 3
     assert isinstance(stmt.source_position.typed_names[0], ast.LocalTypedNameReference)
@@ -659,9 +619,7 @@ def test_move_dimension_point_with_chained_destination():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.MoveDimensionPointStatement)
     assert len(stmt.source_position.typed_names) == 1
     assert isinstance(stmt.source_position.typed_names[0], ast.LocalTypedNameReference)
@@ -691,9 +649,7 @@ def test_mixed_action_statements_with_move():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmts = block.action_statements.statements
+    stmts = definition.action_statements.statements
     assert len(stmts) == 3
     assert isinstance(stmts[0], ast.CreateDimensionPointStatement)
     assert isinstance(stmts[1], ast.MoveDimensionPointStatement)
@@ -713,10 +669,8 @@ def test_destroy_dimension_point_with_local_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.action_statements.statements) == 1
-    stmt = block.action_statements.statements[0]
+    assert len(definition.action_statements.statements) == 1
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.DestroyDimensionPointStatement)
     assert len(stmt.target_position.typed_names) == 1
     target_ref = stmt.target_position.typed_names[0]
@@ -738,9 +692,7 @@ def test_destroy_dimension_point_with_short_global_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.DestroyDimensionPointStatement)
     target_ref = stmt.target_position.typed_names[0]
     assert isinstance(target_ref, ast.GlobalTypedNameReference)
@@ -762,9 +714,7 @@ def test_destroy_dimension_point_with_full_fqun_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.DestroyDimensionPointStatement)
     target_ref = stmt.target_position.typed_names[0]
     assert isinstance(target_ref, ast.GlobalTypedNameReference)
@@ -786,9 +736,7 @@ def test_destroy_dimension_point_with_chained_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmt = block.action_statements.statements[0]
+    stmt = definition.action_statements.statements[0]
     assert isinstance(stmt, ast.DestroyDimensionPointStatement)
     assert len(stmt.target_position.typed_names) == 3
     assert isinstance(stmt.target_position.typed_names[0], ast.LocalTypedNameReference)
@@ -816,9 +764,7 @@ def test_mixed_action_statements_with_destroy():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    stmts = block.action_statements.statements
+    stmts = definition.action_statements.statements
     assert len(stmts) == 4
     assert isinstance(stmts[0], ast.CreateDimensionPointStatement)
     assert isinstance(stmts[1], ast.DestroyDimensionPointStatement)
@@ -842,9 +788,7 @@ def test_action_definition_block_with_constrained_interface_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    local_def = block.interface_positions[0]
+    local_def = definition.interface_positions[0]
     assert local_def.constraints is not None
     assert len(local_def.constraints.requirements) == 1
     requirement = local_def.constraints.requirements[0]
@@ -869,10 +813,8 @@ def test_trigger_condition_statement_transforms_local_position():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.trigger_conditions.conditions) == 1
-    condition = block.trigger_conditions.conditions[0]
+    assert len(definition.trigger_conditions.conditions) == 1
+    condition = definition.trigger_conditions.conditions[0]
     assert isinstance(condition, ast.TriggerConditionStatement)
     assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
     assert condition.typed_name.name_type == ast.NameType.POSITION
@@ -891,10 +833,8 @@ def test_trigger_condition_statement_source_positions():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert block is not None
-    assert len(block.trigger_conditions.conditions) == 1
-    condition = block.trigger_conditions.conditions[0]
+    assert len(definition.trigger_conditions.conditions) == 1
+    condition = definition.trigger_conditions.conditions[0]
     assert condition.location.line == 4
     assert condition.location.column == 9
 
@@ -1107,7 +1047,7 @@ def test_action_definition_quality_requirements_default_empty():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert definition.definition_block.quality_requirements == []
+    assert definition.quality_requirements == []
 
 
 def test_action_definition_with_quality_requirements():
@@ -1125,10 +1065,9 @@ def test_action_definition_with_quality_requirements():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    block = definition.definition_block
-    assert len(block.quality_requirements) == 2
-    first = block.quality_requirements[0]
-    second = block.quality_requirements[1]
+    assert len(definition.quality_requirements) == 2
+    first = definition.quality_requirements[0]
+    second = definition.quality_requirements[1]
     assert isinstance(first, ast.QualityRequirementStatement)
     assert isinstance(second, ast.QualityRequirementStatement)
     assert first.typed_global_name.name_type == ast.NameType.POSITION
@@ -1137,7 +1076,7 @@ def test_action_definition_with_quality_requirements():
     assert second.typed_global_name.name_content.path.relative_path == Path("b")
     assert first.location.line == 2
     assert second.location.line == 3
-    assert len(block.interface_positions) == 1
-    assert block.interface_positions[0].typed_name.name_content.name == "run"
-    assert len(block.trigger_conditions.conditions) == 1
-    assert len(block.action_statements.statements) == 1
+    assert len(definition.interface_positions) == 1
+    assert definition.interface_positions[0].typed_name.name_content.name == "run"
+    assert len(definition.trigger_conditions.conditions) == 1
+    assert len(definition.action_statements.statements) == 1

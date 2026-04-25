@@ -34,7 +34,12 @@ _TRIGGER_REF = ast.LocalTypedNameReference(
     location=_LOC,
 )
 
-_MINIMAL_ACTION_BLOCK = ast.ActionDefinitionBlock(
+_ENCLOSING_DEF = ast.ActionDefinition(
+    name=ast.DefinitionGlobalNameContent(
+        fqun=_FQUN,
+        path=ast.GlobalPathName(name="/my_action", location=_LOC),
+        location=_LOC,
+    ),
     quality_requirements=[],
     interface_positions=[],
     trigger_conditions=ast.TriggerConditionsBlock(
@@ -44,16 +49,6 @@ _MINIMAL_ACTION_BLOCK = ast.ActionDefinitionBlock(
         location=_LOC,
     ),
     action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
-    location=_LOC,
-)
-
-_ENCLOSING_DEF = ast.ActionDefinition(
-    name=ast.DefinitionGlobalNameContent(
-        fqun=_FQUN,
-        path=ast.GlobalPathName(name="/my_action", location=_LOC),
-        location=_LOC,
-    ),
-    definition_block=_MINIMAL_ACTION_BLOCK,
     location=_LOC,
 )
 

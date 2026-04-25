@@ -33,19 +33,6 @@ _TRIGGER_REF = ast.LocalTypedNameReference(
     location=_LOC,
 )
 
-_MINIMAL_ACTION_BLOCK = ast.ActionDefinitionBlock(
-    quality_requirements=[],
-    interface_positions=[],
-    trigger_conditions=ast.TriggerConditionsBlock(
-        conditions=[
-            ast.TriggerConditionStatement(typed_name=_TRIGGER_REF, location=_LOC)
-        ],
-        location=_LOC,
-    ),
-    action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
-    location=_LOC,
-)
-
 
 def _make_action(path_name: str) -> ast.ActionDefinition:
     return ast.ActionDefinition(
@@ -54,7 +41,15 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
             fqun=_FQUN,
             location=_LOC,
         ),
-        definition_block=_MINIMAL_ACTION_BLOCK,
+        quality_requirements=[],
+        interface_positions=[],
+        trigger_conditions=ast.TriggerConditionsBlock(
+            conditions=[
+                ast.TriggerConditionStatement(typed_name=_TRIGGER_REF, location=_LOC)
+            ],
+            location=_LOC,
+        ),
+        action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
         location=_LOC,
     )
 

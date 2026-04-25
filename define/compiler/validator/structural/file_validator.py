@@ -266,7 +266,7 @@ class DefinitionStructuralValidator:
         self._validate_not_duplicate_in_file()
 
         if isinstance(self._definition, ast.ActionDefinition):
-            self._validate_action_definition_block(self._definition.definition_block)
+            self._validate_action_definition(self._definition)
         if isinstance(self._definition, ast.PositionDefinition):
             self._validate_global_position_definition_block(self._definition)
         return self.build_result()
@@ -323,20 +323,20 @@ class DefinitionStructuralValidator:
                 )
             )
 
-    def _validate_action_definition_block(
+    def _validate_action_definition(
         self,
-        definition_block: ast.ActionDefinitionBlock,
+        definition: ast.ActionDefinition,
     ):
-        self._validate_quality_requirements(definition_block.quality_requirements)
+        self._validate_quality_requirements(definition.quality_requirements)
         scope = scope_tracker.ScopeTracker(
             self._definition.typed_name.name_content.fqun
         )
-        for local_def in definition_block.interface_positions:
+        for local_def in definition.interface_positions:
             self._validate_local_position_definition(local_def, scope)
-        self._validate_trigger_conditions(definition_block.trigger_conditions, scope)
+        self._validate_trigger_conditions(definition.trigger_conditions, scope)
         scope.enter_child_scope()
         self._validate_action_statements(
-            definition_block.action_statements,
+            definition.action_statements,
             scope,
         )
         self._check_unused_quality_requirements()

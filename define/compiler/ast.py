@@ -456,24 +456,17 @@ class PositionInitBlock(ActionStatementsBlock):
     """Represents a position init block."""
 
 
-@dataclass(frozen=True, slots=True)
-class ActionDefinitionBlock(ASTNode):
-    """Represents an action definition block."""
+@dataclass(frozen=True, slots=True, init=False)
+class ActionDefinition(QualityDefinition):
+    """Represents an action definition."""
 
     quality_requirements: list[QualityRequirementStatement]
     interface_positions: list[LocalPositionDefinition]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
 
-
-@dataclass(frozen=True, slots=True, init=False)
-class ActionDefinition(QualityDefinition):
-    """Represents an action definition."""
-
-    definition_block: ActionDefinitionBlock
-
     # Computed properties
-    interface_positions: dict[str, LocalPositionDefinition]
+    interface_positions_by_name: dict[str, LocalPositionDefinition]
     interface_position_constraints: dict[str, frozenset[str]]
     trigger_position: LocalPositionDefinition | None
 
@@ -482,7 +475,10 @@ class ActionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        definition_block: ActionDefinitionBlock,
+        quality_requirements: list[QualityRequirementStatement],
+        interface_positions: list[LocalPositionDefinition],
+        trigger_conditions: TriggerConditionsBlock,
+        action_statements: ActionStatementsBlock,
     ):
         """Initialize with a global name, wrapping it in a typed definition name."""
         super().__init__(
@@ -494,7 +490,10 @@ class ActionDefinition(QualityDefinition):
             ),
             location=location,
         )
-        object.__setattr__(self, "definition_block", definition_block)
+        object.__setattr__(self, "quality_requirements", quality_requirements)
+        object.__setattr__(self, "interface_positions", interface_positions)
+        object.__setattr__(self, "trigger_conditions", trigger_conditions)
+        object.__setattr__(self, "action_statements", action_statements)
         # Instead of making these into properties, we compute them up front for two
         # reasons: (1) it's complex to make cached properties on frozen dataclasses
         # (2) this guarantees later thread-safety for accessing this information
@@ -502,8 +501,8 @@ class ActionDefinition(QualityDefinition):
         # copies of it across threads).
         object.__setattr__(
             self,
-            "interface_positions",
-            self._compute_interface_positions(),
+            "interface_positions_by_name",
+            self._compute_interface_positions_by_name(),
         )
         object.__setattr__(
             self,
@@ -515,11 +514,13 @@ class ActionDefinition(QualityDefinition):
     @property
     def interface_position_names(self) -> list[TypedName]:
         """Return the TypedName objects for all interface positions."""
-        return [pos.typed_name for pos in self.definition_block.interface_positions]
+        return [pos.typed_name for pos in self.interface_positions]
 
-    def _compute_interface_positions(self) -> dict[str, LocalPositionDefinition]:
+    def _compute_interface_positions_by_name(
+        self,
+    ) -> dict[str, LocalPositionDefinition]:
         result: dict[str, LocalPositionDefinition] = {}
-        for local_def in self.definition_block.interface_positions:
+        for local_def in self.interface_positions:
             local_name = local_def.typed_name.source_typed_name
             if local_name not in result:
                 result[local_name] = local_def
@@ -528,7 +529,7 @@ class ActionDefinition(QualityDefinition):
     def _compute_interface_position_constraints(self) -> dict[str, frozenset[str]]:
         fqun = self.typed_name.name_content.fqun
         result: dict[str, frozenset[str]] = {}
-        for local_name, local_def in self.interface_positions.items():
+        for local_name, local_def in self.interface_positions_by_name.items():
             if local_def.constraints is None:
                 result[local_name] = frozenset()
                 continue
@@ -539,17 +540,17 @@ class ActionDefinition(QualityDefinition):
         return result
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:
-        trigger_name = self.definition_block.trigger_conditions.conditions[
+        trigger_name = self.trigger_conditions.conditions[
             0
         ].typed_name.source_typed_name
-        return self.interface_positions.get(trigger_name)
+        return self.interface_positions_by_name.get(trigger_name)
 
     @property
     def trigger_position_reference(self) -> PositionReference | None:
         """Return the trigger condition's PositionReference, if valid."""
         if self.trigger_position is None:
             return None
-        return self.definition_block.trigger_conditions.conditions[0].position_reference
+        return self.trigger_conditions.conditions[0].position_reference
 
 
 @dataclass(frozen=True, slots=True)

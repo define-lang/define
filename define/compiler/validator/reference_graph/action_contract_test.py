@@ -33,7 +33,7 @@ def _get_create_ref(
 ) -> ast.PositionReference:
     creates = [
         stmt
-        for stmt in action.definition_block.action_statements.statements
+        for stmt in action.action_statements.statements
         if isinstance(stmt, ast.CreateDimensionPointStatement)
     ]
     return creates[index].target_position
