@@ -164,6 +164,19 @@ class DuplicateQualityRequirementDiagnostic(Diagnostic):
 
 
 @dataclass
+class UnusedQualityRequirementDiagnostic(Diagnostic):
+    """Diagnostic for when a Quality Requirement Statement is never used as a chain start in the definition body."""
+
+    requirement_name: str
+    message_format: ClassVar[str] = (
+        "'{self.requirement_name}' is required here, but it is never used as the "
+        "first name of a chained name in the executed code of this definition; "
+        "either remove the quality requirement statement or reference "
+        "'{self.requirement_name}' in the executed code."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

@@ -233,7 +233,8 @@ class DefinitionStructuralValidator:
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
-    _required_qualities: set[str]
+    _required_qualities: dict[str, ast.QualityRequirementStatement]
+    _used_required_qualities: set[str]
 
     def __init__(
         self,
@@ -250,7 +251,8 @@ class DefinitionStructuralValidator:
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
-        self._required_qualities = set()
+        self._required_qualities = {}
+        self._used_required_qualities = set()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
         """Validate one top-level definition and return its validation result."""
@@ -337,6 +339,7 @@ class DefinitionStructuralValidator:
             definition_block.action_statements,
             scope,
         )
+        self._check_unused_quality_requirements()
 
     def _validate_global_position_definition_block(
         self,
@@ -353,6 +356,7 @@ class DefinitionStructuralValidator:
             )
         if definition.constraints:
             self._validate_position_constraints(definition.constraints)
+        self._check_unused_quality_requirements()
 
     def _validate_trigger_conditions(
         self,
@@ -539,7 +543,9 @@ class DefinitionStructuralValidator:
 
         if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
             canonical = first.full_typed_name(in_universe=fqun)
-            if canonical not in self._required_qualities:
+            if canonical in self._required_qualities:
+                self._used_required_qualities.add(canonical)
+            else:
                 self._diagnostics.append(
                     diagnostics.UnknownGlobalNameDiagnostic(
                         location=first.location,
@@ -669,8 +675,19 @@ class DefinitionStructuralValidator:
                 )
                 continue
             seen_lines[canonical] = requirement.typed_global_name.location.line
-            self._required_qualities.add(canonical)
+            self._required_qualities[canonical] = requirement
             self._process_reference(requirement.typed_global_name)
+
+    def _check_unused_quality_requirements(self):
+        for canonical, requirement in self._required_qualities.items():
+            if canonical in self._used_required_qualities:
+                continue
+            self._diagnostics.append(
+                diagnostics.UnusedQualityRequirementDiagnostic(
+                    location=requirement.typed_global_name.location,
+                    requirement_name=requirement.typed_global_name.source_typed_name,
+                )
+            )
 
     def _process_reference(
         self,

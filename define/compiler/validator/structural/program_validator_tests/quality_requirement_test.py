@@ -471,6 +471,133 @@ def test_circular_qrs_emits_diagnostic(validate_project: ValidateProject):
     assert diags[1].location.column == 37
 
 
+def test_unused_qrs_on_global_position_error():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/foo>.\n"
+        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "    this dimension point must have the position</foo>.\n"
+        "    after it is assigned {\n"
+        "        create a dimension point in position</root>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UnusedQualityRequirementDiagnostic)
+    assert diags[0].requirement_name == "position</foo>"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 40
+
+
+def test_unused_qrs_on_action_error():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/foo>.\n"
+        "define the potential action<my.domain.com:my_lib:/act> {\n"
+        "    this dimension point must have the position</foo>.\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UnusedQualityRequirementDiagnostic)
+    assert diags[0].requirement_name == "position</foo>"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 40
+
+
+def test_qrs_used_only_in_constraint_block_is_unused():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/foo>.\n"
+        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "    this dimension point must have the position</foo>.\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</foo>.\n"
+        "    }\n"
+        "    after it is assigned {\n"
+        "        create a dimension point in position</root>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UnusedQualityRequirementDiagnostic)
+    assert diags[0].requirement_name == "position</foo>"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 40
+
+
+def test_qrs_used_only_mid_chain_via_self_ref_is_unused():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/foo>.\n"
+        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "    this dimension point must have the position</foo>.\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</foo>.\n"
+        "    }\n"
+        "    after it is assigned {\n"
+        "        create a dimension point in position</root>::position</foo>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UnusedQualityRequirementDiagnostic)
+    assert diags[0].requirement_name == "position</foo>"
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 40
+
+
+def test_two_qrs_one_used_one_unused():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/foo>.\n"
+        "define the potential position<my.domain.com:my_lib:/bar>.\n"
+        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "    this dimension point must have the position</foo>.\n"
+        "    this dimension point must have the position</bar>.\n"
+        "    after it is assigned {\n"
+        "        create a dimension point in position</foo>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    assert isinstance(diags[0], diagnostics.UnusedQualityRequirementDiagnostic)
+    assert diags[0].requirement_name == "position</bar>"
+    assert diags[0].location.line == 5
+    assert diags[0].location.column == 40
+
+
 def test_qrs_for_nonexistent_quality_used_in_body(
     validate_project: ValidateProject,
 ):
