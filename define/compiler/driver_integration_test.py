@@ -280,6 +280,12 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "trigger_conditions/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
+    "position_constraints/duplicate_in_global_position.dfn": [
+        diagnostics.DuplicatePositionConstraintDiagnostic,
+    ],
+    "position_constraints/duplicate_in_local_position.dfn": [
+        diagnostics.DuplicatePositionConstraintDiagnostic,
+    ],
     "position_init/empty_init_block.dfn": [
         diagnostics.EmptyPositionInitBlockDiagnostic,
     ],

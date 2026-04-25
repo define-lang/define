@@ -617,6 +617,8 @@ class DefinitionStructuralValidator:
         self,
         constraints: ast.PositionConstraintBlock,
     ):
+        fqun = self._definition.typed_name.name_content.fqun
+        seen_lines: dict[str, int] = {}
         for requirement in constraints.requirements:
             reference_diagnostics = name_validators.validate_typed_name(
                 requirement.typed_global_name, self._definition
@@ -624,6 +626,18 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
+            canonical = requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            first_line = seen_lines.get(canonical)
+            if first_line is not None:
+                self._diagnostics.append(
+                    diagnostics.DuplicatePositionConstraintDiagnostic(
+                        location=requirement.typed_global_name.location,
+                        constraint_name=requirement.typed_global_name.source_typed_name,
+                        first_constraint_line=first_line,
+                    )
+                )
+                continue
+            seen_lines[canonical] = requirement.typed_global_name.location.line
             self._process_reference(requirement.typed_global_name)
 
     def _process_reference(

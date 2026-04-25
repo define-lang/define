@@ -829,6 +829,11 @@ typed name and a statement terminator.
 position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
 ```
 
+### No Duplicate Requirements
+
+Within a single Position Constraint Block, the same typed name may not appear in
+more than one Position Requirement Statement.
+
 ## Position References
 
 Proposals:

@@ -56,6 +56,17 @@ py_test(
 )
 
 py_test(
+    name = "duplicate_position_constraint_test",
+    size = "small",
+    srcs = ["duplicate_position_constraint_test.py"],
+    deps = [
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
     name = "error_messages_test",
     size = "small",
     srcs = ["error_messages_test.py"],
@@ -244,6 +255,7 @@ pyright_test(
         ":destroy_dimension_point_test",
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",
+        ":duplicate_position_constraint_test",
         ":error_messages_test",
         ":file_not_found_test",
         ":fqun_mismatch_test",
