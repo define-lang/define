@@ -96,13 +96,13 @@ class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
     typed_name: GlobalTypedNameInDefinition
+    quality_requirements: list[QualityRequirementStatement]
 
 
 @dataclass(frozen=True, slots=True, init=False)
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
-    quality_requirements: list[QualityRequirementStatement]
     constraints: PositionConstraintBlock | None
     initialization: PositionInitBlock | None
 
@@ -123,9 +123,9 @@ class PositionDefinition(QualityDefinition):
                 # TODO: This is the wrong location.
                 location=name.location,
             ),
+            quality_requirements=quality_requirements or [],
             location=location,
         )
-        object.__setattr__(self, "quality_requirements", quality_requirements or [])
         object.__setattr__(self, "constraints", constraints)
         object.__setattr__(self, "initialization", initialization)
 
@@ -460,7 +460,6 @@ class PositionInitBlock(ActionStatementsBlock):
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
-    quality_requirements: list[QualityRequirementStatement]
     interface_positions: list[LocalPositionDefinition]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
@@ -488,9 +487,9 @@ class ActionDefinition(QualityDefinition):
                 # TODO: This is the wrong location.
                 location=name.location,
             ),
+            quality_requirements=quality_requirements,
             location=location,
         )
-        object.__setattr__(self, "quality_requirements", quality_requirements)
         object.__setattr__(self, "interface_positions", interface_positions)
         object.__setattr__(self, "trigger_conditions", trigger_conditions)
         object.__setattr__(self, "action_statements", action_statements)
