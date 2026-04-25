@@ -35,25 +35,33 @@ class DefineTransformer(
         meta: lark_standalone.Meta,
         items: list[
             ast.DefinitionGlobalNameContent
-            | list[ast.PositionConstraintBlock | ast.PositionInitBlock]
+            | list[
+                ast.QualityRequirementStatement
+                | ast.PositionConstraintBlock
+                | ast.PositionInitBlock
+            ]
         ],
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
         name = cast("ast.DefinitionGlobalNameContent", items[0])
+        quality_requirements: list[ast.QualityRequirementStatement] = []
         constraints: ast.PositionConstraintBlock | None = None
         initialization: ast.PositionInitBlock | None = None
         if len(items) > 1:
             block_contents = cast(
-                "list[ast.PositionConstraintBlock | ast.PositionInitBlock]",
+                "list[ast.QualityRequirementStatement | ast.PositionConstraintBlock | ast.PositionInitBlock]",
                 items[1],
             )
             for item in block_contents:
-                if isinstance(item, ast.PositionConstraintBlock):
+                if isinstance(item, ast.QualityRequirementStatement):
+                    quality_requirements.append(item)
+                elif isinstance(item, ast.PositionConstraintBlock):
                     constraints = item
                 else:
                     initialization = item
         return ast.PositionDefinition(
             name=name,
+            quality_requirements=quality_requirements,
             constraints=constraints,
             initialization=initialization,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
@@ -108,6 +116,12 @@ class DefineTransformer(
 
     def IT_HAS_THE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard the position-requirement keyword token."""
+        return lark_standalone.Discard
+
+    def THIS_DIMENSION_POINT_MUST_HAVE_THE(  # noqa: N802
+        self, _token: lark_standalone.Token
+    ) -> object:
+        """Discard the quality-requirement keyword token."""
         return lark_standalone.Discard
 
     def IT_HAPPENS_WHEN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
@@ -186,9 +200,18 @@ class DefineTransformer(
         return items[0]
 
     def potential_position_definition_block(
-        self, items: list[ast.PositionConstraintBlock | ast.PositionInitBlock]
-    ) -> list[ast.PositionConstraintBlock | ast.PositionInitBlock]:
-        """Pass through constraint and init blocks from a potential position definition."""
+        self,
+        items: list[
+            ast.QualityRequirementStatement
+            | ast.PositionConstraintBlock
+            | ast.PositionInitBlock
+        ],
+    ) -> list[
+        ast.QualityRequirementStatement
+        | ast.PositionConstraintBlock
+        | ast.PositionInitBlock
+    ]:
+        """Pass through quality requirements and constraint/init blocks from a potential position definition."""
         return items
 
     @lark_standalone.v_args(meta=True)
@@ -219,6 +242,16 @@ class DefineTransformer(
     ) -> ast.PositionRequirementStatement:
         """Transform a position requirement statement."""
         return ast.PositionRequirementStatement(
+            typed_global_name=items[0],
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+        )
+
+    @lark_standalone.v_args(meta=True)
+    def quality_requirement_statement(
+        self, meta: lark_standalone.Meta, items: list[ast.GlobalTypedNameReference]
+    ) -> ast.QualityRequirementStatement:
+        """Transform a quality requirement statement."""
+        return ast.QualityRequirementStatement(
             typed_global_name=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
@@ -338,7 +371,8 @@ class DefineTransformer(
         self,
         meta: lark_standalone.Meta,
         items: list[
-            ast.LocalPositionDefinition
+            ast.QualityRequirementStatement
+            | ast.LocalPositionDefinition
             | ast.TriggerConditionsBlock
             | ast.ActionStatementsBlock
         ],
@@ -346,10 +380,15 @@ class DefineTransformer(
         """Transform an action definition block."""
         action_statements = cast("ast.ActionStatementsBlock", items[-1])
         trigger_conditions = cast("ast.TriggerConditionsBlock", items[-2])
-        interface_positions = cast(
-            "list[ast.LocalPositionDefinition]", list(items[:-2])
-        )
+        quality_requirements: list[ast.QualityRequirementStatement] = []
+        interface_positions: list[ast.LocalPositionDefinition] = []
+        for item in items[:-2]:
+            if isinstance(item, ast.QualityRequirementStatement):
+                quality_requirements.append(item)
+            else:
+                interface_positions.append(cast("ast.LocalPositionDefinition", item))
         return ast.ActionDefinitionBlock(
+            quality_requirements=quality_requirements,
             interface_positions=interface_positions,
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,

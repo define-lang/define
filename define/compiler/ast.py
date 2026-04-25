@@ -102,6 +102,7 @@ class QualityDefinition(ASTNode):
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
+    quality_requirements: list[QualityRequirementStatement]
     constraints: PositionConstraintBlock | None
     initialization: PositionInitBlock | None
 
@@ -110,6 +111,7 @@ class PositionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
+        quality_requirements: list[QualityRequirementStatement] | None = None,
         constraints: PositionConstraintBlock | None = None,
         initialization: PositionInitBlock | None = None,
     ):
@@ -123,6 +125,7 @@ class PositionDefinition(QualityDefinition):
             ),
             location=location,
         )
+        object.__setattr__(self, "quality_requirements", quality_requirements or [])
         object.__setattr__(self, "constraints", constraints)
         object.__setattr__(self, "initialization", initialization)
 
@@ -385,6 +388,13 @@ class PositionRequirementStatement(ASTNode):
 
 
 @dataclass(frozen=True, slots=True)
+class QualityRequirementStatement(ASTNode):
+    """Represents a quality requirement statement."""
+
+    typed_global_name: GlobalTypedNameReference
+
+
+@dataclass(frozen=True, slots=True)
 class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
@@ -450,6 +460,7 @@ class PositionInitBlock(ActionStatementsBlock):
 class ActionDefinitionBlock(ASTNode):
     """Represents an action definition block."""
 
+    quality_requirements: list[QualityRequirementStatement]
     interface_positions: list[LocalPositionDefinition]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock

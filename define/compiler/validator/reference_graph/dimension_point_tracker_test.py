@@ -35,6 +35,7 @@ _TRIGGER_REF = ast.LocalTypedNameReference(
 )
 
 _MINIMAL_ACTION_BLOCK = ast.ActionDefinitionBlock(
+    quality_requirements=[],
     interface_positions=[],
     trigger_conditions=ast.TriggerConditionsBlock(
         conditions=[

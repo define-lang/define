@@ -1041,3 +1041,103 @@ def test_init_block_source_positions():
     assert isinstance(stmt, ast.CreateDimensionPointStatement)
     assert stmt.location.line == 3
     assert stmt.location.column == 9
+
+
+def test_position_definition_quality_requirements_default_empty():
+    program = _parse_and_transform("define the potential position<standard:/path>.\n")
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.quality_requirements == []
+
+
+def test_position_definition_with_quality_requirements():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    this dimension point must have the position</a>.\n"
+        + "    this dimension point must have the action</b>.\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert len(definition.quality_requirements) == 2
+    first = definition.quality_requirements[0]
+    second = definition.quality_requirements[1]
+    assert isinstance(first, ast.QualityRequirementStatement)
+    assert isinstance(second, ast.QualityRequirementStatement)
+    assert first.typed_global_name.name_type == ast.NameType.POSITION
+    assert first.typed_global_name.name_content.path.relative_path == Path("a")
+    assert second.typed_global_name.name_type == ast.NameType.ACTION
+    assert second.typed_global_name.name_content.path.relative_path == Path("b")
+    assert first.location.line == 2
+    assert second.location.line == 3
+    assert definition.constraints is not None
+    assert len(definition.constraints.requirements) == 1
+
+
+def test_position_definition_with_quality_requirements_and_init_block():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    this dimension point must have the position</a>.\n"
+        + "    after it is assigned {\n"
+        + "        create a dimension point in position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert len(definition.quality_requirements) == 1
+    assert definition.constraints is None
+    assert definition.initialization is not None
+
+
+def test_action_definition_quality_requirements_default_empty():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<_noop>.\n"
+        + "    it happens when {\n"
+        + "        the position<_noop> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        define the position<__noop>.\n"
+        + "        create a dimension point in position<__noop>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    assert definition.definition_block.quality_requirements == []
+
+
+def test_action_definition_with_quality_requirements():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    this dimension point must have the position</a>.\n"
+        + "    this dimension point must have the action</b>.\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    block = definition.definition_block
+    assert len(block.quality_requirements) == 2
+    first = block.quality_requirements[0]
+    second = block.quality_requirements[1]
+    assert isinstance(first, ast.QualityRequirementStatement)
+    assert isinstance(second, ast.QualityRequirementStatement)
+    assert first.typed_global_name.name_type == ast.NameType.POSITION
+    assert first.typed_global_name.name_content.path.relative_path == Path("a")
+    assert second.typed_global_name.name_type == ast.NameType.ACTION
+    assert second.typed_global_name.name_content.path.relative_path == Path("b")
+    assert first.location.line == 2
+    assert second.location.line == 3
+    assert len(block.interface_positions) == 1
+    assert block.interface_positions[0].typed_name.name_content.name == "run"
+    assert len(block.trigger_conditions.conditions) == 1
+    assert len(block.action_statements.statements) == 1
