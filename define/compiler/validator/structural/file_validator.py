@@ -233,6 +233,7 @@ class DefinitionStructuralValidator:
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
+    _required_qualities: set[str]
 
     def __init__(
         self,
@@ -249,6 +250,7 @@ class DefinitionStructuralValidator:
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
+        self._required_qualities = set()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
         """Validate one top-level definition and return its validation result."""
@@ -323,6 +325,7 @@ class DefinitionStructuralValidator:
         self,
         definition_block: ast.ActionDefinitionBlock,
     ):
+        self._validate_quality_requirements(definition_block.quality_requirements)
         scope = scope_tracker.ScopeTracker(
             self._definition.typed_name.name_content.fqun
         )
@@ -339,6 +342,7 @@ class DefinitionStructuralValidator:
         self,
         definition: ast.PositionDefinition,
     ):
+        self._validate_quality_requirements(definition.quality_requirements)
         if definition.initialization is not None:
             scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
             scope.add_definition(definition)
@@ -521,8 +525,6 @@ class DefinitionStructuralValidator:
             del chain.typed_names[0]
             first = chain.typed_names[0]
 
-        # TODO: Support quality-required global names when those exist
-        # (and throw an error for invalid ones).
         if not scope.is_defined(first) and isinstance(
             first, ast.LocalTypedNameReference
         ):
@@ -536,14 +538,16 @@ class DefinitionStructuralValidator:
             may_continue = False
 
         if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
-            self._diagnostics.append(
-                diagnostics.UnknownGlobalNameDiagnostic(
-                    location=first.location,
-                    source_global_name=first.source_typed_name,
-                    full_global_name=first.full_typed_name(in_universe=fqun),
+            canonical = first.full_typed_name(in_universe=fqun)
+            if canonical not in self._required_qualities:
+                self._diagnostics.append(
+                    diagnostics.UnknownGlobalNameDiagnostic(
+                        location=first.location,
+                        source_global_name=first.source_typed_name,
+                        full_global_name=canonical,
+                    )
                 )
-            )
-            may_continue = False
+                may_continue = False
 
         previous_element = None
         for typed_name in chain.typed_names:
@@ -638,6 +642,34 @@ class DefinitionStructuralValidator:
                 )
                 continue
             seen_lines[canonical] = requirement.typed_global_name.location.line
+            self._process_reference(requirement.typed_global_name)
+
+    def _validate_quality_requirements(
+        self,
+        requirements: list[ast.QualityRequirementStatement],
+    ):
+        fqun = self._definition.typed_name.name_content.fqun
+        seen_lines: dict[str, int] = {}
+        for requirement in requirements:
+            name_diagnostics = name_validators.validate_typed_name(
+                requirement.typed_global_name, self._definition
+            )
+            self._diagnostics.extend(name_diagnostics)
+            if name_diagnostics:
+                continue
+            canonical = requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            first_line = seen_lines.get(canonical)
+            if first_line is not None:
+                self._diagnostics.append(
+                    diagnostics.DuplicateQualityRequirementDiagnostic(
+                        location=requirement.typed_global_name.location,
+                        requirement_name=requirement.typed_global_name.source_typed_name,
+                        first_requirement_line=first_line,
+                    )
+                )
+                continue
+            seen_lines[canonical] = requirement.typed_global_name.location.line
+            self._required_qualities.add(canonical)
             self._process_reference(requirement.typed_global_name)
 
     def _process_reference(

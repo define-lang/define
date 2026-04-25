@@ -152,6 +152,18 @@ class DuplicatePositionConstraintDiagnostic(Diagnostic):
 
 
 @dataclass
+class DuplicateQualityRequirementDiagnostic(Diagnostic):
+    """Diagnostic for when the same quality requirement appears twice in the same definition."""
+
+    requirement_name: str
+    first_requirement_line: int
+    message_format: ClassVar[str] = (
+        "duplicate quality requirement '{self.requirement_name}'; "
+        "first declared on line {self.first_requirement_line}"
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

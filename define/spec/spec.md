@@ -762,7 +762,7 @@ chained_name = typed_name, { "::", typed_name } ;
 
 When a local name reference is valid in the current scope (including any
 transitive parent scope), it must be written as just a single `typed_name` in
-local name format. Chained names must not be used where local names are valid.
+local name format. Global names must not be used where local names are valid.
 
 ### No Inner Global Definitions
 
@@ -828,11 +828,6 @@ typed name and a statement terminator.
 ```ebnf
 position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
 ```
-
-### No Duplicate Requirements
-
-Within a single Position Constraint Block, the same typed name may not appear in
-more than one Position Requirement Statement.
 
 ## Position References
 
@@ -1202,11 +1197,6 @@ quality_requirement_statement =
     "this dimension point must have the", " ", typed_global_name, terminator ;
 ```
 
-Quality Requirement Statements may appear directly inside a Potential Position
-Definition Block, before any Position Constraint Block or Position
-Initialization Block. They may also appear directly inside an Action Definition
-Block, before any local position definitions.
-
 ### Assignment Semantics
 
 When a quality A contains a Quality Requirement Statement naming quality B, then
@@ -1232,14 +1222,20 @@ Statement would otherwise cause it to be assigned, the additional assignment
 does not occur. Only the first assignment takes effect; subsequent attempts to
 assign the same quality via Quality Requirement Statements are silently skipped.
 
+Explicitly requiring the same quality within a definition (writing the same
+quality requirement statement twice) is an error.
+
 ### No Dead Dependencies
 
-If a definition contains a Quality Requirement Statement, the required quality
-must be referenced somewhere within that definition (in a Position Constraint
-Block, Position Initialization Block, Trigger Conditions Block, Action
-Statements Block, or other reference). If the required quality is not referenced
-anywhere in the definition, the compiler must throw an error indicating that the
-Quality Requirement Statement is unnecessary.
+If an action definition contains a Quality Requirement Statement, the required
+quality must be referenced as the first name of a chained name somewhere within
+the action's Action Statements Block or Trigger Conditions Block.
+
+If a position definition contains a Quality Requirement Statement, the required
+quality must be referenced as the first name of a chained name somewhere within
+the position's Position Initialization Block.
+
+If the quaity is not so referenced, the compiler must throw an error.
 
 ## Creating Dimension Points
 
