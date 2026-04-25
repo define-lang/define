@@ -154,6 +154,18 @@ py_test(
 )
 
 py_test(
+    name = "quality_requirement_test",
+    size = "small",
+    srcs = ["quality_requirement_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+    ],
+)
+
+py_test(
     name = "statement_terminators_test",
     size = "small",
     srcs = ["statement_terminators_test.py"],
@@ -222,6 +234,7 @@ pyright_test(
         ":multiple_definitions_test",
         ":parser_tests",
         ":position_definition_test",
+        ":quality_requirement_test",
         ":statement_terminators_test",
         ":test_helpers",
         ":trigger_conditions_test",

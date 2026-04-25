@@ -40,6 +40,7 @@ HAS_A_DIMENSION_POINT: " has a dimension point"
 TO: " to "
 CHAIN_SEPARATOR: "::"
 AFTER_IT_IS_ASSIGNED: "after it is assigned"
+THIS_DIMENSION_POINT_MUST_HAVE_THE: "this dimension point must have the"
 
 # General
 
@@ -74,6 +75,11 @@ _position_constraint_requirement_tail: (NEWLINE* position_requirement_statement)
 _position_constraint_requirements: NEWLINE* position_requirement_statement _position_constraint_requirement_tail NEWLINE*
 position_constraint_block: IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE _block_open _position_constraint_requirements _block_close
 
+# Quality Requirement Statement Syntax
+
+quality_requirement_statement: THIS_DIMENSION_POINT_MUST_HAVE_THE " " typed_global_name_reference terminator
+_quality_requirements: (quality_requirement_statement NEWLINE*)*
+
 # Local Position Definition Syntax
 
 local_position_definition_block: _block_open NEWLINE* position_constraint_block NEWLINE* _block_close
@@ -83,7 +89,7 @@ position_definition_terminator_or_block: terminator | local_position_definition_
 
 _action_statements: (NEWLINE | local_position_definition | create_dimension_point_statement | move_dimension_point_statement | destroy_dimension_point_statement)*
 position_initialization_block: AFTER_IT_IS_ASSIGNED _block_open _action_statements _block_close
-potential_position_definition_block: _block_open NEWLINE* (position_constraint_block NEWLINE* [position_initialization_block NEWLINE*] | position_initialization_block NEWLINE*) _block_close
+potential_position_definition_block: _block_open NEWLINE* _quality_requirements (position_constraint_block NEWLINE* [position_initialization_block NEWLINE*] | position_initialization_block NEWLINE*) _block_close
 position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content (terminator | potential_position_definition_block)
 
 # Dimension Point Statement Syntax
@@ -102,7 +108,8 @@ trigger_condition_statement: THE typed_local_name_reference HAS_A_DIMENSION_POIN
 trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* trigger_condition_statement NEWLINE* "}"
 action_statements_block: AND_IT_DOES _block_open _action_statements _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
-action_definition_block: _block_open (NEWLINE | local_position_definition)* _trigger_and_action NEWLINE* _block_close
+_action_local_position_definitions: (local_position_definition NEWLINE*)*
+action_definition_block: _block_open NEWLINE* _quality_requirements _action_local_position_definitions _trigger_and_action NEWLINE* _block_close
 
 # Root Syntax
 
