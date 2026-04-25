@@ -913,6 +913,7 @@ position_definition = "define the potential", " ", global_position_name, positio
 position_definition_end = terminator | potential_position_definition_block ;
 potential_position_definition_block =
     block_open,
+    { quality_requirement_statement },
     ( position_constraint_block, [ position_initialization_block ] | position_initialization_block ),
     block_close ;
 ```
@@ -989,7 +990,12 @@ The Action Definition Block creates a new local scope.
 ```ebnf
 action_name = "action", "<", global_name, ">" ;
 action_definition = "define the potential", " ", action_name, action_definition_block ;
-action_definition_block = block_open, { local_position_definition }, trigger_and_action, block_close ;
+action_definition_block =
+    block_open,
+    { quality_requirement_statement },
+    { local_position_definition },
+    trigger_and_action,
+    block_close ;
 ```
 
 ### Interface Positions
@@ -1175,6 +1181,60 @@ The Action Requirements and Action Guarantees system implicitly means that
 actions must be processed in a post-order depth-first traversal of the
 global-name reference graph (a graph of which definitions reference which global
 names).
+
+## Quality Requirement Statements
+
+Proposals:
+
+- [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
+
+A Quality Requirement Statement starts with
+`this dimension point must have the`, followed by exactly one space, a typed
+global name, and a statement terminator.
+
+```ebnf
+quality_requirement_statement =
+    "this dimension point must have the", " ", typed_global_name, terminator ;
+```
+
+Quality Requirement Statements may appear directly inside a Potential Position
+Definition Block, before any Position Constraint Block or Position
+Initialization Block. They may also appear directly inside an Action Definition
+Block, before any local position definitions.
+
+### Assignment Semantics
+
+When a quality A contains a Quality Requirement Statement naming quality B, then
+whenever A is assigned to a dimension point, B is automatically assigned to that
+same dimension point beforehand. Quality Requirement Statements are executed in
+the order written in the code when executing their assignment to a dimension
+point.
+
+Inside the requiring quality's definition, the required quality is treated as
+already present on the dimension point. The required quality and its child names
+may be referenced directly in the requiring quality's definition.
+
+Requiring a quality does _not_ expose the transitively required qualities of
+that quality. In order for any code within a global definition to reference a
+global name as the first typed name in a chain (other than self-reference in
+Position Initialization Blocks) it must be listed in an explicit Quality
+Requirement Statement at the top of the global definition.
+
+### Duplicate Assignments
+
+If a quality is already present on a dimension point when a Quality Requirement
+Statement would otherwise cause it to be assigned, the additional assignment
+does not occur. Only the first assignment takes effect; subsequent attempts to
+assign the same quality via Quality Requirement Statements are silently skipped.
+
+### No Dead Dependencies
+
+If a definition contains a Quality Requirement Statement, the required quality
+must be referenced somewhere within that definition (in a Position Constraint
+Block, Position Initialization Block, Trigger Conditions Block, Action
+Statements Block, or other reference). If the required quality is not referenced
+anywhere in the definition, the compiler must throw an error indicating that the
+Quality Requirement Statement is unnecessary.
 
 ## Creating Dimension Points
 
