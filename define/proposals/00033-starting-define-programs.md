@@ -95,7 +95,7 @@ define the potential position<mv:example.com:example:/main> {
         it has the action</start>.
     }
     after it is assigned {
-        create a dimension point in this position.
+        create a dimension point in position</main>.
         create a dimension point in action</start>::position<run>.
     }
 }
@@ -139,7 +139,7 @@ conventions or function signature conventions in Define, as names shouldn't have
 meaning other than "this is a particular position in space."
 
 Basically, all the other options involve inventing new syntax to indicate that
-something is main, and that seemed both unnecessary and more likely to fix us
+something is main, and that seemed both unnecessary and more likely to lock us
 into a bad forward compatibility situation that we would eventually want to get
 out of (like Java making `String[] args` a required argument on every main
 function even when it hardly matters for many programs).

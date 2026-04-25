@@ -154,7 +154,7 @@ configuration, it would place it into the directory
 
 Third party configurations may contain anything they want to contain. However,
 if they contain configuration values, they are strongly encouraged to write them
-in the[Define Configuration Language](../../defcl/spec/spec.md).
+in the [Define Configuration Language](../../defcl/spec/spec.md).
 
 When Define tooling removes a universe from being a dependency of a codebase, it
 may delete that universe's configuration files from the project root of the
@@ -227,7 +227,7 @@ to is either:
 ### What About Environment Variables?
 
 Those are just command-line flags with another name. They have all the same
-problems, but actually the are even worse:
+problems, but actually they are even worse:
 
 - They often don't get logged in the same place that command lines get logged,
   so you have to figure out by magic what environment variables were specified

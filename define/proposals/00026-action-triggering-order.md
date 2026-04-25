@@ -129,7 +129,7 @@ order might as well be random. So this option doesn't work.
 
 We could choose to order actions in the sequence that they were _assigned_ to
 the dimension point. In the above example, this would cause the ball to move
-right, then move left, and then we would create a new ball and them move it to
+right, then move left, and then we would create a new ball and then move it to
 `new_spot`.
 
 This gives some very unintuitive and unexpected semantics to the order in which
@@ -448,10 +448,10 @@ Here's how it does that:
       universe instantaneously.
 
     - **Conflict**: If `move_left` finished 1 nanosecond ago and moved the ball,
-      the `move_right` transaction realizes its snapshot is stale. it
+      the `move_right` transaction realizes its snapshot is stale. It
       automatically abandons everything.
 
-4.  **Retries**": When a transaction fails, the runtime automatically restarts
+4.  **Retries**: When a transaction fails, the runtime automatically restarts
     it.
 
 This is super cool, but it doesn't solve our problems for Define, because it

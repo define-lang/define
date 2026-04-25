@@ -229,7 +229,7 @@ In brief:
    the operation. Operations are named like `operation<standard:/integer/add>`
    and are a property of the value type assigned to a dimension point. While
    actions are "physical" machines in our universe that operate on dimension
-   points, operations are _symbolic_ machines. they operate entirely on values,
+   points, operations are _symbolic_ machines. They operate entirely on values,
    not on positions.
 4. **Translations** between representations: These are mechanisms to translate
    between representations, even translations like "a string of ASCII digits" to
@@ -462,9 +462,9 @@ system. For example, assertions about nullness, allowed ranges of values,
 encoding of values, allowed mathematical operations on values, potential error
 states, etc. all become part of one single concept: a type.
 
-I believe this issue comes from to a more fundamental error that language
-designers have made, which is that they have logically assumed that _everything_
-in the program is a symbol (the meaning attached to a dimension point, not the
+I believe this issue comes from a more fundamental error that language designers
+have made, which is that they have logically assumed that _everything_ in the
+program is a symbol (the meaning attached to a dimension point, not the
 dimension point itself). Values are symbols, variable names are symbols,
 functions are symbols, often even types and raw operations (like addition) are
 symbols themselves. While it's true that the code we write is a representation
@@ -532,7 +532,7 @@ logic (essentially, the idea that you can have logical propositions that are
 _about_ other logical propositions, or in the case of a programming language,
 types that are about things in the program itself like "a type that represents a
 function") which, as I've worked it out so far, would get us into situations
-where static analysis of the program become very difficult, implemnetation of
+where static analysis of the program becomes very difficult, implementation of
 the compiler becomes complex, compile performance becomes harder to manage, etc.
 
 All that said, I haven't finished designing the language yet, so who knows. We
@@ -578,7 +578,7 @@ mitigations for this, but it's fundamentally pretty tough to solve sometimes.
 
 So now we understand the background and the other possibilities that I didn't
 choose. Why choose the pattern that I _did_ choose? Some of it's described
-above: the corespondence between universes, and modeling values as
+above: the correspondence between universes, and modeling values as
 communications.
 
 However, once you have those principles in place, you need solutions for these

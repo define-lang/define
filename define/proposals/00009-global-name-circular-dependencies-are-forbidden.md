@@ -203,7 +203,7 @@ proposal.
 ## Forward Compatibility
 
 It is forward compatible to deny circular dependencies. It would _not_ be
-forward compatible to allow circular deps , as we could not change our minds
+forward compatible to allow circular deps, as we could not change our minds
 about that later. (That is, once you allow circular dependencies, there's often
 no good way to write an automated refactoring that takes the tangle apart.)
 

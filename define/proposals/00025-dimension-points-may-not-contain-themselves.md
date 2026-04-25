@@ -56,7 +56,7 @@ and that thus the empty position still has `position<y>`. However, we consider
 positions to only exist in the universe of reflection as concepts before they
 are occupied, so they define nothing before they are occupied. Trying to make
 them define things when they are empty would lead to numerous complexities in
-the language (you would have to essentially "create" empty postions for every
+the language (you would have to essentially "create" empty positions for every
 position that gets defined, even when it doesn't have a dimension point in it,
 and then have confusing semantics for what happens when a dimension point gets
 moved).
@@ -66,12 +66,12 @@ other positions" is an okay semantic, but for now it's much simpler if we don't
 allow it. The concept of what happens if you move a dimension point into a
 position it defines is also very confusing as a programmer writing the language.
 (Not to mention that it's conceptually confusing---what would it mean for a
-shape to be defined by a the "location" of empty space?)
+shape to be defined by the "location" of empty space?)
 
 ## Forward Compatibility
 
-Since this is simply forbidding something, it eases forward compatiblity. We can
-change our mind about this later, because no valid Define programs will have
+Since this is simply forbidding something, it eases forward compatibility. We
+can change our mind about this later, because no valid Define programs will have
 done it.
 
 ## Refactoring Existing Systems

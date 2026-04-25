@@ -187,7 +187,7 @@ create a dimension point in position<temp_file>.
 move the dimension point in position<temp_file> to position<file>.
 ```
 
-When that Action Statements BLock ends, only `file` has a dimension point in it,
+When that Action Statements Block ends, only `file` has a dimension point in it,
 but the destructor that was defined in `temp_file` needs to fire.
 
 ## Solution
@@ -222,7 +222,7 @@ For clarity, this means destructors will trigger in the reverse order they were
 assigned to a dimension point (the cascade inherently behaves that way).
 
 Any actions triggered _by_ a destructor are still run asynchronously. This means
-they must detect the paradox of attempting to work on a positions that may be in
+they must detect the paradox of attempting to work on positions that may be in
 the middle of being deleted. (Attempting to destroy a dimension point and do any
 other action to it simultaneously is a paradox.) In reality, this means that
 essentially all actions triggered during a destructor will require appropriate
@@ -231,7 +231,7 @@ knows about (which are inherently positions assigned to this dimension point).
 
 Note that these semantics make position initialization and dimension point
 destruction very different: init runs when a _position_ is _assigned_, and
-destructors runs when a _dimension point_ is _destroyed_.
+destructors run when a _dimension point_ is _destroyed_.
 
 ### Static Analysis Requirement
 
@@ -245,7 +245,7 @@ In the example program above, we would need to create a new destructor for
 `temp_file`:
 
 ```
-define the potential action<mv:example.com:example/temp_file/destroy> {
+define the potential action<mv:example.com:example:/temp_file/destroy> {
     this dimension point must have the position</file_name>.
     this dimension point must have the position</file_handle>.
     this dimension point must have the position</buffer>.
@@ -302,7 +302,7 @@ This solution is not only elegant (it doesn't really have to change the cascade
 at all), it is also tremendously more flexible than the destructor system of
 most programming languages. You can specify multiple destructors. You can re-use
 one destructor's code across multiple different "types." You can have
-conditional constructors that only fire when the action is in the state where it
+conditional destructors that only fire when the action is in the state where it
 actually needs the destructor.
 
 The one trade-off is that you have to add the action to any position you need

@@ -130,9 +130,9 @@ might know that your numbers will always be between 2 and 10, and so you could
 specify that constraint _in addition_ on your own numbers in your own program.
 That gets you even more safety and correctness in your own code.
 
-Even though closed worlds are easier to "solve" in some forms of of logic
-(you're checking "the qualities are exactly this set" instead of "the qualities
-are a superset of this set"), open worlds are what provide the semantics that we
+Even though closed worlds are easier to "solve" in some forms of logic (you're
+checking "the qualities are exactly this set" instead of "the qualities are a
+superset of this set"), open worlds are what provide the semantics that we
 desire for programming.
 
 ### Syntax

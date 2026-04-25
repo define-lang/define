@@ -336,7 +336,7 @@ affect dimension points in their self-referenced position or children of that
 position.
 
 Let's take an example where `position</a>` has an init block that creates a
-dimenension point in itself. `position</a>` has the contract:
+dimension point in itself. `position</a>` has the contract:
 `it has the position</dep>`, and `position</dep>` also has an init block that
 creates a dimension point in itself. So when I do:
 
@@ -352,7 +352,7 @@ create a dimension point in position<local>.
 Then I can _guarantee_ that `position<local>::position</a>` is filled, and also
 that `position<local>::position</a>::position</dep>` is filled. Also, the
 position init block of `position</a>` itself can guarantee that `position</dep>`
-filled and could actually move or destroy that position, thus creating a
+is filled and could actually move or destroy that position, thus creating a
 _different_ guarantee than what `position</dep>` normally provides.
 
 ### Requirements Follow Dimension Points
@@ -361,7 +361,7 @@ Above I described how _positions_ are affected, but the reality is that
 requirements follow dimension points, not actually positions. If I move a
 dimension point from an interface position into a local position and then do
 something with one of the children of that dimension point, it still creates a
-requireemnt in the caller. This is true for all forms of requirements.
+requirement in the caller. This is true for all forms of requirements.
 
 So if I have `position<interface_pos>` and I move the dimension point of that
 into `position<some_local>` and then do
@@ -466,7 +466,7 @@ does
 `create a dimension point in position<c_iface>::position</should_be_empty>`.
 Action B doesn't fill this, correctly. However, Action A does fill it. That's an
 error! So Action A has to know that Action C creates a transitive requirement
-thorugh Action B.
+through Action B.
 
 Now imagine that instead, Action C had
 `position<c_iface>::position</should_be_filled>` and was doing
@@ -474,7 +474,7 @@ Now imagine that instead, Action C had
 In that case, either Action A _or_ Action B must fill
 `position</should_be_filled>`. Honestly, it is probably bad software design to
 force Action A to fill an interface position in a deeply-nested action, but if
-we _didn't_ propagate requiements like this, it would be logically inconsistent
+we _didn't_ propagate requirements like this, it would be logically inconsistent
 with how we propagate empty requirements (which is necessary for correctness).
 Also, perhaps there is some valid reason for this pattern (though I am
 skeptical).

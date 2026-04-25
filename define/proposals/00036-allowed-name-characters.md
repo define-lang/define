@@ -116,9 +116,9 @@ what any configuration says:
 - `U+007F` through `U+009F` (extended control characters)
 - `U+00A0` (non-breaking space)
 
-Unicode codepoints below decimal 31 (ASCII control characters) are never allowed
-in names (they cannot be specified in the compiler configuration as being
-allowed).
+Unicode codepoints at or below decimal 31 (ASCII control characters) are never
+allowed in names (they cannot be specified in the compiler configuration as
+being allowed).
 
 ### Character Escapes
 
@@ -148,7 +148,7 @@ MacOS today) tend to return filesystem paths using Normalization Form D.
 
 This normalization will most likely happen in the lexer or parser, meaning the
 rest of the compiler will never "see" names that are not in Normalization Form
-D. However, this means that tools that do automatic refactoring of Define may
+C. However, this means that tools that do automatic refactoring of Define may
 rewrite the bytes of names in source code into Normalization Form C when writing
 out changes to code.
 

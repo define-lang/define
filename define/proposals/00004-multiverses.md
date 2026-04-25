@@ -128,7 +128,7 @@ package manager and/or compiler. This should be provided via two mechanisms:
 2. A central repository, called `omniverse`, that maintains a canonical mapping
    of names to multiverse servers.
 
-Onmiverse may allow a download of its entire repository (at least the mapping of
+Omniverse may allow a download of its entire repository (at least the mapping of
 multiverse names to their server locations) in the same format as the compiler
 configuration.
 

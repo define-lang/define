@@ -14,7 +14,7 @@ code over and over tends to make programs unreadable.
 
 This shows up most clearly in long programs. However, most Define programs that
 do anything serious are very long. So it ends up happening in basically every
-Define program. For example, see this program (don't try to hard to understand
+Define program. For example, see this program (don't try too hard to understand
 it, it's very hard to read):
 
 ```

@@ -65,7 +65,7 @@ other words, when I do
 completes synchronously before the assignment statement is considered to be
 done.
 
-However, any actions triggered by the Position Assignment Block block still fire
+However, any actions triggered by the Position Assignment Block still fire
 asynchronously. Thus, if a Position Assignment Block needs an action to complete
 in order for the position to be correctly initialized, or needs to express an
 expectation for an action to run, it must use a `wait until` statement during
@@ -104,7 +104,7 @@ outer initialization continues.
 ```
 define the potential position<mv:example.com:game:/health> {
     it may only contain dimension points where {
-        it has a value that is a integer. # Imaginary syntax.
+        it has a value that is an integer. # Imaginary syntax.
     }
     after it is assigned {
         create a dimension point in position</health>.

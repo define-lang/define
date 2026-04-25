@@ -17,7 +17,7 @@ can no longer be referenced, and thus must also somehow be destroyed. Imagine
 this program:
 
 ```
-define the potential position<mv:example.com:example/walls> {
+define the potential position<mv:example.com:example:/walls> {
     this dimension point must have the position</paint_color>.
 }
 
@@ -262,7 +262,7 @@ define the potential action<mv:example.com:example:/clean_kitchen> {
         AND
         the position<trash> has a dimension point.
     } and it does {
-        create a dimension point in action<enter_house>::position<door>.
+        create a dimension point in action</enter_house>::position<door>.
         move the dimension point in position<trash> to position</trash_can>.
         destroy the dimension point in position</trash_can>.
         destroy the dimension point in position<remember_to_clean>.
@@ -391,7 +391,7 @@ have no idea when the action-defined position was created).
 
 Any time we set an order for anything, we create a forward compatibility risk,
 as programmers then rely on that being the order. The ordering described in this
-proposal should safe, but there's a slight chance we would have to change the
+proposal should be safe, but there's a slight chance we would have to change the
 ordering of destruction for local positions. For the cascade, I believe I have
 specified it to occur in the only possible logical order that is safe and
 prevents impossible situations (like trying to refer to positions that don't
@@ -409,5 +409,5 @@ points). However, it is also different than the destruction semantics of other
 languages. That means that when we refactor those languages into Define, we may
 need to explicitly implement their destruction semantics in some cases.
 
-Otherwise, there were no previous destruction syntax or semantics in Define to
+Otherwise, there was no previous destruction syntax or semantics in Define to
 refactor.

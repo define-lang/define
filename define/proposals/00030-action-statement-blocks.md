@@ -110,7 +110,7 @@ programmers specify instructions to execute in some sequence.
 One of the interesting things about Define is that we actually _could_ trace the
 dependency tree of some lines of code to see which ones _actually_ have to be
 sequenced that way, and we _could_ re-sequence them, in many cases where we
-could prove the new ordering is equivalent in functionality to thd previous
+could prove the new ordering is equivalent in functionality to the previous
 ordering.
 
 ## Refactoring Existing Systems

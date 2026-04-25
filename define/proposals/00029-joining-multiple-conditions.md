@@ -41,10 +41,10 @@ cannot be ambiguous, so we don't have to specify ambiguity rules for it.
 
 ### Formatting Boolean Logic
 
-When joining single statements (non-parenthesized) `AND` and `OR` must be on the
-its own line. If they open a parenthesized statement, the opening parenthesis
-must be on the same line as the operator, one space after it, with a newline
-after the parenthesis.
+When joining single statements (non-parenthesized) `AND` and `OR` must be on its
+own line. If they open a parenthesized statement, the opening parenthesis must
+be on the same line as the operator, one space after it, with a newline after
+the parenthesis.
 
 Thus, the syntax for `AND` and `OR` looks like this:
 
@@ -118,10 +118,10 @@ This formatting is mandatory and enforced by the compiler.
 
 ### Shortcuts
 
-The program at runtime will only attempts to check conditions until it
-determines the statement must be false. In other words, if you check three
-conditions all joined by AND, and the first one is false, the program at runtime
-might only choose to check the first one as an optimization.
+The program at runtime will only attempt to check conditions until it determines
+the statement must be false. In other words, if you check three conditions all
+joined by AND, and the first one is false, the program at runtime might only
+choose to check the first one as an optimization.
 
 However, the compiler might also choose to re-order condition statements when it
 knows that is safe (produces identical logic) and believes that re-ordering

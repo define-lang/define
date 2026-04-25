@@ -13,12 +13,12 @@ modular analysis.
 
 ### 1: Called Actions Don't Know About the Parent's Added Destructors
 
-Imagine that in Action A, we have a position named `position<my_file>`with the
+Imagine that in Action A, we have a position named `position<my_file>` with the
 qualities `position</file>` and `action</destructor>`, where
 `action</destructor>` deletes the file when the dimension point in
 `position</file>` is destroyed.
 
-When then take `position<my_file>` and pass it into the interface position of
+We then take `position<my_file>` and pass it into the interface position of
 Action B. That interface position only requires `position</file>`. Thus, Action
 B doesn't "know" the destructor exists. When we are analyzing Action B by
 itself, Action B doesn't know that the destructor runs and can't check if
@@ -116,8 +116,8 @@ qualities it had when we started."**
 ### Destruction Contracts
 
 We have to modify the action contract to contain additional data. This is only
-relevant for dimension points that that are passed in through interface
-positions or that are accessed as quality-required positions in an action.
+relevant for dimension points that are passed in through interface positions or
+that are accessed as quality-required positions in an action.
 
 These additions only occur when an action destroys one of those dimension points
 explicitly or automatically.

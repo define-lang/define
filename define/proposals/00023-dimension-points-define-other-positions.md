@@ -58,7 +58,7 @@ class BankAccount:
         self.balance += amount
 ```
 
-In the way we think about it, `balance` and `account_id` are a dimension points
+In the way we think about it, `balance` and `account_id` are dimension points
 with value. You then have an action named `withdraw` and an action named
 `deposit`. Thus `BankAccount` is both a form (it contains multiple dimension
 points) and a set of qualities (it has two actions). That sounds like two

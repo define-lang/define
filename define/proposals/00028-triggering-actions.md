@@ -39,7 +39,7 @@ Conditions for a trigger are only checked after assignment of the action is
 complete on a dimension point, and only checked when the state of dimension
 points change in the program.
 
-In other words, if a action would trigger upon the presence of a dimension
+In other words, if an action would trigger upon the presence of a dimension
 point, and that dimension point is already present when the action is assigned,
 the action does not _check_ its conditions unless that dimension point becomes
 empty and then filled again. Thus, the action does not fire when it is first

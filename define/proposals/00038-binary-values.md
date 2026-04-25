@@ -25,7 +25,7 @@ practical programs will want to rely on the simulator (the computer) to do
 computation, as it's much more efficient and able to respond to situations from
 outside the program (like user input) more dynamically.
 
-Thus, we do need to hae a way to assign meaning (values) to dimension points.
+Thus, we do need to have a way to assign meaning (values) to dimension points.
 
 ### 1: Infinite Complexity
 
@@ -133,7 +133,7 @@ Block:
 `set the value of position<recipient> to position<source>.`
 
 This is called a Value Setting Statement. It makes `position<recipient>` have
-the same value that is curently in `position<source>`. It does not create a
+the same value that is currently in `position<source>`. It does not create a
 reference to `position<source>` but simply changes the value on
 `position<recipient>` to be identical to the value that is currently on
 `position<source>`.
@@ -194,8 +194,8 @@ translate into binary. Thus, with most current computers, the only "meaning"
 that anything can actually have in a program is "this binary data."
 
 Also, information theory, specifically Claude Shannon's work, dictates that any
-discrete information can be losslessy encoded into binary digits (bits). So we
-are in pretty safe terrirory here.
+discrete information can be losslessly encoded into binary digits (bits). So we
+are in pretty safe territory here.
 
 It actually would be nice to be able to reason about non-binary electromagnetic
 states in a computer program, to help with analog controllers and signal
@@ -221,7 +221,7 @@ deterministically transform Define programs in a way that still preserved
 optimal performance characteristics.
 
 If we need new types of values (electromagnetic states, quantum states) in the
-future, it doesn't seem to hard to create a new value system or additional
+future, it doesn't seem too hard to create a new value system or additional
 syntax alongside the existing system in this proposal.
 
 ## Refactoring Existing Systems

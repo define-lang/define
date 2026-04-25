@@ -285,7 +285,7 @@ automated refactoring should make it pretty easy to rename or move things).
 
 It does allow for massive flexibility and composability in a way that no other
 language allows (to my knowledge). The only similar system is the Entity
-Component System used in game engines of simulation systems (Unity, Unreal
+Component System used in game engines or simulation systems (Unity, Unreal
 Engine, Bevy, or the simulation language Ecsact).
 
 #### Only Allow Explicit Composition

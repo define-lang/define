@@ -7,7 +7,7 @@
 
 ## Problems
 
-# 1: Context That Inherently Exists Outside Code
+### 1: Context That Inherently Exists Outside Code
 
 One of the goals of Define is to make everything relevant to the program be
 expressed in code, in the program itself. That means all structure, all actions,
@@ -17,7 +17,7 @@ does still leave some valid things that should be expressed in comments:
 - Opinions about the system or code ("This is an ugly hack.")
 - The reason _why_ something was done the way it was done ("We do this this way
   because we discovered that our users want the data formatted in this way,
-  though research.")
+  through research.")
 - Notes about external human factors related to the code, especially future
   plans ("We will delete this in January 2024 when Joe fixes his library.")
 
@@ -26,12 +26,12 @@ do not cause dimension points to be created, changed, or destroyed in the
 universe, and which do not assign, change, or remove qualities from those
 dimension points."
 
-# 2: Temporarily Disabling Lines of Code
+### 2: Temporarily Disabling Lines of Code
 
 Developers commonly need to disable just one line of code or a block of code
 while they are developing, temporarily.
 
-# 3: Misusing Comments to Create a Meta-programming Language
+### 3: Misusing Comments to Create a Meta-programming Language
 
 In some languages, some frameworks try to use comments or similar structures to
 design some sort of meta-programming language, where you change something about
@@ -53,7 +53,7 @@ When compiling Define programs, the parser fully ignores comments as though the
 entire comment did not exist. They do not appear in the AST during compilation.
 
 Refactoring and static analysis tools for Define may set a parser mode that
-includes comments so that the can preserve comments appropriately. How that
+includes comments so that they can preserve comments appropriately. How that
 interacts with the AST or the specifics of how comments are preserved is
 reserved for later proposals.
 

@@ -152,7 +152,7 @@ create a dimension point in position<ball> {
 ```
 
 We may need _something_ like that in the future, but right now I really want to
-keep this limited to just the syntax we actually know that we _need_. Plus, tha
+keep this limited to just the syntax we actually know that we _need_. Plus, that
 syntax _definitely_ creates more than one way to do the same thing. It opens up
 programmers to arguments about whether you should always assign qualities in the
 atomic creation block or whether you should assign optional qualities outside of
