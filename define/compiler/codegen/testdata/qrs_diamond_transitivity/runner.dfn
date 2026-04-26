@@ -1,0 +1,20 @@
+define the potential action<my.domain.com:my_lib:/runner> {
+    define the position<run>.
+    define the position<source> {
+        it may only contain dimension points where {
+            it has the position</parent_one>.
+            it has the position</parent_two>.
+        }
+    }
+    define the position<dest> {
+        it may only contain dimension points where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in position<source>.
+        move the dimension point in position<source> to position<dest>.
+    }
+}

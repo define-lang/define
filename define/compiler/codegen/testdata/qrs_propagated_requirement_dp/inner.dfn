@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/inner> {
+    define the position<run>.
+    define the position<input> {
+        it may only contain dimension points where {
+            it has the position</parent>.
+        }
+    }
+    define the position<output>.
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        move the dimension point in position<input> to position<output>.
+    }
+}
