@@ -181,6 +181,32 @@ def test_two_distinct_used_quality_requirement_statements():
     assert_no_errors(result)
 
 
+def test_action_qrs_used_via_interface_position_chain():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/foo> {\n"
+        "    define the position<x>.\n"
+        "    it happens when {\n"
+        "        the position<x> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential position<my.domain.com:my_lib:/root> {\n"
+        "    this dimension point must have the action</foo>.\n"
+        "    after it is assigned {\n"
+        "        create a dimension point in action</foo>::position<x>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert_no_errors(result)
+
+
 def test_global_used_without_qrs_is_unknown():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
