@@ -15,9 +15,9 @@ class Act(literal.Action):
             interface_positions=[
                 literal.InterfacePosition(
                     "position<trigger_pos>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.inner.Inner,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<trigger_pos>",

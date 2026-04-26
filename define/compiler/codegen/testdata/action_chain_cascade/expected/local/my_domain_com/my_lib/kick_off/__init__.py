@@ -17,10 +17,10 @@ class KickOff(literal.Action):
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition(
                     "position<output>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.react_a.ReactA,
                         local.my_domain_com.my_lib.react_b.ReactB,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<trigger>",

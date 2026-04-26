@@ -9,9 +9,9 @@ import local.my_domain_com.my_library_collection.perform_operation
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/test>"
-    constraints: ClassVar[list[literal.Constraint]] = [
+    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
         local.my_domain_com.my_library_collection.perform_operation.PerformOperation,
-    ]
+    )
 
     @override
     def after_assigned(self):

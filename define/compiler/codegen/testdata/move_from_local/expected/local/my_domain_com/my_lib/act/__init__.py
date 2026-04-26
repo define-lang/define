@@ -18,9 +18,9 @@ class Act(literal.Action):
                 literal.InterfacePosition("position<iface_dest>"),
                 literal.InterfacePosition(
                     "position<chain_dest>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.mid_dest.MidDest,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<trigger>",
@@ -35,9 +35,9 @@ class Act(literal.Action):
         local_dest = literal.LocalPosition("position<local_dest>")
         local_chain_dest = literal.LocalPosition(
             "position<local_chain_dest>",
-            constraints=[
+            constraints=(
                 local.my_domain_com.my_lib.mid_local.MidLocal,
-            ],
+            ),
         )
         src_a.create_dimension_point()
         src_b.create_dimension_point()

@@ -17,15 +17,15 @@ class Middle(literal.Action):
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
                     "position<box>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.inner.Inner,
-                    ],
+                    ),
                 ),
                 literal.InterfacePosition(
                     "position<final>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.child.Child,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<run>",

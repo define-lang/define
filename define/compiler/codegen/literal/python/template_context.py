@@ -7,16 +7,19 @@ from define.compiler.codegen.literal.python import naming
 
 
 def _compute_imports(
-    refs: list[naming.ClassReference], own_module_name: str
+    class_references: list[naming.ClassReference], own_module_name: str
 ) -> list[naming.ClassReference]:
     """Deduplicate and sort imports, excluding self-references."""
     seen: set[str] = set()
     imports: list[naming.ClassReference] = []
-    for ref in refs:
-        if ref.module_name != own_module_name and ref.module_name not in seen:
-            seen.add(ref.module_name)
-            imports.append(ref)
-    imports.sort(key=lambda r: r.module_name)
+    for class_reference in class_references:
+        if (
+            class_reference.module_name != own_module_name
+            and class_reference.module_name not in seen
+        ):
+            seen.add(class_reference.module_name)
+            imports.append(class_reference)
+    imports.sort(key=lambda imp: imp.module_name)
     return imports
 
 
@@ -60,7 +63,7 @@ class ActionStatementContext:
     kind: StatementKind
     local_var_name: str | None = None
     local_typed_name: str | None = None
-    constraint_refs: list[naming.ClassReference] = field(default_factory=list)
+    constraints: list[naming.ClassReference] = field(default_factory=list)
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
 
@@ -70,7 +73,7 @@ class InterfacePositionContext:
     """Template context for an interface position in an action definition."""
 
     typed_name: str
-    constraint_refs: list[naming.ClassReference] = field(default_factory=list)
+    constraints: list[naming.ClassReference] = field(default_factory=list)
 
 
 @dataclass
@@ -83,6 +86,7 @@ class ActionDefinitionContext:
     interface_positions: list[InterfacePositionContext] = field(default_factory=list)
     trigger_position_name: str = ""
     body_statements: list[ActionStatementContext] = field(default_factory=list)
+    quality_requirements: list[naming.ClassReference] = field(default_factory=list)
 
     @property
     def needs_override(self) -> bool:
@@ -92,12 +96,13 @@ class ActionDefinitionContext:
     @property
     def imports(self) -> list[naming.ClassReference]:
         """Deduplicated, sorted imports needed by this definition."""
-        all_refs: list[naming.ClassReference] = []
+        class_references: list[naming.ClassReference] = []
+        class_references.extend(self.quality_requirements)
         for iface in self.interface_positions:
-            all_refs.extend(iface.constraint_refs)
+            class_references.extend(iface.constraints)
         for stmt in self.body_statements:
-            all_refs.extend(stmt.constraint_refs)
-        return _compute_imports(all_refs, self.module_name)
+            class_references.extend(stmt.constraints)
+        return _compute_imports(class_references, self.module_name)
 
 
 @dataclass
@@ -108,7 +113,8 @@ class PositionDefinitionContext:
     typed_name: str
     has_init: bool
     module_name: str
-    constraint_refs: list[naming.ClassReference] = field(default_factory=list)
+    constraints: list[naming.ClassReference] = field(default_factory=list)
+    quality_requirements: list[naming.ClassReference] = field(default_factory=list)
     statements: list[ActionStatementContext] = field(default_factory=list)
 
     @property
@@ -119,7 +125,9 @@ class PositionDefinitionContext:
     @property
     def imports(self) -> list[naming.ClassReference]:
         """Deduplicated, sorted imports needed by this definition."""
-        all_refs = list(self.constraint_refs)
+        class_references: list[naming.ClassReference] = []
+        class_references.extend(self.constraints)
+        class_references.extend(self.quality_requirements)
         for stmt in self.statements:
-            all_refs.extend(stmt.constraint_refs)
-        return _compute_imports(all_refs, self.module_name)
+            class_references.extend(stmt.constraints)
+        return _compute_imports(class_references, self.module_name)

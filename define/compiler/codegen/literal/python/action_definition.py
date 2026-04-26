@@ -33,7 +33,7 @@ class ActionDefinitionGenerator:
         interface_positions = [
             template_context.InterfacePositionContext(
                 typed_name=local_def.typed_name.source_typed_name,
-                constraint_refs=self._converter.constraints_to_refs(
+                constraints=self._converter.constraints_to_class_references(
                     local_def.constraints,
                     enclosing_fqun,
                 ),
@@ -57,6 +57,11 @@ class ActionDefinitionGenerator:
             interface_position_names=interface_position_names,
         )
 
+        quality_requirements = self._converter.quality_requirements_to_class_references(
+            self._definition.quality_requirements,
+            enclosing_fqun,
+        )
+
         return template_context.ActionDefinitionContext(
             class_name=class_name,
             typed_name=self._definition.typed_name.source_typed_name,
@@ -64,4 +69,5 @@ class ActionDefinitionGenerator:
             interface_positions=interface_positions,
             trigger_position_name=trigger_position_name,
             body_statements=block_gen.generate(),
+            quality_requirements=quality_requirements,
         )

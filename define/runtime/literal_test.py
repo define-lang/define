@@ -85,7 +85,7 @@ class TestGlobalPosition:
 
         pos = MyPosition()
 
-        assert pos._get_constraints() == []
+        assert pos._get_constraints() == ()
 
     def test_create_dimension_point_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -93,9 +93,9 @@ class TestGlobalPosition:
 
         class MyPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[list[literal.Constraint]] = [
+            constraints: ClassVar[tuple[literal.Constraint, ...]] = (
                 ConstraintPosition,
-            ]
+            )
 
         pos = MyPosition()
         pos.create_dimension_point()
@@ -109,9 +109,7 @@ class TestGlobalPosition:
 
         class MyPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[list[literal.Constraint]] = [
-                ConstraintAction,
-            ]
+            constraints: ClassVar[tuple[literal.Constraint, ...]] = (ConstraintAction,)
 
         pos = MyPosition()
         pos.create_dimension_point()
@@ -169,20 +167,20 @@ class TestLocalPosition:
         class ConstraintPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<x>"
 
-        pos = literal.LocalPosition("test", constraints=[ConstraintPosition])
+        pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
 
-        assert pos._get_constraints() == [ConstraintPosition]
+        assert pos._get_constraints() == (ConstraintPosition,)
 
     def test_constraints_defaults_to_empty(self):
         pos = literal.LocalPosition("test")
 
-        assert pos._get_constraints() == []
+        assert pos._get_constraints() == ()
 
     def test_create_dimension_point_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
-        pos = literal.LocalPosition("test", constraints=[ConstraintPosition])
+        pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
@@ -223,9 +221,11 @@ class TestMovePosition:
             _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         source = literal.LocalPosition(
-            "position<source>", constraints=[ConstraintPosition]
+            "position<source>", constraints=(ConstraintPosition,)
         )
-        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintPosition])
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(ConstraintPosition,)
+        )
         source.create_dimension_point()
 
         source.move_dimension_point_to(dest)
@@ -238,7 +238,9 @@ class TestMovePosition:
             _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         source = literal.LocalPosition("position<source>")
-        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintPosition])
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(ConstraintPosition,)
+        )
         source.create_dimension_point()
 
         with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
@@ -251,7 +253,7 @@ class TestMovePosition:
             _typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
 
         source = literal.LocalPosition("position<source>")
-        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintAction])
+        dest = literal.LocalPosition("position<dest>", constraints=(ConstraintAction,))
         source.create_dimension_point()
 
         with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
@@ -264,7 +266,9 @@ class TestMovePosition:
             _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         source = literal.LocalPosition("position<source>")
-        dest = literal.LocalPosition("position<dest>", constraints=[ConstraintPosition])
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(ConstraintPosition,)
+        )
         source.create_dimension_point()
 
         with pytest.raises(literal.UnsatisfiedConstraintError):
@@ -499,3 +503,281 @@ class TestDimensionPointActions:
 
         with pytest.raises(KeyError):
             _ = dp.get_action("nonexistent")
+
+
+class TestQualityRequirements:
+    def test_position_quality_requirements_default_to_empty(self):
+        class MyPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test>"
+
+        assert MyPosition.quality_requirements == ()
+
+    def test_action_quality_requirements_default_to_empty(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        assert MyAction.quality_requirements == ()
+
+    def test_required_quality_attached_before_requiring_quality(self):
+        order: list[str] = []
+
+        class Required(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<required>"
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class Requiring(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<requiring>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Required,)
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(Requiring())
+
+        assert order == ["position<required>", "position<requiring>"]
+        assert "position<required>" in dp._positions
+        assert "position<requiring>" in dp._positions
+
+    def test_quality_requirements_processed_in_source_order(self):
+        order: list[str] = []
+
+        class First(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<first>"
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class Second(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<second>"
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class Requirer(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<requirer>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+                First,
+                Second,
+            )
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(Requirer())
+
+        assert order == ["position<first>", "position<second>", "position<requirer>"]
+
+    def test_transitive_quality_requirements_attached(self):
+        order: list[str] = []
+
+        class C(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<c>"
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class B(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<b>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (C,)
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class A(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<a>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (B,)
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(A())
+
+        assert order == ["position<c>", "position<b>", "position<a>"]
+
+    def test_diamond_quality_requirement_assigned_only_once(self):
+        order: list[str] = []
+
+        class Shared(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<shared>"
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class Left(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<left>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class Right(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<right>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        class Top(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<top>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+                Left,
+                Right,
+            )
+
+            @override
+            def after_assigned(self):
+                order.append(self.name)
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(Top())
+
+        assert order == [
+            "position<shared>",
+            "position<left>",
+            "position<right>",
+            "position<top>",
+        ]
+
+    def test_action_processes_its_quality_requirements(self):
+        class RequiredPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<required>"
+
+        class RequiringAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<requiring>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+                RequiredPosition,
+            )
+
+        dp = literal.DimensionPoint()
+        dp.assign_action(RequiringAction())
+
+        assert "position<required>" in dp._positions
+        assert "action<requiring>" in dp._actions
+
+    def test_position_can_require_action(self):
+        class RequiredAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<required>"
+
+        class RequiringPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<requiring>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+                RequiredAction,
+            )
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(RequiringPosition())
+
+        assert "action<required>" in dp._actions
+        assert "position<requiring>" in dp._positions
+
+    def test_assign_position_already_present_is_no_op(self):
+        triggered: list[str] = []
+
+        class MyPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<test>"
+
+            @override
+            def after_assigned(self):
+                triggered.append(self.name)
+
+        dp = literal.DimensionPoint()
+        first = MyPosition()
+        dp.assign_position(first)
+        dp.assign_position(MyPosition())
+
+        assert triggered == ["position<test>"]
+        assert dp._positions["position<test>"] is first
+
+    def test_assign_action_already_present_is_no_op(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        dp = literal.DimensionPoint()
+        first = MyAction()
+        dp.assign_action(first)
+        dp.assign_action(MyAction())
+
+        assert dp._actions["action<test>"] is first
+
+    def test_create_dimension_point_propagates_transitive_qualities(self):
+        class Inner(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<inner>"
+
+        class Outer(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<outer>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Inner,)
+
+        class Container(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<container>"
+            constraints: ClassVar[tuple[literal.Constraint, ...]] = (Outer,)
+
+        container = Container()
+        container.create_dimension_point()
+
+        assert container._dimension_point is not None
+        assert "position<outer>" in container._dimension_point._positions
+        assert "position<inner>" in container._dimension_point._positions
+
+    def test_move_succeeds_via_transitive_quality_requirement(self):
+        class Required(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<required>"
+
+        class Requiring(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<requiring>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Required,)
+
+        source = literal.LocalPosition("source", constraints=(Requiring,))
+        dest = literal.LocalPosition("dest", constraints=(Required,))
+        source.create_dimension_point()
+
+        source.move_dimension_point_to(dest)
+
+        assert not source.has_dimension_point
+        assert dest.has_dimension_point
+
+    def test_assigned_qualities_recorded_in_assignment_order(self):
+        class A(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<a>"
+
+        class B(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<b>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (A,)
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(B())
+
+        names = [quality.name for quality in dp._assigned_qualities]
+        assert names == ["position<a>", "position<b>"]
+
+    def test_required_quality_after_assigned_side_effects_run(self):
+        class Required(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<required>"
+
+            @override
+            def after_assigned(self):
+                self.create_dimension_point()
+
+        class Requiring(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<requiring>"
+            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Required,)
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(Requiring())
+
+        assert dp.get_position("position<required>").has_dimension_point

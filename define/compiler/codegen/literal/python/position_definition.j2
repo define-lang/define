@@ -3,12 +3,19 @@
 
 class {{ definition.class_name }}(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "{{ definition.typed_name }}"
-{% if definition.constraint_refs %}
-    constraints: ClassVar[list[literal.Constraint]] = [
-{% for ref in definition.constraint_refs %}
-        {{ ref.module_name }}.{{ ref.class_name }},
+{% if definition.constraints %}
+    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
+{% for class_reference in definition.constraints %}
+        {{ class_reference.module_name }}.{{ class_reference.class_name }},
 {% endfor %}
-    ]
+    )
+{% endif %}
+{% if definition.quality_requirements %}
+    quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+{% for class_reference in definition.quality_requirements %}
+        {{ class_reference.module_name }}.{{ class_reference.class_name }},
+{% endfor %}
+    )
 {% endif %}
 {% if definition.has_init %}
 

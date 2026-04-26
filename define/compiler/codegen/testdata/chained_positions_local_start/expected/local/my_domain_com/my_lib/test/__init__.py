@@ -14,9 +14,9 @@ class Test(literal.GlobalPosition):
     def after_assigned(self):
         a = literal.LocalPosition(
             "position<a>",
-            constraints=[
+            constraints=(
                 local.my_domain_com.my_lib.b.B,
-            ],
+            ),
         )
         a.create_dimension_point()
         a.dimension_point.get_position(

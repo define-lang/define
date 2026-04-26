@@ -16,9 +16,9 @@ class Inner(literal.Action):
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
                     "position<input>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.parent.Parent,
-                    ],
+                    ),
                 ),
                 literal.InterfacePosition("position<output>"),
             ],

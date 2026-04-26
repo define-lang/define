@@ -63,15 +63,32 @@ class DimensionPoint:
         """Initialize with empty positions and actions dictionaries."""
         self._positions: dict[str, GlobalPosition] = {}
         self._actions: dict[str, Action] = {}
+        self._assigned_qualities: list[GlobalPosition | Action] = []
 
     def assign_position(self, position: GlobalPosition):
         """Assign a position to this dimension point, triggering after_assigned."""
+        if position.name in self._positions:
+            return
+        self._assign_required_qualities(position)
+        self._assigned_qualities.append(position)
         self._positions[position.name] = position
         position.after_assigned()
 
     def assign_action(self, action: Action):
         """Assign an action to this dimension point."""
+        if action.name in self._actions:
+            return
+        self._assign_required_qualities(action)
+        self._assigned_qualities.append(action)
         self._actions[action.name] = action
+
+    def _assign_required_qualities(self, quality: GlobalPosition | Action):
+        for requirement_class in type(quality).quality_requirements:
+            requirement = requirement_class()
+            if isinstance(requirement, GlobalPosition):
+                self.assign_position(requirement)
+            else:
+                self.assign_action(requirement)
 
     def get_position(self, name: str) -> GlobalPosition:
         """Return the position stored under the given name."""
@@ -84,10 +101,7 @@ class DimensionPoint:
     @property
     def quality_types(self) -> frozenset[Constraint]:
         """Return the set of constraint types satisfied by this dimension point."""
-        return frozenset(
-            {type(p) for p in self._positions.values()}
-            | {type(a) for a in self._actions.values()}
-        )
+        return frozenset(type(q) for q in self._assigned_qualities)
 
 
 class Position(Quality, ABC):
@@ -98,7 +112,7 @@ class Position(Quality, ABC):
         self._dimension_point: DimensionPoint | None = None
 
     @abstractmethod
-    def _get_constraints(self) -> list[Constraint]:
+    def _get_constraints(self) -> tuple[Constraint, ...]:
         """Return the constraint types for this position."""
 
     @property
@@ -156,7 +170,8 @@ class GlobalPosition(Position):
     """A globally-defined position with a class-level typed name and constraints."""
 
     _typed_name: ClassVar[str]
-    constraints: ClassVar[list[Constraint]] = []
+    constraints: ClassVar[tuple[Constraint, ...]] = ()
+    quality_requirements: ClassVar[tuple[Constraint, ...]] = ()
 
     @property
     @override
@@ -165,7 +180,7 @@ class GlobalPosition(Position):
         return type(self)._typed_name
 
     @override
-    def _get_constraints(self) -> list[Constraint]:
+    def _get_constraints(self) -> tuple[Constraint, ...]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
 
@@ -179,12 +194,12 @@ class LocalPosition(Position):
     def __init__(
         self,
         name: str,
-        constraints: list[Constraint] | None = None,
+        constraints: tuple[Constraint, ...] = (),
     ):
         """Initialize a local position with the given name and optional constraints."""
         super().__init__()
         self._name: str = name
-        self._constraints: list[Constraint] = constraints or []
+        self._constraints: tuple[Constraint, ...] = constraints
 
     @property
     @override
@@ -193,7 +208,7 @@ class LocalPosition(Position):
         return self._name
 
     @override
-    def _get_constraints(self) -> list[Constraint]:
+    def _get_constraints(self) -> tuple[Constraint, ...]:
         """Return the constraint types for this position."""
         return self._constraints
 
@@ -202,6 +217,7 @@ class Action(Quality):
     """A globally-defined action with a class-level typed name."""
 
     _typed_name: ClassVar[str]
+    quality_requirements: ClassVar[tuple[Constraint, ...]] = ()
 
     def __init__(
         self,
@@ -250,7 +266,7 @@ class InterfacePosition(LocalPosition):
     def __init__(
         self,
         name: str,
-        constraints: list[Constraint] | None = None,
+        constraints: tuple[Constraint, ...] = (),
     ):
         """Initialize an interface position with the given name and optional constraints."""
         super().__init__(name, constraints)

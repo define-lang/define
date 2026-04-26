@@ -24,39 +24,6 @@ _TEST_CASES = sorted(
     d for d in _TESTDATA_ROOT.iterdir() if d.is_dir() and (d / "expected").is_dir()
 )
 
-_RUNTIME_XFAIL_CASES = frozenset(
-    {
-        "qrs_diamond_transitivity",
-        "qrs_multi_level_transitivity",
-        "qrs_propagated_requirement_dp",
-    }
-)
-
-
-def _runtime_params() -> list[object]:
-    params: list[object] = []
-    for case_dir in _TEST_CASES:
-        if case_dir.name in _RUNTIME_XFAIL_CASES:
-            params.append(
-                pytest.param(
-                    case_dir,
-                    id=case_dir.name,
-                    marks=pytest.mark.xfail(
-                        reason=(
-                            "Codegen does not yet emit transitive"
-                            " quality-requirement-derived constraints, so"
-                            " moves whose validity depends on transitive QR"
-                            " satisfaction fail at runtime even though the"
-                            " validator accepts them."
-                        ),
-                        strict=True,
-                    ),
-                )
-            )
-        else:
-            params.append(pytest.param(case_dir, id=case_dir.name))
-    return params
-
 
 def _all_files(root: Path) -> dict[str, str]:
     return {
@@ -111,7 +78,11 @@ def test_generates_expected_output(
     _assert_dirs_equal(expected_dir, output_dir)
 
 
-@pytest.mark.parametrize("test_case_dir", _runtime_params())
+@pytest.mark.parametrize(
+    "test_case_dir",
+    _TEST_CASES,
+    ids=[d.name for d in _TEST_CASES],
+)
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"
     result = subprocess.run(

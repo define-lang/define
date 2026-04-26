@@ -151,7 +151,7 @@ class NameConverter:
         parts = self._module_name_parts(fqun, name_content.path)
         return ".".join(parts)
 
-    def constraints_to_refs(
+    def constraints_to_class_references(
         self,
         constraints: ast.PositionConstraintBlock | None,
         enclosing_fqun: ast.Fqun,
@@ -159,14 +159,32 @@ class NameConverter:
         """Extract class references from a position constraint block."""
         if constraints is None:
             return []
-        refs: list[ClassReference] = []
-        for req in constraints.requirements:
-            name_content = req.typed_global_name.name_content
-            cls_name = self.class_name(name_content.path.relative_path)
-            fqun = name_content.fqun or enclosing_fqun
-            module_name = ".".join(self._module_name_parts(fqun, name_content.path))
-            refs.append(ClassReference(class_name=cls_name, module_name=module_name))
-        return refs
+        return [
+            self._build_class_reference(requirement.typed_global_name, enclosing_fqun)
+            for requirement in constraints.requirements
+        ]
+
+    def quality_requirements_to_class_references(
+        self,
+        quality_requirements: list[ast.QualityRequirementStatement],
+        enclosing_fqun: ast.Fqun,
+    ) -> list[ClassReference]:
+        """Extract class references from a list of quality requirement statements."""
+        return [
+            self._build_class_reference(requirement.typed_global_name, enclosing_fqun)
+            for requirement in quality_requirements
+        ]
+
+    def _build_class_reference(
+        self,
+        typed_global_name: ast.GlobalTypedNameReference,
+        enclosing_fqun: ast.Fqun,
+    ) -> ClassReference:
+        name_content = typed_global_name.name_content
+        cls_name = self.class_name(name_content.path.relative_path)
+        fqun = name_content.fqun or enclosing_fqun
+        module_name = ".".join(self._module_name_parts(fqun, name_content.path))
+        return ClassReference(class_name=cls_name, module_name=module_name)
 
 
 class LocalNameConverter:

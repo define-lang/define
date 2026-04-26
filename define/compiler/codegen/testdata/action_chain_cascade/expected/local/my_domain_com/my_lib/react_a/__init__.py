@@ -16,9 +16,9 @@ class ReactA(literal.Action):
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition(
                     "position<result>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.final.Final,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<trigger>",

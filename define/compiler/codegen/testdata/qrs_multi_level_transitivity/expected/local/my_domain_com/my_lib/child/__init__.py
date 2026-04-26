@@ -4,9 +4,14 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.grandchild
+
 
 class Child(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/child>"
+    quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+        local.my_domain_com.my_lib.grandchild.Grandchild,
+    )
 
     @override
     def after_assigned(self):

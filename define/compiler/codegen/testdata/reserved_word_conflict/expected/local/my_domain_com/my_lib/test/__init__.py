@@ -11,8 +11,8 @@ import local.my_domain_com.my_lib.type_error
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
-    constraints: ClassVar[list[literal.Constraint]] = [
+    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
         local.my_domain_com.my_lib.class_var.ClassVar_,
         local.my_domain_com.my_lib.class_var_.ClassVar__,
         local.my_domain_com.my_lib.type_error.TypeError_,
-    ]
+    )

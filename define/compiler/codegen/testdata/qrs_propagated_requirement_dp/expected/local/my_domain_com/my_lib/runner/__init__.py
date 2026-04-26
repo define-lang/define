@@ -16,9 +16,9 @@ class Runner(literal.Action):
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
                     "position<wrapper>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.middle.Middle,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<run>",

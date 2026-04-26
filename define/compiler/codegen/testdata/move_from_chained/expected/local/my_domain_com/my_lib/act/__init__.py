@@ -19,28 +19,28 @@ class Act(literal.Action):
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition(
                     "position<chain_src_a>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.mid_src_a.MidSrcA,
-                    ],
+                    ),
                 ),
                 literal.InterfacePosition(
                     "position<chain_src_b>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.mid_src_b.MidSrcB,
-                    ],
+                    ),
                 ),
                 literal.InterfacePosition(
                     "position<chain_src_c>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.mid_src_c.MidSrcC,
-                    ],
+                    ),
                 ),
                 literal.InterfacePosition("position<iface_dest>"),
                 literal.InterfacePosition(
                     "position<chain_dest>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.mid_dest.MidDest,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<trigger>",

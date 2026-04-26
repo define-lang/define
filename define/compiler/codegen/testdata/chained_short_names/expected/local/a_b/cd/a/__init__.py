@@ -9,6 +9,6 @@ import local.a_b.cd.b
 
 class A(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<a.b:cd:/a>"
-    constraints: ClassVar[list[literal.Constraint]] = [
+    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
         local.a_b.cd.b.B,
-    ]
+    )

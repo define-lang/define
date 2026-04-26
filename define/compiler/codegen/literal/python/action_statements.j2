@@ -18,14 +18,14 @@
 {%- endmacro %}
 {% for stmt in statements %}
 {% if stmt.kind == StatementKind.LOCAL_POSITION %}
-{% if stmt.constraint_refs %}
+{% if stmt.constraints %}
         {{ stmt.local_var_name }} = literal.LocalPosition(
             "{{ stmt.local_typed_name }}",
-            constraints=[
-{% for ref in stmt.constraint_refs %}
-                {{ ref.module_name }}.{{ ref.class_name }},
+            constraints=(
+{% for class_reference in stmt.constraints %}
+                {{ class_reference.module_name }}.{{ class_reference.class_name }},
 {% endfor %}
-            ],
+            ),
         )
 {% else %}
         {{ stmt.local_var_name }} = literal.LocalPosition("{{ stmt.local_typed_name }}")

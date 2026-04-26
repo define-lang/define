@@ -17,15 +17,15 @@ class Runner(literal.Action):
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
                     "position<source>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.parent.Parent,
-                    ],
+                    ),
                 ),
                 literal.InterfacePosition(
                     "position<dest>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.grandchild.Grandchild,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<run>",

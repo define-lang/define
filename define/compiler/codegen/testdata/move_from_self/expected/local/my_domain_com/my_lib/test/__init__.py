@@ -15,9 +15,9 @@ class Test(literal.GlobalPosition):
         local_dest = literal.LocalPosition("position<local_dest>")
         chain_start = literal.LocalPosition(
             "position<chain_start>",
-            constraints=[
+            constraints=(
                 local.my_domain_com.my_lib.mid.Mid,
-            ],
+            ),
         )
         self.create_dimension_point()
         chain_start.create_dimension_point()

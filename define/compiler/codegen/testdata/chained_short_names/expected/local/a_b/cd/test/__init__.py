@@ -9,9 +9,9 @@ import local.a_b.cd.a
 
 class Test(literal.GlobalPosition):
     _typed_name: ClassVar[str] = "position<a.b:cd:/test>"
-    constraints: ClassVar[list[literal.Constraint]] = [
+    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
         local.a_b.cd.a.A,
-    ]
+    )
 
     @override
     def after_assigned(self):

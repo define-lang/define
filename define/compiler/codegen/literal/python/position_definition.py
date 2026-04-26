@@ -28,8 +28,12 @@ class PositionDefinitionGenerator:
         has_init = self._definition.initialization is not None
         name_content = self._definition.typed_name.name_content
         enclosing_fqun = name_content.fqun
-        constraint_refs = self._converter.constraints_to_refs(
+        constraints = self._converter.constraints_to_class_references(
             self._definition.constraints,
+            enclosing_fqun,
+        )
+        quality_requirements = self._converter.quality_requirements_to_class_references(
+            self._definition.quality_requirements,
             enclosing_fqun,
         )
 
@@ -50,6 +54,7 @@ class PositionDefinitionGenerator:
             typed_name=self._definition.typed_name.source_typed_name,
             has_init=has_init,
             module_name=module_name,
-            constraint_refs=constraint_refs,
+            constraints=constraints,
+            quality_requirements=quality_requirements,
             statements=statements,
         )

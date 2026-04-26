@@ -16,9 +16,9 @@ class Act(literal.Action):
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition(
                     "position<chain_src>",
-                    constraints=[
+                    constraints=(
                         local.my_domain_com.my_lib.mid.Mid,
-                    ],
+                    ),
                 ),
             ],
             trigger_position_name="position<trigger>",

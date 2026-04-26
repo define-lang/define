@@ -3,19 +3,26 @@
 
 class {{ definition.class_name }}(literal.Action):
     _typed_name: ClassVar[str] = "{{ definition.typed_name }}"
+{% if definition.quality_requirements %}
+    quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+{% for class_reference in definition.quality_requirements %}
+        {{ class_reference.module_name }}.{{ class_reference.class_name }},
+{% endfor %}
+    )
+{% endif %}
 
     def __init__(self):
         super().__init__(
             interface_positions=[
 {% for iface in definition.interface_positions %}
-{% if iface.constraint_refs %}
+{% if iface.constraints %}
                 literal.InterfacePosition(
                     "{{ iface.typed_name }}",
-                    constraints=[
-{% for ref in iface.constraint_refs %}
-                        {{ ref.module_name }}.{{ ref.class_name }},
+                    constraints=(
+{% for class_reference in iface.constraints %}
+                        {{ class_reference.module_name }}.{{ class_reference.class_name }},
 {% endfor %}
-                    ],
+                    ),
                 ),
 {% else %}
                 literal.InterfacePosition("{{ iface.typed_name }}"),
