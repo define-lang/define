@@ -1,0 +1,9 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain dimension points where {
+        it has the position</other>.
+    }
+    after it is assigned {
+        create a dimension point in position</test>.
+        destroy the dimension point in position</test>::position</other>.
+    }
+}
