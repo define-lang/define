@@ -316,7 +316,7 @@ class DefinitionPostorderValidator(abc.ABC):
             )
             return
 
-        qualities = self._get_required_qualities(position, scope) or frozenset()
+        qualities = frozenset(self._get_transitive_required_qualities(position, scope))
         self._tracker.create(position, qualities)
         self._apply_position_init_guarantees(
             position, self._get_constraint_block(position, scope)
@@ -460,7 +460,7 @@ class DefinitionPostorderValidator(abc.ABC):
             return False
 
         from_qualities = self._tracker.get_occupant(from_pos).qualities
-        to_qualities = self._get_required_qualities(to_pos, scope)
+        to_qualities = self._get_direct_required_qualities(to_pos, scope)
 
         return self._check_move_constraints(
             from_pos, to_pos, from_qualities, to_qualities
@@ -686,7 +686,7 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         self._tracker.mark_unknown(ref)
 
-    # TODO: _get_constraint_block and _get_required_qualities share the same
+    # TODO: _get_constraint_block and _get_direct_required_qualities share the same
     # position-resolution logic and should be refactored to use a common helper.
     def _get_constraint_block(
         self,
@@ -718,7 +718,7 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         return position_def.constraints
 
-    def _get_required_qualities(
+    def _get_direct_required_qualities(
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
@@ -752,6 +752,32 @@ class DefinitionPostorderValidator(abc.ABC):
             "ast.PositionDefinition", definition_result.definition
         )
         return position_def.constraint_names
+
+    def _get_transitive_required_qualities(
+        self,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> list[str]:
+        direct = self._get_direct_required_qualities(position, scope) or frozenset()
+        seen: set[str] = set()
+        ordered: list[str] = []
+
+        def visit(name: str):
+            if name in seen:
+                return
+            seen.add(name)
+            defn_result = self._definition_results.get(name)
+            if defn_result is None:
+                return
+            defn = defn_result.definition
+            fqun = defn.typed_name.name_content.fqun
+            for qrs in defn.quality_requirements:
+                visit(qrs.typed_global_name.full_typed_name(in_universe=fqun))
+            ordered.append(name)
+
+        for n in direct:
+            visit(n)
+        return ordered
 
 
 class ActionPostorderValidator(DefinitionPostorderValidator):
@@ -848,7 +874,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if trigger_ref is not None:
             typed_name = trigger_ref.typed_names[0]
             if scope.is_defined(typed_name):
-                qualities = scope.get_constraint_names(typed_name)
+                qualities = frozenset(
+                    self._get_transitive_required_qualities(trigger_ref, scope)
+                )
                 # DLP 37: We assume trigger points are occupied upon the start
                 # of the action, but we can only assume they have the qualities
                 # they are declared with.
@@ -922,7 +950,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         )
 
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            qualities = self._get_required_qualities(position, scope) or frozenset()
+            qualities = frozenset(
+                self._get_transitive_required_qualities(position, scope)
+            )
             self._tracker.create(position, qualities, from_caller=True)
 
     def _parent_comes_from_interface_position(
@@ -1036,9 +1066,13 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                     typed_names=remapped_prefix.typed_names
                     + inner_req.propagation_chain_typed_names(),
                 )
-                qualities = (
-                    self._get_required_qualities(propagated_position, scope)
-                    or frozenset()
+                # The triggered action's OccupiedByExisting guarantees can carry
+                # this synthesized DP into other positions that later statements
+                # reference, so its qualities must match what a real
+                # caller-supplied DP would carry transitively via Quality
+                # Requirement Statements.
+                qualities = frozenset(
+                    self._get_transitive_required_qualities(propagated_position, scope)
                 )
                 self._tracker.create_by_key(
                     propagated_key,

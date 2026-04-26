@@ -321,6 +321,34 @@ def test_duplicate_qrs_full_fqun_cross_universe(validate_project: ValidateProjec
     assert result.file_results[1].diagnostics == []
 
 
+def test_qrs_same_path_different_fquns_are_not_duplicates(
+    validate_project: ValidateProject,
+):
+    main_fqun = "mv:define-lang.org:qrs_distinct_main"
+    a_fqun = "mv:define-lang.org:qrs_distinct_lib_a"
+    b_fqun = "mv:define-lang.org:qrs_distinct_lib_b"
+    result = validate_project(
+        {
+            "a/foo.dfn": f"define the potential position<{a_fqun}:/foo>.\n",
+            "b/foo.dfn": f"define the potential position<{b_fqun}:/foo>.\n",
+            "test.dfn": (
+                f"define the potential position<{main_fqun}:/test> {{\n"
+                f"    this dimension point must have the position<{a_fqun}:/foo>.\n"
+                f"    this dimension point must have the position<{b_fqun}:/foo>.\n"
+                "    after it is assigned {\n"
+                f"        create a dimension point in position<{a_fqun}:/foo>.\n"
+                f"        create a dimension point in position<{b_fqun}:/foo>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+        universe_name=main_fqun,
+        local_deps={a_fqun: "a", b_fqun: "b"},
+        sub_roots={"a": a_fqun, "b": b_fqun},
+    )
+    assert_no_errors(result)
+
+
 def test_duplicate_via_full_form_and_short_form_qrs():
     source = (
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
