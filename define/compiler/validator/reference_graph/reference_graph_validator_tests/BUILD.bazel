@@ -265,6 +265,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
     ],
 )
 

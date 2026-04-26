@@ -1,4 +1,6 @@
 # pyright: reportUnusedCallResult=false
+import pytest
+
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -596,6 +598,119 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     assert all_diags[0].missing_qualities == [
         f"position<{b_fqun}:/foo>",
     ]
+
+
+_REQUIRED_INIT_BLOCK_XFAIL_REASON = (
+    "Validator does not yet engage init blocks of QRS-required positions."
+    " Two related gaps in"
+    " define/compiler/validator/reference_graph/definition_postorder_validator.py:"
+    " (1) _apply_position_init_guarantees iterates constraints.requirements"
+    " (the constraint block only) rather than the transitive QRS closure, so"
+    " /child's init block is never applied when a DP gets /parent and /parent"
+    " QRS-requires /child; (2) _check_chain_element_in_constraints checks"
+    " constraint_names (constraint block only -- see ast.py PositionDefinition"
+    " .constraint_names), so chain access like <source>::position</child>"
+    " is rejected when /child is reached only via /parent's QRS. Both pieces"
+    " need to recognize transitive QRSes for these tests to pass."
+)
+
+
+@pytest.mark.xfail(reason=_REQUIRED_INIT_BLOCK_XFAIL_REASON, strict=True)
+def test_required_position_init_block_creates_dp_for_move(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    this dimension point must have the position</child>.\n"
+                "    after it is assigned {\n"
+                "        define the position<_temp>.\n"
+                "        move the dimension point in position</child> to position<_temp>.\n"
+                "        move the dimension point in position<_temp> to position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</parent>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<source>.\n"
+                "        move the dimension point in position<source>::position</child> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+
+
+@pytest.mark.xfail(reason=_REQUIRED_INIT_BLOCK_XFAIL_REASON, strict=True)
+def test_required_position_init_block_fills_position(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    this dimension point must have the position</child>.\n"
+                "    after it is assigned {\n"
+                "        define the position<_temp>.\n"
+                "        move the dimension point in position</child> to position<_temp>.\n"
+                "        move the dimension point in position<_temp> to position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</parent>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<source>.\n"
+                "        create a dimension point in position<source>::position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<source>::position</child>"
+    assert all_diags[0].created_at.line == 3
+    assert all_diags[0].created_at.column == 9
 
 
 def test_unresolved_qrs_target_is_skipped(
