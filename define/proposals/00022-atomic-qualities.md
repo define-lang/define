@@ -537,6 +537,39 @@ Atomic Qualities also allow us to keep most of the positive properties of "Merge
 Definitions" by allowing multiple different actions to refer to the same point
 in space, as long as it really is _exactly_ the same point in space.
 
+### Alternative Syntaxes
+
+Originally quality implications were called "quality requirements" and the
+syntax was `this dimension point must have the` instead of
+`it also assigns the`. I chose that because it looked similar to the
+`it has the` syntax for position constraints, but that was a significant
+mistake. The AI agent that was helping me write the compiler became extremely
+confused about how "quality requirements" and "position constraints" were
+different, especially because they both essentially _required_ something.
+
+One of the tricks is getting an AI or a programmer to understand that
+implications assign qualities to _this_ dimension point (the same one we are
+assigning the current quality to) and Position Constraint Blocks create _child_
+positions. So I wanted a program syntax and English terminology that makes that
+clear.
+
+The sense that I wanted to convey was: "assigning this quality to this dimension
+point means that we will first auto-assign another quality to this dimension
+point," and that _logically_ what was happening was implication: the existence
+of quality A implies the existence of quality B. Here are various other syntaxes
+that I considered and discarded:
+
+- `require position</foo>`: Unclear what it's doing, too brief (forward
+  compatibility issue).
+- `this also assigns the`: using "this" was inconsistent with everywhere else
+  that we use `it`.
+- `implies position</foo>` or `it implies position</foo>`: Good if you want to
+  think about the program like propositional logic, but I don't think that's how
+  most programmers think about their programs. It seemed better to explain it in
+  an active way.
+- `assign position</foo>`: Assign it to what? That's confusing. I doubt AI
+  agents or humans would be able to understand what's happening.
+
 ## Forward Compatibility
 
 We have changed nothing about Define's forward compatibility guarantees via this
