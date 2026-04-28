@@ -35,7 +35,7 @@ define the potential position<mv:example.com:example:/file_name> {
 }
 
 define the potential position<mv:example.com:example:/file_handle> {
-    this dimension point must have the position</file_system>.
+    it also assigns the position</file_system>.
 
     it may only contain dimension points where {
         it has a value that is an integer.
@@ -56,8 +56,8 @@ define the potential position<mv:example.com:example:/buffer> {
 }
 
 define the potential position<mv:example.com:example:/temp_file/create> {
-    this dimension point must have the position</file_name>.
-    this dimension point must have the position</file_handle>.
+    it also assigns the position</file_name>.
+    it also assigns the position</file_handle>.
 
     define the position<run>.
     define the position<completed>.
@@ -246,9 +246,9 @@ In the example program above, we would need to create a new destructor for
 
 ```
 define the potential action<mv:example.com:example:/temp_file/destroy> {
-    this dimension point must have the position</file_name>.
-    this dimension point must have the position</file_handle>.
-    this dimension point must have the position</buffer>.
+    it also assigns the position</file_name>.
+    it also assigns the position</file_handle>.
+    it also assigns the position</buffer>.
 
     define the position<run>.
 

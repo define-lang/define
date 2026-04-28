@@ -54,7 +54,7 @@ intentional design of position initialization, to ensure encapsulation.
 
 Also, I want to clarify that positions may not refer to positions or actions
 they _transitively_ depend on. They must explicitly depend on positions in order
-to refer to them. This is true for all things that use the quality requirement
+to refer to them. This is true for all things that use the quality implication
 syntax. Just noting it here again for clarity.
 
 ### Semantics
@@ -113,7 +113,7 @@ define the potential position<mv:example.com:game:/health> {
 }
 
 define the potential position<mv:example.com:game:/character> {
-    this dimension point must have the position</health>.
+    it also assigns the position</health>.
 
     after it is assigned {
         create a dimension point in position</character>.
@@ -151,7 +151,7 @@ asynchronous action triggering.
 define the potential position<mv:example.com:system:/ready_flag>.
 
 define the potential action<mv:example.com:system:/on_ready> {
-    this dimension point must have the position</ready_flag>.
+    it also assigns the position</ready_flag>.
 
     it happens when {
         the position</ready_flag> has a dimension point.
@@ -161,8 +161,8 @@ define the potential action<mv:example.com:system:/on_ready> {
 }
 
 define the potential position<mv:example.com:system:/status> {
-    this dimension point must have the position</ready_flag>.
-    this dimension point must have the action</on_ready>.
+    it also assigns the position</ready_flag>.
+    it also assigns the action</on_ready>.
 
     after it is assigned {
         create a dimension point in position</status>.
@@ -191,7 +191,7 @@ define the potential position<mv:example.com:db:/connection_string> {
 }
 
 define the potential action<mv:example.com:db:/connect> {
-    this dimension point must have the position</connection_string>.
+    it also assigns the position</connection_string>.
 
     define the position<run>.
     define the position<connected>.
@@ -208,8 +208,8 @@ define the potential action<mv:example.com:db:/connect> {
 }
 
 define the potential position<mv:example.com:db:/database> {
-    this dimension point must have the position</connection_string>.
-    this dimension point must have the action</connect>.
+    it also assigns the position</connection_string>.
+    it also assigns the action</connect>.
 
     after it is assigned {
         # Set up the connection string.

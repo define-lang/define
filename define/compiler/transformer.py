@@ -10,7 +10,7 @@ from define.compiler.lark import lark_standalone
 
 @dataclass(frozen=True, slots=True)
 class _ActionDefinitionBlockData:
-    quality_requirements: list[ast.QualityRequirementStatement]
+    quality_implications: list[ast.QualityImplicationStatement]
     interface_positions: list[ast.LocalPositionDefinition]
     trigger_conditions: ast.TriggerConditionsBlock
     action_statements: ast.ActionStatementsBlock
@@ -45,7 +45,7 @@ class DefineTransformer(
         items: list[
             ast.DefinitionGlobalNameContent
             | list[
-                ast.QualityRequirementStatement
+                ast.QualityImplicationStatement
                 | ast.PositionConstraintBlock
                 | ast.PositionInitBlock
             ]
@@ -53,24 +53,24 @@ class DefineTransformer(
     ) -> ast.PositionDefinition:
         """Transform a position definition."""
         name = cast("ast.DefinitionGlobalNameContent", items[0])
-        quality_requirements: list[ast.QualityRequirementStatement] = []
+        quality_implications: list[ast.QualityImplicationStatement] = []
         constraints: ast.PositionConstraintBlock | None = None
         initialization: ast.PositionInitBlock | None = None
         if len(items) > 1:
             block_contents = cast(
-                "list[ast.QualityRequirementStatement | ast.PositionConstraintBlock | ast.PositionInitBlock]",
+                "list[ast.QualityImplicationStatement | ast.PositionConstraintBlock | ast.PositionInitBlock]",
                 items[1],
             )
             for item in block_contents:
-                if isinstance(item, ast.QualityRequirementStatement):
-                    quality_requirements.append(item)
+                if isinstance(item, ast.QualityImplicationStatement):
+                    quality_implications.append(item)
                 elif isinstance(item, ast.PositionConstraintBlock):
                     constraints = item
                 else:
                     initialization = item
         return ast.PositionDefinition(
             name=name,
-            quality_requirements=quality_requirements,
+            quality_implications=quality_implications,
             constraints=constraints,
             initialization=initialization,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
@@ -87,7 +87,7 @@ class DefineTransformer(
         block_data = cast("_ActionDefinitionBlockData", items[1])
         return ast.ActionDefinition(
             name=name,
-            quality_requirements=block_data.quality_requirements,
+            quality_implications=block_data.quality_implications,
             interface_positions=block_data.interface_positions,
             trigger_conditions=block_data.trigger_conditions,
             action_statements=block_data.action_statements,
@@ -130,10 +130,10 @@ class DefineTransformer(
         """Discard the position-requirement keyword token."""
         return lark_standalone.Discard
 
-    def THIS_DIMENSION_POINT_MUST_HAVE_THE(  # noqa: N802
+    def IT_ALSO_ASSIGNS_THE(  # noqa: N802
         self, _token: lark_standalone.Token
     ) -> object:
-        """Discard the quality-requirement keyword token."""
+        """Discard the quality-implication keyword token."""
         return lark_standalone.Discard
 
     def IT_HAPPENS_WHEN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
@@ -214,12 +214,12 @@ class DefineTransformer(
     def potential_position_definition_block(
         self,
         items: list[
-            ast.QualityRequirementStatement
+            ast.QualityImplicationStatement
             | ast.PositionConstraintBlock
             | ast.PositionInitBlock
         ],
     ) -> list[
-        ast.QualityRequirementStatement
+        ast.QualityImplicationStatement
         | ast.PositionConstraintBlock
         | ast.PositionInitBlock
     ]:
@@ -259,11 +259,11 @@ class DefineTransformer(
         )
 
     @lark_standalone.v_args(meta=True)
-    def quality_requirement_statement(
+    def quality_implication_statement(
         self, meta: lark_standalone.Meta, items: list[ast.GlobalTypedNameReference]
-    ) -> ast.QualityRequirementStatement:
-        """Transform a quality requirement statement."""
-        return ast.QualityRequirementStatement(
+    ) -> ast.QualityImplicationStatement:
+        """Transform a quality implication statement."""
+        return ast.QualityImplicationStatement(
             typed_global_name=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
@@ -381,7 +381,7 @@ class DefineTransformer(
     def action_definition_block(
         self,
         items: list[
-            ast.QualityRequirementStatement
+            ast.QualityImplicationStatement
             | ast.LocalPositionDefinition
             | ast.TriggerConditionsBlock
             | ast.ActionStatementsBlock
@@ -390,15 +390,15 @@ class DefineTransformer(
         """Transform an action definition block."""
         action_statements = cast("ast.ActionStatementsBlock", items[-1])
         trigger_conditions = cast("ast.TriggerConditionsBlock", items[-2])
-        quality_requirements: list[ast.QualityRequirementStatement] = []
+        quality_implications: list[ast.QualityImplicationStatement] = []
         interface_positions: list[ast.LocalPositionDefinition] = []
         for item in items[:-2]:
-            if isinstance(item, ast.QualityRequirementStatement):
-                quality_requirements.append(item)
+            if isinstance(item, ast.QualityImplicationStatement):
+                quality_implications.append(item)
             else:
                 interface_positions.append(cast("ast.LocalPositionDefinition", item))
         return _ActionDefinitionBlockData(
-            quality_requirements=quality_requirements,
+            quality_implications=quality_implications,
             interface_positions=interface_positions,
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,

@@ -270,8 +270,8 @@ define the potential position<define-lang.org:fibonacci:/sequence/previous> {
 }
 
 define the potential action<define-lang.org:fibonacci:/sequence/next> {
-    this dimension point must have the position</sequence/current>.
-    this dimension point must have the position</sequence/previous>.
+    it also assigns the position</sequence/current>.
+    it also assigns the position</sequence/previous>.
 
     define the position<run>.
 

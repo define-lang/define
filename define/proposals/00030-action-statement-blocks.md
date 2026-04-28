@@ -32,8 +32,8 @@ concurrency.)
 
 ```
 define the potential action<mv:example.com:bank:/account/transfer_to> {
-    this dimension point must have the position</account/balance>.
-    this dimension point must have the action</account/withdraw>.
+    it also assigns the position</account/balance>.
+    it also assigns the action</account/withdraw>.
 
     define the position<run>.
     define the position<to> {

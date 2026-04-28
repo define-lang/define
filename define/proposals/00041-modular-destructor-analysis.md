@@ -255,7 +255,7 @@ define the potential action<mv:example.com:example:/close_file> {
 
 # Caller-attached destructor.
 define the potential action<mv:example.com:example:/delete_file_destructor> {
-    this dimension point must have the position</file>.
+    it also assigns the position</file>.
     it happens when {
         this dimension point is being destroyed.
     } and it does {

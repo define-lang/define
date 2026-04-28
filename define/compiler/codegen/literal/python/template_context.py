@@ -86,7 +86,7 @@ class ActionDefinitionContext:
     interface_positions: list[InterfacePositionContext] = field(default_factory=list)
     trigger_position_name: str = ""
     body_statements: list[ActionStatementContext] = field(default_factory=list)
-    quality_requirements: list[naming.ClassReference] = field(default_factory=list)
+    implied_qualities: list[naming.ClassReference] = field(default_factory=list)
 
     @property
     def needs_override(self) -> bool:
@@ -97,7 +97,7 @@ class ActionDefinitionContext:
     def imports(self) -> list[naming.ClassReference]:
         """Deduplicated, sorted imports needed by this definition."""
         class_references: list[naming.ClassReference] = []
-        class_references.extend(self.quality_requirements)
+        class_references.extend(self.implied_qualities)
         for iface in self.interface_positions:
             class_references.extend(iface.constraints)
         for stmt in self.body_statements:
@@ -114,7 +114,7 @@ class PositionDefinitionContext:
     has_init: bool
     module_name: str
     constraints: list[naming.ClassReference] = field(default_factory=list)
-    quality_requirements: list[naming.ClassReference] = field(default_factory=list)
+    implied_qualities: list[naming.ClassReference] = field(default_factory=list)
     statements: list[ActionStatementContext] = field(default_factory=list)
 
     @property
@@ -127,7 +127,7 @@ class PositionDefinitionContext:
         """Deduplicated, sorted imports needed by this definition."""
         class_references: list[naming.ClassReference] = []
         class_references.extend(self.constraints)
-        class_references.extend(self.quality_requirements)
+        class_references.extend(self.implied_qualities)
         for stmt in self.statements:
             class_references.extend(stmt.constraints)
         return _compute_imports(class_references, self.module_name)

@@ -164,15 +164,15 @@ class NameConverter:
             for requirement in constraints.requirements
         ]
 
-    def quality_requirements_to_class_references(
+    def implied_qualities_to_class_references(
         self,
-        quality_requirements: list[ast.QualityRequirementStatement],
+        quality_implications: list[ast.QualityImplicationStatement],
         enclosing_fqun: ast.Fqun,
     ) -> list[ClassReference]:
-        """Extract class references from a list of quality requirement statements."""
+        """Extract class references from a list of quality implication statements."""
         return [
-            self._build_class_reference(requirement.typed_global_name, enclosing_fqun)
-            for requirement in quality_requirements
+            self._build_class_reference(implication.typed_global_name, enclosing_fqun)
+            for implication in quality_implications
         ]
 
     def _build_class_reference(

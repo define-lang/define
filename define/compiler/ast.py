@@ -96,7 +96,7 @@ class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
     typed_name: GlobalTypedNameInDefinition
-    quality_requirements: list[QualityRequirementStatement]
+    quality_implications: list[QualityImplicationStatement]
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -111,7 +111,7 @@ class PositionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        quality_requirements: list[QualityRequirementStatement] | None = None,
+        quality_implications: list[QualityImplicationStatement] | None = None,
         constraints: PositionConstraintBlock | None = None,
         initialization: PositionInitBlock | None = None,
     ):
@@ -123,7 +123,7 @@ class PositionDefinition(QualityDefinition):
                 # TODO: This is the wrong location.
                 location=name.location,
             ),
-            quality_requirements=quality_requirements or [],
+            quality_implications=quality_implications or [],
             location=location,
         )
         object.__setattr__(self, "constraints", constraints)
@@ -388,8 +388,8 @@ class PositionRequirementStatement(ASTNode):
 
 
 @dataclass(frozen=True, slots=True)
-class QualityRequirementStatement(ASTNode):
-    """Represents a quality requirement statement."""
+class QualityImplicationStatement(ASTNode):
+    """Represents a quality implication statement."""
 
     typed_global_name: GlobalTypedNameReference
 
@@ -474,7 +474,7 @@ class ActionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        quality_requirements: list[QualityRequirementStatement],
+        quality_implications: list[QualityImplicationStatement],
         interface_positions: list[LocalPositionDefinition],
         trigger_conditions: TriggerConditionsBlock,
         action_statements: ActionStatementsBlock,
@@ -487,7 +487,7 @@ class ActionDefinition(QualityDefinition):
                 # TODO: This is the wrong location.
                 location=name.location,
             ),
-            quality_requirements=quality_requirements,
+            quality_implications=quality_implications,
             location=location,
         )
         object.__setattr__(self, "interface_positions", interface_positions)

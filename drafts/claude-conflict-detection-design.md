@@ -26,9 +26,9 @@ essential to the design.
 - Determines file loading order and compilation order
 - Bounds what each definition can "see" and name
 
-**Quality Requirement Tree** (acyclic):
+**Quality Implication Tree** (acyclic):
 
-- Edges: `this dimension point must have the position<...>` / `action<...>`
+- Edges: `it also assigns the position<...>` / `action<...>`
 - Makes names accessible in the current scope
 - Determines quality assignment order and dimension point structure
 - Multiple actions on the same dimension point share positions through this tree
@@ -36,14 +36,14 @@ essential to the design.
 **Trigger relationships** (can cycle, derived from the other two):
 
 - NOT an independent graph -- structurally derived from the reference graph +
-  quality requirement tree
+  quality implication tree
 - Trigger edges either follow reference edges (caller triggers callee through
-  position chain), go between quality requirement siblings (actions on the same
+  position chain), go between quality implication siblings (actions on the same
   dimension point sharing a position), or go in reverse along reference edges
   (callee satisfies caller's `wait until`)
 - Cycles can only form between sibling actions on the same dimension point via
-  shared quality requirement positions. Cross-dimension-point cycles would
-  require reference graph cycles, which are forbidden.
+  shared implied positions. Cross-dimension-point cycles would require reference
+  graph cycles, which are forbidden.
 
 ---
 
@@ -248,9 +248,9 @@ Two concurrent actions can only conflict on positions they can both name:
 
 - **Local positions**: each concurrent subtree's local positions are private. No
   conflict possible.
-- **Shared quality requirement positions**: positions accessible to multiple
-  concurrent siblings because they're on the same dimension point. This is where
-  conflicts happen.
+- **Shared implied positions**: positions accessible to multiple concurrent
+  siblings because they're on the same dimension point. This is where conflicts
+  happen.
 - **Intermediate positions**: one concurrent action traverses through a position
   that another concurrent action writes to (chain invalidation).
 
@@ -259,7 +259,7 @@ Two concurrent actions can only conflict on positions they can both name:
 For each concurrency root, check the concurrent children's effect summaries:
 
 1. **Write-write on shared position**: two concurrent siblings both write to the
-   same quality requirement position → paradox
+   same implied position → paradox
 2. **Read-write on shared position**: one sibling reads (including chain
    traversal) a position that another writes, with no causal ordering → paradox
 3. **Chain invalidation**: one sibling writes to (destroys/vacates) a position
@@ -274,8 +274,8 @@ For each concurrency root, check the concurrent children's effect summaries:
 ### Where Cycles Can Form
 
 Trigger cycles can only form between sibling actions on the same dimension
-point, connected through shared quality requirement positions.
-Cross-dimension-point cycles are prevented by reference graph acyclicity.
+point, connected through shared implied positions. Cross-dimension-point cycles
+are prevented by reference graph acyclicity.
 
 This means cycle detection is **local per dimension point**, not global. For
 each dimension point with multiple actions, check whether the sibling actions
@@ -385,8 +385,7 @@ This is the same order as existing compilation. No new bottleneck.
 
 Where A = number of concurrent siblings, P = number of shared positions. For
 typical programs, A is small (a few async tasks at startup) and P is small (a
-few shared quality requirement positions). Mode 2 is rarely invoked and cheap
-when it is.
+few shared implied positions). Mode 2 is rarely invoked and cheap when it is.
 
 ---
 
@@ -397,7 +396,7 @@ when it is.
   conflict checking) activates only at async trigger points. Mode 1 can ship
   first; Mode 2 added incrementally.
 - **No separate trigger graph**: trigger relationships are derived from the
-  reference graph + quality requirement tree. The ownership tree is the primary
+  reference graph + quality implication tree. The ownership tree is the primary
   analysis structure.
 - **Sync/async classification is local**: determined by whether `wait until`
   follows a trigger point. Most triggers are synchronous.

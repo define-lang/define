@@ -222,9 +222,9 @@ py_test(
 )
 
 py_test(
-    name = "quality_requirement_test",
+    name = "quality_implication_test",
     size = "small",
-    srcs = ["quality_requirement_test.py"],
+    srcs = ["quality_implication_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -269,7 +269,7 @@ pyright_test(
         ":position_constraint_references_test",
         ":program_config_test",
         ":program_validator_tests",
-        ":quality_requirement_test",
+        ":quality_implication_test",
         ":reserved_name_positions_test",
         ":trigger_conditions_test",
         ":universe_without_authority_test",

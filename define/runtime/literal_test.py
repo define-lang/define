@@ -505,45 +505,45 @@ class TestDimensionPointActions:
             _ = dp.get_action("nonexistent")
 
 
-class TestQualityRequirements:
-    def test_position_quality_requirements_default_to_empty(self):
+class TestImpliedQualities:
+    def test_position_implied_qualities_default_to_empty(self):
         class MyPosition(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<test>"
 
-        assert MyPosition.quality_requirements == ()
+        assert MyPosition.implied_qualities == ()
 
-    def test_action_quality_requirements_default_to_empty(self):
+    def test_action_implied_qualities_default_to_empty(self):
         class MyAction(literal.Action):
             _typed_name: ClassVar[str] = "action<test>"
 
-        assert MyAction.quality_requirements == ()
+        assert MyAction.implied_qualities == ()
 
-    def test_required_quality_attached_before_requiring_quality(self):
+    def test_implied_quality_attached_before_implying_quality(self):
         order: list[str] = []
 
-        class Required(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<required>"
+        class Implied(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implied>"
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
-        class Requiring(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<requiring>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Required,)
+        class Implying(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Implied,)
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Requiring())
+        dp.assign_position(Implying())
 
-        assert order == ["position<required>", "position<requiring>"]
-        assert "position<required>" in dp._positions
-        assert "position<requiring>" in dp._positions
+        assert order == ["position<implied>", "position<implying>"]
+        assert "position<implied>" in dp._positions
+        assert "position<implying>" in dp._positions
 
-    def test_quality_requirements_processed_in_source_order(self):
+    def test_implied_qualities_processed_in_source_order(self):
         order: list[str] = []
 
         class First(literal.GlobalPosition):
@@ -560,9 +560,9 @@ class TestQualityRequirements:
             def after_assigned(self):
                 order.append(self.name)
 
-        class Requirer(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<requirer>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+        class Implier(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implier>"
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
                 First,
                 Second,
             )
@@ -572,11 +572,11 @@ class TestQualityRequirements:
                 order.append(self.name)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Requirer())
+        dp.assign_position(Implier())
 
-        assert order == ["position<first>", "position<second>", "position<requirer>"]
+        assert order == ["position<first>", "position<second>", "position<implier>"]
 
-    def test_transitive_quality_requirements_attached(self):
+    def test_transitive_implied_qualities_attached(self):
         order: list[str] = []
 
         class C(literal.GlobalPosition):
@@ -588,7 +588,7 @@ class TestQualityRequirements:
 
         class B(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<b>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (C,)
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (C,)
 
             @override
             def after_assigned(self):
@@ -596,7 +596,7 @@ class TestQualityRequirements:
 
         class A(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<a>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (B,)
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (B,)
 
             @override
             def after_assigned(self):
@@ -607,7 +607,7 @@ class TestQualityRequirements:
 
         assert order == ["position<c>", "position<b>", "position<a>"]
 
-    def test_diamond_quality_requirement_assigned_only_once(self):
+    def test_diamond_implied_quality_assigned_only_once(self):
         order: list[str] = []
 
         class Shared(literal.GlobalPosition):
@@ -619,7 +619,7 @@ class TestQualityRequirements:
 
         class Left(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<left>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
 
             @override
             def after_assigned(self):
@@ -627,7 +627,7 @@ class TestQualityRequirements:
 
         class Right(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<right>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
 
             @override
             def after_assigned(self):
@@ -635,7 +635,7 @@ class TestQualityRequirements:
 
         class Top(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<top>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
                 Left,
                 Right,
             )
@@ -654,37 +654,37 @@ class TestQualityRequirements:
             "position<top>",
         ]
 
-    def test_action_processes_its_quality_requirements(self):
-        class RequiredPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<required>"
+    def test_action_processes_its_implied_qualities(self):
+        class ImpliedPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implied>"
 
-        class RequiringAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<requiring>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
-                RequiredPosition,
+        class ImplyingAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<implying>"
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+                ImpliedPosition,
             )
 
         dp = literal.DimensionPoint()
-        dp.assign_action(RequiringAction())
+        dp.assign_action(ImplyingAction())
 
-        assert "position<required>" in dp._positions
-        assert "action<requiring>" in dp._actions
+        assert "position<implied>" in dp._positions
+        assert "action<implying>" in dp._actions
 
-    def test_position_can_require_action(self):
-        class RequiredAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<required>"
+    def test_position_can_imply_action(self):
+        class ImpliedAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<implied>"
 
-        class RequiringPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<requiring>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
-                RequiredAction,
+        class ImplyingPosition(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+                ImpliedAction,
             )
 
         dp = literal.DimensionPoint()
-        dp.assign_position(RequiringPosition())
+        dp.assign_position(ImplyingPosition())
 
-        assert "action<required>" in dp._actions
-        assert "position<requiring>" in dp._positions
+        assert "action<implied>" in dp._actions
+        assert "position<implying>" in dp._positions
 
     def test_assign_position_already_present_is_no_op(self):
         triggered: list[str] = []
@@ -721,7 +721,7 @@ class TestQualityRequirements:
 
         class Outer(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<outer>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Inner,)
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Inner,)
 
         class Container(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<container>"
@@ -734,16 +734,16 @@ class TestQualityRequirements:
         assert "position<outer>" in container._dimension_point._positions
         assert "position<inner>" in container._dimension_point._positions
 
-    def test_move_succeeds_via_transitive_quality_requirement(self):
-        class Required(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<required>"
+    def test_move_succeeds_via_transitive_implied_quality(self):
+        class Implied(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implied>"
 
-        class Requiring(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<requiring>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Required,)
+        class Implying(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Implied,)
 
-        source = literal.LocalPosition("source", constraints=(Requiring,))
-        dest = literal.LocalPosition("dest", constraints=(Required,))
+        source = literal.LocalPosition("source", constraints=(Implying,))
+        dest = literal.LocalPosition("dest", constraints=(Implied,))
         source.create_dimension_point()
 
         source.move_dimension_point_to(dest)
@@ -757,7 +757,7 @@ class TestQualityRequirements:
 
         class B(literal.GlobalPosition):
             _typed_name: ClassVar[str] = "position<b>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (A,)
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (A,)
 
         dp = literal.DimensionPoint()
         dp.assign_position(B())
@@ -765,19 +765,19 @@ class TestQualityRequirements:
         names = [quality.name for quality in dp._assigned_qualities]
         assert names == ["position<a>", "position<b>"]
 
-    def test_required_quality_after_assigned_side_effects_run(self):
-        class Required(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<required>"
+    def test_implied_quality_after_assigned_side_effects_run(self):
+        class Implied(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implied>"
 
             @override
             def after_assigned(self):
                 self.create_dimension_point()
 
-        class Requiring(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<requiring>"
-            quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (Required,)
+        class Implying(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Implied,)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Requiring())
+        dp.assign_position(Implying())
 
-        assert dp.get_position("position<required>").has_dimension_point
+        assert dp.get_position("position<implied>").has_dimension_point

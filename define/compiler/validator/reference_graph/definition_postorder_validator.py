@@ -771,8 +771,8 @@ class DefinitionPostorderValidator(abc.ABC):
                 return
             defn = defn_result.definition
             fqun = defn.typed_name.name_content.fqun
-            for qrs in defn.quality_requirements:
-                visit(qrs.typed_global_name.full_typed_name(in_universe=fqun))
+            for implication in defn.quality_implications:
+                visit(implication.typed_global_name.full_typed_name(in_universe=fqun))
             ordered.append(name)
 
         for n in direct:

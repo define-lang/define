@@ -159,7 +159,7 @@ define the potential action<mv:example.com:bank:/account/withdraw> {
 }
 
 define the potential action<mv:example.com:bank:/account/charge_monthly_fee> {
-    this dimension point must have the action</account/withdraw>.
+    it also assigns the action</account/withdraw>.
 
     define the position<run>.
 
@@ -490,7 +490,7 @@ satisfied and its direct guarantee is used afterward.
 define the potential position<mv:example.com:example:/slot>.
 
 define the potential action<mv:example.com:example:/store_in_slot> {
-    this dimension point must have the position</slot>.
+    it also assigns the position</slot>.
 
     define the position<run>.
     define the position<item>.
@@ -548,7 +548,7 @@ the same shared external position.
 define the potential position<mv:example.com:example:/slot>.
 
 define the potential action<mv:example.com:example:/store_in_slot> {
-    this dimension point must have the position</slot>.
+    it also assigns the position</slot>.
 
     define the position<run>.
     define the position<item>.
@@ -562,7 +562,7 @@ define the potential action<mv:example.com:example:/store_in_slot> {
 }
 
 define the potential action<mv:example.com:example:/clear_slot> {
-    this dimension point must have the position</slot>.
+    it also assigns the position</slot>.
 
     define the position<run>.
 
@@ -622,7 +622,7 @@ define the potential position<mv:example.com:example:/selected_item> {
 }
 
 define the potential action<mv:example.com:example:/tag_selected_item> {
-    this dimension point must have the position</selected_item>.
+    it also assigns the position</selected_item>.
 
     define the position<run>.
 
@@ -678,7 +678,7 @@ higher-level action assumes the opposite state after a nested call chain.
 define the potential position<mv:example.com:example:/slot>.
 
 define the potential action<mv:example.com:example:/clear_slot> {
-    this dimension point must have the position</slot>.
+    it also assigns the position</slot>.
 
     define the position<run>.
 
@@ -691,8 +691,8 @@ define the potential action<mv:example.com:example:/clear_slot> {
 }
 
 define the potential action<mv:example.com:example:/prepare_slot> {
-    this dimension point must have the position</slot>.
-    this dimension point must have the action</clear_slot>.
+    it also assigns the position</slot>.
+    it also assigns the action</clear_slot>.
 
     define the position<run>.
 
@@ -713,8 +713,8 @@ define the potential action<mv:example.com:example:/prepare_slot> {
 }
 
 define the potential action<mv:example.com:example:/invalid_after_prepare> {
-    this dimension point must have the position</slot>.
-    this dimension point must have the action</prepare_slot>.
+    it also assigns the position</slot>.
+    it also assigns the action</prepare_slot>.
 
     define the position<run>.
 
@@ -748,7 +748,7 @@ level caller fails to satisfy it.
 define the potential position<mv:example.com:example:/slot>.
 
 define the potential action<mv:example.com:example:/clear_slot> {
-    this dimension point must have the position</slot>.
+    it also assigns the position</slot>.
 
     define the position<run>.
 
@@ -762,8 +762,8 @@ define the potential action<mv:example.com:example:/clear_slot> {
 }
 
 define the potential action<mv:example.com:example:/request_slot_clear> {
-    this dimension point must have the position</slot>.
-    this dimension point must have the action</clear_slot>.
+    it also assigns the position</slot>.
+    it also assigns the action</clear_slot>.
 
     define the position<run>.
 
@@ -813,7 +813,7 @@ inside the current action instead of chaining upward to its callers.
 define the potential position<mv:example.com:example:/slot>.
 
 define the potential action<mv:example.com:example:/clear_slot> {
-    this dimension point must have the position</slot>.
+    it also assigns the position</slot>.
 
     define the position<run>.
 

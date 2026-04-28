@@ -1,6 +1,0 @@
-define the potential position<my.domain.com:my_lib:/parent_two> {
-    this dimension point must have the position</child>.
-    after it is assigned {
-        create a dimension point in position</child>.
-    }
-}

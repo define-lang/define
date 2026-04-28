@@ -152,27 +152,27 @@ class DuplicatePositionConstraintDiagnostic(Diagnostic):
 
 
 @dataclass
-class DuplicateQualityRequirementDiagnostic(Diagnostic):
-    """Diagnostic for when the same quality requirement appears twice in the same definition."""
+class DuplicateQualityImplicationDiagnostic(Diagnostic):
+    """Diagnostic for when the same quality implication appears twice in the same definition."""
 
-    requirement_name: str
-    first_requirement_line: int
+    implication_name: str
+    first_implication_line: int
     message_format: ClassVar[str] = (
-        "duplicate quality requirement '{self.requirement_name}'; "
-        "first declared on line {self.first_requirement_line}"
+        "duplicate quality implication '{self.implication_name}'; "
+        "first declared on line {self.first_implication_line}"
     )
 
 
 @dataclass
-class UnusedQualityRequirementDiagnostic(Diagnostic):
-    """Diagnostic for when a Quality Requirement Statement is never used as a chain start in the definition body."""
+class UnusedQualityImplicationDiagnostic(Diagnostic):
+    """Diagnostic for when a Quality Implication Statement is never used as a chain start in the definition body."""
 
-    requirement_name: str
+    implication_name: str
     message_format: ClassVar[str] = (
-        "'{self.requirement_name}' is required here, but it is never used as the "
+        "'{self.implication_name}' is implied here, but it is never used as the "
         "first name of a chained name in the executed code of this definition; "
-        "either remove the quality requirement statement or reference "
-        "'{self.requirement_name}' in the executed code."
+        "either remove the quality implication statement or reference "
+        "'{self.implication_name}' in the executed code."
     )
 
 
@@ -483,7 +483,7 @@ class UnknownGlobalNameDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "'{self.source_global_name}' is not available inside of this definition."
         " To make it available, add this line at the top of the definition:\n\n"
-        "   this dimension point must have the '{self.full_global_name}'."
+        "   it also assigns the '{self.full_global_name}'."
     )
 
 

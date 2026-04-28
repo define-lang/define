@@ -233,8 +233,8 @@ class DefinitionStructuralValidator:
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: dict[str, ast.QualityDefinition]
     _unknown_fquns: set[str]
-    _required_qualities: dict[str, ast.QualityRequirementStatement]
-    _used_required_qualities: set[str]
+    _implied_qualities: dict[str, ast.QualityImplicationStatement]
+    _used_implied_qualities: set[str]
 
     def __init__(
         self,
@@ -251,8 +251,8 @@ class DefinitionStructuralValidator:
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
-        self._required_qualities = {}
-        self._used_required_qualities = set()
+        self._implied_qualities = {}
+        self._used_implied_qualities = set()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
         """Validate one top-level definition and return its validation result."""
@@ -327,7 +327,7 @@ class DefinitionStructuralValidator:
         self,
         definition: ast.ActionDefinition,
     ):
-        self._validate_quality_requirements(definition.quality_requirements)
+        self._validate_quality_implications(definition.quality_implications)
         scope = scope_tracker.ScopeTracker(
             self._definition.typed_name.name_content.fqun
         )
@@ -339,13 +339,13 @@ class DefinitionStructuralValidator:
             definition.action_statements,
             scope,
         )
-        self._check_unused_quality_requirements()
+        self._check_unused_quality_implications()
 
     def _validate_global_position_definition_block(
         self,
         definition: ast.PositionDefinition,
     ):
-        self._validate_quality_requirements(definition.quality_requirements)
+        self._validate_quality_implications(definition.quality_implications)
         if definition.initialization is not None:
             scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
             scope.add_definition(definition)
@@ -356,7 +356,7 @@ class DefinitionStructuralValidator:
             )
         if definition.constraints:
             self._validate_position_constraints(definition.constraints)
-        self._check_unused_quality_requirements()
+        self._check_unused_quality_implications()
 
     def _validate_trigger_conditions(
         self,
@@ -543,8 +543,8 @@ class DefinitionStructuralValidator:
 
         if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
             canonical = first.full_typed_name(in_universe=fqun)
-            if canonical in self._required_qualities:
-                self._used_required_qualities.add(canonical)
+            if canonical in self._implied_qualities:
+                self._used_implied_qualities.add(canonical)
             else:
                 self._diagnostics.append(
                     diagnostics.UnknownGlobalNameDiagnostic(
@@ -650,42 +650,42 @@ class DefinitionStructuralValidator:
             seen_lines[canonical] = requirement.typed_global_name.location.line
             self._process_reference(requirement.typed_global_name)
 
-    def _validate_quality_requirements(
+    def _validate_quality_implications(
         self,
-        requirements: list[ast.QualityRequirementStatement],
+        implications: list[ast.QualityImplicationStatement],
     ):
         fqun = self._definition.typed_name.name_content.fqun
         seen_lines: dict[str, int] = {}
-        for requirement in requirements:
+        for implication in implications:
             name_diagnostics = name_validators.validate_typed_name(
-                requirement.typed_global_name, self._definition
+                implication.typed_global_name, self._definition
             )
             self._diagnostics.extend(name_diagnostics)
             if name_diagnostics:
                 continue
-            canonical = requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            canonical = implication.typed_global_name.full_typed_name(in_universe=fqun)
             first_line = seen_lines.get(canonical)
             if first_line is not None:
                 self._diagnostics.append(
-                    diagnostics.DuplicateQualityRequirementDiagnostic(
-                        location=requirement.typed_global_name.location,
-                        requirement_name=requirement.typed_global_name.source_typed_name,
-                        first_requirement_line=first_line,
+                    diagnostics.DuplicateQualityImplicationDiagnostic(
+                        location=implication.typed_global_name.location,
+                        implication_name=implication.typed_global_name.source_typed_name,
+                        first_implication_line=first_line,
                     )
                 )
                 continue
-            seen_lines[canonical] = requirement.typed_global_name.location.line
-            self._required_qualities[canonical] = requirement
-            self._process_reference(requirement.typed_global_name)
+            seen_lines[canonical] = implication.typed_global_name.location.line
+            self._implied_qualities[canonical] = implication
+            self._process_reference(implication.typed_global_name)
 
-    def _check_unused_quality_requirements(self):
-        for canonical, requirement in self._required_qualities.items():
-            if canonical in self._used_required_qualities:
+    def _check_unused_quality_implications(self):
+        for canonical, implication in self._implied_qualities.items():
+            if canonical in self._used_implied_qualities:
                 continue
             self._diagnostics.append(
-                diagnostics.UnusedQualityRequirementDiagnostic(
-                    location=requirement.typed_global_name.location,
-                    requirement_name=requirement.typed_global_name.source_typed_name,
+                diagnostics.UnusedQualityImplicationDiagnostic(
+                    location=implication.typed_global_name.location,
+                    implication_name=implication.typed_global_name.source_typed_name,
                 )
             )
 

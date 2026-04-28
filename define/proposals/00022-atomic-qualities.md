@@ -390,31 +390,32 @@ the dimension point in that position have the specific quality listed.
 
 ### Dependencies
 
-Potential positions and actions may express that they require other positions
-and/or actions to appear on the dimension point, using this syntax:
+Potential positions and actions may express that they auto-assign other
+positions and/or actions to a dimension point when they are assigned to it,
+using this syntax:
 
-`this dimension point must have the type<name>.`
+`it also assigns the type<name>.`
 
-Where `type` is `position` or `action`. We call this a "quality requirement
-statement." In shorthand, we refer to this as "requiring" a quality.
+Where `type` is `position` or `action`. We call this a "quality implication
+statement." In shorthand, we refer to this as "implying" a quality.
 
-Logically, that syntax enforces a constraint on the quality. It says that before
-this quality is assigned to a dimension point, another quality must be assigned
-first. However, when assigning qualities to a dimension point, their required
-qualities are automatically assigned to them first. So in reality, this creates
-a "dependency tree" of qualities that are assigned to a dimension point.
+Logically, that syntax says that the existence of this quality implies the
+existence of another quality on the same dimension point. Qualities can
+transitively imply other qualities, so this creates a "dependency tree" of
+qualities that are assigned to a dimension point.
 
-Required qualities are assigned to a dimension point before the quality that
-requires them is assigned. In other words, if the `withdraw_money` action
-requires a `balance` position, then the `balance` position is assigned to the
-dimension point _first_, and the `withdraw_money` action is assigned second.
+The actual implementation is that when assigning qualities to a dimension point,
+their implied qualities are automatically assigned to them _first_. In other
+words, if the `withdraw_money` action implies a `balance` position, then the
+`balance` position is assigned to the dimension point _first_, and the
+`withdraw_money` action is assigned second.
 
 To understand how this works, imagine an action that withdraws money from a bank
 account:
 
 ```
 define the potential action<mv:example.com:bank:/account/withdraw> {
-    this dimension point must have the position<mv:example.com:bank:/account/balance>.
+    it also assigns the position<mv:example.com:bank:/account/balance>.
 
     define the position<amount> {
         it may only contain dimension points where {
@@ -447,21 +448,20 @@ coordinate with each other without "knowing about" each other.
 ### Duplicate Assignments
 
 While manually _writing_ duplicate assignments (multiple `assign the` or
-`this dimension point requires` statements with the same exact arguments in the
-same local name scope) should be forbidden by the compiler, quality requirement
-statements across different definitions may attempt to assign the same quality
-more than once to the same dimension point. If this happens, only the first
-assignment actually occurs, and all later assignments are ignored by the
-compiler.
+`it also assigns the` statements with the same exact arguments in the same local
+name scope) should be forbidden by the compiler, quality implication statements
+across different definitions may attempt to assign the same quality more than
+once to the same dimension point. If this happens, only the first assignment
+actually occurs, and all later assignments are ignored by the compiler.
 
 For example, imagine this program:
 
 ```
 define the potential action<mv:example.com:bank:/account/withdraw> {
-    this dimension point must have the position<mv:example.com:bank:/account/balance>.
+    it also assigns the position<mv:example.com:bank:/account/balance>.
 }
 define the potential action<mv:example.com:bank:/account/deposit> {
-    this dimension point must have the position<mv:example.com:bank:/account/balance>.
+    it also assigns the position<mv:example.com:bank:/account/balance>.
 }
 
 define the position<account> {
@@ -476,20 +476,19 @@ create a dimension point in position<account>.
 That program only assigns the `position<mv:example.com:bank:/account/balance>`
 once.
 
-In other words, the `this dimension point must have the` syntax really means:
-assign this quality to the dimension point _if it does not already have this
-quality_.
+In other words, the `it also assigns the` syntax really means: assign this
+quality to the dimension point _if it does not already have this quality_.
 
 ### Forbidding Circular Dependencies
 
-Circular dependencies created by quality requirement statements are forbidden.
+Circular dependencies created by quality implication statements are forbidden.
 The compiler will throw an error indicating that this is forbidden.
 
 ### No Dead Dependencies
 
-If a definition contains a quality requirement statement, the definition must
-actually somehow reference the quality that was required. Otherwise the compiler
-will throw an error indicating that the quality requirement statement is
+If a definition contains a quality implication statement, the definition must
+actually somehow reference the quality that was implied. Otherwise the compiler
+will throw an error indicating that the quality implication statement is
 unnecessary.
 
 ## A Real Program

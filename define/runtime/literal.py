@@ -69,7 +69,7 @@ class DimensionPoint:
         """Assign a position to this dimension point, triggering after_assigned."""
         if position.name in self._positions:
             return
-        self._assign_required_qualities(position)
+        self._assign_implied_qualities(position)
         self._assigned_qualities.append(position)
         self._positions[position.name] = position
         position.after_assigned()
@@ -78,17 +78,17 @@ class DimensionPoint:
         """Assign an action to this dimension point."""
         if action.name in self._actions:
             return
-        self._assign_required_qualities(action)
+        self._assign_implied_qualities(action)
         self._assigned_qualities.append(action)
         self._actions[action.name] = action
 
-    def _assign_required_qualities(self, quality: GlobalPosition | Action):
-        for requirement_class in type(quality).quality_requirements:
-            requirement = requirement_class()
-            if isinstance(requirement, GlobalPosition):
-                self.assign_position(requirement)
+    def _assign_implied_qualities(self, quality: GlobalPosition | Action):
+        for implied_class in type(quality).implied_qualities:
+            implied = implied_class()
+            if isinstance(implied, GlobalPosition):
+                self.assign_position(implied)
             else:
-                self.assign_action(requirement)
+                self.assign_action(implied)
 
     def get_position(self, name: str) -> GlobalPosition:
         """Return the position stored under the given name."""
@@ -171,7 +171,7 @@ class GlobalPosition(Position):
 
     _typed_name: ClassVar[str]
     constraints: ClassVar[tuple[Constraint, ...]] = ()
-    quality_requirements: ClassVar[tuple[Constraint, ...]] = ()
+    implied_qualities: ClassVar[tuple[Constraint, ...]] = ()
 
     @property
     @override
@@ -217,7 +217,7 @@ class Action(Quality):
     """A globally-defined action with a class-level typed name."""
 
     _typed_name: ClassVar[str]
-    quality_requirements: ClassVar[tuple[Constraint, ...]] = ()
+    implied_qualities: ClassVar[tuple[Constraint, ...]] = ()
 
     def __init__(
         self,

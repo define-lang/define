@@ -41,7 +41,7 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
             fqun=_FQUN,
             location=_LOC,
         ),
-        quality_requirements=[],
+        quality_implications=[],
         interface_positions=[],
         trigger_conditions=ast.TriggerConditionsBlock(
             conditions=[

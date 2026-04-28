@@ -21,9 +21,9 @@ define the potential position<mv:example.com:example:/left>.
 define the potential position<mv:example.com:example:/right>.
 
 define the potential action<mv:example.com:example:/move_left> {
-    this dimension point must have the position<mv:example.com:example:/my_ball>.
-    this dimension point must have the position<mv:example.com:example:/left>.
-    this dimension point must have the position<mv:example.com:example:/run_triggers>.
+    it also assigns the position<mv:example.com:example:/my_ball>.
+    it also assigns the position<mv:example.com:example:/left>.
+    it also assigns the position<mv:example.com:example:/run_triggers>.
 
 
     it happens when {
@@ -34,9 +34,9 @@ define the potential action<mv:example.com:example:/move_left> {
 }
 
 define the potential action<mv:example.com:example:/move_right> {
-    this dimension point must have the position<mv:example.com:example:/my_ball>.
-    this dimension point must have the position<mv:example.com:example:/right>.
-    this dimension point must have the position<mv:example.com:example:/run_triggers>.
+    it also assigns the position<mv:example.com:example:/my_ball>.
+    it also assigns the position<mv:example.com:example:/right>.
+    it also assigns the position<mv:example.com:example:/run_triggers>.
 
     it happens when {
         the position<mv:example.com:example:/run_triggers> has a dimension point.
@@ -136,10 +136,10 @@ This gives some very unintuitive and unexpected semantics to the order in which
 you write the `it has the` statements in a position definition (or the order in
 which you manually assign qualities to a dimension point). However, more
 importantly, it's possible for actions to be assigned to a dimension point via
-quality requirement statements. (In other words, it's possible for actions to be
+quality implication statements. (In other words, it's possible for actions to be
 dependencies of other actions.) This means that actions get assigned to a
 dimension point in an order that is invisible to the programmer and can randomly
-change as you change what actions require what other actions.
+change as you change what actions imply what other actions.
 
 #### Explicit Ordering
 

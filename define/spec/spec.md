@@ -913,7 +913,7 @@ position_definition = "define the potential", " ", global_position_name, positio
 position_definition_end = terminator | potential_position_definition_block ;
 potential_position_definition_block =
     block_open,
-    { quality_requirement_statement },
+    { quality_implication_statement },
     ( position_constraint_block, [ position_initialization_block ] | position_initialization_block ),
     block_close ;
 ```
@@ -992,7 +992,7 @@ action_name = "action", "<", global_name, ">" ;
 action_definition = "define the potential", " ", action_name, action_definition_block ;
 action_definition_block =
     block_open,
-    { quality_requirement_statement },
+    { quality_implication_statement },
     { local_position_definition },
     trigger_and_action,
     block_close ;
@@ -1182,56 +1182,55 @@ actions must be processed in a post-order depth-first traversal of the
 global-name reference graph (a graph of which definitions reference which global
 names).
 
-## Quality Requirement Statements
+## Quality Implication Statements
 
 Proposals:
 
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 
-A Quality Requirement Statement starts with
-`this dimension point must have the`, followed by exactly one space, a typed
-global name, and a statement terminator.
+A Quality Implication Statement starts with `it also assigns the`, followed by
+exactly one space, a typed global name, and a statement terminator.
 
 ```ebnf
-quality_requirement_statement =
-    "this dimension point must have the", " ", typed_global_name, terminator ;
+quality_implication_statement =
+    "it also assigns the", " ", typed_global_name, terminator ;
 ```
 
 ### Assignment Semantics
 
-When a quality A contains a Quality Requirement Statement naming quality B, then
+When a quality A contains a Quality Implication Statement naming quality B, then
 whenever A is assigned to a dimension point, B is automatically assigned to that
-same dimension point beforehand. Quality Requirement Statements are executed in
+same dimension point beforehand. Quality Implication Statements are executed in
 the order written in the code when executing their assignment to a dimension
 point.
 
-Inside the requiring quality's definition, the required quality is treated as
-already present on the dimension point. The required quality and its child names
-may be referenced directly in the requiring quality's definition.
+Inside the implying quality's definition, the implied quality is treated as
+already present on the dimension point. The implied quality and its child names
+may be referenced directly in the implying quality's definition.
 
-Requiring a quality does _not_ expose the transitively required qualities of
-that quality. In order for any code within a global definition to reference a
-global name as the first typed name in a chain (other than self-reference in
-Position Initialization Blocks) it must be listed in an explicit Quality
-Requirement Statement at the top of the global definition.
+Implying a quality does _not_ expose the transitively implied qualities of that
+quality. In order for any code within a global definition to reference a global
+name as the first typed name in a chain (other than self-reference in Position
+Initialization Blocks) it must be listed in an explicit Quality Implication
+Statement at the top of the global definition.
 
 ### Duplicate Assignments
 
-If a quality is already present on a dimension point when a Quality Requirement
+If a quality is already present on a dimension point when a Quality Implication
 Statement would otherwise cause it to be assigned, the additional assignment
 does not occur. Only the first assignment takes effect; subsequent attempts to
-assign the same quality via Quality Requirement Statements are silently skipped.
+assign the same quality via Quality Implication Statements are silently skipped.
 
-Explicitly requiring the same quality within a definition (writing the same
-quality requirement statement twice) is an error.
+Explicitly implying the same quality within a definition (writing the same
+quality implication statement twice) is an error.
 
 ### No Dead Dependencies
 
-If an action definition contains a Quality Requirement Statement, the required
+If an action definition contains a Quality Implication Statement, the implied
 quality must be referenced as the first name of a chained name somewhere within
 the action's Action Statements Block or Trigger Conditions Block.
 
-If a position definition contains a Quality Requirement Statement, the required
+If a position definition contains a Quality Implication Statement, the implied
 quality must be referenced as the first name of a chained name somewhere within
 the position's Position Initialization Block.
 

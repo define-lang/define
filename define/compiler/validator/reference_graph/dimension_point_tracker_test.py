@@ -40,7 +40,7 @@ _ENCLOSING_DEF = ast.ActionDefinition(
         path=ast.GlobalPathName(name="/my_action", location=_LOC),
         location=_LOC,
     ),
-    quality_requirements=[],
+    quality_implications=[],
     interface_positions=[],
     trigger_conditions=ast.TriggerConditionsBlock(
         conditions=[

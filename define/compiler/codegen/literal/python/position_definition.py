@@ -32,8 +32,8 @@ class PositionDefinitionGenerator:
             self._definition.constraints,
             enclosing_fqun,
         )
-        quality_requirements = self._converter.quality_requirements_to_class_references(
-            self._definition.quality_requirements,
+        implied_qualities = self._converter.implied_qualities_to_class_references(
+            self._definition.quality_implications,
             enclosing_fqun,
         )
 
@@ -55,6 +55,6 @@ class PositionDefinitionGenerator:
             has_init=has_init,
             module_name=module_name,
             constraints=constraints,
-            quality_requirements=quality_requirements,
+            implied_qualities=implied_qualities,
             statements=statements,
         )

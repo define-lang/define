@@ -196,8 +196,8 @@ def raise_token_error(
             raise parser_exceptions.InvalidPositionDefinitionLocationInAction(
                 e, source, file_path
             )
-        if e.token.type == "THIS_DIMENSION_POINT_MUST_HAVE_THE":
-            raise parser_exceptions.QualityRequirementInWrongLocation(
+        if e.token.type == "IT_ALSO_ASSIGNS_THE":
+            raise parser_exceptions.QualityImplicationInWrongLocation(
                 e, source, file_path
             )
         raise parser_exceptions.MissingCloseBrace(e, source, file_path)
@@ -222,8 +222,8 @@ def raise_token_error(
     if e.accepts == {"NEWLINE", "THE"}:
         if e.token == "}":
             raise parser_exceptions.MissingTriggerConditionContent(e, source, file_path)
-        if e.token.type == "THIS_DIMENSION_POINT_MUST_HAVE_THE":
-            raise parser_exceptions.QualityRequirementInWrongLocation(
+        if e.token.type == "IT_ALSO_ASSIGNS_THE":
+            raise parser_exceptions.QualityImplicationInWrongLocation(
                 e, source, file_path
             )
         raise parser_exceptions.InvalidTriggerConditionsBlock(e, source, file_path)
@@ -259,15 +259,12 @@ def raise_token_error(
     if "DEFINE_THE_POTENTIAL_POSITION" in e.accepts:
         raise parser_exceptions.ExpectedGlobalDefinition(e, source, file_path)
 
-    # A QRS keyword the parser rejects must be in the wrong place inside a definition.
-    # Placed after the global-definition fallback so a stray QRS at the top level still
-    # surfaces as ExpectedGlobalDefinition (the user likely just forgot to start a
-    # definition).
-    if (
-        e.token.type == "THIS_DIMENSION_POINT_MUST_HAVE_THE"
-        and "THIS_DIMENSION_POINT_MUST_HAVE_THE" not in e.accepts
-    ):
-        raise parser_exceptions.QualityRequirementInWrongLocation(e, source, file_path)
+    # An implication keyword the parser rejects must be in the wrong place inside a
+    # definition. Placed after the global-definition fallback so a stray implication at
+    # the top level still surfaces as ExpectedGlobalDefinition (the user likely just
+    # forgot to start a definition).
+    if e.token.type == "IT_ALSO_ASSIGNS_THE" and "IT_ALSO_ASSIGNS_THE" not in e.accepts:
+        raise parser_exceptions.QualityImplicationInWrongLocation(e, source, file_path)
 
     # A relatively broad fallback for random nonsense inside an Action Definition Block.
     if "IT_HAPPENS_WHEN" in e.accepts:

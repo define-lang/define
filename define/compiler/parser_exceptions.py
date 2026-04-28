@@ -459,11 +459,11 @@ class MissingWhitespaceBeforeBrace(DefineTokenError):
     message_format: ClassVar[str] = "Missing a space before '{{'"
 
 
-class QualityRequirementInWrongLocation(DefineTokenError):
-    """Wrote a 'this dimension point must have the' statement somewhere it isn't allowed."""
+class QualityImplicationInWrongLocation(DefineTokenError):
+    """Wrote an 'it also assigns the' statement somewhere it isn't allowed."""
 
     message_format: ClassVar[str] = (
-        "'this dimension point must have the' statements may appear only at the top of a"
+        "'it also assigns the' statements may appear only at the top of a"
         " global definition block."
     )
 

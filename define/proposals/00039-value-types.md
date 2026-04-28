@@ -293,9 +293,9 @@ execute the operation<standard:/number/integer/add> {
 
 # Defined as whatever binary encoding the target CPU uses.
 define the encoding<standard:/number/integer/cpu/32bit/signed> {
-    this dimension point must have the value<standard:/number/integer>.
-    # Imaginary syntax for quality-requiring a constraint.
-    this dimension point must have the constraint<standard:/number/integer/32bit>.
+    it also assigns the value<standard:/number/integer>.
+    # Imaginary syntax for implying a constraint.
+    it also assigns the constraint<standard:/number/integer/32bit>.
 
     define the converter to encoding<standard:/number/integer/cpu/32bit/unsigned> {
         it is implemented by the compiler.

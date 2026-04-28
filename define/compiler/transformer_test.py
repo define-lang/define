@@ -983,18 +983,18 @@ def test_init_block_source_positions():
     assert stmt.location.column == 9
 
 
-def test_position_definition_quality_requirements_default_empty():
+def test_position_definition_quality_implications_default_empty():
     program = _parse_and_transform("define the potential position<standard:/path>.\n")
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
-    assert definition.quality_requirements == []
+    assert definition.quality_implications == []
 
 
-def test_position_definition_with_quality_requirements():
+def test_position_definition_with_quality_implications():
     program = _parse_and_transform(
         "define the potential position<standard:/path> {\n"
-        + "    this dimension point must have the position</a>.\n"
-        + "    this dimension point must have the action</b>.\n"
+        + "    it also assigns the position</a>.\n"
+        + "    it also assigns the action</b>.\n"
         + "    it may only contain dimension points where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
@@ -1002,11 +1002,11 @@ def test_position_definition_with_quality_requirements():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
-    assert len(definition.quality_requirements) == 2
-    first = definition.quality_requirements[0]
-    second = definition.quality_requirements[1]
-    assert isinstance(first, ast.QualityRequirementStatement)
-    assert isinstance(second, ast.QualityRequirementStatement)
+    assert len(definition.quality_implications) == 2
+    first = definition.quality_implications[0]
+    second = definition.quality_implications[1]
+    assert isinstance(first, ast.QualityImplicationStatement)
+    assert isinstance(second, ast.QualityImplicationStatement)
     assert first.typed_global_name.name_type == ast.NameType.POSITION
     assert first.typed_global_name.name_content.path.relative_path == Path("a")
     assert second.typed_global_name.name_type == ast.NameType.ACTION
@@ -1017,10 +1017,10 @@ def test_position_definition_with_quality_requirements():
     assert len(definition.constraints.requirements) == 1
 
 
-def test_position_definition_with_quality_requirements_and_init_block():
+def test_position_definition_with_quality_implications_and_init_block():
     program = _parse_and_transform(
         "define the potential position<standard:/path> {\n"
-        + "    this dimension point must have the position</a>.\n"
+        + "    it also assigns the position</a>.\n"
         + "    after it is assigned {\n"
         + "        create a dimension point in position</other>.\n"
         + "    }\n"
@@ -1028,12 +1028,12 @@ def test_position_definition_with_quality_requirements_and_init_block():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.PositionDefinition)
-    assert len(definition.quality_requirements) == 1
+    assert len(definition.quality_implications) == 1
     assert definition.constraints is None
     assert definition.initialization is not None
 
 
-def test_action_definition_quality_requirements_default_empty():
+def test_action_definition_quality_implications_default_empty():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
         + "    define the position<_noop>.\n"
@@ -1047,14 +1047,14 @@ def test_action_definition_quality_requirements_default_empty():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert definition.quality_requirements == []
+    assert definition.quality_implications == []
 
 
-def test_action_definition_with_quality_requirements():
+def test_action_definition_with_quality_implications():
     program = _parse_and_transform(
         "define the potential action<standard:/path> {\n"
-        + "    this dimension point must have the position</a>.\n"
-        + "    this dimension point must have the action</b>.\n"
+        + "    it also assigns the position</a>.\n"
+        + "    it also assigns the action</b>.\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
         + "        the position<run> has a dimension point.\n"
@@ -1065,11 +1065,11 @@ def test_action_definition_with_quality_requirements():
     )
     definition = program.definitions[0]
     assert isinstance(definition, ast.ActionDefinition)
-    assert len(definition.quality_requirements) == 2
-    first = definition.quality_requirements[0]
-    second = definition.quality_requirements[1]
-    assert isinstance(first, ast.QualityRequirementStatement)
-    assert isinstance(second, ast.QualityRequirementStatement)
+    assert len(definition.quality_implications) == 2
+    first = definition.quality_implications[0]
+    second = definition.quality_implications[1]
+    assert isinstance(first, ast.QualityImplicationStatement)
+    assert isinstance(second, ast.QualityImplicationStatement)
     assert first.typed_global_name.name_type == ast.NameType.POSITION
     assert first.typed_global_name.name_content.path.relative_path == Path("a")
     assert second.typed_global_name.name_type == ast.NameType.ACTION

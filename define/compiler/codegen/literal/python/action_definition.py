@@ -57,8 +57,8 @@ class ActionDefinitionGenerator:
             interface_position_names=interface_position_names,
         )
 
-        quality_requirements = self._converter.quality_requirements_to_class_references(
-            self._definition.quality_requirements,
+        implied_qualities = self._converter.implied_qualities_to_class_references(
+            self._definition.quality_implications,
             enclosing_fqun,
         )
 
@@ -69,5 +69,5 @@ class ActionDefinitionGenerator:
             interface_positions=interface_positions,
             trigger_position_name=trigger_position_name,
             body_statements=block_gen.generate(),
-            quality_requirements=quality_requirements,
+            implied_qualities=implied_qualities,
         )

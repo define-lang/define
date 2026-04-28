@@ -3,9 +3,9 @@
 
 class {{ definition.class_name }}(literal.Action):
     _typed_name: ClassVar[str] = "{{ definition.typed_name }}"
-{% if definition.quality_requirements %}
-    quality_requirements: ClassVar[tuple[literal.Constraint, ...]] = (
-{% for class_reference in definition.quality_requirements %}
+{% if definition.implied_qualities %}
+    implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+{% for class_reference in definition.implied_qualities %}
         {{ class_reference.module_name }}.{{ class_reference.class_name }},
 {% endfor %}
     )
