@@ -4,13 +4,13 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.grandchild
+import local.my_domain_com.my_lib.implied
 
 
-class Child(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/child>"
+class ImplierOne(literal.GlobalPosition):
+    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/implier_one>"
     implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
-        local.my_domain_com.my_lib.grandchild.Grandchild,
+        local.my_domain_com.my_lib.implied.Implied,
     )
 
     @override

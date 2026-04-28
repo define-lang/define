@@ -4,7 +4,7 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.child
+import local.my_domain_com.my_lib.implied
 import local.my_domain_com.my_lib.inner
 
 
@@ -24,7 +24,7 @@ class Middle(literal.Action):
                 literal.InterfacePosition(
                     "position<final>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.implied.Implied,
                     ),
                 ),
             ],

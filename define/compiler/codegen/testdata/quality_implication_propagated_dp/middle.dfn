@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/middle> {
     }
     define the position<final> {
         it may only contain dimension points where {
-            it has the position</child>.
+            it has the position</implied>.
         }
     }
     it happens when {

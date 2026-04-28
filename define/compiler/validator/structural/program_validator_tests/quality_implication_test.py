@@ -207,7 +207,7 @@ def test_action_implication_used_via_interface_position_chain():
     assert_no_errors(result)
 
 
-def test_position_implication_used_only_via_child_position_chain():
+def test_position_implication_used_only_via_implied_position_chain():
     source = (
         "define the potential action<my.domain.com:my_lib:/bar> {\n"
         "    define the position<x>.\n"
@@ -348,31 +348,31 @@ def test_three_duplicate_implication_two_errors():
 def test_duplicate_implication_full_fqun_cross_universe(
     validate_project: ValidateProject,
 ):
-    parent_fqun = "mv:define-lang.org:parent_dup_implication"
-    child_fqun = "mv:define-lang.org:child_dup_implication"
+    implier_fqun = "mv:define-lang.org:implier_dup_implication"
+    implied_fqun = "mv:define-lang.org:implied_dup_implication"
     result = validate_project(
         {
             "test.dfn": (
-                f"define the potential position<{parent_fqun}:/test> {{\n"
-                f"    it also assigns the position<{child_fqun}:/foo>.\n"
-                f"    it also assigns the position<{child_fqun}:/foo>.\n"
+                f"define the potential position<{implier_fqun}:/test> {{\n"
+                f"    it also assigns the position<{implied_fqun}:/foo>.\n"
+                f"    it also assigns the position<{implied_fqun}:/foo>.\n"
                 "    after it is assigned {\n"
-                f"        create a dimension point in position<{child_fqun}:/foo>.\n"
+                f"        create a dimension point in position<{implied_fqun}:/foo>.\n"
                 "    }\n"
                 "}\n"
             ),
-            "lib/foo.dfn": f"define the potential position<{child_fqun}:/foo>.\n",
+            "lib/foo.dfn": f"define the potential position<{implied_fqun}:/foo>.\n",
         },
-        universe_name=parent_fqun,
-        local_deps={child_fqun: "lib"},
-        sub_roots={"lib": child_fqun},
+        universe_name=implier_fqun,
+        local_deps={implied_fqun: "lib"},
+        sub_roots={"lib": implied_fqun},
     )
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
-    assert diags[0].implication_name == f"position<{child_fqun}:/foo>"
+    assert diags[0].implication_name == f"position<{implied_fqun}:/foo>"
     assert diags[0].first_implication_line == 2
     assert diags[0].location.line == 3
     assert diags[0].location.column == 25

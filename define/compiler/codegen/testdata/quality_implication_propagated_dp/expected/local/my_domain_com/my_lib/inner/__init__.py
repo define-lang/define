@@ -4,7 +4,7 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.parent
+import local.my_domain_com.my_lib.implier
 
 
 class Inner(literal.Action):
@@ -17,7 +17,7 @@ class Inner(literal.Action):
                 literal.InterfacePosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.parent.Parent,
+                        local.my_domain_com.my_lib.implier.Implier,
                     ),
                 ),
                 literal.InterfacePosition("position<output>"),

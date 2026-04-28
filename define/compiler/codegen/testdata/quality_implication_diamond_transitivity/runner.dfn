@@ -2,13 +2,13 @@ define the potential action<my.domain.com:my_lib:/runner> {
     define the position<run>.
     define the position<source> {
         it may only contain dimension points where {
-            it has the position</parent_one>.
-            it has the position</parent_two>.
+            it has the position</implier_one>.
+            it has the position</implier_two>.
         }
     }
     define the position<dest> {
         it may only contain dimension points where {
-            it has the position</child>.
+            it has the position</implied>.
         }
     }
     it happens when {

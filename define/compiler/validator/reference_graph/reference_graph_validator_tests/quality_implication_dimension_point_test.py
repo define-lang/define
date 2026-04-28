@@ -7,35 +7,37 @@ import pytest
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
-_CHILD_DFN = "define the potential position<my.domain.com:my_lib:/child>.\n"
+_IMPLIED_DFN = "define the potential position<my.domain.com:my_lib:/implied>.\n"
 
 _PLAIN_DFN = "define the potential position<my.domain.com:my_lib:/plain>.\n"
 
-_PARENT_DFN = (
-    "define the potential position<my.domain.com:my_lib:/parent> {\n"
-    "    it also assigns the position</child>.\n"
+_IMPLIER_DFN = (
+    "define the potential position<my.domain.com:my_lib:/implier> {\n"
+    "    it also assigns the position</implied>.\n"
     "    after it is assigned {\n"
-    "        create a dimension point in position</child>.\n"
+    "        create a dimension point in position</implied>.\n"
     "    }\n"
     "}\n"
 )
 
-_OTHER_PARENT_DFN = (
-    "define the potential position<my.domain.com:my_lib:/other_parent> {\n"
-    "    it also assigns the position</child>.\n"
+_OTHER_IMPLIER_DFN = (
+    "define the potential position<my.domain.com:my_lib:/other_implier> {\n"
+    "    it also assigns the position</implied>.\n"
     "    after it is assigned {\n"
-    "        create a dimension point in position</child>.\n"
+    "        create a dimension point in position</implied>.\n"
     "    }\n"
     "}\n"
 )
 
-_GRANDCHILD_DFN = "define the potential position<my.domain.com:my_lib:/grandchild>.\n"
+_TRANSITIVE_IMPLIED_DFN = (
+    "define the potential position<my.domain.com:my_lib:/transitive_implied>.\n"
+)
 
-_CHILD_WITH_GRANDCHILD_IMPLICATION_DFN = (
-    "define the potential position<my.domain.com:my_lib:/child> {\n"
-    "    it also assigns the position</grandchild>.\n"
+_IMPLIED_WITH_TRANSITIVE_IMPLICATION_DFN = (
+    "define the potential position<my.domain.com:my_lib:/implied> {\n"
+    "    it also assigns the position</transitive_implied>.\n"
     "    after it is assigned {\n"
-    "        create a dimension point in position</grandchild>.\n"
+    "        create a dimension point in position</transitive_implied>.\n"
     "    }\n"
     "}\n"
 )
@@ -46,15 +48,15 @@ def test_create_in_implied_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
+            "implied.dfn": _IMPLIED_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</child>.\n"
+                "    it also assigns the position</implied>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</child>.\n"
+                "        create a dimension point in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -68,19 +70,19 @@ def test_move_between_implied_positions(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
-            "other_parent.dfn": _OTHER_PARENT_DFN,
+            "implied.dfn": _IMPLIED_DFN,
+            "implier.dfn": _IMPLIER_DFN,
+            "other_implier.dfn": _OTHER_IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</parent>.\n"
-                "    it also assigns the position</other_parent>.\n"
+                "    it also assigns the position</implier>.\n"
+                "    it also assigns the position</other_implier>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</parent>.\n"
-                "        move the dimension point in position</parent> to position</other_parent>.\n"
+                "        create a dimension point in position</implier>.\n"
+                "        move the dimension point in position</implier> to position</other_implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -91,12 +93,8 @@ def test_move_between_implied_positions(
 
 @pytest.mark.xfail(
     reason=(
-        "Validator does not propagate a global implication-bearing position's init-block"
-        " effects through chained access rooted at that global. After"
-        " `create a dimension point in position</parent>`, the validator does"
-        " not infer that parent's `after it is assigned` block has filled"
-        " position</parent>::position</child>, so subsequent access to that"
-        " chained position is wrongly seen as empty."
+        "Expected: no diagnostics. Actual: validator emits"
+        " DestroyInEmptyPositionDiagnostic for position</parent>::position</child>."
     ),
     strict=True,
 )
@@ -105,8 +103,14 @@ def test_chained_child_access_via_implied_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</parent>.\n"
@@ -129,17 +133,17 @@ def test_destroy_after_create_in_implied_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "implied.dfn": _IMPLIED_DFN,
+            "implier.dfn": _IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</parent>.\n"
+                "    it also assigns the position</implier>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</parent>.\n"
-                "        destroy the dimension point in position</parent>.\n"
+                "        create a dimension point in position</implier>.\n"
+                "        destroy the dimension point in position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -162,19 +166,19 @@ def test_move_into_implied_position_missing_quality(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
+            "implied.dfn": _IMPLIED_DFN,
             "plain.dfn": _PLAIN_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "implier.dfn": _IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</plain>.\n"
-                "    it also assigns the position</parent>.\n"
+                "    it also assigns the position</implier>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position</plain>.\n"
-                "        move the dimension point in position</plain> to position</parent>.\n"
+                "        move the dimension point in position</plain> to position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -187,9 +191,9 @@ def test_move_into_implied_position_missing_quality(
     assert all_diags[0].location.column == 57
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position</plain>"
-    assert all_diags[0].target_position == "position</parent>"
+    assert all_diags[0].target_position == "position</implier>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/child>",
+        "position<my.domain.com:my_lib:/implied>",
     ]
 
 
@@ -198,16 +202,16 @@ def test_create_in_occupied_implied_position(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
+            "implied.dfn": _IMPLIED_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</child>.\n"
+                "    it also assigns the position</implied>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</child>.\n"
-                "        create a dimension point in position</child>.\n"
+                "        create a dimension point in position</implied>.\n"
+                "        create a dimension point in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -219,7 +223,7 @@ def test_create_in_occupied_implied_position(
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position</child>"
+    assert all_diags[0].position_name == "position</implied>"
     assert all_diags[0].created_at.line == 7
     assert all_diags[0].created_at.column == 37
     assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
@@ -240,15 +244,15 @@ def test_destroy_in_empty_implied_position_inferrs_created(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
+            "implied.dfn": _IMPLIED_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</child>.\n"
+                "    it also assigns the position</implied>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position</child>.\n"
+                "        destroy the dimension point in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -258,7 +262,7 @@ def test_destroy_in_empty_implied_position_inferrs_created(
 
 
 @pytest.mark.xfail(
-    reason="We should be inferring that a DP exists in position</parent>.",
+    reason="We should be inferring that a DP exists in position</implier>.",
     strict=True,
 )
 def test_move_from_empty_implied_position_infers_occupied(
@@ -266,18 +270,18 @@ def test_move_from_empty_implied_position_infers_occupied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
-            "other_parent.dfn": _OTHER_PARENT_DFN,
+            "implied.dfn": _IMPLIED_DFN,
+            "implier.dfn": _IMPLIER_DFN,
+            "other_implier.dfn": _OTHER_IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</parent>.\n"
-                "    it also assigns the position</other_parent>.\n"
+                "    it also assigns the position</implier>.\n"
+                "    it also assigns the position</other_implier>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position</parent> to position</other_parent>.\n"
+                "        move the dimension point in position</implier> to position</other_implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -291,28 +295,28 @@ def test_round_trip_local_to_implied_back_to_local_preserves_quality(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "implied.dfn": _IMPLIED_DFN,
+            "implier.dfn": _IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</parent>.\n"
+                "    it also assigns the position</implier>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
                 "        define the position<local_a> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the position</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<local_b> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</child>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a dimension point in position<local_a>.\n"
-                "        move the dimension point in position<local_a> to position</parent>.\n"
-                "        move the dimension point in position</parent> to position<local_b>.\n"
+                "        move the dimension point in position<local_a> to position</implier>.\n"
+                "        move the dimension point in position</implier> to position<local_b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -328,20 +332,20 @@ def test_round_trip_implied_to_local(
         {
             # TODO: Rename these and improve this test to prove that qualities
             # are preserved.
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "implied.dfn": _IMPLIED_DFN,
+            "implier.dfn": _IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</parent>.\n"
+                "    it also assigns the position</implier>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
                 "        define the position<local>.\n"
-                "        create a dimension point in position</parent>.\n"
-                "        move the dimension point in position</parent> to position<local>.\n"
-                "        move the dimension point in position<local> to position</parent>.\n"
-                "        destroy the dimension point in position</parent>.\n"
+                "        create a dimension point in position</implier>.\n"
+                "        move the dimension point in position</implier> to position<local>.\n"
+                "        move the dimension point in position<local> to position</implier>.\n"
+                "        destroy the dimension point in position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -355,17 +359,17 @@ def test_move_from_local_to_implied_marks_local_empty(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
+            "implied.dfn": _IMPLIED_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</child>.\n"
+                "    it also assigns the position</implied>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
                 "        define the position<local>.\n"
                 "        create a dimension point in position<local>.\n"
-                "        move the dimension point in position<local> to position</child>.\n"
+                "        move the dimension point in position<local> to position</implied>.\n"
                 "        destroy the dimension point in position<local>.\n"
                 "    }\n"
                 "}\n"
@@ -386,18 +390,18 @@ def test_move_from_implied_to_local_marks_implied_empty(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
+            "implied.dfn": _IMPLIED_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the position</child>.\n"
+                "    it also assigns the position</implied>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
                 "        define the position<local>.\n"
-                "        create a dimension point in position</child>.\n"
-                "        move the dimension point in position</child> to position<local>.\n"
-                "        destroy the dimension point in position</child>.\n"
+                "        create a dimension point in position</implied>.\n"
+                "        move the dimension point in position</implied> to position<local>.\n"
+                "        destroy the dimension point in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -409,7 +413,7 @@ def test_move_from_implied_to_local_marks_implied_empty(
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 40
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position</child>"
+    assert all_diags[0].position_name == "position</implied>"
 
 
 def test_move_respects_direct_implied_qualities(
@@ -417,8 +421,8 @@ def test_move_respects_direct_implied_qualities(
 ):
     result = validate_project_with_reference_graph(
         {
-            "child.dfn": _CHILD_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "implied.dfn": _IMPLIED_DFN,
+            "implier.dfn": _IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
@@ -427,12 +431,12 @@ def test_move_respects_direct_implied_qualities(
                 "    } and it does {\n"
                 "        define the position<source> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the position</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<destination> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</child>.\n"
+                "                it has the position</implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a dimension point in position<source>.\n"
@@ -450,9 +454,9 @@ def test_move_respects_transitive_implied_qualities(
 ):
     result = validate_project_with_reference_graph(
         {
-            "grandchild.dfn": _GRANDCHILD_DFN,
-            "child.dfn": _CHILD_WITH_GRANDCHILD_IMPLICATION_DFN,
-            "parent.dfn": _PARENT_DFN,
+            "transitive_implied.dfn": _TRANSITIVE_IMPLIED_DFN,
+            "implied.dfn": _IMPLIED_WITH_TRANSITIVE_IMPLICATION_DFN,
+            "implier.dfn": _IMPLIER_DFN,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
@@ -461,12 +465,12 @@ def test_move_respects_transitive_implied_qualities(
                 "    } and it does {\n"
                 "        define the position<source> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the position</implier>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<destination> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</grandchild>.\n"
+                "                it has the position</transitive_implied>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a dimension point in position<source>.\n"

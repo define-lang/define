@@ -20,14 +20,14 @@ def test_implication_in_potential_position_before_constraint_block(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it also assigns the position</required>.\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/required",
-        "/child",
+        "/implied",
     ]
 
 
@@ -54,7 +54,7 @@ def test_implication_in_potential_position_before_constraint_and_init(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it also assigns the position</required>.\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "    after it is assigned {\n"
         + "        create a dimension point in position</other>.\n"
@@ -64,7 +64,7 @@ def test_implication_in_potential_position_before_constraint_and_init(
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/required",
-        "/child",
+        "/implied",
         "/other",
     ]
 
@@ -76,7 +76,7 @@ def test_multiple_implications_in_potential_position(parse: Parse) -> None:
         + "    it also assigns the action</second>.\n"
         + "    it also assigns the position</third>.\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -85,7 +85,7 @@ def test_multiple_implications_in_potential_position(parse: Parse) -> None:
         "/first",
         "/second",
         "/third",
-        "/child",
+        "/implied",
     ]
 
 
@@ -94,14 +94,14 @@ def test_implication_with_position_name_type(parse: Parse) -> None:
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it also assigns the position</required>.\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/required",
-        "/child",
+        "/implied",
     ]
 
 
@@ -110,14 +110,14 @@ def test_implication_with_action_name_type(parse: Parse) -> None:
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it also assigns the action</required>.\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "}\n"
     )
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path",
         "/required",
-        "/child",
+        "/implied",
     ]
 
 
@@ -129,7 +129,7 @@ def test_implication_with_various_fqun_forms(parse: Parse) -> None:
         + "    it also assigns the position<standard:/std>.\n"
         + "    it also assigns the position</local>.\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -139,7 +139,7 @@ def test_implication_with_various_fqun_forms(parse: Parse) -> None:
         "example.com:my_lib:/short_mv",
         "standard:/std",
         "/local",
-        "/child",
+        "/implied",
     ]
 
 
@@ -210,7 +210,7 @@ def test_implication_with_comments_and_blank_lines(parse: Parse) -> None:
         + "    it also assigns the action</second>.\n"
         + "\n"
         + "    it may only contain dimension points where {\n"
-        + "        it has the position</child>.\n"
+        + "        it has the position</implied>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -218,7 +218,7 @@ def test_implication_with_comments_and_blank_lines(parse: Parse) -> None:
         "mv:define-lang.org:parser:/path",
         "/first",
         "/second",
-        "/child",
+        "/implied",
     ]
 
 
@@ -231,7 +231,7 @@ def test_implication_missing_open_angle_at_eol(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -247,7 +247,7 @@ def test_implication_missing_open_angle_with_terminator(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -263,7 +263,7 @@ def test_implication_missing_open_angle_with_trailing_space(parse: Parse) -> Non
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position .\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -280,7 +280,7 @@ def test_implication_empty_name(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position<>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -296,7 +296,7 @@ def test_implication_newline_inside_name(parse: Parse) -> None:
             + "    it also assigns the position<\n"
             + "        /required>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -311,7 +311,7 @@ def test_implication_missing_close_angle(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position</required.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -325,7 +325,7 @@ def test_implication_missing_terminator(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position</required>\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -339,7 +339,7 @@ def test_implication_missing_newline_after_terminator(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position</required>.    it also assigns the position</other>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -355,7 +355,7 @@ def test_implication_missing_space_after_keyword(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns theposition</required>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -371,7 +371,7 @@ def test_implication_extra_space_after_keyword(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the  position</required>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -385,7 +385,7 @@ def test_implication_local_name_where_global_required(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position<foo>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -401,7 +401,7 @@ def test_implication_chained_name_not_allowed(parse: Parse) -> None:
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the position</a>::position</b>.\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -417,7 +417,7 @@ def test_implication_after_constraint_block_in_potential_position(parse: Parse) 
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "    it also assigns the position</required>.\n"
             + "}\n"
@@ -449,7 +449,7 @@ def test_implication_between_constraint_and_init_block(parse: Parse) -> None:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "    }\n"
             + "    it also assigns the position</required>.\n"
             + "    after it is assigned {\n"
@@ -504,7 +504,7 @@ def test_implication_inside_position_constraint_block(parse: Parse) -> None:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it may only contain dimension points where {\n"
-            + "        it has the position</child>.\n"
+            + "        it has the position</implied>.\n"
             + "        it also assigns the position</required>.\n"
             + "    }\n"
             + "}\n"

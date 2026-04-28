@@ -4,8 +4,8 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.grandchild
-import local.my_domain_com.my_lib.parent
+import local.my_domain_com.my_lib.implier
+import local.my_domain_com.my_lib.transitive_implied
 
 
 class Runner(literal.Action):
@@ -18,13 +18,13 @@ class Runner(literal.Action):
                 literal.InterfacePosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.parent.Parent,
+                        local.my_domain_com.my_lib.implier.Implier,
                     ),
                 ),
                 literal.InterfacePosition(
                     "position<dest>",
                     constraints=(
-                        local.my_domain_com.my_lib.grandchild.Grandchild,
+                        local.my_domain_com.my_lib.transitive_implied.TransitiveImplied,
                     ),
                 ),
             ],
