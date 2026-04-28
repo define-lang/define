@@ -29,6 +29,17 @@ _OTHER_PARENT_DFN = (
     "}\n"
 )
 
+_GRANDCHILD_DFN = "define the potential position<my.domain.com:my_lib:/grandchild>.\n"
+
+_CHILD_WITH_GRANDCHILD_QRS_DFN = (
+    "define the potential position<my.domain.com:my_lib:/child> {\n"
+    "    this dimension point must have the position</grandchild>.\n"
+    "    after it is assigned {\n"
+    "        create a dimension point in position</grandchild>.\n"
+    "    }\n"
+    "}\n"
+)
+
 
 def test_create_in_quality_required_position(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
@@ -414,3 +425,70 @@ def test_move_from_quality_required_to_local_marks_quality_required_empty(
     assert all_diags[0].location.column == 40
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</child>"
+
+
+def test_move_from_local_constrained_to_parent_to_local_constrained_to_child(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": _CHILD_DFN,
+            "parent.dfn": _PARENT_DFN,
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<source> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</parent>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<destination> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<source>.\n"
+                "        move the dimension point in position<source> to position<destination>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+
+
+def test_move_from_local_constrained_to_parent_to_local_constrained_to_grandchild(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "grandchild.dfn": _GRANDCHILD_DFN,
+            "child.dfn": _CHILD_WITH_GRANDCHILD_QRS_DFN,
+            "parent.dfn": _PARENT_DFN,
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<source> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</parent>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<destination> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</grandchild>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<source>.\n"
+                "        move the dimension point in position<source> to position<destination>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
