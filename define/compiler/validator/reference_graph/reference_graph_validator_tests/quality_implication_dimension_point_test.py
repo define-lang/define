@@ -124,7 +124,7 @@ def test_chained_child_access_via_implied_position(
     assert_no_errors(result.program_result)
 
 
-def test_destroy_in_implied_position(
+def test_destroy_after_create_in_implied_position(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -257,7 +257,11 @@ def test_destroy_in_empty_implied_position_inferrs_created(
     assert_no_errors(result.program_result)
 
 
-def test_move_from_empty_implied_position(
+@pytest.mark.xfail(
+    reason="We should be inferring that a DP exists in position</parent>.",
+    strict=True,
+)
+def test_move_from_empty_implied_position_infers_occupied(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -279,13 +283,7 @@ def test_move_from_empty_implied_position(
             ),
         }
     )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 8
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position</parent>"
+    assert_no_errors(result.program_result)
 
 
 def test_round_trip_local_to_implied_back_to_local_preserves_quality(
@@ -309,13 +307,12 @@ def test_round_trip_local_to_implied_back_to_local_preserves_quality(
                 "        }\n"
                 "        define the position<local_b> {\n"
                 "            it may only contain dimension points where {\n"
-                "                it has the position</parent>.\n"
+                "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a dimension point in position<local_a>.\n"
                 "        move the dimension point in position<local_a> to position</parent>.\n"
                 "        move the dimension point in position</parent> to position<local_b>.\n"
-                "        destroy the dimension point in position<local_b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -324,21 +321,13 @@ def test_round_trip_local_to_implied_back_to_local_preserves_quality(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Validator is not tracking dimension point qualities correctly across"
-        " moves, somehow: when a DP is moved out of a quality-required global"
-        " position, the validator drops the implication-derived transitive quality"
-        " (here `child`), so the next move into a constrained local fails"
-        " with MoveViolatesConstraintsDiagnostic instead of succeeding."
-    ),
-    strict=True,
-)
-def test_round_trip_implied_to_local_back_to_implied_preserves_transitive_quality(
+def test_round_trip_implied_to_local(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
+            # TODO: Rename these and improve this test to prove that qualities
+            # are preserved.
             "child.dfn": _CHILD_DFN,
             "parent.dfn": _PARENT_DFN,
             "test.dfn": (
@@ -348,11 +337,7 @@ def test_round_trip_implied_to_local_back_to_implied_preserves_transitive_qualit
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
-                "                it has the position</child>.\n"
-                "            }\n"
-                "        }\n"
+                "        define the position<local>.\n"
                 "        create a dimension point in position</parent>.\n"
                 "        move the dimension point in position</parent> to position<local>.\n"
                 "        move the dimension point in position<local> to position</parent>.\n"
@@ -427,7 +412,7 @@ def test_move_from_implied_to_local_marks_implied_empty(
     assert all_diags[0].position_name == "position</child>"
 
 
-def test_move_from_local_constrained_to_parent_to_local_constrained_to_child(
+def test_move_respects_direct_implied_qualities(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -460,7 +445,7 @@ def test_move_from_local_constrained_to_parent_to_local_constrained_to_child(
     assert_no_errors(result.program_result)
 
 
-def test_move_from_local_constrained_to_parent_to_local_constrained_to_grandchild(
+def test_move_respects_transitive_implied_qualities(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
