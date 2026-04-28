@@ -46,3 +46,7 @@ build --@pypi//venv=dev
 # Ruff linting via aspect_rules_lint
 build --aspects=//tools/bzl:linters.bzl%ruff
 build --@aspect_rules_lint//lint:fail_on_violation
+
+# Use free-threaded Python 3.14t
+build --@aspect_rules_py//py/private/interpreter:freethreaded=true
+build --@rules_python//python/config_settings:py_freethreaded=yes
