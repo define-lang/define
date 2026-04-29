@@ -249,7 +249,7 @@ class DimensionPointTracker:
     def generate_guarantees(
         self,
         for_names: list[ast.TypedName],
-    ) -> dict[tuple[str, ...], action_contract.InterfacePositionGuarantee]:
+    ) -> dict[tuple[str, ...], action_contract.PositionGuarantee]:
         """Generate guarantees for positions whose first key element matches for_names."""
         include_names = {
             name.full_typed_name(in_universe=self._fqun) for name in for_names
@@ -264,9 +264,7 @@ class DimensionPointTracker:
             if unknown_state.caused_by is not None:
                 all_keys.add(tuple(key))
 
-        guarantees: dict[
-            tuple[str, ...], action_contract.InterfacePositionGuarantee
-        ] = {}
+        guarantees: dict[tuple[str, ...], action_contract.PositionGuarantee] = {}
         for key in all_keys:
             first_element = key[0]
             if first_element not in include_names:
@@ -277,7 +275,7 @@ class DimensionPointTracker:
     def _guarantee_for_key(
         self,
         key: tuple[str, ...],
-    ) -> action_contract.InterfacePositionGuarantee:
+    ) -> action_contract.PositionGuarantee:
         """Build a guarantee from the current tracker state for a given key."""
         unknown_state = self._unknown.get(key)
         if unknown_state is not None and unknown_state.caused_by is not None:
@@ -302,7 +300,7 @@ class DimensionPointTracker:
     def apply_guarantees(
         self,
         for_position: ast.PositionReference,
-        guarantees: dict[tuple[str, ...], action_contract.InterfacePositionGuarantee],
+        guarantees: dict[tuple[str, ...], action_contract.PositionGuarantee],
     ):
         """Apply guarantees after an action completes or a quality is assigned.
 
@@ -439,7 +437,7 @@ class DimensionPointTracker:
     def _check_key_exists_for_guarantee(
         self,
         key: tuple[str, ...],
-        guarantee: action_contract.InterfacePositionGuarantee,
+        guarantee: action_contract.PositionGuarantee,
     ) -> bool:
         """Check whether the parent path for a guarantee key is present.
 

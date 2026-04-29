@@ -83,33 +83,33 @@ class InterfacePositionRequirement:
 
 
 @dataclass(frozen=True)
-class InterfacePositionGuarantee:
+class PositionGuarantee:
     """An automatically inferred guarantee about an interface position after action completion."""
 
     caused_by: ast.PositionReference
 
 
 @dataclass(frozen=True)
-class EmptyGuarantee(InterfacePositionGuarantee):
+class EmptyGuarantee(PositionGuarantee):
     """The position is guaranteed to be empty after the action completes."""
 
 
 @dataclass(frozen=True)
-class OccupiedByExistingGuarantee(InterfacePositionGuarantee):
+class OccupiedByExistingGuarantee(PositionGuarantee):
     """The position contains the same DP that was passed into another interface position."""
 
     origin_position: ast.PositionReference
 
 
 @dataclass(frozen=True)
-class OccupiedByNewGuarantee(InterfacePositionGuarantee):
+class OccupiedByNewGuarantee(PositionGuarantee):
     """The position contains a new DP created by the action."""
 
     qualities: frozenset[str]
 
 
 @dataclass(frozen=True)
-class UnknownGuarantee(InterfacePositionGuarantee):
+class UnknownGuarantee(PositionGuarantee):
     """The position's state could not be determined due to an error."""
 
 
@@ -117,7 +117,7 @@ class UnknownGuarantee(InterfacePositionGuarantee):
 class ActionStatementsBlockContract:
     """Base contract for any block containing action statements."""
 
-    guarantees: dict[tuple[str, ...], InterfacePositionGuarantee]
+    guarantees: dict[tuple[str, ...], PositionGuarantee]
 
 
 @dataclass(frozen=True)
