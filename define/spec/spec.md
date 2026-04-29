@@ -885,7 +885,7 @@ a quality definition with an empty block is forbidden---the statement terminator
 syntax must be used to express empty definitions.
 
 ```ebnf
-quality_definition = "define the potential", " ", ( action_definition | position_definition )
+quality_definition = ( action_definition | position_definition )
 ```
 
 The forms of the definitions are defined in later sections.
