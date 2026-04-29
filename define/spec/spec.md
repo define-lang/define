@@ -150,7 +150,7 @@ lowercase_ascii = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k
     | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
 uppercase_ascii = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L"
     | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
-newline = "\n"
+newline = "\n" ;
 ```
 
 ## Idiomatic Define
@@ -267,7 +267,7 @@ There are two types of names defined by the programmer that can be in
 `name_content`: "local names" and "global names."
 
 ```ebnf
-name_content = local_name | global_name
+name_content = local_name | global_name ;
 ```
 
 ### Local Name Syntax
@@ -281,7 +281,10 @@ If configuration allows `/` in local names, it must be escaped.
 ```ebnf
 local_start_char = lowercase_ascii | "_" ;
 local_continue_char = lowercase_ascii | digit | "_" ;
-local_name = ( local_start_char, { local_continue_char } ) | { ? allowed name characters ? };
+local_name =
+    ( local_start_char, { local_continue_char } )
+    | ( ? allowed name characters ?, { ? allowed name characters ? } ) ;
+typed_local_name = name_type, "<", local_name, ">" ;
 ```
 
 ### Global Name Syntax
@@ -389,7 +392,7 @@ Authority names have two parts: a domain and a path. The path is optional. The
 authority consists of the domain followed by an optional path.
 
 ```ebnf
-authority = authority_domain [ authority_path ] ;
+authority = authority_domain, [ authority_path ] ;
 ```
 
 ##### Domain
@@ -666,7 +669,7 @@ In Define, a statement is either:
   of the statement.
 
 ```ebnf
-terminator = ".", ( newline | " ", { " " }, comment, newline )
+terminator = ".", ( newline | " ", { " " }, comment ) ;
 ```
 
 ## Blocks
@@ -689,7 +692,7 @@ opened that block. For nested blocks, this rule applies recursively.
 
 ```ebnf
 block_open = " ", "{", newline ;
-block_close = newline, "}", newline ;
+block_close = "}", newline ;
 ```
 
 ### Non-Filesystem Contexts
@@ -888,7 +891,7 @@ a quality definition with an empty block is forbidden---the statement terminator
 syntax must be used to express empty definitions.
 
 ```ebnf
-quality_definition = ( action_definition | position_definition )
+quality_definition = ( action_definition | position_definition ) ;
 ```
 
 The forms of the definitions are defined in later sections.
@@ -1019,9 +1022,9 @@ This statement starts on the same line as the closing `}` of the previous block,
 which is an exception to the rule that `}` must always be on its own line. The
 Action Statements Block creates a new local scope.
 
-```
+```ebnf
 trigger_and_action = trigger_conditions_block, " ", action_statements_block ;
-trigger_conditions_block = "it happens when", block_open, trigger_conditions, newline, "}" ;
+trigger_conditions_block = "it happens when", block_open, trigger_conditions, "}" ;
 action_statements_block = "and it does", block_open, action_statements_contents, block_close ;
 ```
 
@@ -1045,7 +1048,7 @@ action's Trigger Conditions Block as being satisfied.
 
 ```ebnf
 trigger_conditions = trigger_condition_statement ;
-trigger_condition_statement = "the", " ", typed_local_name_reference, " has a dimension point", terminator ;
+trigger_condition_statement = "the", " ", typed_local_name, " has a dimension point", terminator ;
 ```
 
 ### Action Triggering Semantics
