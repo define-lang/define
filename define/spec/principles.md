@@ -32,6 +32,10 @@ Total standardization enables a lot of very powerful abilities with a
 programming language, because you can much more easily reason about how the code
 is structured, have simpler compilers, easier automated refactoring, etc.
 
+This means that even when the syntax and semantics of the language might allow
+us to write the same thing multiple ways, we should pick one of those ways and
+make the compiler actually forbid th eother pattern whenever it is detected.
+
 ## Previous Languages Do Not Justify Decisions
 
 There are a lot of great lessons we can and should take from previous
@@ -128,6 +132,13 @@ qualities. So either you would have to create a quality called something like
 code above), or you would have to define a very complex machine to execute that
 code. Or, you could choose to just make it saner while you are translating it,
 and specify that all those values have to be integers.
+
+We won't accomplish this goal completely, because in order to get modular
+verification, we have to impose some pretty strict rules on Define. For example,
+there are a lot of languages that have circular references that we can't
+represent. That's an acceptable trade-off, because it makes Define _possible_.
+But otherwise, we should at least be considering how other language constructs
+would be conceptually representable in Define.
 
 ## Provide Clear Errors
 
