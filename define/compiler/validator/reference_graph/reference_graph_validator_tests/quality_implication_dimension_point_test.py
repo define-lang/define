@@ -9,8 +9,6 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _IMPLIED_DFN = "define the potential position<my.domain.com:my_lib:/implied>.\n"
 
-_PLAIN_DFN = "define the potential position<my.domain.com:my_lib:/plain>.\n"
-
 _IMPLIER_DFN = (
     "define the potential position<my.domain.com:my_lib:/implier> {\n"
     "    it also assigns the position</implied>.\n"
@@ -152,33 +150,30 @@ def test_destroy_after_create_in_implied_position(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Validator is not tracking dimension point qualities correctly across"
-        " moves, somehow: it does not detect that the source DP lacks a quality"
-        " transitively required by the destination position, so no"
-        " MoveViolatesConstraintsDiagnostic is emitted."
-    ),
-    strict=True,
-)
 def test_move_into_implied_position_missing_quality(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "implied.dfn": _IMPLIED_DFN,
-            "plain.dfn": _PLAIN_DFN,
-            "implier.dfn": _IMPLIER_DFN,
+            "parent.dfn": (
+                "define the potential position<my.domain.com:my_lib:/parent> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+            "plain.dfn": "define the potential position<my.domain.com:my_lib:/plain>.\n",
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</plain>.\n"
-                "    it also assigns the position</implier>.\n"
+                "    it also assigns the position</parent>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position</plain>.\n"
-                "        move the dimension point in position</plain> to position</implier>.\n"
+                "        move the dimension point in position</plain> to position</parent>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -191,9 +186,9 @@ def test_move_into_implied_position_missing_quality(
     assert all_diags[0].location.column == 57
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position</plain>"
-    assert all_diags[0].target_position == "position</implier>"
+    assert all_diags[0].target_position == "position</parent>"
     assert all_diags[0].missing_qualities == [
-        "position<my.domain.com:my_lib:/implied>",
+        "position<my.domain.com:my_lib:/child>",
     ]
 
 
