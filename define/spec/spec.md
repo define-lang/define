@@ -301,13 +301,13 @@ The first three components combine to form what is called a "fully-qualified
 universe name," or "FQUN."
 
 ```ebnf
-typed_global_name = name_type, "<", global_name ">" ;
-global_name = fqun, global_name_path ;
+typed_global_name = name_type, "<", global_name, ">" ;
+global_name = ("" | fqun), global_name_path ;
+fully_qualified_global_name = fqun, global_name_path ;
 fqun =
     ( multiverse, ":", authority, ":", universe, ":"
     | authority, ":", universe, ":"
-    | "standard:"
-    | "" ) ;
+    | "standard:") ;
 ```
 
 #### Path
@@ -860,6 +860,8 @@ position_reference =
     [ "::", { position_reference_middle, "::" }, local_or_global_position ] ;
 local_or_global_position = local_position_name | global_position_name ;
 position_reference_middle = local_or_global_position | action_name ;
+action_name = "action", "<", global_name, ">" ;
+global_position_name = "position", "<", global_name, ">" ;
 ```
 
 ## Defining Qualities
@@ -874,10 +876,11 @@ Qualities can be assigned to dimension points using syntax and semantics
 described later in this spec.
 
 The syntax for defining qualities is: `define the potential` followed by a space
-and a typed name.
+and a fully-qualified typed global name.
 
 Quality definitions may be followed by a block, in which case that block creates
-a local scope, or they may simply end with a terminator.
+a local scope. Some quality definitions may end with a statement terminator and
+no block.
 
 Quality definitions that end with a terminator are considered to be identical to
 quality definitions that have an empty block following them. Explicitly writing
@@ -908,8 +911,8 @@ member: the Position Initialization Block, which must be the final block or
 statement in the Potential Position Definition Block.
 
 ```ebnf
-global_position_name = "position", "<", global_name, ">" ;
-position_definition = "define the potential", " ", global_position_name, position_definition_end ;
+fully_qualified_global_position_name = "position", "<", fully_qualified_global_name, ">" ;
+position_definition = "define the potential", " ", fully_qualified_global_position_name, position_definition_end ;
 position_definition_end = terminator | potential_position_definition_block ;
 potential_position_definition_block =
     block_open,
@@ -988,8 +991,8 @@ and the Action Statements Block, which are mandatory.
 The Action Definition Block creates a new local scope.
 
 ```ebnf
-action_name = "action", "<", global_name, ">" ;
-action_definition = "define the potential", " ", action_name, action_definition_block ;
+fully_qualified_action_name = "action", "<", fully_qualified_global_name, ">" ;
+action_definition = "define the potential", " ", fully_qualified_action_name, action_definition_block ;
 action_definition_block =
     block_open,
     { quality_implication_statement },
