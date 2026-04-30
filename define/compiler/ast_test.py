@@ -116,37 +116,6 @@ class TestGlobalPathName:
         )
 
 
-class TestGlobalNameContent:
-    def test_full_name_with_explicit_fqun(self):
-        fqun = _make_fqun("my_lib", authority="my.domain.com")
-        name = ast.GlobalNameContent(
-            location=_LOC,
-            fqun=fqun,
-            path=ast.GlobalPathName(location=_LOC, name="/thing"),
-        )
-        assert name.full_name(in_universe=fqun) == "my.domain.com:my_lib:/thing"
-
-    def test_full_name_with_in_universe(self):
-        name = ast.GlobalNameContent(
-            location=_LOC,
-            fqun=None,
-            path=ast.GlobalPathName(location=_LOC, name="/thing"),
-        )
-        assert (
-            name.full_name(in_universe=_make_fqun("my_lib", authority="my.domain.com"))
-            == "my.domain.com:my_lib:/thing"
-        )
-
-    def test_full_name_own_fqun_takes_precedence_over_in_universe(self):
-        name = ast.GlobalNameContent(
-            location=_LOC,
-            fqun=_make_fqun("my_lib", authority="my.domain.com"),
-            path=ast.GlobalPathName(location=_LOC, name="/thing"),
-        )
-        in_universe = _make_fqun("other_lib", authority="other.domain.com")
-        assert name.full_name(in_universe=in_universe) == "my.domain.com:my_lib:/thing"
-
-
 class TestGlobalTypedNameInDefinition:
     def test_full_typed_name(self):
         typed_name = ast.GlobalTypedNameInDefinition(
