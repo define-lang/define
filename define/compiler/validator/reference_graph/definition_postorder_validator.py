@@ -146,19 +146,29 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         constraints: ast.PositionConstraintBlock | None,
+        # TODO: I don't like having to pass this around; it's logically an inherent
+        # part of the PositionReference.
+        source_fqun: ast.Fqun,
     ):
-        """Apply position init block guarantees for each assigned quality in source order."""
+        """Apply position init block guarantees for each assigned quality in source order.
+
+        ``source_fqun`` is the universe of the source file where ``constraints``
+        was parsed, used to resolve any relative references inside requirements.
+        """
         if constraints is None:
             return
         for requirement in constraints.requirements:
             if requirement.typed_global_name.name_type != ast.NameType.POSITION:
                 continue
             applied_position_name = requirement.typed_global_name.full_typed_name(
-                in_universe=self._enclosing_fqun
+                in_universe=source_fqun
             )
             init_block_contract = self._position_contracts.get(applied_position_name)
             if init_block_contract is not None:
-                self._tracker.apply_guarantees(position, init_block_contract.guarantees)
+                self._tracker.apply_guarantees(
+                    position,
+                    init_block_contract.guarantees,
+                )
 
     def _check_trigger(
         self,
@@ -318,9 +328,8 @@ class DefinitionPostorderValidator(abc.ABC):
 
         qualities = frozenset(self._get_transitive_required_qualities(position, scope))
         self._tracker.create(position, qualities)
-        self._apply_position_init_guarantees(
-            position, self._get_constraint_block(position, scope)
-        )
+        constraints, source_fqun = self._get_constraint_block(position, scope)
+        self._apply_position_init_guarantees(position, constraints, source_fqun)
         self._check_trigger(position, scope)
 
     def _analyze_destroy(
@@ -657,9 +666,11 @@ class DefinitionPostorderValidator(abc.ABC):
         parent_name: str,
         fqun: ast.Fqun,
     ):
-        """Check if a chain element is declared in the parent's constraints."""
+        """Check if a chain element is declared in the parent's constraints (or transitively implied by one)."""
         element_name = element.full_typed_name(in_universe=fqun)
-        if element_name not in constraint_names:
+        if element_name not in self._expand_constraints_with_implications(
+            constraint_names
+        ):
             self._diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     location=element.location,
@@ -668,6 +679,28 @@ class DefinitionPostorderValidator(abc.ABC):
                 )
             )
             self._tracker.mark_unknown(ref)
+
+    def _expand_constraints_with_implications(
+        self, constraint_names: frozenset[str]
+    ) -> frozenset[str]:
+        """Return the transitive closure of constraints plus their implications."""
+        result: set[str] = set()
+
+        def visit(name: str):
+            if name in result:
+                return
+            result.add(name)
+            defn_result = self._definition_results.get(name)
+            if defn_result is None:
+                return
+            defn = defn_result.definition
+            fqun = defn.typed_name.name_content.fqun
+            for impl in defn.quality_implications:
+                visit(impl.typed_global_name.full_typed_name(in_universe=fqun))
+
+        for n in constraint_names:
+            visit(n)
+        return frozenset(result)
 
     def _emit_not_in_action_diagnostic(
         self,
@@ -692,10 +725,13 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> ast.PositionConstraintBlock | None:
-        """Resolve the constraint block for the position definition."""
+    ) -> tuple[ast.PositionConstraintBlock | None, ast.Fqun]:
+        """Resolve the constraint block and its source FQUN for the position definition."""
         if scope.is_defined_local(position):
-            return scope.get_definition(position.typed_names[0]).constraints
+            return (
+                scope.get_definition(position.typed_names[0]).constraints,
+                self._enclosing_fqun,
+            )
 
         last_element = position.typed_names[-1]
 
@@ -707,16 +743,19 @@ class DefinitionPostorderValidator(abc.ABC):
             local_pos_name = last_element.full_typed_name(
                 in_universe=self._enclosing_fqun
             )
-            return action_def.interface_positions_by_name[local_pos_name].constraints
+            return (
+                action_def.interface_positions_by_name[local_pos_name].constraints,
+                action_def.typed_name.name_content.fqun,
+            )
 
         lookup_key = last_element.full_typed_name(in_universe=self._enclosing_fqun)
         definition_result = self._definition_results.get(lookup_key)
         if definition_result is None:
-            return None
+            return None, self._enclosing_fqun
         position_def = typing.cast(
             "ast.PositionDefinition", definition_result.definition
         )
-        return position_def.constraints
+        return position_def.constraints, position_def.typed_name.name_content.fqun
 
     def _get_direct_required_qualities(
         self,
@@ -757,27 +796,14 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> list[str]:
+    ) -> frozenset[str]:
         direct = self._get_direct_required_qualities(position, scope) or frozenset()
-        seen: set[str] = set()
-        ordered: list[str] = []
+        return self._expand_constraints_with_implications(direct)
 
-        def visit(name: str):
-            if name in seen:
-                return
-            seen.add(name)
-            defn_result = self._definition_results.get(name)
-            if defn_result is None:
-                return
-            defn = defn_result.definition
-            fqun = defn.typed_name.name_content.fqun
-            for implication in defn.quality_implications:
-                visit(implication.typed_global_name.full_typed_name(in_universe=fqun))
-            ordered.append(name)
-
-        for n in direct:
-            visit(n)
-        return ordered
+    def _get_direct_implied_quality_names(self) -> list[ast.TypedName]:
+        return [
+            impl.typed_global_name for impl in self._definition.quality_implications
+        ]
 
 
 class ActionPostorderValidator(DefinitionPostorderValidator):
@@ -892,7 +918,8 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
             guarantees=self._tracker.generate_guarantees(
-                self._action_definition.interface_position_names
+                self._action_definition.interface_position_names,
+                self._get_direct_implied_quality_names(),
             ),
             trigger_position_name=self._trigger_position_name or "",
         )
@@ -1107,7 +1134,10 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         scope.add_definition(definition)
         self._analyze_statements(definition.initialization, scope)
         return action_contract.PositionInitBlockContract(
-            guarantees=self._tracker.generate_guarantees([definition.typed_name]),
+            guarantees=self._tracker.generate_guarantees(
+                [definition.typed_name],
+                self._get_direct_implied_quality_names(),
+            ),
         )
 
 

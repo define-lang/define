@@ -3,6 +3,8 @@
 # because the position init guarantee scenarios are complex enough to need
 # prose explanations of what each test verifies.
 
+from pathlib import PurePosixPath
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -336,3 +338,82 @@ def test_nested_quality_guarantees_visible_through_action_chain(
         all_diags[0].position_name
         == "position<box>::action</inner>::position<item>::position</a>::position</dep>"
     )
+
+
+_PARENT_FQUN = "mv:define-lang.org:parent"
+_CHILD_FQUN = "mv:define-lang.org:child"
+
+
+def test_cross_universe_constraint_triggers_init_block(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "lib/a.dfn": (
+                f"define the potential position<{_CHILD_FQUN}:/a> {{\n"
+                f"    after it is assigned {{\n"
+                f"        create a dimension point in position</a>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "lib/b.dfn": (
+                f"define the potential position<{_CHILD_FQUN}:/b> {{\n"
+                f"    it may only contain dimension points where {{\n"
+                f"        it has the position</a>.\n"
+                f"    }}\n"
+                f"    after it is assigned {{\n"
+                f"        create a dimension point in position</b>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+            "test.dfn": (
+                f"define the potential action<{_PARENT_FQUN}:/test> {{\n"
+                f"    define the position<run>.\n"
+                f"    it happens when {{\n"
+                f"        the position<run> has a dimension point.\n"
+                f"    }} and it does {{\n"
+                f"        define the position<box> {{\n"
+                f"            it may only contain dimension points where {{\n"
+                f"                it has the position<{_CHILD_FQUN}:/b>.\n"
+                f"            }}\n"
+                f"        }}\n"
+                f"        create a dimension point in position<box>.\n"
+                f"        create a dimension point in position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>.\n"
+                f"        create a dimension point in position<box>::position<{_CHILD_FQUN}:/b>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+        },
+        universe_name=_PARENT_FQUN,
+        local_deps={_CHILD_FQUN: "lib"},
+        sub_roots={"lib": _CHILD_FQUN},
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 128
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == f"position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>"
+    )
+    assert all_diags[0].created_at.line == 3
+    assert all_diags[0].created_at.column == 37
+    assert all_diags[0].created_at.end_line == 3
+    assert all_diags[0].created_at.end_column == 49
+    assert all_diags[0].created_at.file_path == PurePosixPath("lib/a.dfn")
+    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.end_line == 13
+    assert all_diags[1].location.end_column == 89
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == f"position<box>::position<{_CHILD_FQUN}:/b>"
+    assert all_diags[1].created_at.line == 6
+    assert all_diags[1].created_at.column == 37
+    assert all_diags[1].created_at.end_line == 6
+    assert all_diags[1].created_at.end_column == 49
+    assert all_diags[1].created_at.file_path == PurePosixPath("lib/b.dfn")

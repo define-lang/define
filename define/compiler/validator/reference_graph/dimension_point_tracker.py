@@ -51,6 +51,10 @@ class _UnknownState:
 _ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
 
 
+def _is_implied_position(key: tuple[str, ...]) -> bool:
+    return "/" in key[0]
+
+
 class DimensionPointTracker:
     """Tracks which positions contain dimension points.
 
@@ -248,11 +252,13 @@ class DimensionPointTracker:
 
     def generate_guarantees(
         self,
-        for_names: list[ast.TypedName],
+        interface_names: list[ast.TypedName],
+        implied_quality_names: list[ast.TypedName],
     ) -> dict[tuple[str, ...], action_contract.PositionGuarantee]:
-        """Generate guarantees for positions whose first key element matches for_names."""
+        """Generate guarantees for keys whose first element matches an interface or implied quality."""
         include_names = {
-            name.full_typed_name(in_universe=self._fqun) for name in for_names
+            name.full_typed_name(in_universe=self._fqun)
+            for name in (*interface_names, *implied_quality_names)
         }
 
         # Collect keys that have interesting state from both tries.
@@ -304,22 +310,23 @@ class DimensionPointTracker:
     ):
         """Apply guarantees after an action completes or a quality is assigned.
 
-        For action triggers, the key prefix is the chain up to the action.
-        For position init blocks (no action in chain), the key prefix is
-        the position's own canonical key.
-
-        OccupiedByExisting guarantees move entire subtrees (the origin's
-        children follow the parent DP).
+        Interface-position keys (local names) get prefixed with the full
+        action chain. Implied-quality keys (global names) get prefixed
+        with the name of the action's parent in the caller.
+        For position init blocks, both prefixes collapse to ``for_position``.
         """
         action_chain = for_position.get_chain_to_last_action()
         if action_chain is not None:
-            key_prefix = action_chain.canonical_chained_name_tuple(
+            interface_prefix = action_chain.canonical_chained_name_tuple(
                 in_universe=self._fqun
             )
+            implied_prefix = interface_prefix[:-1]
         else:
-            key_prefix = for_position.canonical_chained_name_tuple(
+            # Position Init Block
+            interface_prefix = for_position.canonical_chained_name_tuple(
                 in_universe=self._fqun
             )
+            implied_prefix = interface_prefix
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,
@@ -370,7 +377,10 @@ class DimensionPointTracker:
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple(
                     in_universe=self._fqun
                 )
-                origin_keys.add(key_prefix + origin_tuple)
+                if _is_implied_position(origin_tuple):
+                    origin_keys.add(implied_prefix + origin_tuple)
+                else:
+                    origin_keys.add(interface_prefix + origin_tuple)
 
         # Saved subtrees for swap safety. Keyed by the origin's full key.
         saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]] = {}
@@ -379,7 +389,11 @@ class DimensionPointTracker:
         ] = {}
 
         for name, guarantee in sorted_items:
-            key = key_prefix + name
+            key = (
+                implied_prefix + name
+                if _is_implied_position(name)
+                else interface_prefix + name
+            )
 
             if not self._check_key_exists_for_guarantee(key, guarantee):
                 continue
@@ -415,7 +429,8 @@ class DimensionPointTracker:
                 case action_contract.OccupiedByExistingGuarantee():
                     self._apply_existing_guarantee(
                         key,
-                        key_prefix,
+                        interface_prefix,
+                        implied_prefix,
                         guarantee,
                         saved_state,
                         saved_unknown,
@@ -470,7 +485,8 @@ class DimensionPointTracker:
     def _apply_existing_guarantee(
         self,
         dest_key: tuple[str, ...],
-        key_prefix: tuple[str, ...],
+        interface_prefix: tuple[str, ...],
+        implied_prefix: tuple[str, ...],
         guarantee: action_contract.OccupiedByExistingGuarantee,
         saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]],
         saved_unknown: dict[tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]],
@@ -479,7 +495,10 @@ class DimensionPointTracker:
         origin_tuple = guarantee.origin_position.canonical_chained_name_tuple(
             in_universe=self._fqun
         )
-        origin_key = key_prefix + origin_tuple
+        if _is_implied_position(origin_tuple):
+            origin_key = implied_prefix + origin_tuple
+        else:
+            origin_key = interface_prefix + origin_tuple
 
         # Get origin's dp_info — from saved copy if already processed,
         # else from the live trie.
