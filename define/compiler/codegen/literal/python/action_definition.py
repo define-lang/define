@@ -26,7 +26,6 @@ class ActionDefinitionGenerator:
     def generate(self) -> template_context.ActionDefinitionContext:
         """Generate template context for the action definition."""
         name_content = self._definition.typed_name.name_content
-        enclosing_fqun = name_content.fqun
         class_name = self._converter.class_name(name_content.path.relative_path)
         module_name = self._converter.module_name(name_content)
 
@@ -35,7 +34,6 @@ class ActionDefinitionGenerator:
                 typed_name=local_def.typed_name.source_typed_name,
                 constraints=self._converter.constraints_to_class_references(
                     local_def.constraints,
-                    enclosing_fqun,
                 ),
             )
             for local_def in self._definition.interface_positions
@@ -59,7 +57,6 @@ class ActionDefinitionGenerator:
 
         implied_qualities = self._converter.implied_qualities_to_class_references(
             self._definition.quality_implications,
-            enclosing_fqun,
         )
 
         return template_context.ActionDefinitionContext(

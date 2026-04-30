@@ -91,7 +91,7 @@ def _make_global_typed_name(
 
 
 def test_add_and_is_defined():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     local_def = _make_local_def("my_pos")
     tracker.add_definition(local_def)
 
@@ -100,7 +100,7 @@ def test_add_and_is_defined():
 
 
 def test_is_defined_unknown():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
 
     ref = _make_local_typed_name("no_such")
     assert tracker.is_defined(ref) is False
@@ -108,7 +108,7 @@ def test_is_defined_unknown():
 
 def test_definition_has_quality_match():
     constraints = _make_constraint_block((ast.NameType.ACTION, "/child"))
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("my_pos", constraints))
 
     parent = _make_local_typed_name("my_pos")
@@ -118,7 +118,7 @@ def test_definition_has_quality_match():
 
 def test_definition_has_quality_no_match():
     constraints = _make_constraint_block((ast.NameType.ACTION, "/other"))
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("my_pos", constraints))
 
     parent = _make_local_typed_name("my_pos")
@@ -127,7 +127,7 @@ def test_definition_has_quality_no_match():
 
 
 def test_definition_has_quality_no_constraints():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("my_pos"))
 
     parent = _make_local_typed_name("my_pos")
@@ -136,7 +136,7 @@ def test_definition_has_quality_no_constraints():
 
 
 def test_enter_child_scope_sees_parent():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
 
     tracker.enter_child_scope()
@@ -146,7 +146,7 @@ def test_enter_child_scope_sees_parent():
 
 
 def test_is_defined_in_current_scope_parent_not_visible():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
 
     tracker.enter_child_scope()
@@ -157,7 +157,7 @@ def test_is_defined_in_current_scope_parent_not_visible():
 
 
 def test_is_defined_in_current_scope_child_visible():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.enter_child_scope()
     tracker.add_definition(_make_local_def("child_pos"))
 
@@ -166,7 +166,7 @@ def test_is_defined_in_current_scope_child_visible():
 
 
 def test_enter_child_scope_adds_to_child_layer():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
 
     tracker.enter_child_scope()
@@ -177,7 +177,7 @@ def test_enter_child_scope_adds_to_child_layer():
 
 
 def test_defined_on_line():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     local_def = _make_local_def("my_pos")
     tracker.add_definition(local_def)
 
@@ -185,14 +185,14 @@ def test_defined_on_line():
 
 
 def test_defined_on_line_raises_for_undefined():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
 
     with pytest.raises(KeyError):
         tracker.defined_on_line(_make_local_typed_name("no_such"))
 
 
 def test_action_name_does_not_match_position():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("shared_name"))
 
     pos_ref = _make_local_typed_name("shared_name", ast.NameType.POSITION)
@@ -203,20 +203,20 @@ def test_action_name_does_not_match_position():
 
 
 def test_get_constraint_names_returns_empty_frozenset_for_undefined():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     ref = _make_local_typed_name("no_such")
     assert tracker.get_constraint_names(ref) == frozenset()
 
 
 def test_get_constraint_names_returns_empty_frozenset_for_unconstrained():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("my_pos"))
     ref = _make_local_typed_name("my_pos")
     assert tracker.get_constraint_names(ref) == frozenset()
 
 
 def test_add_global_position_definition():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     global_def = _make_global_position_def("/my_pos")
     tracker.add_definition(global_def)
 
@@ -226,7 +226,7 @@ def test_add_global_position_definition():
 
 def test_global_position_defined_on_line():
     location = ast.SourceLocation(line=5, column=1, end_line=5, end_column=1)
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_global_position_def("/my_pos", location=location))
 
     ref = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
@@ -235,7 +235,7 @@ def test_global_position_defined_on_line():
 
 def test_global_position_with_constraints():
     constraints = _make_constraint_block((ast.NameType.ACTION, "/child"))
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_global_position_def("/my_pos", constraints))
 
     parent = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
@@ -244,7 +244,7 @@ def test_global_position_with_constraints():
 
 
 def test_global_position_without_constraints():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_global_position_def("/my_pos"))
 
     parent = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
@@ -259,7 +259,7 @@ def _make_position_ref(
 
 
 def test_is_defined_local_single_local_in_scope():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("my_pos"))
     position = _make_position_ref([_make_local_typed_name("my_pos")])
 
@@ -267,7 +267,7 @@ def test_is_defined_local_single_local_in_scope():
 
 
 def test_is_defined_local_multi_item_chain():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("my_pos"))
     position = _make_position_ref(
         [
@@ -280,7 +280,7 @@ def test_is_defined_local_multi_item_chain():
 
 
 def test_is_defined_local_global_reference():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     position = _make_position_ref(
         [_make_global_typed_name("/some_pos", ast.NameType.POSITION)]
     )
@@ -289,14 +289,14 @@ def test_is_defined_local_global_reference():
 
 
 def test_is_defined_local_not_in_scope():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     position = _make_position_ref([_make_local_typed_name("missing")])
 
     assert tracker.is_defined_local(position) is False
 
 
 def test_is_defined_local_in_parent_scope():
-    tracker = scope_tracker.ScopeTracker(_FQUN)
+    tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("parent_pos"))
     tracker.enter_child_scope()
     position = _make_position_ref([_make_local_typed_name("parent_pos")])

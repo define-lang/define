@@ -27,14 +27,11 @@ class PositionDefinitionGenerator:
         """Generate template context for the position definition."""
         has_init = self._definition.initialization is not None
         name_content = self._definition.typed_name.name_content
-        enclosing_fqun = name_content.fqun
         constraints = self._converter.constraints_to_class_references(
             self._definition.constraints,
-            enclosing_fqun,
         )
         implied_qualities = self._converter.implied_qualities_to_class_references(
             self._definition.quality_implications,
-            enclosing_fqun,
         )
 
         statements: list[template_context.ActionStatementContext] = []

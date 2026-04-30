@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import abc
 import enum
 import sys
 from dataclasses import dataclass, field
@@ -134,9 +133,8 @@ class PositionDefinition(QualityDefinition):
         """Return the fully-qualified constraint names for this position."""
         if self.constraints is None:
             return frozenset()
-        fqun = self.typed_name.name_content.fqun
         return frozenset(
-            requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            requirement.typed_global_name.full_typed_name
             for requirement in self.constraints.requirements
         )
 
@@ -185,20 +183,21 @@ type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
 
 
 @dataclass(frozen=True, slots=True)
-class TypedName(ASTNode, abc.ABC):
+class TypedName(ASTNode):
     """Represents a typed name (local or global)."""
 
     name_type: NameType
     name_content: NameContent
     _source_typed_name: str = field(init=False, repr=False, compare=False)
 
-    @abc.abstractmethod
-    def full_typed_name(self, in_universe: Fqun) -> str:
-        """Return canonical typed-name text including effective FQUN and path."""
-
     @property
     def source_typed_name(self) -> str:
         """Return typed-name text as it appears in the source."""
+        return self._source_typed_name
+
+    @property
+    def full_typed_name(self) -> str:
+        """Return canonical typed-name text including effective FQUN and path."""
         return self._source_typed_name
 
 
@@ -208,9 +207,10 @@ class GlobalTypedNameReference(TypedName):
 
     name_content: ReferenceGlobalNameContent
     enclosing_fqun: Fqun
+    _full_typed_name: str = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        """Compute and cache the source typed name string."""
+        """Compute and cache the source and full typed-name strings."""
         if self.name_content.fqun is not None:
             inner = f"{self.name_content.fqun.canonical}:{self.name_content.path.name}"
         else:
@@ -220,11 +220,17 @@ class GlobalTypedNameReference(TypedName):
             "_source_typed_name",
             f"{self.name_type.value}<{inner}>",
         )
-
-    @override
-    def full_typed_name(self, in_universe: Fqun) -> str:
         fqun = self.name_content.fqun or self.enclosing_fqun
-        return f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>"
+        object.__setattr__(
+            self,
+            "_full_typed_name",
+            f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>",
+        )
+
+    @property
+    @override
+    def full_typed_name(self) -> str:
+        return self._full_typed_name
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,10 +247,6 @@ class LocalTypedNameReference(TypedName):
             f"{self.name_type.value}<{self.name_content.name}>",
         )
 
-    @override
-    def full_typed_name(self, in_universe: Fqun) -> str:
-        return self._source_typed_name
-
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
@@ -255,17 +257,15 @@ class ChainedName(ASTNode):
 
     typed_names: list[TypedNameReference]
 
-    def canonical_chained_name(self, in_universe: Fqun) -> str:
+    @property
+    def canonical_chained_name(self) -> str:
         """Return the canonical chained name string."""
-        return "::".join(
-            elem.full_typed_name(in_universe=in_universe) for elem in self.typed_names
-        )
+        return "::".join(elem.full_typed_name for elem in self.typed_names)
 
-    def canonical_chained_name_tuple(self, in_universe: Fqun) -> tuple[str, ...]:
+    @property
+    def canonical_chained_name_tuple(self) -> tuple[str, ...]:
         """Return the canonical chained name as a tuple of typed-name strings."""
-        return tuple(
-            elem.full_typed_name(in_universe=in_universe) for elem in self.typed_names
-        )
+        return tuple(elem.full_typed_name for elem in self.typed_names)
 
     @property
     def source_chained_name(self) -> str:
@@ -529,14 +529,13 @@ class ActionDefinition(QualityDefinition):
         return result
 
     def _compute_interface_position_constraints(self) -> dict[str, frozenset[str]]:
-        fqun = self.typed_name.name_content.fqun
         result: dict[str, frozenset[str]] = {}
         for local_name, local_def in self.interface_positions_by_name.items():
             if local_def.constraints is None:
                 result[local_name] = frozenset()
                 continue
             result[local_name] = frozenset(
-                requirement.typed_global_name.full_typed_name(in_universe=fqun)
+                requirement.typed_global_name.full_typed_name
                 for requirement in local_def.constraints.requirements
             )
         return result
@@ -636,7 +635,3 @@ class GlobalTypedNameInDefinition(TypedName):
             "_source_typed_name",
             f"{self.name_type.value}<{self.name_content.fqun.canonical}:{self.name_content.path.name}>",
         )
-
-    @override
-    def full_typed_name(self, in_universe: Fqun) -> str:
-        return self._source_typed_name

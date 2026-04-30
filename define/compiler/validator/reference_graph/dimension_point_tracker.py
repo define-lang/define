@@ -69,11 +69,8 @@ class DimensionPointTracker:
     for emitting diagnostics based on the tracker's query results.
     """
 
-    _fqun: ast.Fqun
-
-    def __init__(self, enclosing_definition: ast.QualityDefinition):
-        """Initialize with the enclosing definition's FQUN."""
-        self._fqun = enclosing_definition.typed_name.name_content.fqun
+    def __init__(self):
+        """Initialize an empty dimension point tracker."""
         self._state: trie.StrictReparentingTrie[_NodeState] = (
             trie.StrictReparentingTrie()
         )
@@ -83,7 +80,7 @@ class DimensionPointTracker:
 
     def _key(self, position: ast.PositionReference) -> tuple[str, ...]:
         """Compute the canonical tuple key for a position reference."""
-        return position.canonical_chained_name_tuple(in_universe=self._fqun)
+        return position.canonical_chained_name_tuple
 
     def _ensure_action_parent(self, key: tuple[str, ...]):
         """Create the action intermediate trie node if needed."""
@@ -257,8 +254,7 @@ class DimensionPointTracker:
     ) -> dict[tuple[str, ...], action_contract.PositionGuarantee]:
         """Generate guarantees for keys whose first element matches an interface or implied quality."""
         include_names = {
-            name.full_typed_name(in_universe=self._fqun)
-            for name in (*interface_names, *implied_quality_names)
+            name.full_typed_name for name in (*interface_names, *implied_quality_names)
         }
 
         # Collect keys that have interesting state from both tries.
@@ -317,15 +313,11 @@ class DimensionPointTracker:
         """
         action_chain = for_position.get_chain_to_last_action()
         if action_chain is not None:
-            interface_prefix = action_chain.canonical_chained_name_tuple(
-                in_universe=self._fqun
-            )
+            interface_prefix = action_chain.canonical_chained_name_tuple
             implied_prefix = interface_prefix[:-1]
         else:
             # Position Init Block
-            interface_prefix = for_position.canonical_chained_name_tuple(
-                in_universe=self._fqun
-            )
+            interface_prefix = for_position.canonical_chained_name_tuple
             implied_prefix = interface_prefix
 
         # Parent-before-child ordering: Our first sort is by the key length
@@ -374,9 +366,7 @@ class DimensionPointTracker:
         origin_keys: set[tuple[str, ...]] = set()
         for _name, guarantee in sorted_items:
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
-                origin_tuple = guarantee.origin_position.canonical_chained_name_tuple(
-                    in_universe=self._fqun
-                )
+                origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
                 if _is_implied_position(origin_tuple):
                     origin_keys.add(implied_prefix + origin_tuple)
                 else:
@@ -492,9 +482,7 @@ class DimensionPointTracker:
         saved_unknown: dict[tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]],
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""
-        origin_tuple = guarantee.origin_position.canonical_chained_name_tuple(
-            in_universe=self._fqun
-        )
+        origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
         if _is_implied_position(origin_tuple):
             origin_key = implied_prefix + origin_tuple
         else:

@@ -56,7 +56,7 @@ class InterfacePositionRequirement:
         fqun = self.enclosing_action.typed_name.name_content.fqun
         if fqun.canonical == caller_fqun.canonical:
             return chain.source_chained_name
-        return chain.canonical_chained_name(in_universe=fqun)
+        return chain.canonical_chained_name
 
     def propagation_chain_typed_names(self) -> list[ast.TypedNameReference]:
         """Collect typed names from this requirement's full propagation chain.

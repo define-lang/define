@@ -28,30 +28,6 @@ _FQUN = ast.Fqun(
     location=_LOC,
 )
 
-_TRIGGER_REF = ast.LocalTypedNameReference(
-    name_type=ast.NameType.POSITION,
-    name_content=ast.LocalNameContent(name="pp", location=_LOC),
-    location=_LOC,
-)
-
-_ENCLOSING_DEF = ast.ActionDefinition(
-    name=ast.DefinitionGlobalNameContent(
-        fqun=_FQUN,
-        path=ast.GlobalPathName(name="/my_action", location=_LOC),
-        location=_LOC,
-    ),
-    quality_implications=[],
-    interface_positions=[],
-    trigger_conditions=ast.TriggerConditionsBlock(
-        conditions=[
-            ast.TriggerConditionStatement(typed_name=_TRIGGER_REF, location=_LOC)
-        ],
-        location=_LOC,
-    ),
-    action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
-    location=_LOC,
-)
-
 
 def _make_local_ref(
     name: str, location: ast.SourceLocation = _LOC
@@ -84,7 +60,7 @@ def _make_position_ref(
 
 
 def test_create_and_is_occupied():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, frozenset())
@@ -93,13 +69,13 @@ def test_create_and_is_occupied():
 
 
 def test_not_occupied_initially():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
 
     assert tracker.is_occupied(_make_position_ref([_make_local_ref("my_pos")])) is False
 
 
 def test_get_occupant():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, frozenset(["position<x>"]))
@@ -111,7 +87,7 @@ def test_get_occupant():
 
 
 def test_create_already_occupied_raises():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, frozenset())
@@ -121,7 +97,7 @@ def test_create_already_occupied_raises():
 
 
 def test_destroy():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("pos_a")])
 
     tracker.create(ref, frozenset())
@@ -131,14 +107,14 @@ def test_destroy():
 
 
 def test_destroy_from_empty_raises():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
 
     with pytest.raises(ValueError, match="not occupied"):
         tracker.destroy(_make_position_ref([_make_local_ref("pos_a")]))
 
 
 def test_move():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
@@ -150,7 +126,7 @@ def test_move():
 
 
 def test_move_from_empty_raises():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
 
     with pytest.raises(KeyError):
         tracker.move(
@@ -160,7 +136,7 @@ def test_move_from_empty_raises():
 
 
 def test_mark_unknown_state():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.mark_unknown(ref)
@@ -169,7 +145,7 @@ def test_mark_unknown_state():
 
 
 def test_no_unknown_state_initially():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
 
     assert (
         tracker.has_unknown_state(_make_position_ref([_make_local_ref("my_pos")]))
@@ -178,7 +154,7 @@ def test_no_unknown_state_initially():
 
 
 def test_unknown_state_does_not_affect_other_keys():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
 
     tracker.mark_unknown(_make_position_ref([_make_local_ref("pos_a")]))
 
@@ -193,7 +169,7 @@ def test_unknown_state_does_not_affect_other_keys():
 
 
 def test_unknown_state_propagates_to_descendants():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -207,7 +183,7 @@ def test_unknown_state_propagates_to_descendants():
 
 
 def test_move_to_occupied_raises():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
@@ -219,7 +195,7 @@ def test_move_to_occupied_raises():
 
 
 def test_create_stores_qualities():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, frozenset(["position<x>"]))
@@ -228,7 +204,7 @@ def test_create_stores_qualities():
 
 
 def test_move_preserves_qualities():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
     qualities = frozenset(["position<x>", "action<y>"])
@@ -240,7 +216,7 @@ def test_move_preserves_qualities():
 
 
 def test_move_updates_ref():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref(
         [_make_local_ref("pos_b", location=_LOC2)], location=_LOC2
@@ -254,7 +230,7 @@ def test_move_updates_ref():
 
 
 def test_create_empty_qualities():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
     tracker.create(ref, frozenset())
@@ -263,7 +239,7 @@ def test_create_empty_qualities():
 
 
 def test_keys_use_separate_trie_levels():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_chain = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -276,7 +252,7 @@ def test_keys_use_separate_trie_levels():
 
 
 def test_move_preserves_origin_position():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref_a = _make_position_ref([_make_local_ref("pos_a")])
     ref_b = _make_position_ref([_make_local_ref("pos_b")])
 
@@ -287,7 +263,7 @@ def test_move_preserves_origin_position():
 
 
 def test_create_at_global_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
@@ -299,7 +275,7 @@ def test_create_at_global_chain():
 
 
 def test_move_from_local_to_global_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     dest_parent_ref = _make_position_ref([_make_local_ref("pos_b")])
     chain_ref = _make_position_ref(
@@ -316,7 +292,7 @@ def test_move_from_local_to_global_chain():
 
 
 def test_move_from_global_chain_to_local():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     chain_parent_ref = _make_position_ref([_make_local_ref("pos_b")])
     chain_ref = _make_position_ref(
@@ -333,7 +309,7 @@ def test_move_from_global_chain_to_local():
 
 
 def test_move_between_global_chains():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_a = _make_position_ref([_make_local_ref("pos_a")])
     parent_b = _make_position_ref([_make_local_ref("pos_b")])
     chain_a = _make_position_ref(
@@ -354,7 +330,7 @@ def test_move_between_global_chains():
 
 
 def test_create_at_interface_position_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("item")]
@@ -368,7 +344,7 @@ def test_create_at_interface_position_chain():
 
 
 def test_action_parent_auto_created_for_single_action_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     item_ref = _make_position_ref([_make_local_ref("item")])
     ref = _make_position_ref(
         [_make_local_ref("item"), _make_action_ref("/foo"), _make_local_ref("trigger")]
@@ -381,7 +357,7 @@ def test_action_parent_auto_created_for_single_action_chain():
 
 
 def test_chained_position_without_intermediate_fails():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     local_ref = _make_position_ref([_make_local_ref("local")])
     ref = _make_position_ref(
         [_make_local_ref("local"), _make_global_ref("/mid"), _make_global_ref("/last")]
@@ -394,7 +370,7 @@ def test_chained_position_without_intermediate_fails():
 
 
 def test_action_chain_without_parent_position_fails():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref(
         [_make_local_ref("local"), _make_action_ref("/foo"), _make_local_ref("iface")]
     )
@@ -404,7 +380,7 @@ def test_action_chain_without_parent_position_fails():
 
 
 def test_nested_action_chain_without_intermediate_fails():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     item_ref = _make_position_ref([_make_local_ref("item")])
     ref = _make_position_ref(
         [
@@ -423,7 +399,7 @@ def test_nested_action_chain_without_intermediate_fails():
 
 
 def test_move_between_interface_position_chains():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref_a = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/act"), _make_local_ref("src")]
@@ -442,7 +418,7 @@ def test_move_between_interface_position_chains():
 
 
 def test_destroy_at_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
@@ -454,7 +430,7 @@ def test_destroy_at_chain():
 
 
 def test_destroy_prunes_children():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -469,7 +445,7 @@ def test_destroy_prunes_children():
 
 
 def test_mark_unknown_at_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
     tracker.mark_unknown(ref)
@@ -478,7 +454,7 @@ def test_mark_unknown_at_chain():
 
 
 def test_destroy_clears_unknown_children():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -496,7 +472,7 @@ def test_destroy_clears_unknown_children():
 
 
 def test_destroy_parent_also_destroys_child():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     local_ref = _make_position_ref([_make_local_ref("pos_a")])
     chain_ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")]
@@ -515,7 +491,7 @@ def test_destroy_parent_also_destroys_child():
 
 
 def test_emptied_by_at_chain():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     ref = _make_position_ref(
         [_make_local_ref("pos_a"), _make_global_ref("/child")], location=_LOC2
@@ -545,7 +521,7 @@ _ACTION_KEY_PREFIX = ("position<box>", "action<my.domain.com:my_lib:/other>")
 
 
 def test_apply_guarantees_empty():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -564,7 +540,7 @@ def test_apply_guarantees_empty():
 
 
 def test_apply_guarantees_occupied_by_new():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -590,7 +566,7 @@ def test_apply_guarantees_occupied_by_new():
 
 
 def test_apply_guarantees_occupied_by_existing():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
@@ -632,7 +608,7 @@ def test_apply_guarantees_occupied_by_existing():
 
 
 def test_apply_guarantees_occupied_by_existing_moves_children():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     item_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -675,7 +651,7 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
 
 
 def test_apply_guarantees_occupied_by_existing_swap():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     item_ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -753,7 +729,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
 
 
 def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [
@@ -780,7 +756,7 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
 
 
 def test_apply_guarantees_unknown():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [_make_local_ref("box"), _make_action_ref("/other"), _make_local_ref("item")]
@@ -799,7 +775,7 @@ def test_apply_guarantees_unknown():
 
 
 def test_apply_guarantees_does_not_touch_unmentioned_positions():
-    tracker = dimension_point_tracker.DimensionPointTracker(_ENCLOSING_DEF)
+    tracker = dimension_point_tracker.DimensionPointTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
         [

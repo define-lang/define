@@ -43,7 +43,6 @@ class ActionStatementsBlockGenerator:
                 local_typed_name=stmt.typed_name.source_typed_name,
                 constraints=self._converter.constraints_to_class_references(
                     stmt.constraints,
-                    self._defining_typed_name.name_content.fqun,
                 ),
             )
         if isinstance(stmt, ast.CreateDimensionPointStatement):
@@ -66,7 +65,6 @@ class ActionStatementsBlockGenerator:
         self, position_reference: ast.PositionReference
     ) -> template_context.PositionExpr:
         """Build a position expression from a position reference chain."""
-        fqun = self._defining_typed_name.name_content.fqun
         first = position_reference.typed_names[0]
         if isinstance(first, ast.LocalTypedNameReference):
             if first.source_typed_name in self._interface_position_names:
@@ -88,7 +86,7 @@ class ActionStatementsBlockGenerator:
             chain_elements.append(
                 template_context.ChainElement(
                     accessor=_chain_accessor(prev.name_type, elem.name_type),
-                    typed_name=elem.full_typed_name(in_universe=fqun),
+                    typed_name=elem.full_typed_name,
                 )
             )
         return template_context.PositionExpr(start=start, chain_elements=chain_elements)

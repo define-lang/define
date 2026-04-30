@@ -335,9 +335,7 @@ class DefinitionStructuralValidator:
         definition: ast.ActionDefinition,
     ):
         self._validate_quality_implications(definition.quality_implications)
-        scope = scope_tracker.ScopeTracker(
-            self._definition.typed_name.name_content.fqun
-        )
+        scope = scope_tracker.ScopeTracker()
         for local_def in definition.interface_positions:
             self._validate_local_position_definition(local_def, scope)
         self._validate_trigger_conditions(definition.trigger_conditions, scope)
@@ -354,7 +352,7 @@ class DefinitionStructuralValidator:
     ):
         self._validate_quality_implications(definition.quality_implications)
         if definition.initialization is not None:
-            scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
+            scope = scope_tracker.ScopeTracker()
             scope.add_definition(definition)
             self._validate_action_statements(
                 definition.initialization,
@@ -516,12 +514,10 @@ class DefinitionStructuralValidator:
         Returns whether the caller may continue processing this reference.
         """
         first = chain.typed_names[0]
-        fqun = self._definition.typed_name.name_content.fqun
         may_continue = True
 
         is_self_reference = (
-            first.full_typed_name(in_universe=fqun)
-            == self._definition.typed_name.source_typed_name
+            first.full_typed_name == self._definition.typed_name.source_typed_name
         )
         is_chained_self_reference = is_self_reference and len(chain.typed_names) > 1
         if is_chained_self_reference and not allow_self_reference:
@@ -543,13 +539,13 @@ class DefinitionStructuralValidator:
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
                     location=first.name_content.location,
-                    local_name=first.full_typed_name(in_universe=fqun),
+                    local_name=first.full_typed_name,
                 )
             )
             may_continue = False
 
         if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
-            canonical = first.full_typed_name(in_universe=fqun)
+            canonical = first.full_typed_name
             if canonical in self._implied_qualities:
                 self._used_implied_qualities.add(canonical)
             else:
@@ -579,10 +575,8 @@ class DefinitionStructuralValidator:
                 self._diagnostics.append(
                     diagnostics.ChainedLocalNameRequiresActionDiagnostic(
                         location=typed_name.location,
-                        local_name=typed_name.full_typed_name(in_universe=fqun),
-                        preceding_name=previous_element.full_typed_name(
-                            in_universe=fqun
-                        ),
+                        local_name=typed_name.full_typed_name,
+                        preceding_name=previous_element.full_typed_name,
                     )
                 )
                 # Don't even try to process this name; it will fail when we try to
@@ -634,7 +628,6 @@ class DefinitionStructuralValidator:
         self,
         constraints: ast.PositionConstraintBlock,
     ):
-        fqun = self._definition.typed_name.name_content.fqun
         seen_lines: dict[str, int] = {}
         for requirement in constraints.requirements:
             reference_diagnostics = name_validators.validate_typed_name(
@@ -643,7 +636,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
-            canonical = requirement.typed_global_name.full_typed_name(in_universe=fqun)
+            canonical = requirement.typed_global_name.full_typed_name
             first_line = seen_lines.get(canonical)
             if first_line is not None:
                 self._diagnostics.append(
@@ -661,7 +654,6 @@ class DefinitionStructuralValidator:
         self,
         implications: list[ast.QualityImplicationStatement],
     ):
-        fqun = self._definition.typed_name.name_content.fqun
         seen_lines: dict[str, int] = {}
         for implication in implications:
             name_diagnostics = name_validators.validate_typed_name(
@@ -670,7 +662,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(name_diagnostics)
             if name_diagnostics:
                 continue
-            canonical = implication.typed_global_name.full_typed_name(in_universe=fqun)
+            canonical = implication.typed_global_name.full_typed_name
             first_line = seen_lines.get(canonical)
             if first_line is not None:
                 self._diagnostics.append(

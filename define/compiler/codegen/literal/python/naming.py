@@ -154,35 +154,32 @@ class NameConverter:
     def constraints_to_class_references(
         self,
         constraints: ast.PositionConstraintBlock | None,
-        enclosing_fqun: ast.Fqun,
     ) -> list[ClassReference]:
         """Extract class references from a position constraint block."""
         if constraints is None:
             return []
         return [
-            self._build_class_reference(requirement.typed_global_name, enclosing_fqun)
+            self._build_class_reference(requirement.typed_global_name)
             for requirement in constraints.requirements
         ]
 
     def implied_qualities_to_class_references(
         self,
         quality_implications: list[ast.QualityImplicationStatement],
-        enclosing_fqun: ast.Fqun,
     ) -> list[ClassReference]:
         """Extract class references from a list of quality implication statements."""
         return [
-            self._build_class_reference(implication.typed_global_name, enclosing_fqun)
+            self._build_class_reference(implication.typed_global_name)
             for implication in quality_implications
         ]
 
     def _build_class_reference(
         self,
         typed_global_name: ast.GlobalTypedNameReference,
-        enclosing_fqun: ast.Fqun,
     ) -> ClassReference:
         name_content = typed_global_name.name_content
         cls_name = self.class_name(name_content.path.relative_path)
-        fqun = name_content.fqun or enclosing_fqun
+        fqun = name_content.fqun or typed_global_name.enclosing_fqun
         module_name = ".".join(self._module_name_parts(fqun, name_content.path))
         return ClassReference(class_name=cls_name, module_name=module_name)
 

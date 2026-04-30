@@ -25,9 +25,7 @@ class ReferenceEdge:
     @cached_property
     def target_full_typed_name(self) -> str:
         """Return the fully qualified typed-name key for this edge target."""
-        return self.global_name_reference.full_typed_name(
-            in_universe=self.enclosing_definition.typed_name.name_content.fqun
-        )
+        return self.global_name_reference.full_typed_name
 
     @property
     def source_full_typed_name(self) -> str:

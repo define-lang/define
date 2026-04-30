@@ -63,7 +63,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
     @cached_property
     def _tracker(self) -> dimension_point_tracker.DimensionPointTracker:
-        return dimension_point_tracker.DimensionPointTracker(self._definition)
+        return dimension_point_tracker.DimensionPointTracker()
 
     @abc.abstractmethod
     def analyze(self) -> PostorderValidationResult:
@@ -146,23 +146,14 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         constraints: ast.PositionConstraintBlock | None,
-        # TODO: I don't like having to pass this around; it's logically an inherent
-        # part of the PositionReference.
-        source_fqun: ast.Fqun,
     ):
-        """Apply position init block guarantees for each assigned quality in source order.
-
-        ``source_fqun`` is the universe of the source file where ``constraints``
-        was parsed, used to resolve any relative references inside requirements.
-        """
+        """Apply position init block guarantees for each assigned quality in source order."""
         if constraints is None:
             return
         for requirement in constraints.requirements:
             if requirement.typed_global_name.name_type != ast.NameType.POSITION:
                 continue
-            applied_position_name = requirement.typed_global_name.full_typed_name(
-                in_universe=source_fqun
-            )
+            applied_position_name = requirement.typed_global_name.full_typed_name
             init_block_contract = self._position_contracts.get(applied_position_name)
             if init_block_contract is not None:
                 self._tracker.apply_guarantees(
@@ -191,7 +182,7 @@ class DefinitionPostorderValidator(abc.ABC):
         action_ref = typing.cast(
             "ast.GlobalTypedNameReference", position.get_last_action()
         )
-        action_name = action_ref.full_typed_name(in_universe=self._enclosing_fqun)
+        action_name = action_ref.full_typed_name
         # The action's file may have failed to load or parse.
         contract = self._action_contracts.get(action_name)
         if contract is None:
@@ -199,10 +190,7 @@ class DefinitionPostorderValidator(abc.ABC):
         trigger_element = typing.cast(
             "ast.LocalTypedNameReference", interface_position.typed_names[0]
         )
-        if (
-            trigger_element.full_typed_name(in_universe=self._enclosing_fqun)
-            != contract.trigger_position_name
-        ):
+        if trigger_element.full_typed_name != contract.trigger_position_name:
             return
 
         # We only propagate inner requirements if actions actually get called.
@@ -234,9 +222,7 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         # source_prefix is for diagnostics, canonical_prefix is for key lookups.
         source_prefix = action_chain.source_chained_name
-        canonical_prefix = action_chain.canonical_chained_name_tuple(
-            in_universe=self._enclosing_fqun
-        )
+        canonical_prefix = action_chain.canonical_chained_name_tuple
 
         for req_key, req in contract.requirements.items():
             key = canonical_prefix + req_key
@@ -328,8 +314,8 @@ class DefinitionPostorderValidator(abc.ABC):
 
         qualities = frozenset(self._get_transitive_required_qualities(position, scope))
         self._tracker.create(position, qualities)
-        constraints, source_fqun = self._get_constraint_block(position, scope)
-        self._apply_position_init_guarantees(position, constraints, source_fqun)
+        constraints = self._get_constraint_block(position, scope)
+        self._apply_position_init_guarantees(position, constraints)
         self._check_trigger(position, scope)
 
     def _analyze_destroy(
@@ -513,7 +499,6 @@ class DefinitionPostorderValidator(abc.ABC):
 
         Returns True if a prefix relationship was detected (and diagnostics emitted).
         """
-        fqun = self._enclosing_fqun
         from_pos = stmt.source_position
         to_pos = stmt.target_position
         if len(from_pos.typed_names) > len(to_pos.typed_names):
@@ -521,9 +506,7 @@ class DefinitionPostorderValidator(abc.ABC):
         for from_name, to_name in zip(
             from_pos.typed_names, to_pos.typed_names, strict=False
         ):
-            if from_name.full_typed_name(in_universe=fqun) != to_name.full_typed_name(
-                in_universe=fqun
-            ):
+            if from_name.full_typed_name != to_name.full_typed_name:
                 return False
 
         if len(from_pos.typed_names) == len(to_pos.typed_names):
@@ -557,7 +540,6 @@ class DefinitionPostorderValidator(abc.ABC):
         """
         if len(ref.typed_names) < 2:
             return
-        enclosing_fqun = self._enclosing_fqun
         elements = ref.typed_names
 
         # Check the second element against the first element's constraints
@@ -569,8 +551,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 ref,
                 elements[1],
                 scope.get_constraint_names(first),
-                first.full_typed_name(in_universe=enclosing_fqun),
-                enclosing_fqun,
+                first.full_typed_name,
             )
 
         index = 1
@@ -581,7 +562,7 @@ class DefinitionPostorderValidator(abc.ABC):
             if not isinstance(parent, ast.GlobalTypedNameReference):
                 self._tracker.mark_unknown(ref)
                 return
-            parent_name = parent.full_typed_name(in_universe=enclosing_fqun)
+            parent_name = parent.full_typed_name
             parent_result = self._definition_results.get(parent_name)
             # This means the definition's file did not load or did not parse.
             if parent_result is None:
@@ -595,7 +576,6 @@ class DefinitionPostorderValidator(abc.ABC):
                         child,
                         position_def.constraint_names,
                         parent_name,
-                        enclosing_fqun,
                     )
                     index += 1
                 case ast.ActionDefinition() as action_def:
@@ -606,7 +586,6 @@ class DefinitionPostorderValidator(abc.ABC):
                         index + 1,
                         action_def,
                         parent_name,
-                        enclosing_fqun,
                     )
                     if consumed == 0:
                         return
@@ -624,7 +603,6 @@ class DefinitionPostorderValidator(abc.ABC):
         child_index: int,
         action_def: ast.ActionDefinition,
         parent_name: str,
-        fqun: ast.Fqun,
     ) -> int:
         """Validate chain elements against an action definition's local positions.
 
@@ -632,16 +610,13 @@ class DefinitionPostorderValidator(abc.ABC):
         """
         # TODO: We should emit more specific diagnostics for these cases.
         if not isinstance(child, ast.LocalTypedNameReference):
-            self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
+            self._emit_not_in_action_diagnostic(ref, child, parent_name)
             return 0
         if child.name_type != ast.NameType.POSITION:
-            self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
+            self._emit_not_in_action_diagnostic(ref, child, parent_name)
             return 0
-        if (
-            child.full_typed_name(in_universe=fqun)
-            not in action_def.interface_position_constraints
-        ):
-            self._emit_not_in_action_diagnostic(ref, child, parent_name, fqun)
+        if child.full_typed_name not in action_def.interface_position_constraints:
+            self._emit_not_in_action_diagnostic(ref, child, parent_name)
             return 0
         # The caller guarantees child exists, but not that the child's child exists.
         if child_index + 1 >= len(elements):
@@ -650,11 +625,8 @@ class DefinitionPostorderValidator(abc.ABC):
         self._check_chain_element_in_constraints(
             ref,
             next_child,
-            action_def.interface_position_constraints[
-                child.full_typed_name(in_universe=fqun)
-            ],
+            action_def.interface_position_constraints[child.full_typed_name],
             child.source_typed_name,
-            fqun,
         )
         return 2
 
@@ -664,10 +636,9 @@ class DefinitionPostorderValidator(abc.ABC):
         element: ast.TypedNameReference,
         constraint_names: frozenset[str],
         parent_name: str,
-        fqun: ast.Fqun,
     ):
         """Check if a chain element is declared in the parent's constraints (or transitively implied by one)."""
-        element_name = element.full_typed_name(in_universe=fqun)
+        element_name = element.full_typed_name
         if element_name not in self._expand_constraints_with_implications(
             constraint_names
         ):
@@ -694,9 +665,8 @@ class DefinitionPostorderValidator(abc.ABC):
             if defn_result is None:
                 return
             defn = defn_result.definition
-            fqun = defn.typed_name.name_content.fqun
             for impl in defn.quality_implications:
-                visit(impl.typed_global_name.full_typed_name(in_universe=fqun))
+                visit(impl.typed_global_name.full_typed_name)
 
         for n in constraint_names:
             visit(n)
@@ -707,13 +677,12 @@ class DefinitionPostorderValidator(abc.ABC):
         ref: ast.PositionReference,
         element: ast.TypedNameReference,
         parent_name: str,
-        fqun: ast.Fqun,
     ):
         """Emit a diagnostic for a chain element not found in an action definition."""
         self._diagnostics.append(
             diagnostics.ChainElementNotInActionDiagnostic(
                 location=element.location,
-                element_name=element.full_typed_name(in_universe=fqun),
+                element_name=element.full_typed_name,
                 parent_name=parent_name,
             )
         )
@@ -725,37 +694,28 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> tuple[ast.PositionConstraintBlock | None, ast.Fqun]:
-        """Resolve the constraint block and its source FQUN for the position definition."""
+    ) -> ast.PositionConstraintBlock | None:
+        """Resolve the constraint block for the position definition."""
         if scope.is_defined_local(position):
-            return (
-                scope.get_definition(position.typed_names[0]).constraints,
-                self._enclosing_fqun,
-            )
+            return scope.get_definition(position.typed_names[0]).constraints
 
         last_element = position.typed_names[-1]
 
         if isinstance(last_element, ast.LocalTypedNameReference):
             parent = position.typed_names[-2]
-            parent_key = parent.full_typed_name(in_universe=self._enclosing_fqun)
-            action_def = self._definition_results[parent_key].definition
+            action_def = self._definition_results[parent.full_typed_name].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
-            local_pos_name = last_element.full_typed_name(
-                in_universe=self._enclosing_fqun
-            )
-            return (
-                action_def.interface_positions_by_name[local_pos_name].constraints,
-                action_def.typed_name.name_content.fqun,
-            )
+            return action_def.interface_positions_by_name[
+                last_element.full_typed_name
+            ].constraints
 
-        lookup_key = last_element.full_typed_name(in_universe=self._enclosing_fqun)
-        definition_result = self._definition_results.get(lookup_key)
+        definition_result = self._definition_results.get(last_element.full_typed_name)
         if definition_result is None:
-            return None, self._enclosing_fqun
+            return None
         position_def = typing.cast(
             "ast.PositionDefinition", definition_result.definition
         )
-        return position_def.constraints, position_def.typed_name.name_content.fqun
+        return position_def.constraints
 
     def _get_direct_required_qualities(
         self,
@@ -774,17 +734,15 @@ class DefinitionPostorderValidator(abc.ABC):
             # parent is a global action reference whose definition exists and
             # contains this interface position.
             parent = position.typed_names[-2]
-            parent_key = parent.full_typed_name(in_universe=self._enclosing_fqun)
-            action_def = self._definition_results[parent_key].definition
+            action_def = self._definition_results[parent.full_typed_name].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
             return action_def.interface_position_constraints[
-                last_element.full_typed_name(in_universe=self._enclosing_fqun)
+                last_element.full_typed_name
             ]
 
-        lookup_key = last_element.full_typed_name(in_universe=self._enclosing_fqun)
         # This can be None if the last element in the chain is a definition we never loaded
         # (file not found or failed to parse).
-        definition_result = self._definition_results.get(lookup_key)
+        definition_result = self._definition_results.get(last_element.full_typed_name)
         if definition_result is None:
             return None
         position_def = typing.cast(
@@ -840,9 +798,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     @property
     def _trigger_position_name(self) -> str | None:
         if self._action_definition.trigger_position is not None:
-            return self._action_definition.trigger_position.typed_name.full_typed_name(
-                in_universe=self._enclosing_fqun
-            )
+            return self._action_definition.trigger_position.typed_name.full_typed_name
         return None
 
     @typing.override
@@ -870,10 +826,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             return
         if len(position.typed_names) != 1:
             return
-        pos_name = position.typed_names[0].full_typed_name(
-            in_universe=self._enclosing_fqun
-        )
-        if pos_name != self._trigger_position_name:
+        if position.typed_names[0].full_typed_name != self._trigger_position_name:
             return
         self._diagnostics.append(
             diagnostics.ActionSelfTriggerDiagnostic(
@@ -887,7 +840,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         self,
         definition: ast.ActionDefinition,
     ) -> action_contract.ActionContract:
-        scope = scope_tracker.ScopeTracker(self._enclosing_fqun)
+        scope = scope_tracker.ScopeTracker()
         for pos in definition.interface_positions:
             # Skip duplicates so the first definition's constraints are preserved,
             # matching file_validator's behavior of not adding conflicting names.
@@ -935,7 +888,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         first = position.typed_names[0]
         if not scope.is_defined(first):
             return
-        first_typed_name = first.full_typed_name(in_universe=self._enclosing_fqun)
+        first_typed_name = first.full_typed_name
         first_is_interface = first_typed_name in self._interface_positions
         inferred_from_chain = position
         if not first_is_interface:
@@ -963,9 +916,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         ):
             return
 
-        requirement_key = inferred_from_chain.canonical_chained_name_tuple(
-            in_universe=self._enclosing_fqun
-        )
+        requirement_key = inferred_from_chain.canonical_chained_name_tuple
         if requirement_key in self._inferred_requirements:
             return
         self._inferred_requirements[requirement_key] = (
@@ -990,9 +941,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         parent = position.parent_position()
         if parent is None:
             return None
-        parent_key = parent.canonical_chained_name_tuple(
-            in_universe=self._enclosing_fqun
-        )
+        parent_key = parent.canonical_chained_name_tuple
         # This check is necessary because we have to run _maybe_infer_reqiuirement
         # before we run _check_parents_occupied, so we can run into situations where
         # the developer has written a statement that operates on the child of a non-existent
@@ -1004,7 +953,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if not dp_info.from_caller:
             return None
         origin_first = dp_info.origin_position.typed_names[0]
-        origin_key = origin_first.full_typed_name(in_universe=self._enclosing_fqun)
+        origin_key = origin_first.full_typed_name
         return self._interface_positions.get(origin_key)
 
     def _remap_through_interface_position(
@@ -1066,9 +1015,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         remapped_prefix = self._remap_through_interface_position(
             action_chain, iface_def
         )
-        canonical_key_prefix = remapped_prefix.canonical_chained_name_tuple(
-            in_universe=self._enclosing_fqun
-        )
+        canonical_key_prefix = remapped_prefix.canonical_chained_name_tuple
         for req_key, inner_req in contract.requirements.items():
             propagated_key = (*canonical_key_prefix, *req_key)
             # If we already inferred a requirement for this key (i.e.,
@@ -1130,7 +1077,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
     ) -> action_contract.PositionInitBlockContract | None:
         if definition.initialization is None:
             return None
-        scope = scope_tracker.ScopeTracker(definition.typed_name.name_content.fqun)
+        scope = scope_tracker.ScopeTracker()
         scope.add_definition(definition)
         self._analyze_statements(definition.initialization, scope)
         return action_contract.PositionInitBlockContract(

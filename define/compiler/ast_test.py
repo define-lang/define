@@ -143,12 +143,9 @@ class TestGlobalTypedNameReference:
             ),
             enclosing_fqun=fqun,
         )
-        assert (
-            reference.full_typed_name(in_universe=fqun)
-            == "action<my.domain.com:my_lib:/thing>"
-        )
+        assert reference.full_typed_name == "action<my.domain.com:my_lib:/thing>"
 
-    def test_full_typed_name_with_short_name_uses_in_universe(self):
+    def test_full_typed_name_with_short_name_uses_enclosing_fqun(self):
         reference = ast.GlobalTypedNameReference(
             location=_LOC,
             name_type=ast.NameType.POSITION,
@@ -159,12 +156,7 @@ class TestGlobalTypedNameReference:
             ),
             enclosing_fqun=_make_fqun("my_lib", authority="my.domain.com"),
         )
-        assert (
-            reference.full_typed_name(
-                in_universe=_make_fqun("my_lib", authority="my.domain.com")
-            )
-            == "position<my.domain.com:my_lib:/thing>"
-        )
+        assert reference.full_typed_name == "position<my.domain.com:my_lib:/thing>"
 
     def test_full_typed_name_own_fqun_takes_precedence(self):
         reference = ast.GlobalTypedNameReference(
@@ -175,13 +167,9 @@ class TestGlobalTypedNameReference:
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
-            enclosing_fqun=_make_fqun("my_lib", authority="my.domain.com"),
+            enclosing_fqun=_make_fqun("other_lib", authority="other.domain.com"),
         )
-        in_universe = _make_fqun("other_lib", authority="other.domain.com")
-        assert (
-            reference.full_typed_name(in_universe=in_universe)
-            == "position<my.domain.com:my_lib:/thing>"
-        )
+        assert reference.full_typed_name == "position<my.domain.com:my_lib:/thing>"
 
 
 class TestCachedStrings:
@@ -203,7 +191,7 @@ class TestCachedStrings:
         )
         assert typed_name.source_typed_name is typed_name.source_typed_name
 
-    def test_definition_full_typed_name_ignores_in_universe(self):
+    def test_definition_full_typed_name_returns_same_object(self):
         typed_name = ast.GlobalTypedNameInDefinition(
             location=_LOC,
             name_type=ast.NameType.POSITION,
@@ -213,11 +201,7 @@ class TestCachedStrings:
                 path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
-        own_fqun = typed_name.name_content.fqun
-        other = _make_fqun("other_lib", authority="other.domain.com")
-        assert typed_name.full_typed_name(
-            in_universe=other
-        ) is typed_name.full_typed_name(in_universe=own_fqun)
+        assert typed_name.full_typed_name is typed_name.full_typed_name
 
     def test_definition_source_typed_name_matches_full(self):
         typed_name = ast.GlobalTypedNameInDefinition(
@@ -229,10 +213,7 @@ class TestCachedStrings:
                 path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
         )
-        own_fqun = typed_name.name_content.fqun
-        assert typed_name.source_typed_name is typed_name.full_typed_name(
-            in_universe=own_fqun
-        )
+        assert typed_name.source_typed_name is typed_name.full_typed_name
 
 
 class TestInterfacePositionConstraints:
@@ -353,25 +334,19 @@ class TestPositionConstraintNames:
         assert position.constraint_names == frozenset()
 
 
-_FQUN_OBJ = _make_fqun(_FQUN)
-
-
 class TestChainedNameCanonical:
     def test_single_element(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>")
-        assert pos.canonical_chained_name(in_universe=_FQUN_OBJ) == "position<local>"
+        assert pos.canonical_chained_name == "position<local>"
 
     def test_two_elements(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::position</x>")
-        assert (
-            pos.canonical_chained_name(in_universe=_FQUN_OBJ)
-            == f"position<local>::position<{_FQUN}:/x>"
-        )
+        assert pos.canonical_chained_name == f"position<local>::position<{_FQUN}:/x>"
 
     def test_with_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::action</act>::position<iface>")
         assert (
-            pos.canonical_chained_name(in_universe=_FQUN_OBJ)
+            pos.canonical_chained_name
             == f"position<local>::action<{_FQUN}:/act>::position<iface>"
         )
 
@@ -379,13 +354,11 @@ class TestChainedNameCanonical:
 class TestChainedNameCanonicalTuple:
     def test_single_element(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>")
-        assert pos.canonical_chained_name_tuple(in_universe=_FQUN_OBJ) == (
-            "position<local>",
-        )
+        assert pos.canonical_chained_name_tuple == ("position<local>",)
 
     def test_three_elements(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::action</act>::position<iface>")
-        assert pos.canonical_chained_name_tuple(in_universe=_FQUN_OBJ) == (
+        assert pos.canonical_chained_name_tuple == (
             "position<local>",
             f"action<{_FQUN}:/act>",
             "position<iface>",
