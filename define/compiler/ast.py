@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import abc
 import enum
 import sys
 from dataclasses import dataclass, field
@@ -140,8 +141,13 @@ class PositionDefinition(QualityDefinition):
 
 
 @dataclass(frozen=True, slots=True)
-class NameContent(ASTNode):
+class NameContent(ASTNode, abc.ABC):
     """Base class for name content nodes (local or global)."""
+
+    @property
+    @abc.abstractmethod
+    def source_name(self) -> str:
+        """Return the inner content as it appears in the source."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +155,11 @@ class LocalNameContent(NameContent):
     """Represents a local name."""
 
     name: str
+
+    @property
+    @override
+    def source_name(self) -> str:
+        return self.name
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -190,6 +201,14 @@ class TypedName(ASTNode):
     name_content: NameContent
     _source_typed_name: str = field(init=False, repr=False, compare=False)
 
+    def __post_init__(self):
+        """Compute and cache the source typed name string."""
+        object.__setattr__(
+            self,
+            "_source_typed_name",
+            f"{self.name_type.value}<{self.name_content.source_name}>",
+        )
+
     @property
     def source_typed_name(self) -> str:
         """Return typed-name text as it appears in the source."""
@@ -209,17 +228,10 @@ class GlobalTypedNameReference(TypedName):
     enclosing_fqun: Fqun
     _full_typed_name: str = field(init=False, repr=False, compare=False)
 
+    @override
     def __post_init__(self):
         """Compute and cache the source and full typed-name strings."""
-        if self.name_content.fqun is not None:
-            inner = f"{self.name_content.fqun.canonical}:{self.name_content.path.name}"
-        else:
-            inner = self.name_content.path.name
-        object.__setattr__(
-            self,
-            "_source_typed_name",
-            f"{self.name_type.value}<{inner}>",
-        )
+        super().__post_init__()
         fqun = self.name_content.fqun or self.enclosing_fqun
         object.__setattr__(
             self,
@@ -238,14 +250,6 @@ class LocalTypedNameReference(TypedName):
     """Represents a typed local name reference."""
 
     name_content: LocalNameContent
-
-    def __post_init__(self):
-        """Compute and cache the source typed name string."""
-        object.__setattr__(
-            self,
-            "_source_typed_name",
-            f"{self.name_type.value}<{self.name_content.name}>",
-        )
 
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
@@ -609,6 +613,13 @@ class GlobalNameContent(NameContent):
     fqun: Fqun | None
     path: GlobalPathName
 
+    @property
+    @override
+    def source_name(self) -> str:
+        if self.fqun is not None:
+            return f"{self.fqun.canonical}:{self.path.name}"
+        return self.path.name
+
 
 @dataclass(frozen=True, slots=True)
 class DefinitionGlobalNameContent(GlobalNameContent):
@@ -627,11 +638,3 @@ class GlobalTypedNameInDefinition(TypedName):
     """Represents a typed global name at a definition site."""
 
     name_content: DefinitionGlobalNameContent
-
-    def __post_init__(self):
-        """Compute and cache the source typed name string."""
-        object.__setattr__(
-            self,
-            "_source_typed_name",
-            f"{self.name_type.value}<{self.name_content.fqun.canonical}:{self.name_content.path.name}>",
-        )
