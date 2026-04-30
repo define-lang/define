@@ -71,6 +71,7 @@ def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
             path=ast.GlobalPathName(name=path, location=_LOC),
             location=_LOC,
         ),
+        enclosing_fqun=_FQUN,
         location=_LOC,
     )
 
@@ -535,6 +536,7 @@ def _make_action_ref(path: str) -> ast.GlobalTypedNameReference:
             path=ast.GlobalPathName(name=path, location=_LOC),
             location=_LOC,
         ),
+        enclosing_fqun=_FQUN,
         location=_LOC,
     )
 

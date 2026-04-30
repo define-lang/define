@@ -758,6 +758,7 @@ class TestValidateTypedName:
                 path=_global_path_name("/other"),
                 location=_LOC,
             ),
+            enclosing_fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
             location=_LOC,
         )
         result = name_validators.validate_typed_name(ref, _enclosing_definition())
@@ -771,6 +772,7 @@ class TestValidateTypedName:
                 path=_global_path_name("/other"),
                 location=_LOC,
             ),
+            enclosing_fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
             location=_LOC,
         )
         result = name_validators.validate_typed_name(ref, _enclosing_definition())

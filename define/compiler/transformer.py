@@ -16,27 +16,65 @@ class _ActionDefinitionBlockData:
     action_statements: ast.ActionStatementsBlock
 
 
-class DefineTransformer(
-    lark_standalone.Transformer[lark_standalone.Token, ast.Program]
-):
-    """Transforms the parse tree from Parser into AST nodes."""
+class DefineTransformer:
+    """Top-level orchestrator that transforms a parse tree into an AST Program."""
 
     _file_path: PurePosixPath | None
 
     def __init__(self, file_path: PurePosixPath | None = None):
         """Initialize with an optional file path for source locations."""
-        super().__init__()
         self._file_path = file_path
 
-    @lark_standalone.v_args(meta=True)
-    def start(
-        self, meta: lark_standalone.Meta, items: list[ast.QualityDefinition]
+    def transform(
+        self, tree: lark_standalone.Tree[lark_standalone.Token]
     ) -> ast.Program:
-        """Transform the root rule into a Program."""
+        """Transform the parse tree into an AST Program."""
+        definitions: list[ast.QualityDefinition] = []
+        for child in tree.children:
+            if not isinstance(child, lark_standalone.Tree):
+                continue
+            enclosing_fqun = _extract_definition_fqun(child, self._file_path)
+            sub_transformer = DefinitionTransformer(
+                file_path=self._file_path, enclosing_fqun=enclosing_fqun
+            )
+            definitions.append(sub_transformer.transform(child))
         return ast.Program(
-            definitions=items,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            definitions=definitions,
+            location=ast.SourceLocation.from_meta(tree.meta, file_path=self._file_path),
         )
+
+
+def _extract_definition_fqun(
+    definition_tree: lark_standalone.Tree[lark_standalone.Token],
+    file_path: PurePosixPath | None,
+) -> ast.Fqun:
+    """Extract the inline FQUN from a definition parse subtree."""
+    inner = cast(
+        "lark_standalone.Tree[lark_standalone.Token]", definition_tree.children[0]
+    )
+    name_tree = cast("lark_standalone.Tree[lark_standalone.Token]", inner.children[1])
+    name_token = cast("lark_standalone.Token", name_tree.children[0])
+    return name_parser.parse_global_name_definition(name_token, file_path).fqun
+
+
+class DefinitionTransformer(
+    lark_standalone.Transformer[lark_standalone.Token, ast.QualityDefinition]
+):
+    """Transforms a single definition subtree into an AST QualityDefinition."""
+
+    _file_path: PurePosixPath | None
+    _enclosing_fqun: ast.Fqun
+
+    def __init__(
+        self,
+        *,
+        file_path: PurePosixPath | None,
+        enclosing_fqun: ast.Fqun,
+    ):
+        """Initialize with the enclosing definition's FQUN and an optional file path."""
+        super().__init__()
+        self._file_path = file_path
+        self._enclosing_fqun = enclosing_fqun
 
     @lark_standalone.v_args(meta=True)
     def position_definition(
@@ -284,6 +322,7 @@ class DefineTransformer(
         return ast.GlobalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
+            enclosing_fqun=self._enclosing_fqun,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 

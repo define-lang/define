@@ -157,19 +157,26 @@ class FileStructuralValidator:
         file_path = context.full_path if context.is_filesystem_context else None
         try:
             program = transformer.DefineTransformer(file_path=file_path).transform(tree)
-        except lark_standalone.VisitError as e:
-            if isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
-                tracker.mark_transform_finished()
-                return validation_result.FileValidationResult(
-                    exception=e.orig_exc,
-                    source=source,
-                    file_path=context.full_path,
-                    root_prefix=context.root_prefix,
-                    stats=tracker.build(),
-                    file_diagnostics=[],
-                    definition_results=[],
-                )
-            raise
+        except (
+            lark_standalone.VisitError,
+            parser_exceptions.DefineSyntaxError,
+        ) as e:
+            if isinstance(e, lark_standalone.VisitError):
+                if not isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
+                    raise
+                syntax_error = e.orig_exc
+            else:
+                syntax_error = e
+            tracker.mark_transform_finished()
+            return validation_result.FileValidationResult(
+                exception=syntax_error,
+                source=source,
+                file_path=context.full_path,
+                root_prefix=context.root_prefix,
+                stats=tracker.build(),
+                file_diagnostics=[],
+                definition_results=[],
+            )
         tracker.mark_transform_finished()
 
         seen_definitions: dict[str, ast.QualityDefinition] = {}

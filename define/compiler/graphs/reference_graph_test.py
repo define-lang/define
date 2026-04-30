@@ -68,6 +68,7 @@ def _make_edge(
                 path=ast.GlobalPathName(name=target_path, location=_LOC),
                 location=_LOC,
             ),
+            enclosing_fqun=_FQUN,
             location=_LOC,
         ),
     )

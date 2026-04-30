@@ -1080,3 +1080,87 @@ def test_action_definition_with_quality_implications():
     assert definition.interface_positions[0].typed_name.name_content.name == "run"
     assert len(definition.trigger_conditions.conditions) == 1
     assert len(definition.action_statements.statements) == 1
+
+
+def test_enclosing_fqun_set_on_global_reference():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.constraints is not None
+    requirement = definition.constraints.requirements[0]
+    assert (
+        requirement.typed_global_name.enclosing_fqun.canonical
+        == definition.typed_name.name_content.fqun.canonical
+    )
+
+
+def test_enclosing_fqun_dispatched_per_definition():
+    program = _parse_and_transform(
+        "define the potential position<my_mv:example.com:lib_a:/pos_a> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "    }\n"
+        + "}\n"
+        + "define the potential position<my_mv:example.com:lib_b:/pos_b> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert len(program.definitions) == 2
+    first = program.definitions[0]
+    second = program.definitions[1]
+    assert isinstance(first, ast.PositionDefinition)
+    assert isinstance(second, ast.PositionDefinition)
+    assert first.constraints is not None
+    assert second.constraints is not None
+    first_ref = first.constraints.requirements[0].typed_global_name
+    second_ref = second.constraints.requirements[0].typed_global_name
+    assert first_ref.enclosing_fqun.canonical == "my_mv:example.com:lib_a"
+    assert second_ref.enclosing_fqun.canonical == "my_mv:example.com:lib_b"
+
+
+def test_enclosing_fqun_independent_of_reference_own_fqun():
+    program = _parse_and_transform(
+        "define the potential position<standard:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position<other.com:other_lib:/elsewhere>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    assert definition.constraints is not None
+    typed_ref = definition.constraints.requirements[0].typed_global_name
+    assert typed_ref.name_content.fqun is not None
+    assert typed_ref.name_content.fqun.canonical == "other.com:other_lib"
+    assert typed_ref.enclosing_fqun.canonical == "standard"
+
+
+def test_enclosing_fqun_on_every_segment_of_chained_reference():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "        create a dimension point in position</a>::action</b>::position</c>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    stmt = definition.action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    expected = definition.typed_name.name_content.fqun.canonical
+    chain = stmt.target_position.typed_names
+    assert len(chain) == 3
+    for segment in chain:
+        assert isinstance(segment, ast.GlobalTypedNameReference)
+        assert segment.enclosing_fqun.canonical == expected

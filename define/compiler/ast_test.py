@@ -172,6 +172,7 @@ class TestGlobalTypedNameReference:
                 fqun=fqun,
                 path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
+            enclosing_fqun=fqun,
         )
         assert (
             reference.full_typed_name(in_universe=fqun)
@@ -187,6 +188,7 @@ class TestGlobalTypedNameReference:
                 fqun=None,
                 path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
+            enclosing_fqun=_make_fqun("my_lib", authority="my.domain.com"),
         )
         assert (
             reference.full_typed_name(
@@ -204,6 +206,7 @@ class TestGlobalTypedNameReference:
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
                 path=ast.GlobalPathName(location=_LOC, name="/thing"),
             ),
+            enclosing_fqun=_make_fqun("my_lib", authority="my.domain.com"),
         )
         in_universe = _make_fqun("other_lib", authority="other.domain.com")
         assert (

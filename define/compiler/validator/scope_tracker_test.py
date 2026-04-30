@@ -40,6 +40,7 @@ def _make_constraint_block(
                         path=ast.GlobalPathName(name=path, location=_LOC),
                         location=_LOC,
                     ),
+                    enclosing_fqun=_FQUN,
                     location=_LOC,
                 ),
                 location=_LOC,
@@ -84,6 +85,7 @@ def _make_global_typed_name(
             path=ast.GlobalPathName(name=path, location=_LOC),
             location=_LOC,
         ),
+        enclosing_fqun=_FQUN,
         location=_LOC,
     )
 

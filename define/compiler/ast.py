@@ -234,6 +234,7 @@ class GlobalTypedNameReference(TypedName):
     """Represents a typed global name reference."""
 
     name_content: ReferenceGlobalNameContent
+    enclosing_fqun: Fqun
 
 
 @dataclass(frozen=True, slots=True)
