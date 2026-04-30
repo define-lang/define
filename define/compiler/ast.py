@@ -236,6 +236,10 @@ class GlobalTypedNameReference(TypedName):
     name_content: ReferenceGlobalNameContent
     enclosing_fqun: Fqun
 
+    @override
+    def full_typed_name(self, in_universe: Fqun) -> str:
+        return f"{self.name_type.value}<{self.name_content.full_name(in_universe=self.enclosing_fqun)}>"
+
 
 @dataclass(frozen=True, slots=True)
 class LocalTypedNameReference(TypedName):
