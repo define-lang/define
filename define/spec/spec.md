@@ -1097,13 +1097,23 @@ action_statement =
     | wait_until_statement ;
 ```
 
+## Action Contracts
+
+Actions provie a "contract" indicating what state must be true before they are
+run and what state will be true when they complete.
+
+For the rest of this section, when we refer to "contracted position" we mean an
+interface position, a child name of an interface position, an implied quality,
+or a child name of an implied quality. Contracts cover only contracted
+positions.
+
 ### Automatic Action Requirements
 
 Proposals:
 
 - [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
 
-For each interface position that is not a trigger position, the compiler
+For each contracted position that is not a trigger position, the compiler
 automatically infers occupancy requirements for that position from the first
 time an Action Statements Block statement references that position. These
 inferred requirements are referred to as Action Requirements.
@@ -1116,20 +1126,20 @@ the Action Statements Block of an action that defines them.
 
 #### How Requirements Are Inferred
 
-If the first reference to the final position in a chained name is a Create
-Dimension Point Statement target or a Move Dimension Point Statement
-destination, that position is required to be empty.
+If the first reference to the final position in a chained name of a contracted
+position is a Create Dimension Point Statement target or a Move Dimension Point
+Statement destination, that position is required to be empty.
 
-If the first reference to the final position in a chain is a Move Dimension
-Point Statement source or a Destroy Dimension Point Statement target, that
-position is required to contain a dimension point.
+If the first reference to the final position in a chain of a contracted position
+is a Move Dimension Point Statement source or a Destroy Dimension Point
+Statement target, that position is required to contain a dimension point.
 
-Every intermediate position in a chained name is also implicitly required to
-contain a dimension point, if it is the first time that intermediate position is
-referenced in any chain (either within a chain or as the final position) in the
-Action Statements Block.
+Every intermediate position in a chained name of a contracted position is also
+implicitly required to contain a dimension point, if it is the first time that
+intermediate position is referenced in any chain (either within a chain or as
+the final position) in the Action Statements Block.
 
-#### Transitive Requirements Are Preserved
+#### Transitive Requirements On Interface Positions Are Preserved
 
 Imagine a call chain where Action A calls Action B, then Action B calls Action
 C. Imagine now that all of these calls happen through a chained name that is
@@ -1147,39 +1157,54 @@ which means this rule only applies to positions accessible via interface
 positions of actions (any chained name that is a child of an interface
 position).
 
+### Transitive Requirements on Implied Positions
+
+Implied positions always have their requirements transitively propagated up the
+call chain of actions. The calling action's requirements override the called
+action's requirements on implied positions, if they both impose a requirement on
+the same position.
+
 #### Requirements Follow Dimension Points
 
-If an action moves a dimension point from an interface position and then takes
+If an action moves a dimension point from a contracted position and then takes
 some action on a child position of that dimension point, that still creates a
-requirement on the interface position. Requirements are actually logically about
-dimension points the caller passed in, not fixed positions.
+requirement on the contracted position. Requirements are actually logically
+about dimension points the caller passed in, not fixed positions.
 
 ### Automatic Action Guarantees
 
 For each action, the compiler determines a set of "Action Guarantees." These are
 facts that are guaranteed to always be true when an action completes.
 
-The compiler determines a set of Action Position Occupancy Guarantees:
+The compiler determines a set of Action Position Occupancy Guarantees.
 
-- Which interface positions are always empty at the end of the action
-- Which interface positions are always filled at the end of the action
+- Which contracted positions are always empty at the end of the action
+- Which contracted positions are always filled at the end of the action
 
 The compiler also determines a set of Action Dimension Point Identity
 Guarantees. Upon completion of an action, each dimension point in each position
 is in one of two possible states:
 
-- It is a dimension point that was passed into one of the interface positions at
-  the start of the action, and thus has the same qualities as that dimension
-  point had when it was passed in.
+- It is a dimension point was in one of the contracted positions at the start of
+  the action, and thus has the same qualities as that dimension point had when
+  it was passed in.
 - It is a new dimension point created by this action or one of this action's
-  callees, and thus has the qualities defined by the position in which it was
-  created.
+  callees, and thus has the qualities defined by the contracted position in
+  which it was created.
 
 The compiler uses these guarantees to reason about dimension point occupancy and
 dimension point qualities in a fully modular way without having to do
 whole-program dataflow analysis.
 
-These guarantees are visible only to the action's direct caller.
+#### Transitive Guarantees on Implied Qualities
+
+Guarantees about interface positions are visible only to an action's direct
+caller. However, guarantees about implied positions are propagated transitively
+up through an action's callers.
+
+An action can create a different guarantee about an implied position than an
+action it called, in which case the calling action's guarantee overrides the
+called action's guarantee.
 
 ### Depth-First Post-Order Reference Graph Traversal
 
