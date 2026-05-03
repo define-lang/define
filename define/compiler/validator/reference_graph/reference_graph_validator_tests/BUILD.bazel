@@ -183,6 +183,17 @@ py_test(
 )
 
 py_test(
+    name = "implied_action_triggering_test",
+    size = "small",
+    srcs = ["implied_action_triggering_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "inferred_action_occupancy_test",
     size = "small",
     srcs = ["inferred_action_occupancy_test.py"],
@@ -349,6 +360,7 @@ pyright_test(
         ":destroy_dimension_point_test",
         ":dimension_point_conflict_test",
         ":error_messages_test",
+        ":implied_action_triggering_test",
         ":inferred_action_occupancy_test",
         ":move_chained_constraint_test",
         ":move_cross_fqun_test",
