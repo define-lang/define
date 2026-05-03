@@ -116,6 +116,49 @@ class TestGlobalPathName:
         )
 
 
+class TestSourceLocationFromDefinitionName:
+    def test_position_spans_keyword_through_close(self):
+        name_content = ast.DefinitionGlobalNameContent(
+            location=ast.SourceLocation(line=1, column=31, end_line=1, end_column=45),
+            fqun=_make_fqun("my_lib", authority="my.domain.com"),
+            path=ast.GlobalPathName(location=_LOC, name="/thing"),
+        )
+        result = ast.SourceLocation.from_definition_name(
+            name_content, ast.NameType.POSITION
+        )
+        assert result == ast.SourceLocation(
+            line=1, column=22, end_line=1, end_column=46
+        )
+
+    def test_action_spans_keyword_through_close(self):
+        name_content = ast.DefinitionGlobalNameContent(
+            location=ast.SourceLocation(line=1, column=29, end_line=1, end_column=43),
+            fqun=_make_fqun("my_lib", authority="my.domain.com"),
+            path=ast.GlobalPathName(location=_LOC, name="/thing"),
+        )
+        result = ast.SourceLocation.from_definition_name(
+            name_content, ast.NameType.ACTION
+        )
+        assert result == ast.SourceLocation(
+            line=1, column=22, end_line=1, end_column=44
+        )
+
+    def test_local_position_spans_keyword_through_close(self):
+        path = PurePosixPath("foo.dfn")
+        name_content = ast.LocalNameContent(
+            name="x",
+            location=ast.SourceLocation(
+                line=2, column=21, end_line=2, end_column=22, file_path=path
+            ),
+        )
+        result = ast.SourceLocation.from_definition_name(
+            name_content, ast.NameType.POSITION
+        )
+        assert result == ast.SourceLocation(
+            line=2, column=12, end_line=2, end_column=23, file_path=path
+        )
+
+
 class TestGlobalTypedNameInDefinition:
     def test_full_typed_name(self):
         typed_name = ast.GlobalTypedNameInDefinition(

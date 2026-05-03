@@ -40,6 +40,9 @@ def test_position_definition_transforms_to_program():
     assert definition.typed_name.name_content.path.location.column == 40
     assert definition.typed_name.name_content.location.line == 1
     assert definition.typed_name.name_content.location.column == 31
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=46
+    )
 
 
 def test_action_definition_transforms_to_program():
@@ -62,6 +65,31 @@ def test_action_definition_transforms_to_program():
     assert definition.location.line == 1
     assert fqun.universe.name == "standard"
     assert definition.typed_name.name_content.path.relative_path == Path("path")
+    assert definition.typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=44
+    )
+
+
+def test_local_position_definition_transforms_to_program():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    define the position<_pp>.\n"
+        + "    it happens when {\n"
+        + "        the position<_pp> has a dimension point.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    assert len(definition.interface_positions) == 1
+    local_def = definition.interface_positions[0]
+    assert local_def.typed_name.name_content.location == ast.SourceLocation(
+        line=2, column=25, end_line=2, end_column=28
+    )
+    assert local_def.typed_name.location == ast.SourceLocation(
+        line=2, column=16, end_line=2, end_column=29
+    )
 
 
 def test_global_name_full_fqun():

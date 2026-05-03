@@ -67,6 +67,24 @@ class SourceLocation:
             file_path=file_path,
         )
 
+    @classmethod
+    def from_definition_name(
+        cls, name_content: NameContent, name_type: NameType
+    ) -> Self:
+        """Source location of a typed name at its definition site.
+
+        Spans the type-keyword word ("position" or "action") immediately
+        before "<" through the closing ">" of the name content.
+        """
+        name_loc = name_content.location
+        return cls(
+            line=name_loc.line,
+            column=name_loc.column - 1 - len(name_type.value),
+            end_line=name_loc.end_line,
+            end_column=name_loc.end_column + 1,
+            file_path=name_loc.file_path,
+        )
+
 
 def start_of_file_location(
     file_path: PurePosixPath | None = None,
@@ -120,8 +138,7 @@ class PositionDefinition(QualityDefinition):
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.POSITION,
                 name_content=name,
-                # TODO: This is the wrong location.
-                location=name.location,
+                location=SourceLocation.from_definition_name(name, NameType.POSITION),
             ),
             quality_implications=quality_implications or [],
             location=location,
@@ -184,7 +201,9 @@ class LocalPositionDefinition(ASTNode):
             LocalTypedNameReference(
                 name_type=NameType.POSITION,
                 name_content=local_name,
-                location=local_name.location,
+                location=SourceLocation.from_definition_name(
+                    local_name, NameType.POSITION
+                ),
             ),
         )
         object.__setattr__(self, "constraints", constraints)
@@ -491,8 +510,7 @@ class ActionDefinition(QualityDefinition):
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.ACTION,
                 name_content=name,
-                # TODO: This is the wrong location.
-                location=name.location,
+                location=SourceLocation.from_definition_name(name, NameType.ACTION),
             ),
             quality_implications=quality_implications,
             location=location,
