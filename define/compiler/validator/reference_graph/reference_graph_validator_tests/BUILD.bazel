@@ -59,9 +59,21 @@ py_test(
 )
 
 py_test(
-    name = "automated_guarantees_transitive_implication_test",
+    name = "automated_guarantees_transitive_implied_identity_test",
     size = "small",
-    srcs = ["automated_guarantees_transitive_implication_test.py"],
+    srcs = ["automated_guarantees_transitive_implied_identity_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "automated_guarantees_transitive_implied_occupancy_test",
+    size = "small",
+    srcs = ["automated_guarantees_transitive_implied_occupancy_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -361,7 +373,8 @@ pyright_test(
         ":automated_guarantees_nested_action_test",
         ":automated_guarantees_position_init_test",
         ":automated_guarantees_test",
-        ":automated_guarantees_transitive_implication_test",
+        ":automated_guarantees_transitive_implied_identity_test",
+        ":automated_guarantees_transitive_implied_occupancy_test",
         ":automated_guarantees_unknown_test",
         ":automated_requirements_diamond_test",
         ":automated_requirements_move_test",
