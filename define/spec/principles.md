@@ -65,6 +65,47 @@ as a language, for a few reasons:
 - It makes intent clearer to readers.
 - It makes the language naturally interpretable by an AI coding assistant.
 
+## Optimizing for Convenience was a Mistake
+
+Past programming languages have often optimized for the convenience of an
+individual programmer. They have provided intuitive syntax or syntactic sugar in
+exchange for poor runtime performance, the inability to fully optimize, or the
+inability to statically prove key facts about the program's behavior.
+
+Certainly, the ability for an individual programmer to read and understand code
+is critical. Plus, all code is in fact written and managed by individuals in
+some fashion or another (even when they are doing it through AI). So it's not
+like the individual is totally unimportant. We do care about the individual
+developer experience of using Define.
+
+The challenge of software development, though, is not how hard it is for an
+individual developer to write single lines of software or single files. It's how
+hard it is to maintain a system that is both correct and easy to keep modifying,
+over time, usually among disconnected groups of software developers. Thus,
+Define optimizes for these problems over all other problems.
+
+We can think of Define as a purism of total maintability. The maintainability of
+an _ecosystem_ of Define programs by large numbers of programmers over a long
+period of time is our top priority and overrides all other priorities for the
+design of Define. When I say "an ecosystem of Define programs" I mean multiple
+libraries and different pieces of code that all have to interact with each
+other, maintained by possibly disconnected groups of people who cannot
+communicate with each other other than by sending each other code (or even
+sending each other compiled binaries).
+
+My belief is that if we focus on this property, then we can develop _tooling_
+that makes working with the language more tractable for individual programmers.
+If we have perfect, modular static analysis, we could have editors that
+implement far more convenience features than editors have for any other
+language. We could develop command-line tools or analysis systems that allow for
+better refactoring, more detailed enforcement of patterns, perfect dead code
+elimination, fast symbol lookup, and all sorts of other things.
+
+Thus, we aren't _eliminating_ developer convenience. We just _start_ with
+maintainability as our total guide and we theorize that this will allow us to
+_get_ to a great developer experience, as opposed to sacrificing maintainability
+in the language design in exchange for the immediate convenince of typing code.
+
 ## Define is Explicit
 
 The language should not make choices for the programmer. The programmer should
