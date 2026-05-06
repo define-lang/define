@@ -1,5 +1,8 @@
 # pyright: reportUnusedCallResult=false
+from pathlib import PurePosixPath
+
 from define.compiler import conftest, diagnostics
+from define.compiler.graphs import action_call_graph
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 
@@ -96,6 +99,56 @@ class TestActionTriggering:
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+
+    def test_move_from_trigger_position_to_itself_does_not_retrigger(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    define the position<gateway> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</other>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<gateway>.\n"
+                    "        create a dimension point in position<gateway>::action</other>::position<trigger_pos>.\n"
+                    "        move the dimension point in position<gateway>::action</other>::position<trigger_pos> to position<gateway>::action</other>::position<trigger_pos>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "other.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/other> {\n"
+                    "    define the position<trigger_pos>.\n"
+                    "    it happens when {\n"
+                    "        the position<trigger_pos> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
+        assert all_diags[0].location.line == 13
+        assert all_diags[0].location.column == 132
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+        assert (
+            all_diags[0].position_name
+            == "position<gateway>::action</other>::position<trigger_pos>"
+        )
+        assert list(result.action_call_graph.edges()) == [
+            action_call_graph.ActionGraphEdge(source=_TEST, target=_OTHER),
+        ]
 
     def test_no_trigger_when_writing_to_non_trigger_position(
         self,

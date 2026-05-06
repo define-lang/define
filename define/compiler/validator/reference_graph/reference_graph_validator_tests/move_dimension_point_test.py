@@ -25,6 +25,44 @@ def test_valid_local_positions(
     assert results[0].diagnostics == []
 
 
+def test_move_from_child_to_parents_empty_sibling(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<parent> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child>.\n"
+                "            it has the position</sibling>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<parent>.\n"
+                "        create a dimension point in position<parent>::position</child>.\n"
+                "        create a dimension point in position<parent>::position</child>::position</grandchild>.\n"
+                "        move the dimension point in position<parent>::position</child>::position</grandchild> to position<parent>::position</sibling>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</grandchild>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "grandchild.dfn": "define the potential position<my.domain.com:my_lib:/grandchild>.\n",
+            "sibling.dfn": "define the potential position<my.domain.com:my_lib:/sibling>.\n",
+        }
+    )
+    assert result.program_result.all_diagnostics == []
+
+
 def test_duplicate_source_definition_does_not_add_move_constraint_diagnostics(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -259,62 +297,6 @@ def test_valid_global_to_position(
     assert all_diags[0].location.column == 60
 
 
-def test_move_from_a_position_to_itself(
-    validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
-):
-    source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
-        "    } and it does {\n"
-        "        define the position<a>.\n"
-        "        create a dimension point in position<a>.\n"
-        "        move the dimension point in position<a> to position<a>.\n"
-        "    }\n"
-        "}\n"
-    )
-    results = validate_non_filesystem_with_reference_graph(source).file_results
-    diags = results[0].diagnostics
-    assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
-    assert diags[0].location.line == 8
-    assert diags[0].location.column == 52
-    assert diags[0].position_name == "position<a>"
-
-
-def test_move_from_a_chained_position_to_itself(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "        define the position<a> {\n"
-                "            it may only contain dimension points where {\n"
-                "                it has the position</x>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a dimension point in position<a>.\n"
-                "        move the dimension point in position<a>::position</x> to position<a>::position</x>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
-    assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 79
-    assert all_diags[0].position_name == "position<a>::position</x>"
-
-
 def test_move_to_same_position_does_not_mark_unknown(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
@@ -343,37 +325,6 @@ def test_move_to_same_position_does_not_mark_unknown(
     assert diags[1].location.column == 37
     assert diags[1].position_name == "position<a>"
     assert diags[1].created_at.line == 7
-
-
-def test_move_to_chained_prefix_position(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<local_pos> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</target_pos>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        the position<local_pos> has a dimension point.\n"
-                "    } and it does {\n"
-                "        move the dimension point in position<local_pos> to position<local_pos>::position</target_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "target_pos.dfn": "define the potential position<my.domain.com:my_lib:/target_pos>.\n",
-        }
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    assert all_diags[0].location.line == 10
-    assert all_diags[0].location.column == 81
-    assert all_diags[0].source_position == "position<local_pos>"
-    assert all_diags[0].target_position == "position<local_pos>::position</target_pos>"
 
 
 def test_move_to_chained_prefix_marks_unknown(

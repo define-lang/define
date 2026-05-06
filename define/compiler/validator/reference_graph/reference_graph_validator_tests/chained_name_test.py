@@ -31,7 +31,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 3
+        assert len(diags) == 2
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -39,16 +39,11 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<inner_pos>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 58
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].element_name == "position<Bad>"
-        assert diags[1].parent_name == "position<inner_pos>"
+        assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert diags[1].local_name == "Bad"
+        assert diags[1].char == "B"
         assert diags[1].location.line == 6
-        assert diags[1].location.column == 58
-        assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
-        assert diags[2].local_name == "Bad"
-        assert diags[2].char == "B"
-        assert diags[2].location.line == 6
-        assert diags[2].location.column == 67
+        assert diags[1].location.column == 67
 
     def test_chain_both_endpoints_action(
         self,
@@ -113,7 +108,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 4
+        assert len(diags) == 3
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -124,15 +119,10 @@ class TestCreateDimensionPoint:
         assert isinstance(diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
         assert diags[1].location.line == 6
         assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[2].element_name == "action<act_b>"
-        assert diags[2].parent_name == "position<pos_a>"
+        assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
+        assert diags[2].local_name == "act_b"
         assert diags[2].location.line == 6
-        assert diags[2].location.column == 54
-        assert isinstance(diags[3], diagnostics.LocalActionNameDiagnostic)
-        assert diags[3].local_name == "act_b"
-        assert diags[3].location.line == 6
-        assert diags[3].location.column == 61
+        assert diags[2].location.column == 61
 
     def test_chain_starting_with_action(
         self,
@@ -288,7 +278,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 5
+        assert len(diags) == 4
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -296,28 +286,23 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
         assert diags[0].location.column == 54
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].parent_name == "position<pos_a>"
-        assert diags[1].element_name == "action<wrong>"
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
-        assert diags[2].local_name == "wrong"
+        assert diags[1].location.column == 61
+        assert isinstance(
+            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[2].local_name == "position<pos_end>"
+        assert diags[2].preceding_name == "action<wrong>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 61
+        assert diags[2].location.column == 69
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
-        assert diags[3].local_name == "position<pos_end>"
-        assert diags[3].preceding_name == "action<wrong>"
-        assert diags[3].location.line == 10
-        assert diags[3].location.column == 69
-        assert isinstance(
-            diags[4], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
-        )
-        assert diags[4].universe == "my.domain.com:my_lib"
-        assert diags[4].location.line == 4
-        assert diags[4].location.column == 31
+        assert diags[3].universe == "my.domain.com:my_lib"
+        assert diags[3].location.line == 4
+        assert diags[3].location.column == 31
 
     def test_chain_second_element_global_not_in_constraints(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -386,7 +371,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 4
+        assert len(diags) == 3
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -394,22 +379,17 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 54
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].parent_name == "position<pos_a>"
-        assert diags[1].element_name == "action<act_b>"
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].local_name == "act_b"
         assert diags[1].location.line == 6
-        assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
-        assert diags[2].local_name == "act_b"
-        assert diags[2].location.line == 6
-        assert diags[2].location.column == 61
+        assert diags[1].location.column == 61
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
-        assert diags[3].local_name == "position<pos_c>"
-        assert diags[3].preceding_name == "action<act_b>"
-        assert diags[3].location.line == 6
-        assert diags[3].location.column == 69
+        assert diags[2].local_name == "position<pos_c>"
+        assert diags[2].preceding_name == "action<act_b>"
+        assert diags[2].location.line == 6
+        assert diags[2].location.column == 69
 
     def test_chain_second_element_matches_constraint(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -556,7 +536,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 5
+        assert len(diags) == 4
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -564,28 +544,23 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
         assert diags[0].location.column == 54
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].element_name == "action<child>"
-        assert diags[1].parent_name == "position<pos_a>"
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].local_name == "child"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
-        assert diags[2].local_name == "child"
+        assert diags[1].location.column == 61
+        assert isinstance(
+            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[2].local_name == "position<pos_end>"
+        assert diags[2].preceding_name == "action<child>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 61
+        assert diags[2].location.column == 69
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
-        assert diags[3].local_name == "position<pos_end>"
-        assert diags[3].preceding_name == "action<child>"
-        assert diags[3].location.line == 10
-        assert diags[3].location.column == 69
-        assert isinstance(
-            diags[4], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
-        )
-        assert diags[4].universe == "my.domain.com:my_lib"
-        assert diags[4].location.line == 4
-        assert diags[4].location.column == 33
+        assert diags[3].universe == "my.domain.com:my_lib"
+        assert diags[3].location.line == 4
+        assert diags[3].location.column == 33
 
     def test_chain_second_element_skipped_when_first_undefined(
         self,
@@ -647,7 +622,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 5
+        assert len(diags) == 4
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -655,29 +630,24 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
         assert diags[0].location.column == 54
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].element_name == "action<Bad>"
-        assert diags[1].parent_name == "position<pos_a>"
+        assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert diags[1].local_name == "Bad"
+        assert diags[1].char == "B"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
-        assert diags[2].local_name == "Bad"
-        assert diags[2].char == "B"
+        assert diags[1].location.column == 61
+        assert isinstance(
+            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[2].local_name == "position<pos_end>"
+        assert diags[2].preceding_name == "action<Bad>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 61
+        assert diags[2].location.column == 67
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
-        assert diags[3].local_name == "position<pos_end>"
-        assert diags[3].preceding_name == "action<Bad>"
-        assert diags[3].location.line == 10
-        assert diags[3].location.column == 67
-        assert isinstance(
-            diags[4], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
-        )
-        assert diags[4].universe == "my.domain.com:my_lib"
-        assert diags[4].location.line == 4
-        assert diags[4].location.column == 31
+        assert diags[3].universe == "my.domain.com:my_lib"
+        assert diags[3].location.line == 4
+        assert diags[3].location.column == 31
 
     def test_chained_local_after_short_form_global_position(
         self,
@@ -1078,7 +1048,7 @@ class TestCreateDimensionPoint:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 5
+        assert len(diags) == 4
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
@@ -1086,28 +1056,23 @@ class TestCreateDimensionPoint:
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
         assert diags[0].location.column == 54
-        assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-        assert diags[1].parent_name == "position<pos_a>"
-        assert diags[1].element_name == "action<wrong>"
+        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
-        assert diags[2].local_name == "wrong"
+        assert diags[1].location.column == 61
+        assert isinstance(
+            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[2].local_name == "position<pos_c>"
+        assert diags[2].preceding_name == "action<wrong>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 61
+        assert diags[2].location.column == 69
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
-        assert diags[3].local_name == "position<pos_c>"
-        assert diags[3].preceding_name == "action<wrong>"
-        assert diags[3].location.line == 10
-        assert diags[3].location.column == 69
-        assert isinstance(
-            diags[4], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
-        )
-        assert diags[4].universe == "my.domain.com:my_lib"
-        assert diags[4].location.line == 4
-        assert diags[4].location.column == 31
+        assert diags[3].universe == "my.domain.com:my_lib"
+        assert diags[3].location.line == 4
+        assert diags[3].location.column == 31
 
     def test_chain_action_cannot_contain_action(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -1219,18 +1184,11 @@ class TestCreateDimensionPoint:
         )
         assert [type(d) for d in test_result.diagnostics] == [
             diagnostics.PositionReferenceChainEndDiagnostic,
-            diagnostics.ChainElementNotInActionDiagnostic,
         ]
         end_diag = test_result.diagnostics[0]
         assert isinstance(end_diag, diagnostics.PositionReferenceChainEndDiagnostic)
         assert end_diag.location.line == 10
         assert end_diag.location.column == 62
-        diag = test_result.diagnostics[1]
-        assert isinstance(diag, diagnostics.ChainElementNotInActionDiagnostic)
-        assert diag.element_name == "action<my.domain.com:my_lib:/b>"
-        assert diag.parent_name == "action<my.domain.com:my_lib:/a>"
-        assert diag.location.line == 10
-        assert diag.location.column == 62
 
 
 class TestMoveDimensionPoint:
@@ -1681,7 +1639,7 @@ class TestChainActionValidation:
         )
         assert result.program_result.file_results[1].file_path == PurePosixPath("a.dfn")
         assert list(result.program_result.file_results[1].diagnostics) == []
-        assert len(result.program_result.file_results[0].diagnostics) == 3
+        assert len(result.program_result.file_results[0].diagnostics) == 2
         assert isinstance(
             result.program_result.file_results[0].diagnostics[0],
             diagnostics.PositionReferenceChainEndDiagnostic,
@@ -1692,25 +1650,9 @@ class TestChainActionValidation:
         )
         assert isinstance(
             result.program_result.file_results[0].diagnostics[1],
-            diagnostics.ChainElementNotInActionDiagnostic,
-        )
-        assert (
-            result.program_result.file_results[0].diagnostics[1].element_name
-            == "action<bad>"
-        )
-        assert (
-            result.program_result.file_results[0].diagnostics[1].parent_name
-            == "action<my.domain.com:my_lib:/a>"
-        )
-        assert result.program_result.file_results[0].diagnostics[1].location.line == 10
-        assert (
-            result.program_result.file_results[0].diagnostics[1].location.column == 62
-        )
-        assert isinstance(
-            result.program_result.file_results[0].diagnostics[2],
             diagnostics.LocalActionNameDiagnostic,
         )
-        assert result.program_result.file_results[0].diagnostics[2].local_name == "bad"
+        assert result.program_result.file_results[0].diagnostics[1].local_name == "bad"
 
     def test_chain_through_action_with_constrained_local_position(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph

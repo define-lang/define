@@ -229,17 +229,12 @@ def test_chained_name_starting_with_self_two_items_invalid_local(
     )
     results = validate_non_filesystem_with_reference_graph(source).file_results
     diags = results[0].diagnostics
-    assert len(diags) == 2
+    assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 54
     assert diags[0].local_name == "position<inner>"
     assert diags[0].preceding_name == "position<my.domain.com:my_lib:/test>"
-    assert isinstance(diags[1], diagnostics.ChainElementNotInConstraintsDiagnostic)
-    assert diags[1].location.line == 3
-    assert diags[1].location.column == 54
-    assert diags[1].element_name == "position<inner>"
-    assert diags[1].parent_name == "position<my.domain.com:my_lib:/test>"
 
 
 def test_chained_name_starting_with_self_three_items_valid(

@@ -10,6 +10,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -199,7 +200,6 @@ py_test(
     srcs = ["error_messages_test.py"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",

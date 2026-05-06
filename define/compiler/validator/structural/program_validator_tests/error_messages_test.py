@@ -94,6 +94,83 @@ def test_non_filesystem_diagnostics_have_no_file_name():
     )
 
 
+def test_move_to_same_position_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<pos>.\n"
+        "        create a dimension point in position<pos>.\n"
+        "        move the dimension point in position<pos> to position<pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == (
+        "line 8, column 54\n"
+        "        move the dimension point in position<pos> to position<pos>.\n"
+        "                                                     ^\n"
+        "source and destination cannot be identical when moving dimension points"
+        " ('position<pos>' is the name of both"
+        " the source and destination here)"
+    )
+
+
+def test_move_into_defining_position_format(validate_project: ValidateProject):
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<local_pos> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</mid_pos>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<local_pos> has a dimension point.\n"
+        "    } and it does {\n"
+        "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "mid_pos.dfn": (
+                "define the potential position<my.domain.com:my_lib:/mid_pos> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</end_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "end_pos.dfn": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
+        }
+    )
+    test_result = next(
+        r for r in result.file_results if r.file_path == PurePosixPath("test.dfn")
+    )
+    diags = test_result.diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 10, column 81\n'
+        "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
+        "                                                                                ^\n"
+        "cannot move a dimension point\n"
+        "  from: position<local_pos>\n"
+        "    to: position<local_pos>::position</mid_pos>::position</end_pos>\n"
+        "because the source position defines the destination position"
+        " ('position<local_pos>' is the start of both positions)"
+    )
+
+
 def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     validate_project: ValidateProject,
 ):

@@ -206,7 +206,6 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "dimension_points/create/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/create/duplicate_local_dimension_point.dfn": [
@@ -223,7 +222,6 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "dimension_points/move/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
     "dimension_points/move/dest_occupied_after_move.dfn": [

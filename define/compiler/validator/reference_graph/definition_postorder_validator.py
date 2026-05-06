@@ -287,10 +287,10 @@ class DefinitionPostorderValidator(abc.ABC):
         validity: validation_result.DimensionPointStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
-        self._validate_chained_name(stmt.target_position, scope)
-        position = stmt.target_position
         if not validity.target_ok:
             return
+        self._validate_chained_name(stmt.target_position, scope)
+        position = stmt.target_position
         if self._tracker.has_unknown_state(position):
             return
 
@@ -324,10 +324,10 @@ class DefinitionPostorderValidator(abc.ABC):
         validity: validation_result.DimensionPointStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
-        self._validate_chained_name(stmt.target_position, scope)
-        position = stmt.target_position
         if not validity.target_ok:
             return
+        self._validate_chained_name(stmt.target_position, scope)
+        position = stmt.target_position
         if self._tracker.has_unknown_state(position):
             return
 
@@ -366,11 +366,20 @@ class DefinitionPostorderValidator(abc.ABC):
         validity: validation_result.DimensionPointStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
+        if not (validity.source_ok and validity.target_ok):
+            return
+        if validity.from_is_prefix_of_to:
+            self._tracker.mark_unknown(stmt.source_position)
+            self._tracker.mark_unknown(stmt.target_position)
+            return
         self._validate_chained_name(stmt.source_position, scope)
         self._validate_chained_name(stmt.target_position, scope)
-        if self._check_if_from_is_a_prefix_of_to(stmt):
-            return
-        if not (validity.source_ok and validity.target_ok):
+        if (
+            stmt.source_position.canonical_chained_name_tuple
+            == stmt.target_position.canonical_chained_name_tuple
+        ):
+            # We can't execute self-to-self moves because it would re-trigger
+            # actions if the move is for a trigger position.
             return
         self._execute_move(stmt.source_position, stmt.target_position, scope)
 
@@ -490,44 +499,6 @@ class DefinitionPostorderValidator(abc.ABC):
         self._tracker.mark_unknown(from_pos)
         self._tracker.mark_unknown(to_pos)
         return False
-
-    def _check_if_from_is_a_prefix_of_to(
-        self,
-        stmt: ast.MoveDimensionPointStatement,
-    ) -> bool:
-        """Check if the from chain is a prefix of (or identical to) the to chain.
-
-        Returns True if a prefix relationship was detected (and diagnostics emitted).
-        """
-        from_pos = stmt.source_position
-        to_pos = stmt.target_position
-        if len(from_pos.typed_names) > len(to_pos.typed_names):
-            return False
-        for from_name, to_name in zip(
-            from_pos.typed_names, to_pos.typed_names, strict=False
-        ):
-            if from_name.full_typed_name != to_name.full_typed_name:
-                return False
-
-        if len(from_pos.typed_names) == len(to_pos.typed_names):
-            self._diagnostics.append(
-                diagnostics.MoveToSamePositionDiagnostic(
-                    location=to_pos.typed_names[-1].location,
-                    position_name=to_pos.source_chained_name,
-                )
-            )
-        else:
-            divergence = to_pos.typed_names[len(from_pos.typed_names)]
-            self._diagnostics.append(
-                diagnostics.MoveIntoDefiningPositionDiagnostic(
-                    location=divergence.location,
-                    source_position=from_pos.source_chained_name,
-                    target_position=to_pos.source_chained_name,
-                )
-            )
-            self._tracker.mark_unknown(stmt.source_position)
-            self._tracker.mark_unknown(stmt.target_position)
-        return True
 
     def _validate_chained_name(
         self,

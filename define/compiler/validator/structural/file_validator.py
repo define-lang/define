@@ -475,13 +475,52 @@ class DefinitionStructuralValidator:
             scope,
             allow_self_reference=allow_self_reference,
         )
+        from_is_prefix_of_to = self._check_if_from_is_a_prefix_of_to(stmt)
         self._dp_statement_validity.append(
             validation_result.DimensionPointStatementValidity(
                 statement=stmt,
                 source_ok=source_ok,
                 target_ok=target_ok,
+                from_is_prefix_of_to=from_is_prefix_of_to,
             )
         )
+
+    def _check_if_from_is_a_prefix_of_to(
+        self,
+        stmt: ast.MoveDimensionPointStatement,
+    ) -> bool:
+        """Check if the from chain is a prefix of the to chain, and emit a diagnostic if so.
+
+        Also emits a diagnostic if the from and to chains are identical.
+        """
+        from_pos = stmt.source_position
+        to_pos = stmt.target_position
+        if len(from_pos.typed_names) > len(to_pos.typed_names):
+            return False
+        for from_name, to_name in zip(
+            from_pos.typed_names, to_pos.typed_names, strict=False
+        ):
+            if from_name.full_typed_name != to_name.full_typed_name:
+                return False
+
+        if len(from_pos.typed_names) == len(to_pos.typed_names):
+            self._diagnostics.append(
+                diagnostics.MoveToSamePositionDiagnostic(
+                    location=to_pos.typed_names[-1].location,
+                    position_name=to_pos.source_chained_name,
+                )
+            )
+            return False
+
+        divergence = to_pos.typed_names[len(from_pos.typed_names)]
+        self._diagnostics.append(
+            diagnostics.MoveIntoDefiningPositionDiagnostic(
+                location=divergence.location,
+                source_position=from_pos.source_chained_name,
+                target_position=to_pos.source_chained_name,
+            )
+        )
+        return True
 
     def _validate_destroy_dimension_point(
         self,

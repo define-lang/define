@@ -39,6 +39,7 @@ class DimensionPointStatementValidity:
     statement: ast.DimensionPointStatement
     target_ok: bool
     source_ok: bool = True
+    from_is_prefix_of_to: bool = False
 
 
 @dataclass

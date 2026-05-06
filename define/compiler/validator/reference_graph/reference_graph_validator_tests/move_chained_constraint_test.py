@@ -634,14 +634,10 @@ def test_move_from_local_local_chain(
     )
     result = validate_non_filesystem_with_reference_graph(source)
     results = result.file_results
-    assert len(results[0].diagnostics) == 2
+    assert len(results[0].diagnostics) == 1
     assert isinstance(
         results[0].diagnostics[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
-    )
-    assert isinstance(
-        results[0].diagnostics[1],
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
     )
 
 
@@ -663,16 +659,12 @@ def test_move_from_local_local_local_chain(
     )
     result = validate_non_filesystem_with_reference_graph(source)
     results = result.file_results
-    assert len(results[0].diagnostics) == 3
+    assert len(results[0].diagnostics) == 2
     assert isinstance(
         results[0].diagnostics[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
     assert isinstance(
         results[0].diagnostics[1],
-        diagnostics.ChainElementNotInConstraintsDiagnostic,
-    )
-    assert isinstance(
-        results[0].diagnostics[2],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
