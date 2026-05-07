@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from define.compiler import ast
+from define.compiler import ast
 
 
 class PositionOccupancyState(enum.Enum):
@@ -19,14 +17,18 @@ class PositionOccupancyState(enum.Enum):
 
 
 @dataclass(frozen=True)
-class InterfacePositionRequirement:
-    """An automatically inferred requirement on an action interface position."""
+class PositionRequirement:
+    """An automatically inferred requirement on a contracted position.
+
+    A contracted position is an interface position, a child of an interface
+    position, an implied quality, or a child of an implied quality.
+    """
 
     required_state: PositionOccupancyState
     # Can be either a position reference or an action reference.
     inferred_from: ast.ChainedName
     enclosing_action: ast.ActionDefinition
-    propagated_from: InterfacePositionRequirement | None = None
+    propagated_from: PositionRequirement | None = None
 
     def root_cause_action_name(self) -> str:
         """Walk the propagation chain to find the originating action's canonical name."""
@@ -35,42 +37,21 @@ class InterfacePositionRequirement:
             current = current.propagated_from
         return current.enclosing_action.typed_name.source_typed_name
 
-    def resolved_chained_name(self, caller_fqun: ast.Fqun) -> str:
-        """Return the requirement's chained name resolved for the caller's FQUN context.
+    def propagation_chain_chained_name(self) -> ast.ChainedName:
+        """Get the full chained name composed by walking propagated_from.
 
-        Walks the propagation chain, resolving each level's elements against
-        its enclosing action's FQUN. Uses source form for same-FQUN elements
-        and canonical form for cross-FQUN elements.
+        The returned ChainedName's location is this requirement's
+        inferred_from location.
         """
-        # Each propagation level's inferred_from contains only that
-        # level's prefix (e.g., [iface, action] or [iface, position</y>, action]).
-        # The leaf level's chain is the original requirement's chain.
-        parts: list[str] = []
-        current = self
-        while current is not None:
-            parts.append(current._resolved_chain(current.inferred_from, caller_fqun))
-            current = current.propagated_from
-        return "::".join(parts)
-
-    def _resolved_chain(self, chain: ast.ChainedName, caller_fqun: ast.Fqun) -> str:
-        fqun = self.enclosing_action.typed_name.name_content.fqun
-        if fqun.canonical == caller_fqun.canonical:
-            return chain.source_chained_name
-        return chain.canonical_chained_name
-
-    def propagation_chain_typed_names(self) -> list[ast.TypedNameReference]:
-        """Collect typed names from this requirement's full propagation chain.
-
-        Each propagation level's inferred_from contains only that level's
-        prefix. The concatenation gives the full position within the
-        innermost action's context.
-        """
-        result: list[ast.TypedNameReference] = list(self.inferred_from.typed_names)
+        typed_names = list(self.inferred_from.typed_names)
         current = self.propagated_from
         while current is not None:
-            result.extend(current.inferred_from.typed_names)
+            typed_names.extend(current.inferred_from.typed_names)
             current = current.propagated_from
-        return result
+        return ast.ChainedName(
+            location=self.inferred_from.location,
+            typed_names=typed_names,
+        )
 
     def propagated_from_locations(self) -> list[ast.SourceLocation]:
         """Collect source locations from the propagated_from chain."""
@@ -124,7 +105,7 @@ class ActionStatementsBlockContract:
 class ActionContract(ActionStatementsBlockContract):
     """The automatically inferred requirements and guarantees for an action."""
 
-    requirements: dict[tuple[str, ...], InterfacePositionRequirement]
+    requirements: dict[tuple[str, ...], PositionRequirement]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
 

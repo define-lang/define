@@ -105,6 +105,17 @@ py_test(
 )
 
 py_test(
+    name = "automated_requirements_implied_position_test",
+    size = "small",
+    srcs = ["automated_requirements_implied_position_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "automated_requirements_move_test",
     size = "small",
     srcs = ["automated_requirements_move_test.py"],
@@ -112,6 +123,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
     ],
 )
 
@@ -123,6 +135,18 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_nested_implied_test",
+    size = "small",
+    srcs = ["automated_requirements_nested_implied_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
     ],
 )
 
@@ -214,6 +238,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
     ],
 )
 
@@ -322,7 +347,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
     ],
 )
 
@@ -377,8 +401,10 @@ pyright_test(
         ":automated_guarantees_transitive_implied_occupancy_test",
         ":automated_guarantees_unknown_test",
         ":automated_requirements_diamond_test",
+        ":automated_requirements_implied_position_test",
         ":automated_requirements_move_test",
         ":automated_requirements_nested_action_test",
+        ":automated_requirements_nested_implied_test",
         ":automated_requirements_test",
         ":chained_name_test",
         ":create_dimension_point_test",

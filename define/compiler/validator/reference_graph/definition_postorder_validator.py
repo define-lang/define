@@ -65,6 +65,16 @@ class DefinitionPostorderValidator(abc.ABC):
     def _tracker(self) -> dimension_point_tracker.DimensionPointTracker:
         return dimension_point_tracker.DimensionPointTracker()
 
+    @cached_property
+    def _implied_quality_list(self) -> list[ast.TypedName]:
+        return [
+            impl.typed_global_name for impl in self._definition.quality_implications
+        ]
+
+    @cached_property
+    def _implied_quality_name_set(self) -> frozenset[str]:
+        return frozenset(name.full_typed_name for name in self._implied_quality_list)
+
     @abc.abstractmethod
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, edges, and contract."""
@@ -220,12 +230,14 @@ class DefinitionPostorderValidator(abc.ABC):
             raise ValueError(
                 f"no action in chain: {trigger_position.source_chained_name}"
             )
-        # source_prefix is for diagnostics, canonical_prefix is for key lookups.
-        source_prefix = action_chain.source_chained_name
-        canonical_prefix = action_chain.canonical_chained_name_tuple
-
-        for req_key, req in contract.requirements.items():
-            key = canonical_prefix + req_key
+        for req in contract.requirements.values():
+            full_caller_chain = req.propagation_chain_chained_name().in_caller(
+                action_chain
+            )
+            key = full_caller_chain.canonical_chained_name_tuple
+            position_name = full_caller_chain.source_form_in_universe(
+                self._enclosing_fqun
+            )
 
             if self._tracker.has_unknown_state_by_key(key):
                 continue
@@ -241,7 +253,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
                         location=dp.last_position.location,
                         action_name=req.root_cause_action_name(),
-                        position_name=f"{source_prefix}::{req.resolved_chained_name(self._enclosing_fqun)}",
+                        position_name=position_name,
                         inferred_at=req.inferred_from.location,
                         propagated_from_locations=req.propagated_from_locations(),
                         filled_at=occupant.last_position.location,
@@ -255,7 +267,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
                         location=dp.last_position.location,
                         action_name=req.root_cause_action_name(),
-                        position_name=f"{source_prefix}::{req.resolved_chained_name(self._enclosing_fqun)}",
+                        position_name=position_name,
                         inferred_at=req.inferred_from.location,
                         propagated_from_locations=req.propagated_from_locations(),
                     )
@@ -502,73 +514,82 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _validate_chained_name(
         self,
-        ref: ast.PositionReference,
+        chain: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ):
         """Validate chained name elements against their parent name's constraints.
 
-        Marks the chain's position as UNKNOWN in the tracker if validation fails.
+        Marks the chain's occupancy state as UNKNOWN in the tracker if validation fails.
         """
-        if len(ref.typed_names) < 2:
+        if len(chain.typed_names) < 2:
             return
-        elements = ref.typed_names
-
-        # Check the second element against the first element's constraints
-        # using the scope tracker. This works also for position-self references
-        # because we inserted the position's definition into the scope already.
+        elements = chain.typed_names
         first = elements[0]
+        # An interface position (or position-self reference in an init
+        # block) at index 0 is in scope and provides its own constraints;
+        # every other parent name in the chain must be a global definition
+        # that we have to look up.
+        index = 0
         if scope.is_defined(first):
             self._check_chain_element_in_constraints(
-                ref,
+                chain,
                 elements[1],
                 scope.get_constraint_names(first),
                 first.full_typed_name,
             )
+            index = 1
 
-        index = 1
         while index < len(elements) - 1:
             parent = elements[index]
-            # The file_validator already diagnoses invalid chains before
-            # they reach us. However, they still _exist_, so we skip them.
-            if not isinstance(parent, ast.GlobalTypedNameReference):
-                self._tracker.mark_unknown(ref)
-                return
-            parent_name = parent.full_typed_name
-            parent_result = self._definition_results.get(parent_name)
-            # This means the definition's file did not load or did not parse.
-            if parent_result is None:
-                self._tracker.mark_unknown(ref)
-                return
             child = elements[index + 1]
-            match parent_result.definition:
+            parent_def = self._get_chain_element_definition(parent, chain)
+            if parent_def is None:
+                return
+            match parent_def:
                 case ast.PositionDefinition() as position_def:
                     self._check_chain_element_in_constraints(
-                        ref,
+                        chain,
                         child,
                         position_def.constraint_names,
-                        parent_name,
+                        parent.full_typed_name,
                     )
                     index += 1
                 case ast.ActionDefinition() as action_def:
                     consumed = self._validate_action_chain_step(
-                        ref,
+                        chain,
                         child,
                         elements,
                         index + 1,
                         action_def,
-                        parent_name,
+                        parent.full_typed_name,
                     )
                     if consumed == 0:
                         return
                     index += consumed
                 case _:
-                    raise TypeError(
-                        f"Unexpected definition type: {type(parent_result.definition)}"
-                    )
+                    raise TypeError(f"Unexpected definition type: {type(parent_def)}")
+
+    def _get_chain_element_definition(
+        self,
+        parent: ast.TypedNameReference,
+        chain: ast.PositionReference,
+    ) -> ast.QualityDefinition | None:
+        """Get the QualityDefinition for a chain element, or None on failure (and mark chain unknown)."""
+        # The file_validator already diagnoses invalid chains before
+        # they reach us. However, they still _exist_, so we skip them.
+        if not isinstance(parent, ast.GlobalTypedNameReference):
+            self._tracker.mark_unknown(chain)
+            return None
+        parent_result = self._definition_results.get(parent.full_typed_name)
+        # This means the definition's file did not load or did not parse.
+        if parent_result is None:
+            self._tracker.mark_unknown(chain)
+            return None
+        return parent_result.definition
 
     def _validate_action_chain_step(
         self,
-        ref: ast.PositionReference,
+        chain: ast.PositionReference,
         child: ast.TypedNameReference,
         elements: list[ast.TypedNameReference],
         child_index: int,
@@ -581,20 +602,20 @@ class DefinitionPostorderValidator(abc.ABC):
         """
         # TODO: We should emit more specific diagnostics for these cases.
         if not isinstance(child, ast.LocalTypedNameReference):
-            self._emit_not_in_action_diagnostic(ref, child, parent_name)
+            self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0
         if child.name_type != ast.NameType.POSITION:
-            self._emit_not_in_action_diagnostic(ref, child, parent_name)
+            self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0
         if child.full_typed_name not in action_def.interface_position_constraints:
-            self._emit_not_in_action_diagnostic(ref, child, parent_name)
+            self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0
         # The caller guarantees child exists, but not that the child's child exists.
         if child_index + 1 >= len(elements):
             return 1
         next_child = elements[child_index + 1]
         self._check_chain_element_in_constraints(
-            ref,
+            chain,
             next_child,
             action_def.interface_position_constraints[child.full_typed_name],
             child.source_typed_name,
@@ -603,7 +624,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _check_chain_element_in_constraints(
         self,
-        ref: ast.PositionReference,
+        chain: ast.PositionReference,
         element: ast.TypedNameReference,
         constraint_names: frozenset[str],
         parent_name: str,
@@ -620,7 +641,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     parent_name=parent_name,
                 )
             )
-            self._tracker.mark_unknown(ref)
+            self._tracker.mark_unknown(chain)
 
     def _expand_constraints_with_implications(
         self, constraint_names: frozenset[str]
@@ -645,7 +666,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _emit_not_in_action_diagnostic(
         self,
-        ref: ast.PositionReference,
+        chain: ast.PositionReference,
         element: ast.TypedNameReference,
         parent_name: str,
     ):
@@ -657,7 +678,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 parent_name=parent_name,
             )
         )
-        self._tracker.mark_unknown(ref)
+        self._tracker.mark_unknown(chain)
 
     # TODO: _get_constraint_block and _get_direct_required_qualities share the same
     # position-resolution logic and should be refactored to use a common helper.
@@ -729,18 +750,11 @@ class DefinitionPostorderValidator(abc.ABC):
         direct = self._get_direct_required_qualities(position, scope) or frozenset()
         return self._expand_constraints_with_implications(direct)
 
-    def _get_direct_implied_quality_names(self) -> list[ast.TypedName]:
-        return [
-            impl.typed_global_name for impl in self._definition.quality_implications
-        ]
-
 
 class ActionPostorderValidator(DefinitionPostorderValidator):
     """Validates an action definition during a DFS post-order walk."""
 
-    _inferred_requirements: dict[
-        tuple[str, ...], action_contract.InterfacePositionRequirement
-    ]
+    _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
 
     def __init__(
         self,
@@ -843,7 +857,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             requirements=self._inferred_requirements,
             guarantees=self._tracker.generate_guarantees(
                 self._action_definition.interface_position_names,
-                self._get_direct_implied_quality_names(),
+                self._implied_quality_list,
             ),
             trigger_position_name=self._trigger_position_name or "",
         )
@@ -855,32 +869,15 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Infer a requirement for an interface position the first time it is referenced."""
-        first = position.typed_names[0]
-        if not scope.is_defined(first):
+        """Infer a requirement for a contracted position the first time it is referenced."""
+        inferred_from_chain = self._chain_for_inferred_requirement(position, scope)
+        if inferred_from_chain is None:
             return
-        first_typed_name = first.full_typed_name
-        first_is_interface = first_typed_name in self._interface_positions
-        inferred_from_chain = position
-        if not first_is_interface:
-            parent_interface_position = self._parent_comes_from_interface_position(
-                position
-            )
-            if parent_interface_position is None:
-                return
-            # When the parent came from the caller (via a moved interface
-            # position), remap the requirement through the original interface
-            # position so the requirement key and diagnostic match the caller's
-            # view of the world.
-            inferred_from_chain: ast.ChainedName = (
-                self._remap_through_interface_position(
-                    position, parent_interface_position
-                )
-            )
 
         # The population of the base trigger position itself is handled elsewhere
         # and doesn't create an implicit requirement. (However, actions on children
         # of the position still do create requirements.)
+        first_typed_name = position.typed_names[0].full_typed_name
         if (
             scope.is_defined_local(position)
             and self._trigger_position_name == first_typed_name
@@ -891,7 +888,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if requirement_key in self._inferred_requirements:
             return
         self._inferred_requirements[requirement_key] = (
-            action_contract.InterfacePositionRequirement(
+            action_contract.PositionRequirement(
                 required_state=required_state,
                 inferred_from=inferred_from_chain,
                 enclosing_action=self._action_definition,
@@ -903,6 +900,32 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 self._get_transitive_required_qualities(position, scope)
             )
             self._tracker.create(position, qualities, from_caller=True)
+
+    def _chain_for_inferred_requirement(
+        self,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> ast.ChainedName | None:
+        """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
+        # It's either an implied position or a self-reference in an init block.
+        if position.starts_with_global:
+            return position
+
+        first = position.typed_names[0]
+        if not scope.is_defined(first):
+            return None
+        if first.full_typed_name in self._interface_positions:
+            return position
+        parent_interface_position = self._parent_comes_from_interface_position(position)
+        if parent_interface_position is None:
+            return None
+        # When the parent came from the caller (via a moved interface
+        # position), remap the requirement through the original interface
+        # position so the requirement key and diagnostic match the caller's
+        # view of the world.
+        return self._remap_through_interface_position(
+            position, parent_interface_position
+        )
 
     def _parent_comes_from_interface_position(
         self,
@@ -980,24 +1003,41 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if iface_def is None:
             return
 
-        # The caller sees only the interface position and the action, not any
-        # internal positions the DP may have been moved through. (That's why
-        # we only append action_chain to the interface position.)
-        remapped_prefix = self._remap_through_interface_position(
+        # Interface-position requirements get the full action-plus-interface
+        # prefix; implied-quality requirements live alongside the action on
+        # the caller's interface position, so they get only the parent prefix
+        # of the action.
+        interface_prefix = self._remap_through_interface_position(
             action_chain, iface_def
         )
-        canonical_key_prefix = remapped_prefix.canonical_chained_name_tuple
-        for req_key, inner_req in contract.requirements.items():
-            propagated_key = (*canonical_key_prefix, *req_key)
+        # TODO: This is actually wrong; it's only safe because we guard to only
+        # interface positions above, but when we make all contracted positions
+        # work, this won't work in the case action</foo>::position<iface> or
+        # just position</x> in the caller.
+        implied_prefix = interface_prefix.parent_position()
+        if implied_prefix is None:
+            raise ValueError(
+                f"interface_prefix has no parent position: {interface_prefix.source_chained_name}"
+            )
+        for inner_req in contract.requirements.values():
+            propagation_prefix = (
+                implied_prefix
+                if inner_req.inferred_from.starts_with_global
+                else interface_prefix
+            )
+            full_caller_chain = inner_req.propagation_chain_chained_name().in_caller(
+                interface_prefix
+            )
+            propagated_key = full_caller_chain.canonical_chained_name_tuple
             # If we already inferred a requirement for this key (i.e.,
             # our own code references this position first), we satisfy
             # it ourselves and don't propagate it to our caller.
             if propagated_key in self._inferred_requirements:
                 continue
             self._inferred_requirements[propagated_key] = (
-                action_contract.InterfacePositionRequirement(
+                action_contract.PositionRequirement(
                     required_state=inner_req.required_state,
-                    inferred_from=remapped_prefix,
+                    inferred_from=propagation_prefix,
                     enclosing_action=self._action_definition,
                     propagated_from=inner_req,
                 )
@@ -1007,9 +1047,8 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 == action_contract.PositionOccupancyState.OCCUPIED
             ):
                 propagated_position = ast.PositionReference(
-                    location=remapped_prefix.location,
-                    typed_names=remapped_prefix.typed_names
-                    + inner_req.propagation_chain_typed_names(),
+                    location=full_caller_chain.location,
+                    typed_names=full_caller_chain.typed_names,
                 )
                 # The triggered action's OccupiedByExisting guarantees can carry
                 # this synthesized DP into other positions that later statements
@@ -1054,7 +1093,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         return action_contract.PositionInitBlockContract(
             guarantees=self._tracker.generate_guarantees(
                 [definition.typed_name],
-                self._get_direct_implied_quality_names(),
+                self._implied_quality_list,
             ),
         )
 

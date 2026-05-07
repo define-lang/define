@@ -4,13 +4,17 @@ import typing
 import unittest.mock
 from pathlib import PurePosixPath
 
-from define.compiler import conftest
+from define.compiler import ast, conftest
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
 )
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
+
+
+def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
+    return req.propagation_chain_chained_name().source_form_in_universe(fqun)
 
 
 def _get_contract(
@@ -145,6 +149,84 @@ class TestRequirementInference:
         )
         contract = _get_contract(source)
         assert ("position<local_only>",) not in contract.requirements
+
+
+_IMPLIED_POSITION = "position<my.domain.com:my_lib:/implied>"
+_IMPLIED_ACTION = "action<my.domain.com:my_lib:/sub>"
+_SUB_IFACE = "position<iface>"
+
+
+class TestImpliedPositionRequirementInference:
+    def test_create_in_implied_position_infers_empty(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</implied>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position</implied>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        key = (_IMPLIED_POSITION,)
+        assert key in contract.requirements
+        req = contract.requirements[key]
+        assert req.required_state == action_contract.PositionOccupancyState.EMPTY
+        assert req.inferred_from.source_chained_name == "position</implied>"
+        assert req.inferred_from.location.line == 8
+
+    def test_destroy_in_implied_position_infers_occupied(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</implied>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        destroy the dimension point in position</implied>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        key = (_IMPLIED_POSITION,)
+        assert key in contract.requirements
+        assert (
+            contract.requirements[key].required_state
+            == action_contract.PositionOccupancyState.OCCUPIED
+        )
+
+    def test_create_in_implied_action_iface_infers_empty(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/sub> {\n"
+            "    define the position<iface>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the action</sub>.\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in action</sub>::position<iface>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        leaf_key = (_IMPLIED_ACTION, _SUB_IFACE)
+        assert leaf_key in contract.requirements
+        leaf = contract.requirements[leaf_key]
+        assert leaf.required_state == action_contract.PositionOccupancyState.EMPTY
+        assert leaf.inferred_from.source_chained_name == "action</sub>::position<iface>"
 
 
 class TestGuaranteeGeneration:
@@ -780,18 +862,15 @@ def test_interface_position_requirement_integration(
     # Methods on the outermost requirement
     assert req.root_cause_action_name() == _INNER_ACTION
     outer_fqun = req.enclosing_action.typed_name.name_content.fqun
-    assert req.resolved_chained_name(outer_fqun) == (
+    assert _resolved(req, outer_fqun) == (
         "position<out_iface>::action</middle>"
         "::position<mid_iface>::action</inner>"
         "::position<item>"
     )
-    assert [n.source_typed_name for n in req.propagation_chain_typed_names()] == [
-        "position<out_iface>",
-        "action</middle>",
-        "position<mid_iface>",
-        "action</inner>",
-        "position<item>",
-    ]
+    assert req.propagation_chain_chained_name().source_chained_name == (
+        "position<out_iface>::action</middle>"
+        "::position<mid_iface>::action</inner>::position<item>"
+    )
     outer_locs = req.propagated_from_locations()
     assert len(outer_locs) == 2
     assert outer_locs[0].line == 11
@@ -802,14 +881,12 @@ def test_interface_position_requirement_integration(
     # Methods on the middle requirement
     assert mid_req.root_cause_action_name() == _INNER_ACTION
     middle_fqun = mid_req.enclosing_action.typed_name.name_content.fqun
-    assert mid_req.resolved_chained_name(middle_fqun) == (
+    assert _resolved(mid_req, middle_fqun) == (
         "position<mid_iface>::action</inner>::position<item>"
     )
-    assert [n.source_typed_name for n in mid_req.propagation_chain_typed_names()] == [
-        "position<mid_iface>",
-        "action</inner>",
-        "position<item>",
-    ]
+    assert mid_req.propagation_chain_chained_name().source_chained_name == (
+        "position<mid_iface>::action</inner>::position<item>"
+    )
     mid_locs = mid_req.propagated_from_locations()
     assert len(mid_locs) == 1
     assert mid_locs[0].line == 8
@@ -818,8 +895,9 @@ def test_interface_position_requirement_integration(
     # Methods on the leaf requirement
     assert inner_req.root_cause_action_name() == _INNER_ACTION
     inner_fqun = inner_req.enclosing_action.typed_name.name_content.fqun
-    assert inner_req.resolved_chained_name(inner_fqun) == "position<item>"
-    assert [n.source_typed_name for n in inner_req.propagation_chain_typed_names()] == [
-        "position<item>"
-    ]
+    assert _resolved(inner_req, inner_fqun) == "position<item>"
+    assert (
+        inner_req.propagation_chain_chained_name().source_chained_name
+        == "position<item>"
+    )
     assert inner_req.propagated_from_locations() == []

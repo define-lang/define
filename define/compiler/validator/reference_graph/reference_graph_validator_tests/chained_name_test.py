@@ -1,4 +1,5 @@
 # pyright: reportUnusedCallResult=false
+# TODO: Split up this file.
 """Chained position reference validation tests.
 
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
@@ -1807,6 +1808,176 @@ class TestChainActionValidation:
         assert all(
             len(r.diagnostics) == 0 for r in result.program_result.file_results[1:]
         )
+
+
+class TestImpliedQualityChainStart:
+    def test_valid_chain_past_implied_position(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
+                "x.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/x> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</y>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    it also assigns the position</x>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position</x>::position</y>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert_no_errors(result.program_result)
+
+    def test_invalid_chain_past_implied_position(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "z.dfn": "define the potential position<my.domain.com:my_lib:/z>.\n",
+                "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    it also assigns the position</x>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position</x>::position</z>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(
+            all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic
+        )
+        assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
+        assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/x>"
+        assert all_diags[0].location.line == 7
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+    def test_valid_chain_past_implied_action_iface(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/b> {\n"
+                    "    define the position<iface>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    it also assigns the action</b>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</b>::position<iface>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert_no_errors(result.program_result)
+
+    def test_invalid_chain_past_implied_action(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/b> {\n"
+                    "    define the position<iface>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    it also assigns the action</b>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in action</b>::position<not_iface>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert all_diags[0].element_name == "position<not_iface>"
+        assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/b>"
+        assert all_diags[0].location.line == 7
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+    def test_valid_three_element_chain_past_implied_position(
+        self,
+        validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "z.dfn": "define the potential position<my.domain.com:my_lib:/z>.\n",
+                "y.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/y> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</z>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "x.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/x> {\n"
+                    "    it may only contain dimension points where {\n"
+                    "        it has the position</y>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    it also assigns the position</x>.\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position</x>::position</y>::position</z>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert_no_errors(result.program_result)
 
 
 class TestMissingDefinitionInChain:

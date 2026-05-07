@@ -581,3 +581,110 @@ class TestParentPosition:
             "position<local>::action</act>::position<iface>",
             "position<local>",
         ]
+
+
+class TestInCaller:
+    def test_implied_quality_drops_action_segment(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>")
+        caller = position_reference_for("position<box>::action</b>")
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == "position<box>::position</x>"
+
+    def test_implied_quality_chain_drops_action_segment(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>::position</y>")
+        caller = position_reference_for("position<box>::action</b>")
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == "position<box>::position</x>::position</y>"
+
+    def test_interface_position_nests_under_action(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position<iface>")
+        caller = position_reference_for("position<box>::action</b>")
+        result = inner.in_caller(caller)
+        assert (
+            result.source_chained_name == "position<box>::action</b>::position<iface>"
+        )
+
+    def test_implied_action_iface_drops_action_segment(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("action</c>::position<iface>")
+        caller = position_reference_for("position<box>::action</b>")
+        result = inner.in_caller(caller)
+        assert (
+            result.source_chained_name == "position<box>::action</c>::position<iface>"
+        )
+
+    def test_caller_without_parent_implied_returns_self(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        # When the caller's action chain has no parent position (e.g., an
+        # implied action triggered directly), an implied quality lives at
+        # the caller's top-level scope, not under any interface position.
+        inner = position_reference_for("position</x>")
+        caller = position_reference_for("action</b>")
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == "position</x>"
+
+    def test_caller_without_parent_interface_concatenates(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position<iface>")
+        caller = position_reference_for("action</b>")
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == "action</b>::position<iface>"
+
+    def test_long_caller_chain_implied_drops_trailing_action(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>")
+        caller = position_reference_for(
+            "position<box>::action</foo>::position<iface>::action</bar>"
+        )
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == (
+            "position<box>::action</foo>::position<iface>::position</x>"
+        )
+
+    def test_long_caller_chain_interface_concatenates(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position<inner_iface>")
+        caller = position_reference_for(
+            "position<box>::action</foo>::position<iface>::action</bar>"
+        )
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == (
+            "position<box>::action</foo>::position<iface>"
+            "::action</bar>::position<inner_iface>"
+        )
+
+    def test_two_action_caller_chain_implied_chained_inner(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>::position</y>")
+        caller = position_reference_for(
+            "position<box>::action</foo>::position<iface>::action</bar>"
+        )
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == (
+            "position<box>::action</foo>::position<iface>::position</x>::position</y>"
+        )
+
+    def test_two_action_caller_chain_interface_chained_inner(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position<inner_iface>::position</child>")
+        caller = position_reference_for(
+            "position<box>::action</foo>::position<iface>::action</bar>"
+        )
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == (
+            "position<box>::action</foo>::position<iface>"
+            "::action</bar>::position<inner_iface>::position</child>"
+        )

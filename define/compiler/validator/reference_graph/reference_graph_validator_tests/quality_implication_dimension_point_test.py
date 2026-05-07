@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -89,13 +87,6 @@ def test_move_between_implied_positions(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Expected: no diagnostics. Actual: validator emits"
-        " DestroyInEmptyPositionDiagnostic for position</parent>::position</child>."
-    ),
-    strict=True,
-)
 def test_chained_child_access_via_implied_position(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -224,16 +215,6 @@ def test_create_in_occupied_implied_position(
     assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Inference error: a destroy in a quality-required position whose state"
-        " has not been touched by the action body should infer the position is"
-        " OCCUPIED on entry (turning the destroy into an inferred caller-side"
-        " requirement). Instead the validator infers EMPTY and emits"
-        " DestroyInEmptyPositionDiagnostic."
-    ),
-    strict=True,
-)
 def test_destroy_in_empty_implied_position_inferrs_created(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -256,10 +237,6 @@ def test_destroy_in_empty_implied_position_inferrs_created(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    reason="We should be inferring that a DP exists in position</implier>.",
-    strict=True,
-)
 def test_move_from_empty_implied_position_infers_occupied(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

@@ -56,6 +56,7 @@ See [define/spec/spec.md] for the language specification.
 
 - Only add comments that explain why code was written. Never add comments saying
   what code does.
+- When refactoring, preserve existing comments.
 
 ## Docstrings
 

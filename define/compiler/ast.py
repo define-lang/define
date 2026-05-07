@@ -274,6 +274,11 @@ class LocalTypedNameReference(TypedName):
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
+def chain_starts_with_global(key: tuple[str, ...]) -> bool:
+    """Return whether the leftmost element of a chained-name key is a global."""
+    return "/" in key[0]
+
+
 @dataclass(frozen=True, slots=True)
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
@@ -294,6 +299,11 @@ class ChainedName(ASTNode):
     def source_chained_name(self) -> str:
         """Return chained name text as it appears in the source."""
         return "::".join(elem.source_typed_name for elem in self.typed_names)
+
+    @property
+    def starts_with_global(self) -> bool:
+        """Return whether the chain's first element is a global reference."""
+        return isinstance(self.typed_names[0], GlobalTypedNameReference)
 
     def get_last_action(self) -> GlobalTypedNameReference | None:
         """Return the last action element in the chain, or None."""
@@ -353,6 +363,36 @@ class ChainedName(ASTNode):
                     typed_names=names[: i + 1],
                 )
         return None
+
+    def source_form_in_universe(self, caller_fqun: Fqun) -> str:
+        """Get the string form of the name as it would be written in source in the specified universe."""
+        parts: list[str] = []
+        for elem in self.typed_names:
+            if isinstance(elem, GlobalTypedNameReference):
+                effective_fqun = elem.name_content.fqun or elem.enclosing_fqun
+                if effective_fqun.canonical != caller_fqun.canonical:
+                    parts.append(elem.full_typed_name)
+                    continue
+            parts.append(elem.source_typed_name)
+        return "::".join(parts)
+
+    def in_caller(self, caller_action_chain: ChainedName) -> ChainedName:
+        """Get the full chained name of a contracted position from the perspective of the caller of the current action.
+
+        `caller_action_chain` is the full chain of the action in the caller,
+        ending with an action name.
+        """
+        if self.starts_with_global:
+            prefix = caller_action_chain.parent_position()
+            prefix_names = prefix.typed_names if prefix is not None else []
+            return ChainedName(
+                location=self.location,
+                typed_names=[*prefix_names, *self.typed_names],
+            )
+        return ChainedName(
+            location=self.location,
+            typed_names=[*caller_action_chain.typed_names, *self.typed_names],
+        )
 
 
 @dataclass(frozen=True, slots=True, init=False)

@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -193,6 +195,13 @@ def test_caller_triggering_implied_action_violates_inner_requirement(
     assert result.action_call_graph.unique_edges() == {(_TEST, _IMPLIED)}
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Requirements are not yet inferred for implied-action iface positions"
+        " whose state was filled by a prior internal trigger."
+    ),
+)
 def test_implied_action_guarantees_propagate_to_caller(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):

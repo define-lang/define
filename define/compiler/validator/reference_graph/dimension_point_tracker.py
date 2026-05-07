@@ -51,10 +51,6 @@ class _UnknownState:
 _ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
 
 
-def _is_implied_position(key: tuple[str, ...]) -> bool:
-    return "/" in key[0]
-
-
 class DimensionPointTracker:
     """Tracks which positions contain dimension points.
 
@@ -367,7 +363,7 @@ class DimensionPointTracker:
         for _name, guarantee in sorted_items:
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
-                if _is_implied_position(origin_tuple):
+                if ast.chain_starts_with_global(origin_tuple):
                     origin_keys.add(implied_prefix + origin_tuple)
                 else:
                     origin_keys.add(interface_prefix + origin_tuple)
@@ -381,7 +377,7 @@ class DimensionPointTracker:
         for name, guarantee in sorted_items:
             key = (
                 implied_prefix + name
-                if _is_implied_position(name)
+                if ast.chain_starts_with_global(name)
                 else interface_prefix + name
             )
 
@@ -483,7 +479,7 @@ class DimensionPointTracker:
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""
         origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
-        if _is_implied_position(origin_tuple):
+        if ast.chain_starts_with_global(origin_tuple):
             origin_key = implied_prefix + origin_tuple
         else:
             origin_key = interface_prefix + origin_tuple
