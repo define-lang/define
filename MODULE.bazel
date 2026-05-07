@@ -14,11 +14,11 @@ bazel_dep(name = "gazelle", version = "0.50.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "34.1")
 bazel_dep(name = "protovalidate", version = "1.2.0")
-bazel_dep(name = "aspect_rules_py", version = "1.11.2")
+bazel_dep(name = "aspect_rules_py", version = "1.11.5")
 bazel_dep(name = "rules_buf", version = "0.5.4")
 bazel_dep(name = "rules_multitool", version = "1.11.1")
 bazel_dep(name = "aspect_rules_lint", version = "2.5.2")
-bazel_dep(name = "aspect_rules_js", version = "3.0.3")
+bazel_dep(name = "aspect_rules_js", version = "3.1.1")
 bazel_dep(name = "rules_nodejs", version = "6.7.4")
 
 # Transitive overrides
