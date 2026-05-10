@@ -275,6 +275,308 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
+def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position<iface> to position<local>.\n"
+                "        create a dimension point in position<local>::position</child>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert diag.location.line == 15
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert (
+        diag.position_name
+        == "position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>"
+    )
+    assert diag.inferred_at.line == 17
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert diag.filled_at.line == 14
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(diag.propagated_from_locations) == 1
+    assert diag.propagated_from_locations[0].line == 7
+    assert diag.propagated_from_locations[0].column == 37
+    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_local(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "intermediate.dfn": (
+                "define the potential position<my.domain.com:my_lib:/intermediate> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</intermediate>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position<iface>::position</intermediate> to position<local>.\n"
+                "        create a dimension point in position<local>::position</child>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</intermediate>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</intermediate>::position</child>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert diag.location.line == 16
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert (
+        diag.position_name
+        == "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>"
+    )
+    assert diag.inferred_at.line == 17
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert diag.filled_at.line == 15
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(diag.propagated_from_locations) == 1
+    assert diag.propagated_from_locations[0].line == 7
+    assert diag.propagated_from_locations[0].column == 37
+    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+def test_complex_chain_interaction_iface(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</grand>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "grand.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grand> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</great>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "great.dfn": (
+                "define the potential position<my.domain.com:my_lib:/great> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</double>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "double.dfn": (
+                "define the potential position<my.domain.com:my_lib:/double> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</child>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</great>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position<iface>::position</child>::position</grand> to position<local>.\n"
+                "        create a dimension point in position<local>::position</great>::position</double>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>::position</grand>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert diag.location.line == 18
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert (
+        diag.position_name
+        == "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
+    )
+    assert diag.inferred_at.line == 17
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert diag.filled_at.line == 17
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(diag.propagated_from_locations) == 1
+    assert diag.propagated_from_locations[0].line == 7
+    assert diag.propagated_from_locations[0].column == 37
+    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
 @pytest.mark.xfail(
     strict=True,
     reason=(
@@ -302,8 +604,6 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
-                "        define the position<_sink>.\n"
-                "        move the dimension point in position<trigger_pos> to position<_sink>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -388,8 +688,6 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
-                "        define the position<_sink>.\n"
-                "        move the dimension point in position<trigger_pos> to position<_sink>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -447,6 +745,338 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "_remap_through_interface_position does not yet remap chains whose"
+        " from_caller origin is an implied (global) position."
+    ),
+)
+def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position</implied> to position<local>.\n"
+                "        create a dimension point in position<local>::position</child>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</implied>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert diag.location.line == 15
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert (
+        diag.position_name
+        == "position<box>::position</implied>::position</child>::action</inner>::position<item>"
+    )
+    assert diag.inferred_at.line == 13
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert diag.filled_at.line == 14
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(diag.propagated_from_locations) == 1
+    assert diag.propagated_from_locations[0].line == 7
+    assert diag.propagated_from_locations[0].column == 37
+    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "_remap_through_interface_position does not yet remap chains whose"
+        " from_caller origin is an implied (global) position."
+    ),
+)
+def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_local(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</intermediate>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "intermediate.dfn": (
+                "define the potential position<my.domain.com:my_lib:/intermediate> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</child>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position</implied>::position</intermediate> to position<local>.\n"
+                "        create a dimension point in position<local>::position</child>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</implied>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</intermediate>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</intermediate>::position</child>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert diag.location.line == 16
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert (
+        diag.position_name
+        == "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>"
+    )
+    assert diag.inferred_at.line == 13
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert diag.filled_at.line == 15
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(diag.propagated_from_locations) == 1
+    assert diag.propagated_from_locations[0].line == 7
+    assert diag.propagated_from_locations[0].column == 37
+    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "_remap_through_interface_position does not yet remap chains whose"
+        " from_caller origin is an implied (global) position."
+    ),
+)
+def test_complex_chain_interaction_implied(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</grand>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "grand.dfn": (
+                "define the potential position<my.domain.com:my_lib:/grand> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</great>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "great.dfn": (
+                "define the potential position<my.domain.com:my_lib:/great> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</double>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "double.dfn": (
+                "define the potential position<my.domain.com:my_lib:/double> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</inner>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<local> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</great>.\n"
+                "            }\n"
+                "        }\n"
+                "        move the dimension point in position</implied>::position</child>::position</grand> to position<local>.\n"
+                "        create a dimension point in position<local>::position</great>::position</double>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</implied>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>::position</grand>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>::position</grand>::position</great>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>.\n"
+                "        create a dimension point in position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert diag.location.line == 18
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert (
+        diag.position_name
+        == "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
+    )
+    assert diag.inferred_at.line == 14
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert diag.filled_at.line == 17
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
+    assert len(diag.propagated_from_locations) == 1
+    assert diag.propagated_from_locations[0].line == 7
+    assert diag.propagated_from_locations[0].column == 37
+    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
 def test_caller_sees_requirement_when_interface_moved_to_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -467,8 +1097,6 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
-                "        define the position<_sink>.\n"
-                "        move the dimension point in position<trigger_pos> to position<_sink>.\n"
                 "    }\n"
                 "}\n"
             ),

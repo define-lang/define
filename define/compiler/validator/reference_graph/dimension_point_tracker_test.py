@@ -563,6 +563,7 @@ def test_apply_guarantees_occupied_by_new():
     assert occupant.last_position.location == _LOC2
     assert occupant.qualities == frozenset(["position<x>"])
     assert occupant.origin_position is _POS2_REF
+    assert occupant.from_caller is False
 
 
 def test_apply_guarantees_occupied_by_existing():

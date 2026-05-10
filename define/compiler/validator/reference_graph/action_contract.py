@@ -37,18 +37,14 @@ class PositionRequirement:
             current = current.propagated_from
         return current.enclosing_action.typed_name.source_typed_name
 
-    def propagation_chain_chained_name(self) -> ast.ChainedName:
-        """Get the full chained name composed by walking propagated_from.
-
-        The returned ChainedName's location is this requirement's
-        inferred_from location.
-        """
+    def full_propagation_position_chain(self) -> ast.PositionReference:
+        """Get the full chained name composed by walking propagated_from."""
         typed_names = list(self.inferred_from.typed_names)
         current = self.propagated_from
         while current is not None:
             typed_names.extend(current.inferred_from.typed_names)
             current = current.propagated_from
-        return ast.ChainedName(
+        return ast.PositionReference(
             location=self.inferred_from.location,
             typed_names=typed_names,
         )

@@ -40,7 +40,7 @@ def _get_create_ref(
 
 
 def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
-    return req.propagation_chain_chained_name().source_form_in_universe(fqun)
+    return req.full_propagation_position_chain().source_form_in_universe(fqun)
 
 
 _EMPTY = action_contract.PositionOccupancyState.EMPTY
@@ -458,7 +458,7 @@ class TestPropagationChainChainedName:
             enclosing_action=_OUTER,
         )
         assert (
-            req.propagation_chain_chained_name().source_chained_name
+            req.full_propagation_position_chain().source_chained_name
             == "position<iface>::action</middle>::position<trigger_pos>"
         )
 
@@ -475,7 +475,7 @@ class TestPropagationChainChainedName:
             propagated_from=leaf,
         )
         assert (
-            propagated.propagation_chain_chained_name().source_chained_name
+            propagated.full_propagation_position_chain().source_chained_name
             == "position<iface>::action</inner>::position<item>::position</x>"
         )
 
@@ -497,7 +497,7 @@ class TestPropagationChainChainedName:
             enclosing_action=_OUTER,
             propagated_from=middle,
         )
-        assert outer.propagation_chain_chained_name().source_chained_name == (
+        assert outer.full_propagation_position_chain().source_chained_name == (
             "position<iface>::action</middle>"
             "::position<mid_iface>::action</inner>"
             "::position<item>::position</x>"
@@ -510,7 +510,7 @@ class TestPropagationChainChainedName:
             enclosing_action=_MAIN_IMPLIES_POSITION,
         )
         assert (
-            req.propagation_chain_chained_name().source_chained_name == "position</x>"
+            req.full_propagation_position_chain().source_chained_name == "position</x>"
         )
 
     def test_implied_position_propagated(self):
@@ -526,7 +526,7 @@ class TestPropagationChainChainedName:
             propagated_from=leaf,
         )
         assert (
-            propagated.propagation_chain_chained_name().source_chained_name
+            propagated.full_propagation_position_chain().source_chained_name
             == "position<iface>::position</x>"
         )
 

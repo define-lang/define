@@ -127,16 +127,15 @@ class DimensionPointTracker:
         in_position: ast.PositionReference,
         qualities: frozenset[str],
         *,
-        from_caller: bool = False,
+        from_caller: ast.PositionReference | None = None,
     ):
         """Record a new dimension point at this position.
 
         Args:
             in_position: Where the dimension point is being created.
             qualities: The qualities this dimension point has.
-            from_caller: True if this DP represents one passed in by the caller
-                of this action (pass into the trigger condition or an interface
-                position), False if created within this action body statement.
+            from_caller: When provided, the DP represents one passed in by the
+                caller, and this is its caller-side chained name.
 
         Raises ValueError if the position is already occupied.
         """
@@ -144,13 +143,15 @@ class DimensionPointTracker:
             self._key(in_position), in_position, qualities, from_caller=from_caller
         )
 
+    # TODO: The docstring here no longer makes sense now that AST nodes
+    # resolve their own FQUN.
     def create_by_key(
         self,
         key: tuple[str, ...],
         position: ast.PositionReference,
         qualities: frozenset[str],
         *,
-        from_caller: bool = False,
+        from_caller: ast.PositionReference | None = None,
     ):
         """Record a new dimension point using an explicit canonical key.
 
@@ -165,8 +166,8 @@ class DimensionPointTracker:
         info = DimensionPointInfo(
             last_position=position,
             qualities=qualities,
-            origin_position=position,
-            from_caller=from_caller,
+            origin_position=from_caller if from_caller is not None else position,
+            from_caller=from_caller is not None,
         )
         if existing is not None:
             existing.dp_info = info

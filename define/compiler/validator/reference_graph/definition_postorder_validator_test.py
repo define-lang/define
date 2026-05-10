@@ -14,7 +14,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
-    return req.propagation_chain_chained_name().source_form_in_universe(fqun)
+    return req.full_propagation_position_chain().source_form_in_universe(fqun)
 
 
 def _get_contract(
@@ -867,7 +867,7 @@ def test_interface_position_requirement_integration(
         "::position<mid_iface>::action</inner>"
         "::position<item>"
     )
-    assert req.propagation_chain_chained_name().source_chained_name == (
+    assert req.full_propagation_position_chain().source_chained_name == (
         "position<out_iface>::action</middle>"
         "::position<mid_iface>::action</inner>::position<item>"
     )
@@ -884,7 +884,7 @@ def test_interface_position_requirement_integration(
     assert _resolved(mid_req, middle_fqun) == (
         "position<mid_iface>::action</inner>::position<item>"
     )
-    assert mid_req.propagation_chain_chained_name().source_chained_name == (
+    assert mid_req.full_propagation_position_chain().source_chained_name == (
         "position<mid_iface>::action</inner>::position<item>"
     )
     mid_locs = mid_req.propagated_from_locations()
@@ -897,7 +897,7 @@ def test_interface_position_requirement_integration(
     inner_fqun = inner_req.enclosing_action.typed_name.name_content.fqun
     assert _resolved(inner_req, inner_fqun) == "position<item>"
     assert (
-        inner_req.propagation_chain_chained_name().source_chained_name
+        inner_req.full_propagation_position_chain().source_chained_name
         == "position<item>"
     )
     assert inner_req.propagated_from_locations() == []

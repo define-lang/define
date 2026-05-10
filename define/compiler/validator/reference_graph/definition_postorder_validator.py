@@ -231,7 +231,14 @@ class DefinitionPostorderValidator(abc.ABC):
                 f"no action in chain: {trigger_position.source_chained_name}"
             )
         for req in contract.requirements.values():
-            full_caller_chain = req.propagation_chain_chained_name().in_caller(
+            # Example values:
+            #   action_chain:
+            #     position<box>::action</outer>
+            #   req.full_propagation_position_chain():
+            #     position<iface>::action</inner>::position<item>
+            #   full_caller_chain:
+            #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
+            full_caller_chain = req.full_propagation_position_chain().in_caller(
                 action_chain
             )
             key = full_caller_chain.canonical_chained_name_tuple
@@ -844,7 +851,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 # DLP 37: We assume trigger points are occupied upon the start
                 # of the action, but we can only assume they have the qualities
                 # they are declared with.
-                self._tracker.create(trigger_ref, qualities, from_caller=True)
+                self._tracker.create(trigger_ref, qualities, from_caller=trigger_ref)
 
         scope.enter_child_scope()
         self._analyze_statements(definition.action_statements, scope)
@@ -899,13 +906,13 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             qualities = frozenset(
                 self._get_transitive_required_qualities(position, scope)
             )
-            self._tracker.create(position, qualities, from_caller=True)
+            self._tracker.create(position, qualities, from_caller=inferred_from_chain)
 
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> ast.ChainedName | None:
+    ) -> ast.PositionReference | None:
         """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
         # It's either an implied position or a self-reference in an init block.
         if position.starts_with_global:
@@ -916,22 +923,19 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             return None
         if first.full_typed_name in self._interface_positions:
             return position
-        parent_interface_position = self._parent_comes_from_interface_position(position)
-        if parent_interface_position is None:
+        parent_origin = self._parent_comes_from_interface_position(position)
+        if parent_origin is None:
             return None
-        # When the parent came from the caller (via a moved interface
-        # position), remap the requirement through the original interface
-        # position so the requirement key and diagnostic match the caller's
-        # view of the world.
-        return self._remap_through_interface_position(
-            position, parent_interface_position
-        )
+        # This comes from an interface position, so we put the requirement on
+        # that interface position, not whatever local position we are inferring
+        # a requirement for.
+        return position.replace_parent_position_with_prefix(parent_origin)
 
     def _parent_comes_from_interface_position(
         self,
         position: ast.ChainedName,
-    ) -> ast.LocalPositionDefinition | None:
-        """Return the interface position if the parent DP came from the caller."""
+    ) -> ast.PositionReference | None:
+        """Return the parent DP's interface-side origin chain if it came from the caller."""
         parent = position.parent_position()
         if parent is None:
             return None
@@ -939,49 +943,25 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # This check is necessary because we have to run _maybe_infer_reqiuirement
         # before we run _check_parents_occupied, so we can run into situations where
         # the developer has written a statement that operates on the child of a non-existent
-        # dimension point. Later, _chck_parents_occupied will detect this situation, emit
+        # dimension point. Later, _check_parents_occupied will detect this situation, emit
         # a diagnostic, and mark the relevant position unknown.
         if not self._tracker.is_occupied_by_key(parent_key):
             return None
         dp_info = self._tracker.get_occupant_by_key(parent_key)
         if not dp_info.from_caller:
             return None
-        origin_first = dp_info.origin_position.typed_names[0]
-        origin_key = origin_first.full_typed_name
-        return self._interface_positions.get(origin_key)
-
-    def _remap_through_interface_position(
-        self,
-        chain: ast.ChainedName,
-        iface_def: ast.LocalPositionDefinition,
-    ) -> ast.ChainedName:
-        """Replace a chain's parent prefix with the original interface position."""
-        parent = chain.parent_position()
-        if parent is None:
-            raise ValueError(
-                f"cannot remap single-element chain: {chain.source_chained_name}"
-            )
-        return ast.ChainedName(
-            location=chain.location,
-            typed_names=[
-                iface_def.typed_name,
-                *chain.typed_names[len(parent.typed_names) :],
-            ],
-        )
+        if (
+            dp_info.origin_position.typed_names[0].full_typed_name
+            not in self._interface_positions
+        ):
+            return None
+        return dp_info.origin_position
 
     def _action_parent_comes_from_interface_position(
         self,
         trigger_position: ast.PositionReference,
-    ) -> tuple[ast.ChainedName, ast.LocalPositionDefinition | None]:
-        """Return the interface position definition if the action's parent DP is from the caller.
-
-        Only the action's immediate parent position matters. If the parent
-        DP is from_caller, the caller injected it, so the caller has access
-        to the rest of the chain and could have pre-filled the action's interface
-        positions. Thus, requirements must propagate. If the parent DP is NOT
-        from_caller (created internally by this action), the caller's access
-        was severed, so requirements don't propagate.
-        """
+    ) -> tuple[ast.ChainedName, ast.PositionReference | None]:
+        """Return the action's parent DP's iface-side origin chain if it is from the caller."""
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError("not an action")
@@ -997,18 +977,18 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         scope: scope_tracker.ScopeTracker,
     ):
         """Propagate inner action requirements into this action's contract."""
-        (action_chain, iface_def) = self._action_parent_comes_from_interface_position(
-            trigger_position
+        (action_chain, parent_origin) = (
+            self._action_parent_comes_from_interface_position(trigger_position)
         )
-        if iface_def is None:
+        if parent_origin is None:
             return
 
         # Interface-position requirements get the full action-plus-interface
         # prefix; implied-quality requirements live alongside the action on
         # the caller's interface position, so they get only the parent prefix
         # of the action.
-        interface_prefix = self._remap_through_interface_position(
-            action_chain, iface_def
+        interface_prefix = action_chain.replace_parent_position_with_prefix(
+            parent_origin
         )
         # TODO: This is actually wrong; it's only safe because we guard to only
         # interface positions above, but when we make all contracted positions
@@ -1025,7 +1005,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 if inner_req.inferred_from.starts_with_global
                 else interface_prefix
             )
-            full_caller_chain = inner_req.propagation_chain_chained_name().in_caller(
+            full_caller_chain = inner_req.full_propagation_position_chain().in_caller(
                 interface_prefix
             )
             propagated_key = full_caller_chain.canonical_chained_name_tuple
@@ -1046,23 +1026,18 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 inner_req.required_state
                 == action_contract.PositionOccupancyState.OCCUPIED
             ):
-                propagated_position = ast.PositionReference(
-                    location=full_caller_chain.location,
-                    typed_names=full_caller_chain.typed_names,
-                )
                 # The triggered action's OccupiedByExisting guarantees can carry
                 # this synthesized DP into other positions that later statements
                 # reference, so its qualities must match what a real
                 # caller-supplied DP would carry transitively via Quality
                 # Requirement Statements.
                 qualities = frozenset(
-                    self._get_transitive_required_qualities(propagated_position, scope)
+                    self._get_transitive_required_qualities(full_caller_chain, scope)
                 )
-                self._tracker.create_by_key(
-                    propagated_key,
-                    propagated_position,
+                self._tracker.create(
+                    full_caller_chain,
                     qualities,
-                    from_caller=True,
+                    from_caller=full_caller_chain,
                 )
 
 
