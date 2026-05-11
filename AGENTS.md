@@ -62,10 +62,13 @@ See [define/spec/spec.md] for the language specification.
 
 - Avoid putting "Returns" clauses in docstrings on simple accessors where the
   return value is obvious from the function signature.
+- Do not write docstrings in tests. If a test docstring is genuinely needed, it
+  must be a single short sentence giving a conceptual description of what we are
+  testing.
 
 ## Code Style
 
-- Avoid non-descriptive variable names like `ref`.
+- Do not use non-descriptive variable names like `ref`.
 - Prefer positive booleans. For example: `enable_feature=False` rather than
   `disable_feature=True`.
 - Do not add `-> None` return annotations unless a type checker explicitly
@@ -80,8 +83,9 @@ See [define/spec/spec.md] for the language specification.
 
 ## Tests
 
+- If the spec and the tests are in conflict, the spec is right and the tests are
+  wrong.
 - Avoid adding debug messages to assert calls.
-- Do not write docstrings in tests.
 - When using `unittest.mock`, always use `patch.object` with `autospec=True`
   instead of `patch`.
 - **Never filter results or diagnostics in test assertions.** Always assert on
@@ -137,7 +141,7 @@ BUILD file generator.
   `bazelisk coverage --noshow_progress //... --combined_report=lcov --instrumentation_filter='^//(define|defcl|tools)[/:]'`
 - Always run the full test suite (`bazelisk test --noshow_progress //...`) when
   done working, to make sure nothing is broken.
-- Run coverage after writing a lot of tests.
+- Run and check coverage after writing new tests.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
 - After changing the code generator or any codegen testdata, regenerate expected
