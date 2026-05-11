@@ -7,6 +7,9 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -87,6 +90,15 @@ def test_inner_chained_action_empty_requirement_propagates(
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
@@ -224,11 +236,14 @@ def test_inner_chained_action_occupied_requirement_propagates(
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
-    assert all_diags[0].propagated_from_locations[0].line == 8
-    assert all_diags[0].propagated_from_locations[0].column == 37
-    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
-        "inner.dfn"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
     )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
@@ -284,6 +299,63 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
                 "        create a dimension point in position<box>.\n"
                 "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
                 "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_action(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/outer fills position<iface>::action</inner>::position<item> itself, fulfilling /inner's OCCUPIED requirement on position<item>."""
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<item> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<iface>::action</inner>::position<item>.\n"
+                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
                 "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -379,17 +451,17 @@ def test_doubly_nested_action_requirement_propagates(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
-    assert (
-        all_diags[0].position_name
-        == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
-    )
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
+    )
     assert all_diags[0].propagated_from_locations == []
     # /test fills position<item> which /inner requires empty (propagated through /middle and /outer)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
@@ -407,7 +479,21 @@ def test_doubly_nested_action_requirement_propagates(
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[1].propagated_from_locations) == 2
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "full_typed_name": "position<mid_iface>::action</inner>",
+            "line": 11,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
@@ -541,7 +627,15 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[2].filled_at.line == 12
     assert all_diags[2].filled_at.column == 37
     assert all_diags[2].filled_at.file_path == PurePosixPath("outer.dfn")
-    assert len(all_diags[2].propagated_from_locations) == 1
+    assert_propagation_chain(
+        all_diags[2],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
@@ -652,7 +746,27 @@ def test_four_deep_action_chain_requirement_propagates(
     assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 3
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<b_iface>::action</c>",
+            "line": 11,
+            "column": 37,
+            "file_path": "b.dfn",
+        },
+        {
+            "full_typed_name": "position<c_iface>::action</d>",
+            "line": 11,
+            "column": 37,
+            "file_path": "c.dfn",
+        },
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "d.dfn",
+        },
+    )
     assert_action_calls(
         result.action_call_graph,
         _TEST,
@@ -851,7 +965,15 @@ def test_trigger_position_child_empty_requirement_propagates(
     assert all_diags[2].filled_at.line == 10
     assert all_diags[2].filled_at.column == 37
     assert all_diags[2].filled_at.file_path == PurePosixPath("inner.dfn")
-    assert len(all_diags[2].propagated_from_locations) == 1
+    assert_propagation_chain(
+        all_diags[2],
+        {
+            "full_typed_name": "position<trigger_pos>::position</x>",
+            "line": 10,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -927,11 +1049,14 @@ def test_trigger_position_child_occupied_requirement_propagates(
     assert all_diags[0].inferred_at.line == 12
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
-    assert all_diags[0].propagated_from_locations[0].line == 11
-    assert all_diags[0].propagated_from_locations[0].column == 37
-    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
-        "inner.dfn"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<trigger_pos>::position</x>",
+            "line": 11,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
     )
 
 
@@ -1015,6 +1140,15 @@ def test_inner_action_requirement_propagates_after_move(
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -1132,7 +1266,21 @@ def test_doubly_nested_requirement_propagates_after_move(
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[1].propagated_from_locations) == 2
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "full_typed_name": "position<mid_iface>::action</inner>",
+            "line": 17,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
@@ -1312,7 +1460,15 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[1].propagated_from_locations) == 1
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "full_typed_name": f"position<item>::position<{_DEP_FQUN}:/x>",
+            "line": 11,
+            "column": 37,
+            "file_path": "lib/inner.dfn",
+        },
+    )
     assert_action_calls(
         result.action_call_graph,
         f"action<{_MAIN_FQUN}:/test>",
@@ -1468,22 +1624,25 @@ def test_cross_fqun_occupied_requirement_violated(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == f"action<{_DEP_FQUN}:/inner>"
     assert (
         all_diags[0].position_name
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
     )
-    assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
-    assert all_diags[0].propagated_from_locations[0].line == 12
-    assert all_diags[0].propagated_from_locations[0].column == 37
-    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
-        "lib/inner.dfn"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": f"position<item>::position<{_DEP_FQUN}:/x>",
+            "line": 12,
+            "column": 37,
+            "file_path": "lib/inner.dfn",
+        },
     )
     assert_action_calls(
         result.action_call_graph,
@@ -1593,7 +1752,21 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 2
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<mid_iface>::action</bar>",
+            "line": 11,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "bar.dfn",
+        },
+    )
     assert_action_calls(
         result.action_call_graph,
         _TEST,
@@ -1713,7 +1886,17 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": (
+                f"position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>"
+            ),
+            "line": 11,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+    )
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 37
@@ -1729,7 +1912,21 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[1].filled_at.line == 16
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(all_diags[1].propagated_from_locations) == 2
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "full_typed_name": f"position<mid_iface>::action<{_DEP_FQUN}:/bar>",
+            "line": 12,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "full_typed_name": f"position<item>::position<{_DEP_FQUN}:/x>",
+            "line": 11,
+            "column": 37,
+            "file_path": "lib/bar.dfn",
+        },
+    )
     assert_action_calls(
         result.action_call_graph,
         f"action<{_MAIN_FQUN}:/test>",

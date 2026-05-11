@@ -25,6 +25,7 @@ py_test(
         ":conftest",
         ":parser",
         ":transformer",
+        "@pypi//pytest",
     ],
 )
 

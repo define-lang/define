@@ -1,8 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -19,10 +17,6 @@ _TRANSITIVE_EDGES = {
 }
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_implied_to_implied_identity_preserved_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -100,10 +94,6 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -194,10 +184,6 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_implied_to_interface_identity_preserved_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -274,10 +260,6 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

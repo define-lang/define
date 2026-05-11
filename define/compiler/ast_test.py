@@ -4,6 +4,8 @@
 import sys
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import ast, parser, transformer
 from define.compiler.conftest import PositionReferenceFor
 
@@ -375,6 +377,12 @@ class TestPositionConstraintNames:
     def test_no_constraints(self):
         position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
         assert position.constraint_names == frozenset()
+
+
+class TestChainedNameConstruction:
+    def test_empty_typed_names_rejected(self):
+        with pytest.raises(ValueError, match="at least one typed name"):
+            _ = ast.ChainedName(location=_LOC, typed_names=[])
 
 
 class TestChainedNameCanonical:

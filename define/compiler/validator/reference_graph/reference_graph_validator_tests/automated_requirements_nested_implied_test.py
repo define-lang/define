@@ -2,13 +2,15 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_OUTER = "action<my.domain.com:my_lib:/outer>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 
@@ -86,13 +88,6 @@ _TEST_DOES_NOT_FILL_X = (
 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "OCCUPIED requirement on /middle's implied position</x> is not yet"
-        " inferred from /inner's EmptyGuarantee."
-    ),
-)
 def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfies(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -108,13 +103,6 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfi
     assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "OCCUPIED requirement on /middle's implied position</x> is not yet"
-        " inferred from /inner's EmptyGuarantee."
-    ),
-)
 def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violates(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -134,12 +122,20 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::position</x>"
-    assert all_diags[0].inferred_at.line == 8
+    assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position</x>",
+            "line": 7,
+            "column": 40,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
 
 
@@ -158,13 +154,6 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfi
     assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "EMPTY requirement on /middle's implied position</x> is not yet"
-        " inferred from /inner's OccupiedByNewGuarantee."
-    ),
-)
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violates(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -182,13 +171,252 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::position</x>"
-    assert all_diags[0].inferred_at.line == 8
+    assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 12
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position</x>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+
+
+_X_HAS_INNER = (
+    "define the potential position<my.domain.com:my_lib:/x> {\n"
+    "    it may only contain dimension points where {\n"
+    "        it has the action</inner>.\n"
+    "    }\n"
+    "}\n"
+)
+
+_INNER_REQUIRES_ITEM_OCCUPIED = (
+    "define the potential action<my.domain.com:my_lib:/inner> {\n"
+    "    define the position<trigger_pos>.\n"
+    "    define the position<item>.\n"
+    "    define the position<dest>.\n"
+    "    it happens when {\n"
+    "        the position<trigger_pos> has a dimension point.\n"
+    "    } and it does {\n"
+    "        move the dimension point in position<item> to position<dest>.\n"
+    "    }\n"
+    "}\n"
+)
+
+
+def test_caller_filled_implied_position_propagates_inner_action_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When the caller fills an implied position used to reach an inner action, the inner action's requirements propagate to the caller."""
+    result = validate_project_with_reference_graph(
+        {
+            "x.dfn": _X_HAS_INNER,
+            "inner.dfn": _INNER_REQUIRES_ITEM_OCCUPIED,
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the position</x>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position</x>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</middle>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</x>.\n"
+                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == _INNER
+    assert (
+        all_diags[0].position_name
+        == "position<box>::position</x>::action</inner>::position<item>"
+    )
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
+    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+
+
+def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implied_position(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When the current action fills an implied position before triggering an inner action through it, the inner action's requirement is checked at the trigger site but does not propagate further up to the caller."""
+    result = validate_project_with_reference_graph(
+        {
+            "x.dfn": _X_HAS_INNER,
+            "inner.dfn": _INNER_REQUIRES_ITEM_OCCUPIED,
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the position</x>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position</x>.\n"
+                "        create a dimension point in position</x>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</middle>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
+    assert all_diags[0].inferred_at.line == 8
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
+
+
+def test_doubly_nested_implied_action_chain_propagates(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """An interface requirement from /inner propagates two levels up through /middle and /outer when each is reached as an implied action of its caller."""
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<extra>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<extra> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the action</inner>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    it also assigns the action</middle>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in action</middle>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresOccupiedPositionDiagnostic)
+    assert diag.location.line == 12
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.action_name == _INNER
+    assert diag.position_name == "position<box>::action</inner>::position<extra>"
+    assert diag.inferred_at.line == 7
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "action</inner>",
+            "line": 7,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "full_typed_name": "position<extra>",
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)

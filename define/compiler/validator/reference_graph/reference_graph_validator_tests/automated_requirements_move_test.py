@@ -5,10 +5,11 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -92,6 +93,15 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     assert all_diags[0].inferred_at.line == 17
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -358,10 +368,15 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     assert diag.filled_at.line == 14
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(diag.propagated_from_locations) == 1
-    assert diag.propagated_from_locations[0].line == 7
-    assert diag.propagated_from_locations[0].column == 37
-    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -456,10 +471,15 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     assert diag.filled_at.line == 15
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(diag.propagated_from_locations) == 1
-    assert diag.propagated_from_locations[0].line == 7
-    assert diag.propagated_from_locations[0].column == 37
-    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -570,20 +590,18 @@ def test_complex_chain_interaction_iface(
     assert diag.filled_at.line == 17
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(diag.propagated_from_locations) == 1
-    assert diag.propagated_from_locations[0].line == 7
-    assert diag.propagated_from_locations[0].column == 37
-    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "_remap_through_interface_position does not yet remap chains whose"
-        " from_caller origin is an implied (global) position."
-    ),
-)
 def test_caller_sees_requirement_when_implied_moved_to_local(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -604,6 +622,7 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
+                "        destroy the dimension point in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -658,16 +677,18 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
     assert all_diags[0].inferred_at.line == 13
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "_remap_through_interface_position does not yet remap chains whose"
-        " from_caller origin is an implied (global) position."
-    ),
-)
 def test_caller_sees_requirement_when_implied_moved_to_interface(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -688,6 +709,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
                 "        the position<trigger_pos> has a dimension point.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
+                "        destroy the dimension point in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -739,19 +761,21 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
         all_diags[0].position_name
         == "position<box>::position</implied>::action</inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 14
+    assert all_diags[0].inferred_at.line == 13
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "_remap_through_interface_position does not yet remap chains whose"
-        " from_caller origin is an implied (global) position."
-    ),
-)
 def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -838,20 +862,18 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     assert diag.filled_at.line == 14
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(diag.propagated_from_locations) == 1
-    assert diag.propagated_from_locations[0].line == 7
-    assert diag.propagated_from_locations[0].column == 37
-    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "_remap_through_interface_position does not yet remap chains whose"
-        " from_caller origin is an implied (global) position."
-    ),
-)
 def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_local(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -946,20 +968,18 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     assert diag.filled_at.line == 15
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(diag.propagated_from_locations) == 1
-    assert diag.propagated_from_locations[0].line == 7
-    assert diag.propagated_from_locations[0].column == 37
-    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "_remap_through_interface_position does not yet remap chains whose"
-        " from_caller origin is an implied (global) position."
-    ),
-)
 def test_complex_chain_interaction_implied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1064,16 +1084,21 @@ def test_complex_chain_interaction_implied(
         diag.position_name
         == "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
     )
-    assert diag.inferred_at.line == 14
+    assert diag.inferred_at.line == 13
     assert diag.inferred_at.column == 37
     assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
     assert diag.filled_at.line == 17
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
-    assert len(diag.propagated_from_locations) == 1
-    assert diag.propagated_from_locations[0].line == 7
-    assert diag.propagated_from_locations[0].column == 37
-    assert diag.propagated_from_locations[0].file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        diag,
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -1151,4 +1176,13 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     assert all_diags[0].inferred_at.line == 13
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)

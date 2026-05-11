@@ -25,7 +25,21 @@ class PositionRequirement:
     """
 
     required_state: PositionOccupancyState
-    # Can be either a position reference or an action reference.
+    # The chained name at the line of source where this action inferred the
+    # requirement.
+    #
+    # If this is a requirement imposed directly by this action,
+    # this contains the full chained name used in the statement that imposed
+    # the requirement (like `position<iface>::position</x>` for
+    # `create a dimension point in position<iface>::position</x>.`)
+    #
+    # If this is a requirement that has been propagated from a called
+    # action, then it contains only the prefix of the chain that is unique
+    # within this action. For example, imagine we trigger an action via
+    # `position<iface>::action</inner>::position<run>`, and it includes
+    # a requirement on action</inner>::position<item>. This will contain
+    # just `position<iface>::action</inner>` (which is why it is a ChainedName
+    # and not a PositionReference).
     inferred_from: ast.ChainedName
     enclosing_action: ast.ActionDefinition
     propagated_from: PositionRequirement | None = None
@@ -39,24 +53,23 @@ class PositionRequirement:
 
     def full_propagation_position_chain(self) -> ast.PositionReference:
         """Get the full chained name composed by walking propagated_from."""
-        typed_names = list(self.inferred_from.typed_names)
-        current = self.propagated_from
-        while current is not None:
-            typed_names.extend(current.inferred_from.typed_names)
-            current = current.propagated_from
-        return ast.PositionReference(
-            location=self.inferred_from.location,
-            typed_names=typed_names,
-        )
+        if self.propagated_from is None:
+            if not isinstance(self.inferred_from, ast.PositionReference):
+                raise TypeError(
+                    f"originating requirement's inferred_from must be a PositionReference, got {type(self.inferred_from).__name__}"
+                )
+            return self.inferred_from
+        inner_full = self.propagated_from.full_propagation_position_chain()
+        return inner_full.in_caller(self.inferred_from)
 
     def propagated_from_locations(self) -> list[ast.SourceLocation]:
-        """Collect source locations from the propagated_from chain."""
-        chain: list[ast.SourceLocation] = []
+        """Locations of intermediate propagation steps, ordered outer to inner."""
+        locations: list[ast.SourceLocation] = []
         current = self.propagated_from
         while current is not None:
-            chain.append(current.inferred_from.location)
+            locations.append(current.inferred_from.location)
             current = current.propagated_from
-        return chain
+        return locations
 
 
 @dataclass(frozen=True)

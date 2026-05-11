@@ -251,12 +251,15 @@ class TestRootCauseActionName:
         )
         propagated = action_contract.PositionRequirement(
             required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF),
+            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
             enclosing_action=_OUTER,
             propagated_from=leaf,
         )
         assert propagated.required_state == _EMPTY
-        assert propagated.inferred_from.source_chained_name == "position<iface>"
+        assert (
+            propagated.inferred_from.source_chained_name
+            == "position<iface>::action</middle>"
+        )
         assert propagated.enclosing_action is _OUTER
         assert propagated.propagated_from is leaf
         assert leaf.required_state == _EMPTY
@@ -402,7 +405,7 @@ class TestResolvedChainedName:
         )
         propagated = action_contract.PositionRequirement(
             required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF),
+            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
             enclosing_action=_OUTER,
             propagated_from=leaf,
         )
@@ -416,7 +419,7 @@ class TestResolvedChainedName:
         )
         propagated = action_contract.PositionRequirement(
             required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF),
+            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
             enclosing_action=_OUTER,
             propagated_from=leaf,
         )
@@ -521,7 +524,7 @@ class TestPropagationChainChainedName:
         )
         propagated = action_contract.PositionRequirement(
             required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF),
+            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
             enclosing_action=_OUTER,
             propagated_from=leaf,
         )
@@ -587,12 +590,15 @@ class TestPropagatedFromLocations:
         )
         propagated = action_contract.PositionRequirement(
             required_state=_EMPTY,
-            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF),
+            inferred_from=_make_chain(_OUTER_REF, _IFACE_REF, _ACTION_MIDDLE_REF),
             enclosing_action=_OUTER,
             propagated_from=leaf,
         )
         assert propagated.required_state == _EMPTY
-        assert propagated.inferred_from.source_chained_name == "position<iface>"
+        assert (
+            propagated.inferred_from.source_chained_name
+            == "position<iface>::action</middle>"
+        )
         assert propagated.enclosing_action is _OUTER
         assert propagated.propagated_from is leaf
         assert leaf.required_state == _EMPTY

@@ -98,6 +98,7 @@ py_test(
     size = "small",
     srcs = ["automated_requirements_diamond_test.py"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
@@ -120,6 +121,7 @@ py_test(
     size = "small",
     srcs = ["automated_requirements_move_test.py"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
@@ -132,6 +134,7 @@ py_test(
     size = "small",
     srcs = ["automated_requirements_nested_action_test.py"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
@@ -143,6 +146,7 @@ py_test(
     size = "small",
     srcs = ["automated_requirements_nested_implied_test.py"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
@@ -235,6 +239,7 @@ py_test(
     size = "small",
     srcs = ["implied_action_triggering_test.py"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
@@ -365,6 +370,14 @@ py_test(
 py_library(
     name = "reference_graph_validator_tests",
     srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "test_helpers",
+    srcs = ["test_helpers.py"],
+    deps = [
+        "//define/compiler:diagnostics",
+    ],
 )
 
 py_test(

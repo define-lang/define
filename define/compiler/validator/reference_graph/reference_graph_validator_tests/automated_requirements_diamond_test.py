@@ -7,6 +7,9 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -328,11 +331,14 @@ def test_diamond_occupied_requirement_independent_per_path(
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("act_c.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
-    assert all_diags[0].propagated_from_locations[0].line == 8
-    assert all_diags[0].propagated_from_locations[0].column == 37
-    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
-        "shared.dfn"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 8,
+            "column": 37,
+            "file_path": "shared.dfn",
+        },
     )
     assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
     assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)
@@ -443,11 +449,14 @@ def test_diamond_one_path_violates_occupied_requirement(
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("act_c.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
-    assert all_diags[0].propagated_from_locations[0].line == 8
-    assert all_diags[0].propagated_from_locations[0].column == 37
-    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
-        "shared.dfn"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 8,
+            "column": 37,
+            "file_path": "shared.dfn",
+        },
     )
     assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
     assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)
@@ -509,11 +518,14 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert all_diags[0].inferred_at.line == 11
     assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("act_b.dfn")
-    assert len(all_diags[0].propagated_from_locations) == 1
-    assert all_diags[0].propagated_from_locations[0].line == 8
-    assert all_diags[0].propagated_from_locations[0].column == 37
-    assert all_diags[0].propagated_from_locations[0].file_path == PurePosixPath(
-        "shared.dfn"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 8,
+            "column": 37,
+            "file_path": "shared.dfn",
+        },
     )
     assert isinstance(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
@@ -529,11 +541,14 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert all_diags[1].inferred_at.line == 11
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("act_c.dfn")
-    assert len(all_diags[1].propagated_from_locations) == 1
-    assert all_diags[1].propagated_from_locations[0].line == 8
-    assert all_diags[1].propagated_from_locations[0].column == 37
-    assert all_diags[1].propagated_from_locations[0].file_path == PurePosixPath(
-        "shared.dfn"
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "full_typed_name": "position<item>",
+            "line": 8,
+            "column": 37,
+            "file_path": "shared.dfn",
+        },
     )
     assert_action_calls(result.action_call_graph, _TEST, _ACT_B, _SHARED)
     assert_action_calls(result.action_call_graph, _TEST, _ACT_C, _SHARED)

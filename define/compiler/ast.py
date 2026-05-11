@@ -285,6 +285,11 @@ class ChainedName(ASTNode):
 
     typed_names: list[TypedNameReference]
 
+    def __post_init__(self):
+        """Reject empty chains: a chain must reference at least one typed name."""
+        if not self.typed_names:
+            raise ValueError("ChainedName must contain at least one typed name")
+
     @property
     def canonical_chained_name(self) -> str:
         """Return the canonical chained name string."""
@@ -377,23 +382,19 @@ class ChainedName(ASTNode):
         return "::".join(parts)
 
     def in_caller(self, caller_action_chain: ChainedName) -> Self:
-        """Get the full chained name of a contracted position from the perspective of the caller of the current action.
+        """Get the chained name of a contracted position from the perspective of the caller of the current action.
 
-        `caller_action_chain` is the full chain of the action in the caller,
-        ending with an action name. The result preserves `self`'s last
-        element, so the returned chain has the same subclass as `self`
-        (e.g. a `PositionReference` stays a `PositionReference`).
+        The result has the same subclass as ``self`` (e.g. a
+        ``PositionReference`` stays a ``PositionReference``).
         """
         if self.starts_with_global:
-            prefix = caller_action_chain.parent_position()
-            prefix_names = prefix.typed_names if prefix is not None else []
-            return type(self)(
-                location=self.location,
-                typed_names=[*prefix_names, *self.typed_names],
-            )
+            parent = caller_action_chain.parent_position()
+            prefix_names = parent.typed_names if parent is not None else []
+        else:
+            prefix_names = caller_action_chain.typed_names
         return type(self)(
             location=self.location,
-            typed_names=[*caller_action_chain.typed_names, *self.typed_names],
+            typed_names=[*prefix_names, *self.typed_names],
         )
 
     def replace_parent_position_with_prefix(self, new_prefix: ChainedName) -> Self:

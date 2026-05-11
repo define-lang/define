@@ -1,8 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -81,10 +79,6 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_empty_guarantee_propagates_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -372,10 +366,6 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_empty_implied_position_guarantee_propagates_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -515,10 +505,6 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason="Requires implementing requirements for implied positions.",
-    strict=True,
-)
 def test_empty_implied_position_guarantee_blocks_move_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
