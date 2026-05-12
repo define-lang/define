@@ -299,9 +299,9 @@ def test_create_twice_in_local_chained_position(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<src>::position</x>"
-    assert all_diags[0].created_at.line == 12
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_create_in_chained_position_in_position_init(
@@ -353,6 +353,6 @@ def test_create_twice_in_chained_position_in_position_init(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</test>::position</x>"
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")

@@ -262,9 +262,9 @@ def test_create_twice_in_interface_chained(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<iface>::position</x>"
-    assert all_diags[0].created_at.line == 10
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 10
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_move_then_create_in_interface_chained(
@@ -375,9 +375,9 @@ def test_create_twice_in_trigger_chained(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
-    assert all_diags[0].created_at.line == 10
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 10
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_move_from_trigger_chained_then_create(
@@ -451,9 +451,9 @@ def test_3_item_position_chain_via_moved_local_infers_occupied(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<local>::position</x>"
-    assert all_diags[0].created_at.line == 17
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 17
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_4_depth_action_chain_via_moved_local_infers_occupied(
@@ -510,6 +510,6 @@ def test_4_depth_action_chain_via_moved_local_infers_occupied(
     assert (
         all_diags[0].position_name == "position<local>::action</inner>::position<item>"
     )
-    assert all_diags[0].created_at.line == 17
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 17
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")

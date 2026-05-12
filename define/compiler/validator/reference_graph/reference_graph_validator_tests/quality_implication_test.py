@@ -1,4 +1,6 @@
 # pyright: reportUnusedCallResult=false
+from pathlib import PurePosixPath
+
 import pytest
 
 from define.compiler import conftest, diagnostics
@@ -600,22 +602,13 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     ]
 
 
-_IMPLIED_INIT_BLOCK_XFAIL_REASON = (
-    "Validator does not yet engage init blocks of implied positions."
-    " Two related gaps in"
-    " define/compiler/validator/reference_graph/definition_postorder_validator.py:"
-    " (1) _apply_position_init_guarantees iterates constraints.requirements"
-    " (the constraint block only) rather than the transitive implication closure,"
-    " so /implied's init block is never applied when a DP gets /implier and /implier"
-    " implies /implied; (2) _check_chain_element_in_constraints checks"
-    " constraint_names (constraint block only -- see ast.py PositionDefinition"
-    " .constraint_names), so chain access like <source>::position</implied>"
-    " is rejected when /implied is reached only via /implier's implication. Both"
-    " pieces need to recognize transitive implications for these tests to pass."
+@pytest.mark.xfail(
+    reason=(
+        "When a position is assigned to a dimension point, the init blocks of"
+        " its transitively implied positions do not run."
+    ),
+    strict=True,
 )
-
-
-@pytest.mark.xfail(reason=_IMPLIED_INIT_BLOCK_XFAIL_REASON, strict=True)
 def test_required_position_init_block_creates_dp_for_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -646,11 +639,7 @@ def test_required_position_init_block_creates_dp_for_move(
                 "            it has the position</implier>.\n"
                 "        }\n"
                 "    }\n"
-                "    define the position<dest> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</implied>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<dest>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
@@ -664,7 +653,13 @@ def test_required_position_init_block_creates_dp_for_move(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(reason=_IMPLIED_INIT_BLOCK_XFAIL_REASON, strict=True)
+@pytest.mark.xfail(
+    reason=(
+        "When a position is assigned to a dimension point, the init blocks of"
+        " its transitively implied positions do not run."
+    ),
+    strict=True,
+)
 def test_required_position_init_block_fills_position(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -709,8 +704,11 @@ def test_required_position_init_block_fills_position(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].position_name == "position<source>::position</implied>"
-    assert all_diags[0].created_at.line == 3
-    assert all_diags[0].created_at.column == 9
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 56
+    assert all_diags[0].populated_at.end_line == 6
+    assert all_diags[0].populated_at.end_column == 74
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
 
 def test_unresolved_implication_target_is_skipped(

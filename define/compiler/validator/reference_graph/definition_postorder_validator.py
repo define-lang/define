@@ -324,7 +324,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 diagnostics.CreateInOccupiedPositionDiagnostic(
                     location=position.location,
                     position_name=position.source_chained_name,
-                    created_at=self._tracker.get_occupant(
+                    populated_at=self._tracker.get_occupant(
                         position
                     ).last_position.location,
                 )

@@ -324,7 +324,7 @@ def test_move_to_same_position_does_not_mark_unknown(
     assert diags[1].location.line == 9
     assert diags[1].location.column == 37
     assert diags[1].position_name == "position<a>"
-    assert diags[1].created_at.line == 7
+    assert diags[1].populated_at.line == 7
 
 
 def test_move_to_chained_prefix_marks_unknown(

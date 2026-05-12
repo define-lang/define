@@ -51,11 +51,11 @@ def test_create_in_implied_position_emits_occupied_by_new(
     assert all_diags[0].location.end_column == 70
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 7
-    assert all_diags[0].created_at.end_column == 55
-    assert all_diags[0].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_column == 55
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
 def test_destroy_in_implied_position_emits_empty(
@@ -207,11 +207,11 @@ def test_move_implied_to_implied_emits_occupied_by_existing(
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_b>"
-    assert all_diags[0].created_at.line == 9
-    assert all_diags[0].created_at.column == 61
-    assert all_diags[0].created_at.end_line == 9
-    assert all_diags[0].created_at.end_column == 81
-    assert all_diags[0].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.line == 9
+    assert all_diags[0].populated_at.column == 61
+    assert all_diags[0].populated_at.end_line == 9
+    assert all_diags[0].populated_at.end_column == 81
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
 def test_move_implied_to_local_sink_emits_only_empty(
@@ -310,11 +310,11 @@ def test_move_local_to_implied_emits_occupied_by_new(
     assert all_diags[0].location.end_column == 70
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].created_at.line == 9
-    assert all_diags[0].created_at.column == 57
-    assert all_diags[0].created_at.end_line == 9
-    assert all_diags[0].created_at.end_column == 75
-    assert all_diags[0].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.line == 9
+    assert all_diags[0].populated_at.column == 57
+    assert all_diags[0].populated_at.end_line == 9
+    assert all_diags[0].populated_at.end_column == 75
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
 def test_round_trip_implied_local_implied(
@@ -366,11 +366,11 @@ def test_round_trip_implied_local_implied(
     assert all_diags[0].location.end_column == 70
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].created_at.line == 10
-    assert all_diags[0].created_at.column == 57
-    assert all_diags[0].created_at.end_line == 10
-    assert all_diags[0].created_at.end_column == 75
-    assert all_diags[0].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.line == 10
+    assert all_diags[0].populated_at.column == 57
+    assert all_diags[0].populated_at.end_line == 10
+    assert all_diags[0].populated_at.end_column == 75
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
 _PARENT_FQUN = "my.domain.com:parent_lib"
@@ -428,11 +428,11 @@ def test_implied_position_guarantee_propagates_across_fqun(
     assert (
         all_diags[0].position_name == f"position<box>::position<{_CHILD_FQUN}:/implied>"
     )
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 7
-    assert all_diags[0].created_at.end_column == 55
-    assert all_diags[0].created_at.file_path == PurePosixPath("lib/inner.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_column == 55
+    assert all_diags[0].populated_at.file_path == PurePosixPath("lib/inner.dfn")
 
 
 def test_init_block_create_in_transitive_implied(
@@ -478,11 +478,11 @@ def test_init_block_create_in_transitive_implied(
     assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</transitive_implied>"
-    assert all_diags[0].created_at.line == 4
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 4
-    assert all_diags[0].created_at.end_column == 66
-    assert all_diags[0].created_at.file_path == PurePosixPath("implier.dfn")
+    assert all_diags[0].populated_at.line == 4
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 4
+    assert all_diags[0].populated_at.end_column == 66
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
 
 def test_init_block_move_between_implied_positions(
@@ -529,11 +529,11 @@ def test_init_block_move_between_implied_positions(
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_b>"
-    assert all_diags[0].created_at.line == 6
-    assert all_diags[0].created_at.column == 61
-    assert all_diags[0].created_at.end_line == 6
-    assert all_diags[0].created_at.end_column == 81
-    assert all_diags[0].created_at.file_path == PurePosixPath("implier.dfn")
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 61
+    assert all_diags[0].populated_at.end_line == 6
+    assert all_diags[0].populated_at.end_column == 81
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
 
 
 def test_caller_pre_filled_implied_untouched_by_callee_remains(
@@ -583,11 +583,11 @@ def test_caller_pre_filled_implied_untouched_by_callee_remains(
     assert all_diags[0].location.end_column == 70
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].created_at.line == 13
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 13
-    assert all_diags[0].created_at.end_column == 70
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 13
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 13
+    assert all_diags[0].populated_at.end_column == 70
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_swap_two_implied_positions_via_local(
@@ -643,11 +643,11 @@ def test_swap_two_implied_positions_via_local(
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_a>"
-    assert all_diags[0].created_at.line == 12
-    assert all_diags[0].created_at.column == 61
-    assert all_diags[0].created_at.end_line == 12
-    assert all_diags[0].created_at.end_column == 81
-    assert all_diags[0].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.column == 61
+    assert all_diags[0].populated_at.end_line == 12
+    assert all_diags[0].populated_at.end_column == 81
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 37
@@ -655,11 +655,11 @@ def test_swap_two_implied_positions_via_local(
     assert all_diags[1].location.end_column == 72
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::position</implied_b>"
-    assert all_diags[1].created_at.line == 13
-    assert all_diags[1].created_at.column == 55
-    assert all_diags[1].created_at.end_line == 13
-    assert all_diags[1].created_at.end_column == 75
-    assert all_diags[1].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[1].populated_at.line == 13
+    assert all_diags[1].populated_at.column == 55
+    assert all_diags[1].populated_at.end_line == 13
+    assert all_diags[1].populated_at.end_column == 75
+    assert all_diags[1].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
 def test_cross_fqun_implied_position_init_block(
@@ -717,11 +717,11 @@ def test_cross_fqun_implied_position_init_block(
         all_diags[0].position_name
         == f"position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>"
     )
-    assert all_diags[0].created_at.line == 3
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 3
-    assert all_diags[0].created_at.end_column == 49
-    assert all_diags[0].created_at.file_path == PurePosixPath("lib/a.dfn")
+    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_column == 49
+    assert all_diags[0].populated_at.file_path == PurePosixPath("lib/a.dfn")
 
 
 def test_create_in_implied_action_interface_position_propagates(
@@ -781,8 +781,8 @@ def test_create_in_implied_action_interface_position_propagates(
     assert all_diags[0].location.end_column == 81
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</foo>::position<iface>"
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 7
-    assert all_diags[0].created_at.end_column == 66
-    assert all_diags[0].created_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_column == 66
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")

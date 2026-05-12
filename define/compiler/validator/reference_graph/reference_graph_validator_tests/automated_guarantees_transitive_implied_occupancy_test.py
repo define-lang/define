@@ -211,11 +211,11 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<output>"
     )
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 7
-    assert all_diags[0].created_at.end_column == 53
-    assert all_diags[0].created_at.file_path == PurePosixPath("implied_action.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_column == 53
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
@@ -497,11 +497,11 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     assert all_diags[0].location.end_column == 74
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 7
-    assert all_diags[0].created_at.end_column == 59
-    assert all_diags[0].created_at.file_path == PurePosixPath("implied_action.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_column == 59
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 

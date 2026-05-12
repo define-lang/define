@@ -99,9 +99,9 @@ def test_create_twice_in_interface_position(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].created_at.line == 12
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_untouched_interface_position_preserved_after_trigger(
@@ -149,9 +149,9 @@ def test_untouched_interface_position_preserved_after_trigger(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].created_at.line == 12
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -295,9 +295,9 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -347,9 +347,9 @@ def test_post_trigger_trigger_position_stays_occupied(
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
     )
-    assert all_diags[0].created_at.line == 4
-    assert all_diags[0].created_at.column == 13
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].populated_at.line == 4
+    assert all_diags[0].populated_at.column == 13
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -868,9 +868,9 @@ def test_post_trigger_occupied_by_existing_rejects_create(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
-    assert all_diags[0].created_at.line == 8
-    assert all_diags[0].created_at.column == 55
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].populated_at.line == 8
+    assert all_diags[0].populated_at.column == 55
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -1021,9 +1021,9 @@ def test_position_init_trigger_applies_occupied_guarantee(
     assert (
         all_diags[0].position_name == "position</test>::action</other>::position<item>"
     )
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
 
 
@@ -1128,9 +1128,9 @@ def test_trigger_chain_create_guarantee_fills_position(
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>::position</x>"
     )
-    assert all_diags[0].created_at.line == 10
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].populated_at.line == 10
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 

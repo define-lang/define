@@ -1036,7 +1036,7 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
-    assert all_diags[1].created_at.line == 11
-    assert all_diags[1].created_at.column == 54
-    assert all_diags[1].created_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[1].populated_at.line == 11
+    assert all_diags[1].populated_at.column == 54
+    assert all_diags[1].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)

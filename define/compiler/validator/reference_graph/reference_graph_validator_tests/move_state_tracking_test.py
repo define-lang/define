@@ -106,7 +106,7 @@ def test_cannot_create_in_position_that_was_moved_into(
     assert diags[0].location.line == 10
     assert diags[0].location.column == 37
     assert diags[0].position_name == "position<b>"
-    assert diags[0].created_at.line == 9
+    assert diags[0].populated_at.line == 9
 
 
 def test_double_move_works(

@@ -498,22 +498,25 @@ class LocalActionNameDiagnostic(Diagnostic):
 
 
 # TODO: Inform the developer if the creation ocurred due to an inferred requirement
-# from the caller.
+# from the caller. That's also relevant when you have mutliple position init blocks
+# run on the same position that do something conflicting to one of the other positions,
+# and you need to refer to three things (the create statement that triggered the init
+# blocks and then the two different init blocks that are conflicting).
 @dataclass
 class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a dimension point is created in a position that already has one."""
 
     position_name: str
-    created_at: ast.SourceLocation
+    populated_at: ast.SourceLocation
     message_format: ClassVar[str] = (
         "a dimension point already exists in '{self.position_name}';"
-        " it was put there at:\n{self.formatted_created_at}"
+        " it was put there at:\n{self.formatted_populated_at}"
     )
 
     @property
-    def formatted_created_at(self) -> str:
-        """Format the created_at location as a human-readable string."""
-        return _format_location(self.created_at)
+    def formatted_populated_at(self) -> str:
+        """Format the populated_at location as a human-readable string."""
+        return _format_location(self.populated_at)
 
 
 @dataclass

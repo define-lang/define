@@ -400,11 +400,11 @@ def test_cross_universe_constraint_triggers_init_block(
         all_diags[0].position_name
         == f"position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>"
     )
-    assert all_diags[0].created_at.line == 3
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.end_line == 3
-    assert all_diags[0].created_at.end_column == 49
-    assert all_diags[0].created_at.file_path == PurePosixPath("lib/a.dfn")
+    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_column == 49
+    assert all_diags[0].populated_at.file_path == PurePosixPath("lib/a.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 37
@@ -412,8 +412,8 @@ def test_cross_universe_constraint_triggers_init_block(
     assert all_diags[1].location.end_column == 89
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == f"position<box>::position<{_CHILD_FQUN}:/b>"
-    assert all_diags[1].created_at.line == 6
-    assert all_diags[1].created_at.column == 37
-    assert all_diags[1].created_at.end_line == 6
-    assert all_diags[1].created_at.end_column == 49
-    assert all_diags[1].created_at.file_path == PurePosixPath("lib/b.dfn")
+    assert all_diags[1].populated_at.line == 6
+    assert all_diags[1].populated_at.column == 37
+    assert all_diags[1].populated_at.end_line == 6
+    assert all_diags[1].populated_at.end_column == 49
+    assert all_diags[1].populated_at.file_path == PurePosixPath("lib/b.dfn")

@@ -2,6 +2,8 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -210,9 +212,9 @@ def test_create_in_occupied_implied_position(
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position</implied>"
-    assert all_diags[0].created_at.line == 7
-    assert all_diags[0].created_at.column == 37
-    assert all_diags[0].created_at.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
 
 
 def test_destroy_in_empty_implied_position_inferrs_created(
@@ -453,3 +455,127 @@ def test_move_respects_transitive_implied_qualities(
         }
     )
     assert_no_errors(result.program_result)
+
+
+@pytest.mark.xfail(
+    reason=(
+        "When a position is assigned to a dimension point, the init blocks of"
+        " its transitively implied positions do not run."
+    ),
+    strict=True,
+)
+def test_parent_and_child_implied_init_blocks_conflict(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</implier>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 4
+    assert all_diags[0].location.end_column == 55
+    assert all_diags[0].location.file_path == PurePosixPath("implier.dfn")
+    assert all_diags[0].position_name == "position</implied>"
+    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_column == 55
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implied.dfn")
+
+
+@pytest.mark.xfail(
+    reason=(
+        "When two sibling implications produce init blocks that both create a"
+        " dimension point at the same position, the conflict is silently"
+        " overwritten instead of raising a diagnostic."
+    ),
+    strict=True,
+)
+def test_two_different_implier_init_blocks_conflict(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": _IMPLIED_DFN,
+            "first_implier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/first_implier> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "second_implier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/second_implier> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</first_implier>.\n"
+                "            it has the position</second_implier>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 50
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<box>::position</implied>"
+    assert all_diags[0].populated_at.line == 4
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 4
+    assert all_diags[0].populated_at.end_column == 55
+    assert all_diags[0].populated_at.file_path == PurePosixPath("first_implier.dfn")
