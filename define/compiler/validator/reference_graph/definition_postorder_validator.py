@@ -324,22 +324,14 @@ class DefinitionPostorderValidator(abc.ABC):
         if not self._check_parents_occupied(position):
             self._tracker.mark_unknown(position)
             return
-        if self._tracker.is_occupied(position):
-            self._diagnostics.append(
-                diagnostics.CreateInOccupiedPositionDiagnostic(
-                    location=position.location,
-                    position_name=position.source_chained_name,
-                    populated_at=self._tracker.get_occupant(
-                        position
-                    ).last_position.location,
-                )
-            )
-            return
 
         qualities = frozenset(self._get_transitive_required_qualities(position, scope))
-        self._executor.execute_create(
+        diagnostic = self._executor.execute_create(
             dimension_point_operation.Create(position=position, qualities=qualities)
         )
+        if diagnostic is not None:
+            self._diagnostics.append(diagnostic)
+            return
         constraints = self._get_constraint_block(position, scope)
         self._apply_position_init_guarantees(position, constraints)
         self._check_trigger(position, scope)
@@ -363,30 +355,13 @@ class DefinitionPostorderValidator(abc.ABC):
         if not self._check_parents_occupied(position):
             self._tracker.mark_unknown(position)
             return
-        if not self._tracker.is_occupied(position):
-            from_action = position.get_last_action()
-            if from_action is not None:
-                emptied_by = self._tracker.get_emptied_by(position)
-                self._diagnostics.append(
-                    diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
-                        location=position.location,
-                        position_name=position.source_chained_name,
-                        inferred_at=emptied_by.location if emptied_by else None,
-                    )
-                )
-            else:
-                self._diagnostics.append(
-                    diagnostics.DestroyInEmptyPositionDiagnostic(
-                        location=position.location,
-                        position_name=position.source_chained_name,
-                    )
-                )
-            self._tracker.mark_unknown(position)
-            return
 
-        self._executor.execute_destroy(
+        diagnostic = self._executor.execute_destroy(
             dimension_point_operation.Destroy(position=position)
         )
+        if diagnostic is not None:
+            self._diagnostics.append(diagnostic)
+            self._tracker.mark_unknown(position)
 
     def _analyze_move(
         self,
@@ -428,9 +403,26 @@ class DefinitionPostorderValidator(abc.ABC):
         if not self._validate_move_preconditions(from_pos, to_pos, scope):
             return
 
-        self._executor.execute_move(
+        # Constraint check only runs when occupancy is legal; illegal occupancy
+        # is reported by execute_move below.
+        if self._tracker.is_occupied(from_pos) and not self._tracker.is_occupied(
+            to_pos
+        ):
+            from_qualities = self._tracker.get_occupant(from_pos).qualities
+            to_qualities = self._get_direct_required_qualities(to_pos, scope)
+            if not self._check_move_constraints(
+                from_pos, to_pos, from_qualities, to_qualities
+            ):
+                return
+
+        move_diagnostics = self._executor.execute_move(
             dimension_point_operation.Move(source=from_pos, target=to_pos)
         )
+        if move_diagnostics:
+            self._diagnostics.extend(move_diagnostics)
+            self._tracker.mark_unknown(from_pos)
+            self._tracker.mark_unknown(to_pos)
+            return
         self._check_trigger(to_pos, scope)
 
     def _validate_move_preconditions(
@@ -439,9 +431,9 @@ class DefinitionPostorderValidator(abc.ABC):
         to_pos: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ) -> bool:
-        """Validate occupancy, infer requirements, and check constraints.
+        """Infer chain requirements and check that parent positions are occupied.
 
-        Returns True if the move may proceed.
+        Returns True if both source and target chains have all parents occupied.
         """
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, from_pos, scope
@@ -456,49 +448,7 @@ class DefinitionPostorderValidator(abc.ABC):
             self._tracker.mark_unknown(from_pos)
             self._tracker.mark_unknown(to_pos)
             return False
-
-        from_action = from_pos.get_last_action()
-        from_occupied = self._tracker.is_occupied(from_pos)
-        to_empty = not self._tracker.is_occupied(to_pos)
-
-        if not from_occupied:
-            if from_action is not None:
-                emptied_by = self._tracker.get_emptied_by(from_pos)
-                self._diagnostics.append(
-                    diagnostics.MoveFromEmptyInterfacePositionDiagnostic(
-                        location=from_pos.location,
-                        position_name=from_pos.source_chained_name,
-                        inferred_at=emptied_by.location if emptied_by else None,
-                    )
-                )
-            else:
-                self._diagnostics.append(
-                    diagnostics.MoveFromEmptyPositionDiagnostic(
-                        location=from_pos.location,
-                        position_name=from_pos.source_chained_name,
-                    )
-                )
-        if not to_empty:
-            occupant = self._tracker.get_occupant(to_pos)
-            self._diagnostics.append(
-                diagnostics.MoveToOccupiedPositionDiagnostic(
-                    location=to_pos.location,
-                    position_name=to_pos.source_chained_name,
-                    occupied_at=occupant.last_position.location,
-                )
-            )
-
-        if not (from_occupied and to_empty):
-            self._tracker.mark_unknown(from_pos)
-            self._tracker.mark_unknown(to_pos)
-            return False
-
-        from_qualities = self._tracker.get_occupant(from_pos).qualities
-        to_qualities = self._get_direct_required_qualities(to_pos, scope)
-
-        return self._check_move_constraints(
-            from_pos, to_pos, from_qualities, to_qualities
-        )
+        return True
 
     def _check_move_constraints(
         self,

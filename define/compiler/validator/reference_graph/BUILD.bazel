@@ -60,6 +60,7 @@ py_library(
     deps = [
         ":dimension_point_tracker",
         "//define/compiler:ast",
+        "//define/compiler:diagnostics",
     ],
 )
 
