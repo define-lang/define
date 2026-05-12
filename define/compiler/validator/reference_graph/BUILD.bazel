@@ -44,11 +44,22 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":dimension_point_operation",
         ":dimension_point_tracker",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:scope_tracker",
+    ],
+)
+
+py_library(
+    name = "dimension_point_operation",
+    srcs = ["dimension_point_operation.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":dimension_point_tracker",
+        "//define/compiler:ast",
     ],
 )
 
@@ -110,6 +121,7 @@ pyright_test(
         ":action_contract_test",
         ":definition_postorder_validator",
         ":definition_postorder_validator_test",
+        ":dimension_point_operation",
         ":dimension_point_tracker",
         ":dimension_point_tracker_test",
         ":reference_graph",

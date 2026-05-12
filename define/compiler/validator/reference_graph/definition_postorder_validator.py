@@ -12,6 +12,7 @@ from define.compiler.graphs import action_call_graph
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
+    dimension_point_operation,
     dimension_point_tracker,
 )
 
@@ -64,6 +65,10 @@ class DefinitionPostorderValidator(abc.ABC):
     @cached_property
     def _tracker(self) -> dimension_point_tracker.DimensionPointTracker:
         return dimension_point_tracker.DimensionPointTracker()
+
+    @cached_property
+    def _executor(self) -> dimension_point_operation.DimensionPointOperationExecutor:
+        return dimension_point_operation.DimensionPointOperationExecutor(self._tracker)
 
     @cached_property
     def _implied_quality_list(self) -> list[ast.TypedName]:
@@ -332,7 +337,9 @@ class DefinitionPostorderValidator(abc.ABC):
             return
 
         qualities = frozenset(self._get_transitive_required_qualities(position, scope))
-        self._tracker.create(position, qualities)
+        self._executor.execute_create(
+            dimension_point_operation.Create(position=position, qualities=qualities)
+        )
         constraints = self._get_constraint_block(position, scope)
         self._apply_position_init_guarantees(position, constraints)
         self._check_trigger(position, scope)
@@ -377,7 +384,9 @@ class DefinitionPostorderValidator(abc.ABC):
             self._tracker.mark_unknown(position)
             return
 
-        self._tracker.destroy(position)
+        self._executor.execute_destroy(
+            dimension_point_operation.Destroy(position=position)
+        )
 
     def _analyze_move(
         self,
@@ -419,7 +428,9 @@ class DefinitionPostorderValidator(abc.ABC):
         if not self._validate_move_preconditions(from_pos, to_pos, scope):
             return
 
-        self._tracker.move(from_pos, to_pos)
+        self._executor.execute_move(
+            dimension_point_operation.Move(source=from_pos, target=to_pos)
+        )
         self._check_trigger(to_pos, scope)
 
     def _validate_move_preconditions(
@@ -851,7 +862,13 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 # DLP 37: We assume trigger points are occupied upon the start
                 # of the action, but we can only assume they have the qualities
                 # they are declared with.
-                self._tracker.create(trigger_ref, qualities, from_caller=trigger_ref)
+                self._executor.execute_assume_occupied(
+                    dimension_point_operation.AssumeOccupied(
+                        position=trigger_ref,
+                        qualities=qualities,
+                        contracted_position_chain=trigger_ref,
+                    )
+                )
 
         scope.enter_child_scope()
         self._analyze_statements(definition.action_statements, scope)
@@ -906,7 +923,13 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             qualities = frozenset(
                 self._get_transitive_required_qualities(position, scope)
             )
-            self._tracker.create(position, qualities, from_caller=inferred_from_chain)
+            self._executor.execute_assume_occupied(
+                dimension_point_operation.AssumeOccupied(
+                    position=position,
+                    qualities=qualities,
+                    contracted_position_chain=inferred_from_chain,
+                )
+            )
 
     def _chain_for_inferred_requirement(
         self,
@@ -1041,10 +1064,12 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             qualities = frozenset(
                 self._get_transitive_required_qualities(full_caller_chain, scope)
             )
-            self._tracker.create(
-                full_caller_chain,
-                qualities,
-                from_caller=full_caller_chain,
+            self._executor.execute_assume_occupied(
+                dimension_point_operation.AssumeOccupied(
+                    position=full_caller_chain,
+                    qualities=qualities,
+                    contracted_position_chain=full_caller_chain,
+                )
             )
 
 
