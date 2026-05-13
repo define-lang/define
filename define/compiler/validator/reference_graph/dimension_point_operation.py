@@ -14,74 +14,68 @@ if typing.TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class Operation:
-    """Base type for dimension point state transition operations."""
+    """Base type for dimension point operations."""
+
+    target: ast.PositionReference
 
 
 @dataclass(frozen=True, slots=True)
 class Create(Operation):
-    """Place a freshly created dimension point at a position with the given qualities."""
+    """Create a new dimension point in a position, with the given qualities."""
 
-    position: ast.PositionReference
     qualities: frozenset[str]
 
 
 @dataclass(frozen=True, slots=True)
 class AssumeOccupied(Create):
-    """Place a dimension point that came from outside this body (caller-supplied or contracted)."""
+    """Place a dimension point that comes from the caller."""
 
     contracted_position_chain: ast.PositionReference
 
 
 @dataclass(frozen=True, slots=True)
 class Move(Operation):
-    """Move the dimension point at source to target."""
+    """Move the dimension point in source to target."""
 
     source: ast.PositionReference
-    target: ast.PositionReference
     target_required_qualities: frozenset[str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class Destroy(Operation):
-    """Remove the dimension point at a position."""
-
-    position: ast.PositionReference
+    """Destroy the dimension point in a position."""
 
 
 class DimensionPointOperationExecutor:
-    """Runs operations against a DimensionPointTracker.
-
-    Owns the post-parents-occupied legality rules for create/move/destroy
-    and produces diagnostics on illegal state transitions.
-    """
+    """Creates, destroys, and moves dimension points, including enforcing the rules on doing so."""
 
     _tracker: dimension_point_tracker.DimensionPointTracker
 
     def __init__(self, tracker: dimension_point_tracker.DimensionPointTracker):
-        """Store the tracker that operations will mutate."""
+        """Create a new DimensionPointOperationExecutor."""
         self._tracker = tracker
 
     def execute_create(self, op: Create) -> diagnostics.Diagnostic | None:
-        """Place a freshly created dimension point on the tracker."""
-        if self._tracker.is_occupied(op.position):
+        """Execute the Create operation."""
+        if self._tracker.is_occupied(op.target):
             return diagnostics.CreateInOccupiedPositionDiagnostic(
-                location=op.position.location,
-                position_name=op.position.source_chained_name,
+                location=op.target.location,
+                position_name=op.target.source_chained_name,
                 populated_at=self._tracker.get_occupant(
-                    op.position
+                    op.target
                 ).last_position.location,
             )
-        self._tracker.create(op.position, op.qualities)
+        self._tracker.create(op.target, op.qualities)
         return None
 
     def execute_assume_occupied(self, op: AssumeOccupied):
-        """Record a caller-supplied dimension point on the tracker."""
+        """Execute the AssumeOccupied operation."""
         self._tracker.create(
-            op.position, op.qualities, from_caller=op.contracted_position_chain
+            op.target, op.qualities, from_caller=op.contracted_position_chain
         )
 
     def execute_move(self, op: Move) -> list[diagnostics.Diagnostic]:
-        """Move a dimension point on the tracker from source to target."""
+        """Execute the Move operation."""
         from_occupied = self._tracker.is_occupied(op.source)
         to_empty = not self._tracker.is_occupied(op.target)
         diags: list[diagnostics.Diagnostic] = []
@@ -132,19 +126,19 @@ class DimensionPointOperationExecutor:
         return []
 
     def execute_destroy(self, op: Destroy) -> diagnostics.Diagnostic | None:
-        """Remove a dimension point from the tracker."""
-        if not self._tracker.is_occupied(op.position):
-            from_action = op.position.get_last_action()
+        """Execute the Destroy operation."""
+        if not self._tracker.is_occupied(op.target):
+            from_action = op.target.get_last_action()
             if from_action is not None:
-                emptied_by = self._tracker.get_emptied_by(op.position)
+                emptied_by = self._tracker.get_emptied_by(op.target)
                 return diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
-                    location=op.position.location,
-                    position_name=op.position.source_chained_name,
+                    location=op.target.location,
+                    position_name=op.target.source_chained_name,
                     inferred_at=emptied_by.location if emptied_by else None,
                 )
             return diagnostics.DestroyInEmptyPositionDiagnostic(
-                location=op.position.location,
-                position_name=op.position.source_chained_name,
+                location=op.target.location,
+                position_name=op.target.source_chained_name,
             )
-        self._tracker.destroy(op.position)
+        self._tracker.destroy(op.target)
         return None

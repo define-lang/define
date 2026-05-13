@@ -327,7 +327,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         qualities = frozenset(self._get_transitive_required_qualities(position, scope))
         diagnostic = self._executor.execute_create(
-            dimension_point_operation.Create(position=position, qualities=qualities)
+            dimension_point_operation.Create(target=position, qualities=qualities)
         )
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
@@ -357,7 +357,7 @@ class DefinitionPostorderValidator(abc.ABC):
             return
 
         diagnostic = self._executor.execute_destroy(
-            dimension_point_operation.Destroy(position=position)
+            dimension_point_operation.Destroy(target=position)
         )
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
@@ -778,7 +778,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 # they are declared with.
                 self._executor.execute_assume_occupied(
                     dimension_point_operation.AssumeOccupied(
-                        position=trigger_ref,
+                        target=trigger_ref,
                         qualities=qualities,
                         contracted_position_chain=trigger_ref,
                     )
@@ -839,7 +839,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             )
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(
-                    position=position,
+                    target=position,
                     qualities=qualities,
                     contracted_position_chain=inferred_from_chain,
                 )
@@ -980,7 +980,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             )
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(
-                    position=full_caller_chain,
+                    target=full_caller_chain,
                     qualities=qualities,
                     contracted_position_chain=full_caller_chain,
                 )
