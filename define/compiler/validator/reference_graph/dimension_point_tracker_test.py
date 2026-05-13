@@ -531,7 +531,7 @@ def test_apply_guarantees_empty():
 
     tracker.apply_guarantees(
         ref,
-        {("position<item>",): action_contract.EmptyGuarantee(caused_by=_POS2_REF)},
+        [(("position<item>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
     )
 
     key = (*_ACTION_KEY_PREFIX, "position<item>")
@@ -549,12 +549,15 @@ def test_apply_guarantees_occupied_by_new():
     tracker.create(box_ref, [])
     tracker.apply_guarantees(
         ref,
-        {
-            ("position<item>",): action_contract.OccupiedByNewGuarantee(
-                qualities=[_make_global_ref("/x")],
-                caused_by=_POS2_REF,
+        [
+            (
+                ("position<item>",),
+                action_contract.OccupiedByNewGuarantee(
+                    qualities=[_make_global_ref("/x")],
+                    caused_by=_POS2_REF,
+                ),
             )
-        },
+        ],
     )
 
     key = (*_ACTION_KEY_PREFIX, "position<item>")
@@ -592,12 +595,15 @@ def test_apply_guarantees_occupied_by_existing():
 
     tracker.apply_guarantees(
         ref,
-        {
-            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
-                origin_position=_make_position_ref([_make_local_ref("item")]),
-                caused_by=_POS2_REF,
+        [
+            (
+                ("position<dest>",),
+                action_contract.OccupiedByExistingGuarantee(
+                    origin_position=_make_position_ref([_make_local_ref("item")]),
+                    caused_by=_POS2_REF,
+                ),
             ),
-        },
+        ],
     )
 
     dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
@@ -632,12 +638,15 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
 
     tracker.apply_guarantees(
         trigger_ref,
-        {
-            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
-                origin_position=_make_position_ref([_make_local_ref("item")]),
-                caused_by=_POS2_REF,
+        [
+            (
+                ("position<dest>",),
+                action_contract.OccupiedByExistingGuarantee(
+                    origin_position=_make_position_ref([_make_local_ref("item")]),
+                    caused_by=_POS2_REF,
+                ),
             ),
-        },
+        ],
     )
 
     new_child_key = (
@@ -688,16 +697,22 @@ def test_apply_guarantees_occupied_by_existing_swap():
 
     tracker.apply_guarantees(
         trigger_ref,
-        {
-            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
-                origin_position=_make_position_ref([_make_local_ref("item")]),
-                caused_by=_POS2_REF,
+        [
+            (
+                ("position<dest>",),
+                action_contract.OccupiedByExistingGuarantee(
+                    origin_position=_make_position_ref([_make_local_ref("item")]),
+                    caused_by=_POS2_REF,
+                ),
             ),
-            ("position<item>",): action_contract.OccupiedByExistingGuarantee(
-                origin_position=_make_position_ref([_make_local_ref("dest")]),
-                caused_by=_POS2_REF,
+            (
+                ("position<item>",),
+                action_contract.OccupiedByExistingGuarantee(
+                    origin_position=_make_position_ref([_make_local_ref("dest")]),
+                    caused_by=_POS2_REF,
+                ),
             ),
-        },
+        ],
     )
 
     dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
@@ -743,12 +758,15 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
     tracker.create(box_ref, [])
     tracker.apply_guarantees(
         ref,
-        {
-            ("position<dest>",): action_contract.OccupiedByExistingGuarantee(
-                origin_position=_make_position_ref([_make_local_ref("item")]),
-                caused_by=_POS2_REF,
+        [
+            (
+                ("position<dest>",),
+                action_contract.OccupiedByExistingGuarantee(
+                    origin_position=_make_position_ref([_make_local_ref("item")]),
+                    caused_by=_POS2_REF,
+                ),
             ),
-        },
+        ],
     )
 
     dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
@@ -767,7 +785,7 @@ def test_apply_guarantees_unknown():
 
     tracker.apply_guarantees(
         ref,
-        {("position<item>",): action_contract.UnknownGuarantee(caused_by=_POS2_REF)},
+        [(("position<item>",), action_contract.UnknownGuarantee(caused_by=_POS2_REF))],
     )
 
     key = (*_ACTION_KEY_PREFIX, "position<item>")
@@ -797,7 +815,7 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
 
     tracker.apply_guarantees(
         ref,
-        {("position<trigger>",): action_contract.EmptyGuarantee(caused_by=_POS2_REF)},
+        [(("position<trigger>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
     )
 
     assert tracker.is_occupied(untouched_ref) is True

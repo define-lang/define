@@ -103,11 +103,14 @@ class UnknownGuarantee(PositionGuarantee):
     """The position's state could not be determined due to an error."""
 
 
+GuaranteePair = tuple[tuple[str, ...], PositionGuarantee]
+
+
 @dataclass(frozen=True)
 class ActionStatementsBlockContract:
     """Base contract for any block containing action statements."""
 
-    guarantees: dict[tuple[str, ...], PositionGuarantee]
+    guarantees: list[GuaranteePair]
 
 
 @dataclass(frozen=True)

@@ -249,7 +249,7 @@ class DimensionPointTracker:
         self,
         interface_names: list[ast.TypedName],
         implied_quality_names: list[ast.GlobalTypedNameReference],
-    ) -> dict[tuple[str, ...], action_contract.PositionGuarantee]:
+    ) -> list[action_contract.GuaranteePair]:
         """Generate guarantees for keys whose first element matches an interface or implied quality."""
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
@@ -264,59 +264,12 @@ class DimensionPointTracker:
             if unknown_state.caused_by is not None:
                 all_keys.add(tuple(key))
 
-        guarantees: dict[tuple[str, ...], action_contract.PositionGuarantee] = {}
+        guarantees: list[action_contract.GuaranteePair] = []
         for key in all_keys:
             first_element = key[0]
             if first_element not in include_names:
                 continue
-            guarantees[key] = self._guarantee_for_key(key)
-        return guarantees
-
-    def _guarantee_for_key(
-        self,
-        key: tuple[str, ...],
-    ) -> action_contract.PositionGuarantee:
-        """Build a guarantee from the current tracker state for a given key."""
-        unknown_state = self._unknown.get(key)
-        if unknown_state is not None and unknown_state.caused_by is not None:
-            return action_contract.UnknownGuarantee(caused_by=unknown_state.caused_by)
-        state = self._state.get(key)
-        if state is not None and state.dp_info is not None:
-            info = state.dp_info
-            if info.from_caller:
-                return action_contract.OccupiedByExistingGuarantee(
-                    origin_position=info.origin_position,
-                    caused_by=info.last_position,
-                )
-            return action_contract.OccupiedByNewGuarantee(
-                qualities=info.qualities,
-                caused_by=info.last_position,
-            )
-        caused_by = state.emptied_by if state is not None else None
-        if caused_by is None:
-            raise ValueError(f"no caused_by for empty position {key}")
-        return action_contract.EmptyGuarantee(caused_by=caused_by)
-
-    def apply_guarantees(
-        self,
-        for_position: ast.PositionReference,
-        guarantees: dict[tuple[str, ...], action_contract.PositionGuarantee],
-    ):
-        """Apply guarantees after an action completes or a quality is assigned.
-
-        Interface-position keys (local names) get prefixed with the full
-        action chain. Implied-quality keys (global names) get prefixed
-        with the name of the action's parent in the caller.
-        For position init blocks, both prefixes collapse to ``for_position``.
-        """
-        action_chain = for_position.get_chain_to_last_action()
-        if action_chain is not None:
-            interface_prefix = action_chain.canonical_chained_name_tuple
-            implied_prefix = interface_prefix[:-1]
-        else:
-            # Position Init Block
-            interface_prefix = for_position.canonical_chained_name_tuple
-            implied_prefix = interface_prefix
+            guarantees.append((key, self._guarantee_for_key(key)))
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,
@@ -350,19 +303,68 @@ class DimensionPointTracker:
         # Thus, we must process position</child> being in position<dest> before
         # we process that position<item> is empty. Otherwise we would delete
         # the dimension point in position</child> incorrectly.
-        sorted_items = sorted(
-            guarantees.items(),
+        guarantees.sort(
             key=lambda item: (
                 len(item[0]),
                 item[1].caused_by.location.line,
                 item[1].caused_by.location.column,
             ),
         )
+        return guarantees
+
+    def _guarantee_for_key(
+        self,
+        key: tuple[str, ...],
+    ) -> action_contract.PositionGuarantee:
+        """Build a guarantee from the current tracker state for a given key."""
+        unknown_state = self._unknown.get(key)
+        if unknown_state is not None and unknown_state.caused_by is not None:
+            return action_contract.UnknownGuarantee(caused_by=unknown_state.caused_by)
+        state = self._state.get(key)
+        if state is not None and state.dp_info is not None:
+            info = state.dp_info
+            if info.from_caller:
+                return action_contract.OccupiedByExistingGuarantee(
+                    origin_position=info.origin_position,
+                    caused_by=info.last_position,
+                )
+            return action_contract.OccupiedByNewGuarantee(
+                qualities=info.qualities,
+                caused_by=info.last_position,
+            )
+        caused_by = state.emptied_by if state is not None else None
+        if caused_by is None:
+            raise ValueError(f"no caused_by for empty position {key}")
+        return action_contract.EmptyGuarantee(caused_by=caused_by)
+
+    def apply_guarantees(
+        self,
+        for_position: ast.PositionReference,
+        guarantees: list[action_contract.GuaranteePair],
+    ):
+        """Apply guarantees after an action completes or a quality is assigned.
+
+        Interface-position keys (local names) get prefixed with the full
+        action chain. Implied-quality keys (global names) get prefixed
+        with the name of the action's parent in the caller.
+        For position init blocks, both prefixes collapse to ``for_position``.
+
+        ``guarantees`` is expected pre-sorted by ``generate_guarantees`` into
+        parent-before-child / execution order.
+        """
+        action_chain = for_position.get_chain_to_last_action()
+        if action_chain is not None:
+            interface_prefix = action_chain.canonical_chained_name_tuple
+            implied_prefix = interface_prefix[:-1]
+        else:
+            # Position Init Block
+            interface_prefix = for_position.canonical_chained_name_tuple
+            implied_prefix = interface_prefix
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
         origin_keys: set[tuple[str, ...]] = set()
-        for _name, guarantee in sorted_items:
+        for _name, guarantee in guarantees:
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
                 if ast.chain_starts_with_global(origin_tuple):
@@ -376,7 +378,7 @@ class DimensionPointTracker:
             tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]
         ] = {}
 
-        for name, guarantee in sorted_items:
+        for name, guarantee in guarantees:
             key = (
                 implied_prefix + name
                 if ast.chain_starts_with_global(name)
