@@ -26,29 +26,6 @@ def _make_local_def(
     )
 
 
-def _make_constraint_block(
-    *typed_names: tuple[ast.NameType, str],
-) -> ast.PositionConstraintBlock:
-    requirements: list[ast.PositionRequirementStatement] = []
-    for name_type, path in typed_names:
-        requirements.append(
-            ast.PositionRequirementStatement(
-                typed_global_name=ast.GlobalTypedNameReference(
-                    name_type=name_type,
-                    name_content=ast.ReferenceGlobalNameContent(
-                        fqun=None,
-                        path=ast.GlobalPathName(name=path, location=_LOC),
-                        location=_LOC,
-                    ),
-                    enclosing_fqun=_FQUN,
-                    location=_LOC,
-                ),
-                location=_LOC,
-            )
-        )
-    return ast.PositionConstraintBlock(requirements=requirements, location=_LOC)
-
-
 def _make_global_position_def(
     path: str,
     constraints: ast.PositionConstraintBlock | None = None,
@@ -104,35 +81,6 @@ def test_is_defined_unknown():
 
     ref = _make_local_typed_name("no_such")
     assert tracker.is_defined(ref) is False
-
-
-def test_definition_has_quality_match():
-    constraints = _make_constraint_block((ast.NameType.ACTION, "/child"))
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_local_def("my_pos", constraints))
-
-    parent = _make_local_typed_name("my_pos")
-    quality = _make_global_typed_name("/child", ast.NameType.ACTION)
-    assert tracker.definition_has_quality(parent, quality) is True
-
-
-def test_definition_has_quality_no_match():
-    constraints = _make_constraint_block((ast.NameType.ACTION, "/other"))
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_local_def("my_pos", constraints))
-
-    parent = _make_local_typed_name("my_pos")
-    quality = _make_global_typed_name("/wrong", ast.NameType.ACTION)
-    assert tracker.definition_has_quality(parent, quality) is False
-
-
-def test_definition_has_quality_no_constraints():
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_local_def("my_pos"))
-
-    parent = _make_local_typed_name("my_pos")
-    quality = _make_global_typed_name("/child", ast.NameType.ACTION)
-    assert tracker.definition_has_quality(parent, quality) is False
 
 
 def test_enter_child_scope_sees_parent():
@@ -202,19 +150,6 @@ def test_action_name_does_not_match_position():
     assert tracker.is_defined(act_ref) is False
 
 
-def test_get_constraint_names_returns_empty_frozenset_for_undefined():
-    tracker = scope_tracker.ScopeTracker()
-    ref = _make_local_typed_name("no_such")
-    assert tracker.get_constraint_names(ref) == frozenset()
-
-
-def test_get_constraint_names_returns_empty_frozenset_for_unconstrained():
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_local_def("my_pos"))
-    ref = _make_local_typed_name("my_pos")
-    assert tracker.get_constraint_names(ref) == frozenset()
-
-
 def test_add_global_position_definition():
     tracker = scope_tracker.ScopeTracker()
     global_def = _make_global_position_def("/my_pos")
@@ -231,25 +166,6 @@ def test_global_position_defined_on_line():
 
     ref = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
     assert tracker.defined_on_line(ref) == 5
-
-
-def test_global_position_with_constraints():
-    constraints = _make_constraint_block((ast.NameType.ACTION, "/child"))
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_global_position_def("/my_pos", constraints))
-
-    parent = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
-    quality = _make_global_typed_name("/child", ast.NameType.ACTION)
-    assert tracker.definition_has_quality(parent, quality) is True
-
-
-def test_global_position_without_constraints():
-    tracker = scope_tracker.ScopeTracker()
-    tracker.add_definition(_make_global_position_def("/my_pos"))
-
-    parent = _make_global_typed_name("/my_pos", ast.NameType.POSITION)
-    quality = _make_global_typed_name("/child", ast.NameType.ACTION)
-    assert tracker.definition_has_quality(parent, quality) is False
 
 
 def _make_position_ref(

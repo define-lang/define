@@ -23,7 +23,7 @@ class Operation:
 class Create(Operation):
     """Create a new dimension point in a position, with the given qualities."""
 
-    qualities: frozenset[str]
+    qualities: list[ast.TypedName]
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,12 +38,16 @@ class Move(Operation):
     """Move the dimension point in source to target."""
 
     source: ast.PositionReference
-    target_required_qualities: frozenset[str] | None = None
+    target_required_qualities: list[ast.TypedName]
 
 
 @dataclass(frozen=True, slots=True)
 class Destroy(Operation):
     """Destroy the dimension point in a position."""
+
+
+def _name_set(typed_names: list[ast.TypedName]) -> frozenset[str]:
+    return frozenset(name.full_typed_name for name in typed_names)
 
 
 class DimensionPointOperationExecutor:
@@ -65,13 +69,15 @@ class DimensionPointOperationExecutor:
                     op.target
                 ).last_position.location,
             )
-        self._tracker.create(op.target, op.qualities)
+        self._tracker.create(op.target, _name_set(op.qualities))
         return None
 
     def execute_assume_occupied(self, op: AssumeOccupied):
         """Execute the AssumeOccupied operation."""
         self._tracker.create(
-            op.target, op.qualities, from_caller=op.contracted_position_chain
+            op.target,
+            _name_set(op.qualities),
+            from_caller=op.contracted_position_chain,
         )
 
     def execute_move(self, op: Move) -> list[diagnostics.Diagnostic]:
@@ -108,20 +114,17 @@ class DimensionPointOperationExecutor:
             )
         if diags:
             return diags
-        if op.target_required_qualities is not None:
-            missing = (
-                op.target_required_qualities
-                - self._tracker.get_occupant(op.source).qualities
-            )
-            if missing:
-                return [
-                    diagnostics.MoveViolatesConstraintsDiagnostic(
-                        location=op.target.location,
-                        source_position=op.source.source_chained_name,
-                        target_position=op.target.source_chained_name,
-                        missing_qualities=sorted(missing),
-                    )
-                ]
+        required = _name_set(op.target_required_qualities)
+        missing = required - self._tracker.get_occupant(op.source).qualities
+        if missing:
+            return [
+                diagnostics.MoveViolatesConstraintsDiagnostic(
+                    location=op.target.location,
+                    source_position=op.source.source_chained_name,
+                    target_position=op.target.source_chained_name,
+                    missing_qualities=sorted(missing),
+                )
+            ]
         self._tracker.move(op.source, op.target)
         return []
 

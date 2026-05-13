@@ -325,7 +325,7 @@ class DefinitionPostorderValidator(abc.ABC):
             self._tracker.mark_unknown(position)
             return
 
-        qualities = frozenset(self._get_transitive_required_qualities(position, scope))
+        qualities = self._get_transitive_required_qualities(position, scope)
         diagnostic = self._executor.execute_create(
             dimension_point_operation.Create(target=position, qualities=qualities)
         )
@@ -409,7 +409,8 @@ class DefinitionPostorderValidator(abc.ABC):
                 target=to_pos,
                 target_required_qualities=self._get_direct_required_qualities(
                     to_pos, scope
-                ),
+                )
+                or [],
             )
         )
         if move_diagnostics:
@@ -466,7 +467,7 @@ class DefinitionPostorderValidator(abc.ABC):
             self._check_chain_element_in_constraints(
                 chain,
                 elements[1],
-                scope.get_constraint_names(first),
+                scope.get_definition(first).constraint_typed_names,
                 first.full_typed_name,
             )
             index = 1
@@ -482,7 +483,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     self._check_chain_element_in_constraints(
                         chain,
                         child,
-                        position_def.constraint_names,
+                        position_def.constraint_typed_names,
                         parent.full_typed_name,
                     )
                     index += 1
@@ -549,7 +550,9 @@ class DefinitionPostorderValidator(abc.ABC):
         self._check_chain_element_in_constraints(
             chain,
             next_child,
-            action_def.interface_position_constraints[child.full_typed_name],
+            action_def.interface_positions_by_name[
+                child.full_typed_name
+            ].constraint_typed_names,
             child.source_typed_name,
         )
         return 2
@@ -558,14 +561,18 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         chain: ast.PositionReference,
         element: ast.TypedNameReference,
-        constraint_names: frozenset[str],
+        constraints: list[ast.TypedName],
         parent_name: str,
     ):
         """Check if a chain element is declared in the parent's constraints (or transitively implied by one)."""
         element_name = element.full_typed_name
-        if element_name not in self._expand_constraints_with_implications(
-            constraint_names
-        ):
+        # TODO: This could be slightly more efficient by making _expand_with_implications_in_order
+        # a generator and just checking as we go through if we see the name or not, I think.
+        expanded = {
+            name.full_typed_name
+            for name in self._expand_with_implications_in_order(constraints)
+        }
+        if element_name not in expanded:
             self._diagnostics.append(
                 diagnostics.ChainElementNotInConstraintsDiagnostic(
                     location=element.location,
@@ -574,27 +581,6 @@ class DefinitionPostorderValidator(abc.ABC):
                 )
             )
             self._tracker.mark_unknown(chain)
-
-    def _expand_constraints_with_implications(
-        self, constraint_names: frozenset[str]
-    ) -> frozenset[str]:
-        """Return the transitive closure of constraints plus their implications."""
-        result: set[str] = set()
-
-        def visit(name: str):
-            if name in result:
-                return
-            result.add(name)
-            defn_result = self._definition_results.get(name)
-            if defn_result is None:
-                return
-            defn = defn_result.definition
-            for impl in defn.quality_implications:
-                visit(impl.typed_global_name.full_typed_name)
-
-        for n in constraint_names:
-            visit(n)
-        return frozenset(result)
 
     def _emit_not_in_action_diagnostic(
         self,
@@ -645,24 +631,25 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> frozenset[str] | None:
-        """Resolve the constraint qualities required at a position."""
+    ) -> list[ast.TypedName] | None:
+        """Resolve the constraint qualities required at a position, in source order."""
         if scope.is_defined_local(position):
-            return scope.get_constraint_names(position.typed_names[0])
+            definition = scope.get_definition(position.typed_names[0])
+            return definition.constraint_typed_names
 
         last_element = position.typed_names[-1]
 
         if isinstance(last_element, ast.LocalTypedNameReference):
             # Local position inside an action — look up the parent action's
-            # interface_position_constraints. Chain validation guarantees the
+            # interface position definition. Chain validation guarantees the
             # parent is a global action reference whose definition exists and
             # contains this interface position.
             parent = position.typed_names[-2]
             action_def = self._definition_results[parent.full_typed_name].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
-            return action_def.interface_position_constraints[
+            return action_def.interface_positions_by_name[
                 last_element.full_typed_name
-            ]
+            ].constraint_typed_names
 
         # This can be None if the last element in the chain is a definition we never loaded
         # (file not found or failed to parse).
@@ -672,15 +659,43 @@ class DefinitionPostorderValidator(abc.ABC):
         position_def = typing.cast(
             "ast.PositionDefinition", definition_result.definition
         )
-        return position_def.constraint_names
+        return position_def.constraint_typed_names
 
     def _get_transitive_required_qualities(
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> frozenset[str]:
-        direct = self._get_direct_required_qualities(position, scope) or frozenset()
-        return self._expand_constraints_with_implications(direct)
+    ) -> list[ast.TypedName]:
+        direct = self._get_direct_required_qualities(position, scope)
+        if direct is None:
+            return []
+        return self._expand_with_implications_in_order(direct)
+
+    def _expand_with_implications_in_order(
+        self, direct: list[ast.TypedName]
+    ) -> list[ast.TypedName]:
+        """Expand quality implications depth-first, implications before the implying quality.
+
+        Order follows the spec: when a quality A implies B, B is assigned
+        beforehand. Implications are walked in source order.
+        """
+        seen: set[str] = set()
+        result: list[ast.TypedName] = []
+
+        def visit(typed_name: ast.TypedName):
+            name = typed_name.full_typed_name
+            if name in seen:
+                return
+            seen.add(name)
+            defn_result = self._definition_results.get(name)
+            if defn_result is not None:
+                for impl in defn_result.definition.quality_implications:
+                    visit(impl.typed_global_name)
+            result.append(typed_name)
+
+        for typed_name in direct:
+            visit(typed_name)
+        return result
 
 
 class ActionPostorderValidator(DefinitionPostorderValidator):
@@ -770,9 +785,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if trigger_ref is not None:
             typed_name = trigger_ref.typed_names[0]
             if scope.is_defined(typed_name):
-                qualities = frozenset(
-                    self._get_transitive_required_qualities(trigger_ref, scope)
-                )
+                qualities = self._get_transitive_required_qualities(trigger_ref, scope)
                 # DLP 37: We assume trigger points are occupied upon the start
                 # of the action, but we can only assume they have the qualities
                 # they are declared with.
@@ -834,9 +847,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         )
 
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            qualities = frozenset(
-                self._get_transitive_required_qualities(position, scope)
-            )
+            qualities = self._get_transitive_required_qualities(position, scope)
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(
                     target=position,
@@ -975,8 +986,8 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             # reference, so its qualities must match what a real
             # caller-supplied DP would carry transitively via Quality
             # Requirement Statements.
-            qualities = frozenset(
-                self._get_transitive_required_qualities(full_caller_chain, scope)
+            qualities = self._get_transitive_required_qualities(
+                full_caller_chain, scope
             )
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(

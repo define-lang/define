@@ -357,7 +357,7 @@ class TestInterfacePositionConstraints:
         }
 
 
-class TestPositionConstraintNames:
+class TestPositionConstraintTypedNames:
     def test_with_constraints(self):
         position = _parse_position(
             f"define the potential position<{_FQUN}:/a> {{\n"
@@ -367,16 +367,14 @@ class TestPositionConstraintNames:
             "    }\n"
             "}\n"
         )
-        assert position.constraint_names == frozenset(
-            {
-                f"position<{_FQUN}:/child>",
-                f"position<{_FQUN}:/other>",
-            }
-        )
+        assert [t.full_typed_name for t in position.constraint_typed_names] == [
+            f"position<{_FQUN}:/child>",
+            f"position<{_FQUN}:/other>",
+        ]
 
     def test_no_constraints(self):
         position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
-        assert position.constraint_names == frozenset()
+        assert position.constraint_typed_names == []
 
 
 class TestChainedNameConstruction:

@@ -147,14 +147,11 @@ class PositionDefinition(QualityDefinition):
         object.__setattr__(self, "initialization", initialization)
 
     @property
-    def constraint_names(self) -> frozenset[str]:
-        """Return the fully-qualified constraint names for this position."""
+    def constraint_typed_names(self) -> list[TypedName]:
+        """Return the typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
-            return frozenset()
-        return frozenset(
-            requirement.typed_global_name.full_typed_name
-            for requirement in self.constraints.requirements
-        )
+            return []
+        return [req.typed_global_name for req in self.constraints.requirements]
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,6 +204,13 @@ class LocalPositionDefinition(ASTNode):
             ),
         )
         object.__setattr__(self, "constraints", constraints)
+
+    @property
+    def constraint_typed_names(self) -> list[TypedName]:
+        """Return the typed names of this position's constraint requirements, in source order."""
+        if self.constraints is None:
+            return []
+        return [req.typed_global_name for req in self.constraints.requirements]
 
 
 type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
