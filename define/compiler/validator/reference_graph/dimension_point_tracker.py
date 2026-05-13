@@ -17,8 +17,9 @@ class DimensionPointInfo:
     # The last position reference written in the code for the last
     # statement that relocated or created this dimension point.
     last_position: ast.PositionReference
-    # The qualities we know that this dimension point has.
-    qualities: frozenset[str]
+    # The qualities we know that this dimension point has, in
+    # assignment order.
+    qualities: list[ast.GlobalTypedNameReference]
     # The position reference where this dimension point was first created.
     origin_position: ast.PositionReference
     # Whether this DP was passed in by the caller (trigger/inferred) vs created in the body.
@@ -125,7 +126,7 @@ class DimensionPointTracker:
     def create(
         self,
         in_position: ast.PositionReference,
-        qualities: frozenset[str],
+        qualities: list[ast.GlobalTypedNameReference],
         *,
         from_caller: ast.PositionReference | None = None,
     ):
@@ -133,7 +134,7 @@ class DimensionPointTracker:
 
         Args:
             in_position: Where the dimension point is being created.
-            qualities: The qualities this dimension point has.
+            qualities: The qualities this dimension point has, in assignment order.
             from_caller: When provided, the DP represents one passed in by the
                 caller, and this is its caller-side chained name.
 
@@ -149,7 +150,7 @@ class DimensionPointTracker:
         self,
         key: tuple[str, ...],
         position: ast.PositionReference,
-        qualities: frozenset[str],
+        qualities: list[ast.GlobalTypedNameReference],
         *,
         from_caller: ast.PositionReference | None = None,
     ):
@@ -247,7 +248,7 @@ class DimensionPointTracker:
     def generate_guarantees(
         self,
         interface_names: list[ast.TypedName],
-        implied_quality_names: list[ast.TypedName],
+        implied_quality_names: list[ast.GlobalTypedNameReference],
     ) -> dict[tuple[str, ...], action_contract.PositionGuarantee]:
         """Generate guarantees for keys whose first element matches an interface or implied quality."""
         include_names = {

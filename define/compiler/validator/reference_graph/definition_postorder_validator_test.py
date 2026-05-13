@@ -245,7 +245,7 @@ class TestGuaranteeGeneration:
         contract = _get_contract(source)
         guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == frozenset()
+        assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 37
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -307,7 +307,7 @@ class TestGuaranteeGeneration:
         contract = _get_contract(source)
         guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == frozenset()
+        assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 37
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -378,7 +378,7 @@ class TestGuaranteeGeneration:
         contract = _get_contract(source)
         guarantee = contract.guarantees[("position<item>",)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == frozenset()
+        assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 37
 
@@ -533,7 +533,7 @@ class TestChainedGuaranteeGeneration:
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == frozenset()
+        assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 37
         assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
@@ -644,7 +644,7 @@ class TestChainedGuaranteeGeneration:
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         guarantee = contract.guarantees[chain_key]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == frozenset()
+        assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 37
 
@@ -700,7 +700,7 @@ class TestPositionInitBlockContract:
         assert set(contract.guarantees.keys()) == {(_POS_TEST,)}
         guarantee = contract.guarantees[(_POS_TEST,)]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == frozenset()
+        assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 3
         assert guarantee.caused_by.location.column == 37
 
@@ -736,11 +736,11 @@ class TestPositionInitBlockContract:
         }
         self_guarantee = contract.guarantees[(_POS_TEST,)]
         assert isinstance(self_guarantee, action_contract.OccupiedByNewGuarantee)
-        assert self_guarantee.qualities == frozenset({_POS_DEP})
+        assert [q.full_typed_name for q in self_guarantee.qualities] == [_POS_DEP]
         assert self_guarantee.caused_by.location.line == 7
         dep_guarantee = contract.guarantees[(_POS_TEST, _POS_DEP)]
         assert isinstance(dep_guarantee, action_contract.OccupiedByNewGuarantee)
-        assert dep_guarantee.qualities == frozenset()
+        assert dep_guarantee.qualities == []
         assert dep_guarantee.caused_by.location.line == 8
 
 

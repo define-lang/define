@@ -71,7 +71,7 @@ class DefinitionPostorderValidator(abc.ABC):
         return dimension_point_operation.DimensionPointOperationExecutor(self._tracker)
 
     @cached_property
-    def _implied_quality_list(self) -> list[ast.TypedName]:
+    def _implied_quality_list(self) -> list[ast.GlobalTypedNameReference]:
         return [
             impl.typed_global_name for impl in self._definition.quality_implications
         ]
@@ -561,7 +561,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         chain: ast.PositionReference,
         element: ast.TypedNameReference,
-        constraints: list[ast.TypedName],
+        constraints: list[ast.GlobalTypedNameReference],
         parent_name: str,
     ):
         """Check if a chain element is declared in the parent's constraints (or transitively implied by one)."""
@@ -631,7 +631,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> list[ast.TypedName] | None:
+    ) -> list[ast.GlobalTypedNameReference] | None:
         """Resolve the constraint qualities required at a position, in source order."""
         if scope.is_defined_local(position):
             definition = scope.get_definition(position.typed_names[0])
@@ -665,24 +665,24 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> list[ast.TypedName]:
+    ) -> list[ast.GlobalTypedNameReference]:
         direct = self._get_direct_required_qualities(position, scope)
         if direct is None:
             return []
         return self._expand_with_implications_in_order(direct)
 
     def _expand_with_implications_in_order(
-        self, direct: list[ast.TypedName]
-    ) -> list[ast.TypedName]:
+        self, direct: list[ast.GlobalTypedNameReference]
+    ) -> list[ast.GlobalTypedNameReference]:
         """Expand quality implications depth-first, implications before the implying quality.
 
         Order follows the spec: when a quality A implies B, B is assigned
         beforehand. Implications are walked in source order.
         """
         seen: set[str] = set()
-        result: list[ast.TypedName] = []
+        result: list[ast.GlobalTypedNameReference] = []
 
-        def visit(typed_name: ast.TypedName):
+        def visit(typed_name: ast.GlobalTypedNameReference):
             name = typed_name.full_typed_name
             if name in seen:
                 return

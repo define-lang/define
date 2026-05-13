@@ -147,7 +147,7 @@ class PositionDefinition(QualityDefinition):
         object.__setattr__(self, "initialization", initialization)
 
     @property
-    def constraint_typed_names(self) -> list[TypedName]:
+    def constraint_typed_names(self) -> list[GlobalTypedNameReference]:
         """Return the typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
             return []
@@ -206,7 +206,7 @@ class LocalPositionDefinition(ASTNode):
         object.__setattr__(self, "constraints", constraints)
 
     @property
-    def constraint_typed_names(self) -> list[TypedName]:
+    def constraint_typed_names(self) -> list[GlobalTypedNameReference]:
         """Return the typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
             return []

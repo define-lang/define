@@ -95,7 +95,7 @@ class OccupiedByExistingGuarantee(PositionGuarantee):
 class OccupiedByNewGuarantee(PositionGuarantee):
     """The position contains a new DP created by the action."""
 
-    qualities: frozenset[str]
+    qualities: list[ast.GlobalTypedNameReference]
 
 
 @dataclass(frozen=True)

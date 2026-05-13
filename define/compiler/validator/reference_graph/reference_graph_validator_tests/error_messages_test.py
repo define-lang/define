@@ -411,6 +411,6 @@ def test_move_violates_constraints_error_message(
         "  from: position<from_pos>\n"
         "    to: position<to_pos>\n"
         "because the dimension point being moved does not have the required qualities:\n"
-        "  action<my.domain.com:my_lib:/y>\n"
-        "  position<my.domain.com:my_lib:/x>"
+        "  position<my.domain.com:my_lib:/x>\n"
+        "  action<my.domain.com:my_lib:/y>"
     )
