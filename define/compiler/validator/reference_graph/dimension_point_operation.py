@@ -59,18 +59,26 @@ class DimensionPointOperationExecutor:
         """Create a new DimensionPointOperationExecutor."""
         self._tracker = tracker
 
-    def execute_create(self, op: Create) -> diagnostics.Diagnostic | None:
+    def execute_create(self, op: Create) -> list[diagnostics.Diagnostic]:
         """Execute the Create operation."""
+        parent_diags = self._check_parents_occupied(op.target)
+        if parent_diags:
+            self._tracker.mark_unknown(op.target)
+            return parent_diags
         if self._tracker.is_occupied(op.target):
-            return diagnostics.CreateInOccupiedPositionDiagnostic(
-                location=op.target.location,
-                position_name=op.target.source_chained_name,
-                populated_at=self._tracker.get_occupant(
-                    op.target
-                ).last_position.location,
-            )
+            # Target is genuinely occupied — leave its known state intact so
+            # later statements can still reason about the existing DP.
+            return [
+                diagnostics.CreateInOccupiedPositionDiagnostic(
+                    location=op.target.location,
+                    position_name=op.target.source_chained_name,
+                    populated_at=self._tracker.get_occupant(
+                        op.target
+                    ).last_position.location,
+                )
+            ]
         self._tracker.create(op.target, op.qualities)
-        return None
+        return []
 
     def execute_assume_occupied(self, op: AssumeOccupied):
         """Execute the AssumeOccupied operation."""
@@ -82,6 +90,13 @@ class DimensionPointOperationExecutor:
 
     def execute_move(self, op: Move) -> list[diagnostics.Diagnostic]:
         """Execute the Move operation."""
+        parent_diags = self._check_parents_occupied(
+            op.source
+        ) + self._check_parents_occupied(op.target)
+        if parent_diags:
+            self._tracker.mark_unknown(op.source)
+            self._tracker.mark_unknown(op.target)
+            return parent_diags
         from_occupied = self._tracker.is_occupied(op.source)
         to_empty = not self._tracker.is_occupied(op.target)
         diags: list[diagnostics.Diagnostic] = []
@@ -113,6 +128,8 @@ class DimensionPointOperationExecutor:
                 )
             )
         if diags:
+            self._tracker.mark_unknown(op.source)
+            self._tracker.mark_unknown(op.target)
             return diags
         have = _name_set(self._tracker.get_occupant(op.source).qualities)
         missing = [
@@ -121,6 +138,8 @@ class DimensionPointOperationExecutor:
             if name.full_typed_name not in have
         ]
         if missing:
+            self._tracker.mark_unknown(op.source)
+            self._tracker.mark_unknown(op.target)
             return [
                 diagnostics.MoveViolatesConstraintsDiagnostic(
                     location=op.target.location,
@@ -132,20 +151,51 @@ class DimensionPointOperationExecutor:
         self._tracker.move(op.source, op.target)
         return []
 
-    def execute_destroy(self, op: Destroy) -> diagnostics.Diagnostic | None:
+    def execute_destroy(self, op: Destroy) -> list[diagnostics.Diagnostic]:
         """Execute the Destroy operation."""
+        parent_diags = self._check_parents_occupied(op.target)
+        if parent_diags:
+            self._tracker.mark_unknown(op.target)
+            return parent_diags
         if not self._tracker.is_occupied(op.target):
+            self._tracker.mark_unknown(op.target)
             from_action = op.target.get_last_action()
             if from_action is not None:
                 emptied_by = self._tracker.get_emptied_by(op.target)
-                return diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
+                return [
+                    diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
+                        location=op.target.location,
+                        position_name=op.target.source_chained_name,
+                        inferred_at=emptied_by.location if emptied_by else None,
+                    )
+                ]
+            return [
+                diagnostics.DestroyInEmptyPositionDiagnostic(
                     location=op.target.location,
                     position_name=op.target.source_chained_name,
-                    inferred_at=emptied_by.location if emptied_by else None,
                 )
-            return diagnostics.DestroyInEmptyPositionDiagnostic(
-                location=op.target.location,
-                position_name=op.target.source_chained_name,
-            )
+            ]
         self._tracker.destroy(op.target)
-        return None
+        return []
+
+    def _check_parents_occupied(
+        self, target: ast.PositionReference
+    ) -> list[diagnostics.Diagnostic]:
+        """Walk parent positions leaf-to-root, emitting one diagnostic per empty parent."""
+        diags: list[diagnostics.Diagnostic] = []
+        current = target.parent_position()
+        while current is not None:
+            if self._tracker.has_unknown_state(current):
+                current = current.parent_position()
+                continue
+            if self._tracker.is_occupied(current):
+                break
+            diags.append(
+                diagnostics.ParentPositionNotOccupiedDiagnostic(
+                    location=target.location,
+                    position_name=target.source_chained_name,
+                    parent_position_name=current.source_chained_name,
+                )
+            )
+            current = current.parent_position()
+        return diags

@@ -127,36 +127,6 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         self._maybe_infer_requirement(required_state, position, scope)
 
-    def _check_parents_occupied(
-        self,
-        position: ast.PositionReference,
-    ) -> bool:
-        """Check that all parent positions contain dimension points.
-
-        Walks leaf-to-root. Emits a separate diagnostic for each unoccupied
-        parent.
-
-        Does NOT mark the position unknown — the caller handles that.
-        """
-        ok = True
-        current = position.parent_position()
-        while current is not None:
-            if self._tracker.has_unknown_state(current):
-                current = current.parent_position()
-                continue
-            if self._tracker.is_occupied(current):
-                break
-            self._diagnostics.append(
-                diagnostics.ParentPositionNotOccupiedDiagnostic(
-                    location=position.location,
-                    position_name=position.source_chained_name,
-                    parent_position_name=current.source_chained_name,
-                )
-            )
-            ok = False
-            current = current.parent_position()
-        return ok
-
     def _apply_position_init_guarantees(
         self,
         position: ast.PositionReference,
@@ -318,16 +288,12 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.EMPTY, position, scope
         )
-        if not self._check_parents_occupied(position):
-            self._tracker.mark_unknown(position)
-            return
-
         qualities = self._get_transitive_required_qualities(position, scope)
-        diagnostic = self._executor.execute_create(
+        diags = self._executor.execute_create(
             dimension_point_operation.Create(target=position, qualities=qualities)
         )
-        if diagnostic is not None:
-            self._diagnostics.append(diagnostic)
+        self._diagnostics.extend(diags)
+        if diags:
             return
         self._apply_position_init_guarantees(position, qualities)
         self._check_trigger(position, scope)
@@ -348,16 +314,10 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, position, scope
         )
-        if not self._check_parents_occupied(position):
-            self._tracker.mark_unknown(position)
-            return
-
-        diagnostic = self._executor.execute_destroy(
+        diags = self._executor.execute_destroy(
             dimension_point_operation.Destroy(target=position)
         )
-        if diagnostic is not None:
-            self._diagnostics.append(diagnostic)
-            self._tracker.mark_unknown(position)
+        self._diagnostics.extend(diags)
 
     def _analyze_move(
         self,
@@ -396,8 +356,12 @@ class DefinitionPostorderValidator(abc.ABC):
             self._tracker.mark_unknown(to_pos)
             return
 
-        if not self._validate_move_preconditions(from_pos, to_pos, scope):
-            return
+        self._maybe_infer_requirements_on_chain(
+            action_contract.PositionOccupancyState.OCCUPIED, from_pos, scope
+        )
+        self._maybe_infer_requirements_on_chain(
+            action_contract.PositionOccupancyState.EMPTY, to_pos, scope
+        )
 
         move_diagnostics = self._executor.execute_move(
             dimension_point_operation.Move(
@@ -411,35 +375,8 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         if move_diagnostics:
             self._diagnostics.extend(move_diagnostics)
-            self._tracker.mark_unknown(from_pos)
-            self._tracker.mark_unknown(to_pos)
             return
         self._check_trigger(to_pos, scope)
-
-    def _validate_move_preconditions(
-        self,
-        from_pos: ast.PositionReference,
-        to_pos: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ) -> bool:
-        """Infer chain requirements and check that parent positions are occupied.
-
-        Returns True if both source and target chains have all parents occupied.
-        """
-        self._maybe_infer_requirements_on_chain(
-            action_contract.PositionOccupancyState.OCCUPIED, from_pos, scope
-        )
-        self._maybe_infer_requirements_on_chain(
-            action_contract.PositionOccupancyState.EMPTY, to_pos, scope
-        )
-
-        from_parent_ok = self._check_parents_occupied(from_pos)
-        to_parent_ok = self._check_parents_occupied(to_pos)
-        if not (from_parent_ok and to_parent_ok):
-            self._tracker.mark_unknown(from_pos)
-            self._tracker.mark_unknown(to_pos)
-            return False
-        return True
 
     def _validate_chained_name(
         self,
@@ -855,11 +792,12 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         if parent is None:
             return None
         parent_key = parent.canonical_chained_name_tuple
-        # This check is necessary because we have to run _maybe_infer_reqiuirement
-        # before we run _check_parents_occupied, so we can run into situations where
-        # the developer has written a statement that operates on the child of a non-existent
-        # dimension point. Later, _check_parents_occupied will detect this situation, emit
-        # a diagnostic, and mark the relevant position unknown.
+        # This check is necessary because we have to run _maybe_infer_requirement
+        # before the executor runs its parent-occupancy check, so we can run into
+        # situations where the developer has written a statement that operates on
+        # the child of a non-existent dimension point. The executor's parent check
+        # will later detect this situation, emit a diagnostic, and mark the
+        # relevant position unknown.
         if not self._tracker.is_occupied_by_key(parent_key):
             return None
         dp_info = self._tracker.get_occupant_by_key(parent_key)
