@@ -403,20 +403,14 @@ class DefinitionPostorderValidator(abc.ABC):
         if not self._validate_move_preconditions(from_pos, to_pos, scope):
             return
 
-        # Constraint check only runs when occupancy is legal; illegal occupancy
-        # is reported by execute_move below.
-        if self._tracker.is_occupied(from_pos) and not self._tracker.is_occupied(
-            to_pos
-        ):
-            from_qualities = self._tracker.get_occupant(from_pos).qualities
-            to_qualities = self._get_direct_required_qualities(to_pos, scope)
-            if not self._check_move_constraints(
-                from_pos, to_pos, from_qualities, to_qualities
-            ):
-                return
-
         move_diagnostics = self._executor.execute_move(
-            dimension_point_operation.Move(source=from_pos, target=to_pos)
+            dimension_point_operation.Move(
+                source=from_pos,
+                target=to_pos,
+                target_required_qualities=self._get_direct_required_qualities(
+                    to_pos, scope
+                ),
+            )
         )
         if move_diagnostics:
             self._diagnostics.extend(move_diagnostics)
@@ -449,36 +443,6 @@ class DefinitionPostorderValidator(abc.ABC):
             self._tracker.mark_unknown(to_pos)
             return False
         return True
-
-    def _check_move_constraints(
-        self,
-        from_pos: ast.PositionReference,
-        to_pos: ast.PositionReference,
-        from_qualities: frozenset[str] | None,
-        to_qualities: frozenset[str] | None,
-    ) -> bool:
-        """Check that a move satisfies destination constraints.
-
-        Returns True if the move may proceed. Returns False if constraints are
-        violated (marks unknown state).
-        """
-        if from_qualities is None or to_qualities is None:
-            return True
-        missing = to_qualities - from_qualities
-        if not missing:
-            return True
-
-        self._diagnostics.append(
-            diagnostics.MoveViolatesConstraintsDiagnostic(
-                location=to_pos.typed_names[0].location,
-                source_position=from_pos.source_chained_name,
-                target_position=to_pos.source_chained_name,
-                missing_qualities=sorted(missing),
-            )
-        )
-        self._tracker.mark_unknown(from_pos)
-        self._tracker.mark_unknown(to_pos)
-        return False
 
     def _validate_chained_name(
         self,

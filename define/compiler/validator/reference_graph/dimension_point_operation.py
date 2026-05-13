@@ -38,6 +38,7 @@ class Move(Operation):
 
     source: ast.PositionReference
     target: ast.PositionReference
+    target_required_qualities: frozenset[str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,6 +114,20 @@ class DimensionPointOperationExecutor:
             )
         if diags:
             return diags
+        if op.target_required_qualities is not None:
+            missing = (
+                op.target_required_qualities
+                - self._tracker.get_occupant(op.source).qualities
+            )
+            if missing:
+                return [
+                    diagnostics.MoveViolatesConstraintsDiagnostic(
+                        location=op.target.location,
+                        source_position=op.source.source_chained_name,
+                        target_position=op.target.source_chained_name,
+                        missing_qualities=sorted(missing),
+                    )
+                ]
         self._tracker.move(op.source, op.target)
         return []
 
