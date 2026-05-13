@@ -307,15 +307,14 @@ class DefinitionPostorderValidator(abc.ABC):
         if not validity.target_ok:
             return
         self._validate_chained_name(stmt.target_position, scope)
-        position = stmt.target_position
-        if self._tracker.has_unknown_state(position):
+        if self._tracker.has_unknown_state(stmt.target_position):
             return
 
         self._maybe_infer_requirements_on_chain(
-            action_contract.PositionOccupancyState.OCCUPIED, position, scope
+            action_contract.PositionOccupancyState.OCCUPIED, stmt.target_position, scope
         )
         diags = self._executor.execute_destroy(
-            dimension_point_operation.Destroy(target=position)
+            dimension_point_operation.Destroy(target=stmt.target_position)
         )
         self._diagnostics.extend(diags)
 
