@@ -1,6 +1,6 @@
 module github.com/define-lang/define/defcl/buf
 
-go 1.26.2
+go 1.26.3
 
 require (
 	buf.build/go/bufplugin v0.10.0
