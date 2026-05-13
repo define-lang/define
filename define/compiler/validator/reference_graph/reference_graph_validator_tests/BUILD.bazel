@@ -166,6 +166,45 @@ py_test(
 )
 
 py_test(
+    name = "chained_name_constraint_test",
+    size = "small",
+    srcs = ["chained_name_constraint_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "chained_name_global_start_test",
+    size = "small",
+    srcs = ["chained_name_global_start_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
+    name = "chained_name_multi_element_test",
+    size = "small",
+    srcs = ["chained_name_multi_element_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
     name = "chained_name_test",
     size = "small",
     srcs = ["chained_name_test.py"],
@@ -419,6 +458,9 @@ pyright_test(
         ":automated_requirements_nested_action_test",
         ":automated_requirements_nested_implied_test",
         ":automated_requirements_test",
+        ":chained_name_constraint_test",
+        ":chained_name_global_start_test",
+        ":chained_name_multi_element_test",
         ":chained_name_test",
         ":create_dimension_point_test",
         ":create_without_parent_test",
