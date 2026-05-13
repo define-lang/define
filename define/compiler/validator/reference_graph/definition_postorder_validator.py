@@ -160,16 +160,13 @@ class DefinitionPostorderValidator(abc.ABC):
     def _apply_position_init_guarantees(
         self,
         position: ast.PositionReference,
-        constraints: ast.PositionConstraintBlock | None,
+        qualities: list[ast.GlobalTypedNameReference],
     ):
-        """Apply position init block guarantees for each assigned quality in source order."""
-        if constraints is None:
-            return
-        for requirement in constraints.requirements:
-            if requirement.typed_global_name.name_type != ast.NameType.POSITION:
+        """Apply position init block guarantees for each assigned position quality."""
+        for quality in qualities:
+            if quality.name_type != ast.NameType.POSITION:
                 continue
-            applied_position_name = requirement.typed_global_name.full_typed_name
-            init_block_contract = self._position_contracts.get(applied_position_name)
+            init_block_contract = self._position_contracts.get(quality.full_typed_name)
             if init_block_contract is not None:
                 self._tracker.apply_guarantees(
                     position,
@@ -332,8 +329,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
             return
-        constraints = self._get_constraint_block(position, scope)
-        self._apply_position_init_guarantees(position, constraints)
+        self._apply_position_init_guarantees(position, qualities)
         self._check_trigger(position, scope)
 
     def _analyze_destroy(
@@ -597,35 +593,6 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         )
         self._tracker.mark_unknown(chain)
-
-    # TODO: _get_constraint_block and _get_direct_required_qualities share the same
-    # position-resolution logic and should be refactored to use a common helper.
-    def _get_constraint_block(
-        self,
-        position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ) -> ast.PositionConstraintBlock | None:
-        """Resolve the constraint block for the position definition."""
-        if scope.is_defined_local(position):
-            return scope.get_definition(position.typed_names[0]).constraints
-
-        last_element = position.typed_names[-1]
-
-        if isinstance(last_element, ast.LocalTypedNameReference):
-            parent = position.typed_names[-2]
-            action_def = self._definition_results[parent.full_typed_name].definition
-            action_def = typing.cast("ast.ActionDefinition", action_def)
-            return action_def.interface_positions_by_name[
-                last_element.full_typed_name
-            ].constraints
-
-        definition_result = self._definition_results.get(last_element.full_typed_name)
-        if definition_result is None:
-            return None
-        position_def = typing.cast(
-            "ast.PositionDefinition", definition_result.definition
-        )
-        return position_def.constraints
 
     def _get_direct_required_qualities(
         self,
