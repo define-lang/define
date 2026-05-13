@@ -16,7 +16,7 @@ See [define/spec/spec.md] for the language specification.
 ## Formatting
 
 - After making a change to any file, reformat by running
-  `bazelisk run --noshow_progress //tools:format`
+  `bazelisk run --noshow_progress --ui_event_filters=-info //tools:format`
 
 ## Python Execution
 
@@ -135,17 +135,21 @@ BUILD file generator.
 
 ### Building and Testing
 
-- Build all targets: `bazelisk build --noshow_progress //...`
-- Test all targets: `bazelisk test --noshow_progress //...`
+- Build all targets:
+  `bazelisk build --noshow_progress --ui_event_filters=-info //...`
+- Test all targets:
+  `bazelisk test --noshow_progress --ui_event_filters=-info //...`
 - Run coverage:
-  `bazelisk coverage --noshow_progress //... --combined_report=lcov --instrumentation_filter='^//(define|defcl|tools)[/:]'`
-- Always run the full test suite (`bazelisk test --noshow_progress //...`) when
-  done working, to make sure nothing is broken.
+  `bazelisk coverage --noshow_progress --ui_event_filters=-info //... --combined_report=lcov --instrumentation_filter='^//(define|defcl|tools)[/:]'`
+- Always run the full test suite
+  (`bazelisk test --noshow_progress --ui_event_filters=-info //...`) when done
+  working, to make sure nothing is broken.
 - Run and check coverage after writing new tests.
 - **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
   always set `size = "small"`.
 - After changing the code generator or any codegen testdata, regenerate expected
-  outputs: `bazelisk run --noshow_progress //tools:regenerate_codegen_testdata`
+  outputs:
+  `bazelisk run --noshow_progress --ui_event_filters=-info //tools:regenerate_codegen_testdata`
 
 ### Python Dependencies
 
@@ -154,7 +158,7 @@ BUILD file generator.
 - Dependencies are in `pyproject.toml`. The `tools/` directory has its own
   `pyproject.toml` file.
 - To regenerate or update the uv lock file:
-  `bazelisk run --noshow_progress //:update_lock`
+  `bazelisk run --noshow_progress --ui_event_filters=-info //:update_lock`
 - Reference Python dependencies in BUILD files as `@pypi//package_name`.
 
 ### Basedpyright Type-Checking
