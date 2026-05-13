@@ -19,8 +19,11 @@ def py_test(name, **kwargs):
     if "@pypi//coverage" not in deps:
         deps = deps + ["@pypi//coverage"]
 
+    data = kwargs.pop("data", []) + ["//:pyproject.toml"]
+
     _py_test(
         name = name,
+        data = data,
         deps = deps,
         pytest_main = True,
         **kwargs

@@ -96,6 +96,7 @@ exclude = ["**/codegen/testdata/**/expected/**/*.py"]
 convention = "pep257"
 
 [tool.pytest.ini_options]
+addopts = "--tb=short --no-header -q"
 junit_logging = "all"
 norecursedirs = [
     "bazel-*",
