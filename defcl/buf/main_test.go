@@ -421,3 +421,34 @@ func TestRulesIgnoreImportedFiles(t *testing.T) {
 		ExpectedAnnotations: nil,
 	}.Run(t)
 }
+
+// TestRulesIgnoreImportedFilesEdition2023 covers the IsImport-skip branches
+// without depending on edition 2024 support in protocompile. The root file
+// itself uses edition 2023, so DEFCL_EDITION reports a single annotation on
+// it; every other rule expects zero annotations even though the imported
+// files contain violations of each rule.
+func TestRulesIgnoreImportedFilesEdition2023(t *testing.T) {
+	checktest.CheckTest{
+		Request: &checktest.RequestSpec{
+			Files: &checktest.ProtoFileSpec{
+				DirPaths:  []string{".."},
+				FilePaths: []string{"buf/testdata/import_only_edition_2023/root.proto"},
+			},
+			RuleIDs: []string{
+				"DEFCL_EDITION",
+				"DEFCL_NO_BOOL",
+				"DEFCL_NO_BYTES",
+				"DEFCL_ENUM_IN_MESSAGE",
+				"DEFCL_ENUM_ZERO_UNSPECIFIED",
+				"DEFCL_FIELD_NAME_UNDERSCORE",
+			},
+		},
+		Spec: spec,
+		ExpectedAnnotations: []checktest.ExpectedAnnotation{
+			{
+				RuleID:       "DEFCL_EDITION",
+				FileLocation: &checktest.ExpectedFileLocation{FileName: "buf/testdata/import_only_edition_2023/root.proto"},
+			},
+		},
+	}.Run(t)
+}
