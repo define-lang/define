@@ -145,6 +145,7 @@ class TestLocalPosition:
         with pytest.raises(literal.DimensionPointExistsError) as exc_info:
             pos.create_dimension_point()
         assert exc_info.value.position_name == "test"
+        assert "test" in str(exc_info.value)
 
     def test_has_dimension_point_initially_false(self):
         pos = literal.LocalPosition("test")
@@ -160,8 +161,9 @@ class TestLocalPosition:
     def test_dimension_point_raises_when_none(self):
         pos = literal.LocalPosition("test")
 
-        with pytest.raises(literal.NoDimensionPointError):
+        with pytest.raises(literal.NoDimensionPointError) as exc_info:
             pos.dimension_point  # noqa: B018
+        assert "test" in str(exc_info.value)
 
     def test_constraints_stored(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -247,6 +249,8 @@ class TestMovePosition:
             source.move_dimension_point_to(dest)
         assert exc_info.value.position_name == "position<dest>"
         assert exc_info.value.constraint_name == "position<test.com:lib:/constraint>"
+        assert "position<dest>" in str(exc_info.value)
+        assert "position<test.com:lib:/constraint>" in str(exc_info.value)
 
     def test_move_with_unsatisfied_action_constraint_raises(self):
         class ConstraintAction(literal.Action):
@@ -448,6 +452,15 @@ class TestActionTriggering:
         pos.create_dimension_point()
 
         assert pos.has_dimension_point
+
+    def test_interface_position_applies_constraints_on_create(self):
+        class C(literal.GlobalPosition):
+            _typed_name: ClassVar[str] = "position<c>"
+
+        pos = literal.InterfacePosition("position</iface>", constraints=(C,))
+        pos.create_dimension_point()
+
+        assert C in pos.dimension_point.quality_types
 
     def test_retrigger_after_move_away_and_back(self):
         executed: list[str] = []
@@ -764,6 +777,15 @@ class TestImpliedQualities:
 
         names = [quality.name for quality in dp._assigned_qualities]
         assert names == ["position<a>", "position<b>"]
+
+    def test_assign_action_contributes_to_quality_types(self):
+        class MyAction(literal.Action):
+            _typed_name: ClassVar[str] = "action<test>"
+
+        dp = literal.DimensionPoint()
+        dp.assign_action(MyAction())
+
+        assert MyAction in dp.quality_types
 
     def test_implied_quality_after_assigned_side_effects_run(self):
         class Implied(literal.GlobalPosition):

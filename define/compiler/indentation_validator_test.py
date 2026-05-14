@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 # pyright: reportPrivateUsage=false
 
+from pathlib import PurePosixPath
+
 import pytest
 
 from define.compiler import diagnostics, indentation_validator
@@ -225,8 +227,30 @@ class TestInvalidIndentation:
         assert isinstance(diag, diagnostics.IncorrectIndentationDiagnostic)
         assert diag.location.line == 1
         assert diag.location.column == 1
+        assert diag.location.end_line == 1
+        assert (
+            diag.location.end_column
+            == len("    define the potential position<standard:/path>.") + 1
+        )
         assert diag.expected_indent == 0
         assert diag.actual_indent == 4
+
+    def test_diagnostic_uses_provided_file_path(self):
+        source = "    define the potential position<standard:/path>.\n"
+        path = PurePosixPath("some/file.def")
+        diags = indentation_validator.validate_indentation(source, file_path=path)
+        assert len(diags) == 1
+        diag = diags[0]
+        assert isinstance(diag, diagnostics.IncorrectIndentationDiagnostic)
+        assert diag.location.file_path == path
+
+    def test_diagnostic_file_path_defaults_to_none(self):
+        source = "    define the potential position<standard:/path>.\n"
+        diags = indentation_validator.validate_indentation(source)
+        assert len(diags) == 1
+        diag = diags[0]
+        assert isinstance(diag, diagnostics.IncorrectIndentationDiagnostic)
+        assert diag.location.file_path is None
 
     def test_comment_only_line_wrong_indent(self):
         source = (
