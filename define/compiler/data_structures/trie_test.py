@@ -187,7 +187,7 @@ class TestIteration:
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 2
-        result = sorted(tuple(k) for k, _ in t.items())
+        result = sorted(tuple(k) for k in t.keys())  # noqa: SIM118
         assert result == [("a",), ("a", "b")]
 
 
