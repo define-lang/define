@@ -414,3 +414,105 @@ def test_move_violates_constraints_error_message(
         "  position<my.domain.com:my_lib:/x>\n"
         "  action<my.domain.com:my_lib:/y>"
     )
+
+
+def test_destroy_in_emptied_interface_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</other>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        create a dimension point in position<box>::action</other>::position<item>.\n"
+        "        destroy the dimension point in position<box>::action</other>::position<item>.\n"
+        "        destroy the dimension point in position<box>::action</other>::position<item>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 14, column 40\n'
+        "        destroy the dimension point in position<box>::action</other>::position<item>.\n"
+        "                                       ^\n"
+        "cannot destroy a dimension point in"
+        " 'position<box>::action</other>::position<item>'"
+        " because it does not contain one; it was emptied at:\n"
+        'File "test.dfn", line 13, column 40'
+    )
+
+
+def test_destroy_in_default_empty_interface_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</other>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        destroy the dimension point in position<box>::action</other>::position<item>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 12, column 40\n'
+        "        destroy the dimension point in position<box>::action</other>::position<item>.\n"
+        "                                       ^\n"
+        "cannot destroy a dimension point in"
+        " 'position<box>::action</other>::position<item>'"
+        " because it does not contain one;"
+        " action interface positions are empty by default"
+    )
