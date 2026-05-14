@@ -195,3 +195,22 @@ class TestRun:
             output_dir=tmp_path,
         )
         assert result == driver.ExitCode.ERROR
+
+    def test_compile_emits_codegen_diagnostic_on_action_entry_point(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(PROJECTS_ROOT / "valid" / "action_definition")
+        error_stream = io.StringIO()
+        result = driver.Driver(_PARSER).run(
+            Path("test.dfn"),
+            mode=driver.DriverMode.COMPILE,
+            error_stream=error_stream,
+            output_dir=tmp_path,
+        )
+        assert result == driver.ExitCode.ERROR
+        assert error_stream.getvalue() == (
+            'File "test.dfn", line 1, column 1\n'
+            "define the potential action<mv:define-lang.org:test_action:/test> {\n"
+            "^\n"
+            "the entry point of a Define program must be a position\n"
+        )

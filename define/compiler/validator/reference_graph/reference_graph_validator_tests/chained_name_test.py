@@ -573,3 +573,49 @@ class TestMoveDimensionPoint:
         assert all_diags[0].location.line == 11
         assert all_diags[0].location.column == 72
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+
+class TestDestroyDimensionPoint:
+    def test_undefined_local_position_in_chain(
+        self,
+        validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
+    ):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        destroy the dimension point in position<no_pos>::action<act_b>::position<pos_c>.\n"
+            "    }\n"
+            "}\n"
+        )
+        results = validate_non_filesystem_with_reference_graph(source).file_results
+        diags = results[0].diagnostics
+        assert len(diags) == 4
+        assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].local_name == "position<no_pos>"
+        assert diags[0].location.line == 6
+        assert diags[0].location.column == 49
+        assert diags[0].location.file_path is None
+        assert isinstance(
+            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[1].local_name == "action<act_b>"
+        assert diags[1].preceding_name == "position<no_pos>"
+        assert diags[1].location.line == 6
+        assert diags[1].location.column == 58
+        assert diags[1].location.file_path is None
+        assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
+        assert diags[2].local_name == "act_b"
+        assert diags[2].location.line == 6
+        assert diags[2].location.column == 65
+        assert diags[2].location.file_path is None
+        assert isinstance(
+            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+        )
+        assert diags[3].local_name == "position<pos_c>"
+        assert diags[3].preceding_name == "action<act_b>"
+        assert diags[3].location.line == 6
+        assert diags[3].location.column == 73
+        assert diags[3].location.file_path is None

@@ -966,3 +966,53 @@ def test_destroy_infers_occupied_requirement(
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+
+
+def test_inner_action_local_failure_does_not_propagate_to_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Operations on body-local positions inside a triggered action do not propagate requirements to the caller.
+
+    The inner action errors on its own body (destroying an empty body-local
+    position), but that body-local position is purely local to the inner
+    action and must not appear in the caller's requirements.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<body_local>.\n"
+                "        destroy the dimension point in position<body_local>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].position_name == "position<body_local>"
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)

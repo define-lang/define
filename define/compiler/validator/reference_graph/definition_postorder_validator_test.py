@@ -162,6 +162,36 @@ class TestRequirementInference:
         contract = _get_contract(source)
         assert ("position<local_only>",) not in contract.requirements
 
+    def test_local_only_chain_via_constraints_excluded(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/grandchild>.\n"
+            "define the potential position<my.domain.com:my_lib:/child> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</grandchild>.\n"
+            "    }\n"
+            "}\n"
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<container> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<container>.\n"
+            "        create a dimension point in position<container>::position</child>.\n"
+            "        create a dimension point in position<container>::position</child>::position</grandchild>.\n"
+            "        destroy the dimension point in position<container>::position</child>::position</grandchild>.\n"
+            "        destroy the dimension point in position<container>::position</child>.\n"
+            "        destroy the dimension point in position<container>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        assert contract.requirements == {}
+
 
 _IMPLIED_POSITION = "position<my.domain.com:my_lib:/implied>"
 _IMPLIED_ACTION = "action<my.domain.com:my_lib:/sub>"

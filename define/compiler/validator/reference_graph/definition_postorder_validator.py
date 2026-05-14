@@ -721,18 +721,14 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         scope: scope_tracker.ScopeTracker,
     ):
         """Infer a requirement for a contracted position the first time it is referenced."""
-        inferred_from_chain = self._chain_for_inferred_requirement(position, scope)
+        inferred_from_chain = self._chain_for_inferred_requirement(position)
         if inferred_from_chain is None:
             return
 
         # The population of the base trigger position itself is handled elsewhere
-        # and doesn't create an implicit requirement. (However, actions on children
+        # and doesn't create a requirement. (However, actions on children
         # of the position still do create requirements.)
-        first_typed_name = position.typed_names[0].full_typed_name
-        if (
-            scope.is_defined_local(position)
-            and self._trigger_position_name == first_typed_name
-        ):
+        if self._trigger_position_name == position.canonical_chained_name:
             return
 
         requirement_key = inferred_from_chain.canonical_chained_name_tuple
@@ -759,19 +755,18 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
     ) -> ast.PositionReference | None:
         """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
         # It's either an implied position or a self-reference in an init block.
         if position.starts_with_global:
             return position
 
+        # The structural validator guarantees for us that this is defined, so
+        # we don't need to re-check if it's defined.
         first = position.typed_names[0]
-        if not scope.is_defined(first):
-            return None
         if first.full_typed_name in self._interface_positions:
             return position
-        parent_origin = self._parent_comes_from_contracted_position(position)
+        parent_origin = self._parent_dimension_point_comes_from_caller(position)
         if parent_origin is None:
             return None
         # This comes from a contracted position, so we put the requirement on
@@ -779,7 +774,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # a requirement for.
         return position.replace_parent_position_with_prefix(parent_origin)
 
-    def _parent_comes_from_contracted_position(
+    def _parent_dimension_point_comes_from_caller(
         self,
         position: ast.ChainedName,
     ) -> ast.PositionReference | None:
@@ -799,12 +794,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         dp_info = self._tracker.get_occupant_by_key(parent_key)
         if not dp_info.from_caller:
             return None
-        origin_first = dp_info.origin_position.typed_names[0].full_typed_name
-        if (
-            origin_first not in self._interface_positions
-            and origin_first not in self._implied_quality_name_set
-        ):
-            return None
         return dp_info.origin_position
 
     def _action_parent_comes_from_contracted_position(
@@ -815,7 +804,10 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError("not an action")
-        return (action_chain, self._parent_comes_from_contracted_position(action_chain))
+        return (
+            action_chain,
+            self._parent_dimension_point_comes_from_caller(action_chain),
+        )
 
     @typing.override
     def _propagate_inner_requirements(
