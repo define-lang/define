@@ -212,15 +212,14 @@ class DimensionPointTracker:
         Children of the source position move with it. After the move,
         the source position is marked as emptied.
         """
-        self._move_by_key(self._key(source), self._key(target), source, target)
-
-    def _move_by_key(
-        self,
-        from_key: tuple[str, ...],
-        to_key: tuple[str, ...],
-        source: ast.PositionReference,
-        target: ast.PositionReference,
-    ):
+        from_key = self._key(source)
+        to_key = self._key(target)
+        if self.has_unknown_state_by_key(from_key) or self.has_unknown_state_by_key(
+            to_key
+        ):
+            raise RuntimeError(
+                f"cannot move between positions with unknown state: {from_key} -> {to_key}"
+            )
         self._ensure_action_parent(to_key)
         # TODO: Move last_position into _NodeState so that move_subtree
         # doesn't need this post-move fixup.
@@ -239,11 +238,6 @@ class DimensionPointTracker:
         self._state.move_subtree(from_key, to_key)
         self._state[to_key].dp_info = moved_info
         self._state[from_key] = _NodeState(emptied_by=source)
-
-        if from_key in self._unknown:
-            if to_key in self._unknown:
-                del self._unknown[to_key]
-            self._unknown.move_subtree(from_key, to_key)
 
     def generate_guarantees(
         self,

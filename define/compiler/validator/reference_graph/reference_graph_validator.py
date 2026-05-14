@@ -19,11 +19,11 @@ if typing.TYPE_CHECKING:
 # requirements are detected. (Otherwise developers can write bad action
 # code and not realize it.)
 class ReferenceGraphValidator:
-    """Runs post-order analysis for all definitions in the reference graph.
+    """Verifies all definitions using the reference graph.
 
-    Iterates every definition in DFS post-order and builds an ActionCallGraph
-    by registering trigger positions and body effects discovered during
-    per-definition validation.
+    This is the primary logical validator of Define. After completing structural
+    validation, this step walks through the reference graph in DFS post-order
+    and performs validations on each definition for logical correctness.
     """
 
     _reference_graph: reference_graph.ReferenceGraph
@@ -43,21 +43,14 @@ class ReferenceGraphValidator:
         self._position_contracts = {}
 
     def validate(self) -> action_call_graph.ActionCallGraph:
-        """Run analysis for all definitions in DFS post-order.
-
-        We use dfs_postorder_all rather than dfs_postorder_from because the
-        reference graph can contain multiple roots — the entry-point position
-        and the actions that reference it form separate subgraphs that are
-        only connected through file discovery, not through reference edges.
-        """
+        """Run analysis for all definitions in a depth-first-search, post-order."""
         call_graph = action_call_graph.ActionCallGraph()
+        # We use dfs_postorder_all rather than dfs_postorder_from because the
+        # reference graph can contain multiple roots (any action or position
+        # that is not referenced by anything else creates a new graph).
         for definition in self._reference_graph.dfs_postorder_all():
             name = definition.typed_name.source_typed_name
-            definition_result = self._definition_results.get(name)
-            # A node without a definition result means the target file was
-            # not found or had a syntax error that prevented processing.
-            if definition_result is None:
-                continue
+            definition_result = self._definition_results[name]
             analyzer = definition_postorder_validator.create_postorder_validator(
                 definition_result,
                 self._definition_results,

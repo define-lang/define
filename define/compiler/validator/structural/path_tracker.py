@@ -195,6 +195,4 @@ class PathTracker[T]:
         except StopIteration:
             return (None, None)
         owner_step = self._project_roots.longest_prefix(file_path)
-        if owner_step:
-            return (file_path, owner_step.value.fqun)
-        return (None, None)
+        return (file_path, owner_step.value.fqun)

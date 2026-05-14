@@ -185,9 +185,6 @@ class DimensionPointOperationExecutor:
         diags: list[diagnostics.Diagnostic] = []
         current = target.parent_position()
         while current is not None:
-            if self._tracker.has_unknown_state(current):
-                current = current.parent_position()
-                continue
             if self._tracker.is_occupied(current):
                 break
             diags.append(

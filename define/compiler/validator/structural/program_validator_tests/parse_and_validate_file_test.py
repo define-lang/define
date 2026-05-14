@@ -136,6 +136,26 @@ def test_transform_error_from_name_parser_populates_exceptions(
     _assert_overall_equals_phase_sum(timings)
 
 
+def test_transform_error_from_reference_unwraps_visit_error(
+    parse_and_validate_file: ParseAndValidateFile,
+):
+    source = (
+        "define the potential position<my.domain.com:my_lib:/test> {\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position<mv:too:many:colons:bad:/y>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = parse_and_validate_file(source)
+
+    assert result.diagnostics == []
+    assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
+    assert result.exception.context == "mv:too:many:colons:bad:/y"
+    assert result.exception.line == 3
+    assert result.exception.column == 29
+    assert result.exception.file_path == PurePosixPath("test.dfn")
+
+
 def test_config_error_sets_later_phases_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

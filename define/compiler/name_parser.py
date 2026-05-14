@@ -33,7 +33,7 @@ def parse_global_name_definition(
             token,
             _line(token),
             _column(token),
-            None,
+            file_path,
         )
     return ast.DefinitionGlobalNameContent(
         location=ast.SourceLocation.from_token(token, file_path=file_path),
@@ -94,7 +94,7 @@ def _parse_fqun(
             token,
             _line(token),
             _column(token),
-            None,
+            file_path,
         )
 
     multiverse = None
