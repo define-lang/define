@@ -347,9 +347,9 @@ def test_post_trigger_trigger_position_stays_occupied(
         all_diags[0].position_name
         == "position<box>::action</other>::position<trigger_pos>"
     )
-    assert all_diags[0].populated_at.line == 4
-    assert all_diags[0].populated_at.column == 13
-    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 

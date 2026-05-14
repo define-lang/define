@@ -39,6 +39,38 @@ def _make_local_ref(
     )
 
 
+_DUMMY_ACTION = ast.ActionDefinition(
+    name=ast.DefinitionGlobalNameContent(
+        fqun=_FQUN,
+        path=ast.GlobalPathName(name="/dummy", location=_LOC),
+        location=_LOC,
+    ),
+    location=_LOC,
+    quality_implications=[],
+    interface_positions=[],
+    trigger_conditions=ast.TriggerConditionsBlock(
+        conditions=[
+            ast.TriggerConditionStatement(
+                typed_name=_make_local_ref("dummy"), location=_LOC
+            )
+        ],
+        location=_LOC,
+    ),
+    action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
+)
+
+
+def _make_requirement(
+    state: action_contract.PositionOccupancyState,
+    inferred_from: ast.PositionReference,
+) -> action_contract.PositionRequirement:
+    return action_contract.PositionRequirement(
+        required_state=state,
+        inferred_from=inferred_from,
+        enclosing_action=_DUMMY_ACTION,
+    )
+
+
 def _make_global_ref(path: str) -> ast.GlobalTypedNameReference:
     return ast.GlobalTypedNameReference(
         name_type=ast.NameType.POSITION,
@@ -819,3 +851,77 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
     )
 
     assert tracker.is_occupied(untouched_ref) is True
+
+
+def test_generate_guarantees_skips_occupied_by_existing_at_origin():
+    tracker = dimension_point_tracker.DimensionPointTracker()
+    run_name = _make_local_ref("run")
+    run_ref = _make_position_ref([run_name])
+
+    tracker.create(run_ref, [], from_caller=run_ref)
+
+    assert tracker.generate_guarantees([run_name], [], {}) == []
+
+
+def test_generate_guarantees_emits_occupied_by_existing_when_moved():
+    tracker = dimension_point_tracker.DimensionPointTracker()
+    a_name = _make_local_ref("a")
+    b_name = _make_local_ref("b")
+    a_ref = _make_position_ref([a_name])
+    b_ref = _make_position_ref([b_name], location=_LOC2)
+
+    tracker.create(a_ref, [], from_caller=a_ref)
+    tracker.move(a_ref, b_ref)
+
+    guarantees = tracker.generate_guarantees([a_name, b_name], [], {})
+
+    assert len(guarantees) == 2
+    by_key = dict(guarantees)
+    empty_guarantee = by_key[("position<a>",)]
+    assert isinstance(empty_guarantee, action_contract.EmptyGuarantee)
+    assert empty_guarantee.caused_by is a_ref
+    occupied_guarantee = by_key[("position<b>",)]
+    assert isinstance(occupied_guarantee, action_contract.OccupiedByExistingGuarantee)
+    assert occupied_guarantee.origin_position is a_ref
+    assert occupied_guarantee.caused_by.location == _LOC2
+
+
+def test_generate_guarantees_skips_empty_when_inferred_empty():
+    tracker = dimension_point_tracker.DimensionPointTracker()
+    x_name = _make_local_ref("x")
+    x_ref = _make_position_ref([x_name])
+
+    tracker.create(x_ref, [])
+    tracker.destroy(x_ref)
+
+    requirements = {
+        ("position<x>",): _make_requirement(
+            action_contract.PositionOccupancyState.EMPTY, x_ref
+        )
+    }
+
+    assert tracker.generate_guarantees([x_name], [], requirements) == []
+
+
+def test_generate_guarantees_emits_empty_when_inferred_occupied():
+    tracker = dimension_point_tracker.DimensionPointTracker()
+    x_name = _make_local_ref("x")
+    x_ref = _make_position_ref([x_name])
+
+    tracker.create(x_ref, [], from_caller=x_ref)
+    destroy_ref = _make_position_ref([_make_local_ref("x", location=_LOC2)], _LOC2)
+    tracker.destroy(destroy_ref)
+
+    requirements = {
+        ("position<x>",): _make_requirement(
+            action_contract.PositionOccupancyState.OCCUPIED, x_ref
+        )
+    }
+
+    guarantees = tracker.generate_guarantees([x_name], [], requirements)
+
+    assert len(guarantees) == 1
+    key, guarantee = guarantees[0]
+    assert key == ("position<x>",)
+    assert isinstance(guarantee, action_contract.EmptyGuarantee)
+    assert guarantee.caused_by.location == _LOC2

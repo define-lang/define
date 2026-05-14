@@ -945,9 +945,9 @@ def test_trigger_position_child_empty_requirement_propagates(
     assert all_diags[1].inferred_at.line == 11
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[1].filled_at.line == 8
-    assert all_diags[1].filled_at.column == 13
-    assert all_diags[1].filled_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[1].filled_at.line == 13
+    assert all_diags[1].filled_at.column == 37
+    assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].propagated_from_locations == []
     # /test fills position<trigger_pos>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[2], diagnostics.ActionRequiresEmptyPositionDiagnostic)

@@ -709,6 +709,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             guarantees=self._tracker.generate_guarantees(
                 self._action_definition.interface_position_names,
                 self._implied_quality_list,
+                self._inferred_requirements,
             ),
             trigger_position_name=self._trigger_position_name or "",
         )
@@ -919,6 +920,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
             guarantees=self._tracker.generate_guarantees(
                 [definition.typed_name],
                 self._implied_quality_list,
+                {},
             ),
         )
 

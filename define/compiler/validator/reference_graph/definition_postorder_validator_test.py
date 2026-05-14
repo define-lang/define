@@ -17,18 +17,6 @@ def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
     return req.full_propagation_position_chain().source_form_in_universe(fqun)
 
 
-def _assert_trigger_guarantee(
-    entry: action_contract.GuaranteePair, line: int, column: int = 13
-):
-    key, guarantee = entry
-    assert key == ("position<run>",)
-    assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-    assert guarantee.origin_position.source_chained_name == "position<run>"
-    assert guarantee.caused_by.location.line == line
-    assert guarantee.caused_by.location.column == column
-    assert guarantee.caused_by.source_chained_name == "position<run>"
-
-
 def _get_contract(
     source: str,
     action_name: str = "action<my.domain.com:my_lib:/test>",
@@ -285,10 +273,9 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        assert len(contract.guarantees) == 2
-        _assert_trigger_guarantee(contract.guarantees[0], line=5)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee = contract.guarantees[1][1]
+        assert len(contract.guarantees) == 1
+        assert contract.guarantees[0][0] == ("position<item>",)
+        guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
@@ -310,37 +297,14 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        assert len(contract.guarantees) == 3
-        _assert_trigger_guarantee(contract.guarantees[0], line=6)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee_item = contract.guarantees[1][1]
-        assert isinstance(guarantee_item, action_contract.EmptyGuarantee)
-        assert guarantee_item.caused_by.location.line == 9
-        assert guarantee_item.caused_by.location.column == 37
-        assert guarantee_item.caused_by.source_chained_name == "position<item>"
-        assert contract.guarantees[2][0] == ("position<dest>",)
-        guarantee_dest = contract.guarantees[2][1]
+        assert len(contract.guarantees) == 1
+        assert contract.guarantees[0][0] == ("position<dest>",)
+        guarantee_dest = contract.guarantees[0][1]
         assert isinstance(guarantee_dest, action_contract.OccupiedByNewGuarantee)
         assert guarantee_dest.qualities == []
         assert guarantee_dest.caused_by.location.line == 9
         assert guarantee_dest.caused_by.location.column == 55
         assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
-
-    def test_trigger_position_retains_origin(self):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
-            "    } and it does {\n"
-            "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
-            "    }\n"
-            "}\n"
-        )
-        contract = _get_contract(source)
-        assert len(contract.guarantees) == 1
-        _assert_trigger_guarantee(contract.guarantees[0], line=4)
 
     def test_created_dp_is_new(self):
         source = (
@@ -355,10 +319,9 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        assert len(contract.guarantees) == 2
-        _assert_trigger_guarantee(contract.guarantees[0], line=5)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee = contract.guarantees[1][1]
+        assert len(contract.guarantees) == 1
+        assert contract.guarantees[0][0] == ("position<item>",)
+        guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
@@ -379,16 +342,15 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        assert len(contract.guarantees) == 3
-        _assert_trigger_guarantee(contract.guarantees[0], line=6)
-        assert contract.guarantees[1][0] == ("position<a>",)
-        guarantee_a = contract.guarantees[1][1]
+        assert len(contract.guarantees) == 2
+        assert contract.guarantees[0][0] == ("position<a>",)
+        guarantee_a = contract.guarantees[0][1]
         assert isinstance(guarantee_a, action_contract.EmptyGuarantee)
         assert guarantee_a.caused_by.location.line == 8
         assert guarantee_a.caused_by.location.column == 37
         assert guarantee_a.caused_by.source_chained_name == "position<a>"
-        assert contract.guarantees[2][0] == ("position<b>",)
-        guarantee_b = contract.guarantees[2][1]
+        assert contract.guarantees[1][0] == ("position<b>",)
+        guarantee_b = contract.guarantees[1][1]
         assert isinstance(guarantee_b, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_b.origin_position.source_chained_name == "position<a>"
         assert guarantee_b.caused_by.location.line == 8
@@ -412,17 +374,16 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        assert len(contract.guarantees) == 3
-        _assert_trigger_guarantee(contract.guarantees[0], line=6)
-        assert contract.guarantees[1][0] == ("position<a>",)
-        guarantee_a = contract.guarantees[1][1]
+        assert len(contract.guarantees) == 2
+        assert contract.guarantees[0][0] == ("position<a>",)
+        guarantee_a = contract.guarantees[0][1]
         assert isinstance(guarantee_a, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_a.origin_position.source_chained_name == "position<b>"
         assert guarantee_a.caused_by.location.line == 10
         assert guarantee_a.caused_by.location.column == 52
         assert guarantee_a.caused_by.source_chained_name == "position<a>"
-        assert contract.guarantees[2][0] == ("position<b>",)
-        guarantee_b = contract.guarantees[2][1]
+        assert contract.guarantees[1][0] == ("position<b>",)
+        guarantee_b = contract.guarantees[1][1]
         assert isinstance(guarantee_b, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_b.origin_position.source_chained_name == "position<a>"
         assert guarantee_b.caused_by.location.line == 11
@@ -442,10 +403,9 @@ class TestGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        assert len(contract.guarantees) == 2
-        _assert_trigger_guarantee(contract.guarantees[0], line=5)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee = contract.guarantees[1][1]
+        assert len(contract.guarantees) == 1
+        assert contract.guarantees[0][0] == ("position<item>",)
+        guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
@@ -600,17 +560,9 @@ class TestChainedGuaranteeGeneration:
         )
         contract = _get_contract(source)
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
-        assert len(contract.guarantees) == 3
-        _assert_trigger_guarantee(contract.guarantees[0], line=10)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee_item = contract.guarantees[1][1]
-        assert isinstance(guarantee_item, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_item.origin_position.source_chained_name == "position<item>"
-        assert guarantee_item.caused_by.location.line == 12
-        assert guarantee_item.caused_by.location.column == 37
-        assert guarantee_item.caused_by.source_chained_name == "position<item>"
-        assert contract.guarantees[2][0] == chain_key
-        guarantee = contract.guarantees[2][1]
+        assert len(contract.guarantees) == 1
+        assert contract.guarantees[0][0] == chain_key
+        guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 12
@@ -637,17 +589,9 @@ class TestChainedGuaranteeGeneration:
         )
         contract = _get_contract(source)
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
-        assert len(contract.guarantees) == 4
-        _assert_trigger_guarantee(contract.guarantees[0], line=11)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee_item = contract.guarantees[1][1]
-        assert isinstance(guarantee_item, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_item.origin_position.source_chained_name == "position<item>"
-        assert guarantee_item.caused_by.location.line == 13
-        assert guarantee_item.caused_by.location.column == 37
-        assert guarantee_item.caused_by.source_chained_name == "position<item>"
-        assert contract.guarantees[2][0] == ("position<dest>",)
-        guarantee_dest = contract.guarantees[2][1]
+        assert len(contract.guarantees) == 2
+        assert contract.guarantees[0][0] == ("position<dest>",)
+        guarantee_dest = contract.guarantees[0][1]
         assert isinstance(guarantee_dest, action_contract.OccupiedByExistingGuarantee)
         assert (
             guarantee_dest.origin_position.source_chained_name
@@ -656,8 +600,8 @@ class TestChainedGuaranteeGeneration:
         assert guarantee_dest.caused_by.location.line == 13
         assert guarantee_dest.caused_by.location.column == 69
         assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
-        assert contract.guarantees[3][0] == chain_key
-        guarantee = contract.guarantees[3][1]
+        assert contract.guarantees[1][0] == chain_key
+        guarantee = contract.guarantees[1][1]
         assert isinstance(guarantee, action_contract.EmptyGuarantee)
         assert guarantee.caused_by.location.line == 13
         assert guarantee.caused_by.location.column == 37
@@ -683,23 +627,15 @@ class TestChainedGuaranteeGeneration:
         )
         contract = _get_contract(source)
         chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
-        assert len(contract.guarantees) == 4
-        _assert_trigger_guarantee(contract.guarantees[0], line=11)
-        assert contract.guarantees[1][0] == ("position<src>",)
-        guarantee_src = contract.guarantees[1][1]
+        assert len(contract.guarantees) == 2
+        assert contract.guarantees[0][0] == ("position<src>",)
+        guarantee_src = contract.guarantees[0][1]
         assert isinstance(guarantee_src, action_contract.EmptyGuarantee)
         assert guarantee_src.caused_by.location.line == 13
         assert guarantee_src.caused_by.location.column == 37
         assert guarantee_src.caused_by.source_chained_name == "position<src>"
-        assert contract.guarantees[2][0] == ("position<dest>",)
-        guarantee_dest = contract.guarantees[2][1]
-        assert isinstance(guarantee_dest, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_dest.origin_position.source_chained_name == "position<dest>"
-        assert guarantee_dest.caused_by.location.line == 13
-        assert guarantee_dest.caused_by.location.column == 54
-        assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
-        assert contract.guarantees[3][0] == chain_key
-        guarantee = contract.guarantees[3][1]
+        assert contract.guarantees[1][0] == chain_key
+        guarantee = contract.guarantees[1][1]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert guarantee.origin_position.source_chained_name == "position<src>"
         assert guarantee.caused_by.location.line == 13
@@ -726,32 +662,7 @@ class TestChainedGuaranteeGeneration:
             "}\n"
         )
         contract = _get_contract(source)
-        chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
-        assert len(contract.guarantees) == 4
-        _assert_trigger_guarantee(contract.guarantees[0], line=11)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee_item = contract.guarantees[1][1]
-        assert isinstance(guarantee_item, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_item.origin_position.source_chained_name == "position<item>"
-        assert guarantee_item.caused_by.location.line == 13
-        assert guarantee_item.caused_by.location.column == 37
-        assert guarantee_item.caused_by.source_chained_name == "position<item>"
-        assert contract.guarantees[2][0] == ("position<tmp>",)
-        guarantee_tmp = contract.guarantees[2][1]
-        assert isinstance(guarantee_tmp, action_contract.EmptyGuarantee)
-        assert guarantee_tmp.caused_by.location.line == 14
-        assert guarantee_tmp.caused_by.location.column == 37
-        assert guarantee_tmp.caused_by.source_chained_name == "position<tmp>"
-        assert contract.guarantees[3][0] == chain_key
-        guarantee = contract.guarantees[3][1]
-        assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-        assert (
-            guarantee.origin_position.source_chained_name
-            == "position<item>::position</x>"
-        )
-        assert guarantee.caused_by.location.line == 14
-        assert guarantee.caused_by.location.column == 54
-        assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
+        assert contract.guarantees == []
 
     def test_chain_guarantee_qualities(self):
         source = (
@@ -772,21 +683,131 @@ class TestChainedGuaranteeGeneration:
         )
         contract = _get_contract(source)
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
-        assert len(contract.guarantees) == 3
-        _assert_trigger_guarantee(contract.guarantees[0], line=10)
-        assert contract.guarantees[1][0] == ("position<item>",)
-        guarantee_item = contract.guarantees[1][1]
-        assert isinstance(guarantee_item, action_contract.OccupiedByExistingGuarantee)
-        assert guarantee_item.origin_position.source_chained_name == "position<item>"
-        assert guarantee_item.caused_by.location.line == 12
-        assert guarantee_item.caused_by.location.column == 37
-        assert guarantee_item.caused_by.source_chained_name == "position<item>"
-        assert contract.guarantees[2][0] == chain_key
-        guarantee = contract.guarantees[2][1]
+        assert len(contract.guarantees) == 1
+        assert contract.guarantees[0][0] == chain_key
+        guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 37
+
+
+class TestNoOpGuaranteeSuppression:
+    def test_trigger_guarantee_suppressed_when_trigger_unchanged(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        assert len(contract.guarantees) == 1
+        key, guarantee = contract.guarantees[0]
+        assert key == ("position<item>",)
+        assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
+        assert guarantee.qualities == []
+        assert guarantee.caused_by.location.line == 7
+        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.source_chained_name == "position<item>"
+
+    def test_empty_guarantee_suppressed_for_inferred_empty_position(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        assert (
+            contract.requirements[("position<item>",)].required_state
+            == action_contract.PositionOccupancyState.EMPTY
+        )
+        assert contract.guarantees == []
+
+    def test_empty_guarantee_emitted_for_inferred_occupied_position(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        assert (
+            contract.requirements[("position<item>",)].required_state
+            == action_contract.PositionOccupancyState.OCCUPIED
+        )
+        assert len(contract.guarantees) == 1
+        key, guarantee = contract.guarantees[0]
+        assert key == ("position<item>",)
+        assert isinstance(guarantee, action_contract.EmptyGuarantee)
+        assert guarantee.caused_by.location.line == 7
+        assert guarantee.caused_by.location.column == 40
+        assert guarantee.caused_by.source_chained_name == "position<item>"
+
+    def test_move_iface_to_local_and_back_emits_no_guarantee(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<tmp>.\n"
+            "        move the dimension point in position<item> to position<tmp>.\n"
+            "        move the dimension point in position<tmp> to position<item>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        assert (
+            contract.requirements[("position<item>",)].required_state
+            == action_contract.PositionOccupancyState.OCCUPIED
+        )
+        assert contract.guarantees == []
+
+    def test_trigger_guarantee_emitted_when_trigger_moves(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    define the position<dest>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        move the dimension point in position<run> to position<dest>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_contract(source)
+        assert len(contract.guarantees) == 2
+        run_key, run_guarantee = contract.guarantees[0]
+        assert run_key == ("position<run>",)
+        assert isinstance(run_guarantee, action_contract.EmptyGuarantee)
+        assert run_guarantee.caused_by.location.line == 7
+        assert run_guarantee.caused_by.location.column == 37
+        assert run_guarantee.caused_by.source_chained_name == "position<run>"
+        dest_key, dest_guarantee = contract.guarantees[1]
+        assert dest_key == ("position<dest>",)
+        assert isinstance(dest_guarantee, action_contract.OccupiedByExistingGuarantee)
+        assert dest_guarantee.origin_position.source_chained_name == "position<run>"
+        assert dest_guarantee.caused_by.location.line == 7
+        assert dest_guarantee.caused_by.location.column == 54
+        assert dest_guarantee.caused_by.source_chained_name == "position<dest>"
 
 
 _POS_TEST = "position<my.domain.com:my_lib:/test>"

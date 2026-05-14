@@ -249,8 +249,14 @@ class DimensionPointTracker:
         self,
         interface_names: list[ast.TypedName],
         implied_quality_names: list[ast.GlobalTypedNameReference],
+        requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> list[action_contract.GuaranteePair]:
-        """Generate guarantees for keys whose first element matches an interface or implied quality."""
+        """Generate guarantees for keys whose first element matches an interface or implied quality.
+
+        ``requirements`` is the validator's inferred-requirements dict. A
+        position whose requirement is EMPTY started empty, so an end-state
+        EmptyGuarantee on it would be a no-op and is skipped here.
+        """
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
         }
@@ -269,7 +275,10 @@ class DimensionPointTracker:
             first_element = key[0]
             if first_element not in include_names:
                 continue
-            guarantees.append((key, self._guarantee_for_key(key)))
+            guarantee = self._guarantee_for_key(key, requirements)
+            if guarantee is None:
+                continue
+            guarantees.append((key, guarantee))
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,
@@ -315,8 +324,14 @@ class DimensionPointTracker:
     def _guarantee_for_key(
         self,
         key: tuple[str, ...],
-    ) -> action_contract.PositionGuarantee:
-        """Build a guarantee from the current tracker state for a given key."""
+        requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
+    ) -> action_contract.PositionGuarantee | None:
+        """Build a guarantee from the current tracker state, or None for no-ops.
+
+        Returns None when the guarantee would describe state identical to the
+        action's starting state: a from-caller DP that never left its origin,
+        or an empty position that was already inferred-empty at the start.
+        """
         unknown_state = self._unknown.get(key)
         if unknown_state is not None and unknown_state.caused_by is not None:
             return action_contract.UnknownGuarantee(caused_by=unknown_state.caused_by)
@@ -324,6 +339,8 @@ class DimensionPointTracker:
         if state is not None and state.dp_info is not None:
             info = state.dp_info
             if info.from_caller:
+                if key == info.origin_position.canonical_chained_name_tuple:
+                    return None
                 return action_contract.OccupiedByExistingGuarantee(
                     origin_position=info.origin_position,
                     caused_by=info.last_position,
@@ -335,6 +352,13 @@ class DimensionPointTracker:
         caused_by = state.emptied_by if state is not None else None
         if caused_by is None:
             raise ValueError(f"no caused_by for empty position {key}")
+        requirement = requirements.get(key)
+        if (
+            requirement is not None
+            and requirement.required_state
+            == action_contract.PositionOccupancyState.EMPTY
+        ):
+            return None
         return action_contract.EmptyGuarantee(caused_by=caused_by)
 
     def apply_guarantees(
