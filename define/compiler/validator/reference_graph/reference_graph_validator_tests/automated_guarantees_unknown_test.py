@@ -1040,3 +1040,195 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[1].populated_at.column == 54
     assert all_diags[1].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+
+
+def test_each_unfilled_required_parent_independently_makes_caller_position_unknown(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When an action's body touches children of two distinct interface positions, and the caller fills neither, the caller's view of *both* positions should be unknown afterwards.
+
+    Subsequent operations on either are silently allowed rather than
+    failing as if the position were empty.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "c1.dfn": "define the potential position<my.domain.com:my_lib:/c1>.\n",
+            "c2.dfn": "define the potential position<my.domain.com:my_lib:/c2>.\n",
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<a> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</c1>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<b> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</c2>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<sink_a>.\n"
+                "    define the position<sink_b>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<a>::position</c1> to position<sink_a>.\n"
+                "        move the dimension point in position<b>::position</c2> to position<sink_b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        destroy the dimension point in position<box>::action</other>::position<a>.\n"
+                "        destroy the dimension point in position<box>::action</other>::position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 4
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
+    assert all_diags[0].inferred_at.line == 18
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.end_line == 18
+    assert all_diags[0].inferred_at.end_column == 63
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert isinstance(
+        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.end_line == 12
+    assert all_diags[1].location.end_column == 89
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</other>::position<a>::position</c1>"
+    )
+    assert all_diags[1].inferred_at.line == 18
+    assert all_diags[1].inferred_at.column == 37
+    assert all_diags[1].inferred_at.end_line == 18
+    assert all_diags[1].inferred_at.end_column == 63
+    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[1].propagated_from_locations == []
+    assert isinstance(
+        all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[2].location.line == 12
+    assert all_diags[2].location.column == 37
+    assert all_diags[2].location.end_line == 12
+    assert all_diags[2].location.end_column == 89
+    assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[2].position_name == "position<box>::action</other>::position<b>"
+    assert all_diags[2].inferred_at.line == 19
+    assert all_diags[2].inferred_at.column == 37
+    assert all_diags[2].inferred_at.end_line == 19
+    assert all_diags[2].inferred_at.end_column == 63
+    assert all_diags[2].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[2].propagated_from_locations == []
+    assert isinstance(
+        all_diags[3], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[3].location.line == 12
+    assert all_diags[3].location.column == 37
+    assert all_diags[3].location.end_line == 12
+    assert all_diags[3].location.end_column == 89
+    assert all_diags[3].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[3].action_name == "action<my.domain.com:my_lib:/other>"
+    assert (
+        all_diags[3].position_name
+        == "position<box>::action</other>::position<b>::position</c2>"
+    )
+    assert all_diags[3].inferred_at.line == 19
+    assert all_diags[3].inferred_at.column == 37
+    assert all_diags[3].inferred_at.end_line == 19
+    assert all_diags[3].inferred_at.end_column == 63
+    assert all_diags[3].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[3].propagated_from_locations == []
+
+
+def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When the caller destroys a dimension point before triggering an action that moves from that same position, the destination position should be treated as unknown.
+
+    The caller cannot know whether the action actually moved anything,
+    so further operations on the destination are silently allowed.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<src>.\n"
+                "    define the position<dst>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<src> to position<dst>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<src>.\n"
+                "        destroy the dimension point in position<box>::action</other>::position<src>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        destroy the dimension point in position<box>::action</other>::position<dst>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
+    assert all_diags[0].inferred_at.line == 8
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.end_line == 8
+    assert all_diags[0].inferred_at.end_column == 50
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].propagated_from_locations == []
