@@ -423,7 +423,6 @@ class DimensionPointTracker:
                     saved_state[key] = self._state.pop_subtree(key)
                 if key in self._unknown:
                     saved_unknown[key] = self._unknown.pop_subtree(key)
-                origin_keys.discard(key)
             elif key in self._state:
                 # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
                 # or creates in position<item> (OccupiedByNewGuarantee), any children
@@ -541,8 +540,12 @@ class DimensionPointTracker:
         # Guarantees reset the unknown state of dimension points they touch directly.
         # If we guarantee a dimension point in a position, then we know that it has a
         # dimension point. However, its _children_ might still be in some unknown state.
+        # Exception: if the origin had pre-action unknown state (saved before the
+        # guarantee loop began), the destination inherits that caused_by — the
+        # guarantee fills it with whatever was at origin, including the uncertainty.
         if saved_unk is not None:
-            self._unknown[dest_key] = _UnknownState()
+            origin_unknown = saved_unk[origin_tuple[-1:]]
+            self._unknown[dest_key] = _UnknownState(caused_by=origin_unknown.caused_by)
             self._unknown.graft_subtree(dest_key, saved_unk.root_children())
         elif origin_key in self._unknown:
             self._unknown.move_subtree(origin_key, dest_key)

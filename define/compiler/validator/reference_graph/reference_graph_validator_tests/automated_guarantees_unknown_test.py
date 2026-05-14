@@ -1024,20 +1024,30 @@ def test_swap_guarantee_one_position_unfilled(
     )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<b>"
+    assert all_diags[0].inferred_at is not None
     assert all_diags[0].inferred_at.line == 10
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.end_line == 10
+    assert all_diags[0].inferred_at.end_column == 48
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
     # position<b> is now occupied: the swap moved position<a>'s DP there.
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 37
+    assert all_diags[1].location.end_line == 17
+    assert all_diags[1].location.end_column == 79
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
     assert all_diags[1].populated_at.line == 11
     assert all_diags[1].populated_at.column == 54
+    assert all_diags[1].populated_at.end_line == 11
+    assert all_diags[1].populated_at.end_column == 65
     assert all_diags[1].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
@@ -1232,3 +1242,78 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
     assert all_diags[0].inferred_at.end_column == 50
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].propagated_from_locations == []
+
+
+def test_swap_propagates_prior_unknown_state_from_origin_to_destination(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When the caller has made one of two swap targets unknown before triggering the swap, the other target should also be unknown after the swap.
+
+    The swap moves whatever was in the unknown position into the other,
+    and since the caller cannot know what arrived there, subsequent
+    operations on the destination are silently allowed.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<a>.\n"
+                "    define the position<b>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<_tmp>.\n"
+                "        move the dimension point in position<a> to position<_tmp>.\n"
+                "        move the dimension point in position<b> to position<a>.\n"
+                "        move the dimension point in position<_tmp> to position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<empty_src>.\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</other>::position<a>.\n"
+                "        move the dimension point in position<empty_src> to position<box>::action</other>::position<a>.\n"
+                "        create a dimension point in position<box>::action</other>::position<b>.\n"
+                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        destroy the dimension point in position<box>::action</other>::position<b>.\n"
+                "        destroy the dimension point in position<box>::action</other>::position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_column == 56
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<empty_src>"
+    assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 14
+    assert all_diags[1].location.column == 60
+    assert all_diags[1].location.end_line == 14
+    assert all_diags[1].location.end_column == 102
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "position<box>::action</other>::position<a>"
+    assert all_diags[1].occupied_at is not None
+    assert all_diags[1].occupied_at.line == 13
+    assert all_diags[1].occupied_at.column == 37
+    assert all_diags[1].occupied_at.end_line == 13
+    assert all_diags[1].occupied_at.end_column == 79
+    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert_action_calls(result.action_call_graph, _TEST, _OTHER)
