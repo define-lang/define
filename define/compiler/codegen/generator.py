@@ -1,6 +1,6 @@
 """Code generator for the Define compiler."""
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from define.compiler import ast, diagnostics
 from define.compiler.codegen.literal.python import generator as python_generator
@@ -15,7 +15,6 @@ class CodeGenerator:
         graph: reference_graph.ReferenceGraph,
         entry_file_definitions: list[ast.QualityDefinition],
         output_dir: Path,
-        entry_point_file_path: PurePosixPath | None = None,
     ) -> list[diagnostics.Diagnostic]:
         """Generate code for a validated Define program.
 
@@ -27,17 +26,22 @@ class CodeGenerator:
         errors. Has undefined behavior (including potentially crashing)
         if the graph comes from a validation with errors.
         """
+        if not entry_file_definitions:
+            raise ValueError(
+                "entry_file_definitions must be non-empty; the structural validator should have rejected an empty entry file"
+            )
+
         entry_point = None
         for definition in entry_file_definitions:
             if isinstance(definition, ast.PositionDefinition):
                 entry_point = definition
 
         if entry_point is None:
-            if entry_file_definitions:
-                location = entry_file_definitions[0].location
-            else:
-                location = ast.start_of_file_location(file_path=entry_point_file_path)
-            return [diagnostics.EntryPointNotPositionDiagnostic(location=location)]
+            return [
+                diagnostics.EntryPointNotPositionDiagnostic(
+                    location=entry_file_definitions[0].location
+                )
+            ]
 
         python_gen = python_generator.PythonLiteralCodeGenerator()
         python_gen.generate(graph, entry_point, output_dir)

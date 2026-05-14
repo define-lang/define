@@ -90,7 +90,6 @@ class Driver:
             program_result.reference_graph,
             entry_file_definitions,
             output_dir,
-            entry_point_file_path=first_file.file_path,
         )
         for diagnostic in gen_diagnostics:
             first_file.add_file_diagnostic(diagnostic)
