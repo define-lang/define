@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/work> {
+    define the position<run>.
+    define the position<source> {
+        it may only contain dimension points where {
+            it has the position</shared>.
+        }
+    }
+    define the position<dest> {
+        it may only contain dimension points where {
+            it has the position</shared>.
+        }
+    }
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in position<source>.
+        move the dimension point in position<source> to position<dest>.
+    }
+}

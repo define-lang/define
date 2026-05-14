@@ -79,6 +79,11 @@ class PythonLiteralCodeGenerator:
             ChainAccessor=template_context.ChainAccessor,
         )
 
+        # TODO: Two definitions whose FQUN paths map to the same Python module
+        # (e.g., a position and an action with the same `/path` defined in one
+        # source file, or two positions sharing a path) will silently overwrite
+        # each other here. The generator needs to either group same-module
+        # definitions into a single rendered file or reject the collision.
         file_path = output_dir / naming.file_path_for_module(ctx.module_name)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         _ = file_path.write_text(content)
