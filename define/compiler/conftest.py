@@ -101,19 +101,6 @@ class ValidateProject(Protocol):
         ...
 
 
-class ValidateProjectWithGraph(Protocol):
-    """Callable that validates a multi-file project and returns results + graph."""
-
-    def __call__(
-        self,
-        files: dict[str, str],
-        *,
-        universe_name: str = ...,
-    ) -> validation_result.ProgramValidationResult:
-        """Validate a project with the given files."""
-        ...
-
-
 class ValidateSourceAsFile(Protocol):
     """Callable that validates source as a file and returns diagnostics."""
 
@@ -185,22 +172,6 @@ def validate_project(
             sub_roots=sub_roots,
             entry_file=entry_file,
         )
-
-    return _run
-
-
-@pytest.fixture
-def validate_project_with_graph(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> ValidateProjectWithGraph:
-    """Set up a multi-file project and return results + call graph."""
-
-    def _run(
-        files: dict[str, str],
-        *,
-        universe_name: str = "my.domain.com:my_lib",
-    ) -> validation_result.ProgramValidationResult:
-        return _run_validation(tmp_path, monkeypatch, files, universe_name)
 
     return _run
 

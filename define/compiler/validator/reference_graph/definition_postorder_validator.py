@@ -76,10 +76,6 @@ class DefinitionPostorderValidator(abc.ABC):
             impl.typed_global_name for impl in self._definition.quality_implications
         ]
 
-    @cached_property
-    def _implied_quality_name_set(self) -> frozenset[str]:
-        return frozenset(name.full_typed_name for name in self._implied_quality_list)
-
     @abc.abstractmethod
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, edges, and contract."""
@@ -405,7 +401,15 @@ class DefinitionPostorderValidator(abc.ABC):
             index = 1
 
         while index < len(elements) - 1:
+            # The file_validator rejects any non-first local in a chain unless
+            # it follows a global action, and _validate_action_chain_step
+            # consumes that local along with the global, so parent is always
+            # global here.
             parent = elements[index]
+            if not isinstance(parent, ast.GlobalTypedNameReference):
+                raise TypeError(
+                    f"chain parent at index {index} is not global: {parent}"
+                )
             child = elements[index + 1]
             parent_def = self._get_chain_element_definition(parent, chain)
             if parent_def is None:
@@ -436,15 +440,10 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _get_chain_element_definition(
         self,
-        parent: ast.TypedNameReference,
+        parent: ast.GlobalTypedNameReference,
         chain: ast.PositionReference,
     ) -> ast.QualityDefinition | None:
         """Get the QualityDefinition for a chain element, or None on failure (and mark chain unknown)."""
-        # The file_validator already diagnoses invalid chains before
-        # they reach us. However, they still _exist_, so we skip them.
-        if not isinstance(parent, ast.GlobalTypedNameReference):
-            self._tracker.mark_unknown(chain)
-            return None
         parent_result = self._definition_results.get(parent.full_typed_name)
         # This means the definition's file did not load or did not parse.
         if parent_result is None:
