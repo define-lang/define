@@ -469,9 +469,6 @@ class DefinitionPostorderValidator(abc.ABC):
         if not isinstance(child, ast.LocalTypedNameReference):
             self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0
-        if child.name_type != ast.NameType.POSITION:
-            self._emit_not_in_action_diagnostic(chain, child, parent_name)
-            return 0
         if child.full_typed_name not in action_def.interface_position_constraints:
             self._emit_not_in_action_diagnostic(chain, child, parent_name)
             return 0

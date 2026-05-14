@@ -374,6 +374,58 @@ class TestCreateDimensionPoint:
         assert all_diags[0].location.column == 64
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
+    def test_chain_action_cannot_contain_action_stops_at_first_failure(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<x> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</a>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<x> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<x>::action</a>::action</b>::position<bogus>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "a.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/a> {\n"
+                    "    define the position<inner>.\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/b> {\n"
+                    "    define the position<other>.\n"
+                    "    it happens when {\n"
+                    "        the position<other> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            }
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert all_diags[0].element_name == "action<my.domain.com:my_lib:/b>"
+        assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/a>"
+        assert all_diags[0].location.line == 10
+        assert all_diags[0].location.column == 62
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
     def test_chain_action_then_action_short(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
