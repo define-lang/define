@@ -150,6 +150,59 @@ class TestCreateDimensionPoint:
         )
         assert_no_errors(result.program_result)
 
+    def test_chain_after_action_with_local_not_in_action_stops_walking(
+        self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
+    ):
+        """Chain walking stops when a local element after an action isn't in the action's interfaces.
+
+        Even when the chain continues beyond that element, only one diagnostic
+        is emitted and walking stops — it does not advance as if one element
+        were consumed (which would treat a local element as a global parent
+        and crash).
+        """
+        result = validate_project_with_reference_graph(
+            {
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<pos_a> {\n"
+                    "        it may only contain dimension points where {\n"
+                    "            it has the action</act_b>.\n"
+                    "        }\n"
+                    "    }\n"
+                    "    it happens when {\n"
+                    "        the position<pos_a> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>::position</later>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "act_b.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/act_b> {\n"
+                    "    define the position<inner>.\n"
+                    "    it happens when {\n"
+                    "        the position<inner> has a dimension point.\n"
+                    "    } and it does {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a dimension point in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "later.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/later>.\n"
+                ),
+            }
+        )
+        all_diags = result.program_result.all_diagnostics
+        assert len(all_diags) == 1
+        assert isinstance(all_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
+        assert all_diags[0].element_name == "position<no_such>"
+        assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
+        assert all_diags[0].location.line == 10
+        assert all_diags[0].location.column == 70
+        assert all_diags[0].location.end_line == 10
+        assert all_diags[0].location.end_column == 87
+        assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
     def test_chain_element_inside_action_not_found(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):

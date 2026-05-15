@@ -355,6 +355,95 @@ def test_occupied_requirement_with_unknown_state_is_silent(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
+def test_unknown_requirement_does_not_skip_later_unsatisfied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """An unknown-state requirement does not skip subsequent requirements.
+
+    When one inferred requirement's position is unknown, subsequent
+    requirements must still be checked. Ensures `_check_requirements` uses
+    `continue` to skip the unknown one rather than `break` out of the loop.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<a>.\n"
+                "    define the position<b>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<a>.\n"
+                "        destroy the dimension point in position<b>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<src>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<src>.\n"
+                "        move the dimension point in position<src> to position<box>::action</inner>::position<a>.\n"
+                "        move the dimension point in position<src> to position<box>::action</inner>::position<a>.\n"
+                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 3
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 15
+    assert all_diags[0].location.end_column == 50
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<src>"
+    assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.column == 54
+    assert all_diags[1].location.end_line == 15
+    assert all_diags[1].location.end_column == 96
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "position<box>::action</inner>::position<a>"
+    assert all_diags[1].occupied_at is not None
+    assert all_diags[1].occupied_at.line == 14
+    assert all_diags[1].occupied_at.column == 54
+    assert all_diags[1].occupied_at.end_line == 14
+    assert all_diags[1].occupied_at.end_column == 96
+    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
+    assert isinstance(
+        all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[2].location.line == 16
+    assert all_diags[2].location.column == 37
+    assert all_diags[2].location.end_line == 16
+    assert all_diags[2].location.end_column == 89
+    assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[2].position_name == "position<box>::action</inner>::position<b>"
+    assert all_diags[2].inferred_at.line == 9
+    assert all_diags[2].inferred_at.column == 40
+    assert all_diags[2].inferred_at.end_line == 9
+    assert all_diags[2].inferred_at.end_column == 51
+    assert all_diags[2].inferred_at.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[2].propagated_from_locations == []
+    assert_action_calls(
+        result.action_call_graph, _TEST, "action<my.domain.com:my_lib:/inner>"
+    )
+
+
 def test_multiple_requirements_one_empty_one_occupied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

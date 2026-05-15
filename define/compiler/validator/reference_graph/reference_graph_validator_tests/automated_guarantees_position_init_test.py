@@ -417,3 +417,78 @@ def test_cross_universe_constraint_triggers_init_block(
     assert all_diags[1].populated_at.end_line == 6
     assert all_diags[1].populated_at.end_column == 49
     assert all_diags[1].populated_at.file_path == PurePosixPath("lib/b.dfn")
+
+
+def test_init_block_applies_after_non_position_quality_in_constraints(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Init block applies even when an action quality precedes its position in constraints.
+
+    /target has constraints [action</foo>, position</bar>] in source order.
+    /bar has an init block creating in itself. When the caller creates a DP at
+    position</target>, /bar's init block must run for position</bar> even
+    though an action quality precedes it in the constraint list.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "foo.dfn": (
+                "define the potential action<my.domain.com:my_lib:/foo> {\n"
+                "    define the position<_iface>.\n"
+                "    it happens when {\n"
+                "        the position<_iface> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<_noop>.\n"
+                "        create a dimension point in position<_noop>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "bar.dfn": (
+                "define the potential position<my.domain.com:my_lib:/bar> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</bar>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "target.dfn": (
+                "define the potential position<my.domain.com:my_lib:/target> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</foo>.\n"
+                "        it has the position</bar>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</target>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::position</target>.\n"
+                "        create a dimension point in position<box>::position</target>::position</bar>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_column == 85
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name == "position<box>::position</target>::position</bar>"
+    )
+    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_column == 51
+    assert all_diags[0].populated_at.file_path == PurePosixPath("bar.dfn")

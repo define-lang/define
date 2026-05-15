@@ -18,6 +18,97 @@ _INNER = "action<my.domain.com:my_lib:/inner>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 
 
+def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """A MOVE into /inner's trigger position propagates /inner's OCCUPIED requirement.
+
+    The trigger fires and /inner's OCCUPIED requirement on position<item> must
+    propagate into /outer's contract — the scope passed to _check_trigger must
+    be the live one, not None, so _get_transitive_required_qualities can
+    resolve the propagated requirement's qualities.
+    """
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<src>.\n"
+                "    define the position<iface> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<src>.\n"
+                "        move the dimension point in position<src> to position<iface>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+    )
+    assert all_diags[0].inferred_at.line == 13
+    assert all_diags[0].inferred_at.column == 54
+    assert all_diags[0].inferred_at.end_line == 13
+    assert all_diags[0].inferred_at.end_column == 108
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position<item>",
+            "line": 7,
+            "column": 40,
+            "file_path": "inner.dfn",
+        },
+    )
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
 def test_inner_chained_action_empty_requirement_propagates(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
