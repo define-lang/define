@@ -453,7 +453,6 @@ class DefinitionStructuralValidator:
         )
         self._dp_statement_validity.append(
             validation_result.DimensionPointStatementValidity(
-                statement=stmt,
                 target_ok=target_ok,
             )
         )
@@ -478,7 +477,6 @@ class DefinitionStructuralValidator:
         from_is_prefix_of_to = self._check_if_from_is_a_prefix_of_to(stmt)
         self._dp_statement_validity.append(
             validation_result.DimensionPointStatementValidity(
-                statement=stmt,
                 source_ok=source_ok,
                 target_ok=target_ok,
                 from_is_prefix_of_to=from_is_prefix_of_to,
@@ -536,7 +534,6 @@ class DefinitionStructuralValidator:
         )
         self._dp_statement_validity.append(
             validation_result.DimensionPointStatementValidity(
-                statement=stmt,
                 target_ok=target_ok,
             )
         )
