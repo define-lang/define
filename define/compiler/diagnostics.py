@@ -705,10 +705,9 @@ class IncorrectIndentationDiagnostic(Diagnostic):
 
 
 @dataclass
-class ActionRequirementDiagnostic(Diagnostic):
-    """Base class for diagnostics about interface position occupancy state."""
+class RequirementDiagnostic(Diagnostic):
+    """Base class for diagnostics about a contracted position's occupancy requirement."""
 
-    action_name: str
     position_name: str
     inferred_at: ast.SourceLocation
     propagated_from_locations: list[ast.SourceLocation]
@@ -733,9 +732,10 @@ class ActionRequirementDiagnostic(Diagnostic):
 
 
 @dataclass
-class ActionRequiresEmptyPositionDiagnostic(ActionRequirementDiagnostic):
+class ActionRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
     """Diagnostic for when an action requires an interface position to be empty but it is not."""
 
+    action_name: str
     filled_at: ast.SourceLocation
     message_format: ClassVar[str] = (
         "this line is triggering `{self.action_name}` to run.\n"
@@ -751,12 +751,52 @@ class ActionRequiresEmptyPositionDiagnostic(ActionRequirementDiagnostic):
 
 
 @dataclass
-class ActionRequiresOccupiedPositionDiagnostic(ActionRequirementDiagnostic):
+class ActionRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
     """Diagnostic for when an action requires an interface position to be occupied but it is not."""
 
+    action_name: str
     message_format: ClassVar[str] = (
         "this line is triggering `{self.action_name}` to run.\n"
         "However, '{self.position_name}' must be occupied before that action runs, and it not occupied.\n\n"
+        "{self.formatted_inferred_at}"
+    )
+
+
+@dataclass
+class PositionInitBlockRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
+    """Diagnostic for when a position init block requires a position to be empty but it is not."""
+
+    create_target_name: str
+    init_block_position_name: str
+    filled_at: ast.SourceLocation
+    message_format: ClassVar[str] = (
+        "this line creates a dimension point in `{self.create_target_name}`."
+        " Doing so assigns `{self.init_block_position_name}` to that dimension point,"
+        " running its Position Initialization Block.\n"
+        "However, '{self.position_name}' must be empty before that block runs,"
+        " and it is not empty.\n"
+        "It was filled at:\n{self.formatted_filled_at}\n\n"
+        "{self.formatted_inferred_at}"
+    )
+
+    @property
+    def formatted_filled_at(self) -> str:
+        """Format the filled_at location as a human-readable string."""
+        return _format_location(self.filled_at)
+
+
+@dataclass
+class PositionInitBlockRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
+    """Diagnostic for when a position init block requires a position to be occupied but it is not."""
+
+    create_target_name: str
+    init_block_position_name: str
+    message_format: ClassVar[str] = (
+        "this line creates a dimension point in `{self.create_target_name}`."
+        " Doing so assigns `{self.init_block_position_name}` to that dimension point,"
+        " running its Position Initialization Block.\n"
+        "However, '{self.position_name}' must be occupied before that block runs,"
+        " and it is not occupied.\n\n"
         "{self.formatted_inferred_at}"
     )
 

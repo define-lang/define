@@ -141,9 +141,13 @@ def test_multi_level_transitivity(
     assert_no_errors(result.program_result)
 
 
-def test_diamond_transitivity(
+def test_diamond_transitivity_create_conflict_detected(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
+    # Two impliers both implying the same position and both creating in it
+    # via their init blocks is genuinely illegal: when the second implier's
+    # init block runs, the implied position has already been filled by the
+    # first, so the second's EMPTY-from-Create requirement is violated.
     result = validate_project_with_reference_graph(
         {
             "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
@@ -160,6 +164,78 @@ def test_diamond_transitivity(
                 "    it also assigns the position</implied>.\n"
                 "    after it is assigned {\n"
                 "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</implier_one>.\n"
+                "            it has the position</implier_two>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</implied>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<source>.\n"
+                "        move the dimension point in position<source> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(
+        diag,
+        diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic,
+    )
+    assert diag.create_target_name == "position<source>"
+    assert (
+        diag.init_block_position_name == "position<my.domain.com:my_lib:/implier_two>"
+    )
+    assert diag.position_name == "position<source>::position</implied>"
+    assert diag.location.line == 17
+    assert diag.location.column == 37
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.inferred_at.line == 4
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.file_path == PurePosixPath("implier_two.dfn")
+    assert diag.filled_at.line == 4
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.file_path == PurePosixPath("implier_one.dfn")
+    assert diag.propagated_from_locations == []
+
+
+def test_diamond_transitivity_with_create_destroy_succeeds(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
+            "implier_one.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implier_one> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "        destroy the dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implier_two.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implier_two> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "        destroy the dimension point in position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),

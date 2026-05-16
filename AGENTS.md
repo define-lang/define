@@ -65,6 +65,12 @@ See [define/spec/spec.md] for the language specification.
 - Do not write docstrings in tests. If a test docstring is genuinely needed, it
   must be a single short sentence giving a conceptual description of what we are
   testing.
+- Do not put implementation details in docstrings. For example, this is a bad
+  docstring because it describes implementation structure:
+
+  > The base implementation handles only the implied-quality / global-prefix
+  > case. Subclasses extend this for cases that depend on definition shape
+  > (interface positions, trigger position, self-reference, etc.).
 
 ## Code Style
 

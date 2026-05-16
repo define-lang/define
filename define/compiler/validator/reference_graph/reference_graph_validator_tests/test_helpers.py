@@ -18,12 +18,12 @@ class InferredFromEntry(TypedDict):
 
 
 def assert_propagation_chain(
-    diag: diagnostics.ActionRequirementDiagnostic,
+    diag: diagnostics.RequirementDiagnostic,
     *inferred_from: InferredFromEntry,
 ) -> None:
     """Assert a requirement diagnostic exposes the expected propagated_from chain."""
     __tracebackhide__ = True
-    # TODO: Update ActionRequirementDiagnostic to actually have the names at each level.
+    # TODO: Update RequirementDiagnostic to actually have the names at each level.
     composed_tail = "::".join(
         entry["full_typed_name"] for entry in inferred_from if entry["full_typed_name"]
     )

@@ -38,6 +38,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _position_contracts: dict[str, action_contract.PositionInitBlockContract]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
+    _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
 
     def __init__(
         self,
@@ -53,6 +54,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._position_contracts = position_contracts
         self._diagnostics = []
         self._action_edges = []
+        self._inferred_requirements = {}
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -80,16 +82,44 @@ class DefinitionPostorderValidator(abc.ABC):
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, edges, and contract."""
 
-    def _maybe_infer_requirement(  # noqa: B027
+    def _maybe_infer_requirement(
         self,
-        required_state: action_contract.PositionOccupancyState,  # pyright: ignore[reportUnusedParameter]
-        position: ast.PositionReference,  # pyright: ignore[reportUnusedParameter]
-        scope: scope_tracker.ScopeTracker,  # pyright: ignore[reportUnusedParameter]
+        required_state: action_contract.PositionOccupancyState,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Infer a requirement for an interface position on first reference.
+        """Infer a requirement for a contracted position the first time it is referenced."""
+        inferred_from_chain = self._chain_for_inferred_requirement(position)
+        if inferred_from_chain is None:
+            return
 
-        No-op for non-action definitions. Overridden by ActionPostorderValidator.
-        """
+        requirement_key = inferred_from_chain.canonical_chained_name_tuple
+        if requirement_key in self._inferred_requirements:
+            return
+        self._inferred_requirements[requirement_key] = (
+            action_contract.PositionRequirement(
+                required_state=required_state,
+                inferred_from=inferred_from_chain,
+                enclosing_quality=self._definition,
+            )
+        )
+
+        if required_state == action_contract.PositionOccupancyState.OCCUPIED:
+            qualities = self._get_transitive_required_qualities(position, scope)
+            self._executor.execute_assume_occupied(
+                dimension_point_operation.AssumeOccupied(
+                    target=position,
+                    qualities=qualities,
+                    contracted_position_chain=inferred_from_chain,
+                )
+            )
+
+    @abc.abstractmethod
+    def _chain_for_inferred_requirement(
+        self,
+        position: ast.PositionReference,
+    ) -> ast.PositionReference | None:
+        """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
 
     def _propagate_inner_requirements(  # noqa: B027
         self,
@@ -123,21 +153,23 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         self._maybe_infer_requirement(required_state, position, scope)
 
-    def _apply_position_init_guarantees(
+    def _run_position_init_blocks(
         self,
         position: ast.PositionReference,
         qualities: list[ast.GlobalTypedNameReference],
     ):
-        """Apply position init block guarantees for each assigned position quality."""
+        """Run the caller-side effects of every implied position's init block."""
         for quality in qualities:
             if quality.name_type != ast.NameType.POSITION:
                 continue
             init_block_contract = self._position_contracts.get(quality.full_typed_name)
-            if init_block_contract is not None:
-                self._tracker.apply_guarantees(
-                    position,
-                    init_block_contract.guarantees,
-                )
+            if init_block_contract is None:
+                continue
+            self._check_init_block_requirements(position, init_block_contract)
+            self._tracker.apply_guarantees(
+                position,
+                init_block_contract.guarantees,
+            )
 
     def _check_trigger(
         self,
@@ -176,7 +208,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._propagate_inner_requirements(
             action_ref, action_name, contract, position, scope
         )
-        self._check_requirements(position, contract)
+        self._check_action_requirements(position, contract)
         self._tracker.apply_guarantees(position, contract.guarantees)
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
@@ -185,7 +217,7 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         )
 
-    def _check_requirements(
+    def _check_action_requirements(
         self,
         trigger_position: ast.PositionReference,
         contract: action_contract.ActionContract,
@@ -204,44 +236,99 @@ class DefinitionPostorderValidator(abc.ABC):
             #     position<box>::action</outer>
             #   req.full_propagation_position_chain():
             #     position<iface>::action</inner>::position<item>
-            #   full_caller_chain:
+            #   full_caller_chain (composed via in_caller):
             #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
             full_caller_chain = req.full_propagation_position_chain().in_caller(
                 action_chain
             )
-            key = full_caller_chain.canonical_chained_name_tuple
-            position_name = full_caller_chain.source_form_in_universe(
-                self._enclosing_fqun
+            self._check_one_requirement(full_caller_chain, dp.last_position, req)
+
+    def _check_init_block_requirements(
+        self,
+        create_target: ast.PositionReference,
+        contract: action_contract.PositionInitBlockContract,
+    ):
+        """Check that all init-block requirements hold at the Create statement that assigns the position."""
+        for req in contract.requirements.values():
+            # Example values:
+            #   create_target:
+            #     position<box>
+            #   req.full_propagation_position_chain():
+            #     position</q>::position</q_child>
+            #   full_caller_chain (composed by concatenation):
+            #     position<box>::position</q>::position</q_child>
+            req_chain = req.full_propagation_position_chain()
+            full_caller_chain = ast.PositionReference(
+                location=req_chain.location,
+                typed_names=[*create_target.typed_names, *req_chain.typed_names],
             )
+            self._check_one_requirement(full_caller_chain, create_target, req)
 
-            if self._tracker.has_unknown_state_by_key(key):
-                continue
+    def _check_one_requirement(
+        self,
+        full_caller_chain: ast.PositionReference,
+        caller_position: ast.PositionReference,
+        req: action_contract.PositionRequirement,
+    ):
+        """Emit a diagnostic if a single requirement is not satisfied."""
+        key = full_caller_chain.canonical_chained_name_tuple
+        position_name = full_caller_chain.source_form_in_universe(self._enclosing_fqun)
 
-            is_occupied = self._tracker.is_occupied_by_key(key)
+        if self._tracker.has_unknown_state_by_key(key):
+            return
 
-            if (
-                req.required_state == action_contract.PositionOccupancyState.EMPTY
-                and is_occupied
-            ):
-                occupant = self._tracker.get_occupant_by_key(key)
+        if (
+            req.required_state == action_contract.PositionOccupancyState.EMPTY
+            and self._tracker.is_occupied_by_key(key)
+        ):
+            occupant = self._tracker.get_occupant_by_key(key)
+            if isinstance(req.root_cause_quality(), ast.ActionDefinition):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        location=dp.last_position.location,
-                        action_name=req.root_cause_action_name(),
+                        location=caller_position.location,
+                        action_name=req.root_cause_quality_name(),
                         position_name=position_name,
                         inferred_at=req.inferred_from.location,
                         propagated_from_locations=req.propagated_from_locations(),
                         filled_at=occupant.last_position.location,
                     )
                 )
-            elif (
-                req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-                and not is_occupied
-            ):
+            else:
+                self._diagnostics.append(
+                    diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic(
+                        location=caller_position.location,
+                        create_target_name=caller_position.source_form_in_universe(
+                            self._enclosing_fqun
+                        ),
+                        init_block_position_name=req.root_cause_quality_name(),
+                        position_name=position_name,
+                        inferred_at=req.inferred_from.location,
+                        propagated_from_locations=req.propagated_from_locations(),
+                        filled_at=occupant.last_position.location,
+                    )
+                )
+        elif (
+            req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+            and not self._tracker.is_occupied_by_key(key)
+        ):
+            if isinstance(req.root_cause_quality(), ast.ActionDefinition):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        location=dp.last_position.location,
-                        action_name=req.root_cause_action_name(),
+                        location=caller_position.location,
+                        action_name=req.root_cause_quality_name(),
+                        position_name=position_name,
+                        inferred_at=req.inferred_from.location,
+                        propagated_from_locations=req.propagated_from_locations(),
+                    )
+                )
+            else:
+                self._diagnostics.append(
+                    diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic(
+                        location=caller_position.location,
+                        create_target_name=caller_position.source_form_in_universe(
+                            self._enclosing_fqun
+                        ),
+                        init_block_position_name=req.root_cause_quality_name(),
                         position_name=position_name,
                         inferred_at=req.inferred_from.location,
                         propagated_from_locations=req.propagated_from_locations(),
@@ -291,7 +378,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._diagnostics.extend(diags)
         if diags:
             return
-        self._apply_position_init_guarantees(position, qualities)
+        self._run_position_init_blocks(position, qualities)
         self._check_trigger(position, scope)
 
     def _analyze_destroy(
@@ -600,24 +687,6 @@ class DefinitionPostorderValidator(abc.ABC):
 class ActionPostorderValidator(DefinitionPostorderValidator):
     """Validates an action definition during a DFS post-order walk."""
 
-    _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
-
-    def __init__(
-        self,
-        definition_result: validation_result.DefinitionValidationResult,
-        definition_results: dict[str, validation_result.DefinitionValidationResult],
-        action_contracts: dict[str, action_contract.ActionContract],
-        position_contracts: dict[str, action_contract.PositionInitBlockContract],
-    ):
-        """Initialize with the action definition to validate and the full results map."""
-        super().__init__(
-            definition_result,
-            definition_results,
-            action_contracts,
-            position_contracts,
-        )
-        self._inferred_requirements = {}
-
     @property
     def _action_definition(self) -> ast.ActionDefinition:
         return typing.cast("ast.ActionDefinition", self._definition)
@@ -714,50 +783,18 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         )
 
     @typing.override
-    def _maybe_infer_requirement(
-        self,
-        required_state: action_contract.PositionOccupancyState,
-        position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Infer a requirement for a contracted position the first time it is referenced."""
-        inferred_from_chain = self._chain_for_inferred_requirement(position)
-        if inferred_from_chain is None:
-            return
-
-        # The population of the base trigger position itself is handled elsewhere
-        # and doesn't create a requirement. (However, actions on children
-        # of the position still do create requirements.)
-        if self._trigger_position_name == position.canonical_chained_name:
-            return
-
-        requirement_key = inferred_from_chain.canonical_chained_name_tuple
-        if requirement_key in self._inferred_requirements:
-            return
-        self._inferred_requirements[requirement_key] = (
-            action_contract.PositionRequirement(
-                required_state=required_state,
-                inferred_from=inferred_from_chain,
-                enclosing_action=self._action_definition,
-            )
-        )
-
-        if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            qualities = self._get_transitive_required_qualities(position, scope)
-            self._executor.execute_assume_occupied(
-                dimension_point_operation.AssumeOccupied(
-                    target=position,
-                    qualities=qualities,
-                    contracted_position_chain=inferred_from_chain,
-                )
-            )
-
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
     ) -> ast.PositionReference | None:
         """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
-        # It's either an implied position or a self-reference in an init block.
+        # The population of the base trigger position itself is handled elsewhere
+        # and doesn't create a requirement. (However, actions on children
+        # of the position still do create requirements.)
+        if self._trigger_position_name == position.canonical_chained_name:
+            return None
+
+        # Implied quality.
         if position.starts_with_global:
             return position
 
@@ -869,7 +906,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             action_contract.PositionRequirement(
                 required_state=inner_req.required_state,
                 inferred_from=inferred_from,
-                enclosing_action=self._action_definition,
+                enclosing_quality=self._action_definition,
                 propagated_from=propagated_from,
             )
         )
@@ -907,6 +944,25 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
             contract=contract,
         )
 
+    @typing.override
+    def _chain_for_inferred_requirement(
+        self,
+        position: ast.PositionReference,
+    ) -> ast.PositionReference | None:
+        """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
+        # Doing things with the self-reference or any of its children
+        # doesn't create a requirement because _nothing_ could have run
+        # before the position's own init block. Thus, we know for sure
+        # that it's empty when it runs.
+        if (
+            position.typed_names[0].full_typed_name
+            == self._definition.typed_name.full_typed_name
+        ):
+            return None
+        if position.starts_with_global:
+            return position
+        return None
+
     def _analyze_position_definition(
         self, definition: ast.PositionDefinition
     ) -> action_contract.PositionInitBlockContract | None:
@@ -916,10 +972,11 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         scope.add_definition(definition)
         self._analyze_statements(definition.initialization, scope)
         return action_contract.PositionInitBlockContract(
+            requirements=self._inferred_requirements,
             guarantees=self._tracker.generate_guarantees(
                 [definition.typed_name],
                 self._implied_quality_list,
-                {},
+                self._inferred_requirements,
             ),
         )
 

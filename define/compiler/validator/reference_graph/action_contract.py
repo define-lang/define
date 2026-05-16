@@ -41,15 +41,19 @@ class PositionRequirement:
     # just `position<iface>::action</inner>` (which is why it is a ChainedName
     # and not a PositionReference).
     inferred_from: ast.ChainedName
-    enclosing_action: ast.ActionDefinition
+    enclosing_quality: ast.QualityDefinition
     propagated_from: PositionRequirement | None = None
 
-    def root_cause_action_name(self) -> str:
-        """Walk the propagation chain to find the originating action's canonical name."""
+    def root_cause_quality(self) -> ast.QualityDefinition:
+        """Return the quality definition that originally inferred this requirement."""
         current = self
         while current.propagated_from is not None:
             current = current.propagated_from
-        return current.enclosing_action.typed_name.source_typed_name
+        return current.enclosing_quality
+
+    def root_cause_quality_name(self) -> str:
+        """Return the canonical name of the quality that originally inferred this requirement."""
+        return self.root_cause_quality().typed_name.source_typed_name
 
     def full_propagation_position_chain(self) -> ast.PositionReference:
         """Get the full chained name composed by walking propagated_from."""
@@ -110,6 +114,7 @@ GuaranteePair = tuple[tuple[str, ...], PositionGuarantee]
 class ActionStatementsBlockContract:
     """Base contract for any block containing action statements."""
 
+    requirements: dict[tuple[str, ...], PositionRequirement]
     guarantees: list[GuaranteePair]
 
 
@@ -117,7 +122,6 @@ class ActionStatementsBlockContract:
 class ActionContract(ActionStatementsBlockContract):
     """The automatically inferred requirements and guarantees for an action."""
 
-    requirements: dict[tuple[str, ...], PositionRequirement]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
 

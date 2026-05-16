@@ -67,7 +67,7 @@ def _make_requirement(
     return action_contract.PositionRequirement(
         required_state=state,
         inferred_from=inferred_from,
-        enclosing_action=_DUMMY_ACTION,
+        enclosing_quality=_DUMMY_ACTION,
     )
 
 

@@ -16,3 +16,4 @@ class ImplierOne(literal.GlobalPosition):
     @override
     def after_assigned(self):
         self.create_dimension_point()
+        self.destroy_dimension_point()

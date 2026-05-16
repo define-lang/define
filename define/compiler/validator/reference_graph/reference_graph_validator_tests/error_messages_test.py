@@ -416,6 +416,112 @@ def test_move_violates_constraints_error_message(
     )
 
 
+def test_position_init_block_requires_empty_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the position</p>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "q.dfn": (
+                "define the potential position<my.domain.com:my_lib:/q> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</q>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 11, column 37\n'
+        "        create a dimension point in position<box>.\n"
+        "                                    ^\n"
+        "this line creates a dimension point in `position<box>`."
+        " Doing so assigns `position<my.domain.com:my_lib:/p>`"
+        " to that dimension point, running its Position Initialization Block.\n"
+        "However, 'position<box>::position</q>' must be empty before"
+        " that block runs, and it is not empty.\n"
+        "It was filled at:\n"
+        'File "q.dfn", line 3, column 37\n\n'
+        "This requirement happens because of:\n"
+        'File "p.dfn", line 4, column 37'
+    )
+
+
+def test_position_init_block_requires_occupied_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the position</p>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</q>.\n"
+                "    after it is assigned {\n"
+                "        destroy the dimension point in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 11, column 37\n'
+        "        create a dimension point in position<box>.\n"
+        "                                    ^\n"
+        "this line creates a dimension point in `position<box>`."
+        " Doing so assigns `position<my.domain.com:my_lib:/p>`"
+        " to that dimension point, running its Position Initialization Block.\n"
+        "However, 'position<box>::position</q>' must be occupied before"
+        " that block runs, and it is not occupied.\n\n"
+        "This requirement happens because of:\n"
+        'File "p.dfn", line 4, column 40'
+    )
+
+
 def test_destroy_in_emptied_interface_position_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

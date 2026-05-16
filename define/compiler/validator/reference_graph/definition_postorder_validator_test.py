@@ -904,6 +904,149 @@ class TestPositionInitBlockContract:
         assert dep_guarantee.qualities == []
         assert dep_guarantee.caused_by.location.line == 8
 
+    def test_implied_position_create_target_infers_empty(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/dep>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</dep>.\n"
+            "    after it is assigned {\n"
+            "        define the position<local>.\n"
+            "        move the dimension point in position</dep> to position<local>.\n"
+            "        create a dimension point in position</dep>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        # The move source is the first reference: OCCUPIED requirement is
+        # inferred there. (Re-creating after a move is the way to make the
+        # init block reach a Create on the same position without violating
+        # ordering.)
+        assert (_POS_DEP,) in contract.requirements
+        req = contract.requirements[(_POS_DEP,)]
+        assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+        assert req.inferred_from.location.line == 6
+        assert req.inferred_from.location.column == 37
+        assert req.inferred_from.location.file_path is None
+        assert isinstance(req.enclosing_quality, ast.PositionDefinition)
+        assert req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert req.propagated_from is None
+
+    def test_implied_position_destroy_target_infers_occupied(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/dep>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</dep>.\n"
+            "    after it is assigned {\n"
+            "        destroy the dimension point in position</dep>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        assert (_POS_DEP,) in contract.requirements
+        req = contract.requirements[(_POS_DEP,)]
+        assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+        assert req.inferred_from.location.line == 5
+        assert req.inferred_from.location.column == 40
+        assert req.inferred_from.location.file_path is None
+        assert isinstance(req.enclosing_quality, ast.PositionDefinition)
+        assert req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert req.propagated_from is None
+
+    def test_implied_position_move_destination_infers_empty(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/dep>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</dep>.\n"
+            "    after it is assigned {\n"
+            "        define the position<local>.\n"
+            "        create a dimension point in position<local>.\n"
+            "        move the dimension point in position<local> to position</dep>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        assert (_POS_DEP,) in contract.requirements
+        req = contract.requirements[(_POS_DEP,)]
+        assert req.required_state == action_contract.PositionOccupancyState.EMPTY
+        assert req.inferred_from.location.line == 7
+        assert req.inferred_from.location.column == 56
+        assert req.inferred_from.location.file_path is None
+        assert isinstance(req.enclosing_quality, ast.PositionDefinition)
+        assert req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert req.propagated_from is None
+
+    def test_chained_name_intermediate_implied_parent_infers_occupied(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/grand_child>.\n"
+            "define the potential position<my.domain.com:my_lib:/dep> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</grand_child>.\n"
+            "    }\n"
+            "}\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</dep>.\n"
+            "    after it is assigned {\n"
+            "        destroy the dimension point in position</dep>::position</grand_child>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        grand_child = "position<my.domain.com:my_lib:/grand_child>"
+        assert (_POS_DEP,) in contract.requirements
+        parent_req = contract.requirements[(_POS_DEP,)]
+        assert (
+            parent_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+        )
+        assert parent_req.inferred_from.location.line == 10
+        assert parent_req.inferred_from.location.column == 40
+        assert parent_req.inferred_from.location.file_path is None
+        assert isinstance(parent_req.enclosing_quality, ast.PositionDefinition)
+        assert parent_req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert parent_req.propagated_from is None
+        assert (_POS_DEP, grand_child) in contract.requirements
+        leaf_req = contract.requirements[(_POS_DEP, grand_child)]
+        assert (
+            leaf_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+        )
+        assert leaf_req.inferred_from.location.line == 10
+        assert leaf_req.inferred_from.location.column == 40
+        assert leaf_req.inferred_from.location.file_path is None
+        assert isinstance(leaf_req.enclosing_quality, ast.PositionDefinition)
+        assert leaf_req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert leaf_req.propagated_from is None
+
+    def test_self_reference_does_not_publish_requirement(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/dep>.\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the position</dep>.\n"
+            "    }\n"
+            "    after it is assigned {\n"
+            "        destroy the dimension point in position</test>::position</dep>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        # Self-reference (and its children) must not appear in requirements:
+        # the position is being assigned now, so the caller has no separate
+        # state to satisfy against it.
+        assert contract.requirements == {}
+
+    def test_direct_operation_on_self_does_not_publish_requirement(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    after it is assigned {\n"
+            "        create a dimension point in position</test>.\n"
+            "        destroy the dimension point in position</test>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contract = _get_position_contract(source)
+        # A direct Create or Destroy on the self-reference (no chained
+        # child) must not publish a requirement either.
+        assert contract.requirements == {}
+
 
 _INNER_ACTION = "action<my.domain.com:my_lib:/inner>"
 _MIDDLE_ACTION = "action<my.domain.com:my_lib:/middle>"
@@ -991,7 +1134,7 @@ def test_interface_position_requirement_integration(
 
     # Fields on the outermost requirement
     assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-    assert req.enclosing_action.typed_name.source_typed_name == _OUTER_ACTION
+    assert req.enclosing_quality.typed_name.source_typed_name == _OUTER_ACTION
     assert (
         req.inferred_from.source_chained_name == "position<out_iface>::action</middle>"
     )
@@ -1002,7 +1145,7 @@ def test_interface_position_requirement_integration(
     assert req.propagated_from is not None
     mid_req = req.propagated_from
     assert mid_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-    assert mid_req.enclosing_action.typed_name.source_typed_name == _MIDDLE_ACTION
+    assert mid_req.enclosing_quality.typed_name.source_typed_name == _MIDDLE_ACTION
     assert (
         mid_req.inferred_from.source_chained_name
         == "position<mid_iface>::action</inner>"
@@ -1014,15 +1157,15 @@ def test_interface_position_requirement_integration(
     assert mid_req.propagated_from is not None
     inner_req = mid_req.propagated_from
     assert inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-    assert inner_req.enclosing_action.typed_name.source_typed_name == _INNER_ACTION
+    assert inner_req.enclosing_quality.typed_name.source_typed_name == _INNER_ACTION
     assert inner_req.inferred_from.source_chained_name == "position<item>"
     assert inner_req.inferred_from.location.line == 8
     assert inner_req.inferred_from.location.file_path == PurePosixPath("inner.dfn")
     assert inner_req.propagated_from is None
 
     # Methods on the outermost requirement
-    assert req.root_cause_action_name() == _INNER_ACTION
-    outer_fqun = req.enclosing_action.typed_name.name_content.fqun
+    assert req.root_cause_quality_name() == _INNER_ACTION
+    outer_fqun = req.enclosing_quality.typed_name.name_content.fqun
     assert _resolved(req, outer_fqun) == (
         "position<out_iface>::action</middle>"
         "::position<mid_iface>::action</inner>"
@@ -1040,8 +1183,8 @@ def test_interface_position_requirement_integration(
     assert outer_locs[1].file_path == PurePosixPath("inner.dfn")
 
     # Methods on the middle requirement
-    assert mid_req.root_cause_action_name() == _INNER_ACTION
-    middle_fqun = mid_req.enclosing_action.typed_name.name_content.fqun
+    assert mid_req.root_cause_quality_name() == _INNER_ACTION
+    middle_fqun = mid_req.enclosing_quality.typed_name.name_content.fqun
     assert _resolved(mid_req, middle_fqun) == (
         "position<mid_iface>::action</inner>::position<item>"
     )
@@ -1054,8 +1197,8 @@ def test_interface_position_requirement_integration(
     assert mid_locs[0].file_path == PurePosixPath("inner.dfn")
 
     # Methods on the leaf requirement
-    assert inner_req.root_cause_action_name() == _INNER_ACTION
-    inner_fqun = inner_req.enclosing_action.typed_name.name_content.fqun
+    assert inner_req.root_cause_quality_name() == _INNER_ACTION
+    inner_fqun = inner_req.enclosing_quality.typed_name.name_content.fqun
     assert _resolved(inner_req, inner_fqun) == "position<item>"
     assert (
         inner_req.full_propagation_position_chain().source_chained_name
