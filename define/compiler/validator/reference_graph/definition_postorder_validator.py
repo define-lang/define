@@ -114,12 +114,21 @@ class DefinitionPostorderValidator(abc.ABC):
                 )
             )
 
-    @abc.abstractmethod
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
     ) -> ast.PositionReference | None:
         """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
+        # Implied quality.
+        if position.starts_with_global:
+            return position
+        parent_origin = self._parent_dimension_point_comes_from_caller(position)
+        if parent_origin is None:
+            return None
+        # This comes from a contracted position, so we put the requirement on
+        # that contracted position, not whatever local position we are inferring
+        # a requirement for.
+        return position.replace_parent_position_with_prefix(parent_origin)
 
     def _propagate_inner_requirements(
         self,
@@ -909,23 +918,12 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # of the position still do create requirements.)
         if self._trigger_position_name == position.canonical_chained_name:
             return None
-
-        # Implied quality.
-        if position.starts_with_global:
-            return position
-
         # The structural validator guarantees for us that this is defined, so
         # we don't need to re-check if it's defined.
         first = position.typed_names[0]
         if first.full_typed_name in self._interface_positions:
             return position
-        parent_origin = self._parent_dimension_point_comes_from_caller(position)
-        if parent_origin is None:
-            return None
-        # This comes from a contracted position, so we put the requirement on
-        # that contracted position, not whatever local position we are inferring
-        # a requirement for.
-        return position.replace_parent_position_with_prefix(parent_origin)
+        return super()._chain_for_inferred_requirement(position)
 
 
 class PositionPostorderValidator(DefinitionPostorderValidator):
@@ -959,9 +957,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
             == self._definition.typed_name.full_typed_name
         ):
             return None
-        if position.starts_with_global:
-            return position
-        return None
+        return super()._chain_for_inferred_requirement(position)
 
     def _analyze_position_definition(
         self, definition: ast.PositionDefinition

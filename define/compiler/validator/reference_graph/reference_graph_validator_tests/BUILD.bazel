@@ -155,6 +155,28 @@ py_test(
 )
 
 py_test(
+    name = "automated_requirements_override_test",
+    size = "small",
+    srcs = ["automated_requirements_override_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_position_init_move_test",
+    size = "small",
+    srcs = ["automated_requirements_position_init_move_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_test(
     name = "automated_requirements_position_init_propagation_test",
     size = "small",
     srcs = ["automated_requirements_position_init_propagation_test.py"],
@@ -480,6 +502,8 @@ pyright_test(
         ":automated_requirements_move_test",
         ":automated_requirements_nested_action_test",
         ":automated_requirements_nested_implied_test",
+        ":automated_requirements_override_test",
+        ":automated_requirements_position_init_move_test",
         ":automated_requirements_position_init_propagation_test",
         ":automated_requirements_position_init_test",
         ":automated_requirements_test",

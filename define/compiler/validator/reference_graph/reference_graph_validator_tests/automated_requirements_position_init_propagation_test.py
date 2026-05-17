@@ -1,5 +1,11 @@
 # pyright: reportUnusedCallResult=false
 
+# This file only covers OCCUPIED-state propagation. EMPTY-state propagation
+# through position init blocks is structurally impossible to observe: an init
+# block on /p fires when the caller creates a dimension point with /p as a
+# quality, so any EMPTY requirement is only observed directly by the creator,
+# instantly at the moment of creation.
+
 from pathlib import PurePosixPath
 
 import pytest
