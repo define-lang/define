@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -457,13 +455,6 @@ def test_move_respects_transitive_implied_qualities(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "When a position is assigned to a dimension point, the init blocks of"
-        " its transitively implied positions do not run."
-    ),
-    strict=True,
-)
 def test_parent_and_child_implied_init_blocks_conflict(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -503,28 +494,31 @@ def test_parent_and_child_implied_init_blocks_conflict(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 4
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.end_line == 4
-    assert all_diags[0].location.end_column == 55
-    assert all_diags[0].location.file_path == PurePosixPath("implier.dfn")
-    assert all_diags[0].position_name == "position</implied>"
-    assert all_diags[0].populated_at.line == 3
-    assert all_diags[0].populated_at.column == 37
-    assert all_diags[0].populated_at.end_line == 3
-    assert all_diags[0].populated_at.end_column == 55
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implied.dfn")
+    diag = all_diags[0]
+    assert isinstance(
+        diag, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
+    )
+    assert diag.create_target_name == "position<box>"
+    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/implier>"
+    assert diag.position_name == "position<box>::position</implied>"
+    assert diag.location.line == 11
+    assert diag.location.column == 37
+    assert diag.location.end_line == 11
+    assert diag.location.end_column == 50
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.inferred_at.line == 4
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.end_line == 4
+    assert diag.inferred_at.end_column == 55
+    assert diag.inferred_at.file_path == PurePosixPath("implier.dfn")
+    assert diag.filled_at.line == 3
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.end_line == 3
+    assert diag.filled_at.end_column == 55
+    assert diag.filled_at.file_path == PurePosixPath("implied.dfn")
+    assert diag.propagated_from_locations == []
 
 
-@pytest.mark.xfail(
-    reason=(
-        "When two sibling implications produce init blocks that both create a"
-        " dimension point at the same position, the conflict is silently"
-        " overwritten instead of raising a diagnostic."
-    ),
-    strict=True,
-)
 def test_two_different_implier_init_blocks_conflict(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -567,15 +561,29 @@ def test_two_different_implier_init_blocks_conflict(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 50
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].populated_at.line == 4
-    assert all_diags[0].populated_at.column == 37
-    assert all_diags[0].populated_at.end_line == 4
-    assert all_diags[0].populated_at.end_column == 55
-    assert all_diags[0].populated_at.file_path == PurePosixPath("first_implier.dfn")
+    diag = all_diags[0]
+    assert isinstance(
+        diag, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
+    )
+    assert diag.create_target_name == "position<box>"
+    assert (
+        diag.init_block_position_name
+        == "position<my.domain.com:my_lib:/second_implier>"
+    )
+    assert diag.position_name == "position<box>::position</implied>"
+    assert diag.location.line == 12
+    assert diag.location.column == 37
+    assert diag.location.end_line == 12
+    assert diag.location.end_column == 50
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.inferred_at.line == 4
+    assert diag.inferred_at.column == 37
+    assert diag.inferred_at.end_line == 4
+    assert diag.inferred_at.end_column == 55
+    assert diag.inferred_at.file_path == PurePosixPath("second_implier.dfn")
+    assert diag.filled_at.line == 4
+    assert diag.filled_at.column == 37
+    assert diag.filled_at.end_line == 4
+    assert diag.filled_at.end_column == 55
+    assert diag.filled_at.file_path == PurePosixPath("first_implier.dfn")
+    assert diag.propagated_from_locations == []

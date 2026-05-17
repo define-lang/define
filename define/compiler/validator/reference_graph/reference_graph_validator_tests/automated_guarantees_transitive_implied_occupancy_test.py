@@ -1,8 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -580,13 +578,6 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
-@pytest.mark.xfail(
-    reason=(
-        "When a position is assigned to a dimension point, the init blocks of"
-        " its transitively implied positions do not run."
-    ),
-    strict=True,
-)
 def test_implied_position_self_create_init_block_fires_on_caller_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -627,28 +618,45 @@ def test_implied_position_self_create_init_block_fires_on_caller_create(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.end_line == 3
-    assert all_diags[0].location.end_column == 61
-    assert all_diags[0].location.file_path == PurePosixPath("first_implied.dfn")
-    assert all_diags[0].position_name == "position</first_implied>"
-    assert all_diags[0].populated_at.line == 12
-    assert all_diags[0].populated_at.column == 37
-    assert all_diags[0].populated_at.end_line == 12
-    assert all_diags[0].populated_at.end_column == 76
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert len(all_diags) == 2
+    first = all_diags[0]
+    assert isinstance(
+        first, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
+    )
+    assert first.create_target_name == "position<box>"
+    assert first.init_block_position_name == "position<my.domain.com:my_lib:/implier>"
+    assert first.position_name == "position<box>::position</first_implied>"
+    assert first.location.line == 11
+    assert first.location.column == 37
+    assert first.location.end_line == 11
+    assert first.location.end_column == 50
+    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.inferred_at.line == 4
+    assert first.inferred_at.column == 37
+    assert first.inferred_at.end_line == 4
+    assert first.inferred_at.end_column == 61
+    assert first.inferred_at.file_path == PurePosixPath("implier.dfn")
+    assert first.filled_at.line == 3
+    assert first.filled_at.column == 37
+    assert first.filled_at.end_line == 3
+    assert first.filled_at.end_column == 61
+    assert first.filled_at.file_path == PurePosixPath("first_implied.dfn")
+    assert first.propagated_from_locations == []
+    second = all_diags[1]
+    assert isinstance(second, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert second.location.line == 12
+    assert second.location.column == 37
+    assert second.location.end_line == 12
+    assert second.location.end_column == 76
+    assert second.location.file_path == PurePosixPath("test.dfn")
+    assert second.position_name == "position<box>::position</first_implied>"
+    assert second.populated_at.line == 3
+    assert second.populated_at.column == 37
+    assert second.populated_at.end_line == 3
+    assert second.populated_at.end_column == 61
+    assert second.populated_at.file_path == PurePosixPath("first_implied.dfn")
 
 
-@pytest.mark.xfail(
-    reason=(
-        "When a position is assigned to a dimension point, the init blocks of"
-        " its transitively implied positions do not run."
-    ),
-    strict=True,
-)
 def test_transitively_implied_position_self_create_init_block_fires_on_caller_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -698,19 +706,46 @@ def test_transitively_implied_position_self_create_init_block_fires_on_caller_cr
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.end_line == 3
-    assert all_diags[0].location.end_column == 62
-    assert all_diags[0].location.file_path == PurePosixPath("second_implied.dfn")
-    assert all_diags[0].position_name == "position</second_implied>"
-    assert all_diags[0].populated_at.line == 12
-    assert all_diags[0].populated_at.column == 37
-    assert all_diags[0].populated_at.end_line == 12
-    assert all_diags[0].populated_at.end_column == 77
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert len(all_diags) == 2
+    first = all_diags[0]
+    assert isinstance(
+        first, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
+    )
+    assert first.create_target_name == "position<box>"
+    assert (
+        first.init_block_position_name
+        == "position<my.domain.com:my_lib:/first_implied>"
+    )
+    assert first.position_name == "position<box>::position</second_implied>"
+    assert first.location.line == 11
+    assert first.location.column == 37
+    assert first.location.end_line == 11
+    assert first.location.end_column == 50
+    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.inferred_at.line == 4
+    assert first.inferred_at.column == 37
+    assert first.inferred_at.end_line == 4
+    assert first.inferred_at.end_column == 62
+    assert first.inferred_at.file_path == PurePosixPath("first_implied.dfn")
+    assert first.filled_at.line == 3
+    assert first.filled_at.column == 37
+    assert first.filled_at.end_line == 3
+    assert first.filled_at.end_column == 62
+    assert first.filled_at.file_path == PurePosixPath("second_implied.dfn")
+    assert first.propagated_from_locations == []
+    second = all_diags[1]
+    assert isinstance(second, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert second.location.line == 12
+    assert second.location.column == 37
+    assert second.location.end_line == 12
+    assert second.location.end_column == 77
+    assert second.location.file_path == PurePosixPath("test.dfn")
+    assert second.position_name == "position<box>::position</second_implied>"
+    assert second.populated_at.line == 3
+    assert second.populated_at.column == 37
+    assert second.populated_at.end_line == 3
+    assert second.populated_at.end_column == 62
+    assert second.populated_at.file_path == PurePosixPath("second_implied.dfn")
 
 
 def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_caller_prefix(
