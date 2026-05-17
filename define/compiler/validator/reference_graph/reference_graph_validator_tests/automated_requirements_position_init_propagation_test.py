@@ -93,7 +93,7 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
     )
 
 
-def test_init_block_occupied_propagates_via_implied_global(
+def test_init_block_occupied_propagates_via_implied_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -169,6 +169,112 @@ def test_init_block_occupied_propagates_via_implied_global(
     assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[0],
+        {
+            "full_typed_name": "position</q>",
+            "line": 4,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
+
+
+@pytest.mark.xfail(
+    raises=KeyError,
+    strict=True,
+    reason=(
+        "execute_assume_occupied on a propagated chain with non-action"
+        " intermediate positions hits a missing trie parent —"
+        " _ensure_action_parent only auto-creates intermediate action nodes."
+    ),
+)
+def test_init_block_occupied_propagates_via_implied_action(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</q>.\n"
+                "    after it is assigned {\n"
+                "        destroy the dimension point in position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "carrier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/carrier> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the position</p>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implied_action.dfn": (
+                "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
+                "    it also assigns the position</carrier>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position</carrier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    it also assigns the action</implied_action>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</inner>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].create_target_name
+        == "position<box>::action</inner>::position<trigger_pos>"
+    )
+    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert (
+        all_diags[0].position_name == "position<box>::position</carrier>::position</q>"
+    )
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "full_typed_name": "position</carrier>",
+            "line": 7,
+            "column": 37,
+            "file_path": "implied_action.dfn",
+        },
         {
             "full_typed_name": "position</q>",
             "line": 4,
@@ -384,21 +490,13 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "PositionPostorderValidator does not override _propagate_inner_requirements,"
-        " so requirements of actions triggered from an init block do not propagate"
-        " onto the init block's contract."
-    ),
-)
-def test_action_occupied_req_propagates_via_init_block_implied_action(
+def test_action_occupied_requirement_for_interface_position_propagates_via_init_block_implied_action(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
-            "triggered.dfn": (
-                "define the potential action<my.domain.com:my_lib:/triggered> {\n"
+            "implied_action.dfn": (
+                "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
@@ -410,9 +508,9 @@ def test_action_occupied_req_propagates_via_init_block_implied_action(
             ),
             "p.dfn": (
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the action</triggered>.\n"
+                "    it also assigns the action</implied_action>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</triggered>::position<trigger_pos>.\n"
+                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -443,10 +541,10 @@ def test_action_occupied_req_propagates_via_init_block_implied_action(
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/triggered>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/implied_action>"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</triggered>::position<item>"
+        == "position<box>::action</implied_action>::position<item>"
     )
     assert all_diags[0].inferred_at.file_path == PurePosixPath("p.dfn")
     assert_propagation_chain(
@@ -455,27 +553,19 @@ def test_action_occupied_req_propagates_via_init_block_implied_action(
             "full_typed_name": "position<item>",
             "line": 7,
             "column": 40,
-            "file_path": "triggered.dfn",
+            "file_path": "implied_action.dfn",
         },
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "PositionPostorderValidator does not override _propagate_inner_requirements,"
-        " so requirements of actions triggered from an init block do not propagate"
-        " onto the init block's contract."
-    ),
-)
-def test_action_occupied_req_on_implied_global_propagates_via_init_block(
+def test_action_occupied_requirement_on_implied_position_propagates_via_init_block_via_implied_action(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
         {
             "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "triggered.dfn": (
-                "define the potential action<my.domain.com:my_lib:/triggered> {\n"
+            "implied_action.dfn": (
+                "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
                 "    it also assigns the position</q>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
@@ -487,9 +577,9 @@ def test_action_occupied_req_on_implied_global_propagates_via_init_block(
             ),
             "p.dfn": (
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the action</triggered>.\n"
+                "    it also assigns the action</implied_action>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</triggered>::position<trigger_pos>.\n"
+                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -520,7 +610,7 @@ def test_action_occupied_req_on_implied_global_propagates_via_init_block(
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/triggered>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/implied_action>"
     assert all_diags[0].position_name == "position<box>::position</q>"
     assert all_diags[0].inferred_at.file_path == PurePosixPath("p.dfn")
     assert_propagation_chain(
@@ -529,89 +619,6 @@ def test_action_occupied_req_on_implied_global_propagates_via_init_block(
             "full_typed_name": "position</q>",
             "line": 7,
             "column": 40,
-            "file_path": "triggered.dfn",
-        },
-    )
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "PositionPostorderValidator does not override _propagate_inner_requirements,"
-        " so requirements of actions triggered from an init block do not propagate"
-        " onto the init block's contract."
-    ),
-)
-def test_action_via_implied_position_propagates_via_init_block(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "triggered.dfn": (
-                "define the potential action<my.domain.com:my_lib:/triggered> {\n"
-                "    define the position<trigger_pos>.\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
-                "    } and it does {\n"
-                "        destroy the dimension point in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "carrier.dfn": (
-                "define the potential position<my.domain.com:my_lib:/carrier> {\n"
-                "    it may only contain dimension points where {\n"
-                "        it has the action</triggered>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</carrier>.\n"
-                "    after it is assigned {\n"
-                "        create a dimension point in position</carrier>::action</triggered>::position<trigger_pos>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
-                "                it has the position</p>.\n"
-                "            }\n"
-                "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        }
-    )
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
-    assert all_diags[0].location.end_line == 11
-    assert all_diags[0].location.end_column == 50
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/triggered>"
-    assert (
-        all_diags[0].position_name
-        == "position<box>::position</carrier>::action</triggered>::position<item>"
-    )
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("p.dfn")
-    assert_propagation_chain(
-        all_diags[0],
-        {
-            "full_typed_name": "position<item>",
-            "line": 7,
-            "column": 40,
-            "file_path": "triggered.dfn",
+            "file_path": "implied_action.dfn",
         },
     )

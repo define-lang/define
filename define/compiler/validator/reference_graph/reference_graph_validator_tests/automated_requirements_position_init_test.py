@@ -779,3 +779,71 @@ def test_init_block_occupied_violation_via_destroy_of_child_of_iface_of_action_i
     assert diag.inferred_at.column == 40
     assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
     assert diag.propagated_from_locations == []
+
+
+def test_init_block_action_requirement_violation_via_triggering_implied_action(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied_action.dfn": (
+                "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "carrier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/carrier> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</implied_action>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</carrier>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</p>.\n"
+                "        create a dimension point in position</carrier>.\n"
+                "        create a dimension point in position</carrier>::action</implied_action>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</p>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.ActionRequiresOccupiedPositionDiagnostic)
+    assert diag.location.line == 6
+    assert diag.location.column == 37
+    assert diag.location.end_line == 6
+    assert diag.location.end_column == 103
+    assert diag.location.file_path == PurePosixPath("p.dfn")
+    assert diag.action_name == "action<my.domain.com:my_lib:/implied_action>"
+    assert (
+        diag.position_name
+        == "position</carrier>::action</implied_action>::position<item>"
+    )
+    assert diag.inferred_at.file_path == PurePosixPath("implied_action.dfn")
+    assert diag.propagated_from_locations == []

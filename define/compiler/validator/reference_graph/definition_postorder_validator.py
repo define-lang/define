@@ -121,18 +121,73 @@ class DefinitionPostorderValidator(abc.ABC):
     ) -> ast.PositionReference | None:
         """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
 
-    def _propagate_inner_requirements(  # noqa: B027
+    def _propagate_inner_requirements(
         self,
-        _triggered_action: ast.GlobalTypedNameReference,
-        _triggered_action_name: str,
-        _contract: action_contract.ActionContract,
-        _trigger_position: ast.PositionReference,
-        _scope: scope_tracker.ScopeTracker,
+        contract: action_contract.ActionContract,
+        trigger_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Propagate inner action requirements into this action's contract.
+        """Propagate the triggered action's requirements into this definition's contract."""
+        (action_chain, parent_origin) = (
+            self._action_parent_comes_from_contracted_position(trigger_position)
+        )
+        if parent_origin is not None:
+            caller_path_to_inner_action = (
+                action_chain.replace_parent_position_with_prefix(parent_origin)
+            )
+        elif (
+            isinstance(action_chain.typed_names[0], ast.GlobalTypedNameReference)
+            and action_chain.typed_names[0].name_type == ast.NameType.ACTION
+        ):
+            caller_path_to_inner_action = action_chain
+        else:
+            return
+        for inner_req in contract.requirements.values():
+            full_caller_chain = inner_req.full_propagation_position_chain().in_caller(
+                caller_path_to_inner_action
+            )
+            self._record_propagated_requirement(
+                inner_req=inner_req,
+                full_caller_chain=full_caller_chain,
+                inferred_from=caller_path_to_inner_action,
+                propagated_from=inner_req,
+                scope=scope,
+            )
 
-        No-op for non-action definitions. Overridden by ActionPostorderValidator.
-        """
+    def _parent_dimension_point_comes_from_caller(
+        self,
+        position: ast.ChainedName,
+    ) -> ast.PositionReference | None:
+        """Return the parent DP's contracted-position origin chain if it came from the caller."""
+        parent = position.parent_position()
+        if parent is None:
+            return None
+        parent_key = parent.canonical_chained_name_tuple
+        # This check is necessary because we have to run _maybe_infer_requirement
+        # before the executor runs its parent-occupancy check, so we can run into
+        # situations where the developer has written a statement that operates on
+        # the child of a non-existent dimension point. The executor's parent check
+        # will later detect this situation, emit a diagnostic, and mark the
+        # relevant position unknown.
+        if not self._tracker.is_occupied_by_key(parent_key):
+            return None
+        dp_info = self._tracker.get_occupant_by_key(parent_key)
+        if not dp_info.from_caller:
+            return None
+        return dp_info.origin_position
+
+    def _action_parent_comes_from_contracted_position(
+        self,
+        trigger_position: ast.PositionReference,
+    ) -> tuple[ast.ChainedName, ast.PositionReference | None]:
+        """Return the action's parent DP's contracted-position origin chain if it is from the caller."""
+        action_chain = trigger_position.get_chain_to_last_action()
+        if action_chain is None:
+            raise ValueError("not an action")
+        return (
+            action_chain,
+            self._parent_dimension_point_comes_from_caller(action_chain),
+        )
 
     def _maybe_infer_requirements_on_chain(
         self,
@@ -270,9 +325,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         # We only propagate inner requirements if actions actually get called.
         # (That's why this happens here in _check_trigger.)
-        self._propagate_inner_requirements(
-            action_ref, action_name, contract, position, scope
-        )
+        self._propagate_inner_requirements(contract, position, scope)
         self._check_action_requirements(position, contract)
         self._tracker.apply_guarantees(position, contract.guarantees)
         self._action_edges.append(
@@ -873,81 +926,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # that contracted position, not whatever local position we are inferring
         # a requirement for.
         return position.replace_parent_position_with_prefix(parent_origin)
-
-    def _parent_dimension_point_comes_from_caller(
-        self,
-        position: ast.ChainedName,
-    ) -> ast.PositionReference | None:
-        """Return the parent DP's contracted-position origin chain if it came from the caller."""
-        parent = position.parent_position()
-        if parent is None:
-            return None
-        parent_key = parent.canonical_chained_name_tuple
-        # This check is necessary because we have to run _maybe_infer_requirement
-        # before the executor runs its parent-occupancy check, so we can run into
-        # situations where the developer has written a statement that operates on
-        # the child of a non-existent dimension point. The executor's parent check
-        # will later detect this situation, emit a diagnostic, and mark the
-        # relevant position unknown.
-        if not self._tracker.is_occupied_by_key(parent_key):
-            return None
-        dp_info = self._tracker.get_occupant_by_key(parent_key)
-        if not dp_info.from_caller:
-            return None
-        return dp_info.origin_position
-
-    def _action_parent_comes_from_contracted_position(
-        self,
-        trigger_position: ast.PositionReference,
-    ) -> tuple[ast.ChainedName, ast.PositionReference | None]:
-        """Return the action's parent DP's contracted-position origin chain if it is from the caller."""
-        action_chain = trigger_position.get_chain_to_last_action()
-        if action_chain is None:
-            raise ValueError("not an action")
-        return (
-            action_chain,
-            self._parent_dimension_point_comes_from_caller(action_chain),
-        )
-
-    @typing.override
-    def _propagate_inner_requirements(
-        self,
-        triggered_action: ast.GlobalTypedNameReference,
-        triggered_action_name: str,
-        contract: action_contract.ActionContract,
-        trigger_position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Propagate inner action requirements into this action's contract."""
-        (action_chain, parent_origin) = (
-            self._action_parent_comes_from_contracted_position(trigger_position)
-        )
-        if parent_origin is not None:
-            # Triggering an action that is a child of a contracted position.
-            caller_path_to_inner_action = (
-                action_chain.replace_parent_position_with_prefix(parent_origin)
-            )
-        elif (
-            isinstance(action_chain.typed_names[0], ast.GlobalTypedNameReference)
-            and action_chain.typed_names[0].name_type == ast.NameType.ACTION
-        ):
-            # Triggering an implied action that's not attached to some
-            # passed-in dimension point.
-            caller_path_to_inner_action = action_chain
-        else:
-            # Not a contracted position.
-            return
-        for inner_req in contract.requirements.values():
-            full_caller_chain = inner_req.full_propagation_position_chain().in_caller(
-                caller_path_to_inner_action
-            )
-            self._record_propagated_requirement(
-                inner_req=inner_req,
-                full_caller_chain=full_caller_chain,
-                inferred_from=caller_path_to_inner_action,
-                propagated_from=inner_req,
-                scope=scope,
-            )
 
 
 class PositionPostorderValidator(DefinitionPostorderValidator):
