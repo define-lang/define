@@ -694,3 +694,58 @@ class TestInCaller:
             "position<box>::action</foo>::position<iface>"
             "::action</bar>::position<inner_iface>::position</child>"
         )
+
+    def test_position_ending_caller_concatenates_implied(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>")
+        caller = position_reference_for("position<box>")
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == "position<box>::position</x>"
+
+    def test_position_ending_caller_concatenates_implied_chain(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>::position</y>")
+        caller = position_reference_for("position<box>::position</wrap>")
+        result = inner.in_caller(caller)
+        assert result.source_chained_name == (
+            "position<box>::position</wrap>::position</x>::position</y>"
+        )
+
+
+class TestWithPrefix:
+    def test_concatenates_typed_names(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>")
+        prefix = position_reference_for("position<box>::action</b>")
+        result = inner.with_prefix(prefix)
+        assert result.source_chained_name == "position<box>::action</b>::position</x>"
+
+    def test_preserves_position_reference_subclass(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>")
+        prefix = position_reference_for("position<box>")
+        result = inner.with_prefix(prefix)
+        assert isinstance(result, ast.PositionReference)
+
+    def test_preserves_self_location_not_prefix_location(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>")
+        prefix = position_reference_for("position<box>")
+        result = inner.with_prefix(prefix)
+        assert result.location == inner.location
+        assert result.location != prefix.location
+
+    def test_multi_element_prefix_and_inner(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        inner = position_reference_for("position</x>::position</y>")
+        prefix = position_reference_for("position<box>::position</wrap>")
+        result = inner.with_prefix(prefix)
+        assert result.source_chained_name == (
+            "position<box>::position</wrap>::position</x>::position</y>"
+        )

@@ -1,13 +1,12 @@
 # pyright: reportUnusedCallResult=false
 
-import typing
 import unittest.mock
-from pathlib import PurePosixPath
 
-from define.compiler import ast, conftest
+from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
     definition_postorder_validator,
+    reference_graph_validator,
 )
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -17,25 +16,52 @@ def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
     return req.full_propagation_position_chain().source_form_in_universe(fqun)
 
 
-def _get_contract(
+def _get_contracts(
     source: str,
-    action_name: str = "action<my.domain.com:my_lib:/test>",
-) -> action_contract.ActionContract:
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+) -> dict[str, action_contract.ActionStatementsBlockContract]:
+    contracts: dict[str, action_contract.ActionStatementsBlockContract] = {}
+    action_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+    position_analyze = definition_postorder_validator.PositionPostorderValidator.analyze
+
+    def action_capture(
+        self: definition_postorder_validator.ActionPostorderValidator,
+    ) -> definition_postorder_validator.PostorderValidationResult:
+        result = action_analyze(self)
+        if result.contract is not None:
+            contracts[self._definition.typed_name.full_typed_name] = result.contract  # pyright: ignore[reportPrivateUsage]
+        return result
+
+    def position_capture(
+        self: definition_postorder_validator.PositionPostorderValidator,
+    ) -> definition_postorder_validator.PostorderValidationResult:
+        result = position_analyze(self)
+        if result.contract is not None:
+            contracts[self._definition.typed_name.full_typed_name] = result.contract  # pyright: ignore[reportPrivateUsage]
+        return result
+
+    with (
+        unittest.mock.patch.object(
+            definition_postorder_validator.ActionPostorderValidator,
+            "analyze",
+            autospec=True,
+            side_effect=action_capture,
+        ),
+        unittest.mock.patch.object(
+            definition_postorder_validator.PositionPostorderValidator,
+            "analyze",
+            autospec=True,
+            side_effect=position_capture,
+        ),
+    ):
+        structural = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
             source
         )
-    )
-    assert_no_errors(result)
-    definition_result = result.definition_results[action_name]
-    validator = definition_postorder_validator.create_postorder_validator(
-        definition_result, result.definition_results, {}, {}
-    )
-    result = validator.analyze()
-    contract = result.contract
-    if contract is None:
-        raise ValueError(f"No contract for {action_name}")
-    return typing.cast("action_contract.ActionContract", contract)
+        assert_no_errors(structural)
+        reference_graph_validator.ReferenceGraphValidator(
+            structural.reference_graph,
+            structural.definition_results,
+        ).validate()
+    return contracts
 
 
 class TestRequirementInference:
@@ -51,7 +77,9 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert ("position<item>",) in contract.requirements
         assert (
             contract.requirements[("position<item>",)].required_state
@@ -74,7 +102,9 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.OCCUPIED
@@ -93,7 +123,9 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
             contract.requirements[("position<dest>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
@@ -111,7 +143,10 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        assert isinstance(contract, action_contract.ActionContract)
         assert ("position<run>",) not in contract.requirements
         assert contract.trigger_position_name == "position<run>"
 
@@ -129,7 +164,9 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
@@ -147,7 +184,9 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert ("position<local_only>",) not in contract.requirements
 
     def test_local_only_chain_via_constraints_excluded(self):
@@ -177,13 +216,10 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert contract.requirements == {}
-
-
-_IMPLIED_POSITION = "position<my.domain.com:my_lib:/implied>"
-_IMPLIED_ACTION = "action<my.domain.com:my_lib:/sub>"
-_SUB_IFACE = "position<iface>"
 
 
 class TestImpliedPositionRequirementInference:
@@ -200,8 +236,10 @@ class TestImpliedPositionRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
-        key = (_IMPLIED_POSITION,)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        key = ("position<my.domain.com:my_lib:/implied>",)
         assert key in contract.requirements
         req = contract.requirements[key]
         assert req.required_state == action_contract.PositionOccupancyState.EMPTY
@@ -221,8 +259,10 @@ class TestImpliedPositionRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
-        key = (_IMPLIED_POSITION,)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        key = ("position<my.domain.com:my_lib:/implied>",)
         assert key in contract.requirements
         assert (
             contract.requirements[key].required_state
@@ -251,8 +291,13 @@ class TestImpliedPositionRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
-        leaf_key = (_IMPLIED_ACTION, _SUB_IFACE)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {
+            "action<my.domain.com:my_lib:/sub>",
+            "action<my.domain.com:my_lib:/test>",
+        }
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        leaf_key = ("action<my.domain.com:my_lib:/sub>", "position<iface>")
         assert leaf_key in contract.requirements
         leaf = contract.requirements[leaf_key]
         assert leaf.required_state == action_contract.PositionOccupancyState.EMPTY
@@ -272,7 +317,9 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
         assert contract.guarantees[0][0] == ("position<item>",)
         guarantee = contract.guarantees[0][1]
@@ -296,7 +343,9 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
         assert contract.guarantees[0][0] == ("position<dest>",)
         guarantee_dest = contract.guarantees[0][1]
@@ -318,7 +367,9 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
         assert contract.guarantees[0][0] == ("position<item>",)
         guarantee = contract.guarantees[0][1]
@@ -341,7 +392,9 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
         assert contract.guarantees[0][0] == ("position<a>",)
         guarantee_a = contract.guarantees[0][1]
@@ -373,7 +426,9 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
         assert contract.guarantees[0][0] == ("position<a>",)
         guarantee_a = contract.guarantees[0][1]
@@ -402,7 +457,9 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
         assert contract.guarantees[0][0] == ("position<item>",)
         guarantee = contract.guarantees[0][1]
@@ -430,7 +487,9 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert chain_key in contract.requirements
         assert (
@@ -456,7 +515,9 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert chain_key in contract.requirements
         assert (
@@ -482,7 +543,9 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert ("position<item>",) in contract.requirements
         assert (
             contract.requirements[("position<item>",)].required_state
@@ -507,7 +570,9 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
         assert chain_key in contract.requirements
         assert (
@@ -532,7 +597,9 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert (
             contract.requirements[chain_key].inferred_from.source_chained_name
@@ -558,7 +625,9 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert len(contract.guarantees) == 1
         assert contract.guarantees[0][0] == chain_key
@@ -587,7 +656,9 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert len(contract.guarantees) == 2
         assert contract.guarantees[0][0] == ("position<dest>",)
@@ -625,7 +696,9 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
         assert len(contract.guarantees) == 2
         assert contract.guarantees[0][0] == ("position<src>",)
@@ -661,7 +734,9 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert contract.guarantees == []
 
     def test_chain_guarantee_qualities(self):
@@ -681,7 +756,9 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
         assert len(contract.guarantees) == 1
         assert contract.guarantees[0][0] == chain_key
@@ -705,7 +782,9 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
         key, guarantee = contract.guarantees[0]
         assert key == ("position<item>",)
@@ -728,7 +807,9 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.EMPTY
@@ -747,7 +828,9 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.OCCUPIED
@@ -774,7 +857,9 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
             contract.requirements[("position<item>",)].required_state
             == action_contract.PositionOccupancyState.OCCUPIED
@@ -793,7 +878,9 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contract = _get_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
         run_key, run_guarantee = contract.guarantees[0]
         assert run_key == ("position<run>",)
@@ -810,44 +897,11 @@ class TestNoOpGuaranteeSuppression:
         assert dest_guarantee.caused_by.source_chained_name == "position<dest>"
 
 
-_POS_TEST = "position<my.domain.com:my_lib:/test>"
-_POS_DEP = "position<my.domain.com:my_lib:/dep>"
-
-
-def _get_position_contract(
-    source: str,
-    position_name: str = _POS_TEST,
-) -> action_contract.PositionInitBlockContract:
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-    )
-    assert_no_errors(result)
-    definition_result = result.definition_results[position_name]
-    validator = definition_postorder_validator.create_postorder_validator(
-        definition_result, result.definition_results, {}, {}
-    )
-    result = validator.analyze()
-    contract = result.contract
-    if contract is None:
-        raise ValueError(f"No contract for {position_name}")
-    return typing.cast("action_contract.PositionInitBlockContract", contract)
-
-
 class TestPositionInitBlockContract:
     def test_no_init_block_returns_no_contract(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        result = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-        assert_no_errors(result)
-        definition_result = result.definition_results[_POS_TEST]
-        validator = definition_postorder_validator.create_postorder_validator(
-            definition_result, result.definition_results, {}, {}
-        )
-        result = validator.analyze()
-        assert result.contract is None
+        contracts = _get_contracts(source)
+        assert contracts == {}
 
     def test_init_block_creates_in_self(self):
         source = (
@@ -857,9 +911,11 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
-        assert contract.guarantees[0][0] == (_POS_TEST,)
+        assert contract.guarantees[0][0] == ("position<my.domain.com:my_lib:/test>",)
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
@@ -875,7 +931,9 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert contract.guarantees == []
 
     def test_init_block_with_constraint_child(self):
@@ -891,14 +949,21 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
-        assert contract.guarantees[0][0] == (_POS_TEST,)
+        assert contract.guarantees[0][0] == ("position<my.domain.com:my_lib:/test>",)
         self_guarantee = contract.guarantees[0][1]
         assert isinstance(self_guarantee, action_contract.OccupiedByNewGuarantee)
-        assert [q.full_typed_name for q in self_guarantee.qualities] == [_POS_DEP]
+        assert [q.full_typed_name for q in self_guarantee.qualities] == [
+            "position<my.domain.com:my_lib:/dep>"
+        ]
         assert self_guarantee.caused_by.location.line == 7
-        assert contract.guarantees[1][0] == (_POS_TEST, _POS_DEP)
+        assert contract.guarantees[1][0] == (
+            "position<my.domain.com:my_lib:/test>",
+            "position<my.domain.com:my_lib:/dep>",
+        )
         dep_guarantee = contract.guarantees[1][1]
         assert isinstance(dep_guarantee, action_contract.OccupiedByNewGuarantee)
         assert dep_guarantee.qualities == []
@@ -916,19 +981,20 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
-        # The move source is the first reference: OCCUPIED requirement is
-        # inferred there. (Re-creating after a move is the way to make the
-        # init block reach a Create on the same position without violating
-        # ordering.)
-        assert (_POS_DEP,) in contract.requirements
-        req = contract.requirements[(_POS_DEP,)]
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
+        assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
+        req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         assert req.inferred_from.location.line == 6
         assert req.inferred_from.location.column == 37
         assert req.inferred_from.location.file_path is None
         assert isinstance(req.enclosing_quality, ast.PositionDefinition)
-        assert req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert (
+            req.enclosing_quality.typed_name.full_typed_name
+            == "position<my.domain.com:my_lib:/test>"
+        )
         assert req.propagated_from is None
 
     def test_implied_position_destroy_target_infers_occupied(self):
@@ -941,15 +1007,20 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
-        assert (_POS_DEP,) in contract.requirements
-        req = contract.requirements[(_POS_DEP,)]
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
+        assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
+        req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         assert req.inferred_from.location.line == 5
         assert req.inferred_from.location.column == 40
         assert req.inferred_from.location.file_path is None
         assert isinstance(req.enclosing_quality, ast.PositionDefinition)
-        assert req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert (
+            req.enclosing_quality.typed_name.full_typed_name
+            == "position<my.domain.com:my_lib:/test>"
+        )
         assert req.propagated_from is None
 
     def test_implied_position_move_destination_infers_empty(self):
@@ -964,15 +1035,20 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
-        assert (_POS_DEP,) in contract.requirements
-        req = contract.requirements[(_POS_DEP,)]
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
+        assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
+        req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert req.required_state == action_contract.PositionOccupancyState.EMPTY
         assert req.inferred_from.location.line == 7
         assert req.inferred_from.location.column == 56
         assert req.inferred_from.location.file_path is None
         assert isinstance(req.enclosing_quality, ast.PositionDefinition)
-        assert req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert (
+            req.enclosing_quality.typed_name.full_typed_name
+            == "position<my.domain.com:my_lib:/test>"
+        )
         assert req.propagated_from is None
 
     def test_chained_name_intermediate_implied_parent_infers_occupied(self):
@@ -990,10 +1066,11 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
-        grand_child = "position<my.domain.com:my_lib:/grand_child>"
-        assert (_POS_DEP,) in contract.requirements
-        parent_req = contract.requirements[(_POS_DEP,)]
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
+        assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
+        parent_req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert (
             parent_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         )
@@ -1001,10 +1078,17 @@ class TestPositionInitBlockContract:
         assert parent_req.inferred_from.location.column == 40
         assert parent_req.inferred_from.location.file_path is None
         assert isinstance(parent_req.enclosing_quality, ast.PositionDefinition)
-        assert parent_req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert (
+            parent_req.enclosing_quality.typed_name.full_typed_name
+            == "position<my.domain.com:my_lib:/test>"
+        )
         assert parent_req.propagated_from is None
-        assert (_POS_DEP, grand_child) in contract.requirements
-        leaf_req = contract.requirements[(_POS_DEP, grand_child)]
+        leaf_key = (
+            "position<my.domain.com:my_lib:/dep>",
+            "position<my.domain.com:my_lib:/grand_child>",
+        )
+        assert leaf_key in contract.requirements
+        leaf_req = contract.requirements[leaf_key]
         assert (
             leaf_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         )
@@ -1012,7 +1096,10 @@ class TestPositionInitBlockContract:
         assert leaf_req.inferred_from.location.column == 40
         assert leaf_req.inferred_from.location.file_path is None
         assert isinstance(leaf_req.enclosing_quality, ast.PositionDefinition)
-        assert leaf_req.enclosing_quality.typed_name.full_typed_name == _POS_TEST
+        assert (
+            leaf_req.enclosing_quality.typed_name.full_typed_name
+            == "position<my.domain.com:my_lib:/test>"
+        )
         assert leaf_req.propagated_from is None
 
     def test_self_reference_does_not_publish_requirement(self):
@@ -1027,10 +1114,9 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
-        # Self-reference (and its children) must not appear in requirements:
-        # the position is being assigned now, so the caller has no separate
-        # state to satisfy against it.
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert contract.requirements == {}
 
     def test_direct_operation_on_self_does_not_publish_requirement(self):
@@ -1042,87 +1128,58 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contract = _get_position_contract(source)
-        # A direct Create or Destroy on the self-reference (no chained
-        # child) must not publish a requirement either.
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
+        contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert contract.requirements == {}
 
 
-_INNER_ACTION = "action<my.domain.com:my_lib:/inner>"
-_MIDDLE_ACTION = "action<my.domain.com:my_lib:/middle>"
-_OUTER_ACTION = "action<my.domain.com:my_lib:/outer>"
-
-
-def test_interface_position_requirement_integration(
-    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
-):
-    captured_contracts: dict[str, action_contract.ActionContract] = {}
-    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
-
-    def spy_analyze(
-        validator_self: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
-        result = original_analyze(validator_self)
-        if isinstance(result.contract, action_contract.ActionContract):
-            name = validator_self._definition.typed_name.source_typed_name  # pyright: ignore[reportPrivateUsage]
-            captured_contracts[name] = result.contract
-        return result
-
-    with unittest.mock.patch.object(
-        definition_postorder_validator.ActionPostorderValidator,
-        "analyze",
-        autospec=True,
-        side_effect=spy_analyze,
-    ):
-        validate_project_with_reference_graph(
-            {
-                "inner.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                    "    define the position<trigger_pos>.\n"
-                    "    define the position<item>.\n"
-                    "    define the position<dest>.\n"
-                    "    it happens when {\n"
-                    "        the position<trigger_pos> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        move the dimension point in position<item> to position<dest>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "middle.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/middle> {\n"
-                    "    define the position<trigger_pos>.\n"
-                    "    define the position<mid_iface> {\n"
-                    "        it may only contain dimension points where {\n"
-                    "            it has the action</inner>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<trigger_pos> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        create a dimension point in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-                "outer.dfn": (
-                    "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                    "    define the position<trigger_pos>.\n"
-                    "    define the position<out_iface> {\n"
-                    "        it may only contain dimension points where {\n"
-                    "            it has the action</middle>.\n"
-                    "        }\n"
-                    "    }\n"
-                    "    it happens when {\n"
-                    "        the position<trigger_pos> has a dimension point.\n"
-                    "    } and it does {\n"
-                    "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
-                    "    }\n"
-                    "}\n"
-                ),
-            },
-            entry_file="outer.dfn",
-        )
-
-    outer_contract = captured_contracts[_OUTER_ACTION]
+def test_interface_position_requirement_integration():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/inner> {\n"
+        "    define the position<trigger_pos>.\n"
+        "    define the position<item>.\n"
+        "    define the position<dest>.\n"
+        "    it happens when {\n"
+        "        the position<trigger_pos> has a dimension point.\n"
+        "    } and it does {\n"
+        "        move the dimension point in position<item> to position<dest>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/middle> {\n"
+        "    define the position<trigger_pos>.\n"
+        "    define the position<mid_iface> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the action</inner>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<trigger_pos> has a dimension point.\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/outer> {\n"
+        "    define the position<trigger_pos>.\n"
+        "    define the position<out_iface> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the action</middle>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<trigger_pos> has a dimension point.\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    contracts = _get_contracts(source)
+    assert contracts.keys() == {
+        "action<my.domain.com:my_lib:/inner>",
+        "action<my.domain.com:my_lib:/middle>",
+        "action<my.domain.com:my_lib:/outer>",
+    }
+    outer_contract = contracts["action<my.domain.com:my_lib:/outer>"]
     req_key = (
         "position<out_iface>",
         "action<my.domain.com:my_lib:/middle>",
@@ -1132,39 +1189,44 @@ def test_interface_position_requirement_integration(
     )
     req = outer_contract.requirements[req_key]
 
-    # Fields on the outermost requirement
     assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-    assert req.enclosing_quality.typed_name.source_typed_name == _OUTER_ACTION
+    assert (
+        req.enclosing_quality.typed_name.full_typed_name
+        == "action<my.domain.com:my_lib:/outer>"
+    )
     assert (
         req.inferred_from.source_chained_name == "position<out_iface>::action</middle>"
     )
-    assert req.inferred_from.location.line == 11
-    assert req.inferred_from.location.file_path == PurePosixPath("outer.dfn")
+    assert req.inferred_from.location.line == 34
+    assert req.inferred_from.location.file_path is None
 
-    # Middle level of propagation chain
     assert req.propagated_from is not None
     mid_req = req.propagated_from
     assert mid_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-    assert mid_req.enclosing_quality.typed_name.source_typed_name == _MIDDLE_ACTION
+    assert (
+        mid_req.enclosing_quality.typed_name.full_typed_name
+        == "action<my.domain.com:my_lib:/middle>"
+    )
     assert (
         mid_req.inferred_from.source_chained_name
         == "position<mid_iface>::action</inner>"
     )
-    assert mid_req.inferred_from.location.line == 11
-    assert mid_req.inferred_from.location.file_path == PurePosixPath("middle.dfn")
+    assert mid_req.inferred_from.location.line == 21
+    assert mid_req.inferred_from.location.file_path is None
 
-    # Leaf level — the original requirement from /inner
     assert mid_req.propagated_from is not None
     inner_req = mid_req.propagated_from
     assert inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-    assert inner_req.enclosing_quality.typed_name.source_typed_name == _INNER_ACTION
+    assert (
+        inner_req.enclosing_quality.typed_name.full_typed_name
+        == "action<my.domain.com:my_lib:/inner>"
+    )
     assert inner_req.inferred_from.source_chained_name == "position<item>"
     assert inner_req.inferred_from.location.line == 8
-    assert inner_req.inferred_from.location.file_path == PurePosixPath("inner.dfn")
+    assert inner_req.inferred_from.location.file_path is None
     assert inner_req.propagated_from is None
 
-    # Methods on the outermost requirement
-    assert req.root_cause_quality_name() == _INNER_ACTION
+    assert req.root_cause_quality_name() == "action<my.domain.com:my_lib:/inner>"
     outer_fqun = req.enclosing_quality.typed_name.name_content.fqun
     assert _resolved(req, outer_fqun) == (
         "position<out_iface>::action</middle>"
@@ -1177,13 +1239,12 @@ def test_interface_position_requirement_integration(
     )
     outer_locs = req.propagated_from_locations()
     assert len(outer_locs) == 2
-    assert outer_locs[0].line == 11
-    assert outer_locs[0].file_path == PurePosixPath("middle.dfn")
+    assert outer_locs[0].line == 21
+    assert outer_locs[0].file_path is None
     assert outer_locs[1].line == 8
-    assert outer_locs[1].file_path == PurePosixPath("inner.dfn")
+    assert outer_locs[1].file_path is None
 
-    # Methods on the middle requirement
-    assert mid_req.root_cause_quality_name() == _INNER_ACTION
+    assert mid_req.root_cause_quality_name() == "action<my.domain.com:my_lib:/inner>"
     middle_fqun = mid_req.enclosing_quality.typed_name.name_content.fqun
     assert _resolved(mid_req, middle_fqun) == (
         "position<mid_iface>::action</inner>::position<item>"
@@ -1194,10 +1255,9 @@ def test_interface_position_requirement_integration(
     mid_locs = mid_req.propagated_from_locations()
     assert len(mid_locs) == 1
     assert mid_locs[0].line == 8
-    assert mid_locs[0].file_path == PurePosixPath("inner.dfn")
+    assert mid_locs[0].file_path is None
 
-    # Methods on the leaf requirement
-    assert inner_req.root_cause_quality_name() == _INNER_ACTION
+    assert inner_req.root_cause_quality_name() == "action<my.domain.com:my_lib:/inner>"
     inner_fqun = inner_req.enclosing_quality.typed_name.name_content.fqun
     assert _resolved(inner_req, inner_fqun) == "position<item>"
     assert (
@@ -1205,3 +1265,193 @@ def test_interface_position_requirement_integration(
         == "position<item>"
     )
     assert inner_req.propagated_from_locations() == []
+
+
+def test_init_block_propagation_records_occupied_on_inner_contract():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/q>.\n"
+        "define the potential position<my.domain.com:my_lib:/p> {\n"
+        "    it also assigns the position</q>.\n"
+        "    after it is assigned {\n"
+        "        destroy the dimension point in position</q>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/inner> {\n"
+        "    define the position<trigger_pos>.\n"
+        "    define the position<iface> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</p>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<trigger_pos> has a dimension point.\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<iface>.\n"
+        "    }\n"
+        "}\n"
+    )
+    contracts = _get_contracts(source)
+    assert contracts.keys() == {
+        "position<my.domain.com:my_lib:/p>",
+        "action<my.domain.com:my_lib:/inner>",
+    }
+    inner_contract = contracts["action<my.domain.com:my_lib:/inner>"]
+
+    assert inner_contract.requirements.keys() == {
+        ("position<iface>",),
+        ("position<iface>", "position<my.domain.com:my_lib:/q>"),
+    }
+
+    direct_req = inner_contract.requirements[("position<iface>",)]
+    assert direct_req.required_state == action_contract.PositionOccupancyState.EMPTY
+    assert direct_req.inferred_from.source_chained_name == "position<iface>"
+    assert direct_req.inferred_from.location.line == 18
+    assert direct_req.inferred_from.location.column == 37
+    assert direct_req.inferred_from.location.end_line == 18
+    assert direct_req.inferred_from.location.end_column == 52
+    assert direct_req.inferred_from.location.file_path is None
+    assert (
+        direct_req.enclosing_quality.typed_name.source_typed_name
+        == "action<my.domain.com:my_lib:/inner>"
+    )
+    assert direct_req.propagated_from is None
+
+    propagated_req = inner_contract.requirements[
+        ("position<iface>", "position<my.domain.com:my_lib:/q>")
+    ]
+    assert (
+        propagated_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+    )
+    assert propagated_req.inferred_from.source_chained_name == "position<iface>"
+    assert propagated_req.inferred_from.location.line == 18
+    assert propagated_req.inferred_from.location.column == 37
+    assert propagated_req.inferred_from.location.end_line == 18
+    assert propagated_req.inferred_from.location.end_column == 52
+    assert propagated_req.inferred_from.location.file_path is None
+    assert (
+        propagated_req.enclosing_quality.typed_name.source_typed_name
+        == "action<my.domain.com:my_lib:/inner>"
+    )
+
+    p_req = propagated_req.propagated_from
+    assert p_req is not None
+    assert p_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
+    assert p_req.inferred_from.source_chained_name == "position</q>"
+    assert p_req.inferred_from.location.line == 5
+    assert p_req.inferred_from.location.column == 40
+    assert p_req.inferred_from.location.end_line == 5
+    assert p_req.inferred_from.location.end_column == 52
+    assert p_req.inferred_from.location.file_path is None
+    assert (
+        p_req.enclosing_quality.typed_name.source_typed_name
+        == "position<my.domain.com:my_lib:/p>"
+    )
+    assert p_req.propagated_from is None
+
+    assert propagated_req.full_propagation_position_chain().source_chained_name == (
+        "position<iface>::position</q>"
+    )
+    assert (
+        propagated_req.root_cause_quality_name() == "position<my.domain.com:my_lib:/p>"
+    )
+    propagated_locations = propagated_req.propagated_from_locations()
+    assert len(propagated_locations) == 1
+    assert propagated_locations[0].line == 5
+    assert propagated_locations[0].column == 40
+    assert propagated_locations[0].end_line == 5
+    assert propagated_locations[0].end_column == 52
+    assert propagated_locations[0].file_path is None
+
+
+def test_init_block_propagation_records_empty_on_inner_contract():
+    source = (
+        "define the potential position<my.domain.com:my_lib:/q>.\n"
+        "define the potential position<my.domain.com:my_lib:/p> {\n"
+        "    it also assigns the position</q>.\n"
+        "    after it is assigned {\n"
+        "        create a dimension point in position</q>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/inner> {\n"
+        "    define the position<trigger_pos>.\n"
+        "    define the position<iface> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</p>.\n"
+        "        }\n"
+        "    }\n"
+        "    it happens when {\n"
+        "        the position<trigger_pos> has a dimension point.\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<iface>.\n"
+        "    }\n"
+        "}\n"
+    )
+    contracts = _get_contracts(source)
+    assert contracts.keys() == {
+        "position<my.domain.com:my_lib:/p>",
+        "action<my.domain.com:my_lib:/inner>",
+    }
+    inner_contract = contracts["action<my.domain.com:my_lib:/inner>"]
+
+    assert inner_contract.requirements.keys() == {
+        ("position<iface>",),
+        ("position<iface>", "position<my.domain.com:my_lib:/q>"),
+    }
+
+    direct_req = inner_contract.requirements[("position<iface>",)]
+    assert direct_req.required_state == action_contract.PositionOccupancyState.EMPTY
+    assert direct_req.inferred_from.source_chained_name == "position<iface>"
+    assert direct_req.inferred_from.location.line == 18
+    assert direct_req.inferred_from.location.column == 37
+    assert direct_req.inferred_from.location.end_line == 18
+    assert direct_req.inferred_from.location.end_column == 52
+    assert direct_req.inferred_from.location.file_path is None
+    assert (
+        direct_req.enclosing_quality.typed_name.source_typed_name
+        == "action<my.domain.com:my_lib:/inner>"
+    )
+    assert direct_req.propagated_from is None
+
+    propagated_req = inner_contract.requirements[
+        ("position<iface>", "position<my.domain.com:my_lib:/q>")
+    ]
+    assert propagated_req.required_state == action_contract.PositionOccupancyState.EMPTY
+    assert propagated_req.inferred_from.source_chained_name == "position<iface>"
+    assert propagated_req.inferred_from.location.line == 18
+    assert propagated_req.inferred_from.location.column == 37
+    assert propagated_req.inferred_from.location.end_line == 18
+    assert propagated_req.inferred_from.location.end_column == 52
+    assert propagated_req.inferred_from.location.file_path is None
+    assert (
+        propagated_req.enclosing_quality.typed_name.source_typed_name
+        == "action<my.domain.com:my_lib:/inner>"
+    )
+
+    p_req = propagated_req.propagated_from
+    assert p_req is not None
+    assert p_req.required_state == action_contract.PositionOccupancyState.EMPTY
+    assert p_req.inferred_from.source_chained_name == "position</q>"
+    assert p_req.inferred_from.location.line == 5
+    assert p_req.inferred_from.location.column == 37
+    assert p_req.inferred_from.location.end_line == 5
+    assert p_req.inferred_from.location.end_column == 49
+    assert p_req.inferred_from.location.file_path is None
+    assert (
+        p_req.enclosing_quality.typed_name.source_typed_name
+        == "position<my.domain.com:my_lib:/p>"
+    )
+    assert p_req.propagated_from is None
+
+    assert propagated_req.full_propagation_position_chain().source_chained_name == (
+        "position<iface>::position</q>"
+    )
+    assert (
+        propagated_req.root_cause_quality_name() == "position<my.domain.com:my_lib:/p>"
+    )
+    propagated_locations = propagated_req.propagated_from_locations()
+    assert len(propagated_locations) == 1
+    assert propagated_locations[0].line == 5
+    assert propagated_locations[0].column == 37
+    assert propagated_locations[0].end_line == 5
+    assert propagated_locations[0].end_column == 49
+    assert propagated_locations[0].file_path is None

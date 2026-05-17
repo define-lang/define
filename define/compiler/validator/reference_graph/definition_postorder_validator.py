@@ -157,6 +157,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         qualities: list[ast.GlobalTypedNameReference],
+        scope: scope_tracker.ScopeTracker,
     ):
         """Run the caller-side effects of every implied position's init block."""
         for quality in qualities:
@@ -165,10 +166,74 @@ class DefinitionPostorderValidator(abc.ABC):
             init_block_contract = self._position_contracts.get(quality.full_typed_name)
             if init_block_contract is None:
                 continue
+            self._propagate_init_block_requirements(
+                position, init_block_contract, scope
+            )
             self._check_init_block_requirements(position, init_block_contract)
             self._tracker.apply_guarantees(
                 position,
                 init_block_contract.guarantees,
+            )
+
+    def _propagate_init_block_requirements(
+        self,
+        create_target: ast.PositionReference,
+        init_block_contract: action_contract.PositionInitBlockContract,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Propagate the init block's requirements into the enclosing definition's contract."""
+        caller_path = self._chain_for_inferred_requirement(create_target)
+        if caller_path is None:
+            return
+        for inner_req in init_block_contract.requirements.values():
+            full_caller_chain = inner_req.full_propagation_position_chain().in_caller(
+                caller_path
+            )
+            self._record_propagated_requirement(
+                inner_req=inner_req,
+                full_caller_chain=full_caller_chain,
+                inferred_from=caller_path,
+                propagated_from=inner_req,
+                scope=scope,
+            )
+
+    def _record_propagated_requirement(
+        self,
+        *,
+        inner_req: action_contract.PositionRequirement,
+        full_caller_chain: ast.PositionReference,
+        inferred_from: ast.ChainedName,
+        propagated_from: action_contract.PositionRequirement | None,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Record a requirement propagated from an inner contract."""
+        propagated_key = full_caller_chain.canonical_chained_name_tuple
+        # If we already inferred a requirement for this key (i.e.,
+        # our own code references this position first), we satisfy
+        # the requirement ourselves and thus don't propagate it to our caller.
+        if propagated_key in self._inferred_requirements:
+            return
+        self._inferred_requirements[propagated_key] = (
+            action_contract.PositionRequirement(
+                required_state=inner_req.required_state,
+                inferred_from=inferred_from,
+                enclosing_quality=self._definition,
+                propagated_from=propagated_from,
+            )
+        )
+        if inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED:
+            # We can't know exactly what qualities the dimension point has, but we
+            # can know the minimal set that it _must_ have according to the constraints
+            # the position has.
+            qualities = self._get_transitive_required_qualities(
+                full_caller_chain, scope
+            )
+            self._executor.execute_assume_occupied(
+                dimension_point_operation.AssumeOccupied(
+                    target=full_caller_chain,
+                    qualities=qualities,
+                    contracted_position_chain=full_caller_chain,
+                )
             )
 
     def _check_trigger(
@@ -255,12 +320,10 @@ class DefinitionPostorderValidator(abc.ABC):
             #     position<box>
             #   req.full_propagation_position_chain():
             #     position</q>::position</q_child>
-            #   full_caller_chain (composed by concatenation):
+            #   full_caller_chain (composed via in_caller):
             #     position<box>::position</q>::position</q_child>
-            req_chain = req.full_propagation_position_chain()
-            full_caller_chain = ast.PositionReference(
-                location=req_chain.location,
-                typed_names=[*create_target.typed_names, *req_chain.typed_names],
+            full_caller_chain = req.full_propagation_position_chain().in_caller(
+                create_target
             )
             self._check_one_requirement(full_caller_chain, create_target, req)
 
@@ -378,7 +441,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._diagnostics.extend(diags)
         if diags:
             return
-        self._run_position_init_blocks(position, qualities)
+        self._run_position_init_blocks(position, qualities, scope)
         self._check_trigger(position, scope)
 
     def _analyze_destroy(
@@ -884,47 +947,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 inferred_from=caller_path_to_inner_action,
                 propagated_from=inner_req,
                 scope=scope,
-            )
-
-    def _record_propagated_requirement(
-        self,
-        *,
-        inner_req: action_contract.PositionRequirement,
-        full_caller_chain: ast.PositionReference,
-        inferred_from: ast.ChainedName,
-        propagated_from: action_contract.PositionRequirement | None,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Record a requirement propagated from a triggered action's contract."""
-        propagated_key = full_caller_chain.canonical_chained_name_tuple
-        # If we already inferred a requirement for this key (i.e.,
-        # our own code references this position first), we satisfy
-        # the requirement ourselves and thus don't propagate it to our caller.
-        if propagated_key in self._inferred_requirements:
-            return
-        self._inferred_requirements[propagated_key] = (
-            action_contract.PositionRequirement(
-                required_state=inner_req.required_state,
-                inferred_from=inferred_from,
-                enclosing_quality=self._action_definition,
-                propagated_from=propagated_from,
-            )
-        )
-        if inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            # The triggered action's OccupiedByExisting guarantees can carry
-            # this synthesized DP into other positions that later statements
-            # reference, so its qualities must match what a real
-            # caller-supplied DP would carry transitively via Quality
-            # Requirement Statements.
-            qualities = self._get_transitive_required_qualities(
-                full_caller_chain, scope
-            )
-            self._executor.execute_assume_occupied(
-                dimension_point_operation.AssumeOccupied(
-                    target=full_caller_chain,
-                    qualities=qualities,
-                    contracted_position_chain=full_caller_chain,
-                )
             )
 
 

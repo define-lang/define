@@ -155,6 +155,18 @@ py_test(
 )
 
 py_test(
+    name = "automated_requirements_position_init_propagation_test",
+    size = "small",
+    srcs = ["automated_requirements_position_init_propagation_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "automated_requirements_position_init_test",
     size = "small",
     srcs = ["automated_requirements_position_init_test.py"],
@@ -468,6 +480,7 @@ pyright_test(
         ":automated_requirements_move_test",
         ":automated_requirements_nested_action_test",
         ":automated_requirements_nested_implied_test",
+        ":automated_requirements_position_init_propagation_test",
         ":automated_requirements_position_init_test",
         ":automated_requirements_test",
         ":chained_name_constraint_test",

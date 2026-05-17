@@ -385,21 +385,28 @@ class ChainedName(ASTNode):
             parts.append(elem.source_typed_name)
         return "::".join(parts)
 
-    def in_caller(self, caller_action_chain: ChainedName) -> Self:
-        """Get the chained name of a contracted position from the perspective of the caller of the current action.
+    def with_prefix(self, prefix: ChainedName) -> Self:
+        """Return a copy of ``self`` with ``prefix.typed_names`` prepended.
 
         The result has the same subclass as ``self`` (e.g. a
         ``PositionReference`` stays a ``PositionReference``).
         """
-        if self.starts_with_global:
-            parent = caller_action_chain.parent_position()
-            prefix_names = parent.typed_names if parent is not None else []
-        else:
-            prefix_names = caller_action_chain.typed_names
         return type(self)(
             location=self.location,
-            typed_names=[*prefix_names, *self.typed_names],
+            typed_names=[*prefix.typed_names, *self.typed_names],
         )
+
+    def in_caller(self, caller_chain: ChainedName) -> Self:
+        """Get the chained name of a contracted position from the perspective of the caller."""
+        caller_ends_with_action = (
+            caller_chain.typed_names[-1].name_type == NameType.ACTION
+        )
+        if self.starts_with_global and caller_ends_with_action:
+            parent = caller_chain.parent_position()
+            if parent is None:
+                return self
+            return self.with_prefix(parent)
+        return self.with_prefix(caller_chain)
 
     def replace_parent_position_with_prefix(self, new_prefix: ChainedName) -> Self:
         """Return a new chain with everything up to and including the parent_position replaced with the new prefix."""
