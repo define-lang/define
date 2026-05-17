@@ -835,3 +835,53 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
     assert all_diags[0].populated_at.end_line == 8
     assert all_diags[0].populated_at.end_column == 83
     assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
+
+
+def test_sibling_action_guarantee_and_requirement_share_implied_position_key(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger>.\n"
+                "    it happens when {\n"
+                "        the position<trigger> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "consumer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/consumer> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger>.\n"
+                "    define the position<sink>.\n"
+                "    it happens when {\n"
+                "        the position<trigger> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position</implied> to position<sink>.\n"
+                "        create a dimension point in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</filler>.\n"
+                "    it also assigns the action</consumer>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in action</filler>::position<trigger>.\n"
+                "        create a dimension point in action</consumer>::position<trigger>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)

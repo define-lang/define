@@ -96,6 +96,13 @@ class DefinitionPostorderValidator(abc.ABC):
         requirement_key = inferred_from_chain.canonical_chained_name_tuple
         if requirement_key in self._inferred_requirements:
             return
+        # If a position has been touched by a guarantee or any dimension point
+        # statement already, no requirement should be emitted. This handles at
+        # least two cases that I know about: when a position init block creates
+        # an EmptyGuarantee and another init block or caller tries to then
+        # destroy / move from that same position.
+        if self._tracker.has_been_touched(requirement_key):
+            return
         self._inferred_requirements[requirement_key] = (
             action_contract.PositionRequirement(
                 required_state=required_state,
@@ -276,6 +283,13 @@ class DefinitionPostorderValidator(abc.ABC):
         # our own code references this position first), we satisfy
         # the requirement ourselves and thus don't propagate it to our caller.
         if propagated_key in self._inferred_requirements:
+            return
+        # If a position has been touched by a guarantee or any dimension point
+        # statement already, no requirement should be emitted. This handles at
+        # least two cases that I know about: when a position init block creates
+        # an EmptyGuarantee and another init block or caller tries to then
+        # destroy / move from that same position.
+        if self._tracker.has_been_touched(propagated_key):
             return
         self._inferred_requirements[propagated_key] = (
             action_contract.PositionRequirement(

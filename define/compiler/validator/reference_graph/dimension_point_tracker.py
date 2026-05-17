@@ -112,6 +112,13 @@ class DimensionPointTracker:
         state = self._state.get(key)
         return state is not None and state.dp_info is not None
 
+    def has_been_touched(self, key: tuple[str, ...]) -> bool:
+        """Return whether a guarantee or dimension point statement has decided this position's state."""
+        state = self._state.get(key)
+        if state is None:
+            return False
+        return state.dp_info is not None or state.emptied_by is not None
+
     def get_occupant(self, in_position: ast.PositionReference) -> DimensionPointInfo:
         """Return the info for the dimension point at this position."""
         return self.get_occupant_by_key(self._key(in_position))

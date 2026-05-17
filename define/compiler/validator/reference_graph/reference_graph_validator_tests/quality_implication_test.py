@@ -1,8 +1,6 @@
 # pyright: reportUnusedCallResult=false
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -678,13 +676,6 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     ]
 
 
-@pytest.mark.xfail(
-    reason=(
-        "When a position is assigned to a dimension point, the init blocks of"
-        " its transitively implied positions do not run."
-    ),
-    strict=True,
-)
 def test_required_position_init_block_creates_dp_for_move(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -729,13 +720,6 @@ def test_required_position_init_block_creates_dp_for_move(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "When a position is assigned to a dimension point, the init blocks of"
-        " its transitively implied positions do not run."
-    ),
-    strict=True,
-)
 def test_required_position_init_block_fills_position(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
@@ -779,12 +763,17 @@ def test_required_position_init_block_fills_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.end_line == 12
+    assert all_diags[0].location.end_column == 73
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<source>::position</implied>"
-    assert all_diags[0].populated_at.line == 6
-    assert all_diags[0].populated_at.column == 56
-    assert all_diags[0].populated_at.end_line == 6
-    assert all_diags[0].populated_at.end_column == 74
-    assert all_diags[0].populated_at.file_path == PurePosixPath("implier.dfn")
+    assert all_diags[0].populated_at.line == 3
+    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.end_line == 3
+    assert all_diags[0].populated_at.end_column == 55
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implied.dfn")
 
 
 def test_unresolved_implication_target_is_skipped(

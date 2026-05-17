@@ -587,3 +587,156 @@ def test_two_different_implier_init_blocks_conflict(
     assert diag.filled_at.end_column == 55
     assert diag.filled_at.file_path == PurePosixPath("first_implier.dfn")
     assert diag.propagated_from_locations == []
+
+
+def test_three_level_chain_create_destroy_create_init_blocks(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "sub_implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/sub_implied> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</sub_implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implied.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implied> {\n"
+                "    it also assigns the position</sub_implied>.\n"
+                "    after it is assigned {\n"
+                "        destroy the dimension point in position</sub_implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "implier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/implier> {\n"
+                "    it also assigns the position</sub_implied>.\n"
+                "    it also assigns the position</implied>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</implied>.\n"
+                "        create a dimension point in position</sub_implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</implier>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+
+
+def test_sibling_init_block_empty_guarantee_violates_later_occupied_requirement(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "emptier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/emptier> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</emptier>.\n"
+                "        destroy the dimension point in position</emptier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "requirer.dfn": (
+                "define the potential position<my.domain.com:my_lib:/requirer> {\n"
+                "    it also assigns the position</emptier>.\n"
+                "    after it is assigned {\n"
+                "        destroy the dimension point in position</emptier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</requirer>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(
+        diag, diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
+    )
+    assert diag.create_target_name == "position<box>"
+    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/requirer>"
+    assert diag.position_name == "position<box>::position</emptier>"
+    assert diag.location.line == 11
+    assert diag.location.column == 37
+    assert diag.location.end_line == 11
+    assert diag.location.end_column == 50
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.inferred_at.line == 4
+    assert diag.inferred_at.column == 40
+    assert diag.inferred_at.end_line == 4
+    assert diag.inferred_at.end_column == 58
+    assert diag.inferred_at.file_path == PurePosixPath("requirer.dfn")
+    assert diag.propagated_from_locations == []
+
+
+def test_destroy_in_emptied_interface_child_after_init_block_empties_it(
+    validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "emptier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/emptier> {\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</emptier>.\n"
+                "        destroy the dimension point in position</emptier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the position</emptier>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<source>.\n"
+                "        destroy the dimension point in position<source>::position</emptier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diag.location.line == 12
+    assert diag.location.column == 40
+    assert diag.location.end_line == 12
+    assert diag.location.end_column == 76
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.position_name == "position<source>::position</emptier>"
