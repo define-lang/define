@@ -8,8 +8,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -184,15 +182,6 @@ def test_init_block_occupied_propagates_via_implied_position(
     )
 
 
-@pytest.mark.xfail(
-    raises=KeyError,
-    strict=True,
-    reason=(
-        "execute_assume_occupied on a propagated chain with non-action"
-        " intermediate positions hits a missing trie parent —"
-        " _ensure_action_parent only auto-creates intermediate action nodes."
-    ),
-)
 def test_init_block_occupied_propagates_via_implied_action(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -371,16 +360,6 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
     )
 
 
-@pytest.mark.xfail(
-    raises=KeyError,
-    strict=True,
-    reason=(
-        "execute_assume_occupied on a chain rewritten via "
-        "replace_parent_position_with_prefix hits a missing trie intermediate: "
-        "position-typed intermediates aren't auto-created the way action ones "
-        "are by _ensure_action_parent. Pre-existing tracker limitation."
-    ),
-)
 def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -483,7 +462,7 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     assert all_diags[1].inferred_at.line == 17
     assert all_diags[1].inferred_at.column == 37
     assert all_diags[1].inferred_at.end_line == 17
-    assert all_diags[1].inferred_at.end_column == 74
+    assert all_diags[1].inferred_at.end_column == 73
     assert all_diags[1].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[1],

@@ -34,6 +34,11 @@ class AssumeOccupied(Create):
 
 
 @dataclass(frozen=True, slots=True)
+class AssumeEmpty(Operation):
+    """Mark a position as known-empty per a contract requirement."""
+
+
+@dataclass(frozen=True, slots=True)
 class Move(Operation):
     """Move the dimension point in source to target."""
 
@@ -87,6 +92,10 @@ class DimensionPointOperationExecutor:
             op.qualities,
             from_caller=op.contracted_position_chain,
         )
+
+    def execute_assume_empty(self, op: AssumeEmpty):
+        """Execute the AssumeEmpty operation."""
+        self._tracker.mark_empty(op.target)
 
     def execute_move(self, op: Move) -> list[diagnostics.Diagnostic]:
         """Execute the Move operation."""

@@ -90,6 +90,14 @@ class DimensionPointTracker:
         """Mark a position as having unknown occupancy state."""
         self._unknown[self._key(in_position)] = _UnknownState(caused_by=in_position)
 
+    def mark_empty(self, in_position: ast.PositionReference):
+        """Mark a position as known-empty without a prior DP existing."""
+        key = self._key(in_position)
+        if key in self._state:
+            raise ValueError(f"position {key} already has tracker state")
+        self._ensure_action_parent(key)
+        self._state[key] = _NodeState(emptied_by=in_position)
+
     def has_unknown_state(self, in_position: ast.PositionReference) -> bool:
         """Return whether a position or any ancestor has unknown occupancy state."""
         return self.has_unknown_state_by_key(self._key(in_position))

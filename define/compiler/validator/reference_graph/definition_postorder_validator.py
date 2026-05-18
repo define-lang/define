@@ -120,6 +120,10 @@ class DefinitionPostorderValidator(abc.ABC):
                     contracted_position_chain=inferred_from_chain,
                 )
             )
+        elif required_state == action_contract.PositionOccupancyState.EMPTY:
+            self._executor.execute_assume_empty(
+                dimension_point_operation.AssumeEmpty(target=position)
+            )
 
     def _chain_for_inferred_requirement(
         self,
@@ -159,12 +163,25 @@ class DefinitionPostorderValidator(abc.ABC):
         else:
             return
         for inner_req in contract.requirements.values():
-            full_caller_chain = inner_req.full_propagation_position_chain().in_caller(
+            # For a DP moved into a local position from a caller-provided
+            # interface position, for the inner action's deep init-block
+            # requirement (iface, box_target, q):
+            #
+            #   chain_in_requirement:
+            #     position<iface>::position</box_target>::position</q>
+            #   full_contracted_position (composed with caller_path_to_inner_action):
+            #     position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
+            #   local_chain (composed with action_chain):
+            #     position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>
+            chain_in_requirement = inner_req.full_propagation_position_chain()
+            full_contracted_position = chain_in_requirement.in_caller(
                 caller_path_to_inner_action
             )
+            local_chain = chain_in_requirement.in_caller(action_chain)
             self._record_propagated_requirement(
                 inner_req=inner_req,
-                full_caller_chain=full_caller_chain,
+                full_contracted_position=full_contracted_position,
+                local_chain=local_chain,
                 inferred_from=caller_path_to_inner_action,
                 propagated_from=inner_req,
                 scope=scope,
@@ -257,12 +274,13 @@ class DefinitionPostorderValidator(abc.ABC):
         if caller_path is None:
             return
         for inner_req in init_block_contract.requirements.values():
-            full_caller_chain = inner_req.full_propagation_position_chain().in_caller(
-                caller_path
-            )
+            chain_in_requirement = inner_req.full_propagation_position_chain()
+            full_contracted_position = chain_in_requirement.in_caller(caller_path)
+            local_chain = chain_in_requirement.in_caller(create_target)
             self._record_propagated_requirement(
                 inner_req=inner_req,
-                full_caller_chain=full_caller_chain,
+                full_contracted_position=full_contracted_position,
+                local_chain=local_chain,
                 inferred_from=caller_path,
                 propagated_from=inner_req,
                 scope=scope,
@@ -272,13 +290,14 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         *,
         inner_req: action_contract.PositionRequirement,
-        full_caller_chain: ast.PositionReference,
+        full_contracted_position: ast.PositionReference,
+        local_chain: ast.PositionReference,
         inferred_from: ast.ChainedName,
         propagated_from: action_contract.PositionRequirement | None,
         scope: scope_tracker.ScopeTracker,
     ):
         """Record a requirement propagated from an inner contract."""
-        propagated_key = full_caller_chain.canonical_chained_name_tuple
+        propagated_key = full_contracted_position.canonical_chained_name_tuple
         # If we already inferred a requirement for this key (i.e.,
         # our own code references this position first), we satisfy
         # the requirement ourselves and thus don't propagate it to our caller.
@@ -304,14 +323,18 @@ class DefinitionPostorderValidator(abc.ABC):
             # can know the minimal set that it _must_ have according to the constraints
             # the position has.
             qualities = self._get_transitive_required_qualities(
-                full_caller_chain, scope
+                full_contracted_position, scope
             )
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(
-                    target=full_caller_chain,
+                    target=local_chain,
                     qualities=qualities,
-                    contracted_position_chain=full_caller_chain,
+                    contracted_position_chain=full_contracted_position,
                 )
+            )
+        elif inner_req.required_state == action_contract.PositionOccupancyState.EMPTY:
+            self._executor.execute_assume_empty(
+                dimension_point_operation.AssumeEmpty(target=local_chain)
             )
 
     def _check_trigger(
