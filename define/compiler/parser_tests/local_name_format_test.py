@@ -143,6 +143,40 @@ def test_local_name_with_space(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
+def test_local_name_first_char_colon(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position<:>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == ":"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
+
+
+def test_local_name_first_char_slash(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    define the position</>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.char == "/"
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 25
+
+
 def test_local_name_missing_open_angle(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(

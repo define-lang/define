@@ -808,6 +808,26 @@ def test_move_dimension_point_no_space_after_to(
     assert exc_info.value.column == 50
 
 
+def test_move_dimension_point_chained_source_missing_to(
+    parse: Parse,
+) -> None:
+    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "        move the dimension point in position<src>::position<iface>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "DOT"
+    assert exc_info.value.line == 6
+    assert exc_info.value.column == 67
+
+
 def test_move_dimension_point_missing_terminator_after_destination(
     parse: Parse,
 ) -> None:
