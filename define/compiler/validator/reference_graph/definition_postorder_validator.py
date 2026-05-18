@@ -36,6 +36,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _action_contracts: dict[str, action_contract.ActionContract]
     _position_contracts: dict[str, action_contract.PositionInitBlockContract]
+    _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
@@ -46,12 +47,16 @@ class DefinitionPostorderValidator(abc.ABC):
         definition_results: dict[str, validation_result.DefinitionValidationResult],
         action_contracts: dict[str, action_contract.ActionContract],
         position_contracts: dict[str, action_contract.PositionInitBlockContract],
+        definition_quality_cache: dict[
+            tuple[str, ...], list[ast.GlobalTypedNameReference]
+        ],
     ):
         """Initialize with the definition to validate and the full results map."""
         self._definition_result = definition_result
         self._definition_results = definition_results
         self._action_contracts = action_contracts
         self._position_contracts = position_contracts
+        self._definition_quality_cache = definition_quality_cache
         self._diagnostics = []
         self._action_edges = []
         self._inferred_requirements = {}
@@ -94,9 +99,8 @@ class DefinitionPostorderValidator(abc.ABC):
             return
         self._record_requirement(
             required_state=required_state,
-            contracted_position_chain=inferred_from_chain,
+            contracted_chain=inferred_from_chain,
             local_chain=position,
-            inferred_from=inferred_from_chain,
             propagated_from=None,
             scope=scope,
         )
@@ -105,27 +109,54 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         *,
         required_state: action_contract.PositionOccupancyState,
-        contracted_position_chain: ast.PositionReference,
-        local_chain: ast.PositionReference,
-        inferred_from: ast.ChainedName,
+        contracted_chain: ast.ChainedName,
+        local_chain: ast.ChainedName,
         propagated_from: action_contract.PositionRequirement | None,
         scope: scope_tracker.ScopeTracker,
     ):
         """Record a requirement in this definition's contract and reflect it in the tracker.
 
         Args:
-            required_state: The state the position must be in.
-            contracted_position_chain: The position chain in the caller's
-                contracted-position namespace.
-            local_chain: The position chain in this definition's local
-                namespace.
-            inferred_from: The chain at the source location that inferred
-                this requirement.
+            required_state: The state that the requirement says the position must be in.
+            contracted_chain: The contracted chain as we would expose it
+                in requirements for this action.
+            local_chain: The chain in this definition's local
+                namespace that we are actually operating on.
             propagated_from: The inner requirement this was propagated
                 from, or None for a directly inferred requirement.
-            scope: The scope tracker for resolving qualities.
+            scope: The scope tracker (for resolving qualities of local positions).
         """
-        requirement_key = contracted_position_chain.canonical_chained_name_tuple
+        inferred_from = contracted_chain
+        if propagated_from is not None:
+            # We are recording a requirement that is propagating from an action
+            # we are triggering.
+            #
+            # chain_in_requirement:
+            #   position<iface>::position</box_target>::position</q>
+            # contracted_position:
+            #   position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
+            # local_position:
+            #   position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>
+            chain_in_requirement = propagated_from.full_propagation_position_chain()
+            contracted_position = chain_in_requirement.in_caller(contracted_chain)
+            local_position = chain_in_requirement.in_caller(local_chain)
+        else:
+            # We are recording a requirement that this action generates itself.
+            #
+            # contracted_position:
+            #   position<iface>::position</child>
+            # local_position:
+            #   position<some_local>::position</child>
+            if not (
+                isinstance(contracted_chain, ast.PositionReference)
+                and isinstance(local_chain, ast.PositionReference)
+            ):
+                raise TypeError(
+                    "directly-inferred requirements must be recorded with PositionReference chains"
+                )
+            contracted_position = contracted_chain
+            local_position = local_chain
+        requirement_key = contracted_position.canonical_chained_name_tuple
         # This both prevents us from double-inferring requirements, and also
         # implements the "caller requirements override callee requirements" part
         # of the spec (when recording propagated requirements).
@@ -151,18 +182,18 @@ class DefinitionPostorderValidator(abc.ABC):
             # can know the minimal set that it _must_ have according to the constraints
             # the contracted position has.
             qualities = self._get_transitive_required_qualities(
-                contracted_position_chain, scope
+                contracted_position, scope
             )
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(
-                    target=local_chain,
+                    target=local_position,
                     qualities=qualities,
-                    contracted_position_chain=contracted_position_chain,
+                    contracted_position_chain=contracted_position,
                 )
             )
         elif required_state == action_contract.PositionOccupancyState.EMPTY:
             self._executor.execute_assume_empty(
-                dimension_point_operation.AssumeEmpty(target=local_chain)
+                dimension_point_operation.AssumeEmpty(target=local_position)
             )
 
     def _chain_for_inferred_requirement(
@@ -180,6 +211,13 @@ class DefinitionPostorderValidator(abc.ABC):
         # that contracted position, not whatever local position we are inferring
         # a requirement for.
         return position.replace_parent_position_with_prefix(parent_origin)
+
+    def _local_definition_cache_key(
+        self,
+        _local_name: ast.LocalTypedNameReference,
+    ) -> tuple[str, ...] | None:
+        """Return the cache key for a local-scope position, or None if uncacheable."""
+        return None
 
     def _propagate_inner_requirements(
         self,
@@ -203,26 +241,10 @@ class DefinitionPostorderValidator(abc.ABC):
         else:
             return
         for inner_req in contract.requirements.values():
-            # For a DP moved into a local position from a caller-provided
-            # interface position, for the inner action's deep init-block
-            # requirement (iface, box_target, q):
-            #
-            #   chain_in_requirement:
-            #     position<iface>::position</box_target>::position</q>
-            #   full_contracted_position (composed with caller_path_to_inner_action):
-            #     position<outer_iface>::action</inner>::position<iface>::position</box_target>::position</q>
-            #   local_chain (composed with action_chain):
-            #     position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>
-            chain_in_requirement = inner_req.full_propagation_position_chain()
-            full_contracted_position = chain_in_requirement.in_caller(
-                caller_path_to_inner_action
-            )
-            local_chain = chain_in_requirement.in_caller(action_chain)
             self._record_requirement(
                 required_state=inner_req.required_state,
-                contracted_position_chain=full_contracted_position,
-                local_chain=local_chain,
-                inferred_from=caller_path_to_inner_action,
+                contracted_chain=caller_path_to_inner_action,
+                local_chain=action_chain,
                 propagated_from=inner_req,
                 scope=scope,
             )
@@ -314,14 +336,10 @@ class DefinitionPostorderValidator(abc.ABC):
         if caller_path is None:
             return
         for inner_req in init_block_contract.requirements.values():
-            chain_in_requirement = inner_req.full_propagation_position_chain()
-            full_contracted_position = chain_in_requirement.in_caller(caller_path)
-            local_chain = chain_in_requirement.in_caller(create_target)
             self._record_requirement(
                 required_state=inner_req.required_state,
-                contracted_position_chain=full_contracted_position,
-                local_chain=local_chain,
-                inferred_from=caller_path,
+                contracted_chain=caller_path,
+                local_chain=create_target,
                 propagated_from=inner_req,
                 scope=scope,
             )
@@ -377,24 +395,12 @@ class DefinitionPostorderValidator(abc.ABC):
     ):
         """Check that all action requirements are satisfied before triggering."""
         dp = self._tracker.get_occupant(trigger_position)
-
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError(
                 f"no action in chain: {trigger_position.source_chained_name}"
             )
-        for req in contract.requirements.values():
-            # Example values:
-            #   action_chain:
-            #     position<box>::action</outer>
-            #   req.full_propagation_position_chain():
-            #     position<iface>::action</inner>::position<item>
-            #   full_caller_chain (composed via in_caller):
-            #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
-            full_caller_chain = req.full_propagation_position_chain().in_caller(
-                action_chain
-            )
-            self._check_one_requirement(full_caller_chain, dp.last_position, req)
+        self._check_requirements(contract, action_chain, dp.last_position)
 
     def _check_init_block_requirements(
         self,
@@ -402,23 +408,43 @@ class DefinitionPostorderValidator(abc.ABC):
         contract: action_contract.PositionInitBlockContract,
     ):
         """Check that all init-block requirements hold at the Create statement that assigns the position."""
+        self._check_requirements(contract, create_target, create_target)
+
+    def _check_requirements(
+        self,
+        contract: action_contract.ActionStatementsBlockContract,
+        prefix_chain: ast.ChainedName,
+        acting_on_position: ast.PositionReference,
+    ):
+        """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position."""
+        # Action trigger:
+        #   prefix_chain:
+        #     position<box>::action</outer>
+        #   acting_on_position:
+        #     position<box>::action</outer>::position<trigger>
+        #   req.full_propagation_position_chain():
+        #     position<iface>::action</inner>::position<item>
+        #   full_caller_chain:
+        #     position<box>::action</outer>::position<iface>::action</inner>::position<item>
+        # Init block:
+        #   prefix_chain:
+        #     position<box>
+        #   acting_on_position:
+        #     position<box>
+        #   req.full_propagation_position_chain():
+        #     position</q>::position</q_child>
+        #   full_caller_chain:
+        #     position<box>::position</q>::position</q_child>
         for req in contract.requirements.values():
-            # Example values:
-            #   create_target:
-            #     position<box>
-            #   req.full_propagation_position_chain():
-            #     position</q>::position</q_child>
-            #   full_caller_chain (composed via in_caller):
-            #     position<box>::position</q>::position</q_child>
             full_caller_chain = req.full_propagation_position_chain().in_caller(
-                create_target
+                prefix_chain
             )
-            self._check_one_requirement(full_caller_chain, create_target, req)
+            self._check_one_requirement(full_caller_chain, acting_on_position, req)
 
     def _check_one_requirement(
         self,
         full_caller_chain: ast.PositionReference,
-        caller_position: ast.PositionReference,
+        acting_on_position: ast.PositionReference,
         req: action_contract.PositionRequirement,
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
@@ -436,7 +462,7 @@ class DefinitionPostorderValidator(abc.ABC):
             if isinstance(req.root_cause_quality(), ast.ActionDefinition):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        location=caller_position.location,
+                        location=acting_on_position.location,
                         action_name=req.root_cause_quality_name(),
                         position_name=position_name,
                         inferred_at=req.inferred_from.location,
@@ -447,8 +473,8 @@ class DefinitionPostorderValidator(abc.ABC):
             else:
                 self._diagnostics.append(
                     diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic(
-                        location=caller_position.location,
-                        create_target_name=caller_position.source_form_in_universe(
+                        location=acting_on_position.location,
+                        create_target_name=acting_on_position.source_form_in_universe(
                             self._enclosing_fqun
                         ),
                         init_block_position_name=req.root_cause_quality_name(),
@@ -465,7 +491,7 @@ class DefinitionPostorderValidator(abc.ABC):
             if isinstance(req.root_cause_quality(), ast.ActionDefinition):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        location=caller_position.location,
+                        location=acting_on_position.location,
                         action_name=req.root_cause_quality_name(),
                         position_name=position_name,
                         inferred_at=req.inferred_from.location,
@@ -475,8 +501,8 @@ class DefinitionPostorderValidator(abc.ABC):
             else:
                 self._diagnostics.append(
                     diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic(
-                        location=caller_position.location,
-                        create_target_name=caller_position.source_form_in_universe(
+                        location=acting_on_position.location,
+                        create_target_name=acting_on_position.source_form_in_universe(
                             self._enclosing_fqun
                         ),
                         init_block_position_name=req.root_cause_quality_name(),
@@ -596,14 +622,14 @@ class DefinitionPostorderValidator(abc.ABC):
             action_contract.PositionOccupancyState.EMPTY, to_pos, scope
         )
 
+        target_required_qualities, _ = self._get_direct_required_qualities(
+            to_pos, scope
+        )
         move_diagnostics = self._executor.execute_move(
             dimension_point_operation.Move(
                 source=from_pos,
                 target=to_pos,
-                target_required_qualities=self._get_direct_required_qualities(
-                    to_pos, scope
-                )
-                or [],
+                target_required_qualities=target_required_qualities or [],
             )
         )
         if move_diagnostics:
@@ -768,11 +794,26 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> list[ast.GlobalTypedNameReference] | None:
-        """Resolve the constraint qualities required at a position, in source order."""
+    ) -> tuple[
+        list[ast.GlobalTypedNameReference] | None,
+        tuple[str, ...] | None,
+    ]:
+        """Resolve the constraint qualities required at a position, in source order.
+
+        Also returns the cache key identifying the cacheable entity (a
+        global position or an action interface position), or ``None``
+        for local positions defined inside of an Action Statements Block.
+        """
         if scope.is_defined_local(position):
-            definition = scope.get_definition(position.typed_names[0])
-            return definition.constraint_typed_names
+            # is_defined_local already verified the chain is a single LocalTypedNameReference.
+            local_name = typing.cast(
+                "ast.LocalTypedNameReference", position.typed_names[0]
+            )
+            definition = scope.get_definition(local_name)
+            return (
+                definition.constraint_typed_names,
+                self._local_definition_cache_key(local_name),
+            )
 
         last_element = position.typed_names[-1]
 
@@ -784,29 +825,39 @@ class DefinitionPostorderValidator(abc.ABC):
             parent = position.typed_names[-2]
             action_def = self._definition_results[parent.full_typed_name].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
-            return action_def.interface_positions_by_name[
-                last_element.full_typed_name
-            ].constraint_typed_names
+            return (
+                action_def.interface_positions_by_name[
+                    last_element.full_typed_name
+                ].constraint_typed_names,
+                (parent.full_typed_name, last_element.full_typed_name),
+            )
 
         # This can be None if the last element in the chain is a definition we never loaded
         # (file not found or failed to parse).
         definition_result = self._definition_results.get(last_element.full_typed_name)
         if definition_result is None:
-            return None
+            return (None, None)
         position_def = typing.cast(
             "ast.PositionDefinition", definition_result.definition
         )
-        return position_def.constraint_typed_names
+        return (position_def.constraint_typed_names, (last_element.full_typed_name,))
 
     def _get_transitive_required_qualities(
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ) -> list[ast.GlobalTypedNameReference]:
-        direct = self._get_direct_required_qualities(position, scope)
+        direct, cache_key = self._get_direct_required_qualities(position, scope)
         if direct is None:
             return []
-        return self._expand_with_implications_in_order(direct)
+        if cache_key is None:
+            return self._expand_with_implications_in_order(direct)
+        cached = self._definition_quality_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        result = self._expand_with_implications_in_order(direct)
+        self._definition_quality_cache[cache_key] = result
+        return result
 
     def _expand_with_implications_in_order(
         self, direct: list[ast.GlobalTypedNameReference]
@@ -951,6 +1002,19 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             return position
         return super()._chain_for_inferred_requirement(position)
 
+    @typing.override
+    def _local_definition_cache_key(
+        self,
+        local_name: ast.LocalTypedNameReference,
+    ) -> tuple[str, ...] | None:
+        """Cache interface positions so the action's own processing fills the same key external references use."""
+        if local_name.full_typed_name in self._interface_positions:
+            return (
+                self._action_definition.typed_name.full_typed_name,
+                local_name.full_typed_name,
+            )
+        return None
+
 
 class PositionPostorderValidator(DefinitionPostorderValidator):
     """Validates a position definition during a DFS post-order walk."""
@@ -958,9 +1022,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
     @typing.override
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics and edges."""
-        definition = self._definition
-        if not isinstance(definition, ast.PositionDefinition):
-            raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
+        definition = typing.cast("ast.PositionDefinition", self._definition)
         contract = self._analyze_position_definition(definition)
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
@@ -1008,6 +1070,7 @@ def create_postorder_validator(
     definition_results: dict[str, validation_result.DefinitionValidationResult],
     action_contracts: dict[str, action_contract.ActionContract],
     position_contracts: dict[str, action_contract.PositionInitBlockContract],
+    definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],
 ) -> DefinitionPostorderValidator:
     """Create the appropriate postorder validator for the given definition."""
     if isinstance(definition_result.definition, ast.ActionDefinition):
@@ -1016,6 +1079,7 @@ def create_postorder_validator(
             definition_results,
             action_contracts,
             position_contracts,
+            definition_quality_cache,
         )
     if isinstance(definition_result.definition, ast.PositionDefinition):
         return PositionPostorderValidator(
@@ -1023,5 +1087,6 @@ def create_postorder_validator(
             definition_results,
             action_contracts,
             position_contracts,
+            definition_quality_cache,
         )
     raise TypeError(f"Unexpected definition type: {type(definition_result.definition)}")

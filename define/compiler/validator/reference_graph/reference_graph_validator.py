@@ -11,6 +11,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
+    from define.compiler import ast
     from define.compiler.validator import validation_result
 
 
@@ -30,6 +31,7 @@ class ReferenceGraphValidator:
     _definition_results: dict[str, validation_result.DefinitionValidationResult]
     _action_contracts: dict[str, action_contract.ActionContract]
     _position_contracts: dict[str, action_contract.PositionInitBlockContract]
+    _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
 
     def __init__(
         self,
@@ -41,6 +43,7 @@ class ReferenceGraphValidator:
         self._definition_results = definition_results
         self._action_contracts = {}
         self._position_contracts = {}
+        self._definition_quality_cache = {}
 
     def validate(self) -> action_call_graph.ActionCallGraph:
         """Run analysis for all definitions in a depth-first-search, post-order."""
@@ -56,6 +59,7 @@ class ReferenceGraphValidator:
                 self._definition_results,
                 self._action_contracts,
                 self._position_contracts,
+                self._definition_quality_cache,
             )
             result = analyzer.analyze()
             for d in result.diagnostics:
