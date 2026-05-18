@@ -92,37 +92,77 @@ class DefinitionPostorderValidator(abc.ABC):
         inferred_from_chain = self._chain_for_inferred_requirement(position)
         if inferred_from_chain is None:
             return
+        self._record_requirement(
+            required_state=required_state,
+            contracted_position_chain=inferred_from_chain,
+            local_chain=position,
+            inferred_from=inferred_from_chain,
+            propagated_from=None,
+            scope=scope,
+        )
 
-        requirement_key = inferred_from_chain.canonical_chained_name_tuple
+    def _record_requirement(
+        self,
+        *,
+        required_state: action_contract.PositionOccupancyState,
+        contracted_position_chain: ast.PositionReference,
+        local_chain: ast.PositionReference,
+        inferred_from: ast.ChainedName,
+        propagated_from: action_contract.PositionRequirement | None,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Record a requirement in this definition's contract and reflect it in the tracker.
+
+        Args:
+            required_state: The state the position must be in.
+            contracted_position_chain: The position chain in the caller's
+                contracted-position namespace.
+            local_chain: The position chain in this definition's local
+                namespace.
+            inferred_from: The chain at the source location that inferred
+                this requirement.
+            propagated_from: The inner requirement this was propagated
+                from, or None for a directly inferred requirement.
+            scope: The scope tracker for resolving qualities.
+        """
+        requirement_key = contracted_position_chain.canonical_chained_name_tuple
+        # This both prevents us from double-inferring requirements, and also
+        # implements the "caller requirements override callee requirements" part
+        # of the spec (when recording propagated requirements).
         if requirement_key in self._inferred_requirements:
             return
         # If a position has been touched by a guarantee or any dimension point
-        # statement already, no requirement should be emitted. This handles at
-        # least two cases that I know about: when a position init block creates
-        # an EmptyGuarantee and another init block or caller tries to then
-        # destroy / move from that same position.
+        # statement already, no requirement should be emitted. This handles the
+        # situation where a position init block creates an EmptyGuarantee and
+        # another init block or caller tries to then destroy / move from that
+        # same position.
         if self._tracker.has_been_touched(requirement_key):
             return
         self._inferred_requirements[requirement_key] = (
             action_contract.PositionRequirement(
                 required_state=required_state,
-                inferred_from=inferred_from_chain,
+                inferred_from=inferred_from,
                 enclosing_quality=self._definition,
+                propagated_from=propagated_from,
             )
         )
-
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            qualities = self._get_transitive_required_qualities(position, scope)
+            # We can't know exactly what qualities the dimension point has, but we
+            # can know the minimal set that it _must_ have according to the constraints
+            # the contracted position has.
+            qualities = self._get_transitive_required_qualities(
+                contracted_position_chain, scope
+            )
             self._executor.execute_assume_occupied(
                 dimension_point_operation.AssumeOccupied(
-                    target=position,
+                    target=local_chain,
                     qualities=qualities,
-                    contracted_position_chain=inferred_from_chain,
+                    contracted_position_chain=contracted_position_chain,
                 )
             )
         elif required_state == action_contract.PositionOccupancyState.EMPTY:
             self._executor.execute_assume_empty(
-                dimension_point_operation.AssumeEmpty(target=position)
+                dimension_point_operation.AssumeEmpty(target=local_chain)
             )
 
     def _chain_for_inferred_requirement(
@@ -178,9 +218,9 @@ class DefinitionPostorderValidator(abc.ABC):
                 caller_path_to_inner_action
             )
             local_chain = chain_in_requirement.in_caller(action_chain)
-            self._record_propagated_requirement(
-                inner_req=inner_req,
-                full_contracted_position=full_contracted_position,
+            self._record_requirement(
+                required_state=inner_req.required_state,
+                contracted_position_chain=full_contracted_position,
                 local_chain=local_chain,
                 inferred_from=caller_path_to_inner_action,
                 propagated_from=inner_req,
@@ -277,64 +317,13 @@ class DefinitionPostorderValidator(abc.ABC):
             chain_in_requirement = inner_req.full_propagation_position_chain()
             full_contracted_position = chain_in_requirement.in_caller(caller_path)
             local_chain = chain_in_requirement.in_caller(create_target)
-            self._record_propagated_requirement(
-                inner_req=inner_req,
-                full_contracted_position=full_contracted_position,
+            self._record_requirement(
+                required_state=inner_req.required_state,
+                contracted_position_chain=full_contracted_position,
                 local_chain=local_chain,
                 inferred_from=caller_path,
                 propagated_from=inner_req,
                 scope=scope,
-            )
-
-    def _record_propagated_requirement(
-        self,
-        *,
-        inner_req: action_contract.PositionRequirement,
-        full_contracted_position: ast.PositionReference,
-        local_chain: ast.PositionReference,
-        inferred_from: ast.ChainedName,
-        propagated_from: action_contract.PositionRequirement | None,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Record a requirement propagated from an inner contract."""
-        propagated_key = full_contracted_position.canonical_chained_name_tuple
-        # If we already inferred a requirement for this key (i.e.,
-        # our own code references this position first), we satisfy
-        # the requirement ourselves and thus don't propagate it to our caller.
-        if propagated_key in self._inferred_requirements:
-            return
-        # If a position has been touched by a guarantee or any dimension point
-        # statement already, no requirement should be emitted. This handles at
-        # least two cases that I know about: when a position init block creates
-        # an EmptyGuarantee and another init block or caller tries to then
-        # destroy / move from that same position.
-        if self._tracker.has_been_touched(propagated_key):
-            return
-        self._inferred_requirements[propagated_key] = (
-            action_contract.PositionRequirement(
-                required_state=inner_req.required_state,
-                inferred_from=inferred_from,
-                enclosing_quality=self._definition,
-                propagated_from=propagated_from,
-            )
-        )
-        if inner_req.required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            # We can't know exactly what qualities the dimension point has, but we
-            # can know the minimal set that it _must_ have according to the constraints
-            # the position has.
-            qualities = self._get_transitive_required_qualities(
-                full_contracted_position, scope
-            )
-            self._executor.execute_assume_occupied(
-                dimension_point_operation.AssumeOccupied(
-                    target=local_chain,
-                    qualities=qualities,
-                    contracted_position_chain=full_contracted_position,
-                )
-            )
-        elif inner_req.required_state == action_contract.PositionOccupancyState.EMPTY:
-            self._executor.execute_assume_empty(
-                dimension_point_operation.AssumeEmpty(target=local_chain)
             )
 
     def _check_trigger(
