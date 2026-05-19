@@ -714,3 +714,39 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert isinstance(diags[1].error, exceptions.NotProjectRootError)
     assert result.file_results[1].file_path == PurePosixPath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
+
+
+def test_invalid_cross_fqun_reference_and_definition_in_one_file(
+    validate_project: ValidateProject,
+):
+    # This is a very strange invalid case, but we want to be sure we emit the
+    # right diagnostic for it.
+    foreign_universe = "mv:define-lang.org:other_lib"
+    result = validate_project(
+        {
+            "test.dfn": (
+                f"define the potential position<{foreign_universe}:/test>.\n"
+                f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+                f"    it may only contain dimension points where {{\n"
+                f"        it has the position<{foreign_universe}:/test>.\n"
+                f"    }}\n"
+                f"}}\n"
+            ),
+        },
+        universe_name=_PARENT_UNIVERSE,
+    )
+    assert result.all_exceptions == []
+    assert len(result.file_results) == 1
+    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
+    assert diags[0].expected == _PARENT_UNIVERSE
+    assert diags[0].actual == foreign_universe
+    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].location.line == 4
+    assert diags[1].location.column == 29
+    assert diags[1].universe == foreign_universe
+    assert diags[1].current_universe_name == _PARENT_UNIVERSE

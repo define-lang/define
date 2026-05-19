@@ -158,6 +158,10 @@ class PathTracker[T]:
         """
         return self._project_roots[root].sub_roots
 
+    def has_sub_root(self, fqun: str, parent_root: pathlib.PurePosixPath) -> bool:
+        """Return True if fqun is a configured sub_root of parent_root."""
+        return fqun in self._project_roots[parent_root].sub_roots
+
     def sub_root_location(
         self, fqun: str, parent_root: pathlib.PurePosixPath
     ) -> pathlib.PurePosixPath:

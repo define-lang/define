@@ -387,7 +387,9 @@ class ProgramStructuralValidator:
         """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
         for ref_edge in source_definition.reference_edges:
             target_file = self._resolve_target_file(
-                ref_edge.global_name_reference.name_content, enclosing_root
+                ref_edge.global_name_reference.name_content,
+                enclosing_root,
+                source_definition,
             )
             if target_file is None:
                 continue
@@ -427,23 +429,34 @@ class ProgramStructuralValidator:
         self,
         global_name: ast.ReferenceGlobalNameContent,
         enclosing_root: pathlib.PurePosixPath,
+        source_definition: validation_result.DefinitionValidationResult,
     ) -> pathlib.PurePosixPath | None:
         """Determine the full file path for a global name reference.
 
-        Returns None if the target is under a failed root.
+        Returns None if the target is under a failed or nonexistent root.
         """
-        if global_name.fqun is not None:
-            fqun_string = global_name.fqun.canonical
-            sub_root_loc = self._path_tracker.sub_root_location(
-                fqun_string, enclosing_root
-            )
-            sub_root_path = enclosing_root / sub_root_loc
-            target_file = global_name.path.file_path(sub_root_path)
-            if self._path_tracker.is_under_failed_root(target_file):
-                return None
-            return target_file
+        if global_name.fqun is None:
+            return global_name.path.file_path(enclosing_root)
 
-        return global_name.path.file_path(enclosing_root)
+        fqun_string = global_name.fqun.canonical
+        if not self._path_tracker.has_sub_root(fqun_string, enclosing_root):
+            source_definition.add_diagnostic(
+                diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                    location=global_name.fqun.location,
+                    universe=fqun_string,
+                    current_universe_name=self._path_tracker.fqun_for_root(
+                        enclosing_root
+                    )
+                    or "",
+                )
+            )
+            return None
+        sub_root_loc = self._path_tracker.sub_root_location(fqun_string, enclosing_root)
+        sub_root_path = enclosing_root / sub_root_loc
+        target_file = global_name.path.file_path(sub_root_path)
+        if self._path_tracker.is_under_failed_root(target_file):
+            return None
+        return target_file
 
     def _check_if_current_universe_path_in_a_subroot(
         self,
