@@ -1,0 +1,9 @@
+define the potential action<mv:define-lang.org:test_action_requires_empty:/other> {
+    define the position<trigger_pos>.
+    define the position<dest>.
+    it happens when {
+        the position<trigger_pos> has a dimension point.
+    } and it does {
+        create a dimension point in position<dest>.
+    }
+}

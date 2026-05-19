@@ -1,0 +1,13 @@
+define the potential action<mv:define-lang.org:test_init_requires_empty:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        define the position<box> {
+            it may only contain dimension points where {
+                it has the position</p>.
+            }
+        }
+        create a dimension point in position<box>.
+    }
+}

@@ -1,0 +1,9 @@
+define the potential position<mv:define-lang.org:test_qual_impl_transitive:/test> {
+    it may only contain dimension points where {
+        it has the action</runner>.
+    }
+    after it is assigned {
+        create a dimension point in position</test>.
+        create a dimension point in position</test>::action</runner>::position<run>.
+    }
+}

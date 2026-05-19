@@ -297,6 +297,28 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
+    "actions/self_trigger.dfn": [diagnostics.ActionSelfTriggerDiagnostic],
+    "destroy/destroy_empty_local.dfn": [
+        diagnostics.DestroyInEmptyPositionDiagnostic,
+    ],
+    "dimension_points/create/parent_not_occupied.dfn": [
+        diagnostics.ParentPositionNotOccupiedDiagnostic,
+    ],
+    "dimension_points/move/parent_not_occupied.dfn": [
+        diagnostics.ParentPositionNotOccupiedDiagnostic,
+    ],
+    "quality_implications/duplicate.dfn": [
+        diagnostics.DuplicateQualityImplicationDiagnostic,
+    ],
+    "quality_implications/unused.dfn": [
+        diagnostics.UnusedQualityImplicationDiagnostic,
+    ],
+    "references/unknown_global_name.dfn": [
+        diagnostics.UnknownGlobalNameDiagnostic,
+    ],
+    "references/unnecessary_self_reference.dfn": [
+        diagnostics.UnnecessarySelfReferenceDiagnostic,
+    ],
 }
 
 # Key: path relative to PROJECTS_ROOT / "invalid" (as posix string)
@@ -362,6 +384,21 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     ],
     "position_init/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
+    ],
+    "action_contracts/action_requires_empty": [
+        diagnostics.ActionRequiresEmptyPositionDiagnostic,
+    ],
+    "action_contracts/action_requires_occupied": [
+        diagnostics.ActionRequiresOccupiedPositionDiagnostic,
+    ],
+    "action_contracts/init_requires_empty": [
+        diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic,
+    ],
+    "action_contracts/init_requires_occupied": [
+        diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
+    ],
+    "destroy/destroy_empty_interface": [
+        diagnostics.DestroyInEmptyInterfacePositionDiagnostic,
     ],
 }
 

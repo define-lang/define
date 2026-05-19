@@ -1,0 +1,17 @@
+define the potential action<mv:define-lang.org:test_action_requires_empty:/test> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        define the position<box> {
+            it may only contain dimension points where {
+                it has the action</other>.
+            }
+        }
+        define the position<spare>.
+        create a dimension point in position<box>.
+        create a dimension point in position<spare>.
+        move the dimension point in position<spare> to position<box>::action</other>::position<dest>.
+        create a dimension point in position<box>::action</other>::position<trigger_pos>.
+    }
+}

@@ -1,0 +1,10 @@
+define the potential action<mv:define-lang.org:test_destroy_empty_interface:/other> {
+    define the position<trigger_pos>.
+    define the position<item>.
+    define the position<_sink>.
+    it happens when {
+        the position<trigger_pos> has a dimension point.
+    } and it does {
+        move the dimension point in position<item> to position<_sink>.
+    }
+}

@@ -1,0 +1,20 @@
+define the potential action<mv:define-lang.org:test_qual_impl_transitive:/runner> {
+    define the position<run>.
+    define the position<source> {
+        it may only contain dimension points where {
+            it has the position</implier_one>.
+            it has the position</implier_two>.
+        }
+    }
+    define the position<dest> {
+        it may only contain dimension points where {
+            it has the position</implied>.
+        }
+    }
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in position<source>.
+        move the dimension point in position<source> to position<dest>.
+    }
+}

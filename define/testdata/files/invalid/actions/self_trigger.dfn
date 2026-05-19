@@ -1,0 +1,10 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/actions/self_trigger> {
+    define the position<my_pos>.
+    define the position<other>.
+    it happens when {
+        the position<my_pos> has a dimension point.
+    } and it does {
+        move the dimension point in position<my_pos> to position<other>.
+        create a dimension point in position<my_pos>.
+    }
+}

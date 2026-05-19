@@ -1,0 +1,6 @@
+define the potential position<mv:define-lang.org:test_files:/invalid/quality_implications/unused> {
+    it also assigns the position</valid/minimal_position>.
+    after it is assigned {
+        create a dimension point in position</invalid/quality_implications/unused>.
+    }
+}
