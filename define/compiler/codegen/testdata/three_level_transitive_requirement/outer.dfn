@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    define the position<run>.
+    define the position<middle_iface> {
+        it may only contain dimension points where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in position<middle_iface>::action</middle>::position<inner_iface>::action</inner>::position<data>.
+        create a dimension point in position<middle_iface>::action</middle>::position<run>.
+    }
+}

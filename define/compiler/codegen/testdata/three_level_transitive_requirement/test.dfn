@@ -1,0 +1,11 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain dimension points where {
+        it has the action</outer>.
+    }
+    after it is assigned {
+        create a dimension point in position</test>.
+        create a dimension point in position</test>::action</outer>::position<middle_iface>.
+        create a dimension point in position</test>::action</outer>::position<middle_iface>::action</middle>::position<inner_iface>.
+        create a dimension point in position</test>::action</outer>::position<run>.
+    }
+}

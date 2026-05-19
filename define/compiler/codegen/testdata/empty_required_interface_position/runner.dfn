@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/runner> {
+    define the position<run>.
+    define the position<output>.
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in position<output>.
+    }
+}

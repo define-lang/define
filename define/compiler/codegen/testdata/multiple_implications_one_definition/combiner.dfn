@@ -1,0 +1,8 @@
+define the potential position<my.domain.com:my_lib:/combiner> {
+    it also assigns the position</first_marker>.
+    it also assigns the position</second_marker>.
+    after it is assigned {
+        create a dimension point in position</first_marker>.
+        create a dimension point in position</second_marker>.
+    }
+}

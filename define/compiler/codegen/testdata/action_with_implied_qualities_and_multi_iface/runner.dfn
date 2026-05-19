@@ -1,0 +1,21 @@
+define the potential action<my.domain.com:my_lib:/runner> {
+    it also assigns the position</marker>.
+    define the position<run>.
+    define the position<input_a> {
+        it may only contain dimension points where {
+            it has the position</quality_a>.
+        }
+    }
+    define the position<input_b> {
+        it may only contain dimension points where {
+            it has the position</quality_b>.
+        }
+    }
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in position</marker>.
+        destroy the dimension point in position<input_a>.
+        destroy the dimension point in position<input_b>.
+    }
+}

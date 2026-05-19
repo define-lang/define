@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/runner> {
+    define the position<run>.
+    define the position<wrap> {
+        it may only contain dimension points where {
+            it has the position</mid>.
+        }
+    }
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        destroy the dimension point in position<wrap>::position</mid>::position</leaf>.
+    }
+}

@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/caller> {
+    it also assigns the position</implied>.
+    it also assigns the action</callee>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a dimension point.
+    } and it does {
+        create a dimension point in action</callee>::position<run>.
+        destroy the dimension point in position</implied>.
+    }
+}

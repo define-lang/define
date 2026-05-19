@@ -5,12 +5,17 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
-from define.compiler.validator.test_helpers import assert_action_calls
+from define.compiler.validator.test_helpers import (
+    assert_action_calls,
+    assert_no_errors,
+)
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
@@ -1100,6 +1105,79 @@ def test_complex_chain_interaction_implied(
         },
     )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
+
+
+@pytest.mark.xfail(
+    reason=(
+        "Requirements Follow Dimension Points (spec lines 1176-1181) is not "
+        "applied when the move destination is another contracted position "
+        "(sibling interface position) rather than a local position. The "
+        "validator emits a requirement against the destination interface "
+        "chain, which the caller cannot satisfy without violating the move's "
+        "empty-destination precondition."
+    ),
+    strict=True,
+)
+def test_caller_sees_requirement_when_interface_moved_to_sibling_interface(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<input>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<work>.\n"
+                "        create a dimension point in position<work>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer.dfn": (
+                "define the potential action<my.domain.com:my_lib:/outer> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<source> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the position<dest> {\n"
+                "        it may only contain dimension points where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a dimension point.\n"
+                "    } and it does {\n"
+                "        move the dimension point in position<source> to position<dest>.\n"
+                "        destroy the dimension point in position<dest>::action</inner>::position<input>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the action</outer>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<source>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<source>::action</inner>::position<input>.\n"
+                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
+    assert_action_calls(result.action_call_graph, _TEST, _OUTER)
 
 
 def test_caller_sees_requirement_when_interface_moved_to_implied(
