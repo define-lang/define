@@ -51,15 +51,9 @@ def raise_character_error(
     """Classify a character error into a specific exception type."""
     # Presently this error can only occur when an invalid name parse occurs.
     # TODO: Handle escaping invalid characters.
-    if (
-        e.allowed == {"MORETHAN"}
-        and e.token_history
-        and e.token_history[-1].type == "LOCAL_NAME_CONTENT"
-    ) or e.allowed == {"LOCAL_NAME_CONTENT"}:
+    if e.allowed == {"MORETHAN"}:
         # MORETHAN happens when we encounter an invalid character
-        # after valid characters. LOCAL_NAME_CONTENT happens when we
-        # encounter an invalid character as the first character in
-        # a name.
+        # after some valid LOCAL_NAME_CONTENT characters.
         raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
             e, source, e.char, file_path
         )
@@ -158,12 +152,7 @@ def raise_token_error(
         # This happens at least if it's a newline or just a space and a newline.
         raise parser_exceptions.MissingTerminatorOrBrace(e, source, file_path)
 
-    if e.accepts in (
-        # the position<run>has
-        {"CHAIN_SEPARATOR", "HAS_A_DIMENSION_POINT"},
-        # "the position<run>." (an unfortunate consequence of LALR state merging)
-        {"HAS_A_DIMENSION_POINT"},
-    ):
+    if e.accepts == {"HAS_A_DIMENSION_POINT"}:
         raise parser_exceptions.InvalidHasADimensionPointSyntax(e, source, file_path)
 
     if e.accepts == {"DOT"}:
@@ -273,7 +262,7 @@ def raise_token_error(
     # definition. Placed after the global-definition fallback so a stray implication at
     # the top level still surfaces as ExpectedGlobalDefinition (the user likely just
     # forgot to start a definition).
-    if e.token.type == "IT_ALSO_ASSIGNS_THE" and "IT_ALSO_ASSIGNS_THE" not in e.accepts:
+    if e.token.type == "IT_ALSO_ASSIGNS_THE":
         raise parser_exceptions.QualityImplicationInWrongLocation(e, source, file_path)
 
     # A relatively broad fallback for random nonsense inside an Action Definition Block.
