@@ -1037,6 +1037,7 @@ _MUTATIONS = [
     "remove_newline",
     "remove_angle_bracket",
     "remove_structural_char",
+    "remove_dimension_point_statement_space",
     "insert_unicode",
 ]
 
@@ -1104,6 +1105,17 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             idx = draw(st.sampled_from(indices))
             return source[:idx] + source[idx + 1 :]
 
+    if mutation == "remove_dimension_point_statement_space":
+        prefixes = [
+            "create a dimension point in ",
+            "move the dimension point in ",
+            "destroy the dimension point in ",
+        ]
+        present_prefixes = [prefix for prefix in prefixes if prefix in source]
+        if present_prefixes:
+            prefix = draw(st.sampled_from(present_prefixes))
+            return source.replace(prefix, prefix.rstrip(" "), 1)
+
     if mutation == "insert_unicode":
         idx = draw(st.integers(min_value=0, max_value=len(source)))
         char = draw(st.sampled_from(["\u00e9", "\u00f1", "\u4e16", "\U0001f600"]))
@@ -1118,18 +1130,6 @@ def mutated_sources(draw: st.DrawFn) -> str:
     num_mutations = draw(st.integers(min_value=1, max_value=3))
     for _ in range(num_mutations):
         source = _mutate_source(source, draw)
-    if "create a dimension point in " in source:
-        return source.replace(
-            "create a dimension point in ", "create a dimension point in", 1
-        )
-    if "move the dimension point in " in source:
-        return source.replace(
-            "move the dimension point in ", "move the dimension point in", 1
-        )
-    if "destroy the dimension point in " in source:
-        return source.replace(
-            "destroy the dimension point in ", "destroy the dimension point in", 1
-        )
     return source
 
 
