@@ -71,8 +71,7 @@ typed_name_reference: typed_local_name_reference | typed_global_name_reference
 # Position Constraint Block Syntax
 
 position_requirement_statement: IT_HAS_THE " " typed_global_name_reference terminator
-_position_constraint_requirement_tail: (NEWLINE* position_requirement_statement)*
-_position_constraint_requirements: NEWLINE* position_requirement_statement _position_constraint_requirement_tail NEWLINE*
+_position_constraint_requirements: NEWLINE* (position_requirement_statement NEWLINE*)+
 position_constraint_block: IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE _block_open _position_constraint_requirements _block_close
 
 # Quality Implication Statement Syntax
