@@ -121,34 +121,19 @@ def _position_with_init_block(
     requirements: list[tuple[str, str]] | None = None,
     *,
     indent: str = "    ",
+    quality_implications: list[tuple[str, str]] | None = None,
 ) -> str:
     name = _global_name(universe_name, rel_def_file)
-    if requirements is None:
-        lines = [
-            f"define the potential position<{name}> {{",
-            f"{indent}after it is assigned {{",
-        ]
-        for stmt in init_statements:
-            lines.extend(stmt.rstrip("\n").splitlines())
-        lines.extend(
-            [
-                f"{indent}}}",
-                "}",
-            ]
-        )
-        return _join_lines(lines)
-    lines = [
-        f"define the potential position<{name}> {{",
-        f"{indent}it may only contain dimension points where {{",
-    ]
-    for req_type, req_name in requirements:
-        lines.append(f"{indent * 2}it has the {req_type}<{req_name}>.")
-    lines.extend(
-        [
-            f"{indent}}}",
-            f"{indent}after it is assigned {{",
-        ]
-    )
+    lines = [f"define the potential position<{name}> {{"]
+    if quality_implications:
+        for typed_kind, impl_name in quality_implications:
+            lines.append(f"{indent}it also assigns the {typed_kind}<{impl_name}>.")
+    if requirements is not None:
+        lines.append(f"{indent}it may only contain dimension points where {{")
+        for req_type, req_name in requirements:
+            lines.append(f"{indent * 2}it has the {req_type}<{req_name}>.")
+        lines.append(f"{indent}}}")
+    lines.append(f"{indent}after it is assigned {{")
     for stmt in init_statements:
         lines.extend(stmt.rstrip("\n").splitlines())
     lines.extend(
@@ -265,8 +250,12 @@ def _action_block_with_name(
     include_action_close_comment: bool = False,
     blank_lines_in_blocks: bool = False,
     trigger_condition_ref: str = "position<run>",
+    quality_implications: list[tuple[str, str]] | None = None,
 ) -> str:
     lines = [f"define the potential action<{action_name}> {{"]
+    if quality_implications:
+        for typed_kind, impl_name in quality_implications:
+            lines.append(f"{indent}it also assigns the {typed_kind}<{impl_name}>.")
     lines.append(f"{indent}define the position<run>.")
     for local in outer_locals:
         lines.extend(local.rstrip("\n").splitlines())
@@ -303,6 +292,7 @@ def _action_with_block(
     include_action_close_comment: bool = False,
     blank_lines_in_blocks: bool = False,
     trigger_condition_ref: str = "position<run>",
+    quality_implications: list[tuple[str, str]] | None = None,
 ) -> str:
     return _action_block_with_name(
         _global_name(universe_name, rel_def_file),
@@ -313,6 +303,7 @@ def _action_with_block(
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
         trigger_condition_ref=trigger_condition_ref,
+        quality_implications=quality_implications,
     )
 
 
@@ -586,6 +577,29 @@ def _valid_reference_options() -> st.SearchStrategy[list[tuple[str, str]]]:
     )
 
 
+_VALID_IMPLICATION_TARGETS = [
+    ("position", _ANOTHER_VALID_PATH),
+    ("position", _THIRD_VALID_PATH),
+    ("action", _ANOTHER_VALID_PATH),
+    ("action", _THIRD_VALID_PATH),
+]
+
+
+def _valid_implications_strategy() -> st.SearchStrategy[list[tuple[str, str]]]:
+    return st.lists(
+        st.sampled_from(_VALID_IMPLICATION_TARGETS),
+        min_size=0,
+        max_size=2,
+        unique=True,
+    )
+
+
+def _implication_chain_reference(typed_kind: str, name: str) -> str:
+    if typed_kind == "position":
+        return f"position<{name}>"
+    return f"action<{name}>::position<_noop>"
+
+
 def _valid_local_definition_strategy(
     local_name: str, indent: str
 ) -> st.SearchStrategy[str]:
@@ -654,6 +668,14 @@ def valid_sources(draw: st.DrawFn) -> str:
         elif position_kind == "init_only":
             inner_indent = "        "
             init_stmts: list[str] = []
+            implications = draw(_valid_implications_strategy())
+            for impl_kind, impl_name in implications:
+                init_stmts.append(
+                    _create_dimension_point_statement(
+                        _implication_chain_reference(impl_kind, impl_name),
+                        indent=inner_indent,
+                    )
+                )
             use_self_ref = draw(st.booleans())
             if use_self_ref:
                 init_stmts.append(
@@ -683,12 +705,21 @@ def valid_sources(draw: st.DrawFn) -> str:
                     _PROJECT_FQUN,
                     "test.dfn",
                     init_stmts,
+                    quality_implications=implications or None,
                 )
             )
         elif position_kind == "constrained_with_init":
             inner_indent = "        "
             requirements = draw(_valid_reference_options())
+            implications_c = draw(_valid_implications_strategy())
             init_stmts_c: list[str] = []
+            for impl_kind, impl_name in implications_c:
+                init_stmts_c.append(
+                    _create_dimension_point_statement(
+                        _implication_chain_reference(impl_kind, impl_name),
+                        indent=inner_indent,
+                    )
+                )
             use_self_ref_c = draw(st.booleans())
             if use_self_ref_c:
                 init_stmts_c.append(
@@ -719,6 +750,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                     "test.dfn",
                     init_stmts_c,
                     requirements,
+                    quality_implications=implications_c or None,
                 )
             )
         else:
@@ -743,6 +775,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             include_trigger_comment = draw(st.booleans())
             include_action_close_comment = draw(st.booleans())
             blank_lines_in_blocks = draw(st.booleans())
+            action_implications = draw(_valid_implications_strategy())
             local_names = draw(
                 st.lists(
                     st.sampled_from(_LOCAL_NAMES),
@@ -756,6 +789,13 @@ def valid_sources(draw: st.DrawFn) -> str:
             inner_names = local_names[split_idx:]
             outer_locals: list[str] = []
             inner_locals: list[str] = []
+            for impl_kind, impl_name in action_implications:
+                inner_locals.append(
+                    _create_dimension_point_statement(
+                        _implication_chain_reference(impl_kind, impl_name),
+                        indent=inner_indent,
+                    )
+                )
             create_count = draw(
                 st.integers(min_value=0, max_value=len(_CHAIN_LOCALS_FOR_CREATE))
             )
@@ -800,6 +840,22 @@ def valid_sources(draw: st.DrawFn) -> str:
                             indent=inner_indent,
                         )
                     )
+            destroy_count = draw(st.integers(min_value=0, max_value=2))
+            for i in range(destroy_count):
+                destroy_local = f"destroy_pos_{i}"
+                inner_locals.append(
+                    _local_position_simple(destroy_local, indent=inner_indent)
+                )
+                inner_locals.append(
+                    _create_dimension_point_statement(
+                        f"position<{destroy_local}>", indent=inner_indent
+                    )
+                )
+                inner_locals.append(
+                    _destroy_dimension_point_statement(
+                        f"position<{destroy_local}>", indent=inner_indent
+                    )
+                )
             outer_locals += [
                 draw(_valid_local_definition_strategy(local_name, outer_indent))
                 for local_name in outer_names
@@ -830,6 +886,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                     include_action_close_comment=include_action_close_comment,
                     blank_lines_in_blocks=blank_lines_in_blocks,
                     trigger_condition_ref=trigger_condition_ref,
+                    quality_implications=action_implications or None,
                 )
             )
 
@@ -847,6 +904,50 @@ def valid_sources(draw: st.DrawFn) -> str:
 
 
 @st.composite
+def position_definitions_with_implications(draw: st.DrawFn) -> str:
+    name = draw(global_names())
+    impl_name = draw(global_names())
+    impl_kind = draw(st.sampled_from(["position", "action"]))
+    body_ref = (
+        f"position<{impl_name}>"
+        if impl_kind == "position"
+        else f"action<{impl_name}>::position<_noop>"
+    )
+    return (
+        f"define the potential position<{name}> {{\n"
+        f"    it also assigns the {impl_kind}<{impl_name}>.\n"
+        f"    after it is assigned {{\n"
+        f"        create a dimension point in {body_ref}.\n"
+        f"    }}\n"
+        f"}}\n"
+    )
+
+
+@st.composite
+def action_definitions_with_implications(draw: st.DrawFn) -> str:
+    name = draw(global_names())
+    impl_name = draw(global_names())
+    impl_kind = draw(st.sampled_from(["position", "action"]))
+    body_ref = (
+        f"position<{impl_name}>"
+        if impl_kind == "position"
+        else f"action<{impl_name}>::position<_noop>"
+    )
+    return (
+        f"define the potential action<{name}> {{\n"
+        f"    it also assigns the {impl_kind}<{impl_name}>.\n"
+        f"    define the position<_noop>.\n"
+        f"    it happens when {{\n"
+        f"        the position<_noop> has a dimension point.\n"
+        f"    }} and it does {{\n"
+        f"        define the position<__noop>.\n"
+        f"        create a dimension point in {body_ref}.\n"
+        f"    }}\n"
+        f"}}\n"
+    )
+
+
+@st.composite
 def syntactic_sources(draw: st.DrawFn) -> str:
     """Generate syntactically valid sources with random names (for mutations)."""
     num_defs = draw(st.integers(min_value=1, max_value=3))
@@ -854,15 +955,26 @@ def syntactic_sources(draw: st.DrawFn) -> str:
     for _ in range(num_defs):
         kind = draw(
             st.sampled_from(
-                ["position_simple", "position", "action_simple", "action_block"]
+                [
+                    "position_simple",
+                    "position",
+                    "action_simple",
+                    "action_block",
+                    "position_implication",
+                    "action_implication",
+                ]
             )
         )
         if kind in ["position_simple", "position"]:
             defs.append(draw(position_definitions()))
         elif kind == "action_simple":
             defs.append(draw(action_definitions_simple()))
-        else:
+        elif kind == "action_block":
             defs.append(draw(action_definitions_with_block()))
+        elif kind == "position_implication":
+            defs.append(draw(position_definitions_with_implications()))
+        else:
+            defs.append(draw(action_definitions_with_implications()))
     return "".join(defs)
 
 
@@ -909,6 +1021,7 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "it happens when",
             "and it does",
             "after it is assigned",
+            "it also assigns the",
         ]
         keyword = draw(st.sampled_from(keywords))
         indices: list[int] = []
@@ -1230,6 +1343,91 @@ def _build_position_init_self_reference_project(
     )
 
 
+def _build_position_quality_implication_project(
+    root_universe: str,
+) -> ProjectCase:
+    target_path = _definition_path("target.dfn")
+    root_files = {
+        "test.dfn": _position_with_init_block(
+            root_universe,
+            "test.dfn",
+            [
+                _create_dimension_point_statement(
+                    f"position<{target_path}>", indent="        "
+                ),
+            ],
+            quality_implications=[("position", target_path)],
+        ),
+        "target.dfn": _position_simple(root_universe, "target.dfn"),
+    }
+    return ProjectCase(
+        entrypoint="test.dfn",
+        roots=(ProjectRootCase("", root_universe, root_files, {}),),
+    )
+
+
+def _build_action_quality_implication_project(
+    root_universe: str,
+    child_universe: str,
+) -> ProjectCase:
+    target_global = _global_name(child_universe, "target.dfn")
+    root_files = {
+        "test.dfn": _action_with_block(
+            root_universe,
+            "test.dfn",
+            outer_locals=[],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    f"action<{target_global}>::position<_noop>",
+                    indent="        ",
+                ),
+            ],
+            quality_implications=[("action", target_global)],
+        )
+    }
+    child_files = {"target.dfn": _action_simple(child_universe, "target.dfn")}
+    return ProjectCase(
+        entrypoint="test.dfn",
+        roots=(
+            ProjectRootCase(
+                relative_path="",
+                universe_name=root_universe,
+                files=root_files,
+                local_deps={child_universe: "lib"},
+            ),
+            ProjectRootCase(
+                relative_path="lib",
+                universe_name=child_universe,
+                files=child_files,
+                local_deps={},
+            ),
+        ),
+    )
+
+
+def _build_destroy_dimension_point_project(root_universe: str) -> ProjectCase:
+    root_files = {
+        "test.dfn": _action_with_block(
+            root_universe,
+            "test.dfn",
+            outer_locals=[],
+            inner_locals=[
+                _local_position_simple("destroy_pos", indent="        "),
+                _create_dimension_point_statement(
+                    "position<destroy_pos>", indent="        "
+                ),
+                _destroy_dimension_point_statement(
+                    "position<destroy_pos>", indent="        "
+                ),
+            ],
+        ),
+    }
+    return ProjectCase(
+        entrypoint="test.dfn",
+        roots=(ProjectRootCase("", root_universe, root_files, {}),),
+    )
+
+
 @st.composite
 def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     root_universe = draw(st.sampled_from(_VALID_ROOT_UNIVERSES))
@@ -1246,6 +1444,9 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "cross_fqun_action_statements",
                 "move_local",
                 "position_init_self_reference",
+                "position_quality_implication",
+                "action_quality_implication",
+                "destroy_local",
             ]
         )
     )
@@ -1275,7 +1476,13 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
         )
     if project_kind == "move_local":
         return _build_move_dimension_point_project(root_universe)
-    return _build_position_init_self_reference_project(root_universe)
+    if project_kind == "position_init_self_reference":
+        return _build_position_init_self_reference_project(root_universe)
+    if project_kind == "position_quality_implication":
+        return _build_position_quality_implication_project(root_universe)
+    if project_kind == "action_quality_implication":
+        return _build_action_quality_implication_project(root_universe, child_universe)
+    return _build_destroy_dimension_point_project(root_universe)
 
 
 def _mutate_project_case(
@@ -1448,6 +1655,8 @@ _GLOBAL_NAME_CONTEXTS = [
     "move_to_ref",
     "destroy_ref",
     "trigger_ref",
+    "quality_impl_position_def",
+    "quality_impl_action_def",
 ]
 
 
@@ -1522,6 +1731,29 @@ def _global_name_context_template(context: str) -> str:
                     f"position<{_NAME_MARKER}>", indent="        "
                 )
             ],
+        )
+    if context == "quality_impl_position_def":
+        return _position_with_init_block(
+            _PROJECT_FQUN,
+            "test.dfn",
+            [
+                _create_dimension_point_statement(
+                    f"position<{_ANOTHER_VALID_PATH}>", indent="        "
+                ),
+            ],
+            quality_implications=[("position", _NAME_MARKER)],
+        )
+    if context == "quality_impl_action_def":
+        return _action_with_block(
+            _PROJECT_FQUN,
+            "test.dfn",
+            outer_locals=[],
+            inner_locals=[
+                _create_dimension_point_statement(
+                    f"position<{_ANOTHER_VALID_PATH}>", indent="        "
+                ),
+            ],
+            quality_implications=[("action", _NAME_MARKER)],
         )
     return _action_block_with_name(
         _global_name(_PROJECT_FQUN, "test.dfn"),
