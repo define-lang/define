@@ -142,10 +142,14 @@ def raise_token_error(
             raise parser_exceptions.GlobalNameWhereLocalNameExpected(
                 e, source, file_path
             )
-        # This should always be set at this point, but the type checker doesn't know that.
         if e.token_history:
             raise parser_exceptions.MissingCloseAngleBracket(
                 e, source, file_path, e.token_history[-1]
+            )
+        # Due to some quirks of Lark, $END never has token_history.
+        if e.token.type == "$END":
+            raise parser_exceptions.MissingCloseAngleBracket(
+                e, source, file_path, source[e.token.start_pos : e.token.end_pos]
             )
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE", "DOT"}:

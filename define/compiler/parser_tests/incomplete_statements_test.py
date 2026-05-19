@@ -123,6 +123,15 @@ def test_global_action_block_open_without_content(parse: Parse) -> None:
     assert exc_info.value.column == 63
 
 
+def test_global_position_truncated_in_global_name_no_newline(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
+        parse("define the potential position<mv:define-lang.org:parser:/target.")
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 31
+    assert exc_info.value.name == "mv:define-lang.org:parser:/target."
+
+
 def test_position_block_missing_required_clause(parse: Parse) -> None:
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
