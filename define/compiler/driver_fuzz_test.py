@@ -20,8 +20,8 @@ _AUTHORITY_DOMAINS = ["example.com", "define-lang.org", "test.io", "my.domain.co
 _UNIVERSE_NAMES = ["my_lib", "core", "fuzz_test", "std"]
 _PATH_SEGMENTS = ["path", "hello", "sub", "dir", "leaf", "foo", "bar"]
 _LOCAL_NAMES = ["x", "my_pos", "local", "inner", "_tmp", "pos2", "node_1"]
-_CHAIN_LOCALS_FOR_CREATE = ["src_pos", "src_pos2"]
-_MOVE_POSITION_NAMES = ["mv_a", "mv_b", "mv_c"]
+_CHAIN_LOCALS_FOR_CREATE = ["src_pos", "src_pos2", "src_pos3", "src_pos4"]
+_MOVE_POSITION_NAMES = ["mv_a", "mv_b", "mv_c", "mv_d", "mv_e"]
 _ACTION_WITH_INNER_FILE = "action_with_inner.dfn"
 _INNER_POS_IN_ACTION = "inner_pos"
 _VALID_ROOT_UNIVERSES = [
@@ -184,7 +184,7 @@ def _destroy_dimension_point_statement(position_reference: str, *, indent: str) 
 
 @st.composite
 def _global_chain_valid_references(draw: st.DrawFn) -> str:
-    chain_length = draw(st.integers(min_value=1, max_value=3))
+    chain_length = draw(st.integers(min_value=1, max_value=5))
     segments = [f"position<{draw(global_names())}>"]
     for _ in range(chain_length):
         middle_kind = draw(st.sampled_from(["position", "action"]))
@@ -196,7 +196,7 @@ def _global_chain_valid_references(draw: st.DrawFn) -> str:
 @st.composite
 def _local_start_chain_references(draw: st.DrawFn) -> str:
     local_name = draw(st.sampled_from(_LOCAL_NAMES))
-    chain_length = draw(st.integers(min_value=1, max_value=2))
+    chain_length = draw(st.integers(min_value=1, max_value=3))
     segments = [f"position<{local_name}>"]
     for _ in range(chain_length):
         middle_kind = draw(st.sampled_from(["position", "action"]))
@@ -356,7 +356,7 @@ def fquns(draw: st.DrawFn) -> str:
     if fmt == "2part":
         return f"{universe}:"
     authority = draw(st.sampled_from(_AUTHORITY_DOMAINS))
-    num_auth_segments = draw(st.integers(min_value=0, max_value=2))
+    num_auth_segments = draw(st.integers(min_value=0, max_value=4))
     auth_path = ""
     for _ in range(num_auth_segments):
         seg = draw(st.sampled_from(_PATH_SEGMENTS))
@@ -410,7 +410,7 @@ def position_definitions(draw: st.DrawFn) -> str:
         return f"define the potential position<{name}>.\n"
     if definition_kind in ("position_init", "position_constrained_init"):
         inner_indent = "        "
-        num_stmts = draw(st.integers(min_value=1, max_value=2))
+        num_stmts = draw(st.integers(min_value=1, max_value=4))
         init_stmts: list[str] = []
         for _ in range(num_stmts):
             ref = draw(create_dimension_point_references())
@@ -418,7 +418,7 @@ def position_definitions(draw: st.DrawFn) -> str:
                 _create_dimension_point_statement(ref, indent=inner_indent)
             )
         if definition_kind == "position_constrained_init":
-            num_reqs = draw(st.integers(min_value=1, max_value=3))
+            num_reqs = draw(st.integers(min_value=1, max_value=5))
             reqs: list[tuple[str, str]] = []
             for _ in range(num_reqs):
                 reqs.append(
@@ -447,7 +447,7 @@ def position_definitions(draw: st.DrawFn) -> str:
             lines.extend(stmt.rstrip("\n").splitlines())
         lines.extend(["    }", "}"])
         return _join_lines(lines)
-    num_requirements = draw(st.integers(min_value=1, max_value=3))
+    num_requirements = draw(st.integers(min_value=1, max_value=5))
     requirements: list[tuple[str, str]] = []
     for _ in range(num_requirements):
         child_name = draw(global_names())
@@ -491,7 +491,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         st.lists(
             st.sampled_from(_LOCAL_NAMES),
             min_size=0,
-            max_size=4,
+            max_size=6,
             unique=True,
         )
     )
@@ -526,20 +526,20 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
                     indent=inner_indent,
                 )
             )
-    create_count = draw(st.integers(min_value=0, max_value=2))
+    create_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(create_count):
         position_reference = draw(create_dimension_point_references())
         inner_locals.append(
             _create_dimension_point_statement(position_reference, indent=inner_indent)
         )
-    move_count = draw(st.integers(min_value=0, max_value=2))
+    move_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(move_count):
         from_ref = draw(create_dimension_point_references())
         to_ref = draw(create_dimension_point_references())
         inner_locals.append(
             _move_dimension_point_statement(from_ref, to_ref, indent=inner_indent)
         )
-    destroy_count = draw(st.integers(min_value=0, max_value=2))
+    destroy_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(destroy_count):
         position_reference = draw(create_dimension_point_references())
         inner_locals.append(
@@ -589,7 +589,7 @@ def _valid_implications_strategy() -> st.SearchStrategy[list[tuple[str, str]]]:
     return st.lists(
         st.sampled_from(_VALID_IMPLICATION_TARGETS),
         min_size=0,
-        max_size=2,
+        max_size=len(_VALID_IMPLICATION_TARGETS),
         unique=True,
     )
 
@@ -649,6 +649,51 @@ def _valid_create_spec(
     )
 
 
+_TRAILING_COMMENT_TAGS = [
+    " # done",
+    " # trailing",
+    " # ok",
+    " #",
+    " # x",
+]
+_STANDALONE_COMMENT_TEXTS = [
+    "# note",
+    "# TODO: review",
+    "# fuzz comment",
+    "#",
+    "# section break",
+]
+
+
+@st.composite
+def _decorated_source(draw: st.DrawFn, source: str) -> str:
+    """Inject standalone comments, blank lines, and trailing comments at safe spots."""
+    lines = source.splitlines(keepends=True)
+    result: list[str] = []
+    for line in lines:
+        line_content = line.strip()
+        stripped = line.lstrip(" ")
+        if line_content and draw(st.integers(min_value=0, max_value=9)) == 0:
+            line_indent = len(line) - len(stripped)
+            inject_indent = line_indent + 4 if stripped.startswith("}") else line_indent
+            choice = draw(st.sampled_from(["blank", "comment"]))
+            if choice == "blank":
+                result.append("\n")
+            else:
+                text = draw(st.sampled_from(_STANDALONE_COMMENT_TEXTS))
+                result.append(f"{' ' * inject_indent}{text}\n")
+        body = line.rstrip("\n")
+        if (
+            body
+            and body[-1] in (".", "}", "{")
+            and draw(st.integers(min_value=0, max_value=7)) == 0
+        ):
+            tag = draw(st.sampled_from(_TRAILING_COMMENT_TAGS))
+            line = body + tag + "\n"
+        result.append(line)
+    return "".join(result)
+
+
 @st.composite
 def valid_sources(draw: st.DrawFn) -> str:
     include_position = draw(st.booleans())
@@ -683,7 +728,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                         "position</test>", indent=inner_indent
                     )
                 )
-            num_local = draw(st.integers(min_value=0, max_value=2))
+            num_local = draw(st.integers(min_value=0, max_value=4))
             for i in range(num_local):
                 local_name = _LOCAL_NAMES[i]
                 init_stmts.append(
@@ -727,7 +772,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                         "position</test>", indent=inner_indent
                     )
                 )
-            num_local_c = draw(st.integers(min_value=0, max_value=2))
+            num_local_c = draw(st.integers(min_value=0, max_value=4))
             for i in range(num_local_c):
                 local_name = _LOCAL_NAMES[i]
                 init_stmts_c.append(
@@ -780,7 +825,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                 st.lists(
                     st.sampled_from(_LOCAL_NAMES),
                     min_size=0,
-                    max_size=4,
+                    max_size=6,
                     unique=True,
                 )
             )
@@ -820,7 +865,9 @@ def valid_sources(draw: st.DrawFn) -> str:
                 inner_locals.append(
                     _create_dimension_point_statement(ref, indent=inner_indent)
                 )
-            move_count = draw(st.integers(min_value=0, max_value=2))
+            move_count = draw(
+                st.integers(min_value=0, max_value=len(_MOVE_POSITION_NAMES) - 1)
+            )
             if move_count > 0:
                 needed = _MOVE_POSITION_NAMES[: move_count + 1]
                 for pos_name in needed:
@@ -840,7 +887,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                             indent=inner_indent,
                         )
                     )
-            destroy_count = draw(st.integers(min_value=0, max_value=2))
+            destroy_count = draw(st.integers(min_value=0, max_value=4))
             for i in range(destroy_count):
                 destroy_local = f"destroy_pos_{i}"
                 inner_locals.append(
@@ -900,7 +947,10 @@ def valid_sources(draw: st.DrawFn) -> str:
             ]
         )
     )
-    return separator.join(fragments)
+    raw = separator.join(fragments)
+    if draw(st.booleans()):
+        return draw(_decorated_source(raw))
+    return raw
 
 
 @st.composite
@@ -950,7 +1000,7 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
 @st.composite
 def syntactic_sources(draw: st.DrawFn) -> str:
     """Generate syntactically valid sources with random names (for mutations)."""
-    num_defs = draw(st.integers(min_value=1, max_value=3))
+    num_defs = draw(st.integers(min_value=1, max_value=5))
     defs: list[str] = []
     for _ in range(num_defs):
         kind = draw(
@@ -1065,20 +1115,22 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
 @st.composite
 def mutated_sources(draw: st.DrawFn) -> str:
     source = draw(syntactic_sources())
-    mutated = _mutate_source(source, draw)
-    if "create a dimension point in " in mutated:
-        return mutated.replace(
+    num_mutations = draw(st.integers(min_value=1, max_value=3))
+    for _ in range(num_mutations):
+        source = _mutate_source(source, draw)
+    if "create a dimension point in " in source:
+        return source.replace(
             "create a dimension point in ", "create a dimension point in", 1
         )
-    if "move the dimension point in " in mutated:
-        return mutated.replace(
+    if "move the dimension point in " in source:
+        return source.replace(
             "move the dimension point in ", "move the dimension point in", 1
         )
-    if "destroy the dimension point in " in mutated:
-        return mutated.replace(
+    if "destroy the dimension point in " in source:
+        return source.replace(
             "destroy the dimension point in ", "destroy the dimension point in", 1
         )
-    return mutated
+    return source
 
 
 @dataclass(frozen=True)
@@ -1451,38 +1503,54 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
         )
     )
     if project_kind == "same_universe_chain":
-        return _build_same_universe_chain_project(
+        project_case = _build_same_universe_chain_project(
             root_universe, use_nested_entrypoint=False
         )
-    if project_kind == "same_universe_nested_chain":
-        return _build_same_universe_chain_project(
+    elif project_kind == "same_universe_nested_chain":
+        project_case = _build_same_universe_chain_project(
             root_universe, use_nested_entrypoint=True
         )
-    if project_kind == "action_local_constraints":
-        return _build_action_local_constraints_project(root_universe)
-    if project_kind == "dual_type_reference":
-        return _build_dual_type_reference_project(root_universe)
-    if project_kind == "cross_fqun":
-        return _build_cross_fqun_project(
+    elif project_kind == "action_local_constraints":
+        project_case = _build_action_local_constraints_project(root_universe)
+    elif project_kind == "dual_type_reference":
+        project_case = _build_dual_type_reference_project(root_universe)
+    elif project_kind == "cross_fqun":
+        project_case = _build_cross_fqun_project(
             root_universe, child_universe, nested_child=False
         )
-    if project_kind == "cross_fqun_nested":
-        return _build_cross_fqun_project(
+    elif project_kind == "cross_fqun_nested":
+        project_case = _build_cross_fqun_project(
             root_universe, child_universe, nested_child=True
         )
-    if project_kind == "cross_fqun_action_statements":
-        return _build_cross_fqun_action_statements_project(
+    elif project_kind == "cross_fqun_action_statements":
+        project_case = _build_cross_fqun_action_statements_project(
             root_universe, child_universe
         )
-    if project_kind == "move_local":
-        return _build_move_dimension_point_project(root_universe)
-    if project_kind == "position_init_self_reference":
-        return _build_position_init_self_reference_project(root_universe)
-    if project_kind == "position_quality_implication":
-        return _build_position_quality_implication_project(root_universe)
-    if project_kind == "action_quality_implication":
-        return _build_action_quality_implication_project(root_universe, child_universe)
-    return _build_destroy_dimension_point_project(root_universe)
+    elif project_kind == "move_local":
+        project_case = _build_move_dimension_point_project(root_universe)
+    elif project_kind == "position_init_self_reference":
+        project_case = _build_position_init_self_reference_project(root_universe)
+    elif project_kind == "position_quality_implication":
+        project_case = _build_position_quality_implication_project(root_universe)
+    elif project_kind == "action_quality_implication":
+        project_case = _build_action_quality_implication_project(
+            root_universe, child_universe
+        )
+    else:
+        project_case = _build_destroy_dimension_point_project(root_universe)
+    if draw(st.booleans()):
+        decorated_roots: list[ProjectRootCase] = []
+        for root in project_case.roots:
+            decorated_files = {
+                path: draw(_decorated_source(content))
+                for path, content in root.files.items()
+            }
+            decorated_roots.append(replace(root, files=decorated_files))
+        project_case = ProjectCase(
+            entrypoint=project_case.entrypoint,
+            roots=tuple(decorated_roots),
+        )
+    return project_case
 
 
 def _mutate_project_case(
@@ -1505,7 +1573,10 @@ def _mutate_project_case(
 @st.composite
 def mutated_project_cases(draw: st.DrawFn) -> ProjectCase:
     project_case = draw(valid_project_cases())
-    return _mutate_project_case(project_case, draw)
+    num_mutations = draw(st.integers(min_value=1, max_value=3))
+    for _ in range(num_mutations):
+        project_case = _mutate_project_case(project_case, draw)
+    return project_case
 
 
 @pytest.fixture

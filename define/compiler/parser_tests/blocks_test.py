@@ -45,6 +45,38 @@ def test_block_with_blank_lines(parse: Parse) -> None:
     ]
 
 
+def test_blank_line_between_constraint_requirement_and_close(parse: Parse) -> None:
+    tree = parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path",
+        "/child",
+    ]
+
+
+def test_comment_line_between_constraint_requirement_and_close(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential position<mv:define-lang.org:parser:/path> {\n"
+        + "    it may only contain dimension points where {\n"
+        + "        it has the position</child>.\n"
+        + "        # trailing note\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/path",
+        "/child",
+    ]
+
+
 def test_block_with_comment_inside(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
