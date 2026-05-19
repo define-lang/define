@@ -64,8 +64,8 @@ def raise_character_error(
             e, source, e.char, file_path
         )
 
-    # : and / require special handling because they excluded from our broadest
-    # terminal (LOCAL_NAME_CONTENT) and so match no terminals at all.
+    # : and / require special handling because they are excluded from our
+    #  broadest terminal (LOCAL_NAME_CONTENT), and so match no terminals at all.
     if e.char in (":", "/"):
         # We have to do something special here to get the right error
         # messages: we have to force the parser to produce an UnexpectedToken
@@ -80,6 +80,9 @@ def raise_character_error(
             ip.feed_token(fake_token)
         except lark_standalone.UnexpectedToken as token_error:
             token_error.interactive_parser = ip
+            # The interative_parser will never set the token history
+            # correctly, but we have it from UnexpectedCharacters.
+            token_error.token_history = e.token_history
             raise_token_error(token_error, source, file_path)
 
 
@@ -128,6 +131,9 @@ def raise_token_error(
 
     if e.accepts == {"GLOBAL_NAME_CONTENT"}:
         raise parser_exceptions.InvalidGlobalName(e, source, file_path)
+
+    if e.accepts == {"LOCAL_NAME_CONTENT", "GLOBAL_NAME_CONTENT"}:
+        raise parser_exceptions.InvalidName(e, source, file_path)
 
     if e.accepts == {"MORETHAN"}:
         # This happens when you write something like "standard:/foo" in a local name

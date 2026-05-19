@@ -143,6 +143,23 @@ def test_local_name_with_space(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
+def test_create_position_ref_starting_with_space(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidName) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/act> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a dimension point.\n"
+            + "    } and it does {\n"
+            + "        create a dimension point in position< :/x>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == " "
+    assert exc_info.value.line == 6
+    assert exc_info.value.column == 46
+
+
 def test_local_name_first_char_colon(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(

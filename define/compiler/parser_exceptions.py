@@ -504,3 +504,11 @@ class InvalidGlobalName(DefineTokenError):
     message_format: ClassVar[str] = (
         "This is not a valid global name (like 'multiverse:authority:universe:/name')."
     )
+
+
+class InvalidName(DefineTokenError):
+    """Wrote something invalid where either a local or global name is accepted."""
+
+    message_format: ClassVar[str] = (
+        "'{token}' is not valid inside of a local or global name."
+    )

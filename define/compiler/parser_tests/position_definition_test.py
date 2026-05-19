@@ -362,6 +362,19 @@ def test_init_block_with_create_statement(parse: Parse) -> None:
     ]
 
 
+def test_init_block_colon_immediately_after_open_brace(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    after it is assigned {:\n"
+            + "        create a dimension point in position</path>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 27
+
+
 def test_init_block_with_move_statement(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"

@@ -570,16 +570,19 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
 _PROJECT_FQUN = "mv:define-lang.org:fuzz_test"
 _VALID_NAME = f"{_PROJECT_FQUN}:/test"
 _ANOTHER_VALID_PATH = "/another_test"
+_THIRD_VALID_PATH = "/third_test"
+_VALID_REFERENCE_PATHS = [_ANOTHER_VALID_PATH, _THIRD_VALID_PATH]
 
 
 def _valid_reference_options() -> st.SearchStrategy[list[tuple[str, str]]]:
     return st.lists(
         st.tuples(
             st.sampled_from(["position", "action"]),
-            st.sampled_from([_ANOTHER_VALID_PATH]),
+            st.sampled_from(_VALID_REFERENCE_PATHS),
         ),
         min_size=1,
         max_size=3,
+        unique=True,
     )
 
 
@@ -1304,6 +1307,11 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (tmp_path / "another_test.dfn").write_text(
         _action_simple(_PROJECT_FQUN, "another_test.dfn")
         + _position_simple(_PROJECT_FQUN, "another_test.dfn"),
+        encoding="utf-8",
+    )
+    (tmp_path / "third_test.dfn").write_text(
+        _action_simple(_PROJECT_FQUN, "third_test.dfn")
+        + _position_simple(_PROJECT_FQUN, "third_test.dfn"),
         encoding="utf-8",
     )
     (tmp_path / _ACTION_WITH_INNER_FILE).write_text(
