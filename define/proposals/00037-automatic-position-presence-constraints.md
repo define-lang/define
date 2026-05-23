@@ -872,6 +872,26 @@ control history of this proposal. However, halfway through I realized that I was
 forcing developers to write completely redundant statements and that we should
 simply figure it all out ourselves, instead.
 
+There is an argument to be made for forcing developers to write those redundant
+statements. It makes the code easier for humans to read (easier to understand
+what inputs an action expects to get). It also is easier for the compiler to
+compute---it just reads the requirements that are written in the source and does
+no computation. It also creates clear intentions from the developer, so that if
+they mess up the code inside of an action, the compiler tells them (without them
+or us having to generate a caller to know if their action's code is correct). So
+we may change our minds in the future, but for now this solution maximizes the
+ease of automated refactoring, because it keeps the logic written in only one
+place.
+
+The hardest part to solve without this system is what to do with implied
+qualities. Without this system, we would need a new syntax to specify
+preconditions on actions that describe the expected state of any implied
+position. With the system described in this proposal, implied qualities and
+interface qualities work the same way for the programmer and they don't have to
+think about them differently---the compiler figures out if they are doing
+something invalid and tells them. Still, that might be too much "magic" and not
+enough explicit, written intent in the code. We will see how this evolves.
+
 ## Forward Compatibility
 
 This proposal does not add new syntax. It specifies compiler behavior that is
