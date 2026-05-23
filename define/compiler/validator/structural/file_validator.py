@@ -369,7 +369,10 @@ class DefinitionStructuralValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         for condition in trigger_conditions.conditions:
-            _ = self._validate_full_chained_name(condition.position_reference, scope)
+            if isinstance(condition, ast.PositionPresenceStatement):
+                _ = self._validate_full_chained_name(
+                    condition.position_reference, scope
+                )
 
     def _validate_action_statements(
         self,

@@ -533,10 +533,20 @@ class PositionPresenceStatement(ASTNode):
 
 
 @dataclass(frozen=True, slots=True)
+class DestructorConditionStatement(ASTNode):
+    """Represents a destructor condition statement."""
+
+
+type TriggerConditionStatement = (
+    PositionPresenceStatement | DestructorConditionStatement
+)
+
+
+@dataclass(frozen=True, slots=True)
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
-    conditions: list[PositionPresenceStatement]
+    conditions: list[TriggerConditionStatement]
 
 
 @dataclass(frozen=True, slots=True)
@@ -632,17 +642,21 @@ class ActionDefinition(QualityDefinition):
         return result
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:
-        trigger_name = self.trigger_conditions.conditions[
-            0
-        ].typed_name.source_typed_name
+        first_condition = self.trigger_conditions.conditions[0]
+        if not isinstance(first_condition, PositionPresenceStatement):
+            return None
+        trigger_name = first_condition.typed_name.source_typed_name
         return self.interface_positions_by_name.get(trigger_name)
 
     @property
     def trigger_position_reference(self) -> PositionReference | None:
         """Return the trigger condition's PositionReference, if valid."""
-        if self.trigger_position is None:
+        first_condition = self.trigger_conditions.conditions[0]
+        if self.trigger_position is None or not isinstance(
+            first_condition, PositionPresenceStatement
+        ):
             return None
-        return self.trigger_conditions.conditions[0].position_reference
+        return first_condition.position_reference
 
 
 @dataclass(frozen=True, slots=True)

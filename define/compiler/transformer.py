@@ -186,6 +186,10 @@ class DefinitionTransformer(
         """Discard the 'has a dimension point' keyword token."""
         return lark_standalone.Discard
 
+    def DESTRUCTOR_STATEMENT(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the destructor-condition keyword token."""
+        return lark_standalone.Discard
+
     def AND_IT_DOES(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard the action-statements keyword token."""
         return lark_standalone.Discard
@@ -397,15 +401,24 @@ class DefinitionTransformer(
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
+    @lark_standalone.v_args(meta=True)
+    def destructor_condition_statement(
+        self, meta: lark_standalone.Meta, _items: list[object]
+    ) -> ast.DestructorConditionStatement:
+        """Transform a destructor condition statement."""
+        return ast.DestructorConditionStatement(
+            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+        )
+
     def trigger_condition_statement(
-        self, items: list[ast.PositionPresenceStatement]
-    ) -> ast.PositionPresenceStatement:
+        self, items: list[ast.TriggerConditionStatement]
+    ) -> ast.TriggerConditionStatement:
         """Unwrap the trigger condition statement wrapper rule."""
         return items[0]
 
     @lark_standalone.v_args(meta=True)
     def trigger_conditions_block(
-        self, meta: lark_standalone.Meta, items: list[ast.PositionPresenceStatement]
+        self, meta: lark_standalone.Meta, items: list[ast.TriggerConditionStatement]
     ) -> ast.TriggerConditionsBlock:
         """Transform a trigger conditions block."""
         return ast.TriggerConditionsBlock(

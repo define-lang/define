@@ -39,9 +39,12 @@ class ActionDefinitionGenerator:
             for local_def in self._definition.interface_positions
         ]
 
-        trigger_position_name = self._definition.trigger_conditions.conditions[
-            0
-        ].typed_name.source_typed_name
+        trigger_position = self._definition.trigger_position
+        trigger_position_name = (
+            trigger_position.typed_name.source_typed_name
+            if trigger_position is not None
+            else ""
+        )
 
         interface_position_names = {
             local_def.typed_name.source_typed_name

@@ -867,6 +867,40 @@ def test_trigger_condition_statement_source_positions():
     assert condition.location.column == 9
 
 
+def test_destructor_condition_statement_transforms():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "        this dimension point is being destroyed.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    assert len(definition.trigger_conditions.conditions) == 1
+    condition = definition.trigger_conditions.conditions[0]
+    assert isinstance(condition, ast.DestructorConditionStatement)
+    assert definition.trigger_position is None
+    assert definition.trigger_position_reference is None
+
+
+def test_destructor_condition_statement_source_positions():
+    program = _parse_and_transform(
+        "define the potential action<standard:/path> {\n"
+        + "    it happens when {\n"
+        + "        this dimension point is being destroyed.\n"
+        + "    } and it does {\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    condition = definition.trigger_conditions.conditions[0]
+    assert condition.location.line == 3
+    assert condition.location.column == 9
+
+
 def test_position_definition_with_init_block_only():
     program = _parse_and_transform(
         "define the potential position<standard:/path> {\n"
