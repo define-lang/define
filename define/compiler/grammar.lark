@@ -34,6 +34,7 @@ MOVE_THE_DIMENSION_POINT_IN: "move the dimension point in "
 DESTROY_THE_DIMENSION_POINT_IN: "destroy the dimension point in "
 THE: "the "
 HAS_A_DIMENSION_POINT: " has a dimension point"
+DESTRUCTOR_STATEMENT: "this dimension point is being destroyed"
 # TODO: Removing the spaces from this terminal and putting them in the grammar
 # rules might produce better errors now that *_NAME_CONTENT terminals have
 # negative priority.
@@ -104,7 +105,8 @@ action_definition: DEFINE_THE_POTENTIAL_ACTION global_name_definition_content ac
 
 local_position_definition: DEFINE_THE_POSITION local_name_content position_definition_terminator_or_block
 trigger_condition_statement: THE typed_local_name_reference HAS_A_DIMENSION_POINT terminator
-trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* trigger_condition_statement NEWLINE* "}"
+destructor_condition_statement: DESTRUCTOR_STATEMENT terminator
+trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* (trigger_condition_statement | destructor_condition_statement) NEWLINE* "}"
 action_statements_block: AND_IT_DOES _block_open _action_statements _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
 _action_local_position_definitions: (local_position_definition NEWLINE*)*

@@ -218,7 +218,7 @@ def raise_token_error(
     if e.accepts == {"CHAIN_SEPARATOR", "DOT"}:
         raise parser_exceptions.ExpectedChainSeparatorOrTerminator(e, source, file_path)
 
-    if e.accepts == {"NEWLINE", "THE"}:
+    if e.accepts == {"NEWLINE", "THE", "DESTRUCTOR_STATEMENT"}:
         if e.token == "}":
             raise parser_exceptions.MissingTriggerConditionContent(e, source, file_path)
         if e.token.type == "IT_ALSO_ASSIGNS_THE":

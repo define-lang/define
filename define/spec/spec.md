@@ -1042,11 +1042,12 @@ Proposals:
 
 - [DLP 28: Triggering Actions](../proposals/00028-triggering-actions.md)
 
-A Trigger Conditions Block contains one Trigger Condition Statement.
+A Trigger Conditions Block contains either one Trigger Condition Statement or
+one Destructor Condition Statement (defined later in this spec).
 
 <!-- TODO: Update for multiple statements. -->
 
-The one current Trigger Condition Statement is the Position Presence Statement:
+The Trigger Condition Statement is the Position Presence Statement:
 `the position<name> has a dimension point.` It may only refer to a single local
 name that is an interface position of the current action. (The syntax does not
 accept chained names.)
@@ -1055,7 +1056,7 @@ When compiling an action, the compiler treats the requirements specified by that
 action's Trigger Conditions Block as being satisfied.
 
 ```ebnf
-trigger_conditions = trigger_condition_statement ;
+trigger_conditions = trigger_condition_statement | destructor_condition_statement ;
 trigger_condition_statement = "the", " ", typed_local_name, " has a dimension point", terminator ;
 ```
 
@@ -1456,7 +1457,7 @@ Proposals:
 
 - [DLP 34: Destructors](../proposals/00034-destructors.md)
 
-A destructor condition statement is `this dimension point is being destroyed`
+A Destructor Condition Statement is `this dimension point is being destroyed`
 followed by a statement terminator. An action whose Trigger Conditions Block
 contains a destructor condition statement is called a "destructor."
 
