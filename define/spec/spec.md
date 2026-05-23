@@ -1450,6 +1450,44 @@ relevant.
 When safe, the compiler may destroy multiple dimension points simultaneously (in
 parallel).
 
+## Destructors
+
+Proposals:
+
+- [DLP 34: Destructors](../proposals/00034-destructors.md)
+
+A destructor condition statement is `this dimension point is being destroyed`
+followed by a statement terminator. An action whose Trigger Conditions Block
+contains a destructor condition statement is called a "destructor."
+
+```ebnf
+destructor_condition_statement =
+    "this dimension point is being destroyed", terminator ;
+```
+
+<!-- TODO:
+A destructor may also check any other trigger conditions alongside the
+destructor condition statement, which allows a destructor to fire only when the
+dimension point is in a particular state.
+-->
+
+### When Destructors Are Checked
+
+During the destruction cascade described in
+[Cascading Destruction](#cascading-destruction), the compiler checks destructor
+conditions immediately before the dimension points in the interface position of
+the action would be destroyed. If a destructor would trigger, it runs
+synchronously during the cascade and completes before the cascade continues.
+
+This is an exception to the rule that actions may not trigger during the
+cascade.
+
+### Actions Triggered by Destructors
+
+Any action triggered by a destructor still runs asynchronously, exactly as
+actions triggered during normal execution do. A destructor that depends on such
+an action completing must use `wait until`.
+
 ## Starting Define Programs
 
 Proposals:
