@@ -15,8 +15,9 @@ class Runner(literal.Action):
         local.my_domain_com.my_lib.marker.Marker,
     )
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
@@ -37,7 +38,9 @@ class Runner(literal.Action):
 
     @override
     def execute(self):
-        self.create_dimension_point()
+        self.on_dimension_point.get_position(
+            "position<my.domain.com:my_lib:/marker>"
+        ).create_dimension_point()
         self.get_interface_position(
             "position<input_a>"
         ).destroy_dimension_point()

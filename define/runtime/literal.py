@@ -70,10 +70,19 @@ class Constraint:
     typed_name: ClassVar[str]
     implied_qualities: ClassVar[tuple[type[Constraint], ...]] = ()
 
+    def __init__(self, on_dimension_point: DimensionPoint):
+        """Initialize with the dimension point this quality is assigned to."""
+        self._on_dimension_point: DimensionPoint = on_dimension_point
+
     @property
     def name(self) -> str:
         """Return the typed name of this quality."""
         return type(self).typed_name
+
+    @property
+    def on_dimension_point(self) -> DimensionPoint:
+        """Return the dimension point this quality is assigned to."""
+        return self._on_dimension_point
 
 
 class DimensionPoint:
@@ -90,7 +99,7 @@ class DimensionPoint:
         if position_class.typed_name in self._positions:
             raise DuplicateQualityAssignmentError(position_class.typed_name)
         self._assign_implied_qualities(position_class)
-        position = position_class()
+        position = position_class(self)
         self._assigned_qualities.append(position)
         self._positions[position_class.typed_name] = position
         position.after_assigned()
@@ -100,7 +109,7 @@ class DimensionPoint:
         if action_class.typed_name in self._actions:
             raise DuplicateQualityAssignmentError(action_class.typed_name)
         self._assign_implied_qualities(action_class)
-        action = action_class()
+        action = action_class(self)
         self._assigned_qualities.append(action)
         self._actions[action_class.typed_name] = action
 
@@ -134,9 +143,7 @@ class DimensionPoint:
 class Position(Quality, ABC):
     """Abstract base class for positions that can contain a dimension point."""
 
-    def __init__(self):
-        """Initialize with no dimension point."""
-        self._dimension_point: DimensionPoint | None = None
+    _dimension_point: DimensionPoint | None = None
 
     @abstractmethod
     def _get_constraints(self) -> tuple[type[Constraint], ...]:
@@ -236,10 +243,12 @@ class Action(Constraint, Quality):
 
     def __init__(
         self,
+        on_dimension_point: DimensionPoint,
         interface_positions: list[InterfacePosition] | None = None,
         trigger_position_name: str | None = None,
     ):
-        """Initialize with optional interface positions and trigger position name."""
+        """Initialize with the assigned dimension point and optional interface positions."""
+        super().__init__(on_dimension_point)
         self._interface_positions: dict[str, InterfacePosition] = {
             pos.name: pos for pos in (interface_positions or [])
         }

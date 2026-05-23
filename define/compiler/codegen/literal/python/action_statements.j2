@@ -13,6 +13,14 @@
 .get_interface_position(
 {{ extra_indent }}            "{{ e.typed_name }}"
 {{ extra_indent }}        )
+{%- elif e.accessor == ChainAccessor.IMPLIED_ACTION -%}
+.on_dimension_point.get_action(
+{{ extra_indent }}            "{{ e.typed_name }}"
+{{ extra_indent }}        )
+{%- elif e.accessor == ChainAccessor.IMPLIED_POSITION -%}
+.on_dimension_point.get_position(
+{{ extra_indent }}            "{{ e.typed_name }}"
+{{ extra_indent }}        )
 {%- endif %}
 {%- endfor %}
 {%- endmacro %}

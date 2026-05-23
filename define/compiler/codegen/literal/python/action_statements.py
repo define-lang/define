@@ -78,9 +78,21 @@ class ActionStatementsBlockGenerator:
             else:
                 start = self._local_names.convert(first.name_content.name)
                 chain_elements = []
-        else:
+        elif first.full_typed_name == self._defining_typed_name.full_typed_name:
             start = "self"
             chain_elements = []
+        else:
+            start = "self"
+            if first.name_type == ast.NameType.ACTION:
+                implied_accessor = template_context.ChainAccessor.IMPLIED_ACTION
+            else:
+                implied_accessor = template_context.ChainAccessor.IMPLIED_POSITION
+            chain_elements = [
+                template_context.ChainElement(
+                    accessor=implied_accessor,
+                    typed_name=first.full_typed_name,
+                )
+            ]
         for i, elem in enumerate(position_reference.typed_names[1:]):
             prev = position_reference.typed_names[i]
             chain_elements.append(

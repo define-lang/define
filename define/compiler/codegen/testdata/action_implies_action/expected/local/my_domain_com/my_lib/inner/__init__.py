@@ -8,8 +8,9 @@ from define.runtime import literal
 class Inner(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/inner>"
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
             ],

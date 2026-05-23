@@ -17,5 +17,9 @@ class Combiner(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.create_dimension_point()
+        self.on_dimension_point.get_position(
+            "position<my.domain.com:my_lib:/first_marker>"
+        ).create_dimension_point()
+        self.on_dimension_point.get_position(
+            "position<my.domain.com:my_lib:/second_marker>"
+        ).create_dimension_point()

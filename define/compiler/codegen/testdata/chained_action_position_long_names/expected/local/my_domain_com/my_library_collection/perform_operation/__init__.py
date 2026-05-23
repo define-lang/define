@@ -10,8 +10,9 @@ import local.my_domain_com.my_library_collection.inner_position
 class PerformOperation(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_library_collection:/perform_operation>"
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
                 literal.InterfacePosition(
                     "position<operation_trigger>",

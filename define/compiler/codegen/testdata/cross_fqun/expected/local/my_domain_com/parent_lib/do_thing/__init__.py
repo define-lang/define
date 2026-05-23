@@ -8,8 +8,9 @@ from define.runtime import literal
 class DoThing(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:parent_lib:/do_thing>"
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
                 literal.InterfacePosition("position<trigger_pos>"),
             ],

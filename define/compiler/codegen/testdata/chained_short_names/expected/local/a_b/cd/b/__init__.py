@@ -8,8 +8,9 @@ from define.runtime import literal
 class B(literal.Action):
     typed_name: ClassVar[str] = "action<a.b:cd:/b>"
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
                 literal.InterfacePosition("position<t>"),
             ],

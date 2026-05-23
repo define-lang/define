@@ -15,8 +15,9 @@ class Outer(literal.Action):
         local.my_domain_com.my_lib.caller.Caller,
     )
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
             ],
@@ -25,7 +26,11 @@ class Outer(literal.Action):
 
     @override
     def execute(self):
-        self.get_interface_position(
+        self.on_dimension_point.get_action(
+            "action<my.domain.com:my_lib:/caller>"
+        ).get_interface_position(
             "position<run>"
         ).create_dimension_point()
-        self.create_dimension_point()
+        self.on_dimension_point.get_position(
+            "position<my.domain.com:my_lib:/implied>"
+        ).create_dimension_point()

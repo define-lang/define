@@ -15,4 +15,6 @@ class Implied(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
+        self.on_dimension_point.get_position(
+            "position<my.domain.com:my_lib:/transitive_implied>"
+        ).create_dimension_point()

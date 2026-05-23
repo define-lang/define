@@ -11,8 +11,9 @@ class {{ definition.class_name }}(literal.Action):
     )
 {% endif %}
 
-    def __init__(self):
+    def __init__(self, on_dimension_point: literal.DimensionPoint):
         super().__init__(
+            on_dimension_point,
             interface_positions=[
 {% for iface in definition.interface_positions %}
 {% if iface.constraints %}

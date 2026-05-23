@@ -24,38 +24,6 @@ _TEST_CASES = sorted(
     d for d in _TESTDATA_ROOT.iterdir() if d.is_dir() and (d / "expected").is_dir()
 )
 
-# The codegen does not yet emit correct lookups for direct references to
-# implied qualities. The compiler treats the first chain element as `self`
-# with no bridging accessor, so `position</implied>` and
-# `action</helper>::position<run>` collapse into method calls on the wrong
-# object. These cases compile and produce expected/ output, but executing
-# that output crashes.
-_RUNTIME_BROKEN_IMPLIED_QUALITY_CODEGEN = frozenset(
-    {
-        "action_implies_action",
-        "action_implies_position",
-        "action_with_implied_qualities_and_multi_iface",
-        "action_with_multiple_implications",
-        "caller_overrides_implied_guarantee",
-        "destroy_from_implied",
-        "init_block_consumes_implied_action_interface",
-        "multiple_implications_one_definition",
-        "position_implies_action",
-    }
-)
-
-
-_XFAIL_IMPLIED_QUALITY_CODEGEN = pytest.mark.xfail(
-    reason="codegen emits self.<method>() for direct implied-quality references",
-    strict=True,
-)
-
-
-def _marks_for(name: str) -> tuple[pytest.MarkDecorator, ...]:
-    if name in _RUNTIME_BROKEN_IMPLIED_QUALITY_CODEGEN:
-        return (_XFAIL_IMPLIED_QUALITY_CODEGEN,)
-    return ()
-
 
 def _all_files(root: Path) -> dict[str, str]:
     return {
@@ -112,7 +80,8 @@ def test_generates_expected_output(
 
 @pytest.mark.parametrize(
     "test_case_dir",
-    [pytest.param(d, id=d.name, marks=_marks_for(d.name)) for d in _TEST_CASES],
+    _TEST_CASES,
+    ids=[d.name for d in _TEST_CASES],
 )
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"

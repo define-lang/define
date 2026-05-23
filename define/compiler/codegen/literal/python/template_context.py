@@ -38,6 +38,8 @@ class ChainAccessor(enum.Enum):
     POSITION_FROM_POSITION = enum.auto()
     ACTION_FROM_POSITION = enum.auto()
     POSITION_FROM_ACTION = enum.auto()
+    IMPLIED_ACTION = enum.auto()
+    IMPLIED_POSITION = enum.auto()
 
 
 @dataclass

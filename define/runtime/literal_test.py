@@ -31,6 +31,15 @@ class TestDimensionPoint:
 
         assert isinstance(dp._positions["position<quality_pos>"], MyPosition)
 
+    def test_assign_position_sets_on_dimension_point(self):
+        class MyPosition(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<quality_pos>"
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(MyPosition)
+
+        assert dp.get_position("position<quality_pos>").on_dimension_point is dp
+
     def test_get_position_returns_stored_position(self):
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<quality_pos>"
@@ -52,7 +61,7 @@ class TestGlobalPosition:
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test.com:lib:/thing>"
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
 
         assert pos.name == "position<test.com:lib:/thing>"
 
@@ -60,7 +69,7 @@ class TestGlobalPosition:
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
         pos.create_dimension_point()
 
         assert pos.has_dimension_point
@@ -69,7 +78,7 @@ class TestGlobalPosition:
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
         pos.create_dimension_point()
 
         with pytest.raises(literal.DimensionPointExistsError) as exc_info:
@@ -80,7 +89,7 @@ class TestGlobalPosition:
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
 
         assert pos._get_constraints() == ()
 
@@ -94,7 +103,7 @@ class TestGlobalPosition:
                 ConstraintPosition,
             )
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
@@ -110,7 +119,7 @@ class TestGlobalPosition:
                 ConstraintAction,
             )
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
         pos.create_dimension_point()
 
         assert pos._dimension_point is not None
@@ -120,7 +129,7 @@ class TestGlobalPosition:
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
 
-        pos = MyPosition()
+        pos = MyPosition(literal.DimensionPoint())
 
         pos.after_assigned()
 
@@ -328,7 +337,7 @@ class TestAction:
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test.com:lib:/thing>"
 
-        action = MyAction()
+        action = MyAction(literal.DimensionPoint())
 
         assert action.name == "action<test.com:lib:/thing>"
 
@@ -336,7 +345,7 @@ class TestAction:
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test>"
 
-        action = MyAction()
+        action = MyAction(literal.DimensionPoint())
 
         assert not action.should_execute
 
@@ -344,7 +353,7 @@ class TestAction:
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test>"
 
-        action = MyAction()
+        action = MyAction(literal.DimensionPoint())
 
         action.execute()
 
@@ -355,6 +364,7 @@ class TestAction:
             typed_name: ClassVar[str] = "action<test>"
 
         action = MyAction(
+            literal.DimensionPoint(),
             interface_positions=[pos],
             trigger_position_name="position</iface>",
         )
@@ -368,6 +378,7 @@ class TestAction:
             typed_name: ClassVar[str] = "action<test>"
 
         action = MyAction(
+            literal.DimensionPoint(),
             interface_positions=[pos],
             trigger_position_name="position</trigger_pos>",
         )
@@ -384,8 +395,9 @@ class TestActionTriggering:
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test>"
 
-            def __init__(self):
+            def __init__(self, on_dimension_point: literal.DimensionPoint):
                 super().__init__(
+                    on_dimension_point,
                     interface_positions=[
                         literal.InterfacePosition("position</trigger_pos>"),
                     ],
@@ -396,7 +408,7 @@ class TestActionTriggering:
             def execute(self):
                 executed.append("triggered")
 
-        action = MyAction()
+        action = MyAction(literal.DimensionPoint())
         action.get_interface_position("position</trigger_pos>").create_dimension_point()
 
         assert executed == ["triggered"]
@@ -407,8 +419,9 @@ class TestActionTriggering:
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test>"
 
-            def __init__(self):
+            def __init__(self, on_dimension_point: literal.DimensionPoint):
                 super().__init__(
+                    on_dimension_point,
                     interface_positions=[
                         literal.InterfacePosition("position</trigger_pos>"),
                     ],
@@ -419,7 +432,7 @@ class TestActionTriggering:
             def execute(self):
                 executed.append("triggered")
 
-        action = MyAction()
+        action = MyAction(literal.DimensionPoint())
         source = literal.LocalPosition("position</source>")
         source.create_dimension_point()
         source.move_dimension_point_to(
@@ -439,7 +452,7 @@ class TestActionTriggering:
                 executed.append("triggered")
 
         pos = literal.InterfacePosition("position</trigger_pos>")
-        action = MyAction(interface_positions=[pos])
+        action = MyAction(literal.DimensionPoint(), interface_positions=[pos])
         pos.set_is_trigger_for(action)
         pos.create_dimension_point()
 
@@ -466,8 +479,9 @@ class TestActionTriggering:
         class MyAction(literal.Action):
             typed_name: ClassVar[str] = "action<test>"
 
-            def __init__(self):
+            def __init__(self, on_dimension_point: literal.DimensionPoint):
                 super().__init__(
+                    on_dimension_point,
                     interface_positions=[
                         literal.InterfacePosition("position</trigger_pos>"),
                     ],
@@ -478,7 +492,7 @@ class TestActionTriggering:
             def execute(self):
                 executed.append("triggered")
 
-        action = MyAction()
+        action = MyAction(literal.DimensionPoint())
         trigger = action.get_interface_position("position</trigger_pos>")
         trigger.create_dimension_point()
         other = literal.LocalPosition("position</other>")
@@ -497,6 +511,15 @@ class TestDimensionPointActions:
         dp.assign_action(MyAction)
 
         assert isinstance(dp._actions["action<test>"], MyAction)
+
+    def test_assign_action_sets_on_dimension_point(self):
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<test>"
+
+        dp = literal.DimensionPoint()
+        dp.assign_action(MyAction)
+
+        assert dp.get_action("action<test>").on_dimension_point is dp
 
     def test_get_action_returns_stored_action(self):
         class MyAction(literal.Action):
@@ -776,7 +799,7 @@ class TestImpliedQualities:
             typed_name: ClassVar[str] = "position<container>"
             constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (Outer,)
 
-        container = Container()
+        container = Container(literal.DimensionPoint())
         container.create_dimension_point()
 
         assert container._dimension_point is not None
