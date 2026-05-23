@@ -513,8 +513,8 @@ class GlobalPathName(ASTNode):
 
 
 @dataclass(frozen=True, slots=True)
-class TriggerConditionStatement(ASTNode):
-    """Represents a trigger condition statement."""
+class PositionPresenceStatement(ASTNode):
+    """Represents a position presence statement."""
 
     typed_name: LocalTypedNameReference
     position_reference: PositionReference = field(init=False)
@@ -536,7 +536,7 @@ class TriggerConditionStatement(ASTNode):
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
-    conditions: list[TriggerConditionStatement]
+    conditions: list[PositionPresenceStatement]
 
 
 @dataclass(frozen=True, slots=True)

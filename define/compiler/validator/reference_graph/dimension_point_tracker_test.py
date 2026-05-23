@@ -50,7 +50,7 @@ _DUMMY_ACTION = ast.ActionDefinition(
     interface_positions=[],
     trigger_conditions=ast.TriggerConditionsBlock(
         conditions=[
-            ast.TriggerConditionStatement(
+            ast.PositionPresenceStatement(
                 typed_name=_make_local_ref("dummy"), location=_LOC
             )
         ],

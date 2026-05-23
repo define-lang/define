@@ -843,7 +843,7 @@ def test_trigger_condition_statement_transforms_local_position():
     assert isinstance(definition, ast.ActionDefinition)
     assert len(definition.trigger_conditions.conditions) == 1
     condition = definition.trigger_conditions.conditions[0]
-    assert isinstance(condition, ast.TriggerConditionStatement)
+    assert isinstance(condition, ast.PositionPresenceStatement)
     assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
     assert condition.typed_name.name_type == ast.NameType.POSITION
     assert condition.typed_name.name_content.name == "run"

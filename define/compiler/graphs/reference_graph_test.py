@@ -45,7 +45,7 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
         interface_positions=[],
         trigger_conditions=ast.TriggerConditionsBlock(
             conditions=[
-                ast.TriggerConditionStatement(typed_name=_TRIGGER_REF, location=_LOC)
+                ast.PositionPresenceStatement(typed_name=_TRIGGER_REF, location=_LOC)
             ],
             location=_LOC,
         ),

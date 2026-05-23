@@ -1042,22 +1042,24 @@ Proposals:
 
 - [DLP 28: Triggering Actions](../proposals/00028-triggering-actions.md)
 
-A Trigger Conditions Block contains either one Trigger Condition Statement or
-one Destructor Condition Statement (defined later in this spec).
+A Trigger Conditions Block contains one Trigger Condition Statement.
 
 <!-- TODO: Update for multiple statements. -->
 
-The Trigger Condition Statement is the Position Presence Statement:
-`the position<name> has a dimension point.` It may only refer to a single local
-name that is an interface position of the current action. (The syntax does not
-accept chained names.)
+A Trigger Condition Statement is one of two types: a Position Presence Statement
+or a Destructor Condition Statement (defined later in this spec).
+
+A Position Presence Statement is `the position<name> has a dimension point.` It
+may only refer to a single local name that is an interface position of the
+current action. (The syntax does not accept chained names.)
 
 When compiling an action, the compiler treats the requirements specified by that
 action's Trigger Conditions Block as being satisfied.
 
 ```ebnf
-trigger_conditions = trigger_condition_statement | destructor_condition_statement ;
-trigger_condition_statement = "the", " ", typed_local_name, " has a dimension point", terminator ;
+trigger_conditions = trigger_condition_statement ;
+trigger_condition_statement = position_presence_statement | destructor_condition_statement ;
+position_presence_statement = "the", " ", typed_local_name, " has a dimension point", terminator ;
 ```
 
 ### Action Triggering Semantics
@@ -1457,9 +1459,9 @@ Proposals:
 
 - [DLP 34: Destructors](../proposals/00034-destructors.md)
 
-A Destructor Condition Statement is `this dimension point is being destroyed`
+The Destructor Condition Statement is `this dimension point is being destroyed`
 followed by a statement terminator. An action whose Trigger Conditions Block
-contains a destructor condition statement is called a "destructor."
+contains a Destructor Condition Statement is called a "destructor."
 
 ```ebnf
 destructor_condition_statement =

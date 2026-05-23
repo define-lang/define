@@ -388,18 +388,24 @@ class DefinitionTransformer(
         )
 
     @lark_standalone.v_args(meta=True)
-    def trigger_condition_statement(
+    def position_presence_statement(
         self, meta: lark_standalone.Meta, items: list[ast.LocalTypedNameReference]
-    ) -> ast.TriggerConditionStatement:
-        """Transform a trigger condition statement."""
-        return ast.TriggerConditionStatement(
+    ) -> ast.PositionPresenceStatement:
+        """Transform a position presence statement."""
+        return ast.PositionPresenceStatement(
             typed_name=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
+    def trigger_condition_statement(
+        self, items: list[ast.PositionPresenceStatement]
+    ) -> ast.PositionPresenceStatement:
+        """Unwrap the trigger condition statement wrapper rule."""
+        return items[0]
+
     @lark_standalone.v_args(meta=True)
     def trigger_conditions_block(
-        self, meta: lark_standalone.Meta, items: list[ast.TriggerConditionStatement]
+        self, meta: lark_standalone.Meta, items: list[ast.PositionPresenceStatement]
     ) -> ast.TriggerConditionsBlock:
         """Transform a trigger conditions block."""
         return ast.TriggerConditionsBlock(
