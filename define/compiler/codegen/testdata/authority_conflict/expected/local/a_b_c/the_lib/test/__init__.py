@@ -12,7 +12,7 @@ import mv.a_b_c.the_lib.do_thing
 
 class Test(literal.GlobalPosition):
     typed_name: ClassVar[str] = "position<a.b.c:the_lib:/test>"
-    constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.a_b_c.the_lib.do_thing.DoThing,
         local.a_b_c_.the_lib.do_thing.DoThing,
         mv.a_b_c.the_lib.do_thing.DoThing,

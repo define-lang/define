@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.worker
 
 class Host(literal.GlobalPosition):
     typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/host>"
-    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.worker.Worker,
     )
 

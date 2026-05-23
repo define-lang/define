@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.marker
 
 class Runner(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/runner>"
-    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.Marker,
     )
 

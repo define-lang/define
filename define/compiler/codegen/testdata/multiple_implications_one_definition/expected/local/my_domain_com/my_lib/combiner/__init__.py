@@ -10,7 +10,7 @@ import local.my_domain_com.my_lib.second_marker
 
 class Combiner(literal.GlobalPosition):
     typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/combiner>"
-    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.first_marker.FirstMarker,
         local.my_domain_com.my_lib.second_marker.SecondMarker,
     )

@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.implied
 
 class ImplierTwo(literal.GlobalPosition):
     typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/implier_two>"
-    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
     )
 

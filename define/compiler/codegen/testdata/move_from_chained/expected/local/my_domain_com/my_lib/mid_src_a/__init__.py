@@ -9,6 +9,6 @@ import local.my_domain_com.my_lib.end_src_a
 
 class MidSrcA(literal.GlobalPosition):
     typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/mid_src_a>"
-    constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.end_src_a.EndSrcA,
     )

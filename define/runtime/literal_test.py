@@ -99,7 +99,7 @@ class TestGlobalPosition:
 
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ConstraintPosition,
             )
 
@@ -115,7 +115,7 @@ class TestGlobalPosition:
 
         class MyPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ConstraintAction,
             )
 
@@ -562,9 +562,7 @@ class TestImpliedQualities:
 
         class Implying(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Implied,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
             @override
             def after_assigned(self):
@@ -596,7 +594,7 @@ class TestImpliedQualities:
 
         class Implier(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<implier>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 First,
                 Second,
             )
@@ -622,7 +620,7 @@ class TestImpliedQualities:
 
         class B(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<b>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (C,)
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (C,)
 
             @override
             def after_assigned(self):
@@ -630,7 +628,7 @@ class TestImpliedQualities:
 
         class A(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<a>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (B,)
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (B,)
 
             @override
             def after_assigned(self):
@@ -653,9 +651,7 @@ class TestImpliedQualities:
 
         class Left(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<left>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Shared,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
             @override
             def after_assigned(self):
@@ -663,9 +659,7 @@ class TestImpliedQualities:
 
         class Right(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<right>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Shared,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
             @override
             def after_assigned(self):
@@ -673,7 +667,7 @@ class TestImpliedQualities:
 
         class Top(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<top>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 Left,
                 Right,
             )
@@ -698,19 +692,15 @@ class TestImpliedQualities:
 
         class Left(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<left>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Shared,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
         class Right(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<right>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Shared,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
         class Top(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<top>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 Left,
                 Right,
             )
@@ -732,7 +722,7 @@ class TestImpliedQualities:
 
         class ImplyingAction(literal.Action):
             typed_name: ClassVar[str] = "action<implying>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ImpliedPosition,
             )
 
@@ -748,7 +738,7 @@ class TestImpliedQualities:
 
         class ImplyingPosition(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ImpliedAction,
             )
 
@@ -793,11 +783,11 @@ class TestImpliedQualities:
 
         class Outer(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<outer>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (Inner,)
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Inner,)
 
         class Container(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<container>"
-            constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (Outer,)
+            constraints: ClassVar[tuple[type[literal.Quality], ...]] = (Outer,)
 
         container = Container(literal.DimensionPoint())
         container.create_dimension_point()
@@ -812,9 +802,7 @@ class TestImpliedQualities:
 
         class Implying(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Implied,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
         source = literal.LocalPosition("source", constraints=(Implying,))
         dest = literal.LocalPosition("dest", constraints=(Implied,))
@@ -831,7 +819,7 @@ class TestImpliedQualities:
 
         class B(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<b>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (A,)
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (A,)
 
         dp = literal.DimensionPoint()
         dp.assign_position(B)
@@ -858,9 +846,7 @@ class TestImpliedQualities:
 
         class Implying(literal.GlobalPosition):
             typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
-                Implied,
-            )
+            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
         dp = literal.DimensionPoint()
         dp.assign_position(Implying)

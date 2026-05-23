@@ -55,20 +55,11 @@ class DuplicateQualityAssignmentError(DefineRuntimeError):
     )
 
 
-class Quality(ABC):
-    """Abstract base class for all qualities (positions and actions)."""
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Return the name of this quality."""
-
-
-class Constraint:
-    """Mixin for qualities referenced by class, with a class-level typed name and implied qualities."""
+class Quality:
+    """A quality identified by a class-level typed name: a global position or an action."""
 
     typed_name: ClassVar[str]
-    implied_qualities: ClassVar[tuple[type[Constraint], ...]] = ()
+    implied_qualities: ClassVar[tuple[type[Quality], ...]] = ()
 
     def __init__(self, on_dimension_point: DimensionPoint):
         """Initialize with the dimension point this quality is assigned to."""
@@ -92,7 +83,7 @@ class DimensionPoint:
         """Initialize with empty positions and actions dictionaries."""
         self._positions: dict[str, GlobalPosition] = {}
         self._actions: dict[str, Action] = {}
-        self._assigned_qualities: list[Constraint] = []
+        self._assigned_qualities: list[Quality] = []
 
     def assign_position(self, position_class: type[GlobalPosition]):
         """Assign a position to this dimension point, triggering after_assigned."""
@@ -113,7 +104,7 @@ class DimensionPoint:
         self._assigned_qualities.append(action)
         self._actions[action_class.typed_name] = action
 
-    def _assign_implied_qualities(self, quality_class: type[Constraint]):
+    def _assign_implied_qualities(self, quality_class: type[Quality]):
         for implied_class in quality_class.implied_qualities:
             if (
                 issubclass(implied_class, GlobalPosition)
@@ -135,18 +126,23 @@ class DimensionPoint:
         return self._actions[name]
 
     @property
-    def quality_types(self) -> frozenset[type[Constraint]]:
+    def quality_types(self) -> frozenset[type[Quality]]:
         """Return the set of constraint types satisfied by this dimension point."""
         return frozenset(type(q) for q in self._assigned_qualities)
 
 
-class Position(Quality, ABC):
+class Position(ABC):
     """Abstract base class for positions that can contain a dimension point."""
 
     _dimension_point: DimensionPoint | None = None
 
+    @property
     @abstractmethod
-    def _get_constraints(self) -> tuple[type[Constraint], ...]:
+    def name(self) -> str:
+        """Return the name of this position."""
+
+    @abstractmethod
+    def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types for this position."""
 
     @property
@@ -195,17 +191,17 @@ class Position(Quality, ABC):
             raise NoDimensionPointError(self.name)
         self._dimension_point = None
 
-    def _after_dimension_point_arrived(self):
+    def _after_dimension_point_arrived(self):  # noqa: B027
         """Run after a dimension point arrives. Override in subclasses."""
 
 
-class GlobalPosition(Constraint, Position):
+class GlobalPosition(Quality, Position):
     """A globally-defined position with a class-level typed name and constraints."""
 
-    constraints: ClassVar[tuple[type[Constraint], ...]] = ()
+    constraints: ClassVar[tuple[type[Quality], ...]] = ()
 
     @override
-    def _get_constraints(self) -> tuple[type[Constraint], ...]:
+    def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
 
@@ -219,12 +215,12 @@ class LocalPosition(Position):
     def __init__(
         self,
         name: str,
-        constraints: tuple[type[Constraint], ...] = (),
+        constraints: tuple[type[Quality], ...] = (),
     ):
         """Initialize a local position with the given name and optional constraints."""
         super().__init__()
         self._name: str = name
-        self._constraints: tuple[type[Constraint], ...] = constraints
+        self._constraints: tuple[type[Quality], ...] = constraints
 
     @property
     @override
@@ -233,12 +229,12 @@ class LocalPosition(Position):
         return self._name
 
     @override
-    def _get_constraints(self) -> tuple[type[Constraint], ...]:
+    def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types for this position."""
         return self._constraints
 
 
-class Action(Constraint, Quality):
+class Action(Quality):
     """A globally-defined action with a class-level typed name."""
 
     def __init__(
@@ -281,7 +277,7 @@ class InterfacePosition(LocalPosition):
     def __init__(
         self,
         name: str,
-        constraints: tuple[type[Constraint], ...] = (),
+        constraints: tuple[type[Quality], ...] = (),
     ):
         """Initialize an interface position with the given name and optional constraints."""
         super().__init__(name, constraints)

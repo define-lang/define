@@ -10,7 +10,7 @@ import local.my_domain_com.parent_lib.do_thing
 
 class Test(literal.GlobalPosition):
     typed_name: ClassVar[str] = "position<my.domain.com:parent_lib:/test>"
-    constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
+    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.parent_lib.do_thing.DoThing,
         local.my_domain_com.child_lib.do_thing.DoThing,
     )
