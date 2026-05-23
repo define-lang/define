@@ -24,6 +24,26 @@ def test_valid_local_position():
     assert diags == []
 
 
+def test_valid_destructor():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this dimension point is being destroyed.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert diags == []
+
+
 def test_undefined_local_name():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
