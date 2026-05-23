@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.middle
 
 
 class Outer(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
 
     def __init__(self):
         super().__init__(

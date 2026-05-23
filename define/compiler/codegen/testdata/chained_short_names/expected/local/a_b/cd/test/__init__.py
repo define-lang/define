@@ -8,8 +8,8 @@ import local.a_b.cd.a
 
 
 class Test(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<a.b:cd:/test>"
-    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "position<a.b:cd:/test>"
+    constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.a_b.cd.a.A,
     )
 

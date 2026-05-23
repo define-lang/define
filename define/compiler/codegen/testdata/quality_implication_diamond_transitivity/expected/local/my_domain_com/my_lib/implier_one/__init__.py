@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.implied
 
 
 class ImplierOne(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/implier_one>"
-    implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/implier_one>"
+    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
     )
 

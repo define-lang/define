@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.inner
 
 
 class Outer(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
-    implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
+    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.my_domain_com.my_lib.inner.Inner,
     )
 

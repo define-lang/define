@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class QualityB(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/quality_b>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/quality_b>"

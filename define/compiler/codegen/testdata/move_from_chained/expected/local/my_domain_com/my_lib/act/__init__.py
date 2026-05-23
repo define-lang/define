@@ -11,7 +11,7 @@ import local.my_domain_com.my_lib.mid_src_c
 
 
 class Act(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
 
     def __init__(self):
         super().__init__(

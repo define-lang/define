@@ -6,7 +6,7 @@ from define.runtime import literal
 
 
 class Helper(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/helper>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/helper>"
 
     def __init__(self):
         super().__init__(

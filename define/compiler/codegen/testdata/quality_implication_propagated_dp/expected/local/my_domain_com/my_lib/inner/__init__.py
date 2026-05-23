@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.implier
 
 
 class Inner(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/inner>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/inner>"
 
     def __init__(self):
         super().__init__(

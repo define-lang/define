@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.mid
 
 
 class Runner(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/runner>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/runner>"
 
     def __init__(self):
         super().__init__(

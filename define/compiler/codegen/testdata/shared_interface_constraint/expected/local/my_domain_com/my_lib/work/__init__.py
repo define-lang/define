@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.shared
 
 
 class Work(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/work>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/work>"
 
     def __init__(self):
         super().__init__(

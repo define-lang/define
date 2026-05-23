@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.b
 
 
 class Test(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
 
     @override
     def after_assigned(self):

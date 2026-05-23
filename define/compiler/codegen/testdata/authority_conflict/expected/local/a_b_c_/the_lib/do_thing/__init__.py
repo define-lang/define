@@ -6,7 +6,7 @@ from define.runtime import literal
 
 
 class DoThing(literal.Action):
-    _typed_name: ClassVar[str] = "action<a-b.c:the_lib:/do_thing>"
+    typed_name: ClassVar[str] = "action<a-b.c:the_lib:/do_thing>"
 
     def __init__(self):
         super().__init__(

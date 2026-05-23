@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class EndDest(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_dest>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_dest>"

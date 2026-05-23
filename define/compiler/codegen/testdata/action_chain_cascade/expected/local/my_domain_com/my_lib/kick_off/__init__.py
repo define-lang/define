@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.react_b
 
 
 class KickOff(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/kick_off>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/kick_off>"
 
     def __init__(self):
         super().__init__(

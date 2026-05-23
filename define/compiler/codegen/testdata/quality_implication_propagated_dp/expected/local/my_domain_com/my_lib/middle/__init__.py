@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.inner
 
 
 class Middle(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/middle>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/middle>"
 
     def __init__(self):
         super().__init__(

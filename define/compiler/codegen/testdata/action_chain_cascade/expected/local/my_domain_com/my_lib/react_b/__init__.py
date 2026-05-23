@@ -6,7 +6,7 @@ from define.runtime import literal
 
 
 class ReactB(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/react_b>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/react_b>"
 
     def __init__(self):
         super().__init__(

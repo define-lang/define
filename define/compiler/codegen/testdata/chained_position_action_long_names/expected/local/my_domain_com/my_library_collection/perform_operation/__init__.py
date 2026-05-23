@@ -6,7 +6,7 @@ from define.runtime import literal
 
 
 class PerformOperation(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_library_collection:/perform_operation>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_library_collection:/perform_operation>"
 
     def __init__(self):
         super().__init__(

@@ -8,7 +8,7 @@ import local.my_domain_com.my_library_collection.perform_operation
 
 
 class OuterPosition(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/outer_position>"
-    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/outer_position>"
+    constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.my_domain_com.my_library_collection.perform_operation.PerformOperation,
     )

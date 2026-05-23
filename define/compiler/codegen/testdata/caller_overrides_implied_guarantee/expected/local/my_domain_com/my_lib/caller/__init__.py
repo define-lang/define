@@ -9,8 +9,8 @@ import local.my_domain_com.my_lib.implied
 
 
 class Caller(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/caller>"
-    implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/caller>"
+    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
         local.my_domain_com.my_lib.callee.Callee,
     )

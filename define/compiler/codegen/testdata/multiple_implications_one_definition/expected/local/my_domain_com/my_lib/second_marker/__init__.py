@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class SecondMarker(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/second_marker>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/second_marker>"

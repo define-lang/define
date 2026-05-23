@@ -6,7 +6,7 @@ import local.my_domain_com.my_library_collection.test
 
 
 def main():
-    literal.start(local.my_domain_com.my_library_collection.test.Test())
+    literal.start(local.my_domain_com.my_library_collection.test.Test)
 
 
 if __name__ == "__main__":

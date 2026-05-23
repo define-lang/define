@@ -6,7 +6,7 @@ from define.runtime import literal
 
 
 class Test(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
 
     @override
     def after_assigned(self):

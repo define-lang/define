@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class TransitiveImplied(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/transitive_implied>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/transitive_implied>"

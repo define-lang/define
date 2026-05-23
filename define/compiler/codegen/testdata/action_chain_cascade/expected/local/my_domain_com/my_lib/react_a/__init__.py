@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.final
 
 
 class ReactA(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/react_a>"
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/react_a>"
 
     def __init__(self):
         super().__init__(

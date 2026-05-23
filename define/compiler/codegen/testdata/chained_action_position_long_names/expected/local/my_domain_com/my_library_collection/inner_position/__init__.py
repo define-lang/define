@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class InnerPosition(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/inner_position>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_library_collection:/inner_position>"

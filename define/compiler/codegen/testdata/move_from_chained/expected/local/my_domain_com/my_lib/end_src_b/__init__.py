@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class EndSrcB(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_src_b>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/end_src_b>"

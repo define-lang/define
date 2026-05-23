@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.implied
 
 
 class Callee(literal.Action):
-    _typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/callee>"
-    implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/callee>"
+    implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.my_domain_com.my_lib.implied.Implied,
     )
 

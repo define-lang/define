@@ -6,7 +6,7 @@ import local.my_domain_com.parent_lib.test
 
 
 def main():
-    literal.start(local.my_domain_com.parent_lib.test.Test())
+    literal.start(local.my_domain_com.parent_lib.test.Test)
 
 
 if __name__ == "__main__":

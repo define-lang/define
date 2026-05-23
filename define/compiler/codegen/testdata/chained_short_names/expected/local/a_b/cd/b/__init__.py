@@ -6,7 +6,7 @@ from define.runtime import literal
 
 
 class B(literal.Action):
-    _typed_name: ClassVar[str] = "action<a.b:cd:/b>"
+    typed_name: ClassVar[str] = "action<a.b:cd:/b>"
 
     def __init__(self):
         super().__init__(

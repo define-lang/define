@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.runner
 
 
 class Test(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
-    constraints: ClassVar[tuple[literal.Constraint, ...]] = (
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/test>"
+    constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
         local.my_domain_com.my_lib.runner.Runner,
     )
 

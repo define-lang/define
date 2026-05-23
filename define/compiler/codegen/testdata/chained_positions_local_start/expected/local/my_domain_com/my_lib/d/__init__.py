@@ -6,4 +6,4 @@ from define.runtime import literal
 
 
 class D(literal.GlobalPosition):
-    _typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/d>"
+    typed_name: ClassVar[str] = "position<my.domain.com:my_lib:/d>"

@@ -11,37 +11,34 @@ class TestDimensionPoint:
         triggered: list[str] = []
 
         class TrackingPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test_pos>"
+            typed_name: ClassVar[str] = "position<test_pos>"
 
             @override
             def after_assigned(self):
                 triggered.append(self.name)
 
         dp = literal.DimensionPoint()
-        pos = TrackingPosition()
-        dp.assign_position(pos)
+        dp.assign_position(TrackingPosition)
 
         assert triggered == ["position<test_pos>"]
 
     def test_assign_position_stores_position(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<quality_pos>"
+            typed_name: ClassVar[str] = "position<quality_pos>"
 
         dp = literal.DimensionPoint()
-        pos = MyPosition()
-        dp.assign_position(pos)
+        dp.assign_position(MyPosition)
 
-        assert dp._positions["position<quality_pos>"] is pos
+        assert isinstance(dp._positions["position<quality_pos>"], MyPosition)
 
     def test_get_position_returns_stored_position(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<quality_pos>"
+            typed_name: ClassVar[str] = "position<quality_pos>"
 
         dp = literal.DimensionPoint()
-        pos = MyPosition()
-        dp.assign_position(pos)
+        dp.assign_position(MyPosition)
 
-        assert dp.get_position("position<quality_pos>") is pos
+        assert isinstance(dp.get_position("position<quality_pos>"), MyPosition)
 
     def test_get_position_raises_on_missing_name(self):
         dp = literal.DimensionPoint()
@@ -53,7 +50,7 @@ class TestDimensionPoint:
 class TestGlobalPosition:
     def test_name_from_class_var(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test.com:lib:/thing>"
+            typed_name: ClassVar[str] = "position<test.com:lib:/thing>"
 
         pos = MyPosition()
 
@@ -61,7 +58,7 @@ class TestGlobalPosition:
 
     def test_create_dimension_point(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
+            typed_name: ClassVar[str] = "position<test>"
 
         pos = MyPosition()
         pos.create_dimension_point()
@@ -70,7 +67,7 @@ class TestGlobalPosition:
 
     def test_create_dimension_point_raises_on_duplicate(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
+            typed_name: ClassVar[str] = "position<test>"
 
         pos = MyPosition()
         pos.create_dimension_point()
@@ -81,7 +78,7 @@ class TestGlobalPosition:
 
     def test_constraints_default_to_empty(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
+            typed_name: ClassVar[str] = "position<test>"
 
         pos = MyPosition()
 
@@ -89,11 +86,11 @@ class TestGlobalPosition:
 
     def test_create_dimension_point_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[tuple[literal.Constraint, ...]] = (
+            typed_name: ClassVar[str] = "position<test>"
+            constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
                 ConstraintPosition,
             )
 
@@ -105,11 +102,13 @@ class TestGlobalPosition:
 
     def test_create_dimension_point_assigns_action_constraints(self):
         class ConstraintAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
 
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
-            constraints: ClassVar[tuple[literal.Constraint, ...]] = (ConstraintAction,)
+            typed_name: ClassVar[str] = "position<test>"
+            constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                ConstraintAction,
+            )
 
         pos = MyPosition()
         pos.create_dimension_point()
@@ -119,7 +118,7 @@ class TestGlobalPosition:
 
     def test_after_assigned_default_does_nothing(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
+            typed_name: ClassVar[str] = "position<test>"
 
         pos = MyPosition()
 
@@ -167,7 +166,7 @@ class TestLocalPosition:
 
     def test_constraints_stored(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<x>"
+            typed_name: ClassVar[str] = "position<x>"
 
         pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
 
@@ -180,7 +179,7 @@ class TestLocalPosition:
 
     def test_create_dimension_point_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
         pos.create_dimension_point()
@@ -220,7 +219,7 @@ class TestMovePosition:
 
     def test_move_with_satisfied_constraints_succeeds(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         source = literal.LocalPosition(
             "position<source>", constraints=(ConstraintPosition,)
@@ -237,7 +236,7 @@ class TestMovePosition:
 
     def test_move_with_unsatisfied_position_constraint_raises(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         source = literal.LocalPosition("position<source>")
         dest = literal.LocalPosition(
@@ -254,7 +253,7 @@ class TestMovePosition:
 
     def test_move_with_unsatisfied_action_constraint_raises(self):
         class ConstraintAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "action<test.com:lib:/constraint>"
 
         source = literal.LocalPosition("position<source>")
         dest = literal.LocalPosition("position<dest>", constraints=(ConstraintAction,))
@@ -267,7 +266,7 @@ class TestMovePosition:
 
     def test_move_constraint_check_does_not_transfer_on_failure(self):
         class ConstraintPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
+            typed_name: ClassVar[str] = "position<test.com:lib:/constraint>"
 
         source = literal.LocalPosition("position<source>")
         dest = literal.LocalPosition(
@@ -313,14 +312,13 @@ class TestStart:
         triggered: list[str] = []
 
         class TrackingPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<entry>"
+            typed_name: ClassVar[str] = "position<entry>"
 
             @override
             def after_assigned(self):
                 triggered.append(self.name)
 
-        entry = TrackingPosition()
-        literal.start(entry)
+        literal.start(TrackingPosition)
 
         assert triggered == ["position<entry>"]
 
@@ -328,7 +326,7 @@ class TestStart:
 class TestAction:
     def test_name_from_class_var(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test.com:lib:/thing>"
+            typed_name: ClassVar[str] = "action<test.com:lib:/thing>"
 
         action = MyAction()
 
@@ -336,7 +334,7 @@ class TestAction:
 
     def test_should_execute_defaults_to_false(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         action = MyAction()
 
@@ -344,7 +342,7 @@ class TestAction:
 
     def test_execute_defaults_to_noop(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         action = MyAction()
 
@@ -354,7 +352,7 @@ class TestAction:
         pos = literal.InterfacePosition("position</iface>")
 
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         action = MyAction(
             interface_positions=[pos],
@@ -367,7 +365,7 @@ class TestAction:
         pos = literal.InterfacePosition("position</trigger_pos>")
 
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         action = MyAction(
             interface_positions=[pos],
@@ -384,7 +382,7 @@ class TestActionTriggering:
         executed: list[str] = []
 
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
             def __init__(self):
                 super().__init__(
@@ -407,7 +405,7 @@ class TestActionTriggering:
         executed: list[str] = []
 
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
             def __init__(self):
                 super().__init__(
@@ -434,7 +432,7 @@ class TestActionTriggering:
         executed: list[str] = []
 
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
             @override
             def execute(self):
@@ -455,7 +453,7 @@ class TestActionTriggering:
 
     def test_interface_position_applies_constraints_on_create(self):
         class C(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<c>"
+            typed_name: ClassVar[str] = "position<c>"
 
         pos = literal.InterfacePosition("position</iface>", constraints=(C,))
         pos.create_dimension_point()
@@ -466,7 +464,7 @@ class TestActionTriggering:
         executed: list[str] = []
 
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
             def __init__(self):
                 super().__init__(
@@ -493,23 +491,21 @@ class TestActionTriggering:
 class TestDimensionPointActions:
     def test_assign_action_stores_action(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         dp = literal.DimensionPoint()
-        action = MyAction()
-        dp.assign_action(action)
+        dp.assign_action(MyAction)
 
-        assert dp._actions["action<test>"] is action
+        assert isinstance(dp._actions["action<test>"], MyAction)
 
     def test_get_action_returns_stored_action(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         dp = literal.DimensionPoint()
-        action = MyAction()
-        dp.assign_action(action)
+        dp.assign_action(MyAction)
 
-        assert dp.get_action("action<test>") is action
+        assert isinstance(dp.get_action("action<test>"), MyAction)
 
     def test_get_action_raises_on_missing_name(self):
         dp = literal.DimensionPoint()
@@ -521,13 +517,13 @@ class TestDimensionPointActions:
 class TestImpliedQualities:
     def test_position_implied_qualities_default_to_empty(self):
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
+            typed_name: ClassVar[str] = "position<test>"
 
         assert MyPosition.implied_qualities == ()
 
     def test_action_implied_qualities_default_to_empty(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         assert MyAction.implied_qualities == ()
 
@@ -535,22 +531,24 @@ class TestImpliedQualities:
         order: list[str] = []
 
         class Implied(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implied>"
+            typed_name: ClassVar[str] = "position<implied>"
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class Implying(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Implied,)
+            typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Implied,
+            )
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Implying())
+        dp.assign_position(Implying)
 
         assert order == ["position<implied>", "position<implying>"]
         assert "position<implied>" in dp._positions
@@ -560,22 +558,22 @@ class TestImpliedQualities:
         order: list[str] = []
 
         class First(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<first>"
+            typed_name: ClassVar[str] = "position<first>"
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class Second(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<second>"
+            typed_name: ClassVar[str] = "position<second>"
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class Implier(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implier>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+            typed_name: ClassVar[str] = "position<implier>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
                 First,
                 Second,
             )
@@ -585,7 +583,7 @@ class TestImpliedQualities:
                 order.append(self.name)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Implier())
+        dp.assign_position(Implier)
 
         assert order == ["position<first>", "position<second>", "position<implier>"]
 
@@ -593,30 +591,30 @@ class TestImpliedQualities:
         order: list[str] = []
 
         class C(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<c>"
+            typed_name: ClassVar[str] = "position<c>"
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class B(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<b>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (C,)
+            typed_name: ClassVar[str] = "position<b>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (C,)
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class A(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<a>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (B,)
+            typed_name: ClassVar[str] = "position<a>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (B,)
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(A())
+        dp.assign_position(A)
 
         assert order == ["position<c>", "position<b>", "position<a>"]
 
@@ -624,31 +622,35 @@ class TestImpliedQualities:
         order: list[str] = []
 
         class Shared(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<shared>"
+            typed_name: ClassVar[str] = "position<shared>"
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class Left(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<left>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
+            typed_name: ClassVar[str] = "position<left>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Shared,
+            )
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class Right(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<right>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Shared,)
+            typed_name: ClassVar[str] = "position<right>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Shared,
+            )
 
             @override
             def after_assigned(self):
                 order.append(self.name)
 
         class Top(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<top>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+            typed_name: ClassVar[str] = "position<top>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
                 Left,
                 Right,
             )
@@ -658,7 +660,7 @@ class TestImpliedQualities:
                 order.append(self.name)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Top())
+        dp.assign_position(Top)
 
         assert order == [
             "position<shared>",
@@ -667,78 +669,112 @@ class TestImpliedQualities:
             "position<top>",
         ]
 
+    def test_diamond_implied_action_assigned_only_once(self):
+        class Shared(literal.Action):
+            typed_name: ClassVar[str] = "action<shared>"
+
+        class Left(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<left>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Shared,
+            )
+
+        class Right(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<right>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Shared,
+            )
+
+        class Top(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<top>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Left,
+                Right,
+            )
+
+        dp = literal.DimensionPoint()
+        dp.assign_position(Top)
+
+        names = [quality.name for quality in dp._assigned_qualities]
+        assert names == [
+            "action<shared>",
+            "position<left>",
+            "position<right>",
+            "position<top>",
+        ]
+
     def test_action_processes_its_implied_qualities(self):
         class ImpliedPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implied>"
+            typed_name: ClassVar[str] = "position<implied>"
 
         class ImplyingAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<implying>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+            typed_name: ClassVar[str] = "action<implying>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
                 ImpliedPosition,
             )
 
         dp = literal.DimensionPoint()
-        dp.assign_action(ImplyingAction())
+        dp.assign_action(ImplyingAction)
 
         assert "position<implied>" in dp._positions
         assert "action<implying>" in dp._actions
 
     def test_position_can_imply_action(self):
         class ImpliedAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<implied>"
+            typed_name: ClassVar[str] = "action<implied>"
 
         class ImplyingPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (
+            typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
                 ImpliedAction,
             )
 
         dp = literal.DimensionPoint()
-        dp.assign_position(ImplyingPosition())
+        dp.assign_position(ImplyingPosition)
 
         assert "action<implied>" in dp._actions
         assert "position<implying>" in dp._positions
 
-    def test_assign_position_already_present_is_no_op(self):
+    def test_assign_position_duplicate_raises(self):
         triggered: list[str] = []
 
         class MyPosition(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<test>"
+            typed_name: ClassVar[str] = "position<test>"
 
             @override
             def after_assigned(self):
                 triggered.append(self.name)
 
         dp = literal.DimensionPoint()
-        first = MyPosition()
-        dp.assign_position(first)
-        dp.assign_position(MyPosition())
+        dp.assign_position(MyPosition)
 
+        with pytest.raises(literal.DuplicateQualityAssignmentError) as exc_info:
+            dp.assign_position(MyPosition)
+        assert exc_info.value.position_name == "position<test>"
         assert triggered == ["position<test>"]
-        assert dp._positions["position<test>"] is first
 
-    def test_assign_action_already_present_is_no_op(self):
+    def test_assign_action_duplicate_raises(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         dp = literal.DimensionPoint()
-        first = MyAction()
-        dp.assign_action(first)
-        dp.assign_action(MyAction())
+        dp.assign_action(MyAction)
 
-        assert dp._actions["action<test>"] is first
+        with pytest.raises(literal.DuplicateQualityAssignmentError) as exc_info:
+            dp.assign_action(MyAction)
+        assert exc_info.value.position_name == "action<test>"
 
     def test_create_dimension_point_propagates_transitive_qualities(self):
         class Inner(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<inner>"
+            typed_name: ClassVar[str] = "position<inner>"
 
         class Outer(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<outer>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Inner,)
+            typed_name: ClassVar[str] = "position<outer>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (Inner,)
 
         class Container(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<container>"
-            constraints: ClassVar[tuple[literal.Constraint, ...]] = (Outer,)
+            typed_name: ClassVar[str] = "position<container>"
+            constraints: ClassVar[tuple[type[literal.Constraint], ...]] = (Outer,)
 
         container = Container()
         container.create_dimension_point()
@@ -749,11 +785,13 @@ class TestImpliedQualities:
 
     def test_move_succeeds_via_transitive_implied_quality(self):
         class Implied(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implied>"
+            typed_name: ClassVar[str] = "position<implied>"
 
         class Implying(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Implied,)
+            typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Implied,
+            )
 
         source = literal.LocalPosition("source", constraints=(Implying,))
         dest = literal.LocalPosition("dest", constraints=(Implied,))
@@ -766,40 +804,42 @@ class TestImpliedQualities:
 
     def test_assigned_qualities_recorded_in_assignment_order(self):
         class A(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<a>"
+            typed_name: ClassVar[str] = "position<a>"
 
         class B(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<b>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (A,)
+            typed_name: ClassVar[str] = "position<b>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (A,)
 
         dp = literal.DimensionPoint()
-        dp.assign_position(B())
+        dp.assign_position(B)
 
         names = [quality.name for quality in dp._assigned_qualities]
         assert names == ["position<a>", "position<b>"]
 
     def test_assign_action_contributes_to_quality_types(self):
         class MyAction(literal.Action):
-            _typed_name: ClassVar[str] = "action<test>"
+            typed_name: ClassVar[str] = "action<test>"
 
         dp = literal.DimensionPoint()
-        dp.assign_action(MyAction())
+        dp.assign_action(MyAction)
 
         assert MyAction in dp.quality_types
 
     def test_implied_quality_after_assigned_side_effects_run(self):
         class Implied(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implied>"
+            typed_name: ClassVar[str] = "position<implied>"
 
             @override
             def after_assigned(self):
                 self.create_dimension_point()
 
         class Implying(literal.GlobalPosition):
-            _typed_name: ClassVar[str] = "position<implying>"
-            implied_qualities: ClassVar[tuple[literal.Constraint, ...]] = (Implied,)
+            typed_name: ClassVar[str] = "position<implying>"
+            implied_qualities: ClassVar[tuple[type[literal.Constraint], ...]] = (
+                Implied,
+            )
 
         dp = literal.DimensionPoint()
-        dp.assign_position(Implying())
+        dp.assign_position(Implying)
 
         assert dp.get_position("position<implied>").has_dimension_point
