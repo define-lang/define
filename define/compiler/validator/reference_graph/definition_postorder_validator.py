@@ -201,16 +201,20 @@ class DefinitionPostorderValidator(abc.ABC):
         position: ast.PositionReference,
     ) -> ast.PositionReference | None:
         """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
-        # Implied quality.
-        if position.starts_with_global:
-            return position
         parent_origin = self._parent_dimension_point_comes_from_caller(position)
-        if parent_origin is None:
-            return None
-        # This comes from a contracted position, so we put the requirement on
-        # that contracted position, not whatever local position we are inferring
-        # a requirement for.
-        return position.replace_parent_position_with_prefix(parent_origin)
+        if parent_origin is not None:
+            # The dimension point was moved in from a contracted position, so we
+            # put the requirement on that origin, not whatever position we are
+            # inferring a requirement for.
+            return position.replace_parent_position_with_prefix(parent_origin)
+        if self._starts_with_contracted_name(position):
+            return position
+        return None
+
+    def _starts_with_contracted_name(self, position: ast.PositionReference) -> bool:
+        """Whether the chain's first name is a contracted name of this definition."""
+        # Implied quality.
+        return position.starts_with_global
 
     def _local_definition_cache_key(
         self,
@@ -995,12 +999,17 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # of the position still do create requirements.)
         if self._trigger_position_name == position.canonical_chained_name:
             return None
-        # The structural validator guarantees for us that this is defined, so
-        # we don't need to re-check if it's defined.
-        first = position.typed_names[0]
-        if first.full_typed_name in self._interface_positions:
-            return position
         return super()._chain_for_inferred_requirement(position)
+
+    @typing.override
+    def _starts_with_contracted_name(self, position: ast.PositionReference) -> bool:
+        """Whether the chain's first name is a contracted name of this action."""
+        # The structural validator guarantees the name is defined, so we don't
+        # re-check. An action's own interface positions are contracted.
+        return (
+            super()._starts_with_contracted_name(position)
+            or position.typed_names[0].full_typed_name in self._interface_positions
+        )
 
     @typing.override
     def _local_definition_cache_key(
