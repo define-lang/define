@@ -37,8 +37,12 @@ class DefinitionPostorderValidator(abc.ABC):
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ]
-    _action_contracts: dict[str, action_contract.ActionContract]
-    _position_contracts: dict[str, action_contract.PositionInitBlockContract]
+    _action_contracts: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, action_contract.ActionContract
+    ]
+    _position_contracts: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, action_contract.PositionInitBlockContract
+    ]
     _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
@@ -50,8 +54,12 @@ class DefinitionPostorderValidator(abc.ABC):
         definition_results: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, validation_result.DefinitionValidationResult
         ],
-        action_contracts: dict[str, action_contract.ActionContract],
-        position_contracts: dict[str, action_contract.PositionInitBlockContract],
+        action_contracts: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, action_contract.ActionContract
+        ],
+        position_contracts: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, action_contract.PositionInitBlockContract
+        ],
         definition_quality_cache: dict[
             tuple[str, ...], list[ast.GlobalTypedNameReference]
         ],
@@ -322,7 +330,7 @@ class DefinitionPostorderValidator(abc.ABC):
         for quality in qualities:
             if quality.name_type != ast.NameType.POSITION:
                 continue
-            init_block_contract = self._position_contracts.get(quality.full_typed_name)
+            init_block_contract = self._position_contracts.get(quality)
             if init_block_contract is None:
                 continue
             self._propagate_init_block_requirements(
@@ -415,7 +423,7 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         action_name = action_ref.full_typed_name
         # The action's file may have failed to load or parse.
-        contract = self._action_contracts.get(action_name)
+        contract = self._action_contracts.get(action_ref)
         if contract is None:
             return
         trigger_element = typing.cast(
@@ -1136,8 +1144,12 @@ def create_postorder_validator(
     definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ],
-    action_contracts: dict[str, action_contract.ActionContract],
-    position_contracts: dict[str, action_contract.PositionInitBlockContract],
+    action_contracts: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, action_contract.ActionContract
+    ],
+    position_contracts: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, action_contract.PositionInitBlockContract
+    ],
     definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],
 ) -> DefinitionPostorderValidator:
     """Create the appropriate postorder validator for the given definition."""

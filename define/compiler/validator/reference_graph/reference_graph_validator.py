@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -12,7 +13,6 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
-    from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 
 
@@ -32,8 +32,12 @@ class ReferenceGraphValidator:
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ]
-    _action_contracts: dict[str, action_contract.ActionContract]
-    _position_contracts: dict[str, action_contract.PositionInitBlockContract]
+    _action_contracts: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, action_contract.ActionContract
+    ]
+    _position_contracts: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, action_contract.PositionInitBlockContract
+    ]
     _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
 
     def __init__(
@@ -46,8 +50,8 @@ class ReferenceGraphValidator:
         """Initialize with the reference graph and definition results."""
         self._reference_graph = graph
         self._definition_results = definition_results
-        self._action_contracts = {}
-        self._position_contracts = {}
+        self._action_contracts = typed_name_dict.TypedNameDict()
+        self._position_contracts = typed_name_dict.TypedNameDict()
         self._definition_quality_cache = {}
 
     def validate(self) -> action_call_graph.ActionCallGraph:
@@ -57,7 +61,6 @@ class ReferenceGraphValidator:
         # reference graph can contain multiple roots (any action or position
         # that is not referenced by anything else creates a new graph).
         for definition in self._reference_graph.dfs_postorder_all():
-            name = definition.typed_name.source_typed_name
             definition_result = self._definition_results[definition.typed_name]
             analyzer = definition_postorder_validator.create_postorder_validator(
                 definition_result,
@@ -72,7 +75,7 @@ class ReferenceGraphValidator:
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
             if isinstance(result.contract, action_contract.ActionContract):
-                self._action_contracts[name] = result.contract
+                self._action_contracts[definition.typed_name] = result.contract
             elif isinstance(result.contract, action_contract.PositionInitBlockContract):
-                self._position_contracts[name] = result.contract
+                self._position_contracts[definition.typed_name] = result.contract
         return call_graph
