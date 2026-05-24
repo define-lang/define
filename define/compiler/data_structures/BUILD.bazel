@@ -25,6 +25,24 @@ py_test(
     ],
 )
 
+py_library(
+    name = "typed_name_dict",
+    srcs = ["typed_name_dict.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["//define/compiler:ast"],
+)
+
+py_test(
+    name = "typed_name_dict_test",
+    size = "small",
+    srcs = ["typed_name_dict_test.py"],
+    deps = [
+        ":typed_name_dict",
+        "//define/compiler:ast",
+        "@pypi//pytest",
+    ],
+)
+
 # --- Format checking ---
 
 format_test(
@@ -41,5 +59,7 @@ pyright_test(
         ":data_structures",
         ":trie",
         ":trie_test",
+        ":typed_name_dict",
+        ":typed_name_dict_test",
     ],
 )
