@@ -369,11 +369,35 @@ class DefinitionPostorderValidator(abc.ABC):
                 destructors.append(quality)
         return destructors
 
-    def _run_destructors(self, destructors: list[ast.GlobalTypedNameReference]):
-        """Record a call-graph edge for each destructor firing on a destroyed dimension point."""
-        # TODO: Check requirements, and enforce requirements and guarantees in the way
-        # described in DLP 41.
+    def _run_destructors(
+        self,
+        destructors: list[ast.GlobalTypedNameReference],
+        destroy_target: ast.PositionReference,
+    ):
+        """Check requirements and record a call-graph edge for each destructor firing on a destroyed dimension point."""
+        # A destructor's requirements are checked as though it triggered
+        # synchronously at the moment of destruction (DLP 41). The destructor is a
+        # quality of the dimension point at destroy_target, so its interface
+        # positions hang off destroy_target::action</destructor> while its implied
+        # qualities hang off destroy_target itself; in_caller maps both correctly
+        # from this chain.
+        #
+        # TODO: Propagate a destructor's requirements to the destroying action's
+        # caller when destroy_target is itself a contracted position, and enforce
+        # that destructors create only identity guarantees (DLP 41).
         for quality in destructors:
+            contract = self._action_contracts.get(quality)
+            if contract is not None:
+                action_chain = ast.ChainedName(
+                    location=destroy_target.location,
+                    typed_names=[*destroy_target.typed_names, quality],
+                )
+                self._check_requirements(
+                    contract,
+                    action_chain,
+                    destroy_target,
+                    is_destructor=True,
+                )
             self._action_edges.append(
                 action_call_graph.ActionGraphEdge(
                     source=self._definition.typed_name.source_typed_name,
@@ -471,6 +495,8 @@ class DefinitionPostorderValidator(abc.ABC):
         contract: action_contract.ActionStatementsBlockContract,
         prefix_chain: ast.ChainedName,
         acting_on_position: ast.PositionReference,
+        *,
+        is_destructor: bool = False,
     ):
         """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position."""
         # Action trigger:
@@ -495,13 +521,17 @@ class DefinitionPostorderValidator(abc.ABC):
             full_caller_chain = req.full_propagation_position_chain().in_caller(
                 prefix_chain
             )
-            self._check_one_requirement(full_caller_chain, acting_on_position, req)
+            self._check_one_requirement(
+                full_caller_chain, acting_on_position, req, is_destructor=is_destructor
+            )
 
     def _check_one_requirement(
         self,
         full_caller_chain: ast.PositionReference,
         acting_on_position: ast.PositionReference,
         req: action_contract.PositionRequirement,
+        *,
+        is_destructor: bool,
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
         key = full_caller_chain.canonical_chained_name_tuple
@@ -515,7 +545,21 @@ class DefinitionPostorderValidator(abc.ABC):
             and self._tracker.is_occupied_by_key(key)
         ):
             occupant = self._tracker.get_occupant_by_key(key)
-            if isinstance(req.root_cause_quality(), ast.ActionDefinition):
+            if is_destructor:
+                self._diagnostics.append(
+                    diagnostics.DestructorRequiresEmptyPositionDiagnostic(
+                        location=acting_on_position.location,
+                        destructor_name=req.root_cause_quality_name(),
+                        destroy_target_name=acting_on_position.source_form_in_universe(
+                            self._enclosing_fqun
+                        ),
+                        position_name=position_name,
+                        inferred_at=req.inferred_from.location,
+                        propagated_from_locations=req.propagated_from_locations(),
+                        filled_at=occupant.last_position.location,
+                    )
+                )
+            elif isinstance(req.root_cause_quality(), ast.ActionDefinition):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresEmptyPositionDiagnostic(
                         location=acting_on_position.location,
@@ -544,7 +588,20 @@ class DefinitionPostorderValidator(abc.ABC):
             req.required_state == action_contract.PositionOccupancyState.OCCUPIED
             and not self._tracker.is_occupied_by_key(key)
         ):
-            if isinstance(req.root_cause_quality(), ast.ActionDefinition):
+            if is_destructor:
+                self._diagnostics.append(
+                    diagnostics.DestructorRequiresOccupiedPositionDiagnostic(
+                        location=acting_on_position.location,
+                        destructor_name=req.root_cause_quality_name(),
+                        destroy_target_name=acting_on_position.source_form_in_universe(
+                            self._enclosing_fqun
+                        ),
+                        position_name=position_name,
+                        inferred_at=req.inferred_from.location,
+                        propagated_from_locations=req.propagated_from_locations(),
+                    )
+                )
+            elif isinstance(req.root_cause_quality(), ast.ActionDefinition):
                 self._diagnostics.append(
                     diagnostics.ActionRequiresOccupiedPositionDiagnostic(
                         location=acting_on_position.location,
@@ -641,7 +698,9 @@ class DefinitionPostorderValidator(abc.ABC):
         destructors = self._get_destructors_assigned_to(stmt.target_position)
         diags = self._executor.execute_destroy(
             dimension_point_operation.Destroy(target=stmt.target_position),
-            before_destroy=lambda: self._run_destructors(destructors),
+            before_destroy=lambda: self._run_destructors(
+                destructors, stmt.target_position
+            ),
         )
         self._diagnostics.extend(diags)
 

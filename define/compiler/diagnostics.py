@@ -763,6 +763,43 @@ class ActionRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
 
 
 @dataclass
+class DestructorRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
+    """Diagnostic for when a destructor requires a position to be empty but it is not."""
+
+    destructor_name: str
+    destroy_target_name: str
+    filled_at: ast.SourceLocation
+    message_format: ClassVar[str] = (
+        "destroying the dimension point in `{self.destroy_target_name}`"
+        " runs the destructor `{self.destructor_name}`.\n"
+        "However, '{self.position_name}' must be empty before that destructor runs,"
+        " and it is not empty.\n"
+        "It was filled at:\n{self.formatted_filled_at}\n\n"
+        "{self.formatted_inferred_at}"
+    )
+
+    @property
+    def formatted_filled_at(self) -> str:
+        """Format the filled_at location as a human-readable string."""
+        return _format_location(self.filled_at)
+
+
+@dataclass
+class DestructorRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
+    """Diagnostic for when a destructor requires a position to be occupied but it is not."""
+
+    destructor_name: str
+    destroy_target_name: str
+    message_format: ClassVar[str] = (
+        "destroying the dimension point in `{self.destroy_target_name}`"
+        " runs the destructor `{self.destructor_name}`.\n"
+        "However, '{self.position_name}' must be occupied before that destructor runs,"
+        " and it is not occupied.\n\n"
+        "{self.formatted_inferred_at}"
+    )
+
+
+@dataclass
 class PositionInitBlockRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
     """Diagnostic for when a position init block requires a position to be empty but it is not."""
 

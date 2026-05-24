@@ -622,3 +622,106 @@ def test_destroy_in_default_empty_interface_position_format(
         " because it does not contain one;"
         " action interface positions are empty by default"
     )
+
+
+def test_destructor_requires_occupied_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</destructor>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        destroy the dimension point in position<box>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "destructor.dfn": (
+                "define the potential action<my.domain.com:my_lib:/destructor> {\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        this dimension point is being destroyed.\n"
+                "    } and it does {\n"
+                "        destroy the dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 12, column 40\n'
+        "        destroy the dimension point in position<box>.\n"
+        "                                       ^\n"
+        "destroying the dimension point in `position<box>`"
+        " runs the destructor `action<my.domain.com:my_lib:/destructor>`.\n"
+        "However, 'position<box>::action</destructor>::position<item>'"
+        " must be occupied before that destructor runs, and it is not occupied.\n\n"
+        "This requirement happens because of:\n"
+        'File "destructor.dfn", line 6, column 40'
+    )
+
+
+def test_destructor_requires_empty_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</destructor_empty>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        create a dimension point in position<box>::action</destructor_empty>::position<item>.\n"
+        "        destroy the dimension point in position<box>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "destructor_empty.dfn": (
+                "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        this dimension point is being destroyed.\n"
+                "    } and it does {\n"
+                "        create a dimension point in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(test_source.splitlines())
+    assert formatted == (
+        'File "test.dfn", line 13, column 40\n'
+        "        destroy the dimension point in position<box>.\n"
+        "                                       ^\n"
+        "destroying the dimension point in `position<box>`"
+        " runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.\n"
+        "However, 'position<box>::action</destructor_empty>::position<item>'"
+        " must be empty before that destructor runs, and it is not empty.\n"
+        "It was filled at:\n"
+        'File "test.dfn", line 12, column 37\n\n'
+        "This requirement happens because of:\n"
+        'File "destructor_empty.dfn", line 6, column 37'
+    )
