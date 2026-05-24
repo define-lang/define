@@ -101,6 +101,7 @@ py_library(
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler:parser",
+        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",

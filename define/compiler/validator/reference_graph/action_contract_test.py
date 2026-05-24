@@ -19,7 +19,11 @@ def _parse_action(
         )
     )
     assert_no_errors(result)
-    definition = result.definition_results[action_name].definition
+    definition = next(
+        definition_result.definition
+        for definition_result in result.definition_results.values()
+        if definition_result.definition.typed_name.full_typed_name == action_name
+    )
     assert isinstance(definition, ast.ActionDefinition)
     return definition
 

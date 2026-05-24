@@ -12,6 +12,7 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
+    from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 
 
@@ -28,7 +29,9 @@ class ReferenceGraphValidator:
     """
 
     _reference_graph: reference_graph.ReferenceGraph
-    _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+    ]
     _action_contracts: dict[str, action_contract.ActionContract]
     _position_contracts: dict[str, action_contract.PositionInitBlockContract]
     _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
@@ -36,7 +39,9 @@ class ReferenceGraphValidator:
     def __init__(
         self,
         graph: reference_graph.ReferenceGraph,
-        definition_results: dict[str, validation_result.DefinitionValidationResult],
+        definition_results: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, validation_result.DefinitionValidationResult
+        ],
     ):
         """Initialize with the reference graph and definition results."""
         self._reference_graph = graph
@@ -53,7 +58,7 @@ class ReferenceGraphValidator:
         # that is not referenced by anything else creates a new graph).
         for definition in self._reference_graph.dfs_postorder_all():
             name = definition.typed_name.source_typed_name
-            definition_result = self._definition_results[name]
+            definition_result = self._definition_results[definition.typed_name]
             analyzer = definition_postorder_validator.create_postorder_validator(
                 definition_result,
                 self._definition_results,

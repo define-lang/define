@@ -244,7 +244,14 @@ class TypedName(ASTNode):
 
 
 @dataclass(frozen=True, slots=True)
-class GlobalTypedNameReference(TypedName):
+class GlobalTypedName(TypedName):
+    """A typed global name, at either a definition site or a reference site."""
+
+    name_content: GlobalNameContent
+
+
+@dataclass(frozen=True, slots=True)
+class GlobalTypedNameReference(GlobalTypedName):
     """Represents a typed global name reference."""
 
     name_content: ReferenceGlobalNameContent
@@ -742,7 +749,7 @@ class ReferenceGlobalNameContent(GlobalNameContent):
 
 
 @dataclass(frozen=True, slots=True)
-class GlobalTypedNameInDefinition(TypedName):
+class GlobalTypedNameInDefinition(GlobalTypedName):
     """Represents a typed global name at a definition site."""
 
     name_content: DefinitionGlobalNameContent

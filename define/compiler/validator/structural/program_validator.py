@@ -24,6 +24,7 @@ from define.compiler import (
     exceptions,
     parser,
 )
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
@@ -101,7 +102,9 @@ class ProgramStructuralValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
-    _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+    ]
     _config_loading_time_ns: int
 
     def __init__(self, parser_instance: parser.Parser | None = None):
@@ -116,7 +119,7 @@ class ProgramStructuralValidator:
         self._path_tracker = path_tracker.PathTracker()
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
-        self._definition_results = {}
+        self._definition_results = typed_name_dict.TypedNameDict()
         self._config_loading_time_ns = 0
 
     def validate_program(
@@ -216,15 +219,15 @@ class ProgramStructuralValidator:
         definition_result: validation_result.DefinitionValidationResult,
     ):
         """Handle one completed definition from a file result."""
-        name = definition_result.definition.typed_name.source_typed_name
+        typed_name = definition_result.definition.typed_name
         # FileStructuralValidator preserves duplicate definitions in source order so
         # the later ones can still return diagnostics. Originally, I tried
         # to make all the later checks still run on duplicates, but it gets
         # into too much complexity. We do still load DiscoveredFiles from
         # duplicates, above, but that's it.
-        if name in self._definition_results:
+        if typed_name in self._definition_results:
             return
-        self._definition_results[name] = definition_result
+        self._definition_results[typed_name] = definition_result
         self._reference_graph.add_definition(definition_result.definition)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
@@ -513,7 +516,7 @@ class ProgramStructuralValidator:
             self._path_tracker.mark_not_found(target_file)
             return
 
-        if edge.target_full_typed_name not in self._definition_results:
+        if edge.global_name_reference not in self._definition_results:
             source_definition.add_diagnostic(
                 diagnostics.ReferencedGlobalNameWrongTypeDiagnostic(
                     location=global_name.location,

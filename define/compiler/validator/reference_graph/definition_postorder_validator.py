@@ -17,6 +17,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
+    from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 
 
@@ -33,7 +34,9 @@ class DefinitionPostorderValidator(abc.ABC):
     """Validates a single definition during a DFS post-order walk of the reference graph."""
 
     _definition_result: validation_result.DefinitionValidationResult
-    _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+    ]
     _action_contracts: dict[str, action_contract.ActionContract]
     _position_contracts: dict[str, action_contract.PositionInitBlockContract]
     _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
@@ -44,7 +47,9 @@ class DefinitionPostorderValidator(abc.ABC):
     def __init__(
         self,
         definition_result: validation_result.DefinitionValidationResult,
-        definition_results: dict[str, validation_result.DefinitionValidationResult],
+        definition_results: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName, validation_result.DefinitionValidationResult
+        ],
         action_contracts: dict[str, action_contract.ActionContract],
         position_contracts: dict[str, action_contract.PositionInitBlockContract],
         definition_quality_cache: dict[
@@ -346,7 +351,7 @@ class DefinitionPostorderValidator(abc.ABC):
         for quality in reversed(dp.qualities):
             if quality.name_type != ast.NameType.ACTION:
                 continue
-            definition_result = self._definition_results.get(quality.full_typed_name)
+            definition_result = self._definition_results.get(quality)
             if definition_result is None:
                 continue
             if (
@@ -762,7 +767,7 @@ class DefinitionPostorderValidator(abc.ABC):
         chain: ast.PositionReference,
     ) -> ast.QualityDefinition | None:
         """Get the QualityDefinition for a chain element, or None on failure (and mark chain unknown)."""
-        parent_result = self._definition_results.get(parent.full_typed_name)
+        parent_result = self._definition_results.get(parent)
         # This means the definition's file did not load or did not parse.
         if parent_result is None:
             self._tracker.mark_unknown(chain)
@@ -876,8 +881,10 @@ class DefinitionPostorderValidator(abc.ABC):
             # interface position definition. Chain validation guarantees the
             # parent is a global action reference whose definition exists and
             # contains this interface position.
-            parent = position.typed_names[-2]
-            action_def = self._definition_results[parent.full_typed_name].definition
+            parent = typing.cast(
+                "ast.GlobalTypedNameReference", position.typed_names[-2]
+            )
+            action_def = self._definition_results[parent].definition
             action_def = typing.cast("ast.ActionDefinition", action_def)
             return (
                 action_def.interface_positions_by_name[
@@ -888,7 +895,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         # This can be None if the last element in the chain is a definition we never loaded
         # (file not found or failed to parse).
-        definition_result = self._definition_results.get(last_element.full_typed_name)
+        definition_result = self._definition_results.get(last_element)
         if definition_result is None:
             return (None, None)
         position_def = typing.cast(
@@ -929,7 +936,7 @@ class DefinitionPostorderValidator(abc.ABC):
             if name in seen:
                 return
             seen.add(name)
-            defn_result = self._definition_results.get(name)
+            defn_result = self._definition_results.get(typed_name)
             if defn_result is not None:
                 for impl in defn_result.definition.quality_implications:
                     visit(impl.typed_global_name)
@@ -1126,7 +1133,9 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
 
 def create_postorder_validator(
     definition_result: validation_result.DefinitionValidationResult,
-    definition_results: dict[str, validation_result.DefinitionValidationResult],
+    definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+    ],
     action_contracts: dict[str, action_contract.ActionContract],
     position_contracts: dict[str, action_contract.PositionInitBlockContract],
     definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],

@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
     import pathlib
     from collections.abc import Sequence
 
+    from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
 
@@ -112,7 +113,9 @@ class ProgramValidationResult:
     file_results: list[FileValidationResult]
     config_loading_time_ns: int
     reference_graph: reference_graph.ReferenceGraph
-    definition_results: dict[str, DefinitionValidationResult]
+    definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName, DefinitionValidationResult
+    ]
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:
