@@ -34,12 +34,13 @@ cost if not handled correctly.
 
 [DLP 34 (Destructors)](00034-destructors.md) specifies that destructors are
 processed in LIFO order (in reverse order of assignment). This is particularly
-important when considering quality-required positions and actions, where the
-destructors that were added last _must_ run first because they could depend on
-positions that were quality-required.
+important when taking into account the existence of implied positions and
+actions---destructors that were added last _must_ run first, because they could
+be referencing implied positions.
 
-However, interface positions on actions don't have to specify their constraints
-in the same _order_ that the caller did. So how do we know what order the
+However, contracted positions on actions don't have to specify their constraints
+in the same _order_ that the caller did. The caller may have assigned qualities
+in a different order than how they are listed. So how do we know what order the
 destructors are going to be run in, at compile time?
 
 ### 3: Callees Can Make Changes
@@ -53,16 +54,19 @@ the safety of running a destructor. So somehow we need to be able to do modular
 analysis even though the necessary information to do it is split into multiple
 locations.
 
-### 4: Destructors Can Modify Quality-Required Positions
+### 4: Destructors Can Modify implied Positions
 
-A destructor can quality-require another position, which will automatically mean
-that position gets destroyed only after the destructor runs. However, this adds
-tremendous complexity to the destruction cascade, because it means that one
-destructor could change what's actually going to _run_ on another destructor.
+A destructor can imply qualities just like any other action can, which will
+automatically mean that quality gets unassigned only after the destructor runs
+(and thus, any dimension points in implied positions only get destroyed after
+the destructor runs). However, this adds tremendous complexity to the
+destruction cascade, because it means that one destructor could change what's
+actually going to _run_ on another destructor. (It could change the state of the
+world that the next destructor sees.)
 
 A destructor could move, create, or destroy dimension points in another
 position. It could assign a new quality to any position in another position.
-This includes all children of quality-required positions.
+This includes all children of implied positions.
 
 This adds a potentially enormous computational cost to calculating whether
 destructors are safe, because they can change things that happen after them.
@@ -85,25 +89,25 @@ that were added by the caller.
 Once an action becomes a destructor (that is, it has the Destructor Condition on
 it) it gains certain restrictions.
 
-**Upon completion, a destructor must leave all quality-required positions in the
-state they were in when the action started.**
+**Upon completion, a destructor must leave all contracted positions in the state
+they were in when the action started.**
 
 Before we had this restriction, I wrote out an enormously complex algorithm to
-deal with the fact that destructors could modify the state of quality-required
-positions, including adding or removing destructors to positions that would get
-destroyed later in the cascade. Not only was it extremely hard to reason
-through, it had an unacceptable computational complexity where every action in a
-call chain would have to fully recompute the safety of every destructor in the
-entire cascade for every destroyed dimension point.
+deal with the fact that destructors could modify the state of implied positions,
+including adding or removing destructors to positions that would get destroyed
+later in the cascade. Not only was it extremely hard to reason through, it had
+an unacceptable computational complexity where every action in a call chain
+would have to fully recompute the safety of every destructor in the entire
+cascade for every destroyed dimension point.
 
 There are four ways that a destructor could modify the state of another
 dimension point that would cause us to have to do this recomputation: they could
-**create** dimension points in quality-required positions, **move** dimension
-points into or out of quality-required positions, **destroy** dimension points
-in quality-required positions, or **assign** new qualities to a quality-required
-dimension point. Some of these actions actually can be done, as long as the
-state the dimension points were in at the end of the destructor is identical to
-the state they were in at the start.
+**create** dimension points in contracted positions, **move** dimension points
+into or out of contracted positions, **destroy** dimension points in contracted
+positions, or **assign** new qualities to a contracted dimension point. Some of
+these actions actually can be done, as long as the state the dimension points
+are in at the end of the destructor is identical to the state they were in at
+the start.
 
 Using the system of
 [DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md),
@@ -115,17 +119,16 @@ qualities it had when we started."**
 
 ### Destruction Contracts
 
-We have to modify the action contract to contain additional data. This is only
-relevant for dimension points that are passed in through interface positions or
-that are accessed as quality-required positions in an action.
+We have to modify the action contract to contain additional data for contracted
+positions.
 
-These additions only occur when an action destroys one of those dimension points
-explicitly or automatically.
+These additions only occur when an action destroys a dimension points in a
+contracted position explicitly or automatically.
 
 #### Destruction Fact
 
 Action contracts must contain the information that the relevant dimension point
-was destroyed (not just that the interface position is empty, but specifically
+was destroyed (not just that the contracted position is empty, but specifically
 that _that_ dimension point got destroyed). This is the only way that a caller
 can know to check the verification of destructors that it added.
 
@@ -159,9 +162,9 @@ Child State for the destruction contract of that dimension point.
 
 Note that there is a more memory-efficient version of this possible, too, where
 we do a forward pass through the reference graph that lets called actions know
-which positions destructors added in the callers can actually affect, and so
-callees only have to return the state of those positions. (However, if you want
-to ship a compiled library, you would have to expose the full data for all
+which positions caller-added destructors can actually affect, and so callees
+only have to return the state of _those_ positions. (However, if you want to
+ship a compiled library, you would have to expose the full data for all
 positions anyway, since you can't know what destructors your callers are going
 to add.)
 
@@ -175,8 +178,8 @@ fulfilled. This also happens within the action that actually does the
 destruction, if the action that does the destruction either (a) created the
 dimension point or (b) assigned a destructor to that dimension point.
 
-Since we forbid destructors creating Automated Guarantees, each destructor's
-requirements can be independently verified.
+Since we forbid destructors from creating Automated Guarantees, each
+destructor's requirements can be independently verified.
 
 It is worth noting that an action might not _know_ the state of the dimension
 points a destructor depends on (because they aren't yet populated in the Child

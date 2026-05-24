@@ -1491,6 +1491,11 @@ Any action triggered by a destructor still runs asynchronously, exactly as
 actions triggered during normal execution do. A destructor that depends on such
 an action completing must use `wait until`.
 
+### Destructors Produce No Guarantees
+
+Upon completion, a destructor must leave all contracted positions in the state
+they were in when the action started.
+
 ## Starting Define Programs
 
 Proposals:
