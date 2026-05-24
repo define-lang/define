@@ -934,8 +934,12 @@ A Position Initialization Block starts with `after it is assigned` and then
 opens a block. The block creates a new local scope.
 
 A Position Initialization Block may contain one or more action statements.
-Except as described below, the action statements have the same syntax as in an
-Action Statements Block. An empty Position Initialization Block is not allowed.
+Except as described below, a Position Initialization Block has the same syntax
+and semantics as in an Action Statements Block. Every part of this specification
+that refers to an Action Statements Block also applies to Position
+Initialization Blocks unless explcitly stated.
+
+An empty Position Initialization Block is not allowed.
 
 ```ebnf
 position_initialization_block =
@@ -1458,6 +1462,7 @@ parallel).
 Proposals:
 
 - [DLP 34: Destructors](../proposals/00034-destructors.md)
+- [DLP 41: Modular Destructor Analysis](../proposals/00041-modular-destructor-analysis.md)
 
 The Destructor Condition Statement is `this dimension point is being destroyed`
 followed by a statement terminator. An action whose Trigger Conditions Block
@@ -1495,6 +1500,59 @@ an action completing must use `wait until`.
 
 Upon completion, a destructor must leave all contracted positions in the state
 they were in when the action started.
+
+### Destruction Contracts
+
+When compiling any individual Action Statements Block, the compiler verifies
+only the destructors that the immediate Action Statements Block is aware of
+being on the dimension point at the time of destruction. For contracted
+positions, those dimension points may have more qualities assigned to them than
+the immediate Action Statements Block is aware of.
+
+Thus, when an action destroys a dimension point that (a) the action itself did
+not create and (b) is in a contracted position, its
+[Action Contract](#action-contracts) records additional information about that
+destruction. This additional information is called a Destruction Contract.
+
+Destruction Contracts are used by callers higher in the call stack to validate
+destructors that the action did not know were assigned to the dimension point,
+but which those callers _do_ know are assigned to the dimension point. The
+intention of Destruction Contracts is that each caller verifies the additional
+destructors it knows about as though they were running at the moment of
+destruction (not inside of the caller's code).
+
+#### Destruction Fact
+
+A Destruction Contract records that the specific dimension point that occupied
+the contracted position was destroyed, not merely that the position became
+empty. This is called a Destruction Fact.
+
+When an action destroys more than one dimension point in its contracted
+positions, the contract records those destructions in the order they were
+executed.
+
+#### Child State
+
+Before destroying a dimension point in a contracted position, the compiler takes
+a snapshot of the occupancy state of all of that dimension point's transitive
+child positions. This snapshot is recorded in the Destruction Contract and is
+called the Child State.
+
+An action may not know the full state of every transitive child position,
+because it may not be aware of every quality on the destroyed dimension point.
+Each action in the call chain therefore maintains its own cumulative Child
+State, adding whatever it knows about the state of a child position immediately
+before the parent dimension point was destroyed.
+
+### Destructor Requirement Verification
+
+A destructor has [Automatic Action Requirements](#automatic-action-requirements)
+that work identically to how they work for any other action. This is what the
+compiler is verifying when it verifies a destructor.
+
+Each destructor's requirements are verified independently of every other
+destructor. It is not possible for one destructor to affect the requirements of
+another destructor on the same dimension point.
 
 ## Starting Define Programs
 
