@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
-from functools import cached_property
 from typing import cast
 
 import networkx as nx
@@ -22,7 +21,7 @@ class ReferenceEdge:
     enclosing_definition: ast.QualityDefinition
     global_name_reference: ast.GlobalTypedNameReference
 
-    @cached_property
+    @property
     def target_full_typed_name(self) -> str:
         """Return the fully qualified typed-name key for this edge target."""
         return self.global_name_reference.full_typed_name

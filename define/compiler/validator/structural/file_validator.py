@@ -25,6 +25,7 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.lark import lark_standalone
 from define.compiler.validator import scope_tracker, stats, validation_result
@@ -179,7 +180,9 @@ class FileStructuralValidator:
             )
         tracker.mark_transform_finished()
 
-        seen_definitions: dict[str, ast.QualityDefinition] = {}
+        seen_definitions: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+        ] = typed_name_dict.TypedNameDict()
         definition_results: list[validation_result.DefinitionValidationResult] = []
         for definition in program.definitions:
             result = DefinitionStructuralValidator(
@@ -188,9 +191,8 @@ class FileStructuralValidator:
                 seen_definitions=seen_definitions,
             ).validate_definition()
             definition_results.append(result)
-            definition_name = definition.typed_name.source_typed_name
-            if definition_name not in seen_definitions:
-                seen_definitions[definition_name] = definition
+            if definition.typed_name not in seen_definitions:
+                seen_definitions[definition.typed_name] = definition
         tracker.mark_file_validation_finished()
 
         return validation_result.FileValidationResult(
@@ -238,16 +240,22 @@ class DefinitionStructuralValidator:
     _reference_edges: list[reference_graph.ReferenceEdge]
     _discovered_files: list[validation_result.DiscoveredFile]
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
-    _seen_definitions: dict[str, ast.QualityDefinition]
+    _seen_definitions: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+    ]
     _unknown_fquns: set[str]
-    _implied_qualities: dict[str, ast.QualityImplicationStatement]
+    _implied_qualities: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedNameReference, ast.QualityImplicationStatement
+    ]
     _used_implied_qualities: set[str]
 
     def __init__(
         self,
         definition: ast.QualityDefinition,
         context: FileValidationContext,
-        seen_definitions: dict[str, ast.QualityDefinition],
+        seen_definitions: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+        ],
     ):
         """Initialize per-definition validation state from file-level state."""
         self._definition = definition
@@ -258,7 +266,7 @@ class DefinitionStructuralValidator:
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
-        self._implied_qualities = {}
+        self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
@@ -318,9 +326,8 @@ class DefinitionStructuralValidator:
 
     def _validate_not_duplicate_in_file(self):
         """Check for within-file duplicates."""
-        key = self._definition.typed_name.source_typed_name
-        if key in self._seen_definitions:
-            first_def = self._seen_definitions[key]
+        if self._definition.typed_name in self._seen_definitions:
+            first_def = self._seen_definitions[self._definition.typed_name]
             self._diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(
                     location=self._definition.location,
@@ -584,15 +591,14 @@ class DefinitionStructuralValidator:
             may_continue = False
 
         if not is_self_reference and isinstance(first, ast.GlobalTypedNameReference):
-            canonical = first.full_typed_name
-            if canonical in self._implied_qualities:
-                self._used_implied_qualities.add(canonical)
+            if first in self._implied_qualities:
+                self._used_implied_qualities.add(first.full_typed_name)
             else:
                 self._diagnostics.append(
                     diagnostics.UnknownGlobalNameDiagnostic(
                         location=first.location,
                         source_global_name=first.source_typed_name,
-                        full_global_name=canonical,
+                        full_global_name=first.full_typed_name,
                     )
                 )
                 may_continue = False
@@ -667,7 +673,9 @@ class DefinitionStructuralValidator:
         self,
         constraints: ast.PositionConstraintBlock,
     ):
-        seen_lines: dict[str, int] = {}
+        seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
+            typed_name_dict.TypedNameDict()
+        )
         for requirement in constraints.requirements:
             reference_diagnostics = name_validators.validate_typed_name(
                 requirement.typed_global_name, self._definition
@@ -675,8 +683,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
-            canonical = requirement.typed_global_name.full_typed_name
-            first_line = seen_lines.get(canonical)
+            first_line = seen_lines.get(requirement.typed_global_name)
             if first_line is not None:
                 self._diagnostics.append(
                     diagnostics.DuplicatePositionConstraintDiagnostic(
@@ -686,14 +693,18 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            seen_lines[canonical] = requirement.typed_global_name.location.line
+            seen_lines[requirement.typed_global_name] = (
+                requirement.typed_global_name.location.line
+            )
             self._process_reference(requirement.typed_global_name)
 
     def _validate_quality_implications(
         self,
         implications: list[ast.QualityImplicationStatement],
     ):
-        seen_lines: dict[str, int] = {}
+        seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
+            typed_name_dict.TypedNameDict()
+        )
         for implication in implications:
             name_diagnostics = name_validators.validate_typed_name(
                 implication.typed_global_name, self._definition
@@ -701,8 +712,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(name_diagnostics)
             if name_diagnostics:
                 continue
-            canonical = implication.typed_global_name.full_typed_name
-            first_line = seen_lines.get(canonical)
+            first_line = seen_lines.get(implication.typed_global_name)
             if first_line is not None:
                 self._diagnostics.append(
                     diagnostics.DuplicateQualityImplicationDiagnostic(
@@ -712,13 +722,15 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            seen_lines[canonical] = implication.typed_global_name.location.line
-            self._implied_qualities[canonical] = implication
+            seen_lines[implication.typed_global_name] = (
+                implication.typed_global_name.location.line
+            )
+            self._implied_qualities[implication.typed_global_name] = implication
             self._process_reference(implication.typed_global_name)
 
     def _check_unused_quality_implications(self):
-        for canonical, implication in self._implied_qualities.items():
-            if canonical in self._used_implied_qualities:
+        for implied_name, implication in self._implied_qualities.items():
+            if implied_name.full_typed_name in self._used_implied_qualities:
                 continue
             self._diagnostics.append(
                 diagnostics.UnusedQualityImplicationDiagnostic(
@@ -748,7 +760,7 @@ class DefinitionStructuralValidator:
         if is_self_reference and allow_self_reference:
             return
         # Process a reference that's inside of this same file.
-        if edge.target_full_typed_name in self._seen_definitions or is_self_reference:
+        if edge.global_name_reference in self._seen_definitions or is_self_reference:
             self._reference_edges.append(edge)
             return
 

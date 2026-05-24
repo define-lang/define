@@ -16,6 +16,7 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
+from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import file_validator
@@ -198,7 +199,7 @@ class TestDefinitionStructuralValidator:
         validator = file_validator.DefinitionStructuralValidator(
             definition=program.definitions[0],
             context=_make_context(tmp_path),
-            seen_definitions={},
+            seen_definitions=typed_name_dict.TypedNameDict(),
         )
 
         result = validator.validate_definition()
@@ -215,16 +216,16 @@ class TestDefinitionStructuralValidator:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         program = _parse_program(source, lark_parser)
-        seen_definitions: dict[str, ast.QualityDefinition] = {}
+        seen_definitions: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+        ] = typed_name_dict.TypedNameDict()
 
         first_result = file_validator.DefinitionStructuralValidator(
             definition=program.definitions[0],
             context=_make_context(tmp_path),
             seen_definitions=seen_definitions,
         ).validate_definition()
-        seen_definitions[program.definitions[0].typed_name.source_typed_name] = (
-            program.definitions[0]
-        )
+        seen_definitions[program.definitions[0].typed_name] = program.definitions[0]
         second_result = file_validator.DefinitionStructuralValidator(
             definition=program.definitions[1],
             context=_make_context(tmp_path),
@@ -246,7 +247,9 @@ class TestDefinitionStructuralValidator:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         program = _parse_program(source, lark_parser)
-        seen_definitions: dict[str, ast.QualityDefinition] = {}
+        seen_definitions: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+        ] = typed_name_dict.TypedNameDict()
         results: list[validation_result.DefinitionValidationResult] = []
 
         for definition in program.definitions:
@@ -256,7 +259,7 @@ class TestDefinitionStructuralValidator:
                 seen_definitions=seen_definitions,
             ).validate_definition()
             results.append(result)
-            seen_definitions[definition.typed_name.source_typed_name] = definition
+            seen_definitions[definition.typed_name] = definition
 
         assert len(results) == 2
         assert all(
