@@ -34,8 +34,11 @@ def test_interface_to_local_occupied_satisfied(
                 "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
+                "        define the position<_leaf>.\n"
                 "        move the dimension point in position<source> to position<tmp>.\n"
-                "        destroy the dimension point in position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp>::position</child> to position<_leaf>.\n"
+                "        move the dimension point in position<_leaf> to position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp> to position<source>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -84,8 +87,11 @@ def test_interface_to_local_occupied_violated(
                 "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
+                "        define the position<_leaf>.\n"
                 "        move the dimension point in position<source> to position<tmp>.\n"
-                "        destroy the dimension point in position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp>::position</child> to position<_leaf>.\n"
+                "        move the dimension point in position<_leaf> to position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp> to position<source>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -122,8 +128,8 @@ def test_interface_to_local_occupied_violated(
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 16
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 17
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
@@ -152,6 +158,8 @@ def test_interface_to_local_empty_violated(
                 "        }\n"
                 "        move the dimension point in position<source> to position<tmp>.\n"
                 "        create a dimension point in position<tmp>::position</child>.\n"
+                "        destroy the dimension point in position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp> to position<source>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -223,8 +231,11 @@ def test_implied_to_local_occupied_violated(
                 "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
+                "        define the position<_leaf>.\n"
                 "        move the dimension point in position</marker> to position<tmp>.\n"
-                "        destroy the dimension point in position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp>::position</child> to position<_leaf>.\n"
+                "        move the dimension point in position<_leaf> to position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -261,8 +272,8 @@ def test_implied_to_local_occupied_violated(
         all_diags[0].position_name
         == "position<box>::position</marker>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 12
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 13
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
@@ -294,6 +305,8 @@ def test_implied_to_local_empty_violated(
                 "        }\n"
                 "        move the dimension point in position</marker> to position<tmp>.\n"
                 "        create a dimension point in position<tmp>::position</child>.\n"
+                "        destroy the dimension point in position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -365,8 +378,11 @@ def test_interface_to_implied_occupied_violated(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
+                "        define the position<_leaf>.\n"
                 "        move the dimension point in position<source> to position</dest_marker>.\n"
-                "        destroy the dimension point in position</dest_marker>::position</child>.\n"
+                "        move the dimension point in position</dest_marker>::position</child> to position<_leaf>.\n"
+                "        move the dimension point in position<_leaf> to position</dest_marker>::position</child>.\n"
+                "        move the dimension point in position</dest_marker> to position<source>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -403,8 +419,8 @@ def test_interface_to_implied_occupied_violated(
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 12
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 13
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
@@ -437,8 +453,11 @@ def test_implied_to_implied_occupied_violated(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
+                "        define the position<_leaf>.\n"
                 "        move the dimension point in position</source_marker> to position</dest_marker>.\n"
-                "        destroy the dimension point in position</dest_marker>::position</child>.\n"
+                "        move the dimension point in position</dest_marker>::position</child> to position<_leaf>.\n"
+                "        move the dimension point in position<_leaf> to position</dest_marker>::position</child>.\n"
+                "        move the dimension point in position</dest_marker> to position</source_marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -475,8 +494,8 @@ def test_implied_to_implied_occupied_violated(
         all_diags[0].position_name
         == "position<box>::position</source_marker>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 9
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
@@ -507,8 +526,11 @@ def test_move_requirement_propagates_to_caller_when_target_from_caller(
                 "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
+                "        define the position<_leaf>.\n"
                 "        move the dimension point in position<source> to position<tmp>.\n"
-                "        destroy the dimension point in position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp>::position</child> to position<_leaf>.\n"
+                "        move the dimension point in position<_leaf> to position<tmp>::position</child>.\n"
+                "        move the dimension point in position<tmp> to position<source>.\n"
                 "    }\n"
                 "}\n"
             ),

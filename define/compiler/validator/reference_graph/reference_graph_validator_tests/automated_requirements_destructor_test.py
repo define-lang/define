@@ -14,19 +14,23 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
 _NESTED_DESTRUCTOR = "action<my.domain.com:my_lib:/nested_destructor>"
 
-# Destroys its own interface position, so it requires that position to be occupied.
+# Moves its own interface position's dimension point out and back, so it requires
+# that position to be occupied while leaving it unchanged (no guarantee).
 _DESTRUCTOR_OCCUPIED = (
     "define the potential action<my.domain.com:my_lib:/destructor> {\n"
     "    define the position<item>.\n"
     "    it happens when {\n"
     "        this dimension point is being destroyed.\n"
     "    } and it does {\n"
-    "        destroy the dimension point in position<item>.\n"
+    "        define the position<_holder>.\n"
+    "        move the dimension point in position<item> to position<_holder>.\n"
+    "        move the dimension point in position<_holder> to position<item>.\n"
     "    }\n"
     "}\n"
 )
 
-# Creates in its own interface position, so it requires that position to be empty.
+# Creates then destroys a dimension point in its own interface position, so it
+# requires that position to be empty while leaving it unchanged (no guarantee).
 _DESTRUCTOR_EMPTY_SRC = (
     "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
     "    define the position<item>.\n"
@@ -34,6 +38,7 @@ _DESTRUCTOR_EMPTY_SRC = (
     "        this dimension point is being destroyed.\n"
     "    } and it does {\n"
     "        create a dimension point in position<item>.\n"
+    "        destroy the dimension point in position<item>.\n"
     "    }\n"
     "}\n"
 )
@@ -106,8 +111,8 @@ def test_occupied_interface_requirement_violated(
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 6
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
@@ -208,7 +213,9 @@ def test_intermediate_position_requirement_violated(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position<holder>::position</leaf>.\n"
+                "        define the position<_leaf_holder>.\n"
+                "        move the dimension point in position<holder>::position</leaf> to position<_leaf_holder>.\n"
+                "        move the dimension point in position<_leaf_holder> to position<holder>::position</leaf>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -245,8 +252,8 @@ def test_intermediate_position_requirement_violated(
         all_diags[0].position_name
         == "position<box>::action</nested_destructor>::position<holder>::position</leaf>"
     )
-    assert all_diags[0].inferred_at.line == 10
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 11
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("nested_destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _NESTED_DESTRUCTOR)}

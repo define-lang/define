@@ -1523,6 +1523,45 @@ class TestDestructorContract:
             == action_contract.PositionOccupancyState.EMPTY
         )
 
+    def test_destructor_guarantee_is_replaced_with_unknown(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<slot>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<slot>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        assert [type(guarantee) for _key, guarantee in contract.guarantees] == [
+            action_contract.UnknownGuarantee
+        ]
+
+    def test_destructor_preexisting_unknown_guarantee_passes_through(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<sink>.\n"
+            "        define the position<sink2>.\n"
+            "        move the dimension point in position<item> to position<sink>.\n"
+            "        move the dimension point in position<item> to position<sink2>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        assert [type(guarantee) for _key, guarantee in contract.guarantees] == [
+            action_contract.UnknownGuarantee
+        ]
+
 
 def test_destructors_fire_in_reverse_assignment_order():
     source = (

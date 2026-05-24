@@ -651,7 +651,9 @@ def test_destructor_requires_occupied_position_format(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position<item>.\n"
+                "        define the position<_holder>.\n"
+                "        move the dimension point in position<item> to position<_holder>.\n"
+                "        move the dimension point in position<_holder> to position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -670,7 +672,7 @@ def test_destructor_requires_occupied_position_format(
         "However, 'position<box>::action</destructor>::position<item>'"
         " must be occupied before that destructor runs, and it is not occupied.\n\n"
         "This requirement happens because of:\n"
-        'File "destructor.dfn", line 6, column 40'
+        'File "destructor.dfn", line 7, column 37'
     )
 
 
@@ -703,6 +705,7 @@ def test_destructor_requires_empty_position_format(
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position<item>.\n"
+                "        destroy the dimension point in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -724,4 +727,83 @@ def test_destructor_requires_empty_position_format(
         'File "test.dfn", line 12, column 37\n\n'
         "This requirement happens because of:\n"
         'File "destructor_empty.dfn", line 6, column 37'
+    )
+
+
+def test_destructor_moved_guarantee_names_contracted_origin_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<incoming> {\n"
+        "        it may only contain dimension points where {\n"
+        "            it has the position</child>.\n"
+        "        }\n"
+        "    }\n"
+        "    define the position<dest>.\n"
+        "    it happens when {\n"
+        "        this dimension point is being destroyed.\n"
+        "    } and it does {\n"
+        "        define the position<tmp> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the position</child>.\n"
+        "            }\n"
+        "        }\n"
+        "        move the dimension point in position<incoming> to position<tmp>.\n"
+        "        move the dimension point in position<tmp>::position</child> to position<dest>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph(
+        {
+            "child.dfn": (
+                "define the potential position<my.domain.com:my_lib:/child>.\n"
+            ),
+            "test.dfn": test_source,
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert all_diags[0].format(test_source.splitlines()) == (
+        'File "test.dfn", line 16, column 37\n'
+        "        move the dimension point in position<incoming> to position<tmp>.\n"
+        "                                    ^\n"
+        "a destructor must leave every position in the state it was in when it started.\n"
+        "However, this line empties 'position<incoming>' and then nothing puts the same"
+        " dimension point back into that position."
+    )
+    assert all_diags[1].format(test_source.splitlines()) == (
+        'File "test.dfn", line 17, column 72\n'
+        "        move the dimension point in position<tmp>::position</child> to position<dest>.\n"
+        "                                                                       ^\n"
+        "a destructor must leave every position in the state it was in when it started.\n"
+        "However, this line moves a dimension point from"
+        " 'position<incoming>::position</child>' into 'position<dest>' and then nothing"
+        " moves it back out of that position."
+    )
+
+
+def test_destructor_occupied_guarantee_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    test_source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<item>.\n"
+        "    it happens when {\n"
+        "        this dimension point is being destroyed.\n"
+        "    } and it does {\n"
+        "        create a dimension point in position<item>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project_with_reference_graph({"test.dfn": test_source})
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert all_diags[0].format(test_source.splitlines()) == (
+        'File "test.dfn", line 6, column 37\n'
+        "        create a dimension point in position<item>.\n"
+        "                                    ^\n"
+        "a destructor must leave every position in the state it was in when it started.\n"
+        "However, this line creates a new dimension point in 'position<item>' and then"
+        " nothing removes it from that position."
     )

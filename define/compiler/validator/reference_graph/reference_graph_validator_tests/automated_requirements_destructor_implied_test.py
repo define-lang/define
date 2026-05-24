@@ -26,7 +26,9 @@ def test_occupied_implied_requirement_satisfied(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position</marker>.\n"
+                "        define the position<_holder>.\n"
+                "        move the dimension point in position</marker> to position<_holder>.\n"
+                "        move the dimension point in position<_holder> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -65,7 +67,9 @@ def test_occupied_implied_requirement_violated(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position</marker>.\n"
+                "        define the position<_holder>.\n"
+                "        move the dimension point in position</marker> to position<_holder>.\n"
+                "        move the dimension point in position<_holder> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -98,8 +102,8 @@ def test_occupied_implied_requirement_violated(
     assert all_diags[0].destructor_name == _DESTRUCTOR
     assert all_diags[0].destroy_target_name == "position<box>"
     assert all_diags[0].position_name == "position<box>::position</marker>"
-    assert all_diags[0].inferred_at.line == 6
-    assert all_diags[0].inferred_at.column == 40
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
@@ -118,6 +122,7 @@ def test_empty_implied_requirement_satisfied(
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position</marker>.\n"
+                "        destroy the dimension point in position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -156,6 +161,7 @@ def test_empty_implied_requirement_violated(
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
                 "        create a dimension point in position</marker>.\n"
+                "        destroy the dimension point in position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -215,7 +221,9 @@ def test_implied_requirement_propagates_to_caller_when_target_from_caller(
                 "    it happens when {\n"
                 "        this dimension point is being destroyed.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position</marker>.\n"
+                "        define the position<_holder>.\n"
+                "        move the dimension point in position</marker> to position<_holder>.\n"
+                "        move the dimension point in position<_holder> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),

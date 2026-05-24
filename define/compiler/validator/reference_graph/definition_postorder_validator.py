@@ -383,8 +383,7 @@ class DefinitionPostorderValidator(abc.ABC):
         # from this chain.
         #
         # TODO: Propagate a destructor's requirements to the destroying action's
-        # caller when destroy_target is itself a contracted position, and enforce
-        # that destructors create only identity guarantees (DLP 41).
+        # caller when destroy_target is itself a contracted position (DLP 41).
         for quality in destructors:
             contract = self._action_contracts.get(quality)
             if contract is not None:
@@ -1102,15 +1101,71 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
+        guarantees = self._tracker.generate_guarantees(
+            self._action_definition.interface_position_names,
+            self._implied_quality_list,
+            self._inferred_requirements,
+        )
+        if self._action_definition.is_destructor:
+            guarantees = self._check_destructor_guarantees(guarantees)
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
-            guarantees=self._tracker.generate_guarantees(
-                self._action_definition.interface_position_names,
-                self._implied_quality_list,
-                self._inferred_requirements,
-            ),
+            guarantees=guarantees,
             trigger_position_name=self._trigger_position_name or "",
         )
+
+    def _check_destructor_guarantees(
+        self, guarantees: list[action_contract.GuaranteePair]
+    ) -> list[action_contract.GuaranteePair]:
+        """Emit a diagnostic for each guarantee a destructor produces and replace it with an UnknownGuarantee.
+
+        A destructor may not change any contracted position's state (DLP 41), so
+        each produced guarantee is a violation. The contract it returns may not
+        advertise such a guarantee, so each is replaced with an UnknownGuarantee
+        that leaves the position's post-destructor state undetermined for any
+        consumer of the contract.
+        """
+        rewritten: list[action_contract.GuaranteePair] = []
+        for key, guarantee in guarantees:
+            position_name = guarantee.caused_by.source_form_in_universe(
+                self._enclosing_fqun
+            )
+            match guarantee:
+                case action_contract.EmptyGuarantee():
+                    self._diagnostics.append(
+                        diagnostics.DestructorProducesEmptyGuaranteeDiagnostic(
+                            location=guarantee.caused_by.location,
+                            position_name=position_name,
+                        )
+                    )
+                case action_contract.OccupiedByNewGuarantee():
+                    self._diagnostics.append(
+                        diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
+                            location=guarantee.caused_by.location,
+                            position_name=position_name,
+                        )
+                    )
+                case action_contract.OccupiedByExistingGuarantee():
+                    self._diagnostics.append(
+                        diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
+                            location=guarantee.caused_by.location,
+                            position_name=position_name,
+                            origin_name=guarantee.origin_position.source_form_in_universe(
+                                self._enclosing_fqun
+                            ),
+                        )
+                    )
+                case action_contract.UnknownGuarantee():
+                    rewritten.append((key, guarantee))
+                    continue
+                case _:
+                    raise TypeError(
+                        f"unexpected guarantee type {type(guarantee).__name__}"
+                    )
+            rewritten.append(
+                (key, action_contract.UnknownGuarantee(caused_by=guarantee.caused_by))
+            )
+        return rewritten
 
     @typing.override
     def _chain_for_inferred_requirement(
