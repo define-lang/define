@@ -2,14 +2,11 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_MID = "action<my.domain.com:my_lib:/mid>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 
 
@@ -499,59 +496,3 @@ def test_implied_to_implied_occupied_violated(
     assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
     assert all_diags[0].propagated_from_locations == []
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
-
-
-@pytest.mark.xfail(
-    reason="destructor requirement propagation to the caller is not implemented yet",
-    strict=True,
-)
-def test_move_requirement_propagates_to_caller_when_target_from_caller(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
-            "destructor.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destructor> {\n"
-                "    define the position<source> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the position</child>.\n"
-                "        }\n"
-                "    }\n"
-                "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<tmp> {\n"
-                "            it may only contain dimension points where {\n"
-                "                it has the position</child>.\n"
-                "            }\n"
-                "        }\n"
-                "        define the position<_leaf>.\n"
-                "        move the dimension point in position<source> to position<tmp>.\n"
-                "        move the dimension point in position<tmp>::position</child> to position<_leaf>.\n"
-                "        move the dimension point in position<_leaf> to position<tmp>::position</child>.\n"
-                "        move the dimension point in position<tmp> to position<source>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
-                "    } and it does {\n"
-                "        destroy the dimension point in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    # Once propagation lands, mid exposes the moved-origin requirement on its own
-    # contract instead of firing it locally.
-    assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_MID, _DESTRUCTOR)}

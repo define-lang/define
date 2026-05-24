@@ -2,16 +2,14 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_MID = "action<my.domain.com:my_lib:/mid>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
+_P = "position<my.domain.com:my_lib:/p>"
 
 
 def test_occupied_implied_requirement_satisfied(
@@ -205,13 +203,13 @@ def test_empty_implied_requirement_violated(
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR_EMPTY)}
 
 
-@pytest.mark.xfail(
-    reason="destructor requirement propagation to the caller is not implemented yet",
-    strict=True,
-)
-def test_implied_requirement_propagates_to_caller_when_target_from_caller(
+def test_destructor_in_init_block_checks_implied_requirement_locally(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    # position</p>'s init block creates and then destroys a dimension point in its
+    # implied position</carrier>, whose destructor requires its own implied
+    # position</marker>. The init block owns that dimension point, so the
+    # requirement is checked locally rather than propagated.
     result = validate_project_with_reference_graph(
         {
             "marker.dfn": "define the potential position<my.domain.com:my_lib:/marker>.\n",
@@ -227,24 +225,52 @@ def test_implied_requirement_propagates_to_caller_when_target_from_caller(
                 "    }\n"
                 "}\n"
             ),
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain dimension points where {\n"
-                "            it has the action</destructor>.\n"
-                "        }\n"
+            "carrier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/carrier> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</destructor>.\n"
                 "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</carrier>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</carrier>.\n"
+                "        destroy the dimension point in position</carrier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position<incoming>.\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</p>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
         },
     )
-    # Once propagation lands, mid exposes the implied requirement on its own
-    # contract instead of firing it locally.
-    assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_MID, _DESTRUCTOR)}
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
+    assert all_diags[0].destructor_name == _DESTRUCTOR
+    assert all_diags[0].destroy_target_name == "position</carrier>"
+    assert all_diags[0].position_name == "position</carrier>::position</marker>"
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert result.action_call_graph.unique_edges() == {(_P, _DESTRUCTOR)}

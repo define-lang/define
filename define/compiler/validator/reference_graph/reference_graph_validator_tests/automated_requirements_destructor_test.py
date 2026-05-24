@@ -2,21 +2,19 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_MID = "action<my.domain.com:my_lib:/mid>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
 _NESTED_DESTRUCTOR = "action<my.domain.com:my_lib:/nested_destructor>"
+_P = "position<my.domain.com:my_lib:/p>"
 
 # Moves its own interface position's dimension point out and back, so it requires
 # that position to be occupied while leaving it unchanged (no guarantee).
-_DESTRUCTOR_OCCUPIED = (
+_DESTRUCTOR_REQUIRES_OCCUPIED = (
     "define the potential action<my.domain.com:my_lib:/destructor> {\n"
     "    define the position<item>.\n"
     "    it happens when {\n"
@@ -31,7 +29,7 @@ _DESTRUCTOR_OCCUPIED = (
 
 # Creates then destroys a dimension point in its own interface position, so it
 # requires that position to be empty while leaving it unchanged (no guarantee).
-_DESTRUCTOR_EMPTY_SRC = (
+_DESTRUCTOR_REQUIRES_EMPTY = (
     "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
     "    define the position<item>.\n"
     "    it happens when {\n"
@@ -49,7 +47,7 @@ def test_occupied_interface_requirement_satisfied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "destructor.dfn": _DESTRUCTOR_OCCUPIED,
+            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
@@ -78,7 +76,7 @@ def test_occupied_interface_requirement_violated(
 ):
     result = validate_project_with_reference_graph(
         {
-            "destructor.dfn": _DESTRUCTOR_OCCUPIED,
+            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
@@ -123,7 +121,7 @@ def test_empty_interface_requirement_satisfied(
 ):
     result = validate_project_with_reference_graph(
         {
-            "destructor_empty.dfn": _DESTRUCTOR_EMPTY_SRC,
+            "destructor_empty.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
@@ -151,7 +149,7 @@ def test_empty_interface_requirement_violated(
 ):
     result = validate_project_with_reference_graph(
         {
-            "destructor_empty.dfn": _DESTRUCTOR_EMPTY_SRC,
+            "destructor_empty.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
@@ -259,19 +257,18 @@ def test_intermediate_position_requirement_violated(
     assert result.action_call_graph.unique_edges() == {(_TEST, _NESTED_DESTRUCTOR)}
 
 
-@pytest.mark.xfail(
-    reason="destructor requirement propagation to the caller is not implemented yet",
-    strict=True,
-)
-def test_requirement_propagates_to_caller_when_target_from_caller(
+def test_locally_created_interface_dimension_point_fires_destructor_locally(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
+    # The dimension point is created in this action's own interface position, so
+    # the action owns it: the destructor's requirement is checked here rather than
+    # propagated to a caller, even though position<iface> is a contracted name.
     result = validate_project_with_reference_graph(
         {
-            "destructor.dfn": _DESTRUCTOR_OCCUPIED,
-            "mid.dfn": (
-                "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
+            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<iface> {\n"
                 "        it may only contain dimension points where {\n"
                 "            it has the action</destructor>.\n"
                 "        }\n"
@@ -280,13 +277,93 @@ def test_requirement_propagates_to_caller_when_target_from_caller(
                 "    it happens when {\n"
                 "        the position<run> has a dimension point.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position<incoming>.\n"
+                "        create a dimension point in position<iface>.\n"
+                "        destroy the dimension point in position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),
         },
     )
-    # Once propagation lands, mid does not fire the destructor's requirement
-    # locally; it exposes it on its own contract for its caller to satisfy.
-    assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_MID, _DESTRUCTOR)}
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].destructor_name == _DESTRUCTOR
+    assert all_diags[0].destroy_target_name == "position<iface>"
+    assert (
+        all_diags[0].position_name
+        == "position<iface>::action</destructor>::position<item>"
+    )
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+
+
+def test_destructor_in_init_block_checks_interface_requirement_locally(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    # position</p>'s init block creates and then destroys a dimension point in its
+    # implied position</carrier>. The init block owns that dimension point, so the
+    # destructor's interface-position requirement is checked locally rather than
+    # propagated: position</carrier> never came from a caller.
+    result = validate_project_with_reference_graph(
+        {
+            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
+            "carrier.dfn": (
+                "define the potential position<my.domain.com:my_lib:/carrier> {\n"
+                "    it may only contain dimension points where {\n"
+                "        it has the action</destructor>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it also assigns the position</carrier>.\n"
+                "    after it is assigned {\n"
+                "        create a dimension point in position</carrier>.\n"
+                "        destroy the dimension point in position</carrier>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a dimension point.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain dimension points where {\n"
+                "                it has the position</p>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a dimension point in position<box>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
+    assert all_diags[0].destructor_name == _DESTRUCTOR
+    assert all_diags[0].destroy_target_name == "position</carrier>"
+    assert (
+        all_diags[0].position_name
+        == "position</carrier>::action</destructor>::position<item>"
+    )
+    assert all_diags[0].inferred_at.line == 7
+    assert all_diags[0].inferred_at.column == 37
+    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
+    assert all_diags[0].propagated_from_locations == []
+    assert result.action_call_graph.unique_edges() == {(_P, _DESTRUCTOR)}

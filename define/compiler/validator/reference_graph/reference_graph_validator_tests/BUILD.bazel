@@ -112,7 +112,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
     ],
 )
 
@@ -124,7 +123,18 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "automated_requirements_destructor_propagation_test",
+    size = "small",
+    srcs = ["automated_requirements_destructor_propagation_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
     ],
 )
 
@@ -136,7 +146,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "@pypi//pytest",
     ],
 )
 

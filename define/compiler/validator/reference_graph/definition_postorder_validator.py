@@ -373,17 +373,15 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         destructors: list[ast.GlobalTypedNameReference],
         destroy_target: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Check requirements and record a call-graph edge for each destructor firing on a destroyed dimension point."""
+        """Trigger each destructor that should fire for a destroyed dimension point."""
         # A destructor's requirements are checked as though it triggered
         # synchronously at the moment of destruction (DLP 41). The destructor is a
         # quality of the dimension point at destroy_target, so its interface
         # positions hang off destroy_target::action</destructor> while its implied
         # qualities hang off destroy_target itself; in_caller maps both correctly
         # from this chain.
-        #
-        # TODO: Propagate a destructor's requirements to the destroying action's
-        # caller when destroy_target is itself a contracted position (DLP 41).
         for quality in destructors:
             contract = self._action_contracts.get(quality)
             if contract is not None:
@@ -391,6 +389,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     location=destroy_target.location,
                     typed_names=[*destroy_target.typed_names, quality],
                 )
+                self._propagate_destructor_requirements(contract, action_chain, scope)
                 self._check_requirements(
                     contract,
                     action_chain,
@@ -419,6 +418,36 @@ class DefinitionPostorderValidator(abc.ABC):
                 required_state=inner_req.required_state,
                 contracted_chain=caller_path,
                 local_chain=create_target,
+                propagated_from=inner_req,
+                scope=scope,
+            )
+
+    def _propagate_destructor_requirements(
+        self,
+        contract: action_contract.ActionContract,
+        action_chain: ast.ChainedName,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Propagate requirements into this action's contract when the destroyed dimension point itself was from a contracted position."""
+        # For `move position<incoming> to position<local_box>.` followed by
+        # `destroy position<local_box>.`:
+        # action_chain:
+        #   position<local_box>::action</destructor>
+        # parent_origin:
+        #   position<incoming>
+        # caller_path_to_destructor:
+        #   position<incoming>::action</destructor>
+        parent_origin = self._parent_dimension_point_comes_from_caller(action_chain)
+        if parent_origin is None:
+            return
+        caller_path_to_destructor = action_chain.replace_parent_position_with_prefix(
+            parent_origin
+        )
+        for inner_req in contract.requirements.values():
+            self._record_requirement(
+                required_state=inner_req.required_state,
+                contracted_chain=caller_path_to_destructor,
+                local_chain=action_chain,
                 propagated_from=inner_req,
                 scope=scope,
             )
@@ -698,7 +727,7 @@ class DefinitionPostorderValidator(abc.ABC):
         diags = self._executor.execute_destroy(
             dimension_point_operation.Destroy(target=stmt.target_position),
             before_destroy=lambda: self._run_destructors(
-                destructors, stmt.target_position
+                destructors, stmt.target_position, scope
             ),
         )
         self._diagnostics.extend(diags)
