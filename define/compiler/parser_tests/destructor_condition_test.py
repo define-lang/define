@@ -2,9 +2,6 @@
 """Destructor condition statement parser tests.
 
 Follow parser test authoring rules in parser_tests/AGENTS.md.
-
-Tests marked xfail(strict=True) assert the most logical diagnostic but await
-parser_error_classification.py learning the destructor parser states.
 """
 
 import pytest
