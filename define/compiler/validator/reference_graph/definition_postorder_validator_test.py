@@ -16,10 +16,10 @@ def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
     return req.full_propagation_position_chain().source_form_in_universe(fqun)
 
 
-def _get_contracts(
+def _get_results(
     source: str,
-) -> dict[str, action_contract.ActionStatementsBlockContract]:
-    contracts: dict[str, action_contract.ActionStatementsBlockContract] = {}
+) -> dict[str, definition_postorder_validator.PostorderValidationResult]:
+    results: dict[str, definition_postorder_validator.PostorderValidationResult] = {}
     action_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
     position_analyze = definition_postorder_validator.PositionPostorderValidator.analyze
 
@@ -27,16 +27,14 @@ def _get_contracts(
         self: definition_postorder_validator.ActionPostorderValidator,
     ) -> definition_postorder_validator.PostorderValidationResult:
         result = action_analyze(self)
-        if result.contract is not None:
-            contracts[self._definition.typed_name.full_typed_name] = result.contract  # pyright: ignore[reportPrivateUsage]
+        results[self._definition.typed_name.full_typed_name] = result  # pyright: ignore[reportPrivateUsage]
         return result
 
     def position_capture(
         self: definition_postorder_validator.PositionPostorderValidator,
     ) -> definition_postorder_validator.PostorderValidationResult:
         result = position_analyze(self)
-        if result.contract is not None:
-            contracts[self._definition.typed_name.full_typed_name] = result.contract  # pyright: ignore[reportPrivateUsage]
+        results[self._definition.typed_name.full_typed_name] = result  # pyright: ignore[reportPrivateUsage]
         return result
 
     with (
@@ -61,7 +59,17 @@ def _get_contracts(
             structural.reference_graph,
             structural.definition_results,
         ).validate()
-    return contracts
+    return results
+
+
+def _get_contracts(
+    source: str,
+) -> dict[str, action_contract.ActionStatementsBlockContract]:
+    return {
+        name: result.contract
+        for name, result in _get_results(source).items()
+        if result.contract is not None
+    }
 
 
 class TestRequirementInference:
@@ -1455,3 +1463,104 @@ def test_init_block_propagation_records_empty_on_inner_contract():
     assert propagated_locations[0].end_line == 5
     assert propagated_locations[0].end_column == 49
     assert propagated_locations[0].file_path is None
+
+
+class TestDestructorContract:
+    def test_destructor_contract_has_empty_trigger_position_name(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        assert isinstance(contract, action_contract.ActionContract)
+        assert contract.trigger_position_name == ""
+
+    def test_destructor_body_infers_requirements_normally(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<victim>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        destroy the dimension point in position<victim>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        assert contract.requirements.keys() == {("position<victim>",)}
+        assert (
+            contract.requirements[("position<victim>",)].required_state
+            == action_contract.PositionOccupancyState.OCCUPIED
+        )
+
+    def test_destructor_interface_position_create_infers_empty(self):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<slot>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<slot>.\n"
+            "    }\n"
+            "}\n"
+        )
+        contracts = _get_contracts(source)
+        assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
+        contract = contracts["action<my.domain.com:my_lib:/test>"]
+        assert contract.requirements.keys() == {("position<slot>",)}
+        assert (
+            contract.requirements[("position<slot>",)].required_state
+            == action_contract.PositionOccupancyState.EMPTY
+        )
+
+
+def test_destructors_fire_in_reverse_assignment_order():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/destructor_first> {\n"
+        "    it happens when {\n"
+        "        this dimension point is being destroyed.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/destructor_second> {\n"
+        "    it happens when {\n"
+        "        this dimension point is being destroyed.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a dimension point in position<_noop>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a dimension point.\n"
+        "    } and it does {\n"
+        "        define the position<box> {\n"
+        "            it may only contain dimension points where {\n"
+        "                it has the action</destructor_first>.\n"
+        "                it has the action</destructor_second>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a dimension point in position<box>.\n"
+        "        destroy the dimension point in position<box>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = _get_results(source)
+    test_result = results["action<my.domain.com:my_lib:/test>"]
+    assert [edge.target for edge in test_result.edges] == [
+        "action<my.domain.com:my_lib:/destructor_second>",
+        "action<my.domain.com:my_lib:/destructor_first>",
+    ]

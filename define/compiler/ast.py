@@ -658,6 +658,13 @@ class ActionDefinition(QualityDefinition):
             return None
         return first_condition.position_reference
 
+    @property
+    def is_destructor(self) -> bool:
+        """Whether this action triggers when its dimension point is destroyed."""
+        return isinstance(
+            self.trigger_conditions.conditions[0], DestructorConditionStatement
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class Multiverse(ASTNode):

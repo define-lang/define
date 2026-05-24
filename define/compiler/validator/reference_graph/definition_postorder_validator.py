@@ -329,6 +329,45 @@ class DefinitionPostorderValidator(abc.ABC):
                 init_block_contract.guarantees,
             )
 
+    def _get_destructors_assigned_to(
+        self, position: ast.PositionReference
+    ) -> list[ast.GlobalTypedNameReference]:
+        """Return the destructor qualities of the dimension point at this position, in firing order."""
+        if not self._tracker.is_occupied(position):
+            # Validation checks will throw an error later for this case.
+            return []
+        dp = self._tracker.get_occupant(position)
+        destructors: list[ast.GlobalTypedNameReference] = []
+        # A dimension point keeps its own qualities across moves, so they---not the
+        # destroy-target position's constraints---are the source of truth for which
+        # destructors run. Qualities unassign in the reverse of assignment order during
+        # destruction, and a destructor fires immediately before its action is
+        # removed, so we fire them in reverse order.
+        for quality in reversed(dp.qualities):
+            if quality.name_type != ast.NameType.ACTION:
+                continue
+            definition_result = self._definition_results.get(quality.full_typed_name)
+            if definition_result is None:
+                continue
+            if (
+                isinstance(definition_result.definition, ast.ActionDefinition)
+                and definition_result.definition.is_destructor
+            ):
+                destructors.append(quality)
+        return destructors
+
+    def _run_destructors(self, destructors: list[ast.GlobalTypedNameReference]):
+        """Record a call-graph edge for each destructor firing on a destroyed dimension point."""
+        # TODO: Check requirements, and enforce requirements and guarantees in the way
+        # described in DLP 41.
+        for quality in destructors:
+            self._action_edges.append(
+                action_call_graph.ActionGraphEdge(
+                    source=self._definition.typed_name.source_typed_name,
+                    target=quality.full_typed_name,
+                )
+            )
+
     def _propagate_init_block_requirements(
         self,
         create_target: ast.PositionReference,
@@ -535,6 +574,12 @@ class DefinitionPostorderValidator(abc.ABC):
                 case ast.DestroyDimensionPointStatement():
                     validity = next(validity_iter)
                     self._analyze_destroy(stmt, validity, scope)
+        # TODO: Per the spec's "Automatic Destruction", dimension points still
+        # occupying positions defined only locally within this Action Statements
+        # Block must be auto-destroyed in reverse definition order at block end,
+        # and that auto-destruction must fire their destructors via
+        # _run_destructors. Auto-destruction is not modeled yet; only explicit
+        # destroy statements fire destructors.
 
     def _analyze_create(
         self,
@@ -577,8 +622,13 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, stmt.target_position, scope
         )
+        # Destructors fire immediately before the dimension point is destroyed, and
+        # only when the destroy actually proceeds, so the firing runs as the
+        # executor's before_destroy hook.
+        destructors = self._get_destructors_assigned_to(stmt.target_position)
         diags = self._executor.execute_destroy(
-            dimension_point_operation.Destroy(target=stmt.target_position)
+            dimension_point_operation.Destroy(target=stmt.target_position),
+            before_destroy=lambda: self._run_destructors(destructors),
         )
         self._diagnostics.extend(diags)
 

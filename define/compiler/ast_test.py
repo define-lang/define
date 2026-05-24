@@ -357,6 +357,35 @@ class TestInterfacePositionConstraints:
         }
 
 
+class TestActionIsDestructor:
+    def test_destructor_action(self):
+        action = _parse_action(
+            f"define the potential action<{_FQUN}:/act> {{\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert action.is_destructor is True
+
+    def test_position_presence_action(self):
+        action = _parse_action(
+            f"define the potential action<{_FQUN}:/act> {{\n"
+            "    define the position<pos_a>.\n"
+            "    it happens when {\n"
+            "        the position<pos_a> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<_noop>.\n"
+            "        create a dimension point in position<_noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        assert action.is_destructor is False
+
+
 class TestPositionConstraintTypedNames:
     def test_with_constraints(self):
         position = _parse_position(

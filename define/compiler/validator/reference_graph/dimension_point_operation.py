@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from define.compiler import diagnostics
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Callable
+
     from define.compiler import ast
     from define.compiler.validator.reference_graph import dimension_point_tracker
 
@@ -160,8 +162,15 @@ class DimensionPointOperationExecutor:
         self._tracker.move(op.source, op.target)
         return []
 
-    def execute_destroy(self, op: Destroy) -> list[diagnostics.Diagnostic]:
-        """Execute the Destroy operation."""
+    def execute_destroy(
+        self, op: Destroy, before_destroy: Callable[[], None] = lambda: None
+    ) -> list[diagnostics.Diagnostic]:
+        """Execute the Destroy operation.
+
+        ``before_destroy`` runs only on the success path, immediately before the
+        dimension point is removed. Destructors must fire while the dimension point
+        still exists, so the caller passes their firing in here.
+        """
         parent_diags = self._check_parents_occupied(op.target)
         if parent_diags:
             self._tracker.mark_unknown(op.target)
@@ -184,6 +193,7 @@ class DimensionPointOperationExecutor:
                     position_name=op.target.source_chained_name,
                 )
             ]
+        before_destroy()
         self._tracker.destroy(op.target)
         return []
 
