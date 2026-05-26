@@ -229,7 +229,7 @@ class TypedName(ASTNode):
         object.__setattr__(
             self,
             "_source_typed_name",
-            f"{self.name_type.value}<{self.name_content.source_name}>",
+            sys.intern(f"{self.name_type.value}<{self.name_content.source_name}>"),
         )
 
     @property
@@ -266,7 +266,9 @@ class GlobalTypedNameReference(GlobalTypedName):
         object.__setattr__(
             self,
             "_full_typed_name",
-            f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>",
+            sys.intern(
+                f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>"
+            ),
         )
 
     @property
@@ -509,6 +511,11 @@ class GlobalPathName(ASTNode):
 
     name: str
 
+    def __post_init__(self):
+        """Intern the path string to deduplicate across many references."""
+        # str() coerces lark Token (a str subclass) to plain str; sys.intern rejects subclasses.
+        object.__setattr__(self, "name", sys.intern(str(self.name)))
+
     @property
     def relative_path(self) -> PurePosixPath:
         """Return the path as a relative POSIX path object."""
@@ -679,6 +686,10 @@ class Multiverse(ASTNode):
 
     name: str
 
+    def __post_init__(self):
+        """Intern the multiverse name to deduplicate across many references."""
+        object.__setattr__(self, "name", sys.intern(str(self.name)))
+
 
 @dataclass(frozen=True, slots=True)
 class Universe(ASTNode):
@@ -686,12 +697,20 @@ class Universe(ASTNode):
 
     name: str
 
+    def __post_init__(self):
+        """Intern the universe name to deduplicate across many references."""
+        object.__setattr__(self, "name", sys.intern(str(self.name)))
+
 
 @dataclass(frozen=True, slots=True)
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
     name: str
+
+    def __post_init__(self):
+        """Intern the authority name to deduplicate across many references."""
+        object.__setattr__(self, "name", sys.intern(str(self.name)))
 
 
 @dataclass(frozen=True, slots=True)
