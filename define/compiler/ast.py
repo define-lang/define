@@ -170,6 +170,17 @@ class LocalNameContent(NameContent):
 
     name: str
 
+    def __post_init__(self):
+        """Coerce to a plain interned str.
+
+        The parser passes a lark Token here, which is a str subclass that
+        carries extra slots (type, start_pos, line, column, ...) and is
+        rejected by sys.intern. Local names like ``run`` repeat heavily
+        across a program, so we drop the Token wrapper and intern the
+        underlying string for sharing.
+        """
+        object.__setattr__(self, "name", sys.intern(str(self.name)))
+
     @property
     @override
     def source_name(self) -> str:
