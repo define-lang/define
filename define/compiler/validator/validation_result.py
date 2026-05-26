@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
 
-@dataclass
+@dataclass(slots=True)
 class DiscoveredFile:
     """A file discovered during validation that should be validated next."""
 

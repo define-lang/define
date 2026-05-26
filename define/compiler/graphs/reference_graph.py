@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ReferenceEdge:
     """A reference from one definition to a global name in another file."""
 

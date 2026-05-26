@@ -239,6 +239,7 @@ class DefinitionStructuralValidator:
     _definition: ast.QualityDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
     _discovered_files: list[validation_result.DiscoveredFile]
+    _discovered_file_keys: set[tuple[pathlib.PurePosixPath, str]]
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
     _seen_definitions: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameInDefinition, ast.QualityDefinition
@@ -263,6 +264,7 @@ class DefinitionStructuralValidator:
         self._diagnostics = []
         self._reference_edges = []
         self._discovered_files = []
+        self._discovered_file_keys = set()
         self._dp_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
@@ -747,27 +749,29 @@ class DefinitionStructuralValidator:
     ):
         """Record a reference edge and determine the target file to discover."""
         global_name = typed_global_name.name_content
-        edge = reference_graph.ReferenceEdge(
-            enclosing_definition=self._definition,
-            global_name_reference=typed_global_name,
-        )
 
         # In Position Initialization Blocks, self-references don't cause us
         # to do file loads. They are not actually external references.
         is_self_reference = (
-            edge.target_full_typed_name == self._definition.typed_name.source_typed_name
+            typed_global_name.full_typed_name
+            == self._definition.typed_name.source_typed_name
         )
         if is_self_reference and allow_self_reference:
             return
         # Process a reference that's inside of this same file.
-        if edge.global_name_reference in self._seen_definitions or is_self_reference:
-            self._reference_edges.append(edge)
+        if typed_global_name in self._seen_definitions or is_self_reference:
+            self._reference_edges.append(
+                reference_graph.ReferenceEdge(
+                    enclosing_definition=self._definition,
+                    global_name_reference=typed_global_name,
+                )
+            )
             return
 
         if global_name.fqun is None:
             # Process a reference from this universe.
             self._add_edge_and_discovered_file(
-                edge=edge,
+                typed_global_name=typed_global_name,
                 global_name=global_name,
                 root_prefix=self._context.root_prefix,
                 expected_fqun=self._definition.typed_name.name_content.fqun,
@@ -778,7 +782,7 @@ class DefinitionStructuralValidator:
         if not self._context.is_filesystem_context:
             # Process a cross-FQUN reference in a non-filesystem context.
             self._add_edge_and_discovered_file(
-                edge=edge,
+                typed_global_name=typed_global_name,
                 global_name=global_name,
                 root_prefix=self._context.root_prefix,
                 expected_fqun=global_name.fqun,
@@ -803,7 +807,7 @@ class DefinitionStructuralValidator:
             return
         sub_root_rel = sub_root_mappings[fqun_string]
         self._add_edge_and_discovered_file(
-            edge=edge,
+            typed_global_name=typed_global_name,
             global_name=global_name,
             root_prefix=self._context.root_prefix / sub_root_rel,
             expected_fqun=global_name.fqun,
@@ -811,12 +815,21 @@ class DefinitionStructuralValidator:
 
     def _add_edge_and_discovered_file(
         self,
-        edge: reference_graph.ReferenceEdge,
+        typed_global_name: ast.GlobalTypedNameReference,
         global_name: ast.ReferenceGlobalNameContent,
         root_prefix: pathlib.PurePosixPath,
         expected_fqun: ast.Fqun,
     ):
-        self._reference_edges.append(edge)
+        self._reference_edges.append(
+            reference_graph.ReferenceEdge(
+                enclosing_definition=self._definition,
+                global_name_reference=typed_global_name,
+            )
+        )
+        key = (root_prefix, global_name.path.name)
+        if key in self._discovered_file_keys:
+            return
+        self._discovered_file_keys.add(key)
         self._discovered_files.append(
             validation_result.DiscoveredFile(
                 path=global_name.path.file_path(),

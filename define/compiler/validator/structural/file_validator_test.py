@@ -355,6 +355,43 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert len(_reference_edges(result)) == 2
         assert len(_discovered_files(result)) == 2
 
+    def test_same_global_in_many_contexts_dedupes_discovered_files(
+        self, tmp_path: Path, lark_parser: parser.Parser
+    ):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it also assigns the position</shared>.\n"
+            "    define the position<inner> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the position</shared>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<trigger_pos>.\n"
+            "    it happens when {\n"
+            "        the position<trigger_pos> has a dimension point.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position</shared>.\n"
+            "        move the dimension point in position</shared> to position<inner>.\n"
+            "        destroy the dimension point in position</shared>.\n"
+            "    }\n"
+            "}\n"
+        )
+        (tmp_path / "test.dfn").write_text(source, encoding="utf-8")
+        ctx = _make_context(tmp_path)
+        result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
+
+        assert result.diagnostics == []
+        edges = _reference_edges(result)
+        assert len(edges) == 5
+        assert all(
+            edge.global_name_reference.full_typed_name
+            == "position<my.domain.com:my_lib:/shared>"
+            for edge in edges
+        )
+        files = _discovered_files(result)
+        assert len(files) == 1
+        assert files[0].path == PurePosixPath("shared.dfn")
+
 
 class TestDimensionPointReferenceEdges:
     def test_chained_globals_produce_multiple_edges(
@@ -381,7 +418,7 @@ class TestDimensionPointReferenceEdges:
 
         assert result.diagnostics == []
         assert len(_reference_edges(result)) == 3
-        assert len(_discovered_files(result)) == 3
+        assert len(_discovered_files(result)) == 2
 
     def test_local_names_produce_no_edges(
         self, tmp_path: Path, lark_parser: parser.Parser
