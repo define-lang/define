@@ -5,6 +5,7 @@ load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
 load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 npm_link_all_packages()
@@ -14,6 +15,25 @@ py_binary(
     srcs = ["compile_jinja_templates.py"],
     visibility = ["//visibility:public"],
     deps = ["//define/compiler/codegen/literal/python:template_env"],
+)
+
+py_binary(
+    name = "generate_large_define_source",
+    srcs = ["generate_large_define_source.py"],
+)
+
+py_test(
+    name = "generate_large_define_source_test",
+    size = "small",
+    srcs = ["generate_large_define_source_test.py"],
+    deps = [
+        ":generate_large_define_source",
+        "//define/compiler:ast",
+        "//define/compiler:driver",
+        "//define/compiler:parser",
+        "//define/compiler:transformer",
+        "@pypi//pytest",
+    ],
 )
 
 py_binary(
@@ -195,6 +215,8 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":compile_jinja_templates",
+        ":generate_large_define_source",
+        ":generate_large_define_source_test",
         ":generate_lark_standalone",
         ":generate_programming_languages",
         ":git_commit_via_api",
