@@ -367,14 +367,9 @@ class TestMissingDefinitionInChain:
             },
         )
         all_diags = result.program_result.all_diagnostics
-        assert len(all_diags) == 2
+        assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
         assert all_diags[0].file_path == "middle.dfn"
         assert all_diags[0].location.line == 5
         assert all_diags[0].location.column == 33
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-        assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-        assert all_diags[1].file_path == "middle.dfn"
-        assert all_diags[1].location.line == 11
-        assert all_diags[1].location.column == 65
-        assert all_diags[1].location.file_path == PurePosixPath("test.dfn")

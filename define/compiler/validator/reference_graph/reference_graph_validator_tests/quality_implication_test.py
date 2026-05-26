@@ -807,12 +807,8 @@ def test_unresolved_implication_target_is_skipped(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 34
-    assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert all_diags[1].file_path == "missing.dfn"
-    assert all_diags[1].location.line == 4
-    assert all_diags[1].location.column == 46

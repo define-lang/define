@@ -238,6 +238,7 @@ class DefinitionStructuralValidator:
     _diagnostics: list[diagnostics.Diagnostic]
     _definition: ast.QualityDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
+    _seen_edge_targets: set[str]
     _discovered_files: list[validation_result.DiscoveredFile]
     _discovered_file_keys: set[tuple[pathlib.PurePosixPath, str]]
     _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
@@ -263,6 +264,7 @@ class DefinitionStructuralValidator:
         self._context = context
         self._diagnostics = []
         self._reference_edges = []
+        self._seen_edge_targets = set()
         self._discovered_files = []
         self._discovered_file_keys = set()
         self._dp_statement_validity = []
@@ -360,6 +362,8 @@ class DefinitionStructuralValidator:
         definition: ast.PositionDefinition,
     ):
         self._validate_quality_implications(definition.quality_implications)
+        if definition.constraints:
+            self._validate_position_constraints(definition.constraints)
         if definition.initialization is not None:
             scope = scope_tracker.ScopeTracker()
             scope.add_definition(definition)
@@ -368,8 +372,6 @@ class DefinitionStructuralValidator:
                 scope,
                 allow_self_reference=True,
             )
-        if definition.constraints:
-            self._validate_position_constraints(definition.constraints)
         self._check_unused_quality_implications()
 
     def _validate_trigger_conditions(
@@ -758,6 +760,12 @@ class DefinitionStructuralValidator:
         )
         if is_self_reference and allow_self_reference:
             return
+        # Only the first reference site per target emits an edge; downstream
+        # per-target diagnostics (missing file, cycle, wrong type) then fire
+        # once per (definition, target) pair instead of once per source line.
+        if typed_global_name.full_typed_name in self._seen_edge_targets:
+            return
+        self._seen_edge_targets.add(typed_global_name.full_typed_name)
         # Process a reference that's inside of this same file.
         if typed_global_name in self._seen_definitions or is_self_reference:
             self._reference_edges.append(

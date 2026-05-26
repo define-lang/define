@@ -539,7 +539,7 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
     assert result.file_results[0].diagnostics == []
     assert result.file_results[1].file_path == PurePosixPath("bar.dfn")
     diags = result.file_results[1].diagnostics
-    assert len(diags) == 2
+    assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].cycle == [
         "position<my.domain.com:my_lib:/foo>",
@@ -548,14 +548,6 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
     ]
     assert diags[0].location.line == 2
     assert diags[0].location.column == 25
-    assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert diags[1].cycle == [
-        "position<my.domain.com:my_lib:/foo>",
-        "position<my.domain.com:my_lib:/bar>",
-        "position<my.domain.com:my_lib:/foo>",
-    ]
-    assert diags[1].location.line == 4
-    assert diags[1].location.column == 37
 
 
 def test_unused_implication_on_global_position_error():
@@ -703,12 +695,8 @@ def test_implication_for_nonexistent_quality_used_in_body(
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == PurePosixPath("test.dfn")
     diags = result.file_results[0].diagnostics
-    assert len(diags) == 2
+    assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].file_path == "nonexistent.dfn"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 34
-    assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
-    assert diags[1].file_path == "nonexistent.dfn"
-    assert diags[1].location.line == 4
-    assert diags[1].location.column == 46

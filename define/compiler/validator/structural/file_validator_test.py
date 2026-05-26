@@ -382,11 +382,10 @@ class TestFileStructuralValidatorReferenceDiscovery:
 
         assert result.diagnostics == []
         edges = _reference_edges(result)
-        assert len(edges) == 5
-        assert all(
-            edge.global_name_reference.full_typed_name
+        assert len(edges) == 1
+        assert (
+            edges[0].global_name_reference.full_typed_name
             == "position<my.domain.com:my_lib:/shared>"
-            for edge in edges
         )
         files = _discovered_files(result)
         assert len(files) == 1
@@ -417,7 +416,7 @@ class TestDimensionPointReferenceEdges:
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
         assert result.diagnostics == []
-        assert len(_reference_edges(result)) == 3
+        assert len(_reference_edges(result)) == 2
         assert len(_discovered_files(result)) == 2
 
     def test_local_names_produce_no_edges(
