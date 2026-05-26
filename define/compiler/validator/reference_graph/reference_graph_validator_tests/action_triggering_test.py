@@ -2,7 +2,6 @@
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
-from define.compiler.graphs import action_call_graph
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
 
@@ -146,9 +145,7 @@ class TestActionTriggering:
             all_diags[0].position_name
             == "position<gateway>::action</other>::position<trigger_pos>"
         )
-        assert list(result.action_call_graph.edges()) == [
-            action_call_graph.ActionGraphEdge(source=_TEST, target=_OTHER),
-        ]
+        assert result.action_call_graph.edges() == [(_TEST, _OTHER)]
 
     def test_no_trigger_when_writing_to_non_trigger_position(
         self,

@@ -17,7 +17,7 @@ def assert_action_calls(
     # We use edges() (not unique_edges()) so that the error message
     # displays edges in graph insertion order, making failures easier
     # to diagnose.
-    all_edges = [(e.source, e.target) for e in call_graph.edges()]
+    all_edges = call_graph.edges()
     edge_set = set(all_edges)
     for i in range(len(actions) - 1):
         expected = (actions[i], actions[i + 1])

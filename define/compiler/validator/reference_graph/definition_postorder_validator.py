@@ -342,58 +342,77 @@ class DefinitionPostorderValidator(abc.ABC):
                 init_block_contract.guarantees,
             )
 
-    def _get_destructors_assigned_to(
+    def _collect_cascade_destructors(
         self, position: ast.PositionReference
-    ) -> list[ast.GlobalTypedNameReference]:
-        """Return the destructor qualities of the dimension point at this position, in firing order."""
+    ) -> list[tuple[ast.GlobalTypedNameReference, ast.PositionReference]]:
+        """Return the destructors the destruction cascade fires, each paired with the position of the dimension point it is assigned to, in firing order."""
+        # An unknown-state position is opaque: we cannot claim its destructors
+        # would fire and we cannot reason about its subtree, so the cascade
+        # skips it entirely.
+        if self._tracker.has_unknown_state(position):
+            return []
         if not self._tracker.is_occupied(position):
             # Validation checks will throw an error later for this case.
             return []
+        # A dimension point keeps its own qualities across moves, so it is the source
+        # of the qualities to check for destructors (not the position).
         dp = self._tracker.get_occupant(position)
-        destructors: list[ast.GlobalTypedNameReference] = []
-        # A dimension point keeps its own qualities across moves, so they---not the
-        # destroy-target position's constraints---are the source of truth for which
-        # destructors run. Qualities unassign in the reverse of assignment order during
-        # destruction, and a destructor fires immediately before its action is
-        # removed, so we fire them in reverse order.
+        destructors: list[
+            tuple[ast.GlobalTypedNameReference, ast.PositionReference]
+        ] = []
+        # Here, we walk the tree of dimension points in a depth-frst post-order traversal
+        # as required by the destruction cascade.
         for quality in reversed(dp.qualities):
-            if quality.name_type != ast.NameType.ACTION:
-                continue
-            definition_result = self._definition_results.get(quality)
-            if definition_result is None:
-                continue
-            if (
-                isinstance(definition_result.definition, ast.ActionDefinition)
-                and definition_result.definition.is_destructor
-            ):
-                destructors.append(quality)
+            if quality.name_type == ast.NameType.POSITION:
+                child = ast.PositionReference(
+                    location=position.location,
+                    typed_names=[*position.typed_names, quality],
+                )
+                destructors.extend(self._collect_cascade_destructors(child))
+            elif quality.name_type == ast.NameType.ACTION:
+                definition_result = self._definition_results.get(quality)
+                if definition_result is None or not isinstance(
+                    definition_result.definition, ast.ActionDefinition
+                ):
+                    continue
+                definition = definition_result.definition
+                if definition.is_destructor:
+                    destructors.append((quality, position))
+                for interface_position in reversed(definition.interface_positions):
+                    child = ast.PositionReference(
+                        location=position.location,
+                        typed_names=[
+                            *position.typed_names,
+                            quality,
+                            interface_position.typed_name,
+                        ],
+                    )
+                    destructors.extend(self._collect_cascade_destructors(child))
         return destructors
 
     def _run_destructors(
         self,
-        destructors: list[ast.GlobalTypedNameReference],
-        destroy_target: ast.PositionReference,
+        destructors: list[tuple[ast.GlobalTypedNameReference, ast.PositionReference]],
         scope: scope_tracker.ScopeTracker,
     ):
-        """Trigger each destructor that should fire for a destroyed dimension point."""
+        """Trigger each destructor that fires during a destruction cascade."""
         # A destructor's requirements are checked as though it triggered
         # synchronously at the moment of destruction (DLP 41). The destructor is a
-        # quality of the dimension point at destroy_target, so its interface
-        # positions hang off destroy_target::action</destructor> while its implied
-        # qualities hang off destroy_target itself; in_caller maps both correctly
-        # from this chain.
-        for quality in destructors:
+        # quality of the dimension point in `position`, so its interface positions
+        # hang off position::action</destructor> while its implied qualities hang off
+        # position itself; in_caller maps both correctly from this chain.
+        for quality, position in destructors:
             contract = self._action_contracts.get(quality)
             if contract is not None:
                 action_chain = ast.ChainedName(
-                    location=destroy_target.location,
-                    typed_names=[*destroy_target.typed_names, quality],
+                    location=position.location,
+                    typed_names=[*position.typed_names, quality],
                 )
                 self._propagate_destructor_requirements(contract, action_chain, scope)
                 self._check_requirements(
                     contract,
                     action_chain,
-                    destroy_target,
+                    position,
                     is_destructor=True,
                 )
             self._action_edges.append(
@@ -723,12 +742,10 @@ class DefinitionPostorderValidator(abc.ABC):
         # Destructors fire immediately before the dimension point is destroyed, and
         # only when the destroy actually proceeds, so the firing runs as the
         # executor's before_destroy hook.
-        destructors = self._get_destructors_assigned_to(stmt.target_position)
+        destructors = self._collect_cascade_destructors(stmt.target_position)
         diags = self._executor.execute_destroy(
             dimension_point_operation.Destroy(target=stmt.target_position),
-            before_destroy=lambda: self._run_destructors(
-                destructors, stmt.target_position, scope
-            ),
+            before_destroy=lambda: self._run_destructors(destructors, scope),
         )
         self._diagnostics.extend(diags)
 

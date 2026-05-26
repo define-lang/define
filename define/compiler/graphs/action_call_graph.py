@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-import typing
 from dataclasses import dataclass
 
 import networkx as nx
-
-if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
 
 
 @dataclass(frozen=True)
@@ -41,7 +37,6 @@ class ActionCallGraph:
         """Return the set of distinct ``(source, target)`` pairs."""
         return {(source, target) for source, target in self._graph.edges()}
 
-    def edges(self) -> Iterator[ActionGraphEdge]:
-        """Yield an ``ActionGraphEdge`` for every trigger edge."""
-        for source, target in self._graph.edges():
-            yield ActionGraphEdge(source=source, target=target)
+    def edges(self) -> list[tuple[str, str]]:
+        """Return every trigger edge as a ``(source, target)`` tuple, in insertion order."""
+        return list(self._graph.edges())
