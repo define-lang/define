@@ -1,0 +1,10 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/particles/create/duplicate_local_particle> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<my_pos>.
+        create a particle in position<my_pos>.
+        create a particle in position<my_pos>.
+    }
+}

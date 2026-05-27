@@ -22,8 +22,8 @@ For example:
 
 ```
 define the position<x>.
-create a dimension point in position<x>.
-assign the quality<mv:example.com:example:/foo> to the dimension point in position<x>.
+create a particle in position<x>.
+assign the quality<mv:example.com:example:/foo> to the particle in position<x>.
 ```
 
 ## A Real Program

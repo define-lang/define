@@ -79,9 +79,9 @@ class TestRequirementInference:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -104,9 +104,9 @@ class TestRequirementInference:
             "    define the position<item>.\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<item> to position<dest>.\n"
+            "        move the particle in position<item> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -125,9 +125,9 @@ class TestRequirementInference:
             "    define the position<item>.\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<item> to position<dest>.\n"
+            "        move the particle in position<item> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -145,9 +145,9 @@ class TestRequirementInference:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -165,10 +165,10 @@ class TestRequirementInference:
             "    define the position<item>.\n"
             "    define the position<other>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
-            "        move the dimension point in position<item> to position<other>.\n"
+            "        create a particle in position<item>.\n"
+            "        move the particle in position<item> to position<other>.\n"
             "    }\n"
             "}\n"
         )
@@ -185,10 +185,10 @@ class TestRequirementInference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
             "        define the position<local_only>.\n"
-            "        create a dimension point in position<local_only>.\n"
+            "        create a particle in position<local_only>.\n"
             "    }\n"
             "}\n"
         )
@@ -201,26 +201,26 @@ class TestRequirementInference:
         source = (
             "define the potential position<my.domain.com:my_lib:/grandchild>.\n"
             "define the potential position<my.domain.com:my_lib:/child> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position</grandchild>.\n"
             "    }\n"
             "}\n"
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
             "        define the position<container> {\n"
-            "            it may only contain dimension points where {\n"
+            "            it may only contain particles where {\n"
             "                it has the position</child>.\n"
             "            }\n"
             "        }\n"
-            "        create a dimension point in position<container>.\n"
-            "        create a dimension point in position<container>::position</child>.\n"
-            "        create a dimension point in position<container>::position</child>::position</grandchild>.\n"
-            "        destroy the dimension point in position<container>::position</child>::position</grandchild>.\n"
-            "        destroy the dimension point in position<container>::position</child>.\n"
-            "        destroy the dimension point in position<container>.\n"
+            "        create a particle in position<container>.\n"
+            "        create a particle in position<container>::position</child>.\n"
+            "        create a particle in position<container>::position</child>::position</grandchild>.\n"
+            "        destroy the particle in position<container>::position</child>::position</grandchild>.\n"
+            "        destroy the particle in position<container>::position</child>.\n"
+            "        destroy the particle in position<container>.\n"
             "    }\n"
             "}\n"
         )
@@ -238,9 +238,9 @@ class TestImpliedPositionRequirementInference:
             "    it also assigns the position</implied>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position</implied>.\n"
+            "        create a particle in position</implied>.\n"
             "    }\n"
             "}\n"
         )
@@ -261,9 +261,9 @@ class TestImpliedPositionRequirementInference:
             "    it also assigns the position</implied>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        destroy the dimension point in position</implied>.\n"
+            "        destroy the particle in position</implied>.\n"
             "    }\n"
             "}\n"
         )
@@ -283,19 +283,19 @@ class TestImpliedPositionRequirementInference:
             "    define the position<iface>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
             "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
+            "        create a particle in position<_noop>.\n"
             "    }\n"
             "}\n"
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it also assigns the action</sub>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</sub>::position<iface>.\n"
+            "        create a particle in action</sub>::position<iface>.\n"
             "    }\n"
             "}\n"
         )
@@ -319,9 +319,9 @@ class TestGuaranteeGeneration:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -334,7 +334,7 @@ class TestGuaranteeGeneration:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_moved_away_position_empty_at_end(self):
@@ -344,10 +344,10 @@ class TestGuaranteeGeneration:
             "    define the position<item>.\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
-            "        move the dimension point in position<item> to position<dest>.\n"
+            "        create a particle in position<item>.\n"
+            "        move the particle in position<item> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -360,18 +360,18 @@ class TestGuaranteeGeneration:
         assert isinstance(guarantee_dest, action_contract.OccupiedByNewGuarantee)
         assert guarantee_dest.qualities == []
         assert guarantee_dest.caused_by.location.line == 9
-        assert guarantee_dest.caused_by.location.column == 55
+        assert guarantee_dest.caused_by.location.column == 48
         assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
 
-    def test_created_dp_is_new(self):
+    def test_created_particle_is_new(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -384,7 +384,7 @@ class TestGuaranteeGeneration:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_origin_preserved_through_moves(self):
@@ -394,9 +394,9 @@ class TestGuaranteeGeneration:
             "    define the position<a>.\n"
             "    define the position<b>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<a> to position<b>.\n"
+            "        move the particle in position<a> to position<b>.\n"
             "    }\n"
             "}\n"
         )
@@ -408,14 +408,14 @@ class TestGuaranteeGeneration:
         guarantee_a = contract.guarantees[0][1]
         assert isinstance(guarantee_a, action_contract.EmptyGuarantee)
         assert guarantee_a.caused_by.location.line == 8
-        assert guarantee_a.caused_by.location.column == 37
+        assert guarantee_a.caused_by.location.column == 30
         assert guarantee_a.caused_by.source_chained_name == "position<a>"
         assert contract.guarantees[1][0] == ("position<b>",)
         guarantee_b = contract.guarantees[1][1]
         assert isinstance(guarantee_b, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_b.origin_position.source_chained_name == "position<a>"
         assert guarantee_b.caused_by.location.line == 8
-        assert guarantee_b.caused_by.location.column == 52
+        assert guarantee_b.caused_by.location.column == 45
         assert guarantee_b.caused_by.source_chained_name == "position<b>"
 
     def test_swap_origins(self):
@@ -425,12 +425,12 @@ class TestGuaranteeGeneration:
             "    define the position<a>.\n"
             "    define the position<b>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
             "        define the position<temp>.\n"
-            "        move the dimension point in position<a> to position<temp>.\n"
-            "        move the dimension point in position<b> to position<a>.\n"
-            "        move the dimension point in position<temp> to position<b>.\n"
+            "        move the particle in position<a> to position<temp>.\n"
+            "        move the particle in position<b> to position<a>.\n"
+            "        move the particle in position<temp> to position<b>.\n"
             "    }\n"
             "}\n"
         )
@@ -443,25 +443,25 @@ class TestGuaranteeGeneration:
         assert isinstance(guarantee_a, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_a.origin_position.source_chained_name == "position<b>"
         assert guarantee_a.caused_by.location.line == 10
-        assert guarantee_a.caused_by.location.column == 52
+        assert guarantee_a.caused_by.location.column == 45
         assert guarantee_a.caused_by.source_chained_name == "position<a>"
         assert contract.guarantees[1][0] == ("position<b>",)
         guarantee_b = contract.guarantees[1][1]
         assert isinstance(guarantee_b, action_contract.OccupiedByExistingGuarantee)
         assert guarantee_b.origin_position.source_chained_name == "position<a>"
         assert guarantee_b.caused_by.location.line == 11
-        assert guarantee_b.caused_by.location.column == 55
+        assert guarantee_b.caused_by.location.column == 48
         assert guarantee_b.caused_by.source_chained_name == "position<b>"
 
-    def test_new_dp_qualities(self):
+    def test_new_particle_qualities(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -474,7 +474,7 @@ class TestGuaranteeGeneration:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
 
 
 class TestChainedRequirementInference:
@@ -484,14 +484,14 @@ class TestChainedRequirementInference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>::position</x>.\n"
+            "        create a particle in position<item>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -511,15 +511,15 @@ class TestChainedRequirementInference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<item>::position</x> to position<dest>.\n"
+            "        move the particle in position<item>::position</x> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -539,15 +539,15 @@ class TestChainedRequirementInference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<item>::position</x> to position<dest>.\n"
+            "        move the particle in position<item>::position</x> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -567,14 +567,14 @@ class TestChainedRequirementInference:
             "    define the position<run>.\n"
             "    define the position<src>.\n"
             "    define the position<dest> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<src> to position<dest>::position</x>.\n"
+            "        move the particle in position<src> to position<dest>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -594,14 +594,14 @@ class TestChainedRequirementInference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>::position</x>.\n"
+            "        create a particle in position<item>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -622,14 +622,14 @@ class TestChainedGuaranteeGeneration:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>::position</x>.\n"
+            "        create a particle in position<item>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -643,7 +643,7 @@ class TestChainedGuaranteeGeneration:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 12
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
 
     def test_move_away_from_chain_generates_empty_guarantee(self):
@@ -652,15 +652,15 @@ class TestChainedGuaranteeGeneration:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<item>::position</x> to position<dest>.\n"
+            "        move the particle in position<item>::position</x> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -677,13 +677,13 @@ class TestChainedGuaranteeGeneration:
             == "position<item>::position</x>"
         )
         assert guarantee_dest.caused_by.location.line == 13
-        assert guarantee_dest.caused_by.location.column == 69
+        assert guarantee_dest.caused_by.location.column == 62
         assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
         assert contract.guarantees[1][0] == chain_key
         guarantee = contract.guarantees[1][1]
         assert isinstance(guarantee, action_contract.EmptyGuarantee)
         assert guarantee.caused_by.location.line == 13
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
 
     def test_move_to_chain_generates_occupied_guarantee(self):
@@ -693,14 +693,14 @@ class TestChainedGuaranteeGeneration:
             "    define the position<run>.\n"
             "    define the position<src>.\n"
             "    define the position<dest> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<src> to position<dest>::position</x>.\n"
+            "        move the particle in position<src> to position<dest>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -713,14 +713,14 @@ class TestChainedGuaranteeGeneration:
         guarantee_src = contract.guarantees[0][1]
         assert isinstance(guarantee_src, action_contract.EmptyGuarantee)
         assert guarantee_src.caused_by.location.line == 13
-        assert guarantee_src.caused_by.location.column == 37
+        assert guarantee_src.caused_by.location.column == 30
         assert guarantee_src.caused_by.source_chained_name == "position<src>"
         assert contract.guarantees[1][0] == chain_key
         guarantee = contract.guarantees[1][1]
         assert isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
         assert guarantee.origin_position.source_chained_name == "position<src>"
         assert guarantee.caused_by.location.line == 13
-        assert guarantee.caused_by.location.column == 54
+        assert guarantee.caused_by.location.column == 47
         assert guarantee.caused_by.source_chained_name == "position<dest>::position</x>"
 
     def test_move_from_chain_away_and_back_preserves_existing_origin(self):
@@ -729,16 +729,16 @@ class TestChainedGuaranteeGeneration:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    define the position<tmp>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<item>::position</x> to position<tmp>.\n"
-            "        move the dimension point in position<tmp> to position<item>::position</x>.\n"
+            "        move the particle in position<item>::position</x> to position<tmp>.\n"
+            "        move the particle in position<tmp> to position<item>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -753,14 +753,14 @@ class TestChainedGuaranteeGeneration:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<item> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</x>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>::position</x>.\n"
+            "        create a particle in position<item>::position</x>.\n"
             "    }\n"
             "}\n"
         )
@@ -774,7 +774,7 @@ class TestChainedGuaranteeGeneration:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 12
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
 
 
 class TestNoOpGuaranteeSuppression:
@@ -784,9 +784,9 @@ class TestNoOpGuaranteeSuppression:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -799,7 +799,7 @@ class TestNoOpGuaranteeSuppression:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 7
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_empty_guarantee_suppressed_for_inferred_empty_position(self):
@@ -808,10 +808,10 @@ class TestNoOpGuaranteeSuppression:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<item>.\n"
-            "        destroy the dimension point in position<item>.\n"
+            "        create a particle in position<item>.\n"
+            "        destroy the particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -830,9 +830,9 @@ class TestNoOpGuaranteeSuppression:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        destroy the dimension point in position<item>.\n"
+            "        destroy the particle in position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -848,7 +848,7 @@ class TestNoOpGuaranteeSuppression:
         assert key == ("position<item>",)
         assert isinstance(guarantee, action_contract.EmptyGuarantee)
         assert guarantee.caused_by.location.line == 7
-        assert guarantee.caused_by.location.column == 40
+        assert guarantee.caused_by.location.column == 33
         assert guarantee.caused_by.source_chained_name == "position<item>"
 
     def test_move_iface_to_local_and_back_emits_no_guarantee(self):
@@ -857,11 +857,11 @@ class TestNoOpGuaranteeSuppression:
             "    define the position<run>.\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
             "        define the position<tmp>.\n"
-            "        move the dimension point in position<item> to position<tmp>.\n"
-            "        move the dimension point in position<tmp> to position<item>.\n"
+            "        move the particle in position<item> to position<tmp>.\n"
+            "        move the particle in position<tmp> to position<item>.\n"
             "    }\n"
             "}\n"
         )
@@ -880,9 +880,9 @@ class TestNoOpGuaranteeSuppression:
             "    define the position<run>.\n"
             "    define the position<dest>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        move the dimension point in position<run> to position<dest>.\n"
+            "        move the particle in position<run> to position<dest>.\n"
             "    }\n"
             "}\n"
         )
@@ -894,14 +894,14 @@ class TestNoOpGuaranteeSuppression:
         assert run_key == ("position<run>",)
         assert isinstance(run_guarantee, action_contract.EmptyGuarantee)
         assert run_guarantee.caused_by.location.line == 7
-        assert run_guarantee.caused_by.location.column == 37
+        assert run_guarantee.caused_by.location.column == 30
         assert run_guarantee.caused_by.source_chained_name == "position<run>"
         dest_key, dest_guarantee = contract.guarantees[1]
         assert dest_key == ("position<dest>",)
         assert isinstance(dest_guarantee, action_contract.OccupiedByExistingGuarantee)
         assert dest_guarantee.origin_position.source_chained_name == "position<run>"
         assert dest_guarantee.caused_by.location.line == 7
-        assert dest_guarantee.caused_by.location.column == 54
+        assert dest_guarantee.caused_by.location.column == 47
         assert dest_guarantee.caused_by.source_chained_name == "position<dest>"
 
 
@@ -915,7 +915,7 @@ class TestPositionInitBlockContract:
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
             "    after it is assigned {\n"
-            "        create a dimension point in position</test>.\n"
+            "        create a particle in position</test>.\n"
             "    }\n"
             "}\n"
         )
@@ -928,14 +928,14 @@ class TestPositionInitBlockContract:
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
         assert guarantee.qualities == []
         assert guarantee.caused_by.location.line == 3
-        assert guarantee.caused_by.location.column == 37
+        assert guarantee.caused_by.location.column == 30
 
     def test_local_only_produces_empty_guarantees(self):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
             "    after it is assigned {\n"
             "        define the position<local>.\n"
-            "        create a dimension point in position<local>.\n"
+            "        create a particle in position<local>.\n"
             "    }\n"
             "}\n"
         )
@@ -948,12 +948,12 @@ class TestPositionInitBlockContract:
         source = (
             "define the potential position<my.domain.com:my_lib:/dep>.\n"
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position</dep>.\n"
             "    }\n"
             "    after it is assigned {\n"
-            "        create a dimension point in position</test>.\n"
-            "        create a dimension point in position</test>::position</dep>.\n"
+            "        create a particle in position</test>.\n"
+            "        create a particle in position</test>::position</dep>.\n"
             "    }\n"
             "}\n"
         )
@@ -984,8 +984,8 @@ class TestPositionInitBlockContract:
             "    it also assigns the position</dep>.\n"
             "    after it is assigned {\n"
             "        define the position<local>.\n"
-            "        move the dimension point in position</dep> to position<local>.\n"
-            "        create a dimension point in position</dep>.\n"
+            "        move the particle in position</dep> to position<local>.\n"
+            "        create a particle in position</dep>.\n"
             "    }\n"
             "}\n"
         )
@@ -996,7 +996,7 @@ class TestPositionInitBlockContract:
         req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         assert req.inferred_from.location.line == 6
-        assert req.inferred_from.location.column == 37
+        assert req.inferred_from.location.column == 30
         assert req.inferred_from.location.file_path is None
         assert isinstance(req.enclosing_quality, ast.PositionDefinition)
         assert (
@@ -1011,7 +1011,7 @@ class TestPositionInitBlockContract:
             "define the potential position<my.domain.com:my_lib:/test> {\n"
             "    it also assigns the position</dep>.\n"
             "    after it is assigned {\n"
-            "        destroy the dimension point in position</dep>.\n"
+            "        destroy the particle in position</dep>.\n"
             "    }\n"
             "}\n"
         )
@@ -1022,7 +1022,7 @@ class TestPositionInitBlockContract:
         req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         assert req.inferred_from.location.line == 5
-        assert req.inferred_from.location.column == 40
+        assert req.inferred_from.location.column == 33
         assert req.inferred_from.location.file_path is None
         assert isinstance(req.enclosing_quality, ast.PositionDefinition)
         assert (
@@ -1038,8 +1038,8 @@ class TestPositionInitBlockContract:
             "    it also assigns the position</dep>.\n"
             "    after it is assigned {\n"
             "        define the position<local>.\n"
-            "        create a dimension point in position<local>.\n"
-            "        move the dimension point in position<local> to position</dep>.\n"
+            "        create a particle in position<local>.\n"
+            "        move the particle in position<local> to position</dep>.\n"
             "    }\n"
             "}\n"
         )
@@ -1050,7 +1050,7 @@ class TestPositionInitBlockContract:
         req = contract.requirements[("position<my.domain.com:my_lib:/dep>",)]
         assert req.required_state == action_contract.PositionOccupancyState.EMPTY
         assert req.inferred_from.location.line == 7
-        assert req.inferred_from.location.column == 56
+        assert req.inferred_from.location.column == 49
         assert req.inferred_from.location.file_path is None
         assert isinstance(req.enclosing_quality, ast.PositionDefinition)
         assert (
@@ -1063,14 +1063,14 @@ class TestPositionInitBlockContract:
         source = (
             "define the potential position<my.domain.com:my_lib:/grand_child>.\n"
             "define the potential position<my.domain.com:my_lib:/dep> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position</grand_child>.\n"
             "    }\n"
             "}\n"
             "define the potential position<my.domain.com:my_lib:/test> {\n"
             "    it also assigns the position</dep>.\n"
             "    after it is assigned {\n"
-            "        destroy the dimension point in position</dep>::position</grand_child>.\n"
+            "        destroy the particle in position</dep>::position</grand_child>.\n"
             "    }\n"
             "}\n"
         )
@@ -1083,7 +1083,7 @@ class TestPositionInitBlockContract:
             parent_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         )
         assert parent_req.inferred_from.location.line == 10
-        assert parent_req.inferred_from.location.column == 40
+        assert parent_req.inferred_from.location.column == 33
         assert parent_req.inferred_from.location.file_path is None
         assert isinstance(parent_req.enclosing_quality, ast.PositionDefinition)
         assert (
@@ -1101,7 +1101,7 @@ class TestPositionInitBlockContract:
             leaf_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
         )
         assert leaf_req.inferred_from.location.line == 10
-        assert leaf_req.inferred_from.location.column == 40
+        assert leaf_req.inferred_from.location.column == 33
         assert leaf_req.inferred_from.location.file_path is None
         assert isinstance(leaf_req.enclosing_quality, ast.PositionDefinition)
         assert (
@@ -1114,11 +1114,11 @@ class TestPositionInitBlockContract:
         source = (
             "define the potential position<my.domain.com:my_lib:/dep>.\n"
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position</dep>.\n"
             "    }\n"
             "    after it is assigned {\n"
-            "        destroy the dimension point in position</test>::position</dep>.\n"
+            "        destroy the particle in position</test>::position</dep>.\n"
             "    }\n"
             "}\n"
         )
@@ -1131,8 +1131,8 @@ class TestPositionInitBlockContract:
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
             "    after it is assigned {\n"
-            "        create a dimension point in position</test>.\n"
-            "        destroy the dimension point in position</test>.\n"
+            "        create a particle in position</test>.\n"
+            "        destroy the particle in position</test>.\n"
             "    }\n"
             "}\n"
         )
@@ -1149,35 +1149,35 @@ def test_interface_position_requirement_integration():
         "    define the position<item>.\n"
         "    define the position<dest>.\n"
         "    it happens when {\n"
-        "        the position<trigger_pos> has a dimension point.\n"
+        "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
-        "        move the dimension point in position<item> to position<dest>.\n"
+        "        move the particle in position<item> to position<dest>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/middle> {\n"
         "    define the position<trigger_pos>.\n"
         "    define the position<mid_iface> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the action</inner>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<trigger_pos> has a dimension point.\n"
+        "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
-        "        create a dimension point in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
+        "        create a particle in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/outer> {\n"
         "    define the position<trigger_pos>.\n"
         "    define the position<out_iface> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the action</middle>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<trigger_pos> has a dimension point.\n"
+        "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
-        "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+        "        create a particle in position<out_iface>::action</middle>::position<trigger_pos>.\n"
         "    }\n"
         "}\n"
     )
@@ -1281,20 +1281,20 @@ def test_init_block_propagation_records_occupied_on_inner_contract():
         "define the potential position<my.domain.com:my_lib:/p> {\n"
         "    it also assigns the position</q>.\n"
         "    after it is assigned {\n"
-        "        destroy the dimension point in position</q>.\n"
+        "        destroy the particle in position</q>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/inner> {\n"
         "    define the position<trigger_pos>.\n"
         "    define the position<iface> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the position</p>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<trigger_pos> has a dimension point.\n"
+        "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
-        "        create a dimension point in position<iface>.\n"
+        "        create a particle in position<iface>.\n"
         "    }\n"
         "}\n"
     )
@@ -1314,9 +1314,9 @@ def test_init_block_propagation_records_occupied_on_inner_contract():
     assert direct_req.required_state == action_contract.PositionOccupancyState.EMPTY
     assert direct_req.inferred_from.source_chained_name == "position<iface>"
     assert direct_req.inferred_from.location.line == 18
-    assert direct_req.inferred_from.location.column == 37
+    assert direct_req.inferred_from.location.column == 30
     assert direct_req.inferred_from.location.end_line == 18
-    assert direct_req.inferred_from.location.end_column == 52
+    assert direct_req.inferred_from.location.end_column == 45
     assert direct_req.inferred_from.location.file_path is None
     assert (
         direct_req.enclosing_quality.typed_name.source_typed_name
@@ -1332,9 +1332,9 @@ def test_init_block_propagation_records_occupied_on_inner_contract():
     )
     assert propagated_req.inferred_from.source_chained_name == "position<iface>"
     assert propagated_req.inferred_from.location.line == 18
-    assert propagated_req.inferred_from.location.column == 37
+    assert propagated_req.inferred_from.location.column == 30
     assert propagated_req.inferred_from.location.end_line == 18
-    assert propagated_req.inferred_from.location.end_column == 52
+    assert propagated_req.inferred_from.location.end_column == 45
     assert propagated_req.inferred_from.location.file_path is None
     assert (
         propagated_req.enclosing_quality.typed_name.source_typed_name
@@ -1346,9 +1346,9 @@ def test_init_block_propagation_records_occupied_on_inner_contract():
     assert p_req.required_state == action_contract.PositionOccupancyState.OCCUPIED
     assert p_req.inferred_from.source_chained_name == "position</q>"
     assert p_req.inferred_from.location.line == 5
-    assert p_req.inferred_from.location.column == 40
+    assert p_req.inferred_from.location.column == 33
     assert p_req.inferred_from.location.end_line == 5
-    assert p_req.inferred_from.location.end_column == 52
+    assert p_req.inferred_from.location.end_column == 45
     assert p_req.inferred_from.location.file_path is None
     assert (
         p_req.enclosing_quality.typed_name.source_typed_name
@@ -1365,9 +1365,9 @@ def test_init_block_propagation_records_occupied_on_inner_contract():
     propagated_locations = propagated_req.propagated_from_locations()
     assert len(propagated_locations) == 1
     assert propagated_locations[0].line == 5
-    assert propagated_locations[0].column == 40
+    assert propagated_locations[0].column == 33
     assert propagated_locations[0].end_line == 5
-    assert propagated_locations[0].end_column == 52
+    assert propagated_locations[0].end_column == 45
     assert propagated_locations[0].file_path is None
 
 
@@ -1377,20 +1377,20 @@ def test_init_block_propagation_records_empty_on_inner_contract():
         "define the potential position<my.domain.com:my_lib:/p> {\n"
         "    it also assigns the position</q>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</q>.\n"
+        "        create a particle in position</q>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/inner> {\n"
         "    define the position<trigger_pos>.\n"
         "    define the position<iface> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the position</p>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<trigger_pos> has a dimension point.\n"
+        "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
-        "        create a dimension point in position<iface>.\n"
+        "        create a particle in position<iface>.\n"
         "    }\n"
         "}\n"
     )
@@ -1410,9 +1410,9 @@ def test_init_block_propagation_records_empty_on_inner_contract():
     assert direct_req.required_state == action_contract.PositionOccupancyState.EMPTY
     assert direct_req.inferred_from.source_chained_name == "position<iface>"
     assert direct_req.inferred_from.location.line == 18
-    assert direct_req.inferred_from.location.column == 37
+    assert direct_req.inferred_from.location.column == 30
     assert direct_req.inferred_from.location.end_line == 18
-    assert direct_req.inferred_from.location.end_column == 52
+    assert direct_req.inferred_from.location.end_column == 45
     assert direct_req.inferred_from.location.file_path is None
     assert (
         direct_req.enclosing_quality.typed_name.source_typed_name
@@ -1426,9 +1426,9 @@ def test_init_block_propagation_records_empty_on_inner_contract():
     assert propagated_req.required_state == action_contract.PositionOccupancyState.EMPTY
     assert propagated_req.inferred_from.source_chained_name == "position<iface>"
     assert propagated_req.inferred_from.location.line == 18
-    assert propagated_req.inferred_from.location.column == 37
+    assert propagated_req.inferred_from.location.column == 30
     assert propagated_req.inferred_from.location.end_line == 18
-    assert propagated_req.inferred_from.location.end_column == 52
+    assert propagated_req.inferred_from.location.end_column == 45
     assert propagated_req.inferred_from.location.file_path is None
     assert (
         propagated_req.enclosing_quality.typed_name.source_typed_name
@@ -1440,9 +1440,9 @@ def test_init_block_propagation_records_empty_on_inner_contract():
     assert p_req.required_state == action_contract.PositionOccupancyState.EMPTY
     assert p_req.inferred_from.source_chained_name == "position</q>"
     assert p_req.inferred_from.location.line == 5
-    assert p_req.inferred_from.location.column == 37
+    assert p_req.inferred_from.location.column == 30
     assert p_req.inferred_from.location.end_line == 5
-    assert p_req.inferred_from.location.end_column == 49
+    assert p_req.inferred_from.location.end_column == 42
     assert p_req.inferred_from.location.file_path is None
     assert (
         p_req.enclosing_quality.typed_name.source_typed_name
@@ -1459,9 +1459,9 @@ def test_init_block_propagation_records_empty_on_inner_contract():
     propagated_locations = propagated_req.propagated_from_locations()
     assert len(propagated_locations) == 1
     assert propagated_locations[0].line == 5
-    assert propagated_locations[0].column == 37
+    assert propagated_locations[0].column == 30
     assert propagated_locations[0].end_line == 5
-    assert propagated_locations[0].end_column == 49
+    assert propagated_locations[0].end_column == 42
     assert propagated_locations[0].file_path is None
 
 
@@ -1470,10 +1470,10 @@ class TestDestructorContract:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it happens when {\n"
-            "        this dimension point is being destroyed.\n"
+            "        this particle is being destroyed.\n"
             "    } and it does {\n"
             "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
+            "        create a particle in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -1488,9 +1488,9 @@ class TestDestructorContract:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<victim>.\n"
             "    it happens when {\n"
-            "        this dimension point is being destroyed.\n"
+            "        this particle is being destroyed.\n"
             "    } and it does {\n"
-            "        destroy the dimension point in position<victim>.\n"
+            "        destroy the particle in position<victim>.\n"
             "    }\n"
             "}\n"
         )
@@ -1508,9 +1508,9 @@ class TestDestructorContract:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<slot>.\n"
             "    it happens when {\n"
-            "        this dimension point is being destroyed.\n"
+            "        this particle is being destroyed.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<slot>.\n"
+            "        create a particle in position<slot>.\n"
             "    }\n"
             "}\n"
         )
@@ -1528,9 +1528,9 @@ class TestDestructorContract:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<slot>.\n"
             "    it happens when {\n"
-            "        this dimension point is being destroyed.\n"
+            "        this particle is being destroyed.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<slot>.\n"
+            "        create a particle in position<slot>.\n"
             "    }\n"
             "}\n"
         )
@@ -1546,12 +1546,12 @@ class TestDestructorContract:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<item>.\n"
             "    it happens when {\n"
-            "        this dimension point is being destroyed.\n"
+            "        this particle is being destroyed.\n"
             "    } and it does {\n"
             "        define the position<sink>.\n"
             "        define the position<sink2>.\n"
-            "        move the dimension point in position<item> to position<sink>.\n"
-            "        move the dimension point in position<item> to position<sink2>.\n"
+            "        move the particle in position<item> to position<sink>.\n"
+            "        move the particle in position<item> to position<sink2>.\n"
             "    }\n"
             "}\n"
         )
@@ -1567,33 +1567,33 @@ def test_destructors_fire_in_reverse_assignment_order():
     source = (
         "define the potential action<my.domain.com:my_lib:/destructor_first> {\n"
         "    it happens when {\n"
-        "        this dimension point is being destroyed.\n"
+        "        this particle is being destroyed.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/destructor_second> {\n"
         "    it happens when {\n"
-        "        this dimension point is being destroyed.\n"
+        "        this particle is being destroyed.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
+        "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        define the position<box> {\n"
-        "            it may only contain dimension points where {\n"
+        "            it may only contain particles where {\n"
         "                it has the action</destructor_first>.\n"
         "                it has the action</destructor_second>.\n"
         "            }\n"
         "        }\n"
-        "        create a dimension point in position<box>.\n"
-        "        destroy the dimension point in position<box>.\n"
+        "        create a particle in position<box>.\n"
+        "        destroy the particle in position<box>.\n"
         "    }\n"
         "}\n"
     )

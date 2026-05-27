@@ -8,12 +8,11 @@
 ## Problem
 
 As mentioned in the [Concepts](../spec/concepts.md), programming languages need
-some way to indicate that dimension points are in a form.
+some way to indicate that particles are in a form.
 
-Similarly, there must also be some syntax for removing dimension points from a
-form.
+Similarly, there must also be some syntax for removing particles from a form.
 
 A form is a concept that exists in the universe of reflection, even though the
-dimension points exist in the "real" world of the program.
+particles exist in the "real" world of the program.
 
 ## Solution

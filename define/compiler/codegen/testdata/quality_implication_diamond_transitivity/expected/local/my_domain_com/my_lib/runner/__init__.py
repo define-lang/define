@@ -12,9 +12,9 @@ import local.my_domain_com.my_lib.implier_two
 class Runner(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/runner>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
@@ -38,10 +38,10 @@ class Runner(literal.Action):
     def execute(self):
         self.get_interface_position(
             "position<source>"
-        ).create_dimension_point()
+        ).create_particle()
         self.get_interface_position(
             "position<source>"
-        ).move_dimension_point_to(
+        ).move_particle_to(
             self.get_interface_position(
                 "position<dest>"
             )

@@ -3,6 +3,6 @@ define the potential position<mv:define-lang.org:test_files:/valid/position_init
     after it is assigned { # comment after open brace
         define the position<local>.
 
-        create a dimension point in position<local>.
+        create a particle in position<local>.
     } # comment after close brace
 }

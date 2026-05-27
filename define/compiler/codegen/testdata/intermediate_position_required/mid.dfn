@@ -1,5 +1,5 @@
 define the potential position<my.domain.com:my_lib:/mid> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</leaf>.
     }
 }

@@ -16,16 +16,15 @@ the compiler derive):
    operation-level.
 5. Range information — if the compiler can prove a value is in [a, b], it should
    emit !range. This is verification output, not encoding input.
-6. Alignment and memory layout — for dimension points that are memory-backed,
-   their physical alignment matters. Probably an aspect of the encoding or
-   position.
-7. Aliasing — which dimension points can share memory. Likely belongs to the
+6. Alignment and memory layout — for particles that are memory-backed, their
+   physical alignment matters. Probably an aspect of the encoding or position.
+7. Aliasing — which particles can share memory. Likely belongs to the
    positional/ownership model, not encodings. But the compiler needs to emit
    noalias when appropriate.
 8. Purity — whether an action has side effects. Define's action analysis
    probably already tracks this; map it to LLVM function attributes.
-9. Atomicity — if shared mutable state exists, encodings on those dimension
-   points need memory ordering semantics.
+9. Atomicity — if shared mutable state exists, encodings on those particles need
+   memory ordering semantics.
 
 ### 10: Optimizing Vectorization
 
@@ -37,9 +36,9 @@ different, it can't reorder or parallelize. The fix is noalias attributes on
 pointers (or TBAA metadata for type-based proof).
 
 This is where Define's positional model might give you a huge natural advantage.
-If two dimension points are in separate positions with no aliasing relationship,
-the compiler can emit noalias automatically based on ownership analysis. This is
-the kind of proof you get from C only via restrict (which programmers rarely use
+If two particles are in separate positions with no aliasing relationship, the
+compiler can emit noalias automatically based on ownership analysis. This is the
+kind of proof you get from C only via restrict (which programmers rarely use
 correctly), or from Rust via the borrow checker (where it's enforced but still
 complicated). Define could just emit it from the positional model.
 
@@ -49,10 +48,10 @@ Iteration N+1 must not depend on a value computed in iteration N (except for
 specific recognizable patterns like reductions, inductions, and first-order
 recurrences). Loop-carried deps force serial execution.
 
-If Define expresses "do this action to every dimension point in this collection"
-as an explicit parallel construct, you bypass much of this by declaring
-parallelism up front — the compiler doesn't have to prove independence; the
-programmer (or verifier) has asserted it.
+If Define expresses "do this action to every particle in this collection" as an
+explicit parallel construct, you bypass much of this by declaring parallelism up
+front — the compiler doesn't have to prove independence; the programmer (or
+verifier) has asserted it.
 
 3. Alignment information.
 

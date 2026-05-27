@@ -13,7 +13,7 @@ the grammar:
   * Positions with constraint blocks, with quality implications, with
     init blocks, and combinations.
   * Actions with full bodies and a destructor action that triggers on
-    ``this dimension point is being destroyed``.
+    ``this particle is being destroyed``.
   * Inside the bulk action: every ``ActionStatement`` kind -- local
     position definitions (simple and constrained), ``create``, ``move``,
     and ``destroy`` -- using a mix of local references, short global
@@ -115,9 +115,9 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
                 f"{_OUTER_INDENT}define the position<run>.",
                 f"{_OUTER_INDENT}define the position<_noop>.",
                 f"{_OUTER_INDENT}it happens when {{",
-                f"{_INNER_INDENT}the position<run> has a dimension point.",
+                f"{_INNER_INDENT}the position<run> has a particle.",
                 f"{_OUTER_INDENT}}} and it does {{",
-                f"{_INNER_INDENT}create a dimension point in position<_noop>.",
+                f"{_INNER_INDENT}create a particle in position<_noop>.",
                 f"{_OUTER_INDENT}}}",
                 "}",
                 "",
@@ -138,7 +138,7 @@ def _emit_constrained_position(prefix: str, index: int) -> list[str]:
     name = _qualified_global_name(prefix, index)
     return [
         f"define the potential position<{name}> {{",
-        f"{_OUTER_INDENT}it may only contain dimension points where {{",
+        f"{_OUTER_INDENT}it may only contain particles where {{",
         f"{_INNER_INDENT}it has the position<{_short_global_name(0)}>.",
         f"{_INNER_INDENT}it has the action<{_short_global_name(1, is_action=True)}>.",
         f"{_OUTER_INDENT}}}",
@@ -153,14 +153,14 @@ def _emit_position_with_implications_and_init(prefix: str, index: int) -> list[s
         f"define the potential position<{name}> {{",
         f"{_OUTER_INDENT}it also assigns the position<{_short_global_name(0)}>.",
         f"{_OUTER_INDENT}it also assigns the action<{_short_global_name(1, is_action=True)}>.",
-        f"{_OUTER_INDENT}it may only contain dimension points where {{",
+        f"{_OUTER_INDENT}it may only contain particles where {{",
         f"{_INNER_INDENT}it has the position<{_short_global_name(2)}>.",
         f"{_OUTER_INDENT}}}",
         f"{_OUTER_INDENT}after it is assigned {{",
-        f"{_INNER_INDENT}create a dimension point in position<{_short_global_name(0)}>.",
+        f"{_INNER_INDENT}create a particle in position<{_short_global_name(0)}>.",
         f"{_INNER_INDENT}# Trailing comment in init block",
         (
-            f"{_INNER_INDENT}create a dimension point in"
+            f"{_INNER_INDENT}create a particle in"
             f" action<{_short_global_name(1, is_action=True)}>::position<_noop>."
         ),
         f"{_OUTER_INDENT}}}",
@@ -174,9 +174,9 @@ def _emit_destructor_action(fqun_path: str) -> list[str]:
         f"define the potential action<{fqun_path}> {{",
         f"{_OUTER_INDENT}define the position<_noop>.",
         f"{_OUTER_INDENT}it happens when {{",
-        f"{_INNER_INDENT}this dimension point is being destroyed.",
+        f"{_INNER_INDENT}this particle is being destroyed.",
         f"{_OUTER_INDENT}}} and it does {{",
-        f"{_INNER_INDENT}create a dimension point in position<_noop>. # destructor body",
+        f"{_INNER_INDENT}create a particle in position<_noop>. # destructor body",
         f"{_OUTER_INDENT}}}",
         "}",
         "",
@@ -188,7 +188,7 @@ def _chained_create_statement(chain_length: int, num_globals: int) -> str:
         f"position<{_short_global_name(i % num_globals)}>" for i in range(chain_length)
     ]
     chain = "::".join(elements)
-    return f"{_INNER_INDENT}create a dimension point in {chain}."
+    return f"{_INNER_INDENT}create a particle in {chain}."
 
 
 def _next_body_statement(
@@ -197,18 +197,17 @@ def _next_body_statement(
     """Return a single body line, cycling through statement kinds by ``step``."""
     kind = step % 13
     if kind == 0:
-        return f"{_INNER_INDENT}create a dimension point in position<local_a>."
+        return f"{_INNER_INDENT}create a particle in position<local_a>."
     if kind == 1:
         gi = step % num_globals
         return (
-            f"{_INNER_INDENT}create a dimension point in"
-            f" position<{_short_global_name(gi)}>."
+            f"{_INNER_INDENT}create a particle in position<{_short_global_name(gi)}>."
         )
     if kind == 2:
         # Full-FQUN reference to a decoy position in another universe;
         # the spec requires the full form when the referenced FQUN
         # differs from the enclosing definition's FQUN.
-        return f"{_INNER_INDENT}create a dimension point in position<{_DECOY_3PART}>."
+        return f"{_INNER_INDENT}create a particle in position<{_DECOY_3PART}>."
     if kind == 3:
         return _chained_create_statement(2, num_globals)
     if kind == 4:
@@ -218,29 +217,29 @@ def _next_body_statement(
     if kind == 6:
         gi = step % num_globals
         return (
-            f"{_INNER_INDENT}create a dimension point in"
+            f"{_INNER_INDENT}create a particle in"
             f" position<local_a>::position<{_short_global_name(gi)}>."
         )
     if kind == 7:
         ai = step % num_actions
         return (
-            f"{_INNER_INDENT}create a dimension point in"
+            f"{_INNER_INDENT}create a particle in"
             f" action<{_short_global_name(ai, is_action=True)}>::position<_noop>."
         )
     if kind == 8:
         return (
-            f"{_INNER_INDENT}move the dimension point in position<local_a>"
+            f"{_INNER_INDENT}move the particle in position<local_a>"
             " to position<local_b>."
         )
     if kind == 9:
         gi = step % num_globals
         return (
-            f"{_INNER_INDENT}move the dimension point in"
+            f"{_INNER_INDENT}move the particle in"
             f" position<local_a>::position<{_short_global_name(gi)}>"
             f" to position<local_b>."
         )
     if kind == 10:
-        return f"{_INNER_INDENT}destroy the dimension point in position<local_b>."
+        return f"{_INNER_INDENT}destroy the particle in position<local_b>."
     if kind == 11:
         return f"{_INNER_INDENT}# cycle marker {step}"
     return f"{_INNER_INDENT}define the position<scratch_{step}>."
@@ -253,12 +252,12 @@ def _emit_main_action_header(fqun_path: str) -> list[str]:
         f"{_OUTER_INDENT}define the position<run>.",
         f"{_OUTER_INDENT}define the position<local_a>.",
         f"{_OUTER_INDENT}define the position<local_b> {{",
-        f"{_INNER_INDENT}it may only contain dimension points where {{",
+        f"{_INNER_INDENT}it may only contain particles where {{",
         f"{_DEEP_INDENT}it has the position<{_short_global_name(0)}>.",
         f"{_INNER_INDENT}}}",
         f"{_OUTER_INDENT}}}",
         f"{_OUTER_INDENT}it happens when {{",
-        f"{_INNER_INDENT}the position<run> has a dimension point.",
+        f"{_INNER_INDENT}the position<run> has a particle.",
         f"{_OUTER_INDENT}}} and it does {{",
     ]
 

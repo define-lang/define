@@ -19,22 +19,22 @@ class Test(literal.GlobalPosition):
                 local.my_domain_com.my_lib.mid.Mid,
             ),
         )
-        self.create_dimension_point()
-        chain_start.create_dimension_point()
-        chain_start.dimension_point.get_position(
+        self.create_particle()
+        chain_start.create_particle()
+        chain_start.particle.get_position(
             "position<my.domain.com:my_lib:/mid>"
-        ).create_dimension_point()
-        self.move_dimension_point_to(local_dest)
-        local_dest.move_dimension_point_to(self)
-        self.move_dimension_point_to(
-            chain_start.dimension_point.get_position(
+        ).create_particle()
+        self.move_particle_to(local_dest)
+        local_dest.move_particle_to(self)
+        self.move_particle_to(
+            chain_start.particle.get_position(
                 "position<my.domain.com:my_lib:/mid>"
-            ).dimension_point.get_position(
+            ).particle.get_position(
                 "position<my.domain.com:my_lib:/end>"
             )
         )
-        chain_start.dimension_point.get_position(
+        chain_start.particle.get_position(
             "position<my.domain.com:my_lib:/mid>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/end>"
-        ).move_dimension_point_to(self)
+        ).move_particle_to(self)

@@ -8,9 +8,9 @@ from define.runtime import literal
 class Runner(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/runner>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition("position<output>"),
@@ -22,4 +22,4 @@ class Runner(literal.Action):
     def execute(self):
         self.get_interface_position(
             "position<output>"
-        ).create_dimension_point()
+        ).create_particle()

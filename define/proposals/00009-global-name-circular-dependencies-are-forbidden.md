@@ -70,7 +70,7 @@ forbidden:
 ```
 define the quality<example.com:example:/foo> {
     define the potential_form<foo_form> {
-        it has a dimension point in position<x> {
+        it has a particle in position<x> {
             it has the quality<example.com:example:/bar>
         }
     }
@@ -82,7 +82,7 @@ define the quality<example.com:example:/foo> {
 ```
 define the quality<example.com:example:/bar> {
     define the potential_form<bar_form> {
-        it has a dimension point in position<y> {
+        it has a particle in position<y> {
             it has the quality<example.com:example:/baz>
         }
     }
@@ -94,7 +94,7 @@ define the quality<example.com:example:/bar> {
 ```
 define the quality<example.com:example:/baz> {
     define the potential_form<baz_form> {
-        it has a dimension point in position<z> {
+        it has a particle in position<z> {
             it has the quality<example.com:example:/foo>
         }
     }

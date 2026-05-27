@@ -1,0 +1,9 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/single_action_reference> {
+    define the position<run>.
+    define the position<to_pos>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in action<act_other> to position<to_pos>.
+    }
+}

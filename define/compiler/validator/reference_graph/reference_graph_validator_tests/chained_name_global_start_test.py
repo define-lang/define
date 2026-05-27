@@ -21,9 +21,9 @@ class TestUnnecessarySelfReference:
             "    define the position<run>.\n"
             "    define the position<inner>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</test>::position<inner>.\n"
+            "        create a particle in action</test>::position<inner>.\n"
             "    }\n"
             "}\n"
         )
@@ -33,7 +33,7 @@ class TestUnnecessarySelfReference:
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
-        assert diags[0].location.column == 37
+        assert diags[0].location.column == 30
         assert diags[0].message == (
             "the reference to 'action<my.domain.com:my_lib:/test>' is not necessary"
             " because the code is already inside that definition"
@@ -47,9 +47,9 @@ class TestUnnecessarySelfReference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<inner>.\n"
             "    it happens when {\n"
-            "        the position<inner> has a dimension point.\n"
+            "        the position<inner> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</test>::position<Bad>.\n"
+            "        create a particle in action</test>::position<Bad>.\n"
             "    }\n"
             "}\n"
         )
@@ -59,16 +59,16 @@ class TestUnnecessarySelfReference:
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 6
-        assert diags[0].location.column == 37
+        assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[1].local_name == "position<Bad>"
         assert diags[1].location.line == 6
-        assert diags[1].location.column == 61
+        assert diags[1].location.column == 54
         assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[2].local_name == "Bad"
         assert diags[2].char == "B"
         assert diags[2].location.line == 6
-        assert diags[2].location.column == 61
+        assert diags[2].location.column == 54
 
     def test_self_reference_removal_affects_downstream_validation(
         self,
@@ -78,11 +78,11 @@ class TestUnnecessarySelfReference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<trigger_pos>.\n"
             "    it happens when {\n"
-            "        the position<trigger_pos> has a dimension point.\n"
+            "        the position<trigger_pos> has a particle.\n"
             "    } and it does {\n"
             "        define the position<inner>.\n"
-            "        create a dimension point in action</test>::position<inner>.\n"
-            "        create a dimension point in position<inner>.\n"
+            "        create a particle in action</test>::position<inner>.\n"
+            "        create a particle in position<inner>.\n"
             "    }\n"
             "}\n"
         )
@@ -92,13 +92,13 @@ class TestUnnecessarySelfReference:
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
-        assert diags[0].location.column == 37
+        assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
         assert diags[1].position_name == "position<inner>"
         assert diags[1].location.line == 8
-        assert diags[1].location.column == 37
+        assert diags[1].location.column == 30
         assert diags[1].populated_at.line == 7
-        assert diags[1].populated_at.column == 37
+        assert diags[1].populated_at.column == 30
 
     def test_single_element_self_reference_not_stripped(
         self,
@@ -108,9 +108,9 @@ class TestUnnecessarySelfReference:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<trigger_pos>.\n"
             "    it happens when {\n"
-            "        the position<trigger_pos> has a dimension point.\n"
+            "        the position<trigger_pos> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in action</test>.\n"
+            "        create a particle in action</test>.\n"
             "    }\n"
             "}\n"
         )
@@ -119,10 +119,10 @@ class TestUnnecessarySelfReference:
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert diags[0].location.line == 6
-        assert diags[0].location.column == 37
+        assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
         assert diags[1].location.line == 6
-        assert diags[1].location.column == 37
+        assert diags[1].location.column == 30
         assert diags[1].cycle == [
             "action<my.domain.com:my_lib:/test>",
             "action<my.domain.com:my_lib:/test>",
@@ -140,9 +140,9 @@ class TestUnknownGlobalChainStart:
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</other>::position<x>.\n"
+                    "        create a particle in action</other>::position<x>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -150,10 +150,10 @@ class TestUnknownGlobalChainStart:
                     "define the potential action<my.domain.com:my_lib:/other> {\n"
                     "    define the position<x>.\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -165,7 +165,7 @@ class TestUnknownGlobalChainStart:
         assert all_diags[0].source_global_name == "action</other>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
         assert all_diags[0].location.line == 6
-        assert all_diags[0].location.column == 37
+        assert all_diags[0].location.column == 30
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
@@ -179,7 +179,7 @@ class TestImpliedQualityChainStart:
                 "y.dfn": "define the potential position<my.domain.com:my_lib:/y>.\n",
                 "x.dfn": (
                     "define the potential position<my.domain.com:my_lib:/x> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</y>.\n"
                     "    }\n"
                     "}\n"
@@ -189,9 +189,9 @@ class TestImpliedQualityChainStart:
                     "    it also assigns the position</x>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position</x>::position</y>.\n"
+                    "        create a particle in position</x>::position</y>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -212,9 +212,9 @@ class TestImpliedQualityChainStart:
                     "    it also assigns the position</x>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position</x>::position</z>.\n"
+                    "        create a particle in position</x>::position</z>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -228,7 +228,7 @@ class TestImpliedQualityChainStart:
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/x>"
         assert all_diags[0].location.line == 7
-        assert all_diags[0].location.column == 51
+        assert all_diags[0].location.column == 44
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_valid_chain_past_implied_action_iface(
@@ -242,10 +242,10 @@ class TestImpliedQualityChainStart:
                     "    define the position<iface>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -254,9 +254,9 @@ class TestImpliedQualityChainStart:
                     "    it also assigns the action</b>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</b>::position<iface>.\n"
+                    "        create a particle in action</b>::position<iface>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -275,10 +275,10 @@ class TestImpliedQualityChainStart:
                     "    define the position<iface>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -287,9 +287,9 @@ class TestImpliedQualityChainStart:
                     "    it also assigns the action</b>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in action</b>::position<not_iface>.\n"
+                    "        create a particle in action</b>::position<not_iface>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -301,7 +301,7 @@ class TestImpliedQualityChainStart:
         assert all_diags[0].element_name == "position<not_iface>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/b>"
         assert all_diags[0].location.line == 7
-        assert all_diags[0].location.column == 49
+        assert all_diags[0].location.column == 42
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_valid_three_element_chain_past_implied_position(
@@ -313,14 +313,14 @@ class TestImpliedQualityChainStart:
                 "z.dfn": "define the potential position<my.domain.com:my_lib:/z>.\n",
                 "y.dfn": (
                     "define the potential position<my.domain.com:my_lib:/y> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</z>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "x.dfn": (
                     "define the potential position<my.domain.com:my_lib:/x> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</y>.\n"
                     "    }\n"
                     "}\n"
@@ -330,9 +330,9 @@ class TestImpliedQualityChainStart:
                     "    it also assigns the position</x>.\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position</x>::position</y>::position</z>.\n"
+                    "        create a particle in position</x>::position</y>::position</z>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -352,14 +352,14 @@ class TestMissingDefinitionInChain:
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    define the position<gateway> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</middle>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<gateway>::position</middle>::position</end>.\n"
+                    "        create a particle in position<gateway>::position</middle>::position</end>.\n"
                     "    }\n"
                     "}\n"
                 ),

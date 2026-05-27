@@ -22,9 +22,9 @@ _INNER_DESTROYS_X = (
     "    it also assigns the position</x>.\n"
     "    define the position<run>.\n"
     "    it happens when {\n"
-    "        the position<run> has a dimension point.\n"
+    "        the position<run> has a particle.\n"
     "    } and it does {\n"
-    "        destroy the dimension point in position</x>.\n"
+    "        destroy the particle in position</x>.\n"
     "    }\n"
     "}\n"
 )
@@ -34,9 +34,9 @@ _INNER_CREATES_X = (
     "    it also assigns the position</x>.\n"
     "    define the position<run>.\n"
     "    it happens when {\n"
-    "        the position<run> has a dimension point.\n"
+    "        the position<run> has a particle.\n"
     "    } and it does {\n"
-    "        create a dimension point in position</x>.\n"
+    "        create a particle in position</x>.\n"
     "    }\n"
     "}\n"
 )
@@ -46,9 +46,9 @@ _MIDDLE_TRIGGERS_INNER = (
     "    it also assigns the action</inner>.\n"
     "    define the position<run>.\n"
     "    it happens when {\n"
-    "        the position<run> has a dimension point.\n"
+    "        the position<run> has a particle.\n"
     "    } and it does {\n"
-    "        create a dimension point in action</inner>::position<run>.\n"
+    "        create a particle in action</inner>::position<run>.\n"
     "    }\n"
     "}\n"
 )
@@ -57,16 +57,16 @@ _TEST_PRE_FILLS_X = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
     "    define the position<run>.\n"
     "    it happens when {\n"
-    "        the position<run> has a dimension point.\n"
+    "        the position<run> has a particle.\n"
     "    } and it does {\n"
     "        define the position<box> {\n"
-    "            it may only contain dimension points where {\n"
+    "            it may only contain particles where {\n"
     "                it has the action</middle>.\n"
     "            }\n"
     "        }\n"
-    "        create a dimension point in position<box>.\n"
-    "        create a dimension point in position<box>::position</x>.\n"
-    "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+    "        create a particle in position<box>.\n"
+    "        create a particle in position<box>::position</x>.\n"
+    "        create a particle in position<box>::action</middle>::position<run>.\n"
     "    }\n"
     "}\n"
 )
@@ -75,15 +75,15 @@ _TEST_DOES_NOT_FILL_X = (
     "define the potential action<my.domain.com:my_lib:/test> {\n"
     "    define the position<run>.\n"
     "    it happens when {\n"
-    "        the position<run> has a dimension point.\n"
+    "        the position<run> has a particle.\n"
     "    } and it does {\n"
     "        define the position<box> {\n"
-    "            it may only contain dimension points where {\n"
+    "            it may only contain particles where {\n"
     "                it has the action</middle>.\n"
     "            }\n"
     "        }\n"
-    "        create a dimension point in position<box>.\n"
-    "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+    "        create a particle in position<box>.\n"
+    "        create a particle in position<box>::action</middle>::position<run>.\n"
     "    }\n"
     "}\n"
 )
@@ -121,7 +121,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].position_name == "position<box>::position</x>"
@@ -132,7 +132,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -140,7 +140,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 40,
+            "column": 33,
             "file_path": "inner.dfn",
         },
     )
@@ -177,12 +177,12 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].position_name == "position<box>::position</x>"
     assert all_diags[0].filled_at.line == 12
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -191,7 +191,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -199,7 +199,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -208,7 +208,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
 
 _X_HAS_INNER = (
     "define the potential position<my.domain.com:my_lib:/x> {\n"
-    "    it may only contain dimension points where {\n"
+    "    it may only contain particles where {\n"
     "        it has the action</inner>.\n"
     "    }\n"
     "}\n"
@@ -220,9 +220,9 @@ _INNER_REQUIRES_ITEM_OCCUPIED = (
     "    define the position<item>.\n"
     "    define the position<dest>.\n"
     "    it happens when {\n"
-    "        the position<trigger_pos> has a dimension point.\n"
+    "        the position<trigger_pos> has a particle.\n"
     "    } and it does {\n"
-    "        move the dimension point in position<item> to position<dest>.\n"
+    "        move the particle in position<item> to position<dest>.\n"
     "    }\n"
     "}\n"
 )
@@ -241,9 +241,9 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
                 "    it also assigns the position</x>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</x>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position</x>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -251,16 +251,16 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</middle>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</x>.\n"
-                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</x>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -272,7 +272,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert (
@@ -286,7 +286,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -294,7 +294,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -314,10 +314,10 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
                 "    it also assigns the position</x>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</x>.\n"
-                "        create a dimension point in position</x>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position</x>.\n"
+                "        create a particle in position</x>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -325,15 +325,15 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</middle>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -345,7 +345,7 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 8
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
@@ -356,7 +356,7 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -375,9 +375,9 @@ def test_doubly_nested_implied_action_chain_propagates(
                 "    define the position<extra>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<extra> to position<dest>.\n"
+                "        move the particle in position<extra> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -386,9 +386,9 @@ def test_doubly_nested_implied_action_chain_propagates(
                 "    it also assigns the action</inner>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</inner>::position<trigger_pos>.\n"
+                "        create a particle in action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -397,9 +397,9 @@ def test_doubly_nested_implied_action_chain_propagates(
                 "    it also assigns the action</middle>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</middle>::position<trigger_pos>.\n"
+                "        create a particle in action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -407,15 +407,15 @@ def test_doubly_nested_implied_action_chain_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -426,7 +426,7 @@ def test_doubly_nested_implied_action_chain_propagates(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.ActionRequiresOccupiedPositionDiagnostic)
     assert diag.location.line == 12
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
     assert diag.position_name == "position<box>::action</inner>::position<extra>"
@@ -437,7 +437,7 @@ def test_doubly_nested_implied_action_chain_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -445,7 +445,7 @@ def test_doubly_nested_implied_action_chain_propagates(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -453,7 +453,7 @@ def test_doubly_nested_implied_action_chain_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )

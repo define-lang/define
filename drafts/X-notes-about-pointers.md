@@ -11,7 +11,7 @@ Programs are not just static descriptions of positions in space. Something needs
 to _happen_ to those positions in space. There needs to be some way to cause
 action to occur.
 
-The [Concepts](../spec/concepts.md) describe machines---dimension points that do
+The [Concepts](../spec/concepts.md) describe machines---particles that do
 something under certain circumstances. We need syntax for these.
 
 Traditional programming languages describe action in terms of various
@@ -28,10 +28,10 @@ constructs:
 4. Specialized types of functions such as constructors, which create new objects
    that can then have functions called on them.
 
-Conceptually, none of those things _exist_. What exists are dimension points in
-space. Those dimension points can have qualities that cause them to take action
-under certain circumstances. The question is: what are those circumstances, and
-what actions can they take?
+Conceptually, none of those things _exist_. What exists are particles in space.
+Those particles can have qualities that cause them to take action under certain
+circumstances. The question is: what are those circumstances, and what actions
+can they take?
 
 ### Pointers
 
@@ -65,12 +65,12 @@ We have to decide:
 
 1. Are views (pointers) a real thing that exists in actual universes?
 2. If so, do we actually _need_ them in order to be able to express all possible
-   programs efficiently (without excessive duplication of dimension points)?
+   programs efficiently (without excessive duplication of particles)?
 
 The "are they a real thing" comes down to a few questions:
 
-1. Can one dimension point modify another without moving it? Answer: You can
-   change its qualities where it is. Otherwise, the only possible modification
-   seems to be moving it.
-2. Can you trigger a machine without moving a dimension point?
+1. Can one particle modify another without moving it? Answer: You can change its
+   qualities where it is. Otherwise, the only possible modification seems to be
+   moving it.
+2. Can you trigger a machine without moving a particle?
 3. What happens when two machines see the same point simultaneously?

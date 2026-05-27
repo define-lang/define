@@ -2,8 +2,8 @@ define the potential action<mv:define-lang.org:test_files:/valid/quality_implica
     it also assigns the position</valid/minimal_position>.
     define the position<run>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        create a dimension point in position</valid/minimal_position>.
+        create a particle in position</valid/minimal_position>.
     }
 }

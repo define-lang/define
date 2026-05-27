@@ -348,9 +348,9 @@ py_test(
 )
 
 py_test(
-    name = "create_dimension_point_test",
+    name = "create_particle_test",
     size = "small",
-    srcs = ["create_dimension_point_test.py"],
+    srcs = ["create_particle_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -370,9 +370,9 @@ py_test(
 )
 
 py_test(
-    name = "destroy_dimension_point_test",
+    name = "destroy_particle_test",
     size = "small",
-    srcs = ["destroy_dimension_point_test.py"],
+    srcs = ["destroy_particle_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -416,9 +416,9 @@ py_test(
 )
 
 py_test(
-    name = "dimension_point_conflict_test",
+    name = "particle_conflict_test",
     size = "small",
-    srcs = ["dimension_point_conflict_test.py"],
+    srcs = ["particle_conflict_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -496,9 +496,9 @@ py_test(
 )
 
 py_test(
-    name = "move_dimension_point_test",
+    name = "move_particle_test",
     size = "small",
-    srcs = ["move_dimension_point_test.py"],
+    srcs = ["move_particle_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -550,9 +550,9 @@ py_test(
 )
 
 py_test(
-    name = "quality_implication_dimension_point_test",
+    name = "quality_implication_particle_test",
     size = "small",
-    srcs = ["quality_implication_dimension_point_test.py"],
+    srcs = ["quality_implication_particle_test.py"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -641,24 +641,24 @@ pyright_test(
         ":chained_name_global_start_test",
         ":chained_name_multi_element_test",
         ":chained_name_test",
-        ":create_dimension_point_test",
+        ":create_particle_test",
         ":create_without_parent_test",
-        ":destroy_dimension_point_test",
+        ":destroy_particle_test",
         ":destructor_auto_test",
         ":destructor_cascade_test",
         ":destructor_triggering_test",
-        ":dimension_point_conflict_test",
         ":error_messages_test",
         ":implied_action_triggering_test",
         ":inferred_action_occupancy_test",
         ":move_chained_constraint_test",
         ":move_cross_fqun_test",
-        ":move_dimension_point_test",
         ":move_local_constraint_test",
+        ":move_particle_test",
         ":move_state_tracking_test",
         ":move_without_parent_test",
+        ":particle_conflict_test",
         ":position_init_self_reference_test",
-        ":quality_implication_dimension_point_test",
+        ":quality_implication_particle_test",
         ":quality_implication_test",
         ":reference_graph_validator_tests",
         ":trigger_conditions_test",

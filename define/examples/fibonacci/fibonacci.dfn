@@ -1,8 +1,8 @@
 define the potential position<define-lang.org:fibonacci:/fibonacci> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action</generate>.
     }
     after it is assigned {
-        create a dimension point in action</generate>::position<run>.
+        create a particle in action</generate>::position<run>.
     }
 }

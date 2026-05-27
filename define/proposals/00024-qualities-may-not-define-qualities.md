@@ -32,18 +32,18 @@ N/A in this proposal, because we are only explaining and justifying decisions.
 ## Why This is the Right Solution
 
 A quality is a definition of an abstract concept. Only when you apply it to a
-dimension point does it become "real." A _definition_ is an abstract thing. It
-doesn't make sense for a definition to define another definition. What does that
-even mean? To see this concretely, look at this imaginary syntax:
+particle does it become "real." A _definition_ is an abstract thing. It doesn't
+make sense for a definition to define another definition. What does that even
+mean? To see this concretely, look at this imaginary syntax:
 
 ```
 define the potential position<mv:example.com:bank:/balance> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is a decimal.
         it has the quality<standard:/numbers/constraints/non_negative>
     }
     define the potential position<overdrafted_by_amount> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has a value that is a decimal.
             it has the quality<standard:/numbers/constraints/non_negative>
         }
@@ -53,9 +53,9 @@ define the potential position<mv:example.com:bank:/balance> {
 
 It _looks_ nice, because it makes it visually apparent to us as programmers that
 the `overdrafted` position is related to _only_ the `balance` position. But then
-we have a confusion: Does assigning the `balance` quality to a dimension point
-mean that the `overdrafted_by_amount` quality will always be automatically
-created? It says it's a potential position, so what happens? Super confusing.
+we have a confusion: Does assigning the `balance` quality to a particle mean
+that the `overdrafted_by_amount` quality will always be automatically created?
+It says it's a potential position, so what happens? Super confusing.
 
 Other languages have this mostly because it allows for access control (saying
 things like "only the code for `balance` can update the `overdrafted` quality").
@@ -65,8 +65,8 @@ solves that problem much better.
 Essentially, allowing inner qualities gives us a bookkeeping system (these two
 qualities are associated) and that's it. It is confusing because the inner
 quality doesn't behave the same way as any other part of the quality definition.
-All the other definitions become "part" of the dimension point when the quality
-is assigned to the dimension point.
+All the other definitions become "part" of the particle when the quality is
+assigned to the particle.
 
 As a side note, another reason to avoid this is that you get into dangerous
 territory with logical systems when you allow abstract concepts to contain the

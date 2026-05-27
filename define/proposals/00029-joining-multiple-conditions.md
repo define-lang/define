@@ -132,22 +132,22 @@ of those positions and will deny paradoxes against them.
 ### Checking Conditions
 
 As noted in [DLP 28](00028-triggering-actions.md), actions only _check_ their
-conditions when the state of dimension points in the program change. However, at
-that time they will check all of their conditions. So for example, imagine you
-have these conditions:
+conditions when the state of particles in the program change. However, at that
+time they will check all of their conditions. So for example, imagine you have
+these conditions:
 
 ```
-the position<foo> has a dimension point
+the position<foo> has a particle
 AND
-NOT the position<bar> has a dimension point
+NOT the position<bar> has a particle
 ```
 
 Let's pretend that when that action was assigned, the `position<foo>` already
-had a dimension point, and `position<bar>` was already empty. Then the program
-destroys the dimension point in `position<foo>`. Nothing happens, because the
-trigger conditions don't match. However, then we create a dimension point in
-`position<foo>`. The action would fire, even though nothing has changed about
-the _state_ of `position<bar>`.
+had a particle, and `position<bar>` was already empty. Then the program destroys
+the particle in `position<foo>`. Nothing happens, because the trigger conditions
+don't match. However, then we create a particle in `position<foo>`. The action
+would fire, even though nothing has changed about the _state_ of
+`position<bar>`.
 
 In other words, only one of the positions listed in a trigger condition has to
 change its state in order for the action to check its conditions.
@@ -161,23 +161,23 @@ define the potential action<define-lang.org:bank:/account/transfer_to> {
 
     define the position<run>.
     define the position<to> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the action</account/deposit>.
         }
     }
     define the position<amount> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has a value that is a decimal.
             it has the constraint</positive>.
         }
     }
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
         AND
-        the position<to> has a dimension point.
+        the position<to> has a particle.
         AND
-        the position<amount> has a dimension point.
+        the position<amount> has a particle.
     } and it does {
         # A bunch of stuff to transfer money to another account.
     }
@@ -207,9 +207,9 @@ compatibility because we know exactly what Define programs must look like.
 
 ## Refactoring Existing Systems
 
-With just position constraints, the `has a dimension point` trigger condition,
-and these boolean operators, you can express almost every trigger condition in
-every existing programming language today, as well as some conditions that those
+With just position constraints, the `has a particle` trigger condition, and
+these boolean operators, you can express almost every trigger condition in every
+existing programming language today, as well as some conditions that those
 languages would have a _very_ difficult time expressing.
 
 There are still a few other pieces we would need to cover _every_ reasonable

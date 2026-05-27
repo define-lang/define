@@ -58,7 +58,7 @@ def test_position_definition_empty_name_at_eof(parse: Parse) -> None:
 def test_position_definition_with_constraint_block(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
@@ -73,7 +73,7 @@ def test_position_definition_with_constraint_block(parse: Parse) -> None:
 def test_position_definition_with_multiple_requirements(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</first>.\n"
         + "        it has the action</second>.\n"
         + "    }\n"
@@ -101,7 +101,7 @@ def test_position_constraint_block_requires_requirements(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "    }\n"
             + "}\n"
         )
@@ -117,7 +117,7 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
         parse(
             "define the potential position<my_lib:/path>.\n"
             + "define the potential position<my_lib:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        t has the position<my_lib:/path>.\n"
             + "    }\n"
             + "}\n"
@@ -136,10 +136,10 @@ def test_position_definition_rejects_multiple_constraint_blocks(
     ) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position</first>.\n"
             + "    }\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the action</second>.\n"
             + "    }\n"
             + "}\n"
@@ -155,9 +155,9 @@ def test_second_constraint_block_after_close_on_same_line(
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position</first>.\n"
-            + "    }    it may only contain dimension points where {\n"
+            + "    }    it may only contain particles where {\n"
             + "        it has the action</second>.\n"
             + "    }\n"
             + "}\n"
@@ -174,8 +174,8 @@ def test_second_constraint_block_on_requirement_line(
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
-            + "        it has the position</first>.    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position</first>.    it may only contain particles where {\n"
             + "        it has the action</second>.\n"
             + "    }\n"
             + "}\n"
@@ -194,12 +194,12 @@ def test_action_definition_block_with_mixed_local_position_forms(
         + "    define the position<run>.\n"
         + "    define the position<empty_pos>.\n"
         + "    define the position<constrained_pos> {\n"
-        + "        it may only contain dimension points where {\n"
+        + "        it may only contain particles where {\n"
         + "            it has the position</child>.\n"
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -223,17 +223,17 @@ def test_action_definition_block_with_multiple_local_block_positions(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    define the position<first_pos> {\n"
-        + "        it may only contain dimension points where {\n"
+        + "        it may only contain particles where {\n"
         + "            it has the position</first_child>.\n"
         + "        }\n"
         + "    }\n"
         + "    define the position<second_pos> {\n"
-        + "        it may only contain dimension points where {\n"
+        + "        it may only contain particles where {\n"
         + "            it has the action</second_child>.\n"
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -258,11 +258,11 @@ def test_action_statements_block_with_mixed_local_position_forms(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<empty_inner>.\n"
         + "        define the position<constrained_inner> {\n"
-        + "            it may only contain dimension points where {\n"
+        + "            it may only contain particles where {\n"
         + "                it has the action</inner_action>.\n"
         + "            }\n"
         + "        }\n"
@@ -288,15 +288,15 @@ def test_action_statements_block_with_multiple_local_block_positions(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<first_inner> {\n"
-        + "            it may only contain dimension points where {\n"
+        + "            it may only contain particles where {\n"
         + "                it has the position</first_child>.\n"
         + "            }\n"
         + "        }\n"
         + "        define the position<second_inner> {\n"
-        + "            it may only contain dimension points where {\n"
+        + "            it may only contain particles where {\n"
         + "                it has the action</second_child>.\n"
         + "            }\n"
         + "        }\n"
@@ -320,7 +320,7 @@ def test_position_definition_with_init_block_only(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in position</other>.\n"
+        + "        create a particle in position</other>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -333,11 +333,11 @@ def test_position_definition_with_init_block_only(parse: Parse) -> None:
 def test_position_definition_with_constraint_and_init_block(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in position</other>.\n"
+        + "        create a particle in position</other>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -352,7 +352,7 @@ def test_init_block_with_create_statement(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in position</path>.\n"
+        + "        create a particle in position</path>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -367,7 +367,7 @@ def test_init_block_colon_immediately_after_open_brace(parse: Parse) -> None:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    after it is assigned {:\n"
-            + "        create a dimension point in position</path>.\n"
+            + "        create a particle in position</path>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -379,7 +379,7 @@ def test_init_block_with_move_statement(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        move the dimension point in position</source> to position</path>.\n"
+        + "        move the particle in position</source> to position</path>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -405,8 +405,8 @@ def test_init_block_with_multiple_statements(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    after it is assigned {\n"
-        + "        create a dimension point in position</path>.\n"
-        + "        move the dimension point in position</source> to position</dest>.\n"
+        + "        create a particle in position</path>.\n"
+        + "        move the particle in position</source> to position</dest>.\n"
         + "        define the position<inner>.\n"
         + "    }\n"
         + "}\n"
@@ -435,7 +435,7 @@ def test_init_block_with_comments_and_blank_lines(parse: Parse) -> None:
         + "    after it is assigned {\n"
         + "        # a comment\n"
         + "\n"
-        + "        create a dimension point in position</path>.\n"
+        + "        create a particle in position</path>.\n"
         + "\n"
         + "    }\n"
         + "}\n"
@@ -447,15 +447,15 @@ def test_init_block_before_constraint_block_fails(parse: Parse) -> None:
         parse(
             "define the potential position<standard:/path> {\n"
             + "    after it is assigned {\n"
-            + "        create a dimension point in position</path>.\n"
+            + "        create a particle in position</path>.\n"
             + "    }\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position</child>.\n"
             + "    }\n"
             + "}\n"
         )
-    assert str(exc_info.value.token) == "it may only contain dimension points where"
-    assert exc_info.value.token.type == "IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE"
+    assert str(exc_info.value.token) == "it may only contain particles where"
+    assert exc_info.value.token.type == "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE"
     assert exc_info.value.line == 5
     assert exc_info.value.column == 5
 
@@ -465,10 +465,10 @@ def test_multiple_init_blocks_fails(parse: Parse) -> None:
         parse(
             "define the potential position<standard:/path> {\n"
             + "    after it is assigned {\n"
-            + "        create a dimension point in position</path>.\n"
+            + "        create a particle in position</path>.\n"
             + "    }\n"
             + "    after it is assigned {\n"
-            + "        create a dimension point in position</path>.\n"
+            + "        create a particle in position</path>.\n"
             + "    }\n"
             + "}\n"
         )
@@ -525,7 +525,7 @@ def test_empty_local_position_definition_block(parse: Parse) -> None:
             + "    define the position<bad> {\n"
             + "    }\n"
             + "    it happens when {\n"
-            + "        the position<bad> has a dimension point.\n"
+            + "        the position<bad> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -543,7 +543,7 @@ def test_invalid_content_in_local_position_definition_block(parse: Parse) -> Non
             + "        nonsense here\n"
             + "    }\n"
             + "    it happens when {\n"
-            + "        the position<bad> has a dimension point.\n"
+            + "        the position<bad> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"

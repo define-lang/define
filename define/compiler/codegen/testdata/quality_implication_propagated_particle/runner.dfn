@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/runner> {
+    define the position<run>.
+    define the position<wrapper> {
+        it may only contain particles where {
+            it has the action</middle>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<wrapper>::action</middle>::position<box>.
+        create a particle in position<wrapper>::action</middle>::position<box>::action</inner>::position<input>.
+        create a particle in position<wrapper>::action</middle>::position<run>.
+    }
+}

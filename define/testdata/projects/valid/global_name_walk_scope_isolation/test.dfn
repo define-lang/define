@@ -1,13 +1,13 @@
 define the potential action<mv:define-lang.org:test_walk_scope_isolation:/test> {
     define the position<dup_local> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the action</target>.
         }
     }
     it happens when {
-        the position<dup_local> has a dimension point.
+        the position<dup_local> has a particle.
     } and it does {
         define the position<_noop>.
-        create a dimension point in position<_noop>.
+        create a particle in position<_noop>.
     }
 }

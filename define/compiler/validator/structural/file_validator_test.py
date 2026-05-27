@@ -88,10 +88,10 @@ class TestFileStructuralValidatorSuccess:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<_noop>.\n"
             "    it happens when {\n"
-            "        the position<_noop> has a dimension point.\n"
+            "        the position<_noop> has a particle.\n"
             "    } and it does {\n"
             "        define the position<__noop>.\n"
-            "        create a dimension point in position<__noop>.\n"
+            "        create a particle in position<__noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -277,7 +277,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
     def test_short_form_reference(self, tmp_path: Path, lark_parser: parser.Parser):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position</other>.\n"
             "    }\n"
             "}\n"
@@ -298,7 +298,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
     ):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position<other.domain.com:other_lib:/dep>.\n"
             "    }\n"
             "}\n"
@@ -324,7 +324,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
     ):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position<other.domain.com:other_lib:/dep>.\n"
             "    }\n"
             "}\n"
@@ -342,7 +342,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
     def test_multiple_references(self, tmp_path: Path, lark_parser: parser.Parser):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             "        it has the position</dep_a>.\n"
             "        it has the position</dep_b>.\n"
             "    }\n"
@@ -362,17 +362,17 @@ class TestFileStructuralValidatorReferenceDiscovery:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it also assigns the position</shared>.\n"
             "    define the position<inner> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</shared>.\n"
             "        }\n"
             "    }\n"
             "    define the position<trigger_pos>.\n"
             "    it happens when {\n"
-            "        the position<trigger_pos> has a dimension point.\n"
+            "        the position<trigger_pos> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position</shared>.\n"
-            "        move the dimension point in position</shared> to position<inner>.\n"
-            "        destroy the dimension point in position</shared>.\n"
+            "        create a particle in position</shared>.\n"
+            "        move the particle in position</shared> to position<inner>.\n"
+            "        destroy the particle in position</shared>.\n"
             "    }\n"
             "}\n"
         )
@@ -392,7 +392,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert files[0].path == PurePosixPath("shared.dfn")
 
 
-class TestDimensionPointReferenceEdges:
+class TestParticleReferenceEdges:
     def test_chained_globals_produce_multiple_edges(
         self, tmp_path: Path, lark_parser: parser.Parser
     ):
@@ -400,14 +400,14 @@ class TestDimensionPointReferenceEdges:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    define the position<gateway> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the action</beta>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<gateway>::action</beta>::position</gamma>.\n"
+            "        create a particle in position<gateway>::action</beta>::position</gamma>.\n"
             "    }\n"
             "}\n"
         )
@@ -427,9 +427,9 @@ class TestDimensionPointReferenceEdges:
             "    define the position<run>.\n"
             "    define the position<inner_pos>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<inner_pos>.\n"
+            "        create a particle in position<inner_pos>.\n"
             "    }\n"
             "}\n"
         )
@@ -447,14 +447,14 @@ class TestDimensionPointReferenceEdges:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<my_pos> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</Bad>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<my_pos> has a dimension point.\n"
+            "        the position<my_pos> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<my_pos>::position</Bad>.\n"
+            "        create a particle in position<my_pos>::position</Bad>.\n"
             "    }\n"
             "}\n"
         )
@@ -478,7 +478,7 @@ class TestDimensionPointReferenceEdges:
         assert result.diagnostics[1].segment == "Bad"
         assert result.diagnostics[1].char == "B"
         assert result.diagnostics[1].location.line == 10
-        assert result.diagnostics[1].location.column == 65
+        assert result.diagnostics[1].location.column == 58
         assert _reference_edges(result) == []
         assert _discovered_files(result) == []
 

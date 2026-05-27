@@ -11,7 +11,7 @@ from define.compiler.conftest import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
-class TestCreateDimensionPoint:
+class TestCreateParticle:
     def test_chain_second_element_not_in_constraints(
         self,
         validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
@@ -19,14 +19,14 @@ class TestCreateDimensionPoint:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the action</other>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<pos_a> has a dimension point.\n"
+            "        the position<pos_a> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<pos_a>::action<wrong>::position<pos_end>.\n"
+            "        create a particle in position<pos_a>::action<wrong>::position<pos_end>.\n"
             "    }\n"
             "}\n"
         )
@@ -39,18 +39,18 @@ class TestCreateDimensionPoint:
         assert diags[0].local_name == "action<wrong>"
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
-        assert diags[0].location.column == 54
+        assert diags[0].location.column == 47
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 61
+        assert diags[1].location.column == 54
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].local_name == "position<pos_end>"
         assert diags[2].preceding_name == "action<wrong>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 69
+        assert diags[2].location.column == 62
         assert isinstance(
             diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
@@ -66,14 +66,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</correct>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</wrong>::position<end>.\n"
+                    "        create a particle in position<x>::action</wrong>::position<end>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -81,10 +81,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/correct> {\n"
                     "    define the position<end>.\n"
                     "    it happens when {\n"
-                    "        the position<end> has a dimension point.\n"
+                    "        the position<end> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -92,10 +92,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/wrong> {\n"
                     "    define the position<end>.\n"
                     "    it happens when {\n"
-                    "        the position<end> has a dimension point.\n"
+                    "        the position<end> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -109,7 +109,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<x>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 50
+        assert all_diags[0].location.column == 43
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_second_element_position_has_no_constraints(
@@ -120,9 +120,9 @@ class TestCreateDimensionPoint:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a>.\n"
             "    it happens when {\n"
-            "        the position<pos_a> has a dimension point.\n"
+            "        the position<pos_a> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<pos_a>::action<act_b>::position<pos_c>.\n"
+            "        create a particle in position<pos_a>::action<act_b>::position<pos_c>.\n"
             "    }\n"
             "}\n"
         )
@@ -135,18 +135,18 @@ class TestCreateDimensionPoint:
         assert diags[0].local_name == "action<act_b>"
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 6
-        assert diags[0].location.column == 54
+        assert diags[0].location.column == 47
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].local_name == "act_b"
         assert diags[1].location.line == 6
-        assert diags[1].location.column == 61
+        assert diags[1].location.column == 54
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].local_name == "position<pos_c>"
         assert diags[2].preceding_name == "action<act_b>"
         assert diags[2].location.line == 6
-        assert diags[2].location.column == 69
+        assert diags[2].location.column == 62
 
     def test_chain_second_element_matches_constraint(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
@@ -156,14 +156,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</child>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
+                    "        create a particle in position<pos_a>::action</child>::position<pos_end>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -171,10 +171,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/child> {\n"
                     "    define the position<pos_end>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_end> has a dimension point.\n"
+                    "        the position<pos_end> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -190,15 +190,15 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</child>.\n"
                     "        }\n"
                     "    }\n"
                     "    define the position<pos_a>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</child>::position<pos_end>.\n"
+                    "        create a particle in position<pos_a>::action</child>::position<pos_end>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -206,10 +206,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/child> {\n"
                     "    define the position<pos_end>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_end> has a dimension point.\n"
+                    "        the position<pos_end> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -233,22 +233,22 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<run>.\n"
                     "    it happens when {\n"
-                    "        the position<run> has a dimension point.\n"
+                    "        the position<run> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</child>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</child>::position<no_such>.\n"
+                    "        create a particle in position<pos_a>::action</child>::position<no_such>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -256,10 +256,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/child> {\n"
                     "    define the position<pos_end>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_end> has a dimension point.\n"
+                    "        the position<pos_end> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -282,14 +282,14 @@ class TestCreateDimensionPoint:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the position</child>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<pos_a> has a dimension point.\n"
+            "        the position<pos_a> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<pos_a>::action<child>::position<pos_end>.\n"
+            "        create a particle in position<pos_a>::action<child>::position<pos_end>.\n"
             "    }\n"
             "}\n"
         )
@@ -302,18 +302,18 @@ class TestCreateDimensionPoint:
         assert diags[0].local_name == "action<child>"
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
-        assert diags[0].location.column == 54
+        assert diags[0].location.column == 47
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].local_name == "child"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 61
+        assert diags[1].location.column == 54
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].local_name == "position<pos_end>"
         assert diags[2].preceding_name == "action<child>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 69
+        assert diags[2].location.column == 62
         assert isinstance(
             diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
@@ -329,9 +329,9 @@ class TestCreateDimensionPoint:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<run> has a dimension point.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<no_such>::action<act_b>::position<pos_c>.\n"
+            "        create a particle in position<no_such>::action<act_b>::position<pos_c>.\n"
             "    }\n"
             "}\n"
         )
@@ -341,25 +341,25 @@ class TestCreateDimensionPoint:
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "position<no_such>"
         assert diags[0].location.line == 6
-        assert diags[0].location.column == 46
+        assert diags[0].location.column == 39
         assert isinstance(
             diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[1].local_name == "action<act_b>"
         assert diags[1].preceding_name == "position<no_such>"
         assert diags[1].location.line == 6
-        assert diags[1].location.column == 56
+        assert diags[1].location.column == 49
         assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
         assert diags[2].local_name == "act_b"
         assert diags[2].location.line == 6
-        assert diags[2].location.column == 63
+        assert diags[2].location.column == 56
         assert isinstance(
             diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].local_name == "position<pos_c>"
         assert diags[3].preceding_name == "action<act_b>"
         assert diags[3].location.line == 6
-        assert diags[3].location.column == 71
+        assert diags[3].location.column == 64
 
     def test_chain_second_element_name_error_also_not_in_constraints(
         self,
@@ -368,14 +368,14 @@ class TestCreateDimensionPoint:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the action</child>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<pos_a> has a dimension point.\n"
+            "        the position<pos_a> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<pos_a>::action<Bad>::position<pos_end>.\n"
+            "        create a particle in position<pos_a>::action<Bad>::position<pos_end>.\n"
             "    }\n"
             "}\n"
         )
@@ -388,19 +388,19 @@ class TestCreateDimensionPoint:
         assert diags[0].local_name == "action<Bad>"
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
-        assert diags[0].location.column == 54
+        assert diags[0].location.column == 47
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[1].local_name == "Bad"
         assert diags[1].char == "B"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 61
+        assert diags[1].location.column == 54
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].local_name == "position<pos_end>"
         assert diags[2].preceding_name == "action<Bad>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 67
+        assert diags[2].location.column == 60
         assert isinstance(
             diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )
@@ -415,14 +415,14 @@ class TestCreateDimensionPoint:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<pos_a> {\n"
-            "        it may only contain dimension points where {\n"
+            "        it may only contain particles where {\n"
             "            it has the action</other>.\n"
             "        }\n"
             "    }\n"
             "    it happens when {\n"
-            "        the position<pos_a> has a dimension point.\n"
+            "        the position<pos_a> has a particle.\n"
             "    } and it does {\n"
-            "        create a dimension point in position<pos_a>::action<wrong>::position<pos_c>.\n"
+            "        create a particle in position<pos_a>::action<wrong>::position<pos_c>.\n"
             "    }\n"
             "}\n"
         )
@@ -435,18 +435,18 @@ class TestCreateDimensionPoint:
         assert diags[0].local_name == "action<wrong>"
         assert diags[0].preceding_name == "position<pos_a>"
         assert diags[0].location.line == 10
-        assert diags[0].location.column == 54
+        assert diags[0].location.column == 47
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
         assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
-        assert diags[1].location.column == 61
+        assert diags[1].location.column == 54
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].local_name == "position<pos_c>"
         assert diags[2].preceding_name == "action<wrong>"
         assert diags[2].location.line == 10
-        assert diags[2].location.column == 69
+        assert diags[2].location.column == 62
         assert isinstance(
             diags[3], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
         )

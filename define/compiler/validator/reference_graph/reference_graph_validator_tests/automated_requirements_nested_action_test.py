@@ -36,9 +36,9 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position<item>.\n"
+                "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -47,15 +47,15 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<src>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<src>.\n"
-                "        move the dimension point in position<src> to position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<src>.\n"
+                "        move the particle in position<src> to position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -63,16 +63,16 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -84,9 +84,9 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -100,7 +100,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 13,
-            "column": 54,
+            "column": 47,
             "file_path": "outer.dfn",
         },
         {
@@ -108,7 +108,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 40,
+            "column": 33,
             "file_path": "inner.dfn",
         },
     )
@@ -132,9 +132,9 @@ def test_inner_chained_action_empty_requirement_propagates(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -142,14 +142,14 @@ def test_inner_chained_action_empty_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -157,17 +157,17 @@ def test_inner_chained_action_empty_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -177,7 +177,7 @@ def test_inner_chained_action_empty_requirement_propagates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -191,7 +191,7 @@ def test_inner_chained_action_empty_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -199,12 +199,12 @@ def test_inner_chained_action_empty_requirement_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
     assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
@@ -224,9 +224,9 @@ def test_inner_chained_action_empty_requirement_satisfied(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -234,14 +234,14 @@ def test_inner_chained_action_empty_requirement_satisfied(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -249,16 +249,16 @@ def test_inner_chained_action_empty_requirement_satisfied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -284,9 +284,9 @@ def test_inner_chained_action_occupied_requirement_propagates(
                 "    define the position<item>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item> to position<dest>.\n"
+                "        move the particle in position<item> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -294,14 +294,14 @@ def test_inner_chained_action_occupied_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -309,16 +309,16 @@ def test_inner_chained_action_occupied_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -330,7 +330,7 @@ def test_inner_chained_action_occupied_requirement_propagates(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -344,7 +344,7 @@ def test_inner_chained_action_occupied_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -352,7 +352,7 @@ def test_inner_chained_action_occupied_requirement_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -375,9 +375,9 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
                 "    define the position<item>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item> to position<dest>.\n"
+                "        move the particle in position<item> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -385,14 +385,14 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -400,17 +400,17 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -440,9 +440,9 @@ def test_doubly_nested_action_requirement_propagates(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -450,14 +450,14 @@ def test_doubly_nested_action_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/middle> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<mid_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<mid_iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -465,15 +465,15 @@ def test_doubly_nested_action_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<out_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</middle>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<out_iface>::action</middle>::position<mid_iface>.\n"
-                "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+                "        create a particle in position<out_iface>::action</middle>::position<mid_iface>.\n"
+                "        create a particle in position<out_iface>::action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -481,18 +481,18 @@ def test_doubly_nested_action_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<out_iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<out_iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -503,10 +503,10 @@ def test_doubly_nested_action_requirement_propagates(
     # /test fills position<mid_iface> which /outer requires empty (it creates there)
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -520,14 +520,14 @@ def test_doubly_nested_action_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
     )
     # /test fills position<item> which /inner requires empty (propagated through /middle and /outer)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -535,7 +535,7 @@ def test_doubly_nested_action_requirement_propagates(
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
     )
     assert all_diags[1].filled_at.line == 14
-    assert all_diags[1].filled_at.column == 37
+    assert all_diags[1].filled_at.column == 30
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
@@ -544,7 +544,7 @@ def test_doubly_nested_action_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
             "line": 12,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -552,7 +552,7 @@ def test_doubly_nested_action_requirement_propagates(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -560,7 +560,7 @@ def test_doubly_nested_action_requirement_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -584,9 +584,9 @@ def test_four_deep_action_chain_requirement_propagates(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -594,14 +594,14 @@ def test_four_deep_action_chain_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/c> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<c_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</d>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<c_iface>::action</d>::position<trigger_pos>.\n"
+                "        create a particle in position<c_iface>::action</d>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -609,14 +609,14 @@ def test_four_deep_action_chain_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/b> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<b_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<b_iface>::action</c>::position<trigger_pos>.\n"
+                "        create a particle in position<b_iface>::action</c>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -624,14 +624,14 @@ def test_four_deep_action_chain_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/a> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<a_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</b>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<a_iface>::action</b>::position<trigger_pos>.\n"
+                "        create a particle in position<a_iface>::action</b>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -639,19 +639,19 @@ def test_four_deep_action_chain_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</a>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</a>::position<a_iface>.\n"
-                "        create a dimension point in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>.\n"
-                "        create a dimension point in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>.\n"
-                "        create a dimension point in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>.\n"
-                "        create a dimension point in position<box>::action</a>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</a>::position<a_iface>.\n"
+                "        create a particle in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>.\n"
+                "        create a particle in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>.\n"
+                "        create a particle in position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>.\n"
+                "        create a particle in position<box>::action</a>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -661,7 +661,7 @@ def test_four_deep_action_chain_requirement_propagates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 16
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/a>"
     assert (
@@ -669,7 +669,7 @@ def test_four_deep_action_chain_requirement_propagates(
         == "position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>"
     )
     assert all_diags[0].filled_at.line == 15
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -678,7 +678,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/a>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/b>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "a.dfn",
         },
         {
@@ -686,7 +686,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/b>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/c>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "b.dfn",
         },
         {
@@ -694,7 +694,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/c>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/d>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "c.dfn",
         },
         {
@@ -702,7 +702,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/d>",
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "d.dfn",
         },
     )
@@ -734,9 +734,9 @@ def test_both_requirements_propagate_when_inner_has_both(
                 "    define the position<src>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<src> to position<dest>.\n"
+                "        move the particle in position<src> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -744,14 +744,14 @@ def test_both_requirements_propagate_when_inner_has_both(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -759,18 +759,18 @@ def test_both_requirements_propagate_when_inner_has_both(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<src>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<dest>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<src>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<dest>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -780,14 +780,14 @@ def test_both_requirements_propagate_when_inner_has_both(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<dest>"
     )
     assert all_diags[0].filled_at.line == 14
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -796,7 +796,7 @@ def test_both_requirements_propagate_when_inner_has_both(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -804,7 +804,7 @@ def test_both_requirements_propagate_when_inner_has_both(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 54,
+            "column": 47,
             "file_path": "inner.dfn",
         },
     )
@@ -827,14 +827,14 @@ def test_trigger_position_child_empty_requirement_propagates(
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<trigger_pos> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<trigger_pos>::position</x>.\n"
+                "        create a particle in position<trigger_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -842,14 +842,14 @@ def test_trigger_position_child_empty_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -857,18 +857,18 @@ def test_trigger_position_child_empty_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -881,7 +881,7 @@ def test_trigger_position_child_empty_requirement_propagates(
     # in the same position, which is already occupied.
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
@@ -890,7 +890,7 @@ def test_trigger_position_child_empty_requirement_propagates(
     # /test fills position<trigger_pos> which /outer requires empty (it creates there)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -898,7 +898,7 @@ def test_trigger_position_child_empty_requirement_propagates(
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>"
     )
     assert all_diags[1].filled_at.line == 13
-    assert all_diags[1].filled_at.column == 37
+    assert all_diags[1].filled_at.column == 30
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
@@ -907,14 +907,14 @@ def test_trigger_position_child_empty_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
     )
     # /test fills position<trigger_pos>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[2], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[2].location.line == 15
-    assert all_diags[2].location.column == 37
+    assert all_diags[2].location.column == 30
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[2].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -922,7 +922,7 @@ def test_trigger_position_child_empty_requirement_propagates(
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>"
     )
     assert all_diags[2].filled_at.line == 10
-    assert all_diags[2].filled_at.column == 37
+    assert all_diags[2].filled_at.column == 30
     assert all_diags[2].filled_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[2],
@@ -931,7 +931,7 @@ def test_trigger_position_child_empty_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -939,7 +939,7 @@ def test_trigger_position_child_empty_requirement_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 10,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -955,15 +955,15 @@ def test_trigger_position_child_occupied_requirement_propagates(
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<trigger_pos> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_sink>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<_sink>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<_sink>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -971,15 +971,15 @@ def test_trigger_position_child_occupied_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        # Here we fail to fill inner's trigger_pos::/x.\n"
-                "        create a dimension point in position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -987,16 +987,16 @@ def test_trigger_position_child_occupied_requirement_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1008,7 +1008,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -1022,7 +1022,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 12,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -1030,7 +1030,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -1039,9 +1039,9 @@ def test_trigger_position_child_occupied_requirement_propagates(
 def test_inner_action_requirement_propagates_after_move(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Requirement propagates even when the DP is moved to a local position before triggering.
+    """Requirement propagates even when the particle is moved to a local position before triggering.
 
-    /outer moves the DP from position<iface> to position<local>, then triggers /inner
+    /outer moves the particle from position<iface> to position<local>, then triggers /inner
     via position<local>::action</inner>::position<trigger_pos>. Since /inner is a
     constraint on position<iface>, its requirements propagate through position<iface>.
     """
@@ -1052,9 +1052,9 @@ def test_inner_action_requirement_propagates_after_move(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1062,20 +1062,20 @@ def test_inner_action_requirement_propagates_after_move(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position<iface> to position<local>.\n"
-                "        create a dimension point in position<local>::action</inner>::position<trigger_pos>.\n"
+                "        move the particle in position<iface> to position<local>.\n"
+                "        create a particle in position<local>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1083,17 +1083,17 @@ def test_inner_action_requirement_propagates_after_move(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1103,7 +1103,7 @@ def test_inner_action_requirement_propagates_after_move(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -1111,7 +1111,7 @@ def test_inner_action_requirement_propagates_after_move(
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
     assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -1120,7 +1120,7 @@ def test_inner_action_requirement_propagates_after_move(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
             "line": 17,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -1128,7 +1128,7 @@ def test_inner_action_requirement_propagates_after_move(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -1138,9 +1138,9 @@ def test_inner_action_requirement_propagates_after_move(
 def test_doubly_nested_requirement_propagates_after_move(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Three-level nesting where /middle moves its interface DP before triggering /inner.
+    """Three-level nesting where /middle moves its interface particle before triggering /inner.
 
-    /middle moves the DP from position<mid_iface> to position<local>, then triggers
+    /middle moves the particle from position<mid_iface> to position<local>, then triggers
     /inner through position<local>::action</inner>::position<trigger_pos>. /inner's
     EMPTY requirement on position<item> should propagate through /middle and /outer
     to /test.
@@ -1152,9 +1152,9 @@ def test_doubly_nested_requirement_propagates_after_move(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1162,20 +1162,20 @@ def test_doubly_nested_requirement_propagates_after_move(
                 "define the potential action<my.domain.com:my_lib:/middle> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<mid_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position<mid_iface> to position<local>.\n"
-                "        create a dimension point in position<local>::action</inner>::position<trigger_pos>.\n"
+                "        move the particle in position<mid_iface> to position<local>.\n"
+                "        create a particle in position<local>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1183,15 +1183,15 @@ def test_doubly_nested_requirement_propagates_after_move(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<out_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</middle>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<out_iface>::action</middle>::position<mid_iface>.\n"
-                "        create a dimension point in position<out_iface>::action</middle>::position<trigger_pos>.\n"
+                "        create a particle in position<out_iface>::action</middle>::position<mid_iface>.\n"
+                "        create a particle in position<out_iface>::action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1199,18 +1199,18 @@ def test_doubly_nested_requirement_propagates_after_move(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<out_iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<out_iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1220,7 +1220,7 @@ def test_doubly_nested_requirement_propagates_after_move(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -1228,7 +1228,7 @@ def test_doubly_nested_requirement_propagates_after_move(
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
     )
     assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -1237,13 +1237,13 @@ def test_doubly_nested_requirement_propagates_after_move(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
     )
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
@@ -1251,7 +1251,7 @@ def test_doubly_nested_requirement_propagates_after_move(
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
     )
     assert all_diags[1].filled_at.line == 14
-    assert all_diags[1].filled_at.column == 37
+    assert all_diags[1].filled_at.column == 30
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
@@ -1260,7 +1260,7 @@ def test_doubly_nested_requirement_propagates_after_move(
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _MIDDLE,
             "line": 12,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -1268,7 +1268,7 @@ def test_doubly_nested_requirement_propagates_after_move(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 17,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -1276,7 +1276,7 @@ def test_doubly_nested_requirement_propagates_after_move(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -1301,9 +1301,9 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1311,20 +1311,20 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>.\n"
-                "        create a dimension point in position<local>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<local>.\n"
+                "        create a particle in position<local>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1332,17 +1332,17 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1373,14 +1373,14 @@ def test_cross_fqun_inner_requirement_renders_correctly(
                 f"define the potential action<{_DEP_FQUN}:/inner> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>::position</x>.\n"
+                "        create a particle in position<item>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1388,15 +1388,15 @@ def test_cross_fqun_inner_requirement_renders_correctly(
                 f"define the potential action<{_MAIN_FQUN}:/outer> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 f"            it has the action<{_DEP_FQUN}:/inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                f"        create a dimension point in position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
-                f"        create a dimension point in position<iface>::action<{_DEP_FQUN}:/inner>::position<trigger_pos>.\n"
+                f"        create a particle in position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
+                f"        create a particle in position<iface>::action<{_DEP_FQUN}:/inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1404,18 +1404,18 @@ def test_cross_fqun_inner_requirement_renders_correctly(
                 f"define the potential action<{_MAIN_FQUN}:/test> {{\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                f"        create a dimension point in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
-                f"        create a dimension point in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                f"        create a particle in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
+                f"        create a particle in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1429,7 +1429,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     # /test fills position<item> which /outer requires empty (it creates there)
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
@@ -1437,7 +1437,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>"
     )
     assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -1446,14 +1446,14 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
     )
     # /test fills position<item>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
@@ -1461,7 +1461,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
     )
     assert all_diags[1].filled_at.line == 14
-    assert all_diags[1].filled_at.column == 37
+    assert all_diags[1].filled_at.column == 30
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
@@ -1470,7 +1470,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "line": 12,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -1478,7 +1478,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "enclosing_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "lib/inner.dfn",
         },
     )
@@ -1506,15 +1506,15 @@ def test_cross_fqun_occupied_requirement_propagates(
                 f"define the potential action<{_DEP_FQUN}:/inner> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item>::position</x> to position<dest>.\n"
+                "        move the particle in position<item>::position</x> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1522,14 +1522,14 @@ def test_cross_fqun_occupied_requirement_propagates(
                 f"define the potential action<{_MAIN_FQUN}:/outer> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 f"            it has the action<{_DEP_FQUN}:/inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                f"        create a dimension point in position<iface>::action<{_DEP_FQUN}:/inner>::position<trigger_pos>.\n"
+                f"        create a particle in position<iface>::action<{_DEP_FQUN}:/inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1537,18 +1537,18 @@ def test_cross_fqun_occupied_requirement_propagates(
                 f"define the potential action<{_MAIN_FQUN}:/test> {{\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                f"        create a dimension point in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
-                f"        create a dimension point in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                f"        create a particle in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
+                f"        create a particle in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1582,15 +1582,15 @@ def test_cross_fqun_occupied_requirement_violated(
                 f"define the potential action<{_DEP_FQUN}:/inner> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item>::position</x> to position<dest>.\n"
+                "        move the particle in position<item>::position</x> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1598,14 +1598,14 @@ def test_cross_fqun_occupied_requirement_violated(
                 f"define the potential action<{_MAIN_FQUN}:/outer> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 f"            it has the action<{_DEP_FQUN}:/inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                f"        create a dimension point in position<iface>::action<{_DEP_FQUN}:/inner>::position<trigger_pos>.\n"
+                f"        create a particle in position<iface>::action<{_DEP_FQUN}:/inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1613,17 +1613,17 @@ def test_cross_fqun_occupied_requirement_violated(
                 f"define the potential action<{_MAIN_FQUN}:/test> {{\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
-                f"        create a dimension point in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
+                f"        create a particle in position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1638,7 +1638,7 @@ def test_cross_fqun_occupied_requirement_violated(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
@@ -1652,7 +1652,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "outer.dfn",
         },
         {
@@ -1660,7 +1660,7 @@ def test_cross_fqun_occupied_requirement_violated(
             "enclosing_quality_name": f"action<{_DEP_FQUN}:/inner>",
             "triggered_quality_name": None,
             "line": 12,
-            "column": 37,
+            "column": 30,
             "file_path": "lib/inner.dfn",
         },
     )
@@ -1687,7 +1687,7 @@ def test_complex_chain_same_fqun_position_name(
         {
             "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</foo>.\n"
                 "    }\n"
                 "}\n"
@@ -1696,14 +1696,14 @@ def test_complex_chain_same_fqun_position_name(
                 "define the potential action<my.domain.com:my_lib:/foo> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</middle>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</middle>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1711,14 +1711,14 @@ def test_complex_chain_same_fqun_position_name(
                 "define the potential action<my.domain.com:my_lib:/middle> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<mid_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</bar>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<mid_iface>::action</bar>::position<trigger_pos>.\n"
+                "        create a particle in position<mid_iface>::action</bar>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1727,9 +1727,9 @@ def test_complex_chain_same_fqun_position_name(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1737,19 +1737,19 @@ def test_complex_chain_same_fqun_position_name(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>.\n"
-                "        create a dimension point in position<local>::position</x>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<trigger_pos>.\n"
+                "        create a particle in position<local>.\n"
+                "        create a particle in position<local>::position</x>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<iface>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1759,7 +1759,7 @@ def test_complex_chain_same_fqun_position_name(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 16
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/foo>"
     assert (
@@ -1767,7 +1767,7 @@ def test_complex_chain_same_fqun_position_name(
         == "position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>"
     )
     assert all_diags[0].filled_at.line == 15
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -1776,7 +1776,7 @@ def test_complex_chain_same_fqun_position_name(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/foo>",
             "triggered_quality_name": _MIDDLE,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "foo.dfn",
         },
         {
@@ -1784,7 +1784,7 @@ def test_complex_chain_same_fqun_position_name(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": "action<my.domain.com:my_lib:/bar>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -1792,7 +1792,7 @@ def test_complex_chain_same_fqun_position_name(
             "enclosing_quality_name": "action<my.domain.com:my_lib:/bar>",
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "bar.dfn",
         },
     )
@@ -1820,7 +1820,7 @@ def test_complex_chain_cross_fqun_position_name(
         {
             "x.dfn": (
                 f"define the potential position<{_MAIN_FQUN}:/x> {{\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</foo>.\n"
                 "    }\n"
                 "}\n"
@@ -1830,14 +1830,14 @@ def test_complex_chain_cross_fqun_position_name(
                 f"define the potential action<{_DEP_FQUN}:/bar> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>::position</x>.\n"
+                "        create a particle in position<item>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1845,15 +1845,15 @@ def test_complex_chain_cross_fqun_position_name(
                 f"define the potential action<{_MAIN_FQUN}:/middle> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<mid_iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 f"            it has the action<{_DEP_FQUN}:/bar>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                f"        create a dimension point in position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
-                f"        create a dimension point in position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<trigger_pos>.\n"
+                f"        create a particle in position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
+                f"        create a particle in position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1861,14 +1861,14 @@ def test_complex_chain_cross_fqun_position_name(
                 f"define the potential action<{_MAIN_FQUN}:/foo> {{\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</middle>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::action</middle>::position<trigger_pos>.\n"
+                "        create a particle in position<iface>::action</middle>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1876,20 +1876,20 @@ def test_complex_chain_cross_fqun_position_name(
                 f"define the potential action<{_MAIN_FQUN}:/test> {{\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>.\n"
-                "        create a dimension point in position<local>::position</x>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.\n"
-                f"        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
-                f"        create a dimension point in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>.\n"
-                "        create a dimension point in position<local>::position</x>::action</foo>::position<trigger_pos>.\n"
+                "        create a particle in position<local>.\n"
+                "        create a particle in position<local>::position</x>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<iface>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>.\n"
+                f"        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>.\n"
+                f"        create a particle in position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>.\n"
+                "        create a particle in position<local>::position</x>::action</foo>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1902,7 +1902,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 17
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/foo>"
     assert (
@@ -1910,7 +1910,7 @@ def test_complex_chain_cross_fqun_position_name(
         == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>"
     )
     assert all_diags[0].filled_at.line == 15
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -1919,7 +1919,7 @@ def test_complex_chain_cross_fqun_position_name(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/foo>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "foo.dfn",
         },
         {
@@ -1927,13 +1927,13 @@ def test_complex_chain_cross_fqun_position_name(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
     )
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 17
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == f"action<{_MAIN_FQUN}:/foo>"
     assert (
@@ -1941,7 +1941,7 @@ def test_complex_chain_cross_fqun_position_name(
         == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>"
     )
     assert all_diags[1].filled_at.line == 16
-    assert all_diags[1].filled_at.column == 37
+    assert all_diags[1].filled_at.column == 30
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
@@ -1950,7 +1950,7 @@ def test_complex_chain_cross_fqun_position_name(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/foo>",
             "triggered_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "foo.dfn",
         },
         {
@@ -1958,7 +1958,7 @@ def test_complex_chain_cross_fqun_position_name(
             "enclosing_quality_name": f"action<{_MAIN_FQUN}:/middle>",
             "triggered_quality_name": f"action<{_DEP_FQUN}:/bar>",
             "line": 12,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -1966,7 +1966,7 @@ def test_complex_chain_cross_fqun_position_name(
             "enclosing_quality_name": f"action<{_DEP_FQUN}:/bar>",
             "triggered_quality_name": None,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "lib/bar.dfn",
         },
     )

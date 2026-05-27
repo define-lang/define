@@ -1,5 +1,5 @@
 define the potential position<mv:define-lang.org:test_files:/invalid/position_constraints/duplicate_in_global_position> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</valid/action_local_pos_requires_global>.
         it has the position</valid/action_local_pos_requires_global>.
     }

@@ -26,11 +26,11 @@ def test_occupied_implied_requirement_satisfied(
                 "define the potential action<my.domain.com:my_lib:/destructor> {\n"
                 "    it also assigns the position</marker>.\n"
                 "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
+                "        this particle is being destroyed.\n"
                 "    } and it does {\n"
                 "        define the position<_holder>.\n"
-                "        move the dimension point in position</marker> to position<_holder>.\n"
-                "        move the dimension point in position<_holder> to position</marker>.\n"
+                "        move the particle in position</marker> to position<_holder>.\n"
+                "        move the particle in position<_holder> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -38,16 +38,16 @@ def test_occupied_implied_requirement_satisfied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</marker>.\n"
-                "        destroy the dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</marker>.\n"
+                "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -67,11 +67,11 @@ def test_occupied_implied_requirement_violated(
                 "define the potential action<my.domain.com:my_lib:/destructor> {\n"
                 "    it also assigns the position</marker>.\n"
                 "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
+                "        this particle is being destroyed.\n"
                 "    } and it does {\n"
                 "        define the position<_holder>.\n"
-                "        move the dimension point in position</marker> to position<_holder>.\n"
-                "        move the dimension point in position<_holder> to position</marker>.\n"
+                "        move the particle in position</marker> to position<_holder>.\n"
+                "        move the particle in position<_holder> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -79,15 +79,15 @@ def test_occupied_implied_requirement_violated(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        destroy the dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
+                "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -99,7 +99,7 @@ def test_occupied_implied_requirement_violated(
         all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].destructor_name == _DESTRUCTOR
     assert all_diags[0].destroy_target_name == "position<box>"
@@ -111,7 +111,7 @@ def test_occupied_implied_requirement_violated(
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor.dfn",
         },
     )
@@ -128,10 +128,10 @@ def test_empty_implied_requirement_satisfied(
                 "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
                 "    it also assigns the position</marker>.\n"
                 "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
+                "        this particle is being destroyed.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</marker>.\n"
-                "        destroy the dimension point in position</marker>.\n"
+                "        create a particle in position</marker>.\n"
+                "        destroy the particle in position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -139,15 +139,15 @@ def test_empty_implied_requirement_satisfied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        destroy the dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
+                "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -167,10 +167,10 @@ def test_empty_implied_requirement_violated(
                 "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
                 "    it also assigns the position</marker>.\n"
                 "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
+                "        this particle is being destroyed.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</marker>.\n"
-                "        destroy the dimension point in position</marker>.\n"
+                "        create a particle in position</marker>.\n"
+                "        destroy the particle in position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -178,16 +178,16 @@ def test_empty_implied_requirement_violated(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</marker>.\n"
-                "        destroy the dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</marker>.\n"
+                "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -199,13 +199,13 @@ def test_empty_implied_requirement_violated(
         all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
     )
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].destructor_name == _DESTRUCTOR_EMPTY
     assert all_diags[0].destroy_target_name == "position<box>"
     assert all_diags[0].position_name == "position<box>::position</marker>"
     assert all_diags[0].filled_at.line == 12
-    assert all_diags[0].filled_at.column == 37
+    assert all_diags[0].filled_at.column == 30
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -214,7 +214,7 @@ def test_empty_implied_requirement_violated(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -224,9 +224,9 @@ def test_empty_implied_requirement_violated(
 def test_destructor_in_init_block_checks_implied_requirement_locally(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    # position</p>'s init block creates and then destroys a dimension point in its
+    # position</p>'s init block creates and then destroys a particle in its
     # implied position</carrier>, whose destructor requires its own implied
-    # position</marker>. The init block owns that dimension point, so the
+    # position</marker>. The init block owns that particle, so the
     # requirement is checked locally rather than propagated.
     result = validate_project_with_reference_graph(
         {
@@ -235,17 +235,17 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
                 "define the potential action<my.domain.com:my_lib:/destructor> {\n"
                 "    it also assigns the position</marker>.\n"
                 "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
+                "        this particle is being destroyed.\n"
                 "    } and it does {\n"
                 "        define the position<_holder>.\n"
-                "        move the dimension point in position</marker> to position<_holder>.\n"
-                "        move the dimension point in position<_holder> to position</marker>.\n"
+                "        move the particle in position</marker> to position<_holder>.\n"
+                "        move the particle in position<_holder> to position</marker>.\n"
                 "    }\n"
                 "}\n"
             ),
             "carrier.dfn": (
                 "define the potential position<my.domain.com:my_lib:/carrier> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</destructor>.\n"
                 "    }\n"
                 "}\n"
@@ -254,8 +254,8 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</carrier>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</carrier>.\n"
-                "        destroy the dimension point in position</carrier>.\n"
+                "        create a particle in position</carrier>.\n"
+                "        destroy the particle in position</carrier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -263,14 +263,14 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -282,7 +282,7 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
         all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 5
-    assert all_diags[0].location.column == 40
+    assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
     assert all_diags[0].destructor_name == _DESTRUCTOR
     assert all_diags[0].destroy_target_name == "position</carrier>"
@@ -294,7 +294,7 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor.dfn",
         },
     )

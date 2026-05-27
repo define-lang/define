@@ -505,12 +505,12 @@ class LocalActionNameDiagnostic(Diagnostic):
 # blocks and then the two different init blocks that are conflicting).
 @dataclass
 class CreateInOccupiedPositionDiagnostic(Diagnostic):
-    """Diagnostic for when a dimension point is created in a position that already has one."""
+    """Diagnostic for when a particle is created in a position that already has one."""
 
     position_name: str
     populated_at: ast.SourceLocation
     message_format: ClassVar[str] = (
-        "a dimension point already exists in '{self.position_name}';"
+        "a particle already exists in '{self.position_name}';"
         " it was put there at:\n{self.formatted_populated_at}"
     )
 
@@ -522,21 +522,21 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
 
 @dataclass
 class ParentPositionNotOccupiedDiagnostic(Diagnostic):
-    """Diagnostic for when a position is accessed but its parent has no dimension point."""
+    """Diagnostic for when a position is accessed but its parent has no particle."""
 
     position_name: str
     parent_position_name: str
     message_format: ClassVar[str] = (
         "cannot access '{self.position_name}'"
-        " because '{self.parent_position_name}' does not contain a dimension point.\n"
-        "To fix this, either create a dimension point in '{self.parent_position_name}'"
-        " or move an existing dimension point there."
+        " because '{self.parent_position_name}' does not contain a particle.\n"
+        "To fix this, either create a particle in '{self.parent_position_name}'"
+        " or move an existing particle there."
     )
 
 
 @dataclass
 class MoveToOccupiedPositionDiagnostic(Diagnostic):
-    """Diagnostic for when a move's destination position already contains a dimension point."""
+    """Diagnostic for when a move's destination position already contains a particle."""
 
     position_name: str
     occupied_at: ast.SourceLocation | None = None
@@ -546,7 +546,7 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
     def message(self) -> str:
         """Render the diagnostic message, optionally including the occupied-at location."""
         base = (
-            f"cannot move a dimension point to '{self.position_name}'"
+            f"cannot move a particle to '{self.position_name}'"
             " because it already contains one"
         )
         if self.occupied_at is not None:
@@ -556,22 +556,22 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
 
 @dataclass
 class MoveFromEmptyPositionDiagnostic(Diagnostic):
-    """Diagnostic for when a move statement's source position has no dimension point."""
+    """Diagnostic for when a move statement's source position has no particle."""
 
     position_name: str
     message_format: ClassVar[str] = (
-        "cannot move a dimension point from '{self.position_name}'"
+        "cannot move a particle from '{self.position_name}'"
         " because it does not contain one"
     )
 
 
 @dataclass
 class DestroyInEmptyPositionDiagnostic(Diagnostic):
-    """Diagnostic for when a destroy statement's target position has no dimension point."""
+    """Diagnostic for when a destroy statement's target position has no particle."""
 
     position_name: str
     message_format: ClassVar[str] = (
-        "cannot destroy a dimension point in '{self.position_name}'"
+        "cannot destroy a particle in '{self.position_name}'"
         " because it does not contain one"
     )
 
@@ -582,7 +582,7 @@ class MoveToSamePositionDiagnostic(Diagnostic):
 
     position_name: str
     message_format: ClassVar[str] = (
-        "source and destination cannot be identical when moving dimension points"
+        "source and destination cannot be identical when moving particles"
         " ('{self.position_name}' is the name of both"
         " the source and destination here)"
     )
@@ -603,22 +603,22 @@ class MoveViolatesConstraintsDiagnostic(Diagnostic):
         return "\n  ".join(self.missing_qualities)
 
     message_format: ClassVar[str] = (
-        "cannot move a dimension point\n"
+        "cannot move a particle\n"
         "  from: {self.source_position}\n"
         "    to: {self.target_position}\n"
-        "because the dimension point being moved does not have the required qualities:\n"
+        "because the particle being moved does not have the required qualities:\n"
         "  {self.missing_list}"
     )
 
 
 @dataclass
 class MoveIntoDefiningPositionDiagnostic(Diagnostic):
-    """Diagnostic for when a move statement moves a dimension point into a position it defines."""
+    """Diagnostic for when a move statement moves a particle into a position it defines."""
 
     source_position: str
     target_position: str
     message_format: ClassVar[str] = (
-        "cannot move a dimension point\n"
+        "cannot move a particle\n"
         "  from: {self.source_position}\n"
         "    to: {self.target_position}\n"
         "because the source position defines the destination position"
@@ -737,8 +737,8 @@ class RequirementDiagnostic(Diagnostic):
                 return f"'{step.enclosing_quality_name}' inferred this requirement"
             case action_contract.PropagationKind.DESTRUCTOR_CASCADE:
                 return (
-                    f"'{step.enclosing_quality_name}' destroys a dimension"
-                    f" point, triggering the destructor '{step.triggered_quality_name}'"
+                    f"'{step.enclosing_quality_name}' destroys a particle,"
+                    f" triggering the destructor '{step.triggered_quality_name}'"
                 )
             case action_contract.PropagationKind.ACTION_TRIGGER:
                 return (
@@ -747,8 +747,8 @@ class RequirementDiagnostic(Diagnostic):
                 )
             case action_contract.PropagationKind.INIT_BLOCK_TRIGGER:
                 return (
-                    f"'{step.enclosing_quality_name}' creates a dimension"
-                    f" point that runs the Position Initialization Block of"
+                    f"'{step.enclosing_quality_name}' creates a particle that"
+                    f" runs the Position Initialization Block of"
                     f" '{step.triggered_quality_name}'"
                 )
 
@@ -813,27 +813,27 @@ class DestructorRequirementDiagnostic(RequirementDiagnostic):
         lines: list[str] = []
         if self.auto_destruction_local_position_name is None:
             lines.append(
-                f"Destroying the dimension point in '{self.destroy_target_name}'"
+                f"Destroying the particle in '{self.destroy_target_name}'"
                 + f" triggers the destructor '{self.destructor_name}'."
             )
         else:
             lines.append(
-                f"The dimension point in '{self.auto_destruction_local_position_name}'"
+                f"The particle in '{self.auto_destruction_local_position_name}'"
                 + " is being automatically destroyed at the end of"
                 + f" '{self.containing_definition_name}'."
             )
             if self.destroy_target_name != self.auto_destruction_local_position_name:
                 lines.append(
-                    f"This causes the dimension point in '{self.destroy_target_name}'"
+                    f"This causes the particle in '{self.destroy_target_name}'"
                     + " to be destroyed first."
                 )
             lines.append(
-                "The above line shows how the dimension point in"
+                "The above line shows how the particle in"
                 + f" '{self.destroy_target_name}' got into its current position."
             )
         lines.append("")
         lines.append(
-            f"The dimension point in '{self.destroy_target_name}' was originally"
+            f"The particle in '{self.destroy_target_name}' was originally"
             + " created at:"
         )
         lines.append(_format_location(self.destroy_target_origin_at))
@@ -895,17 +895,17 @@ class DestructorProducesEmptyGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
     message_format: ClassVar[str] = (
         "a destructor must leave every position in the state it was in when it started.\n"
         "However, this line empties '{self.position_name}' and then nothing puts the same"
-        " dimension point back into that position."
+        " particle back into that position."
     )
 
 
 @dataclass
 class DestructorProducesOccupiedGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
-    """Diagnostic for when a destructor leaves a new dimension point in a contracted position."""
+    """Diagnostic for when a destructor leaves a new particle in a contracted position."""
 
     message_format: ClassVar[str] = (
         "a destructor must leave every position in the state it was in when it started.\n"
-        "However, this line creates a new dimension point in '{self.position_name}' and then"
+        "However, this line creates a new particle in '{self.position_name}' and then"
         " nothing removes it from that position."
     )
 
@@ -914,12 +914,12 @@ class DestructorProducesOccupiedGuaranteeDiagnostic(DestructorGuaranteeDiagnosti
 class DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
     DestructorGuaranteeDiagnostic
 ):
-    """Diagnostic for when a destructor moves a dimension point into a contracted position."""
+    """Diagnostic for when a destructor moves a particle into a contracted position."""
 
     origin_name: str
     message_format: ClassVar[str] = (
         "a destructor must leave every position in the state it was in when it started.\n"
-        "However, this line moves a dimension point from '{self.origin_name}' into"
+        "However, this line moves a particle from '{self.origin_name}' into"
         " '{self.position_name}' and then nothing moves it back out of that position."
     )
 
@@ -932,8 +932,8 @@ class PositionInitBlockRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
     init_block_position_name: str
     filled_at: ast.SourceLocation
     message_format: ClassVar[str] = (
-        "this line creates a dimension point in '{self.create_target_name}'."
-        " Doing so assigns '{self.init_block_position_name}' to that dimension point,"
+        "this line creates a particle in '{self.create_target_name}'."
+        " Doing so assigns '{self.init_block_position_name}' to that particle,"
         " running its Position Initialization Block.\n"
         "However, '{self.position_name}' must be empty before that block runs,"
         " and it is not empty.\n"
@@ -954,8 +954,8 @@ class PositionInitBlockRequiresOccupiedPositionDiagnostic(RequirementDiagnostic)
     create_target_name: str
     init_block_position_name: str
     message_format: ClassVar[str] = (
-        "this line creates a dimension point in '{self.create_target_name}'."
-        " Doing so assigns '{self.init_block_position_name}' to that dimension point,"
+        "this line creates a particle in '{self.create_target_name}'."
+        " Doing so assigns '{self.init_block_position_name}' to that particle,"
         " running its Position Initialization Block.\n"
         "However, '{self.position_name}' must be occupied before that block runs,"
         " and it is not occupied.\n\n"
@@ -976,7 +976,7 @@ class MoveFromEmptyInterfacePositionDiagnostic(Diagnostic):
     def message(self) -> str:
         """Render the diagnostic message."""
         base = (
-            f"cannot move a dimension point from '{self.position_name}'"
+            f"cannot move a particle from '{self.position_name}'"
             f" because it does not contain one"
         )
         if self.inferred_at is not None:
@@ -996,7 +996,7 @@ class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
     def message(self) -> str:
         """Render the diagnostic message."""
         base = (
-            f"cannot destroy a dimension point in '{self.position_name}'"
+            f"cannot destroy a particle in '{self.position_name}'"
             f" because it does not contain one"
         )
         if self.inferred_at is not None:

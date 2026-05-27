@@ -58,7 +58,7 @@ def test_missing_terminator_after_typed_reference_in_position_constraint(
         parse(
             "define the potential position<my_lib:/hello/hello>.\n"
             + "define the potential position<my_lib:/sub/sub> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the action<std:/path/sub>\n"
             + "    }\n"
             + "}\n"

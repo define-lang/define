@@ -15,7 +15,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _POSITION_WITH_REF = (
     "define the potential position<my.domain.com:my_lib:/{name}> {{\n"
-    "    it may only contain dimension points where {{\n"
+    "    it may only contain particles where {{\n"
     "        it has the position</{ref}>.\n"
     "    }}\n"
     "}}\n"
@@ -34,7 +34,7 @@ def _position_with_refs(name: str, refs: list[str]) -> str:
     ref_lines = "".join(f"        it has the position</{r}>.\n" for r in refs)
     return (
         f"define the potential position<my.domain.com:my_lib:/{name}> {{\n"
-        f"    it may only contain dimension points where {{\n"
+        f"    it may only contain particles where {{\n"
         f"{ref_lines}"
         f"    }}\n"
         f"}}\n"
@@ -45,7 +45,7 @@ def _hub_with_refs(ref_lines: list[str]) -> str:
     lines = "".join(f"        {line}\n" for line in ref_lines)
     return (
         f"define the potential position<my.domain.com:my_lib:/hub> {{\n"
-        f"    it may only contain dimension points where {{\n"
+        f"    it may only contain particles where {{\n"
         f"{lines}"
         f"    }}\n"
         f"}}\n"
@@ -104,10 +104,10 @@ def test_wrong_type_detected_without_deferral(
                 "define the potential action<my.domain.com:my_lib:/target> {\n"
                 "    define the position<_noop>.\n"
                 "    it happens when {\n"
-                "        the position<_noop> has a dimension point.\n"
+                "        the position<_noop> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<__noop>.\n"
-                "        create a dimension point in position<__noop>.\n"
+                "        create a particle in position<__noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -166,7 +166,7 @@ def test_reference_edges_resolve_by_file_completion_order(
             {
                 "test.dfn": (
                     f"define the potential position<{universe}:/test> {{\n"
-                    f"    it may only contain dimension points where {{\n"
+                    f"    it may only contain particles where {{\n"
                     f"        it has the position</lib/target>.\n"
                     f"        it has the position</target>.\n"
                     f"    }}\n"

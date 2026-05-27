@@ -12,5 +12,5 @@ class Test(literal.GlobalPosition):
     def after_assigned(self):
         a = literal.LocalPosition("position<a>")
         b = literal.LocalPosition("position<b>")
-        a.create_dimension_point()
-        a.move_dimension_point_to(b)
+        a.create_particle()
+        a.move_particle_to(b)

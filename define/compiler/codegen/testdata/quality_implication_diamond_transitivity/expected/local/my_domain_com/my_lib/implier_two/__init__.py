@@ -15,9 +15,9 @@ class ImplierTwo(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.on_dimension_point.get_position(
+        self.on_particle.get_position(
             "position<my.domain.com:my_lib:/implied>"
-        ).create_dimension_point()
-        self.on_dimension_point.get_position(
+        ).create_particle()
+        self.on_particle.get_position(
             "position<my.domain.com:my_lib:/implied>"
-        ).destroy_dimension_point()
+        ).destroy_particle()

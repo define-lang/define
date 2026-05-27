@@ -66,9 +66,9 @@ entire program by saying what operations can occur on what types. (Or in some
 languages, what _happens_ when an operation is executed on certain types, like
 in languages that allow you to append numbers to strings by using `+`.)
 
-If we break this down, then very basically, the minimum question a dimension
-point needs to be able to answer is: **"What operations am I meaningful input
-for?"** This further breaks down into two separate questions:
+If we break this down, then very basically, the minimum question a particle
+needs to be able to answer is: **"What operations am I meaningful input for?"**
+This further breaks down into two separate questions:
 
 1. What operations _can_ operate on this data?
 2. What operations _should_ operate on this data?
@@ -150,11 +150,11 @@ into the details if you really need to.
 ### 6: Assignment Protection
 
 A special type of operation is assigning a value to a variable (or in Define, to
-a dimension point). One of the key protections that a programming language
-usually needs is the ability to say "you can't assign this letter to this
-variable that only accepts 64-bit integers," even though they are both
-binary-encoded data. Without this protection, it becomes very hard to track down
-bugs in the program and implement clear contracts between components.
+a particle). One of the key protections that a programming language usually
+needs is the ability to say "you can't assign this letter to this variable that
+only accepts 64-bit integers," even though they are both binary-encoded data.
+Without this protection, it becomes very hard to track down bugs in the program
+and implement clear contracts between components.
 
 ### 7: Implementation Overrides / Re-Use
 
@@ -212,8 +212,8 @@ In brief:
 
 1. **Concept** of a Value: You can assign qualities like
    `value<standard:/number/integer>` or `value<standard:/number/natural>` to a
-   dimension point. These behave according to the rules of mathematics, as far
-   as Define is concerned, unless their type definition indicates otherwise.
+   particle. These behave according to the rules of mathematics, as far as
+   Define is concerned, unless their type definition indicates otherwise.
 2. **Representation** of a Value: The actual implementation of a value is
    dictated by an _encoding_, which is also a quality you can assign to a value.
    Often the encoding is inferred by the compiler, except at the boundaries of a
@@ -227,10 +227,9 @@ In brief:
    `operation` types in `encoding` types. That is, values define the _contract_
    and _name_ of the operation, and encodings specify the _implementation_ of
    the operation. Operations are named like `operation<standard:/integer/add>`
-   and are a property of the value type assigned to a dimension point. While
-   actions are "physical" machines in our universe that operate on dimension
-   points, operations are _symbolic_ machines. They operate entirely on values,
-   not on positions.
+   and are a property of the value type assigned to a particle. While actions
+   are "physical" machines in our universe that operate on particles, operations
+   are _symbolic_ machines. They operate entirely on values, not on positions.
 4. **Translations** between representations: These are mechanisms to translate
    between representations, even translations like "a string of ASCII digits" to
    "binary 64-bit int." Encodings can specify what they can convert _to_ and
@@ -464,12 +463,12 @@ states, etc. all become part of one single concept: a type.
 
 I believe this issue comes from a more fundamental error that language designers
 have made, which is that they have logically assumed that _everything_ in the
-program is a symbol (the meaning attached to a dimension point, not the
-dimension point itself). Values are symbols, variable names are symbols,
-functions are symbols, often even types and raw operations (like addition) are
-symbols themselves. While it's true that the code we write is a representation
-of other things, I believe it is a mistake to equate all symbols in a program as
-all being "just symbols" that are all the same kind of thing.
+program is a symbol (the meaning attached to a particle, not the particle
+itself). Values are symbols, variable names are symbols, functions are symbols,
+often even types and raw operations (like addition) are symbols themselves.
+While it's true that the code we write is a representation of other things, I
+believe it is a mistake to equate all symbols in a program as all being "just
+symbols" that are all the same kind of thing.
 
 ### The Difference in Define
 
@@ -480,8 +479,8 @@ program. At the least, these are: the universe of the program, the universe of
 reflection, and the universe of the physical computer. In other words, the
 symbols we write in a language often represent _fundamentally different things_.
 Sometimes these things have relationships to each other, but you can understand
-the specific relationship they have. Dimension points in the program's universe
-have meanings (values). Those meanings represent something in the physical
+the specific relationship they have. Particles in the program's universe have
+meanings (values). Those meanings represent something in the physical
 universe---in particular, on the computer. What is happening physically on the
 computer and what is happening logically in the program's universe are not
 actually the same thing, from the perspective of language design.

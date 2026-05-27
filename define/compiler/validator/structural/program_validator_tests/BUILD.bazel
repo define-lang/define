@@ -36,9 +36,9 @@ py_test(
 )
 
 py_test(
-    name = "destroy_dimension_point_test",
+    name = "destroy_particle_test",
     size = "small",
-    srcs = ["destroy_dimension_point_test.py"],
+    srcs = ["destroy_particle_test.py"],
     deps = [
         "//define/compiler:diagnostics",
         "//define/compiler/validator/structural:program_validator",
@@ -125,9 +125,9 @@ py_test(
 )
 
 py_test(
-    name = "move_dimension_point_test",
+    name = "move_particle_test",
     size = "small",
-    srcs = ["move_dimension_point_test.py"],
+    srcs = ["move_particle_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -264,7 +264,7 @@ pyright_test(
     deps = [
         ":action_statements_block_test",
         ":cross_fqun_walking_test",
-        ":destroy_dimension_point_test",
+        ":destroy_particle_test",
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",
         ":duplicate_position_constraint_test",
@@ -273,7 +273,7 @@ pyright_test(
         ":fqun_mismatch_test",
         ":global_name_walking_test",
         ":local_name_conflicts_test",
-        ":move_dimension_point_test",
+        ":move_particle_test",
         ":name_format_positions_test",
         ":parallel_test",
         ":parse_and_validate_file_test",

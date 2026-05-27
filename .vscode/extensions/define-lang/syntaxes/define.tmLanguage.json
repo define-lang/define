@@ -59,7 +59,7 @@
     {
       "comment": "Position constraint - may only contain",
       "name": "keyword.other",
-      "match": "\\bit\\s+may\\s+only\\s+contain\\s+dimension\\s+points\\s+where\\b"
+      "match": "\\bit\\s+may\\s+only\\s+contain\\s+particles\\s+where\\b"
     },
     {
       "comment": "Destruction constraint - may only be destroyed by",
@@ -72,9 +72,9 @@
       "match": "\\bit\\s+may\\s+not\\s+be\\s+destroyed\\b"
     },
     {
-      "comment": "Dimension point must have requirement",
+      "comment": "Particle must have requirement",
       "name": "keyword.other",
-      "match": "\\bthis\\s+dimension\\s+point\\s+must\\s+have\\b"
+      "match": "\\bthis\\s+particle\\s+must\\s+have\\b"
     },
     {
       "comment": "Has a value that is a decimal",
@@ -107,14 +107,14 @@
       "match": "\\bit\\s+has\\s+the\\s+same\\s+qualities\\s+as\\b"
     },
     {
-      "comment": "Create dimension point",
+      "comment": "Create particle",
       "name": "support.function",
-      "match": "\\bcreate\\s+a\\s+dimension\\s+point\\s+in\\b"
+      "match": "\\bcreate\\s+a\\s+particle\\s+in\\b"
     },
     {
-      "comment": "Destroy dimension point",
+      "comment": "Destroy particle",
       "name": "support.function",
-      "match": "\\bdestroy\\s+the\\s+dimension\\s+point\\s+in\\b"
+      "match": "\\bdestroy\\s+the\\s+particle\\s+in\\b"
     },
     {
       "comment": "Assign quality",
@@ -122,9 +122,9 @@
       "match": "\\bassign\\s+the\\s+quality\\b"
     },
     {
-      "comment": "To the dimension point",
+      "comment": "To the particle",
       "name": "support.function",
-      "match": "\\bto\\s+the\\s+dimension\\s+point\\s+in\\b"
+      "match": "\\bto\\s+the\\s+particle\\s+in\\b"
     },
     {
       "comment": "Set value",
@@ -137,9 +137,9 @@
       "match": "\\bthe\\s+value\\s+in\\b"
     },
     {
-      "comment": "Move dimension point",
+      "comment": "Move particle",
       "name": "support.function",
-      "match": "\\bmove\\s+the\\s+dimension\\s+point\\s+in\\b"
+      "match": "\\bmove\\s+the\\s+particle\\s+in\\b"
     },
     {
       "comment": "This quality is assigned",
@@ -167,9 +167,9 @@
       "match": "\\bthe\\s+value\\b"
     },
     {
-      "comment": "Has a dimension point check",
+      "comment": "Has a particle check",
       "name": "keyword.other",
-      "match": "\\bhas\\s+a\\s+dimension\\s+point\\b"
+      "match": "\\bhas\\s+a\\s+particle\\b"
     },
     {
       "comment": "Is empty check",

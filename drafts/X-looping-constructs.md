@@ -22,11 +22,11 @@ logic, etc.
 
 ### Programs Need Unbounded Collections
 
-Define currently has no way to store an unbounded number of dimension points.
-All positions are declared in source code, each holding at most one dimension
-point. The total amount of state in a program is bounded at compile time. This
-makes Define equivalent to a finite state machine, which cannot express many
-real-world programs.
+Define currently has no way to store an unbounded number of particles. All
+positions are declared in source code, each holding at most one particle. The
+total amount of state in a program is bounded at compile time. This makes Define
+equivalent to a finite state machine, which cannot express many real-world
+programs.
 
 ### Turing-Completeness Requires Unbounded Memory and Repetition
 
@@ -58,8 +58,8 @@ conflict detection) can be preserved.
 
 We introduce three constructs:
 
-1. **Bags** --- unbounded, unordered collections of dimension points with
-   uniform constraints.
+1. **Bags** --- unbounded, unordered collections of particles with uniform
+   constraints.
 2. **`for each` over bags** --- iterating over a bag's contents.
 3. **`repeat` with explicit termination** --- general-purpose looping via
    repeated action invocation.
@@ -71,13 +71,13 @@ computation in Define.** Loop bodies are action calls, and the action's contract
 
 ### Bags
 
-A bag is an unordered collection of dimension points that all have exactly the
-same qualities --- no more, no less. Unlike positions, which hold at most one
-dimension point, a bag can hold any number (including zero).
+A bag is an unordered collection of particles that all have exactly the same
+qualities --- no more, no less. Unlike positions, which hold at most one
+particle, a bag can hold any number (including zero).
 
 Bags may only be defined as local names inside Action Statements Blocks (and
 Position Initialization Blocks, which share the same syntax). Bags are not
-qualities and cannot be assigned to dimension points.
+qualities and cannot be assigned to particles.
 
 #### Syntax
 
@@ -88,40 +88,39 @@ positions:
 define the bag<name>.
 
 define the bag<name> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position<mv:example.com:example:/foo>.
         it has the action<mv:example.com:example:/bar>.
     }
 }
 ```
 
-A bag with no constraint block contains unconstrained dimension points.
+A bag with no constraint block contains unconstrained particles.
 
-#### Creating Dimension Points in Bags
+#### Creating Particles in Bags
 
-The existing `create a dimension point` syntax extends to bags:
+The existing `create a particle` syntax extends to bags:
 
 ```
-create a dimension point in bag<name>.
+create a particle in bag<name>.
 ```
 
 As with positions, if the bag has a constraint block, atomic creation
-automatically assigns all required qualities to the new dimension point.
+automatically assigns all required qualities to the new particle.
 
-#### Moving Dimension Points In and Out of Bags
+#### Moving Particles In and Out of Bags
 
-Dimension points can be moved between bags and positions:
+Particles can be moved between bags and positions:
 
 ```
-move the dimension point in position<x> to bag<name>.
-move a dimension point in bag<name> to position<x>.
+move the particle in position<x> to bag<name>.
+move a particle in bag<name> to position<x>.
 ```
 
-When moving out of a bag, the bag is unordered, so the specific dimension point
-moved is unspecified. It is an error to move a dimension point out of an empty
-bag.
+When moving out of a bag, the bag is unordered, so the specific particle moved
+is unspecified. It is an error to move a particle out of an empty bag.
 
-When moving into a bag, the dimension point must satisfy the bag's constraints.
+When moving into a bag, the particle must satisfy the bag's constraints.
 
 #### Bag Emptiness
 
@@ -131,10 +130,10 @@ is sufficient for all conditional branching needed by looping constructs (see
 
 ### `for each` --- Collection Iteration
 
-The `for each` construct iterates over the dimension points in a bag, calling an
-action for each one. The construct creates a position reference for each item
-that refers to the dimension point's location _inside_ the bag. The dimension
-point is not moved out of the bag unless the action explicitly does so.
+The `for each` construct iterates over the particles in a bag, calling an action
+for each one. The construct creates a position reference for each item that
+refers to the particle's location _inside_ the bag. The particle is not moved
+out of the bag unless the action explicitly does so.
 
 #### Syntax
 
@@ -142,22 +141,21 @@ point is not moved out of the bag unless the action explicitly does so.
 for each position<item> in bag<work> call action</process>.
 ```
 
-The loop visits each dimension point in the bag exactly once (order is
-unspecified). `position<item>` is created by the loop construct itself and
-refers to the current dimension point's location inside the bag. The called
-action receives this position via one of its interface positions.
+The loop visits each particle in the bag exactly once (order is unspecified).
+`position<item>` is created by the loop construct itself and refers to the
+current particle's location inside the bag. The called action receives this
+position via one of its interface positions.
 
-If the action moves or destroys the dimension point at `position<item>`, it is
-removed from the bag. If the action does not, the dimension point remains in the
-bag after that iteration.
+If the action moves or destroys the particle at `position<item>`, it is removed
+from the bag. If the action does not, the particle remains in the bag after that
+iteration.
 
 #### New Items Added During Iteration
 
-If the action adds new dimension points to the bag being iterated during an
-iteration, those new dimension points will be visited by subsequent iterations.
-This enables the "self-feeding" pattern, which is the mechanism for unbounded
-computation. The loop terminates when there are no unvisited dimension points
-remaining in the bag.
+If the action adds new particles to the bag being iterated during an iteration,
+those new particles will be visited by subsequent iterations. This enables the
+"self-feeding" pattern, which is the mechanism for unbounded computation. The
+loop terminates when there are no unvisited particles remaining in the bag.
 
 ### `repeat` --- General-Purpose Looping
 
@@ -248,23 +246,23 @@ termination:
 
 ```
 define the potential position<define-lang.org:fibonacci:/sequence/current> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is an integer.
         it has the constraint</non_negative>.
     }
     after it is assigned {
-        create a dimension point in position</sequence/current>.
+        create a particle in position</sequence/current>.
         set the value in position</sequence/current> to 1.
     }
 }
 
 define the potential position<define-lang.org:fibonacci:/sequence/previous> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is an integer.
         it has the constraint</non_negative>.
     }
     after it is assigned {
-        create a dimension point in position</sequence/previous>.
+        create a particle in position</sequence/previous>.
         set the value in position</sequence/previous> to 0.
     }
 }
@@ -276,22 +274,22 @@ define the potential action<define-lang.org:fibonacci:/sequence/next> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<temp> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has a value that is an integer.
                 it has the constraint</non_negative>.
             }
         }
-        create a dimension point in position<temp>.
+        create a particle in position<temp>.
         set the value in position<temp> to position</sequence/current>.
 
         set the value in position</sequence/current> to position</sequence/current> plus position</sequence/previous>.
 
         set the value in position</sequence/previous> to position<temp>.
 
-        destroy the dimension point in position<temp>.
+        destroy the particle in position<temp>.
     }
 }
 
@@ -299,16 +297,16 @@ define the potential action<define-lang.org:fibonacci:/generate> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<sequence> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</sequence/current>.
                 it has the position</sequence/previous>.
                 it has the action</sequence/next>.
             }
         }
-        create a dimension point in position<sequence>.
+        create a particle in position<sequence>.
 
         repeat action</sequence/next> {
             stop after 500 times.
@@ -331,25 +329,25 @@ This program processes a collection of work items using `for each`:
 define the potential position<mv:example.com:batch:/result>.
 
 define the potential position<mv:example.com:batch:/item> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</result>.
     }
 }
 
 define the potential action<mv:example.com:batch:/process_one> {
     define the position<item> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the position<mv:example.com:batch:/item>.
         }
     }
     define the position<done>.
 
     it happens when {
-        the position<item> has a dimension point.
+        the position<item> has a particle.
     } and it does {
-        create a dimension point in position<item>::position</result>.
-        move the dimension point in position<item> to bag<completed>.
-        create a dimension point in position<done>.
+        create a particle in position<item>::position</result>.
+        move the particle in position<item> to bag<completed>.
+        create a particle in position<done>.
     }
 }
 
@@ -358,27 +356,27 @@ define the potential action<mv:example.com:batch:/run> {
     define the position<had_work>.
 
     it happens when {
-        the position<go> has a dimension point.
+        the position<go> has a particle.
     } and it does {
         define the bag<pending> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position<mv:example.com:batch:/item>.
             }
         }
         define the bag<completed> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position<mv:example.com:batch:/item>.
             }
         }
 
-        create a dimension point in bag<pending>.
-        create a dimension point in bag<pending>.
-        create a dimension point in bag<pending>.
+        create a particle in bag<pending>.
+        create a particle in bag<pending>.
+        create a particle in bag<pending>.
 
         for each position<current> in bag<pending> call action</process_one>.
 
         if the bag<completed> is not empty {
-            create a dimension point in position<had_work>.
+            create a particle in position<had_work>.
         }
     }
 }
@@ -393,18 +391,18 @@ continues until no items remain:
 ```
 define the potential action<mv:example.com:work:/handle> {
     define the position<item> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the position<mv:example.com:work:/task>.
         }
     }
 
     it happens when {
-        the position<item> has a dimension point.
+        the position<item> has a particle.
     } and it does {
         # Process the item. Processing may add sub-tasks
         # to bag<queue>, which the enclosing for-each
         # will visit in subsequent iterations.
-        create a dimension point in position<item>::position</done>.
+        create a particle in position<item>::position</done>.
     }
 }
 
@@ -412,16 +410,16 @@ define the potential action<mv:example.com:work:/run> {
     define the position<go>.
 
     it happens when {
-        the position<go> has a dimension point.
+        the position<go> has a particle.
     } and it does {
         define the bag<queue> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position<mv:example.com:work:/task>.
             }
         }
 
-        create a dimension point in bag<queue>.
-        create a dimension point in bag<queue>.
+        create a particle in bag<queue>.
+        create a particle in bag<queue>.
 
         for each position<current> in bag<queue> call action</handle>.
     }
@@ -467,8 +465,8 @@ bags + bag iteration + bag emptiness conditionals can simulate a Minsky machine
 (2-counter machine), which is known to be Turing-complete:
 
 - Two bags serve as counters (counter value = number of items in the bag).
-- Increment: add a dimension point to the bag.
-- Decrement: move a dimension point out of the bag.
+- Increment: add a particle to the bag.
+- Decrement: move a particle out of the bag.
 - Branch on zero: test if the bag is empty.
 
 ### Two Constructs With Clean Separation
@@ -543,9 +541,9 @@ be refactored to:
 ```
 # Before:
 repeat 500 times {
-    create a dimension point in position<sequence>::action</sequence/next>::position<run>.
+    create a particle in position<sequence>::action</sequence/next>::position<run>.
     wait until {
-        NOT position<sequence>::action</sequence/next>::position<run> has a dimension point.
+        NOT position<sequence>::action</sequence/next>::position<run> has a particle.
     }
 }
 

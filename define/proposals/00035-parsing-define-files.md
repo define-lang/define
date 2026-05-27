@@ -138,7 +138,7 @@ returns. It also intentionally bans all forms of space characters other than
 
 ```
 define the potential position<mv:example.com:example:/bank> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action</do_transfers>.
     }
 }
@@ -150,7 +150,7 @@ define the potential position<mv:example.com:example:/bank> {
 
 ```
 Define the potential position<mv:example.com:example:/bank> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action</do_transfers>.
     }
 }
@@ -160,7 +160,7 @@ Define the potential position<mv:example.com:example:/bank> {
 
 ```
 define  the potential position<mv:example.com:example:/bank> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action</do_transfers>.
     }
 }

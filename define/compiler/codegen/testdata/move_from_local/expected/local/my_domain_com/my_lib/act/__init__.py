@@ -11,9 +11,9 @@ import local.my_domain_com.my_lib.mid_local
 class Act(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition("position<iface_dest>"),
@@ -40,33 +40,33 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.mid_local.MidLocal,
             ),
         )
-        src_a.create_dimension_point()
-        src_b.create_dimension_point()
-        src_c.create_dimension_point()
-        src_d.create_dimension_point()
-        local_chain_dest.create_dimension_point()
-        local_chain_dest.dimension_point.get_position(
+        src_a.create_particle()
+        src_b.create_particle()
+        src_c.create_particle()
+        src_d.create_particle()
+        local_chain_dest.create_particle()
+        local_chain_dest.particle.get_position(
             "position<my.domain.com:my_lib:/mid_local>"
-        ).create_dimension_point()
-        src_a.move_dimension_point_to(local_dest)
-        src_b.move_dimension_point_to(
+        ).create_particle()
+        src_a.move_particle_to(local_dest)
+        src_b.move_particle_to(
             self.get_interface_position(
                 "position<iface_dest>"
             )
         )
-        src_c.move_dimension_point_to(
+        src_c.move_particle_to(
             self.get_interface_position(
                 "position<chain_dest>"
-            ).dimension_point.get_position(
+            ).particle.get_position(
                 "position<my.domain.com:my_lib:/mid_dest>"
-            ).dimension_point.get_position(
+            ).particle.get_position(
                 "position<my.domain.com:my_lib:/end_dest>"
             )
         )
-        src_d.move_dimension_point_to(
-            local_chain_dest.dimension_point.get_position(
+        src_d.move_particle_to(
+            local_chain_dest.particle.get_position(
                 "position<my.domain.com:my_lib:/mid_local>"
-            ).dimension_point.get_position(
+            ).particle.get_position(
                 "position<my.domain.com:my_lib:/end_local>"
             )
         )

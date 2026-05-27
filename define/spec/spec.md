@@ -754,8 +754,8 @@ an error.
 
 Names can be chained with `::` to refer to inner definitions. Each subsequent
 name in the chain must be a name either defined directly inside the previous
-name or assigned to a dimension point via syntax described later in this spec.
-The full name thus created is called a "chained name."
+name or assigned to a particle via syntax described later in this spec. The full
+name thus created is called a "chained name."
 
 ```ebnf
 chained_name = typed_name, { "::", typed_name } ;
@@ -810,13 +810,13 @@ local_position_definition_block = block_open, position_constraint_block, block_c
 
 ### Position Constraint Block
 
-A Position Constraint Block starts with
-`it may only contain dimension points where` and then opens a block. The block
-must contain one or more Position Requirement Statements.
+A Position Constraint Block starts with `it may only contain particles where`
+and then opens a block. The block must contain one or more Position Requirement
+Statements.
 
 ```ebnf
 position_constraint_block =
-    "it may only contain dimension points where",
+    "it may only contain particles where",
     block_open,
     position_requirement_statement,
     { position_requirement_statement },
@@ -836,7 +836,7 @@ position_requirement_statement = "it has the", " ", typed_global_name, terminato
 
 Proposals:
 
-- [DLP 23: Dimension Points Define Other Positions](../proposals/00023-dimension-points-define-other-positions.md)
+- [DLP 23: Particles Define Other Positions](../proposals/00023-particles-define-other-positions.md)
 
 A position reference is a single position name or a chained name that ends with
 the name of a position.
@@ -852,10 +852,9 @@ Unless otherwise stated, the rules for all position references are:
   constraint on their parent name.
 - For local position names, the parent name must be an action and the local
   position must be defined in the Action Definition Block of that action.
-- Every position in the chain except the last must already contain a dimension
-  point.
+- Every position in the chain except the last must already contain a particle.
 - The statement that uses the position reference determines whether the last
-  position in the chain must contain a dimension point or be empty.
+  position in the chain must contain a particle or be empty.
 
 ```ebnf
 position_reference =
@@ -875,8 +874,8 @@ Proposals:
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 
 Potential positions and potential actions are referred to as "qualities."
-Qualities can be assigned to dimension points using syntax and semantics
-described later in this spec.
+Qualities can be assigned to particles using syntax and semantics described
+later in this spec.
 
 The syntax for defining qualities is: `define the potential` followed by a space
 and a fully-qualified typed global name.
@@ -902,7 +901,7 @@ Proposals:
 
 - [DLP 19: Guaranteeing Qualities in Positions](../proposals/00019-guaranteeing-qualities-in-positions.md)
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
-- [DLP 23: Dimension Points Define Other Positions](../proposals/00023-dimension-points-define-other-positions.md)
+- [DLP 23: Particles Define Other Positions](../proposals/00023-particles-define-other-positions.md)
 - [DLP 24: Qualities May Not Define Qualities](../proposals/00024-qualities-may-not-define-qualities.md)
 
 Potential positions are defined with `define the potential` followed by a space
@@ -958,9 +957,8 @@ referenced and affected using its global short name.
 #### Position Initialization Timing
 
 Position initialization occurs synchronously immediately after the position is
-assigned as a quality to a dimension point. It does not wait for all qualities
-on the dimension point to be assigned, but triggers immediately after
-assignment.
+assigned as a quality to a particle. It does not wait for all qualities on the
+particle to be assigned, but triggers immediately after assignment.
 
 If the compiler can determine it is safe to do so, it may re-order the execution
 of position initialization blocks or move them to a different point of the
@@ -1021,8 +1019,8 @@ action_definition_block =
 The local positions defined directly in an Action Definition Block are called
 "interface positions."
 
-When an action is assigned to a dimension point, its interface positions are
-initially empty.
+When an action is assigned to a particle, its interface positions are initially
+empty.
 
 ### Inner Blocks
 
@@ -1053,9 +1051,9 @@ A Trigger Conditions Block contains one Trigger Condition Statement.
 A Trigger Condition Statement is one of two types: a Position Presence Statement
 or a Destructor Condition Statement (defined later in this spec).
 
-A Position Presence Statement is `the position<name> has a dimension point.` It
-may only refer to a single local name that is an interface position of the
-current action. (The syntax does not accept chained names.)
+A Position Presence Statement is `the position<name> has a particle.` It may
+only refer to a single local name that is an interface position of the current
+action. (The syntax does not accept chained names.)
 
 When compiling an action, the compiler treats the requirements specified by that
 action's Trigger Conditions Block as being satisfied.
@@ -1063,7 +1061,7 @@ action's Trigger Conditions Block as being satisfied.
 ```ebnf
 trigger_conditions = trigger_condition_statement ;
 trigger_condition_statement = position_presence_statement | destructor_condition_statement ;
-position_presence_statement = "the", " ", typed_local_name, " has a dimension point", terminator ;
+position_presence_statement = "the", " ", typed_local_name, " has a particle", terminator ;
 ```
 
 ### Action Triggering Semantics
@@ -1079,8 +1077,8 @@ action triggers, it only triggers again if its Trigger Conditions Block first
 becomes false and then becomes true again.
 
 Trigger conditions are checked only when program state changes in a way that can
-affect those conditions, and only after assignment of the action to a dimension
-point is complete. Thus, an action does not trigger on assignment if its trigger
+affect those conditions, and only after assignment of the action to a particle
+is complete. Thus, an action does not trigger on assignment if its trigger
 conditions are already true at assignment time.
 
 ### Action Statement Blocks
@@ -1095,9 +1093,9 @@ Action Statements Block is not allowed.
 Action statements are:
 
 - local position definitions
-- create dimension point statements
-- move dimension point statements
-- destroy dimension point statements
+- create particle statements
+- move particle statements
+- destroy particle statements
 - quality assignment statements
 - `wait until` statements
 
@@ -1105,9 +1103,9 @@ Action statements are:
 action_statements_contents = action_statement, { action_statement } ;
 action_statement =
     local_position_definition
-    | create_dimension_point_statement
-    | move_dimension_point_statement
-    | destroy_dimension_point_statement
+    | create_particle_statement
+    | move_particle_statement
+    | destroy_particle_statement
     | quality_assignment_statement
     | wait_until_statement ;
 ```
@@ -1142,15 +1140,15 @@ the Action Statements Block of an action that defines them.
 #### How Requirements Are Inferred
 
 If the first reference to the final position in a chained name of a contracted
-position is a Create Dimension Point Statement target or a Move Dimension Point
-Statement destination, that position is required to be empty.
+position is a Create Particle Statement target or a Move Particle Statement
+destination, that position is required to be empty.
 
 If the first reference to the final position in a chain of a contracted position
-is a Move Dimension Point Statement source or a Destroy Dimension Point
-Statement target, that position is required to contain a dimension point.
+is a Move Particle Statement source or a Destroy Particle Statement target, that
+position is required to contain a particle.
 
 Every intermediate position in a chained name of a contracted position is also
-implicitly required to contain a dimension point, if it is the first time that
+implicitly required to contain a particle, if it is the first time that
 intermediate position is referenced in any chain (either within a chain or as
 the final position) in the Action Statements Block.
 
@@ -1179,12 +1177,12 @@ call chain of actions. The calling action's requirements override the called
 action's requirements on implied positions, if they both impose a requirement on
 the same position.
 
-#### Requirements Follow Dimension Points
+#### Requirements Follow Particles
 
-If an action moves a dimension point from a contracted position and then takes
-some action on a child position of that dimension point, that still creates a
-requirement on the contracted position. Requirements are actually logically
-about dimension points the caller passed in, not fixed positions.
+If an action moves a particle from a contracted position and then takes some
+action on a child position of that particle, that still creates a requirement on
+the contracted position. Requirements are actually logically about particles the
+caller passed in, not fixed positions.
 
 ### Automatic Action Guarantees
 
@@ -1196,20 +1194,20 @@ The compiler determines a set of Action Position Occupancy Guarantees.
 - Which contracted positions are always empty at the end of the action
 - Which contracted positions are always filled at the end of the action
 
-The compiler also determines a set of Action Dimension Point Identity
-Guarantees. Upon completion of an action, each dimension point in each position
-is in one of two possible states:
+The compiler also determines a set of Action Particle Identity Guarantees. Upon
+completion of an action, each particle in each position is in one of two
+possible states:
 
-- It is a dimension point was in one of the contracted positions at the start of
-  the action, and thus has the same qualities as that dimension point had when
-  it was passed in.
-- It is a new dimension point created by this action or one of this action's
-  callees, and thus has the qualities defined by the contracted position in
-  which it was created.
+- It is a particle was in one of the contracted positions at the start of the
+  action, and thus has the same qualities as that particle had when it was
+  passed in.
+- It is a new particle created by this action or one of this action's callees,
+  and thus has the qualities defined by the contracted position in which it was
+  created.
 
-The compiler uses these guarantees to reason about dimension point occupancy and
-dimension point qualities in a fully modular way without having to do
-whole-program dataflow analysis.
+The compiler uses these guarantees to reason about particle occupancy and
+particle qualities in a fully modular way without having to do whole-program
+dataflow analysis.
 
 #### Transitive Guarantees on Implied Qualities
 
@@ -1245,14 +1243,13 @@ quality_implication_statement =
 ### Assignment Semantics
 
 When a quality A contains a Quality Implication Statement naming quality B, then
-whenever A is assigned to a dimension point, B is automatically assigned to that
-same dimension point beforehand. Quality Implication Statements are executed in
-the order written in the code when executing their assignment to a dimension
-point.
+whenever A is assigned to a particle, B is automatically assigned to that same
+particle beforehand. Quality Implication Statements are executed in the order
+written in the code when executing their assignment to a particle.
 
 Inside the implying quality's definition, the implied quality is treated as
-already present on the dimension point. The implied quality and its child names
-may be referenced directly in the implying quality's definition.
+already present on the particle. The implied quality and its child names may be
+referenced directly in the implying quality's definition.
 
 Implying a quality does _not_ expose the transitively implied qualities of that
 quality. In order for any code within a global definition to reference a global
@@ -1262,7 +1259,7 @@ Statement at the top of the global definition.
 
 ### Duplicate Assignments
 
-If a quality is already present on a dimension point when a Quality Implication
+If a quality is already present on a particle when a Quality Implication
 Statement would otherwise cause it to be assigned, the additional assignment
 does not occur. Only the first assignment takes effect; subsequent attempts to
 assign the same quality via Quality Implication Statements are silently skipped.
@@ -1282,21 +1279,20 @@ the position's Position Initialization Block.
 
 If the quaity is not so referenced, the compiler must throw an error.
 
-## Creating Dimension Points
+## Creating Particles
 
 Proposals:
 
-- [DLP 13: Creating Dimension Points](../proposals/00013-creating-dimension-points.md)
+- [DLP 13: Creating Particles](../proposals/00013-creating-particles.md)
 
-A Create Dimension Point Statement starts with `create a dimension point in`,
-followed by exactly one space and a position reference, ending with a statement
-terminator.
+A Create Particle Statement starts with `create a particle in`, followed by
+exactly one space and a position reference, ending with a statement terminator.
 
-It is an error if the referenced position already contains a dimension point.
+It is an error if the referenced position already contains a particle.
 
 ```ebnf
-create_dimension_point_statement =
-    "create a dimension point in", " ", position_reference, terminator ;
+create_particle_statement =
+    "create a particle in", " ", position_reference, terminator ;
 ```
 
 ### Atomic Creation
@@ -1305,57 +1301,56 @@ Proposals:
 
 - [DLP 20: Atomic Creation](../proposals/00020-atomic-creation.md)
 
-If a Create Dimension Point Statement targets a position with a Position
-Constraint Block, the created dimension point is automatically assigned all
-required qualities from that block as part of the creation.
+If a Create Particle Statement targets a position with a Position Constraint
+Block, the created particle is automatically assigned all required qualities
+from that block as part of the creation.
 
 #### Quality Assignment Sequence For Atomic Creation
 
 During atomic creation, qualities are assigned in the same order as their
 Position Requirement Statements appear in the Position Constraint Block.
 
-The semantics of creating a dimension point in a constrained position are
-equivalent to creating the dimension point in an unconstrained anonymous
-position, assigning the required qualities in order, and then moving the
-dimension point into the referenced position. In other words, the destination
-position's constraints are enforced only after all required quality assignments
-for that creation are complete.
+The semantics of creating a particle in a constrained position are equivalent to
+creating the particle in an unconstrained anonymous position, assigning the
+required qualities in order, and then moving the particle into the referenced
+position. In other words, the destination position's constraints are enforced
+only after all required quality assignments for that creation are complete.
 
 The compiler may choose to re-order quality assignments or perform them
 concurrently if doing so is guaranteed to produce the same result as assigning
 them in sequence.
 
-## Moving Dimension Points
+## Moving Particles
 
 Proposals:
 
-- [DLP 17: Moving Dimension Points](../proposals/00017-moving-dimension-points.md)
+- [DLP 17: Moving Particles](../proposals/00017-moving-particles.md)
 
-A Move Dimension Point Statement starts with `move the dimension point in`,
-followed by exactly one space and a source position reference, then `to`, then a
-destination position reference, ending with a statement terminator.
+A Move Particle Statement starts with `move the particle in`, followed by
+exactly one space and a source position reference, then `to`, then a destination
+position reference, ending with a statement terminator.
 
-The source position reference must contain a dimension point.
+The source position reference must contain a particle.
 
 It is an error if the source and destination position are the same.
 
 It is an error if the destination position reference already contains a
-dimension point.
+particle.
 
 ```ebnf
-move_dimension_point_statement =
-    "move the dimension point in", " ", position_reference, " to ", position_reference, terminator ;
+move_particle_statement =
+    "move the particle in", " ", position_reference, " to ", position_reference, terminator ;
 ```
 
-### Cannot Move a Dimension Point Into a Position It Defines
+### Cannot Move a Particle Into a Position It Defines
 
 Proposals:
 
-- [DLP 25: Dimension Points May Not Contain Themselves](../proposals/00025-dimension-points-may-not-contain-themselves.md)
+- [DLP 25: Particles May Not Contain Themselves](../proposals/00025-particles-may-not-contain-themselves.md)
 
-In a Move Dimension Point Statement, it is an error if the `from` position
-reference is a prefix of the `to` position reference (also meaning it's an error
-if they are identical).
+In a Move Particle Statement, it is an error if the `from` position reference is
+a prefix of the `to` position reference (also meaning it's an error if they are
+identical).
 
 ### Destination Position Constraints Are Enforced During Moves
 
@@ -1364,64 +1359,63 @@ Proposals:
 - [DLP 18: Modular Constraints](../proposals/00018-modular-constraints.md)
 - [DLP 19: Guaranteeing Qualities in Positions](../proposals/00019-guaranteeing-qualities-in-positions.md)
 
-In a Move Dimension Point Statement, all required qualities from the destination
-position's Position Constraint Block must be present on the dimension point
-being moved.
+In a Move Particle Statement, all required qualities from the destination
+position's Position Constraint Block must be present on the particle being
+moved.
 
-It is an error if the dimension point being moved does not have one or more
-required qualities of the destination position.
+It is an error if the particle being moved does not have one or more required
+qualities of the destination position.
 
 This rule must be enforced statically at compile time and must never be a
 runtime check.
 
-## Destroying Dimension Points
+## Destroying Particles
 
 Proposals:
 
-- [DLP 31: Destroying Dimension Points](../proposals/00031-destroying-dimension-points.md)
+- [DLP 31: Destroying Particles](../proposals/00031-destroying-particles.md)
 
-A Destroy Dimension Point Statement starts with
-`destroy the dimension point in`, followed by exactly one space and a position
-reference, ending with a statement terminator.
+A Destroy Particle Statement starts with `destroy the particle in`, followed by
+exactly one space and a position reference, ending with a statement terminator.
 
-It is an error to attempt to destroy a dimension point that does not exist, and
-the compiler will forbid it.
+It is an error to attempt to destroy a particle that does not exist, and the
+compiler will forbid it.
 
 ```ebnf
-destroy_dimension_point_statement =
-    "destroy the dimension point in", " ", position_reference, terminator ;
+destroy_particle_statement =
+    "destroy the particle in", " ", position_reference, terminator ;
 ```
 
 ### Cascading Destruction
 
-When a dimension point is destroyed, all of the dimension points in the
-positions it defines are also destroyed.
+When a particle is destroyed, all of the particles in the positions it defines
+are also destroyed.
 
-Qualities are unassigned from the dimension point in reverse order to how they
-were assigned to it. (Because requirement statements assign qualities
-topologically in order according to their dependency tree, qualities are
-inherently removed in reverse topological order.)
+Qualities are unassigned from the particle in reverse order to how they were
+assigned to it. (Because requirement statements assign qualities topologically
+in order according to their dependency tree, qualities are inherently removed in
+reverse topological order.)
 
-Before a position quality is unassigned, its dimension point is destroyed.
+Before a position quality is unassigned, its particle is destroyed.
 
 All position constraints defined by a position's definition are suspended at the
 start of destruction until destruction completes.
 
-Before removing an action from a dimension point, all dimension points that are
-still contained in interface positions of that action are destroyed in reverse
-order of when the positions were defined. Once removal of an action begins (and
-thus its defined dimension points must be destroyed), the action may no longer
-trigger or check its conditions.
+Before removing an action from a particle, all particles that are still
+contained in interface positions of that action are destroyed in reverse order
+of when the positions were defined. Once removal of an action begins (and thus
+its defined particles must be destroyed), the action may no longer trigger or
+check its conditions.
 
 Destruction completes as though it were a written series of unassignment and
 destruction statements. Any action that triggers due to destruction of a child
-dimension point fires immediately after that child's destruction is complete.
-This means that a child dimension point's destruction may trigger an action
-asynchronously before the destruction of the parent dimension point is complete.
+particle fires immediately after that child's destruction is complete. This
+means that a child particle's destruction may trigger an action asynchronously
+before the destruction of the parent particle is complete.
 
-Actions that would trigger due to the removal of a quality from a dimension
-point do not fire due to the automatic quality removal process that happens
-during destruction.
+Actions that would trigger due to the removal of a quality from a particle do
+not fire due to the automatic quality removal process that happens during
+destruction.
 
 The compiler may optimize this process and does not have to actually unassign
 every quality, as long as it ensures identical behavior occurs as if it had done
@@ -1429,18 +1423,17 @@ so.
 
 ### Automatic Destruction
 
-Dimension points that can no longer possibly be referenced are automatically
-destroyed.
+Particles that can no longer possibly be referenced are automatically destroyed.
 
-At the end of an Action Statements Block, any dimension points still existing in
+At the end of an Action Statements Block, any particles still existing in
 positions that are only defined locally within that Action Statements Block are
 automatically destroyed in reverse order of their position definition
 statements.
 
 The compiler behaves as through there were destruction statements at the end of
 an Action Statements Block to implement this. If the compiler is uncertain about
-whether a position still contains a dimension point, it only destroys the
-dimension point if one is present.
+whether a position still contains a particle, it only destroys the particle if
+one is present.
 
 Hitting a `wait until` statement does not count as exiting the Action Statements
 Block, and does not trigger automatic destruction.
@@ -1448,13 +1441,12 @@ Block, and does not trigger automatic destruction.
 ### Optimization of Destruction
 
 When the compiler knows that destruction is free of side effects (there are no
-action triggers watching for the destruction of that dimension point, including
-no triggers watching any of the other positions that dimension point
-transitively defines), the compiler may automatically destroy local dimension
-points within an Action Statements Block the instant they are no longer
-relevant.
+action triggers watching for the destruction of that particle, including no
+triggers watching any of the other positions that particle transitively
+defines), the compiler may automatically destroy local particles within an
+Action Statements Block the instant they are no longer relevant.
 
-When safe, the compiler may destroy multiple dimension points simultaneously (in
+When safe, the compiler may destroy multiple particles simultaneously (in
 parallel).
 
 ## Destructors
@@ -1464,28 +1456,28 @@ Proposals:
 - [DLP 34: Destructors](../proposals/00034-destructors.md)
 - [DLP 41: Modular Destructor Analysis](../proposals/00041-modular-destructor-analysis.md)
 
-The Destructor Condition Statement is `this dimension point is being destroyed`
+The Destructor Condition Statement is `this particle is being destroyed`
 followed by a statement terminator. An action whose Trigger Conditions Block
 contains a Destructor Condition Statement is called a "destructor."
 
 ```ebnf
 destructor_condition_statement =
-    "this dimension point is being destroyed", terminator ;
+    "this particle is being destroyed", terminator ;
 ```
 
 <!-- TODO:
 A destructor may also check any other trigger conditions alongside the
 destructor condition statement, which allows a destructor to fire only when the
-dimension point is in a particular state.
+particle is in a particular state.
 -->
 
 ### When Destructors Are Checked
 
 During the destruction cascade described in
 [Cascading Destruction](#cascading-destruction), the compiler checks destructor
-conditions immediately before the dimension points in the interface position of
-the action would be destroyed. If a destructor would trigger, it runs
-synchronously during the cascade and completes before the cascade continues.
+conditions immediately before the particles in the interface position of the
+action would be destroyed. If a destructor would trigger, it runs synchronously
+during the cascade and completes before the cascade continues.
 
 This is an exception to the rule that actions may not trigger during the
 cascade.
@@ -1505,44 +1497,43 @@ they were in when the action started.
 
 When compiling any individual Action Statements Block, the compiler verifies
 only the destructors that the immediate Action Statements Block is aware of
-being on the dimension point at the time of destruction. For contracted
-positions, those dimension points may have more qualities assigned to them than
-the immediate Action Statements Block is aware of.
+being on the particle at the time of destruction. For contracted positions,
+those particles may have more qualities assigned to them than the immediate
+Action Statements Block is aware of.
 
-Thus, when an action destroys a dimension point that (a) the action itself did
-not create and (b) is in a contracted position, its
+Thus, when an action destroys a particle that (a) the action itself did not
+create and (b) is in a contracted position, its
 [Action Contract](#action-contracts) records additional information about that
 destruction. This additional information is called a Destruction Contract.
 
 Destruction Contracts are used by callers higher in the call stack to validate
-destructors that the action did not know were assigned to the dimension point,
-but which those callers _do_ know are assigned to the dimension point. The
-intention of Destruction Contracts is that each caller verifies the additional
-destructors it knows about as though they were running at the moment of
-destruction (not inside of the caller's code).
+destructors that the action did not know were assigned to the particle, but
+which those callers _do_ know are assigned to the particle. The intention of
+Destruction Contracts is that each caller verifies the additional destructors it
+knows about as though they were running at the moment of destruction (not inside
+of the caller's code).
 
 #### Destruction Fact
 
-A Destruction Contract records that the specific dimension point that occupied
-the contracted position was destroyed, not merely that the position became
-empty. This is called a Destruction Fact.
+A Destruction Contract records that the specific particle that occupied the
+contracted position was destroyed, not merely that the position became empty.
+This is called a Destruction Fact.
 
-When an action destroys more than one dimension point in its contracted
-positions, the contract records those destructions in the order they were
-executed.
+When an action destroys more than one particle in its contracted positions, the
+contract records those destructions in the order they were executed.
 
 #### Child State
 
-Before destroying a dimension point in a contracted position, the compiler takes
-a snapshot of the occupancy state of all of that dimension point's transitive
-child positions. This snapshot is recorded in the Destruction Contract and is
-called the Child State.
+Before destroying a particle in a contracted position, the compiler takes a
+snapshot of the occupancy state of all of that particle's transitive child
+positions. This snapshot is recorded in the Destruction Contract and is called
+the Child State.
 
 An action may not know the full state of every transitive child position,
-because it may not be aware of every quality on the destroyed dimension point.
-Each action in the call chain therefore maintains its own cumulative Child
-State, adding whatever it knows about the state of a child position immediately
-before the parent dimension point was destroyed.
+because it may not be aware of every quality on the destroyed particle. Each
+action in the call chain therefore maintains its own cumulative Child State,
+adding whatever it knows about the state of a child position immediately before
+the parent particle was destroyed.
 
 ### Destructor Requirement Verification
 
@@ -1552,7 +1543,7 @@ compiler is verifying when it verifies a destructor.
 
 Each destructor's requirements are verified independently of every other
 destructor. It is not possible for one destructor to affect the requirements of
-another destructor on the same dimension point.
+another destructor on the same particle.
 
 ## Starting Define Programs
 
@@ -1566,18 +1557,18 @@ logically occurs from the compiler's viewpoint when starting a program:
 1. An anonymous position is created, called the "view point position."
 2. That anonymous position has exactly one constraint: it is assigned the
    potential position that is the program's entry point.
-3. A dimension point is created in the view point position. This dimension point
-   is called the "view point."
+3. A particle is created in the view point position. This particle is called the
+   "view point."
 
 The program may not otherwise interact with the view point or view point
 position in any way.
 
-This action follows the normal rules of dimension point creation in constrained
+This action follows the normal rules of particle creation in constrained
 positions. Thus, it triggers the Position Initialization Block of the potential
 position, and all code in the program executes from there.
 
 The potential position that is first assigned is called the "entry point
-position," and any dimension point created in it is called the "entry point."
+position," and any particle created in it is called the "entry point."
 
 ## Ending Define Programs
 

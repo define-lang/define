@@ -8,9 +8,9 @@ from define.runtime import literal
 class ClassVar_(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/class_var>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<trigger_pos>"),
             ],
@@ -25,9 +25,9 @@ class ClassVar_(literal.Action):
         super_ = literal.LocalPosition("position<super>")
         type_ = literal.LocalPosition("position<type>")
         typing = literal.LocalPosition("position<typing>")
-        self_.create_dimension_point()
-        self__.create_dimension_point()
-        literal_.create_dimension_point()
-        super_.create_dimension_point()
-        type_.create_dimension_point()
-        typing.create_dimension_point()
+        self_.create_particle()
+        self__.create_particle()
+        literal_.create_particle()
+        super_.create_particle()
+        type_.create_particle()
+        typing.create_particle()

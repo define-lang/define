@@ -14,10 +14,10 @@ class TestTriggerConditionValidation:
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<my_pos>.\n"
             "    it happens when {\n"
-            "        the position<my_pos> has a dimension point.\n"
+            "        the position<my_pos> has a particle.\n"
             "    } and it does {\n"
             "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
+            "        create a particle in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -32,10 +32,10 @@ class TestTriggerConditionValidation:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it happens when {\n"
-            "        the position<unknown> has a dimension point.\n"
+            "        the position<unknown> has a particle.\n"
             "    } and it does {\n"
             "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
+            "        create a particle in position<_noop>.\n"
             "    }\n"
             "}\n"
         )
@@ -54,10 +54,10 @@ class TestTriggerConditionValidation:
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it happens when {\n"
-            "        the position<BAD> has a dimension point.\n"
+            "        the position<BAD> has a particle.\n"
             "    } and it does {\n"
             "        define the position<_noop>.\n"
-            "        create a dimension point in position<_noop>.\n"
+            "        create a particle in position<_noop>.\n"
             "    }\n"
             "}\n"
         )

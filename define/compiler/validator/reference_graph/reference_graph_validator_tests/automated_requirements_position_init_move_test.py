@@ -21,7 +21,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
             "q_child.dfn": "define the potential position<my.domain.com:my_lib:/q_child>.\n",
             "q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "}\n"
@@ -31,12 +31,12 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
                 "    it also assigns the position</q>.\n"
                 "    after it is assigned {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</q_child>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position</q> to position<local>.\n"
-                "        destroy the dimension point in position<local>::position</q_child>.\n"
+                "        move the particle in position</q> to position<local>.\n"
+                "        destroy the particle in position<local>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -44,14 +44,14 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -63,7 +63,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
         all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
     assert all_diags[0].init_block_position_name == _P
@@ -75,7 +75,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 9,
-            "column": 37,
+            "column": 30,
             "file_path": "p.dfn",
         },
     )
@@ -83,7 +83,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
         all_diags[1], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[1].location.line == 11
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].create_target_name == "position<box>"
     assert all_diags[1].init_block_position_name == _P
@@ -97,7 +97,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 10,
-            "column": 40,
+            "column": 33,
             "file_path": "p.dfn",
         },
     )
@@ -111,12 +111,12 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
             "q_child.dfn": "define the potential position<my.domain.com:my_lib:/q_child>.\n",
             "q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</q>.\n"
-                "        create a dimension point in position</q>::position</q_child>.\n"
+                "        create a particle in position</q>.\n"
+                "        create a particle in position</q>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -125,12 +125,12 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
                 "    it also assigns the position</q>.\n"
                 "    after it is assigned {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</q_child>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position</q> to position<local>.\n"
-                "        create a dimension point in position<local>::position</q_child>.\n"
+                "        move the particle in position</q> to position<local>.\n"
+                "        create a particle in position<local>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -138,14 +138,14 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -158,13 +158,13 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
         diag, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
     )
     assert diag.location.line == 11
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.create_target_name == "position<box>"
     assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert diag.filled_at.line == 7
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("q.dfn")
     assert_propagation_chain(
         diag,
@@ -173,7 +173,7 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 10,
-            "column": 37,
+            "column": 30,
             "file_path": "p.dfn",
         },
     )
@@ -187,17 +187,17 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
             "q_child.dfn": "define the potential position<my.domain.com:my_lib:/q_child>.\n",
             "q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</q>.\n"
+                "        create a particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q2> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "}\n"
@@ -207,8 +207,8 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
                 "    after it is assigned {\n"
-                "        move the dimension point in position</q> to position</q2>.\n"
-                "        destroy the dimension point in position</q2>::position</q_child>.\n"
+                "        move the particle in position</q> to position</q2>.\n"
+                "        destroy the particle in position</q2>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -216,14 +216,14 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -236,7 +236,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
         diag, diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert diag.location.line == 11
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.create_target_name == "position<box>"
     assert diag.init_block_position_name == _P
@@ -248,7 +248,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 40,
+            "column": 33,
             "file_path": "p.dfn",
         },
     )
@@ -262,18 +262,18 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
             "q_child.dfn": "define the potential position<my.domain.com:my_lib:/q_child>.\n",
             "q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</q>.\n"
-                "        create a dimension point in position</q>::position</q_child>.\n"
+                "        create a particle in position</q>.\n"
+                "        create a particle in position</q>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q2> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "}\n"
@@ -283,8 +283,8 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
                 "    after it is assigned {\n"
-                "        move the dimension point in position</q> to position</q2>.\n"
-                "        create a dimension point in position</q2>::position</q_child>.\n"
+                "        move the particle in position</q> to position</q2>.\n"
+                "        create a particle in position</q2>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -292,14 +292,14 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -312,13 +312,13 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
         diag, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
     )
     assert diag.location.line == 11
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.create_target_name == "position<box>"
     assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
     assert diag.filled_at.line == 7
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("q.dfn")
     assert_propagation_chain(
         diag,
@@ -327,7 +327,7 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "p.dfn",
         },
     )
@@ -341,18 +341,18 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
             "q_child.dfn": "define the potential position<my.domain.com:my_lib:/q_child>.\n",
             "q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</q>.\n"
-                "        create a dimension point in position</q>::position</q_child>.\n"
+                "        create a particle in position</q>.\n"
+                "        create a particle in position</q>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q2> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "}\n"
@@ -362,8 +362,8 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
                 "    after it is assigned {\n"
-                "        move the dimension point in position</q> to position</q2>.\n"
-                "        destroy the dimension point in position</q2>::position</q_child>.\n"
+                "        move the particle in position</q> to position</q2>.\n"
+                "        destroy the particle in position</q2>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -371,14 +371,14 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -395,17 +395,17 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
             "q_child.dfn": "define the potential position<my.domain.com:my_lib:/q_child>.\n",
             "q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</q>.\n"
+                "        create a particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
             "q2.dfn": (
                 "define the potential position<my.domain.com:my_lib:/q2> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</q_child>.\n"
                 "    }\n"
                 "}\n"
@@ -415,8 +415,8 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
                 "    it also assigns the position</q>.\n"
                 "    it also assigns the position</q2>.\n"
                 "    after it is assigned {\n"
-                "        move the dimension point in position</q> to position</q2>.\n"
-                "        create a dimension point in position</q2>::position</q_child>.\n"
+                "        move the particle in position</q> to position</q2>.\n"
+                "        create a particle in position</q2>::position</q_child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -424,14 +424,14 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),

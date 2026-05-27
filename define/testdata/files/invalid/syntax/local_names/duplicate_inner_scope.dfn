@@ -1,7 +1,7 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/duplicate_inner_scope> {
     define the position<run>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<same_name>.
         define the position<same_name>.

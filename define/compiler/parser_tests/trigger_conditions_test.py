@@ -16,7 +16,7 @@ def test_trigger_condition_with_local_position(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
-        + "        the position<my_pos> has a dimension point.\n"
+        + "        the position<my_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -30,7 +30,7 @@ def test_trigger_condition_with_comments(parse: Parse) -> None:
         + "    define the position<run>.\n"
         + "    it happens when {\n"
         + "        # a comment\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "        # another comment\n"
         + "    } and it does {\n"
         + "    }\n"
@@ -45,7 +45,7 @@ def test_trigger_condition_with_blank_lines(parse: Parse) -> None:
         + "    define the position<run>.\n"
         + "    it happens when {\n"
         + "\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "\n"
         + "    } and it does {\n"
         + "    }\n"
@@ -55,12 +55,12 @@ def test_trigger_condition_with_blank_lines(parse: Parse) -> None:
 
 
 def test_chained_name_is_parse_error(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.InvalidHasADimensionPointSyntax) as exc_info:
+    with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run>::position</other> has a dimension point.\n"
+            + "        the position<run>::position</other> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -76,7 +76,7 @@ def test_global_name_is_parse_error(parse: Parse) -> None:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    it happens when {\n"
-            + "        the position</some_pos> has a dimension point.\n"
+            + "        the position</some_pos> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -168,7 +168,7 @@ def test_missing_terminator_after_trigger_condition(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point\n"
+            + "        the position<run> has a particle\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -176,16 +176,16 @@ def test_missing_terminator_after_trigger_condition(parse: Parse) -> None:
     assert exc_info.value.token == "\n"
     assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.line == 4
-    assert exc_info.value.column == 48
+    assert exc_info.value.column == 41
 
 
-def test_missing_space_before_has_a_dimension_point(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.InvalidHasADimensionPointSyntax) as exc_info:
+def test_missing_space_before_has_a_particle(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run>has a dimension point.\n"
+            + "        the position<run>has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -194,8 +194,8 @@ def test_missing_space_before_has_a_dimension_point(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_missing_has_a_dimension_point(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.InvalidHasADimensionPointSyntax) as exc_info:
+def test_missing_has_a_particle(parse: Parse) -> None:
+    with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"

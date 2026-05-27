@@ -17,27 +17,27 @@ class DefineRuntimeError(Exception):
         super().__init__(self.message_format.format(self=self))
 
 
-class DimensionPointExistsError(DefineRuntimeError):
-    """Raised when creating a dimension point in a position that already has one."""
+class ParticleExistsError(DefineRuntimeError):
+    """Raised when creating a particle in a position that already has one."""
 
     message_format: ClassVar[str] = (
-        "Position '{self.position_name}' already contains a dimension point."
+        "Position '{self.position_name}' already contains a particle."
     )
 
 
-class NoDimensionPointError(DefineRuntimeError):
-    """Raised when moving a dimension point from a position that has none."""
+class NoParticleError(DefineRuntimeError):
+    """Raised when moving a particle from a position that has none."""
 
     message_format: ClassVar[str] = (
-        "Position '{self.position_name}' does not contain a dimension point."
+        "Position '{self.position_name}' does not contain a particle."
     )
 
 
 class UnsatisfiedConstraintError(DefineRuntimeError):
-    """Raised when moving a dimension point to a position whose constraints are not met."""
+    """Raised when moving a particle to a position whose constraints are not met."""
 
     message_format: ClassVar[str] = (
-        "Cannot move dimension point to '{self.position_name}':"
+        "Cannot move particle to '{self.position_name}':"
         " unsatisfied constraint '{self.constraint_name}'."
     )
 
@@ -48,10 +48,10 @@ class UnsatisfiedConstraintError(DefineRuntimeError):
 
 
 class DuplicateQualityAssignmentError(DefineRuntimeError):
-    """Raised when assigning a quality that is already on the dimension point."""
+    """Raised when assigning a quality that is already on the particle."""
 
     message_format: ClassVar[str] = (
-        "Quality '{self.position_name}' is already assigned to this dimension point."
+        "Quality '{self.position_name}' is already assigned to this particle."
     )
 
 
@@ -61,9 +61,9 @@ class Quality:
     typed_name: ClassVar[str]
     implied_qualities: ClassVar[tuple[type[Quality], ...]] = ()
 
-    def __init__(self, on_dimension_point: DimensionPoint):
-        """Initialize with the dimension point this quality is assigned to."""
-        self._on_dimension_point: DimensionPoint = on_dimension_point
+    def __init__(self, on_particle: Particle):
+        """Initialize with the particle this quality is assigned to."""
+        self._on_particle: Particle = on_particle
 
     @property
     def name(self) -> str:
@@ -71,13 +71,13 @@ class Quality:
         return type(self).typed_name
 
     @property
-    def on_dimension_point(self) -> DimensionPoint:
-        """Return the dimension point this quality is assigned to."""
-        return self._on_dimension_point
+    def on_particle(self) -> Particle:
+        """Return the particle this quality is assigned to."""
+        return self._on_particle
 
 
-class DimensionPoint:
-    """A dimension point in the Define universe."""
+class Particle:
+    """A particle in the Define universe."""
 
     def __init__(self):
         """Initialize with empty positions and actions dictionaries."""
@@ -86,7 +86,7 @@ class DimensionPoint:
         self._assigned_qualities: list[Quality] = []
 
     def assign_position(self, position_class: type[GlobalPosition]):
-        """Assign a position to this dimension point, triggering after_assigned."""
+        """Assign a position to this particle, triggering after_assigned."""
         if position_class.typed_name in self._positions:
             raise DuplicateQualityAssignmentError(position_class.typed_name)
         self._assign_implied_qualities(position_class)
@@ -96,7 +96,7 @@ class DimensionPoint:
         position.after_assigned()
 
     def assign_action(self, action_class: type[Action]):
-        """Assign an action to this dimension point."""
+        """Assign an action to this particle."""
         if action_class.typed_name in self._actions:
             raise DuplicateQualityAssignmentError(action_class.typed_name)
         self._assign_implied_qualities(action_class)
@@ -127,14 +127,14 @@ class DimensionPoint:
 
     @property
     def quality_types(self) -> frozenset[type[Quality]]:
-        """Return the set of constraint types satisfied by this dimension point."""
+        """Return the set of constraint types satisfied by this particle."""
         return frozenset(type(q) for q in self._assigned_qualities)
 
 
 class Position(ABC):
-    """Abstract base class for positions that can contain a dimension point."""
+    """Abstract base class for positions that can contain a particle."""
 
-    _dimension_point: DimensionPoint | None = None
+    _particle: Particle | None = None
 
     @property
     @abstractmethod
@@ -146,53 +146,53 @@ class Position(ABC):
         """Return the constraint types for this position."""
 
     @property
-    def has_dimension_point(self) -> bool:
-        """Return whether this position contains a dimension point."""
-        return self._dimension_point is not None
+    def has_particle(self) -> bool:
+        """Return whether this position contains a particle."""
+        return self._particle is not None
 
     @property
-    def dimension_point(self) -> DimensionPoint:
-        """Return the dimension point, raising NoDimensionPointError if none exists."""
-        if self._dimension_point is None:
-            raise NoDimensionPointError(self.name)
-        return self._dimension_point
+    def particle(self) -> Particle:
+        """Return the particle, raising NoParticleError if none exists."""
+        if self._particle is None:
+            raise NoParticleError(self.name)
+        return self._particle
 
-    def create_dimension_point(self):
-        """Create a dimension point in this position. Raises if one exists."""
-        if self._dimension_point is not None:
-            raise DimensionPointExistsError(self.name)
-        self._dimension_point = DimensionPoint()
+    def create_particle(self):
+        """Create a particle in this position. Raises if one exists."""
+        if self._particle is not None:
+            raise ParticleExistsError(self.name)
+        self._particle = Particle()
         for constraint_type in self._get_constraints():
             if issubclass(constraint_type, GlobalPosition):
-                self._dimension_point.assign_position(constraint_type)
+                self._particle.assign_position(constraint_type)
             elif issubclass(constraint_type, Action):
-                self._dimension_point.assign_action(constraint_type)
-        self._after_dimension_point_arrived()
+                self._particle.assign_action(constraint_type)
+        self._after_particle_arrived()
 
-    def move_dimension_point_to(self, destination: Position):
-        """Move the dimension point from this position to destination."""
-        if self._dimension_point is None:
-            raise NoDimensionPointError(self.name)
-        if destination._dimension_point is not None:
-            raise DimensionPointExistsError(destination.name)
-        quality_types = self._dimension_point.quality_types
+    def move_particle_to(self, destination: Position):
+        """Move the particle from this position to destination."""
+        if self._particle is None:
+            raise NoParticleError(self.name)
+        if destination._particle is not None:
+            raise ParticleExistsError(destination.name)
+        quality_types = self._particle.quality_types
         for constraint_type in destination._get_constraints():
             if constraint_type not in quality_types:
                 raise UnsatisfiedConstraintError(
                     destination.name, constraint_type.typed_name
                 )
-        destination._dimension_point = self._dimension_point
-        self._dimension_point = None
-        destination._after_dimension_point_arrived()
+        destination._particle = self._particle
+        self._particle = None
+        destination._after_particle_arrived()
 
-    def destroy_dimension_point(self):
-        """Destroy the dimension point in this position."""
-        if self._dimension_point is None:
-            raise NoDimensionPointError(self.name)
-        self._dimension_point = None
+    def destroy_particle(self):
+        """Destroy the particle in this position."""
+        if self._particle is None:
+            raise NoParticleError(self.name)
+        self._particle = None
 
-    def _after_dimension_point_arrived(self):  # noqa: B027
-        """Run after a dimension point arrives. Override in subclasses."""
+    def _after_particle_arrived(self):  # noqa: B027
+        """Run after a particle arrives. Override in subclasses."""
 
 
 class GlobalPosition(Quality, Position):
@@ -239,12 +239,12 @@ class Action(Quality):
 
     def __init__(
         self,
-        on_dimension_point: DimensionPoint,
+        on_particle: Particle,
         interface_positions: list[InterfacePosition] | None = None,
         trigger_position_name: str | None = None,
     ):
-        """Initialize with the assigned dimension point and optional interface positions."""
-        super().__init__(on_dimension_point)
+        """Initialize with the assigned particle and optional interface positions."""
+        super().__init__(on_particle)
         self._interface_positions: dict[str, InterfacePosition] = {
             pos.name: pos for pos in (interface_positions or [])
         }
@@ -260,12 +260,10 @@ class Action(Quality):
 
     @property
     def should_execute(self) -> bool:
-        """Return whether the trigger position has a dimension point."""
+        """Return whether the trigger position has a particle."""
         if self._trigger_position_name is None:
             return False
-        return self._interface_positions[
-            self._trigger_position_name
-        ].has_dimension_point
+        return self._interface_positions[self._trigger_position_name].has_particle
 
     def execute(self):
         """Execute the action body. Override in subclasses."""
@@ -288,7 +286,7 @@ class InterfacePosition(LocalPosition):
         self._trigger_action = action
 
     @override
-    def _after_dimension_point_arrived(self):
+    def _after_particle_arrived(self):
         if self._trigger_action is not None and self._trigger_action.should_execute:
             self._trigger_action.execute()
 
@@ -296,8 +294,8 @@ class InterfacePosition(LocalPosition):
 def start(entry_point: type[GlobalPosition]):
     """Execute the Define program startup sequence.
 
-    Creates a dimension point (the view point) and assigns the entry point
+    Creates a particle (the view point) and assigns the entry point
     position as a quality, which triggers entry_point.after_assigned().
     """
-    view_point = DimensionPoint()
+    view_point = Particle()
     view_point.assign_position(entry_point)

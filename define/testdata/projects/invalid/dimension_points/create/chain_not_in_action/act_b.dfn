@@ -1,9 +1,0 @@
-define the potential action<mv:define-lang.org:test_dim_bad_action:/act_b> {
-    define the position<inner>.
-    it happens when {
-        the position<inner> has a dimension point.
-    } and it does {
-        define the position<_noop>.
-        create a dimension point in position<_noop>.
-    }
-}

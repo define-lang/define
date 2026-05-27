@@ -15,16 +15,16 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.dimension_point.get_action(
+        self.create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_library_collection:/perform_operation>"
         ).get_interface_position(
             "position<operation_trigger>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_library_collection:/perform_operation>"
         ).get_interface_position(
             "position<operation_trigger>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_library_collection:/inner_position>"
-        ).create_dimension_point()
+        ).create_particle()

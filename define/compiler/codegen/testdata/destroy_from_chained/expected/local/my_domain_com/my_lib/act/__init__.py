@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.mid
 class Act(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition(
@@ -29,8 +29,8 @@ class Act(literal.Action):
     def execute(self):
         self.get_interface_position(
             "position<chain_src>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/end>"
-        ).destroy_dimension_point()
+        ).destroy_particle()

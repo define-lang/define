@@ -29,10 +29,10 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -40,20 +40,20 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<src>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<src>.\n"
-                "        move the dimension point in position<src> to position<box>::action</other>::position<item>.\n"
-                "        move the dimension point in position<src> to position<box>::action</other>::position<item>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<src>.\n"
+                "        move the particle in position<src> to position<box>::action</other>::position<item>.\n"
+                "        move the particle in position<src> to position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -64,16 +64,16 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].position_name == "position<src>"
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].location.line == 15
-    assert all_diags[1].location.column == 54
+    assert all_diags[1].location.column == 47
     assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
-    assert all_diags[1].occupied_at.column == 54
+    assert all_diags[1].occupied_at.column == 47
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -90,11 +90,11 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
                 "    define the position<sink>.\n"
                 "    define the position<sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
-                "        move the dimension point in position<item> to position<sink>.\n"
-                "        move the dimension point in position<item> to position<sink2>.\n"
+                "        create a particle in position<item>.\n"
+                "        move the particle in position<item> to position<sink>.\n"
+                "        move the particle in position<item> to position<sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -102,16 +102,16 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -122,7 +122,7 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -139,11 +139,11 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
                 "    define the position<sink>.\n"
                 "    define the position<sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
-                "        move the dimension point in position<item> to position<sink>.\n"
-                "        move the dimension point in position<item> to position<sink2>.\n"
+                "        create a particle in position<item>.\n"
+                "        move the particle in position<item> to position<sink>.\n"
+                "        move the particle in position<item> to position<sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -151,17 +151,17 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the dimension point in position<box>::action</other>::position<item> to position<dest>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the particle in position<box>::action</other>::position<item> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -172,7 +172,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -189,11 +189,11 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
                 "    define the position<sink>.\n"
                 "    define the position<sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
-                "        move the dimension point in position<item> to position<sink>.\n"
-                "        move the dimension point in position<item> to position<sink2>.\n"
+                "        create a particle in position<item>.\n"
+                "        move the particle in position<item> to position<sink>.\n"
+                "        move the particle in position<item> to position<sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -201,18 +201,18 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<spare>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<spare>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<spare>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -223,7 +223,7 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -237,18 +237,18 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<sink>.\n"
                 "    define the position<sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<trigger_pos>::position</x>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<sink>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<sink2>.\n"
+                "        create a particle in position<trigger_pos>::position</x>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<sink>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -256,16 +256,16 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>::position</x>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -276,7 +276,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -290,18 +290,18 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<sink>.\n"
                 "    define the position<sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<trigger_pos>::position</x>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<sink>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<sink2>.\n"
+                "        create a particle in position<trigger_pos>::position</x>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<sink>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -309,17 +309,17 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the dimension point in position<box>::action</other>::position<trigger_pos>::position</x> to position<dest>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the particle in position<box>::action</other>::position<trigger_pos>::position</x> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -330,7 +330,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -344,18 +344,18 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
             "other.dfn": (
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<sink>.\n"
                 "    define the position<sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<trigger_pos>::position</x>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<sink>.\n"
-                "        move the dimension point in position<trigger_pos>::position</x> to position<sink2>.\n"
+                "        create a particle in position<trigger_pos>::position</x>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<sink>.\n"
+                "        move the particle in position<trigger_pos>::position</x> to position<sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -363,18 +363,18 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<spare>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<spare>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        move the dimension point in position<spare> to position<box>::action</other>::position<trigger_pos>::position</x>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<spare>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        move the particle in position<spare> to position<box>::action</other>::position<trigger_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -385,7 +385,7 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -400,12 +400,12 @@ def test_unknown_from_move_to_occupied_interface_position(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "        define the position<extra>.\n"
-                "        create a dimension point in position<extra>.\n"
-                "        move the dimension point in position<extra> to position<item>.\n"
+                "        create a particle in position<extra>.\n"
+                "        move the particle in position<extra> to position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -413,16 +413,16 @@ def test_unknown_from_move_to_occupied_interface_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -433,7 +433,7 @@ def test_unknown_from_move_to_occupied_interface_position(
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 10
-    assert all_diags[0].location.column == 56
+    assert all_diags[0].location.column == 49
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -448,16 +448,16 @@ def test_unknown_from_constraint_violation_on_interface_position(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</quality_a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<unconstrained>.\n"
-                "        create a dimension point in position<unconstrained>.\n"
-                "        move the dimension point in position<unconstrained> to position<item>.\n"
+                "        create a particle in position<unconstrained>.\n"
+                "        move the particle in position<unconstrained> to position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -465,16 +465,16 @@ def test_unknown_from_constraint_violation_on_interface_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -485,7 +485,7 @@ def test_unknown_from_constraint_violation_on_interface_position(
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 64
+    assert all_diags[0].location.column == 57
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -500,13 +500,13 @@ def test_unknown_propagation_from_local_to_interface_position(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local>.\n"
                 "        define the position<sink>.\n"
-                "        create a dimension point in position<local>.\n"
-                "        move the dimension point in position<local> to position<sink>.\n"
-                "        move the dimension point in position<local> to position<item>.\n"
+                "        create a particle in position<local>.\n"
+                "        move the particle in position<local> to position<sink>.\n"
+                "        move the particle in position<local> to position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -514,16 +514,16 @@ def test_unknown_propagation_from_local_to_interface_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -534,30 +534,30 @@ def test_unknown_propagation_from_local_to_interface_position(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
 def test_unknown_from_prefix_move_on_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Moving an interface position DP into one of its own child positions reports MoveIntoDefiningPositionDiagnostic."""
+    """Moving an interface position particle into one of its own child positions reports MoveIntoDefiningPositionDiagnostic."""
     result = validate_project_with_reference_graph(
         {
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<tp>.\n"
                 "    it happens when {\n"
-                "        the position<tp> has a dimension point.\n"
+                "        the position<tp> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "mid.dfn": (
                 "define the potential position<my.domain.com:my_lib:/mid> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</inner>.\n"
                 "    }\n"
                 "}\n"
@@ -566,15 +566,15 @@ def test_unknown_from_prefix_move_on_interface_position(
                 "define the potential action<my.domain.com:my_lib:/outer> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</mid>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>.\n"
-                "        move the dimension point in position<iface> to position<iface>::position</mid>::action</inner>::position<tp>.\n"
+                "        create a particle in position<iface>.\n"
+                "        move the particle in position<iface> to position<iface>::position</mid>::action</inner>::position<tp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -582,16 +582,16 @@ def test_unknown_from_prefix_move_on_interface_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</outer>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</outer>::position<iface>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</outer>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</outer>::position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -602,7 +602,7 @@ def test_unknown_from_prefix_move_on_interface_position(
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 73
+    assert all_diags[0].location.column == 66
     assert_action_calls(result.action_call_graph, _TEST, _OUTER)
 
 
@@ -617,9 +617,9 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -627,10 +627,10 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in action</other>::position<item>.\n"
+                "        create a particle in action</other>::position<trigger_pos>.\n"
+                "        create a particle in action</other>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -661,17 +661,17 @@ def test_post_trigger_unknown_guarantee_on_child_position(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</child_q>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<_sink>.\n"
                 "    define the position<_sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item>::position</child_q> to position<_sink>.\n"
-                "        move the dimension point in position<item>::position</child_q> to position<_sink2>.\n"
+                "        move the particle in position<item>::position</child_q> to position<_sink>.\n"
+                "        move the particle in position<item>::position</child_q> to position<_sink2>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -679,26 +679,26 @@ def test_post_trigger_unknown_guarantee_on_child_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<spare> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</child_q>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<spare2>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<spare>.\n"
-                "        create a dimension point in position<spare2>.\n"
-                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        move the dimension point in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<spare>.\n"
+                "        create a particle in position<spare2>.\n"
+                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        move the particle in position<spare2> to position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -709,7 +709,7 @@ def test_post_trigger_unknown_guarantee_on_child_position(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -724,23 +724,23 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</child_q>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<dest> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</child_q>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<_sink>.\n"
                 "    define the position<_sink2>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item> to position<_sink>.\n"
-                "        move the dimension point in position<item> to position<_sink2>.\n"
-                "        move the dimension point in position<item> to position<dest>.\n"
+                "        move the particle in position<item> to position<_sink>.\n"
+                "        move the particle in position<item> to position<_sink2>.\n"
+                "        move the particle in position<item> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -748,24 +748,24 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<spare> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</child_q>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<spare>.\n"
-                "        move the dimension point in position<spare> to position<box>::action</other>::position<item>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<dest>::position</child_q>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<spare>.\n"
+                "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
+                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<dest>::position</child_q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -776,7 +776,7 @@ def test_post_trigger_existing_guarantee_unknown_origin_with_children(
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 19
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -796,15 +796,15 @@ def test_caller_prefills_child_without_parent_then_triggers(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</child_q>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -812,16 +812,16 @@ def test_caller_prefills_child_without_parent_then_triggers(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<item>::position</child_q>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<item>::position</child_q>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -832,7 +832,7 @@ def test_caller_prefills_child_without_parent_then_triggers(
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert (
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</child_q>"
@@ -847,7 +847,7 @@ def test_caller_prefills_child_without_parent_then_triggers(
 def test_action_creates_child_but_caller_omits_parent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Action's body creates a DP in both parent and child interface positions.
+    """Action's body creates a particle in both parent and child interface positions.
 
     The caller doesn't fill position<item> or its child — the action
     fills them internally, generating OccupiedByNew guarantees for both.
@@ -861,15 +861,15 @@ def test_action_creates_child_but_caller_omits_parent(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</child_q>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
-                "        create a dimension point in position<item>::position</child_q>.\n"
+                "        create a particle in position<item>.\n"
+                "        create a particle in position<item>::position</child_q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -877,15 +877,15 @@ def test_action_creates_child_but_caller_omits_parent(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -914,12 +914,12 @@ def test_swap_guarantee_both_positions_unfilled(
                 "    define the position<a>.\n"
                 "    define the position<b>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<tmp>.\n"
-                "        move the dimension point in position<a> to position<tmp>.\n"
-                "        move the dimension point in position<b> to position<a>.\n"
-                "        move the dimension point in position<tmp> to position<b>.\n"
+                "        move the particle in position<a> to position<tmp>.\n"
+                "        move the particle in position<b> to position<a>.\n"
+                "        move the particle in position<tmp> to position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -927,19 +927,19 @@ def test_swap_guarantee_both_positions_unfilled(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<a>.\n"
-                "        create a dimension point in position<box>::action</other>::position<a>.\n"
-                "        create a dimension point in position<box>::action</other>::position<b>.\n"
-                "        create a dimension point in position<box>::action</other>::position<b>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<a>.\n"
+                "        create a particle in position<box>::action</other>::position<a>.\n"
+                "        create a particle in position<box>::action</other>::position<b>.\n"
+                "        create a particle in position<box>::action</other>::position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -951,7 +951,7 @@ def test_swap_guarantee_both_positions_unfilled(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
@@ -962,7 +962,7 @@ def test_swap_guarantee_both_positions_unfilled(
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 9,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -970,7 +970,7 @@ def test_swap_guarantee_both_positions_unfilled(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[1].location.line == 12
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
@@ -981,7 +981,7 @@ def test_swap_guarantee_both_positions_unfilled(
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 10,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -1005,12 +1005,12 @@ def test_swap_guarantee_one_position_unfilled(
                 "    define the position<a>.\n"
                 "    define the position<b>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<tmp>.\n"
-                "        move the dimension point in position<a> to position<tmp>.\n"
-                "        move the dimension point in position<b> to position<a>.\n"
-                "        move the dimension point in position<tmp> to position<b>.\n"
+                "        move the particle in position<a> to position<tmp>.\n"
+                "        move the particle in position<b> to position<a>.\n"
+                "        move the particle in position<tmp> to position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1018,20 +1018,20 @@ def test_swap_guarantee_one_position_unfilled(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<spare>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<spare>.\n"
-                "        move the dimension point in position<spare> to position<box>::action</other>::position<a>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</other>::position<a>.\n"
-                "        create a dimension point in position<box>::action</other>::position<b>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<spare>.\n"
+                "        move the particle in position<spare> to position<box>::action</other>::position<a>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<a>.\n"
+                "        create a particle in position<box>::action</other>::position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1043,9 +1043,9 @@ def test_swap_guarantee_one_position_unfilled(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 15
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<b>"
@@ -1056,22 +1056,22 @@ def test_swap_guarantee_one_position_unfilled(
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 10,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
-    # position<b> is now occupied: the swap moved position<a>'s DP there.
+    # position<b> is now occupied: the swap moved position<a>'s particle there.
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 17
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 17
-    assert all_diags[1].location.end_column == 79
+    assert all_diags[1].location.end_column == 72
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
     assert all_diags[1].populated_at.line == 11
-    assert all_diags[1].populated_at.column == 54
+    assert all_diags[1].populated_at.column == 47
     assert all_diags[1].populated_at.end_line == 11
-    assert all_diags[1].populated_at.end_column == 65
+    assert all_diags[1].populated_at.end_column == 58
     assert all_diags[1].populated_at.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
@@ -1092,22 +1092,22 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<a> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</c1>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</c2>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<sink_a>.\n"
                 "    define the position<sink_b>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<a>::position</c1> to position<sink_a>.\n"
-                "        move the dimension point in position<b>::position</c2> to position<sink_b>.\n"
+                "        move the particle in position<a>::position</c1> to position<sink_a>.\n"
+                "        move the particle in position<b>::position</c2> to position<sink_b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1115,17 +1115,17 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        destroy the dimension point in position<box>::action</other>::position<a>.\n"
-                "        destroy the dimension point in position<box>::action</other>::position<b>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        destroy the particle in position<box>::action</other>::position<a>.\n"
+                "        destroy the particle in position<box>::action</other>::position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1137,9 +1137,9 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
@@ -1150,7 +1150,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 18,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -1158,9 +1158,9 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[1].location.line == 12
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 12
-    assert all_diags[1].location.end_column == 89
+    assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
@@ -1174,7 +1174,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 18,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -1182,9 +1182,9 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
         all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[2].location.line == 12
-    assert all_diags[2].location.column == 37
+    assert all_diags[2].location.column == 30
     assert all_diags[2].location.end_line == 12
-    assert all_diags[2].location.end_column == 89
+    assert all_diags[2].location.end_column == 82
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[2].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[2].position_name == "position<box>::action</other>::position<b>"
@@ -1195,7 +1195,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 19,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -1203,9 +1203,9 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
         all_diags[3], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[3].location.line == 12
-    assert all_diags[3].location.column == 37
+    assert all_diags[3].location.column == 30
     assert all_diags[3].location.end_line == 12
-    assert all_diags[3].location.end_column == 89
+    assert all_diags[3].location.end_column == 82
     assert all_diags[3].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[3].action_name == "action<my.domain.com:my_lib:/other>"
     assert (
@@ -1219,7 +1219,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 19,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -1228,7 +1228,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
 def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When the caller destroys a dimension point before triggering an action that moves from that same position, the destination position should be treated as unknown.
+    """When the caller destroys a particle before triggering an action that moves from that same position, the destination position should be treated as unknown.
 
     The caller cannot know whether the action actually moved anything,
     so further operations on the destination are silently allowed.
@@ -1241,9 +1241,9 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
                 "    define the position<src>.\n"
                 "    define the position<dst>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<src> to position<dst>.\n"
+                "        move the particle in position<src> to position<dst>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1251,18 +1251,18 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<src>.\n"
-                "        destroy the dimension point in position<box>::action</other>::position<src>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        destroy the dimension point in position<box>::action</other>::position<dst>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<src>.\n"
+                "        destroy the particle in position<box>::action</other>::position<src>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        destroy the particle in position<box>::action</other>::position<dst>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1274,9 +1274,9 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
@@ -1287,7 +1287,7 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "other.dfn",
         },
     )
@@ -1310,12 +1310,12 @@ def test_swap_propagates_prior_unknown_state_from_origin_to_destination(
                 "    define the position<a>.\n"
                 "    define the position<b>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_tmp>.\n"
-                "        move the dimension point in position<a> to position<_tmp>.\n"
-                "        move the dimension point in position<b> to position<a>.\n"
-                "        move the dimension point in position<_tmp> to position<b>.\n"
+                "        move the particle in position<a> to position<_tmp>.\n"
+                "        move the particle in position<b> to position<a>.\n"
+                "        move the particle in position<_tmp> to position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1323,21 +1323,21 @@ def test_swap_propagates_prior_unknown_state_from_origin_to_destination(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</other>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<empty_src>.\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</other>::position<a>.\n"
-                "        move the dimension point in position<empty_src> to position<box>::action</other>::position<a>.\n"
-                "        create a dimension point in position<box>::action</other>::position<b>.\n"
-                "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-                "        destroy the dimension point in position<box>::action</other>::position<b>.\n"
-                "        destroy the dimension point in position<box>::action</other>::position<b>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<a>.\n"
+                "        move the particle in position<empty_src> to position<box>::action</other>::position<a>.\n"
+                "        create a particle in position<box>::action</other>::position<b>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        destroy the particle in position<box>::action</other>::position<b>.\n"
+                "        destroy the particle in position<box>::action</other>::position<b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1347,22 +1347,22 @@ def test_swap_propagates_prior_unknown_state_from_origin_to_destination(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
-    assert all_diags[0].location.end_column == 56
+    assert all_diags[0].location.end_column == 49
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<empty_src>"
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 14
-    assert all_diags[1].location.column == 60
+    assert all_diags[1].location.column == 53
     assert all_diags[1].location.end_line == 14
-    assert all_diags[1].location.end_column == 102
+    assert all_diags[1].location.end_column == 95
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</other>::position<a>"
     assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 13
-    assert all_diags[1].occupied_at.column == 37
+    assert all_diags[1].occupied_at.column == 30
     assert all_diags[1].occupied_at.end_line == 13
-    assert all_diags[1].occupied_at.end_column == 79
+    assert all_diags[1].occupied_at.end_column == 72
     assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)

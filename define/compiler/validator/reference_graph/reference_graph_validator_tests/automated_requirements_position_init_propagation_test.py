@@ -2,7 +2,7 @@
 
 # This file only covers OCCUPIED-state propagation. EMPTY-state propagation
 # through position init blocks is structurally impossible to observe: an init
-# block on /p fires when the caller creates a dimension point with /p as a
+# block on /p fires when the caller creates a particle with /p as a
 # quality, so any EMPTY requirement is only observed directly by the creator,
 # instantly at the moment of creation.
 
@@ -32,7 +32,7 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    after it is assigned {\n"
-                "        destroy the dimension point in position</q>.\n"
+                "        destroy the particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -40,14 +40,14 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</p>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>.\n"
+                "        create a particle in position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -55,15 +55,15 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -75,9 +75,9 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert (
@@ -91,7 +91,7 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _P,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
         {
@@ -99,7 +99,7 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 4,
-            "column": 40,
+            "column": 33,
             "file_path": "p.dfn",
         },
     )
@@ -115,13 +115,13 @@ def test_init_block_occupied_propagates_via_implied_position(
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    after it is assigned {\n"
-                "        destroy the dimension point in position</q>.\n"
+                "        destroy the particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
             "implied_pos.dfn": (
                 "define the potential position<my.domain.com:my_lib:/implied_pos> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</p>.\n"
                 "    }\n"
                 "}\n"
@@ -131,9 +131,9 @@ def test_init_block_occupied_propagates_via_implied_position(
                 "    it also assigns the position</implied_pos>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</implied_pos>.\n"
+                "        create a particle in position</implied_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -141,15 +141,15 @@ def test_init_block_occupied_propagates_via_implied_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -161,9 +161,9 @@ def test_init_block_occupied_propagates_via_implied_position(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert (
@@ -177,7 +177,7 @@ def test_init_block_occupied_propagates_via_implied_position(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _P,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
         {
@@ -185,7 +185,7 @@ def test_init_block_occupied_propagates_via_implied_position(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 4,
-            "column": 40,
+            "column": 33,
             "file_path": "p.dfn",
         },
     )
@@ -201,13 +201,13 @@ def test_init_block_occupied_propagates_via_implied_action(
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    after it is assigned {\n"
-                "        destroy the dimension point in position</q>.\n"
+                "        destroy the particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
             "carrier.dfn": (
                 "define the potential position<my.domain.com:my_lib:/carrier> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</p>.\n"
                 "    }\n"
                 "}\n"
@@ -217,9 +217,9 @@ def test_init_block_occupied_propagates_via_implied_action(
                 "    it also assigns the position</carrier>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position</carrier>.\n"
+                "        create a particle in position</carrier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -228,9 +228,9 @@ def test_init_block_occupied_propagates_via_implied_action(
                 "    it also assigns the action</implied_action>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -238,15 +238,15 @@ def test_init_block_occupied_propagates_via_implied_action(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -258,9 +258,9 @@ def test_init_block_occupied_propagates_via_implied_action(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 89
+    assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert (
@@ -273,7 +273,7 @@ def test_init_block_occupied_propagates_via_implied_action(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _IMPLIED_ACTION,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
         {
@@ -281,7 +281,7 @@ def test_init_block_occupied_propagates_via_implied_action(
             "enclosing_quality_name": _IMPLIED_ACTION,
             "triggered_quality_name": _P,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "implied_action.dfn",
         },
         {
@@ -289,7 +289,7 @@ def test_init_block_occupied_propagates_via_implied_action(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 4,
-            "column": 40,
+            "column": 33,
             "file_path": "p.dfn",
         },
     )
@@ -305,13 +305,13 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
                 "define the potential position<my.domain.com:my_lib:/inner_p> {\n"
                 "    it also assigns the position</r>.\n"
                 "    after it is assigned {\n"
-                "        destroy the dimension point in position</r>.\n"
+                "        destroy the particle in position</r>.\n"
                 "    }\n"
                 "}\n"
             ),
             "something.dfn": (
                 "define the potential position<my.domain.com:my_lib:/something> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</inner_p>.\n"
                 "    }\n"
                 "}\n"
@@ -320,7 +320,7 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
                 "define the potential position<my.domain.com:my_lib:/outer_p> {\n"
                 "    it also assigns the position</something>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</something>.\n"
+                "        create a particle in position</something>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -328,14 +328,14 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</outer_p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -347,9 +347,9 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
         all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
-    assert all_diags[0].location.end_column == 50
+    assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
     assert all_diags[0].init_block_position_name == _OUTER_P
@@ -364,7 +364,7 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
             "enclosing_quality_name": _OUTER_P,
             "triggered_quality_name": _INNER_P,
             "line": 4,
-            "column": 37,
+            "column": 30,
             "file_path": "outer_p.dfn",
         },
         {
@@ -372,7 +372,7 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
             "enclosing_quality_name": _INNER_P,
             "triggered_quality_name": None,
             "line": 4,
-            "column": 40,
+            "column": 33,
             "file_path": "inner_p.dfn",
         },
     )
@@ -388,13 +388,13 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the position</q>.\n"
                 "    after it is assigned {\n"
-                "        destroy the dimension point in position</q>.\n"
+                "        destroy the particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
             "box_target.dfn": (
                 "define the potential position<my.domain.com:my_lib:/box_target> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</p>.\n"
                 "    }\n"
                 "}\n"
@@ -403,20 +403,20 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</box_target>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</box_target>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position<iface> to position<box>.\n"
-                "        create a dimension point in position<box>::position</box_target>.\n"
+                "        move the particle in position<iface> to position<box>.\n"
+                "        create a particle in position<box>::position</box_target>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -424,15 +424,15 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<outer_box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<outer_box>.\n"
-                "        create a dimension point in position<outer_box>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<outer_box>.\n"
+                "        create a particle in position<outer_box>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -444,9 +444,9 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 95
+    assert all_diags[0].location.end_column == 88
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert (
@@ -460,7 +460,7 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 16,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -469,9 +469,9 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
         diagnostics.ActionRequiresOccupiedPositionDiagnostic,
     )
     assert all_diags[1].location.line == 12
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 12
-    assert all_diags[1].location.end_column == 95
+    assert all_diags[1].location.end_column == 88
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == _INNER
     assert (
@@ -485,7 +485,7 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _P,
             "line": 17,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
         {
@@ -493,7 +493,7 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
             "enclosing_quality_name": _P,
             "triggered_quality_name": None,
             "line": 4,
-            "column": 40,
+            "column": 33,
             "file_path": "p.dfn",
         },
     )
@@ -509,9 +509,9 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position<item>.\n"
+                "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -519,7 +519,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the action</implied_action>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -527,14 +527,14 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -546,9 +546,9 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
         all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
-    assert all_diags[0].location.end_column == 50
+    assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
     assert all_diags[0].init_block_position_name == _P
@@ -563,7 +563,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
             "enclosing_quality_name": _P,
             "triggered_quality_name": _IMPLIED_ACTION,
             "line": 4,
-            "column": 37,
+            "column": 30,
             "file_path": "p.dfn",
         },
         {
@@ -571,7 +571,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
             "enclosing_quality_name": _IMPLIED_ACTION,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 40,
+            "column": 33,
             "file_path": "implied_action.dfn",
         },
     )
@@ -588,9 +588,9 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
                 "    it also assigns the position</q>.\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        destroy the dimension point in position</q>.\n"
+                "        destroy the particle in position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -598,7 +598,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
                 "define the potential position<my.domain.com:my_lib:/p> {\n"
                 "    it also assigns the action</implied_action>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -606,14 +606,14 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</p>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -625,9 +625,9 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
         all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
-    assert all_diags[0].location.end_column == 50
+    assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
     assert all_diags[0].init_block_position_name == _P
@@ -639,7 +639,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
             "enclosing_quality_name": _P,
             "triggered_quality_name": _IMPLIED_ACTION,
             "line": 4,
-            "column": 37,
+            "column": 30,
             "file_path": "p.dfn",
         },
         {
@@ -647,7 +647,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
             "enclosing_quality_name": _IMPLIED_ACTION,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 40,
+            "column": 33,
             "file_path": "implied_action.dfn",
         },
     )

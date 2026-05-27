@@ -14,7 +14,7 @@ from define.compiler.validator.structural import program_validator
 def test_position_constraint_reference_with_invalid_path():
     source = (
         "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</Bad>.\n"
         "    }\n"
         "}\n"
@@ -36,11 +36,11 @@ def test_position_constraint_reference_with_invalid_path():
 def test_global_position_validates_constraints_block_before_initialization_block():
     source = (
         "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</BadConstraint>.\n"
         "    }\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</BadInit>.\n"
+        "        create a particle in position</BadInit>.\n"
         "    }\n"
         "}\n"
     )
@@ -64,7 +64,7 @@ def test_global_position_validates_constraints_block_before_initialization_block
 def test_same_fqun_constraint_reference_must_use_short_form():
     source = (
         "define the potential position<my.domain.com:my_lib:/root> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<my.domain.com:my_lib:/child>.\n"
         "    }\n"
         "}\n"
@@ -86,15 +86,15 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form():
     source = (
         "define the potential action<my.domain.com:my_lib:/act> {\n"
         "    define the position<my_pos> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the position<my.domain.com:my_lib:/child>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<my_pos> has a dimension point.\n"
+        "        the position<my_pos> has a particle.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -118,7 +118,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</Bad>.\n"
                 "        it has the position</valid>.\n"
                 "    }\n"
@@ -149,16 +149,16 @@ def test_referenced_global_name_wrong_type_position(
                 "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target> {\n"
                 "    define the position<_noop>.\n"
                 "    it happens when {\n"
-                "        the position<_noop> has a dimension point.\n"
+                "        the position<_noop> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<__noop>.\n"
-                "        create a dimension point in position<__noop>.\n"
+                "        create a particle in position<__noop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</target>.\n"
                 "    }\n"
                 "}\n"
@@ -186,30 +186,30 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
                 "define the potential action<mv:define-lang.org:test_walk_wrong_type:/target> {\n"
                 "    define the position<_noop>.\n"
                 "    it happens when {\n"
-                "        the position<_noop> has a dimension point.\n"
+                "        the position<_noop> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<__noop>.\n"
-                "        create a dimension point in position<__noop>.\n"
+                "        create a particle in position<__noop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</target>.\n"
                 "    }\n"
                 "}\n"
                 "define the potential action<mv:define-lang.org:test_walk_wrong_type:/test> {\n"
                 "    define the position<local> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</target>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<local> has a dimension point.\n"
+                "        the position<local> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),

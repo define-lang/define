@@ -15,14 +15,14 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.dimension_point.get_position(
+        self.create_particle()
+        self.particle.get_position(
             "position<my.domain.com:my_lib:/a>"
-        ).create_dimension_point()
-        self.dimension_point.get_position(
+        ).create_particle()
+        self.particle.get_position(
             "position<my.domain.com:my_lib:/a>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<trigger_pos>"
-        ).create_dimension_point()
+        ).create_particle()

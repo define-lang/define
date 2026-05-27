@@ -38,7 +38,7 @@ def _first_definition(
 def test_reference_edge_same_universe():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</a>.\n"
         "    }\n"
         "}\n"
@@ -58,7 +58,7 @@ def test_reference_edge_same_universe():
 def test_reference_edge_explicit_fqun():
     result = _parse(
         f"define the potential position<{_FQUN}:/x> {{\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<other.com:other_lib:/b>.\n"
         "    }\n"
         "}\n"

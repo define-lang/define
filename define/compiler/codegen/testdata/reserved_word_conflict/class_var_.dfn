@@ -1,9 +1,9 @@
 define the potential action<my.domain.com:my_lib:/class_var_> {
     define the position<trigger_pos>.
     it happens when {
-        the position<trigger_pos> has a dimension point.
+        the position<trigger_pos> has a particle.
     } and it does {
         define the position<self_>.
-        create a dimension point in position<self_>.
+        create a particle in position<self_>.
     }
 }

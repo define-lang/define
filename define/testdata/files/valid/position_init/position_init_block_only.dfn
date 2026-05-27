@@ -1,6 +1,6 @@
 define the potential position<mv:define-lang.org:test_files:/valid/position_init/position_init_block_only> {
     after it is assigned {
         define the position<local>.
-        create a dimension point in position<local>.
+        create a particle in position<local>.
     }
 }

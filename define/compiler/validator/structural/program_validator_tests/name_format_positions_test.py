@@ -102,10 +102,10 @@ def test_local_name_position():
         "define the potential action<mv:my.domain.com:my_lib:/act> {\n"
         "    define the position<my-pos>.\n"
         "    it happens when {\n"
-        "        the position<my-pos> has a dimension point.\n"
+        "        the position<my-pos> has a particle.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )

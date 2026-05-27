@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/inner> {
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</implier>.
+        }
+    }
+    define the position<output>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<input> to position<output>.
+    }
+}

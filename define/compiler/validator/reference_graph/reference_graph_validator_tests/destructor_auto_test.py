@@ -19,16 +19,16 @@ _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
 _CHILD_DESTRUCTOR = "action<my.domain.com:my_lib:/child_destructor>"
 
-# Creates and destroys a dimension point in its own interface position, so it
+# Creates and destroys a particle in its own interface position, so it
 # requires that position to be empty when the destructor fires.
 _DESTRUCTOR_REQUIRES_EMPTY = (
     "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
     "    define the position<item>.\n"
     "    it happens when {\n"
-    "        this dimension point is being destroyed.\n"
+    "        this particle is being destroyed.\n"
     "    } and it does {\n"
-    "        create a dimension point in position<item>.\n"
-    "        destroy the dimension point in position<item>.\n"
+    "        create a particle in position<item>.\n"
+    "        destroy the particle in position<item>.\n"
     "    }\n"
     "}\n"
 )
@@ -38,10 +38,10 @@ def _named_destructor_noop(name: str) -> str:
     return (
         f"define the potential action<my.domain.com:my_lib:/{name}> {{\n"
         "    it happens when {\n"
-        "        this dimension point is being destroyed.\n"
+        "        this particle is being destroyed.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -57,14 +57,14 @@ def test_local_position_left_occupied_fires_destructor(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -84,11 +84,11 @@ def test_local_position_in_init_block_left_occupied_fires_destructor(
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -110,20 +110,20 @@ def test_auto_destruction_in_reverse_definition_order(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box_a> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_a>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<box_b> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_b>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box_a>.\n"
-                "        create a dimension point in position<box_b>.\n"
+                "        create a particle in position<box_a>.\n"
+                "        create a particle in position<box_b>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -146,15 +146,15 @@ def test_empty_local_position_does_not_fire_destructor(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<other>.\n"
-                "        create a dimension point in position<other>.\n"
+                "        create a particle in position<other>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -175,15 +175,15 @@ def test_explicit_destroy_before_block_end_does_not_double_fire(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        destroy the dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
+                "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -194,16 +194,16 @@ def test_explicit_destroy_before_block_end_does_not_double_fire(
     assert edges == [(_TEST, _DESTRUCTOR)]
 
 
-def test_auto_destruction_cascades_into_child_dp_destructors(
+def test_auto_destruction_cascades_into_child_particle_destructors(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A local position with a child DP fires the child's destructor through cascade."""
+    """A local position with a child particle fires the child's destructor through cascade."""
     result = validate_project_with_reference_graph(
         {
             "child_destructor.dfn": _named_destructor_noop("child_destructor"),
             "child.dfn": (
                 "define the potential position<my.domain.com:my_lib:/child> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</child_destructor>.\n"
                 "    }\n"
                 "}\n"
@@ -212,15 +212,15 @@ def test_auto_destruction_cascades_into_child_dp_destructors(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</child>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</child>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</child>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -233,23 +233,23 @@ def test_auto_destruction_cascades_into_child_dp_destructors(
 def test_move_from_interface_position_to_local_then_auto_destroy(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A caller-passed DP moved from an interface position into a local fires its destructor at end of block."""
+    """A caller-passed particle moved from an interface position into a local fires its destructor at end of block."""
     result = validate_project_with_reference_graph(
         {
             "destructor.dfn": _named_destructor_noop("destructor"),
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<incoming> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</destructor>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local>.\n"
-                "        move the dimension point in position<incoming> to position<local>.\n"
+                "        move the particle in position<incoming> to position<local>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -262,13 +262,13 @@ def test_move_from_interface_position_to_local_then_auto_destroy(
 def test_move_from_implied_position_to_local_then_auto_destroy(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A caller-passed DP moved from an implied position into a local fires its destructor at end of block."""
+    """A caller-passed particle moved from an implied position into a local fires its destructor at end of block."""
     result = validate_project_with_reference_graph(
         {
             "destructor.dfn": _named_destructor_noop("destructor"),
             "implied_q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/implied_q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</destructor>.\n"
                 "    }\n"
                 "}\n"
@@ -278,10 +278,10 @@ def test_move_from_implied_position_to_local_then_auto_destroy(
                 "    it also assigns the position</implied_q>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local>.\n"
-                "        move the dimension point in position</implied_q> to position<local>.\n"
+                "        move the particle in position</implied_q> to position<local>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -301,15 +301,15 @@ def test_auto_destruction_failing_empty_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</destructor_empty>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</destructor_empty>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -320,18 +320,18 @@ def test_auto_destruction_failing_empty_requirement(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     assert diag.location.line == 11
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.destructor_name == _DESTRUCTOR_EMPTY
     assert diag.destroy_target_name == "position<box>"
     assert diag.destroy_target_origin_at.line == 11
-    assert diag.destroy_target_origin_at.column == 37
+    assert diag.destroy_target_origin_at.column == 30
     assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert (
         diag.position_name == "position<box>::action</destructor_empty>::position<item>"
     )
     assert diag.filled_at.line == 12
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -340,7 +340,7 @@ def test_auto_destruction_failing_empty_requirement(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -359,11 +359,11 @@ def test_auto_destruction_failing_occupied_requirement(
                 "define the potential action<my.domain.com:my_lib:/destructor> {\n"
                 "    define the position<item>.\n"
                 "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
+                "        this particle is being destroyed.\n"
                 "    } and it does {\n"
                 "        define the position<_holder>.\n"
-                "        move the dimension point in position<item> to position<_holder>.\n"
-                "        move the dimension point in position<_holder> to position<item>.\n"
+                "        move the particle in position<item> to position<_holder>.\n"
+                "        move the particle in position<_holder> to position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -371,14 +371,14 @@ def test_auto_destruction_failing_occupied_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
+                "        create a particle in position<box>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -389,12 +389,12 @@ def test_auto_destruction_failing_occupied_requirement(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestructorRequiresOccupiedPositionDiagnostic)
     assert diag.location.line == 11
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.destructor_name == _DESTRUCTOR
     assert diag.destroy_target_name == "position<box>"
     assert diag.destroy_target_origin_at.line == 11
-    assert diag.destroy_target_origin_at.column == 37
+    assert diag.destroy_target_origin_at.column == 30
     assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert diag.position_name == "position<box>::action</destructor>::position<item>"
     assert_propagation_chain(
@@ -404,7 +404,7 @@ def test_auto_destruction_failing_occupied_requirement(
             "enclosing_quality_name": _DESTRUCTOR,
             "triggered_quality_name": None,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor.dfn",
         },
     )
@@ -422,12 +422,12 @@ def test_init_block_auto_destruction_failing_requirement(
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</destructor_empty>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</destructor_empty>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -438,18 +438,18 @@ def test_init_block_auto_destruction_failing_requirement(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     assert diag.location.line == 8
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.destructor_name == _DESTRUCTOR_EMPTY
     assert diag.destroy_target_name == "position<box>"
     assert diag.destroy_target_origin_at.line == 8
-    assert diag.destroy_target_origin_at.column == 37
+    assert diag.destroy_target_origin_at.column == 30
     assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert (
         diag.position_name == "position<box>::action</destructor_empty>::position<item>"
     )
     assert diag.filled_at.line == 9
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -458,7 +458,7 @@ def test_init_block_auto_destruction_failing_requirement(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -476,22 +476,22 @@ def test_auto_destruction_failing_in_reverse_definition_order(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box_a> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<box_b> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box_a>.\n"
-                "        create a dimension point in position<box_a>::action</destructor_empty>::position<item>.\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</destructor_empty>::position<item>.\n"
+                "        create a particle in position<box_a>.\n"
+                "        create a particle in position<box_a>::action</destructor_empty>::position<item>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</destructor_empty>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -504,19 +504,19 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     box_a_diag = all_diags[0]
     assert isinstance(box_a_diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     assert box_a_diag.location.line == 16
-    assert box_a_diag.location.column == 37
+    assert box_a_diag.location.column == 30
     assert box_a_diag.location.file_path == PurePosixPath("test.dfn")
     assert box_a_diag.destructor_name == _DESTRUCTOR_EMPTY
     assert box_a_diag.destroy_target_name == "position<box_a>"
     assert box_a_diag.destroy_target_origin_at.line == 16
-    assert box_a_diag.destroy_target_origin_at.column == 37
+    assert box_a_diag.destroy_target_origin_at.column == 30
     assert box_a_diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert (
         box_a_diag.position_name
         == "position<box_a>::action</destructor_empty>::position<item>"
     )
     assert box_a_diag.filled_at.line == 17
-    assert box_a_diag.filled_at.column == 37
+    assert box_a_diag.filled_at.column == 30
     assert box_a_diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         box_a_diag,
@@ -525,7 +525,7 @@ def test_auto_destruction_failing_in_reverse_definition_order(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -535,19 +535,19 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     box_b_diag = all_diags[1]
     assert isinstance(box_b_diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     assert box_b_diag.location.line == 18
-    assert box_b_diag.location.column == 37
+    assert box_b_diag.location.column == 30
     assert box_b_diag.location.file_path == PurePosixPath("test.dfn")
     assert box_b_diag.destructor_name == _DESTRUCTOR_EMPTY
     assert box_b_diag.destroy_target_name == "position<box_b>"
     assert box_b_diag.destroy_target_origin_at.line == 18
-    assert box_b_diag.destroy_target_origin_at.column == 37
+    assert box_b_diag.destroy_target_origin_at.column == 30
     assert box_b_diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert (
         box_b_diag.position_name
         == "position<box_b>::action</destructor_empty>::position<item>"
     )
     assert box_b_diag.filled_at.line == 19
-    assert box_b_diag.filled_at.column == 37
+    assert box_b_diag.filled_at.column == 30
     assert box_b_diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         box_b_diag,
@@ -556,7 +556,7 @@ def test_auto_destruction_failing_in_reverse_definition_order(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -572,7 +572,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
             "destructor_empty.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
             "child_q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/child_q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</destructor_empty>.\n"
                 "    }\n"
                 "}\n"
@@ -581,16 +581,16 @@ def test_cascade_child_auto_destruction_failing_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</child_q>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</child_q>.\n"
-                "        create a dimension point in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</child_q>.\n"
+                "        create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -602,19 +602,19 @@ def test_cascade_child_auto_destruction_failing_requirement(
     assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
     # The diagnostic location is where position<box> (the auto-destroyed local) was last filled.
     assert diag.location.line == 11
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.destructor_name == _DESTRUCTOR_EMPTY
     assert diag.destroy_target_name == "position<box>::position</child_q>"
-    # Origin is where the cascaded child DP was created.
+    # Origin is where the cascaded child particle was created.
     assert diag.destroy_target_origin_at.line == 12
-    assert diag.destroy_target_origin_at.column == 37
+    assert diag.destroy_target_origin_at.column == 30
     assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert diag.position_name == (
         "position<box>::position</child_q>::action</destructor_empty>::position<item>"
     )
     assert diag.filled_at.line == 13
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -623,7 +623,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -640,21 +640,21 @@ def test_interface_to_local_auto_destruction_failing_requirement(
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<incoming> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</destructor_empty>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position<incoming> to position<local>.\n"
-                "        create a dimension point in position<local>::action</destructor_empty>::position<item>.\n"
+                "        move the particle in position<incoming> to position<local>.\n"
+                "        create a particle in position<local>::action</destructor_empty>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -664,22 +664,22 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
-    # The diagnostic location is the move target: where position<local> got its dimension point.
+    # The diagnostic location is the move target: where position<local> got its particle.
     assert diag.location.line == 16
-    assert diag.location.column == 59
+    assert diag.location.column == 52
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.destructor_name == _DESTRUCTOR_EMPTY
     assert diag.destroy_target_name == "position<local>"
-    # Origin is the move source: where the caller-passed DP first came from.
+    # Origin is the move source: where the caller-passed particle first came from.
     assert diag.destroy_target_origin_at.line == 16
-    assert diag.destroy_target_origin_at.column == 37
+    assert diag.destroy_target_origin_at.column == 30
     assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert (
         diag.position_name
         == "position<local>::action</destructor_empty>::position<item>"
     )
     assert diag.filled_at.line == 17
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -688,7 +688,7 @@ def test_interface_to_local_auto_destruction_failing_requirement(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -704,7 +704,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
             "destructor_empty.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
             "implied_q.dfn": (
                 "define the potential position<my.domain.com:my_lib:/implied_q> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</destructor_empty>.\n"
                 "    }\n"
                 "}\n"
@@ -714,15 +714,15 @@ def test_implied_to_local_auto_destruction_failing_requirement(
                 "    it also assigns the position</implied_q>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position</implied_q> to position<local>.\n"
-                "        create a dimension point in position<local>::action</destructor_empty>::position<item>.\n"
+                "        move the particle in position</implied_q> to position<local>.\n"
+                "        create a particle in position<local>::action</destructor_empty>::position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -732,23 +732,23 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
-    # The diagnostic location is the move target: where position<local> got its dimension point.
+    # The diagnostic location is the move target: where position<local> got its particle.
     assert diag.location.line == 12
-    assert diag.location.column == 61
+    assert diag.location.column == 54
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.destructor_name == _DESTRUCTOR_EMPTY
     assert diag.destroy_target_name == "position<local>"
     # Origin is the move source (the implied position) where the caller-passed
-    # DP first came from.
+    # particle first came from.
     assert diag.destroy_target_origin_at.line == 12
-    assert diag.destroy_target_origin_at.column == 37
+    assert diag.destroy_target_origin_at.column == 30
     assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
     assert (
         diag.position_name
         == "position<local>::action</destructor_empty>::position<item>"
     )
     assert diag.filled_at.line == 13
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -757,7 +757,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )
@@ -768,27 +768,27 @@ def test_implied_to_local_auto_destruction_failing_requirement(
 def test_destructor_requirement_propagates_to_caller_via_interface(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A destructor's requirement on a caller-passed DP propagates to its caller's caller."""
+    """A destructor's requirement on a caller-passed particle propagates to its caller's caller."""
     result = validate_project_with_reference_graph(
         {
             "destructor_empty.dfn": _DESTRUCTOR_REQUIRES_EMPTY,
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<incoming> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</destructor_empty>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</destructor_empty>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position<incoming> to position<local>.\n"
+                "        move the particle in position<incoming> to position<local>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -796,17 +796,17 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<entry>.\n"
                 "    it happens when {\n"
-                "        the position<entry> has a dimension point.\n"
+                "        the position<entry> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<incoming>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<run>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<incoming>.\n"
+                "        create a particle in position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>.\n"
+                "        create a particle in position<box>::action</inner>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -817,7 +817,7 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert diag.location.line == 14
-    assert diag.location.column == 37
+    assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _INNER
     assert diag.position_name == (
@@ -825,7 +825,7 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
         "::action</destructor_empty>::position<item>"
     )
     assert diag.filled_at.line == 13
-    assert diag.filled_at.column == 37
+    assert diag.filled_at.column == 30
     assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
@@ -842,7 +842,7 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
             "triggered_quality_name": None,
             "line": 6,
-            "column": 37,
+            "column": 30,
             "file_path": "destructor_empty.dfn",
         },
     )

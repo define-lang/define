@@ -141,7 +141,7 @@ def test_transform_error_from_reference_unwraps_visit_error(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<mv:too:many:colons:bad:/y>.\n"
         "    }\n"
         "}\n"

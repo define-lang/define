@@ -152,8 +152,8 @@ def raise_token_error(
         # This happens at least if it's a newline or just a space and a newline.
         raise parser_exceptions.MissingTerminatorOrBrace(e, source, file_path)
 
-    if e.accepts == {"HAS_A_DIMENSION_POINT"}:
-        raise parser_exceptions.InvalidHasADimensionPointSyntax(e, source, file_path)
+    if e.accepts == {"HAS_A_PARTICLE"}:
+        raise parser_exceptions.InvalidHasAParticleSyntax(e, source, file_path)
 
     if e.accepts == {"DOT"}:
         raise parser_exceptions.MissingTerminator(e, source, file_path)
@@ -291,7 +291,7 @@ def raise_token_error(
         )
 
     # We are in a position definition block.
-    if "IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE" in e.accepts:
+    if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts:
         if e.token == "}":
             raise parser_exceptions.MissingPositionDefinitionContent(
                 e, source, file_path

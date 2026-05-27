@@ -110,10 +110,10 @@ using the syntax:
 ```
 define the quality<example.com:my_program:adder> {
     define the potential_form<add> {
-        a dimension point in position<first_arg> {
+        a particle in position<first_arg> {
             it has the quality<standard:/integer>
         }
-        a dimension point in position<second_arg> {
+        a particle in position<second_arg> {
             it has the quality<scikit-learn.org:scikit:/numbers/int32>
         }
     }

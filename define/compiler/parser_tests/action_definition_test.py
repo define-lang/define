@@ -25,10 +25,10 @@ def test_action_definition_with_body_parses(parse: Parse) -> None:
         "define the potential action<standard:/path> {\n"
         + "    define the position<pp>.\n"
         + "    it happens when {\n"
-        + "        the position<pp> has a dimension point.\n"
+        + "        the position<pp> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<noop>.\n"
-        + "        create a dimension point in position<noop>.\n"
+        + "        create a particle in position<noop>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -57,7 +57,7 @@ def test_action_with_empty_inner_blocks(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -73,7 +73,7 @@ def test_action_with_local_position_definition(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
-        + "        the position<my_pos> has a dimension point.\n"
+        + "        the position<my_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -88,12 +88,12 @@ def test_action_with_constrained_local_position_definition(parse: Parse) -> None
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos> {\n"
-        + "        it may only contain dimension points where {\n"
+        + "        it may only contain particles where {\n"
         + "            it has the action</do_work>.\n"
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
-        + "        the position<my_pos> has a dimension point.\n"
+        + "        the position<my_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -111,7 +111,7 @@ def test_action_with_multiple_local_position_definitions(parse: Parse) -> None:
         + "    define the position<first_pos>.\n"
         + "    define the position<second_pos>.\n"
         + "    it happens when {\n"
-        + "        the position<first_pos> has a dimension point.\n"
+        + "        the position<first_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -131,12 +131,12 @@ def test_action_with_mixed_local_position_definition_forms(parse: Parse) -> None
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<first_pos>.\n"
         + "    define the position<second_pos> {\n"
-        + "        it may only contain dimension points where {\n"
+        + "        it may only contain particles where {\n"
         + "            it has the position</child>.\n"
         + "        }\n"
         + "    }\n"
         + "    it happens when {\n"
-        + "        the position<first_pos> has a dimension point.\n"
+        + "        the position<first_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -159,7 +159,7 @@ def test_action_block_with_comments_and_blank_lines(parse: Parse) -> None:
         + "\n"
         + "    # a comment\n"
         + "    it happens when {\n"
-        + "        the position<my_pos> has a dimension point.\n"
+        + "        the position<my_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -175,7 +175,7 @@ def test_action_block_with_full_fqun(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/some/path> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
-        + "        the position<my_pos> has a dimension point.\n"
+        + "        the position<my_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -191,7 +191,7 @@ def test_action_block_comment_after_trigger_open(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when { # comment\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -207,7 +207,7 @@ def test_action_block_comment_after_action_close(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "    } # comment\n"
         + "}\n"
@@ -223,7 +223,7 @@ def test_action_block_no_indentation(p: parser.Parser) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "define the position<run>.\n"
         + "it happens when {\n"
-        + "the position<run> has a dimension point.\n"
+        + "the position<run> has a particle.\n"
         + "} and it does {\n"
         + "}\n"
         + "}\n"
@@ -247,7 +247,7 @@ def test_action_block_blank_lines_in_trigger_block(parse: Parse) -> None:
         + "    define the position<run>.\n"
         + "    it happens when {\n"
         + "\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "\n"
         + "    } and it does {\n"
         + "    }\n"
@@ -264,7 +264,7 @@ def test_action_block_blank_lines_in_action_block(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "\n"
         + "\n"
@@ -284,7 +284,7 @@ def test_action_block_with_local_position_definition_in_action_statements(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<inner_pos>.\n"
         + "    }\n"
@@ -307,7 +307,7 @@ def test_action_block_with_multiple_local_position_definitions_in_action_stateme
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<first_inner>.\n"
         + "        define the position<second_inner>.\n"
@@ -332,7 +332,7 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<outer_pos>.\n"
         + "    it happens when {\n"
-        + "        the position<outer_pos> has a dimension point.\n"
+        + "        the position<outer_pos> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<inner_pos>.\n"
         + "    }\n"
@@ -353,14 +353,14 @@ def test_two_action_definitions_in_same_file(parse: Parse) -> None:
         "define the potential action<mv:define-lang.org:parser:/first> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
         + "define the potential action<mv:define-lang.org:parser:/second> {\n"
         + "    define the position<my_pos>.\n"
         + "    it happens when {\n"
-        + "        the position<my_pos> has a dimension point.\n"
+        + "        the position<my_pos> has a particle.\n"
         + "    } and it does {\n"
         + "    }\n"
         + "}\n"
@@ -399,7 +399,7 @@ def test_global_position_definition_not_allowed_in_action_definition_block(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -420,7 +420,7 @@ def test_global_position_definition_not_allowed_in_action_statements_block(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "        define the potential position<mv:define-lang.org:parser:/inner_pos>.\n"
             + "    }\n"
@@ -438,7 +438,7 @@ def test_action_block_missing_action_statements_block(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    }\n"
             + "}\n"
         )
@@ -453,7 +453,7 @@ def test_action_block_missing_outer_close(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
         )
@@ -468,7 +468,7 @@ def test_action_block_extra_space_before_brace(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/path>  {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -489,7 +489,7 @@ def test_action_block_missing_newline_after_outer_open_brace(parse: Parse) -> No
     with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> { it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -505,7 +505,7 @@ def test_action_block_missing_newline_after_inner_close(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }}\n"
         )
@@ -520,7 +520,7 @@ def test_trigger_and_action_on_wrong_line(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    }\n"
             + "    and it does {\n"
             + "    }\n"
@@ -539,7 +539,7 @@ def test_local_position_after_trigger_and_action(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "    define the position<late_pos>.\n"
@@ -556,11 +556,11 @@ def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -576,7 +576,7 @@ def test_missing_close_brace_followed_by_global_definition(parse: Parse) -> None
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "define the potential position<mv:define-lang.org:parser:/my_action>.\n"
@@ -592,7 +592,7 @@ def test_action_statements_block_invalid_statement(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "        nonsense\n"
             + "    }\n"
@@ -603,16 +603,16 @@ def test_action_statements_block_invalid_statement(parse: Parse) -> None:
     assert exc_info.value.column == 9
 
 
-def test_action_statements_block_with_create_dimension_point_local_position(
+def test_action_statements_block_with_create_particle_local_position(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in position<run>.\n"
+        + "        create a particle in position<run>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -626,16 +626,16 @@ def test_action_statements_block_with_create_dimension_point_local_position(
     ]
 
 
-def test_action_statements_block_with_create_dimension_point_short_global_position(
+def test_action_statements_block_with_create_particle_short_global_position(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in position</run>.\n"
+        + "        create a particle in position</run>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -646,16 +646,16 @@ def test_action_statements_block_with_create_dimension_point_short_global_positi
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_statements_block_with_create_dimension_point_full_global_position(
+def test_action_statements_block_with_create_particle_full_global_position(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in position<mv:define-lang.org:parser:/run>.\n"
+        + "        create a particle in position<mv:define-lang.org:parser:/run>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -666,16 +666,16 @@ def test_action_statements_block_with_create_dimension_point_full_global_positio
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_statements_block_with_create_dimension_point_chain(
+def test_action_statements_block_with_create_particle_chain(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in position<to>::action</deposit>::position<run>.\n"
+        + "        create a particle in position<to>::action</deposit>::position<run>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -691,16 +691,16 @@ def test_action_statements_block_with_create_dimension_point_chain(
     ]
 
 
-def test_action_statements_block_with_create_dimension_point_short_global_chain(
+def test_action_statements_block_with_create_particle_short_global_chain(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in position</to>::action</deposit>::position</run>.\n"
+        + "        create a particle in position</to>::action</deposit>::position</run>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -713,16 +713,16 @@ def test_action_statements_block_with_create_dimension_point_short_global_chain(
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_statements_block_with_create_dimension_point_any_typed_chain(
+def test_action_statements_block_with_create_particle_any_typed_chain(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in action</start>::position<mid>::action</end>.\n"
+        + "        create a particle in action</start>::position<mid>::action</end>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -738,18 +738,18 @@ def test_action_statements_block_with_create_dimension_point_any_typed_chain(
     ]
 
 
-def test_action_statements_block_with_mixed_statements_and_multiple_create_dimension_points(
+def test_action_statements_block_with_mixed_statements_and_multiple_create_particles(
     parse: Parse,
 ) -> None:
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
         + "        define the position<inner_pos>.\n"
-        + "        create a dimension point in position<inner_pos>.\n"
-        + "        create a dimension point in position</global_run>::action</deposit>::position<inner_pos>.\n"
+        + "        create a particle in position<inner_pos>.\n"
+        + "        create a particle in position</global_run>::action</deposit>::position<inner_pos>.\n"
         + "    }\n"
         + "}\n"
     )

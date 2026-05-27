@@ -31,7 +31,7 @@ def test_sub_root_redeclares_parent_fqun(
     (tmp_path / "test.dfn").write_text(
         (
             f"define the potential position<{parent_fqun}:/test> {{\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + f"        it has the position<{child_fqun}:/target>.\n"
             + "    }\n"
             + "}\n"
@@ -41,7 +41,7 @@ def test_sub_root_redeclares_parent_fqun(
     (tmp_path / "lib/target.dfn").write_text(
         (
             f"define the potential position<{child_fqun}:/target> {{\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + f"        it has the position<{parent_fqun}:/leaf>.\n"
             + "    }\n"
             + "}\n"
@@ -76,7 +76,7 @@ def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -98,7 +98,7 @@ def test_cross_fqun_file_not_found(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/missing>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -123,7 +123,7 @@ def test_cross_fqun_sub_root_missing_config(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -149,7 +149,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"        it has the position</other>.\n"
                 f"    }}\n"
@@ -157,7 +157,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_emits_one_diagnostic(
             ),
             "other.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/other> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/another>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -180,7 +180,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -209,7 +209,7 @@ def test_already_loaded_root_fqun_mismatch(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"        it has the position<{second_child}:/other>.\n"
                 f"    }}\n"
@@ -241,7 +241,7 @@ def test_sub_root_conflict(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position</lib/parent_target>.\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
                 f"    }}\n"
@@ -286,7 +286,7 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position</lib/parent_target>.\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/missing_target>.\n"
                 f"    }}\n"
@@ -332,7 +332,7 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/sub_root_target>.\n"
                 f"        it has the position</lib/parent_target>.\n"
                 f"    }}\n"
@@ -373,7 +373,7 @@ def test_path_inside_other_universe_skips_further_validation(
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/child_action>.\n"
                 f"        it has the position</lib/child_action>.\n"
                 f"    }}\n"
@@ -383,10 +383,10 @@ def test_path_inside_other_universe_skips_further_validation(
                 f"define the potential action<{_CHILD_UNIVERSE}:/child_action> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
-                f"        the position<run> has a dimension point.\n"
+                f"        the position<run> has a particle.\n"
                 f"    }} and it does {{\n"
                 f"        define the position<_noop>.\n"
-                f"        create a dimension point in position<_noop>.\n"
+                f"        create a particle in position<_noop>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -425,7 +425,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -465,7 +465,7 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -474,10 +474,10 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
                 f"define the potential action<{_CHILD_UNIVERSE}:/target> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
-                f"        the position<run> has a dimension point.\n"
+                f"        the position<run> has a particle.\n"
                 f"    }} and it does {{\n"
                 f"        define the position<_noop>.\n"
-                f"        create a dimension point in position<_noop>.\n"
+                f"        create a particle in position<_noop>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -508,14 +508,14 @@ def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/entry>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
             "lib/entry.dfn": (
                 f"define the potential position<{_CHILD_UNIVERSE}:/entry> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position</leaf>.\n"
                 f"    }}\n"
                 f"}}\n"
@@ -547,7 +547,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
     (tmp_path / "test.dfn").write_text(
         (
             f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-            f"    it may only contain dimension points where {{\n"
+            f"    it may only contain particles where {{\n"
             f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
             f"    }}\n"
             f"}}\n"
@@ -557,7 +557,7 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
     (tmp_path / "lib/target.dfn").write_text(
         (
             f"define the potential position<{_CHILD_UNIVERSE}:/target> {{\n"
-            f"    it may only contain dimension points where {{\n"
+            f"    it may only contain particles where {{\n"
             f"        it has the position<{grandchild_universe}:/leaf>.\n"
             f"    }}\n"
             f"}}\n"
@@ -588,7 +588,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{child_a}:/target_a>.\n"
                 f"        it has the position<{child_b}:/target_b>.\n"
                 f"    }}\n"
@@ -623,7 +623,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{child_a}:/target_a>.\n"
                 f"        it has the position<{child_b}:/target_b>.\n"
                 f"    }}\n"
@@ -657,7 +657,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target_a>.\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target_b>.\n"
                 f"        it has the position</local>.\n"
@@ -688,13 +688,13 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
         {
             "test.dfn": (
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{_CHILD_UNIVERSE}:/target>.\n"
                 f"        it has the position</wrong_type>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
-            "wrong_type.dfn": f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a dimension point.\n    }} and it does {{\n        define the position<__noop>.\n        create a dimension point in position<__noop>.\n    }}\n}}\n",
+            "wrong_type.dfn": f"define the potential action<{_PARENT_UNIVERSE}:/wrong_type> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a particle.\n    }} and it does {{\n        define the position<__noop>.\n        create a particle in position<__noop>.\n    }}\n}}\n",
         },
         universe_name=_PARENT_UNIVERSE,
         local_deps={_CHILD_UNIVERSE: "lib"},
@@ -727,7 +727,7 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
             "test.dfn": (
                 f"define the potential position<{foreign_universe}:/test>.\n"
                 f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position<{foreign_universe}:/test>.\n"
                 f"    }}\n"
                 f"}}\n"

@@ -7,17 +7,16 @@
 
 ## Problems
 
-Right now, when you assign a position to a dimension point, you then have to
-manually create a dimension point in that position, or you have to manually
-trigger some action that creates its dimension points. This breaks
-encapsulation, because you either have to know the implementation details of a
-set of actions (you have to know what positions they care about) or you have to
-remember to manually run some "init" action on the dimension point (plus you
-would have to remember to even _assign_ that init action to the dimension
-point).
+Right now, when you assign a position to a particle, you then have to manually
+create a particle in that position, or you have to manually trigger some action
+that creates its particles. This breaks encapsulation, because you either have
+to know the implementation details of a set of actions (you have to know what
+positions they care about) or you have to remember to manually run some "init"
+action on the particle (plus you would have to remember to even _assign_ that
+init action to the particle).
 
-This also makes it hard to guarantee anything about the state of a dimension
-point based on its qualities, because different parts of the program might be
+This also makes it hard to guarantee anything about the state of a particle
+based on its qualities, because different parts of the program might be
 initializing it differently.
 
 ## Solution
@@ -60,10 +59,9 @@ syntax. Just noting it here again for clarity.
 ### Semantics
 
 Position initialization is considered to occur as part of quality assignment. In
-other words, when I do
-`assign the position<name> to position<some_dimension_point>`, initialization
-completes synchronously before the assignment statement is considered to be
-done.
+other words, when I do `assign the position<name> to position<some_particle>`,
+initialization completes synchronously before the assignment statement is
+considered to be done.
 
 However, any actions triggered by the Position Assignment Block still fire
 asynchronously. Thus, if a Position Assignment Block needs an action to complete
@@ -71,26 +69,25 @@ in order for the position to be correctly initialized, or needs to express an
 expectation for an action to run, it must use a `wait until` statement during
 init in order to ensure that.
 
-When creating a dimension point in a constrained position (a position that uses
-the `it may only contain dimension points where`) syntax, position
-initialization occurs in the same way as described here---immediately after the
-position is assigned to the dimension point (not after all qualities are
-assigned to it).
+When creating a particle in a constrained position (a position that uses the
+`it may only contain particles where`) syntax, position initialization occurs in
+the same way as described here---immediately after the position is assigned to
+the particle (not after all qualities are assigned to it).
 
 ## A Real Program
 
 ### Example 1: Basic Position Initialization
 
-This shows the simplest case: initializing a position and creating a dimension
-point in it.
+This shows the simplest case: initializing a position and creating a particle in
+it.
 
 ```
 define the potential position<mv:example.com:playground:/ball> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</color>.
     }
     after it is assigned {
-        create a dimension point in position</ball>.
+        create a particle in position</ball>.
     }
 }
 ```
@@ -103,11 +100,11 @@ outer initialization continues.
 
 ```
 define the potential position<mv:example.com:game:/health> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is an integer. # Imaginary syntax.
     }
     after it is assigned {
-        create a dimension point in position</health>.
+        create a particle in position</health>.
         set the value in position</health> to 100. # Imaginary syntax
     }
 }
@@ -116,10 +113,10 @@ define the potential position<mv:example.com:game:/character> {
     it also assigns the position</health>.
 
     after it is assigned {
-        create a dimension point in position</character>.
-        # At this point, position</health> has already been assigned to this dimension
-        # point (due to the dependency), and its initialization has already completed.
-        # So position</health> already contains a dimension point with value 100.
+        create a particle in position</character>.
+        # At this point, position</health> has already been assigned to this
+        # particle (due to the dependency), and its initialization has already completed.
+        # So position</health> already contains a particle with value 100.
 
         # We can reference position</health> because this position depends on it.
         set the value in position</health> to position</health> * 2. # Imaginary syntax
@@ -129,17 +126,17 @@ define the potential position<mv:example.com:game:/character> {
 # Then inside of some Action Statements Block:
 
 define the position<player> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position<mv:example.com:game:/character>.
     }
 }
 
 # When this executes, the following happens in order:
 # 1. position</health> is assigned (due to dependency from </character>)
-# 2. position</health>'s initialization runs, creating a dimension point with value 100
+# 2. position</health>'s initialization runs, creating a particle with value 100
 # 3. position</character> is assigned
 # 4. position</character>'s initialization runs, changing health to 200.
-create a dimension point in position<player>.
+create a particle in position<player>.
 ```
 
 ### Example 3: Initialization Triggering Asynchronous Actions
@@ -154,7 +151,7 @@ define the potential action<mv:example.com:system:/on_ready> {
     it also assigns the position</ready_flag>.
 
     it happens when {
-        the position</ready_flag> has a dimension point.
+        the position</ready_flag> has a particle.
     } and it does {
         # This does something when the system is ready.
     }
@@ -165,11 +162,11 @@ define the potential position<mv:example.com:system:/status> {
     it also assigns the action</on_ready>.
 
     after it is assigned {
-        create a dimension point in position</status>.
-        # This creates a dimension point that will trigger the </on_ready> action.
+        create a particle in position</status>.
+        # This creates a particle that will trigger the </on_ready> action.
         # However, the action fires ASYNCHRONOUSLY, so it will not complete before
         # this initialization block finishes.
-        create a dimension point in position</ready_flag>.
+        create a particle in position</ready_flag>.
 
         # If we need to wait for the action to complete, we must explicitly wait:
         # wait until {
@@ -185,7 +182,7 @@ This shows the pattern for ensuring an action completes during initialization.
 
 ```
 define the potential position<mv:example.com:db:/connection_string> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is a string. # Imaginary syntax
     }
 }
@@ -197,13 +194,13 @@ define the potential action<mv:example.com:db:/connect> {
     define the position<connected>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
         AND
-        the position</connection_string> has a dimension point.
+        the position</connection_string> has a particle.
     } and it does {
         # Imagine this does actual connection work.
-        create a dimension point in position<connected>.
-        destroy the dimension point in position<run>.
+        create a particle in position<connected>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -213,16 +210,16 @@ define the potential position<mv:example.com:db:/database> {
 
     after it is assigned {
         # Set up the connection string.
-        create a dimension point in position</connection_string>.
+        create a particle in position</connection_string>.
         set the value in position</connection_string> to "localhost:5432". # Imaginary syntax
 
         # Trigger the connect action.
-        create a dimension point in action</connect>::position<run>.
+        create a particle in action</connect>::position<run>.
 
         # Wait for the connection to complete before initialization finishes.
-        # This ensures the dimension point is fully initialized before it can be used.
+        # This ensures the particle is fully initialized before it can be used.
         wait until {
-            action</connect>::position<connected> has a dimension point.
+            action</connect>::position<connected> has a particle.
         }
 
         # Note that this pattern is probably not a good way to connect to a
@@ -243,29 +240,29 @@ makes programs more consistent and easier to maintain, as it allows the
 maintainers of individual positions to entirely own how they are configured.
 
 The part I'm not certain about is how much of the action statement syntax to
-allow during init. Most developers should only need to create dimension points
-(and set values, using some future value-setting syntax), but theoretically
-there could be a need to move and destroy dimension points, as well as to write
-more complex code. So for now, I'm opting for the full flexibility of allowing
-all action statements, even though it allows for a lot of bad programs to be
-written. (Basically, Define has the same "constructors should not do work"
-principle as all other languages, but still allows it).
+allow during init. Most developers should only need to create particles (and set
+values, using some future value-setting syntax), but theoretically there could
+be a need to move and destroy particles, as well as to write more complex code.
+So for now, I'm opting for the full flexibility of allowing all action
+statements, even though it allows for a lot of bad programs to be written.
+(Basically, Define has the same "constructors should not do work" principle as
+all other languages, but still allows it).
 
 One of the dangers of this syntax (or even allowing it in the first place) is
 that it does create multiple ways to do the same thing. You can init a position
-in the Assignment Block or you can manually create dimension points outside the
-block. Possibly the compiler (or linter) should recommend that you choose the
+in the Assignment Block or you can manually create particles outside the block.
+Possibly the compiler (or linter) should recommend that you choose the
 assignment block if it notices you always doing manual init.
 
 ### Why On Assignment Instead of On Creation?
 
 Why did I choose to make this happen when this position is assigned to a
-dimension point, instead of when a dimension point is created in this position?
+particle, instead of when a particle is created in this position?
 
 In most situations, those are the same thing, because assignment happens during
-dimension point creation, on constrained positions. However, quality assignment
-can also happen outside of that context, and that quality still needs to be in
-the same state as if it had been assigned during creation.
+particle creation, on constrained positions. However, quality assignment can
+also happen outside of that context, and that quality still needs to be in the
+same state as if it had been assigned during creation.
 
 ### Why Not a Syntax Like "This Position?"
 

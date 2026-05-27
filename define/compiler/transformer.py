@@ -158,7 +158,7 @@ class DefinitionTransformer(
         """Discard the potential-action definition keyword token."""
         return lark_standalone.Discard
 
-    def IT_MAY_ONLY_CONTAIN_DIMENSION_POINTS_WHERE(  # noqa: N802
+    def IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE(  # noqa: N802
         self, _token: lark_standalone.Token
     ) -> object:
         """Discard the position-constraint intro keyword token."""
@@ -182,8 +182,8 @@ class DefinitionTransformer(
         """Discard the trigger-condition 'the' keyword token."""
         return lark_standalone.Discard
 
-    def HAS_A_DIMENSION_POINT(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the 'has a dimension point' keyword token."""
+    def HAS_A_PARTICLE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the 'has a particle' keyword token."""
         return lark_standalone.Discard
 
     def DESTRUCTOR_STATEMENT(self, _token: lark_standalone.Token) -> object:  # noqa: N802
@@ -194,16 +194,16 @@ class DefinitionTransformer(
         """Discard the action-statements keyword token."""
         return lark_standalone.Discard
 
-    def CREATE_A_DIMENSION_POINT_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the create-dimension-point keyword token."""
+    def CREATE_A_PARTICLE_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the create-particle keyword token."""
         return lark_standalone.Discard
 
-    def MOVE_THE_DIMENSION_POINT_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the move-dimension-point keyword token."""
+    def MOVE_THE_PARTICLE_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the move-particle keyword token."""
         return lark_standalone.Discard
 
-    def DESTROY_THE_DIMENSION_POINT_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the destroy-dimension-point keyword token."""
+    def DESTROY_THE_PARTICLE_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Discard the destroy-particle keyword token."""
         return lark_standalone.Discard
 
     def TO(self, _token: lark_standalone.Token) -> object:  # noqa: N802
@@ -361,32 +361,32 @@ class DefinitionTransformer(
         )
 
     @lark_standalone.v_args(meta=True)
-    def create_dimension_point_statement(
+    def create_particle_statement(
         self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
-    ) -> ast.CreateDimensionPointStatement:
-        """Transform a create dimension point statement."""
-        return ast.CreateDimensionPointStatement(
+    ) -> ast.CreateParticleStatement:
+        """Transform a create particle statement."""
+        return ast.CreateParticleStatement(
             target_position=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
-    def move_dimension_point_statement(
+    def move_particle_statement(
         self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
-    ) -> ast.MoveDimensionPointStatement:
-        """Transform a move dimension point statement."""
-        return ast.MoveDimensionPointStatement(
+    ) -> ast.MoveParticleStatement:
+        """Transform a move particle statement."""
+        return ast.MoveParticleStatement(
             target_position=items[1],
             source_position=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
     @lark_standalone.v_args(meta=True)
-    def destroy_dimension_point_statement(
+    def destroy_particle_statement(
         self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
-    ) -> ast.DestroyDimensionPointStatement:
-        """Transform a destroy dimension point statement."""
-        return ast.DestroyDimensionPointStatement(
+    ) -> ast.DestroyParticleStatement:
+        """Transform a destroy particle statement."""
+        return ast.DestroyParticleStatement(
             target_position=items[0],
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )

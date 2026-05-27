@@ -12,8 +12,8 @@ from define.compiler.graphs import action_call_graph
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
-    dimension_point_operation,
-    dimension_point_tracker,
+    particle_operation,
+    particle_tracker,
 )
 
 if typing.TYPE_CHECKING:
@@ -32,7 +32,7 @@ class PostorderValidationResult:
 
 @dataclass(frozen=True, slots=True)
 class _CascadeDestructor:
-    """One destructor in a destruction cascade, paired with the dimension point it fires on."""
+    """One destructor in a destruction cascade, paired with the particle it fires on."""
 
     quality: ast.GlobalTypedNameReference
     position: ast.PositionReference
@@ -92,12 +92,12 @@ class DefinitionPostorderValidator(abc.ABC):
         return self._definition.typed_name.name_content.fqun
 
     @cached_property
-    def _tracker(self) -> dimension_point_tracker.DimensionPointTracker:
-        return dimension_point_tracker.DimensionPointTracker()
+    def _tracker(self) -> particle_tracker.ParticleTracker:
+        return particle_tracker.ParticleTracker()
 
     @cached_property
-    def _executor(self) -> dimension_point_operation.DimensionPointOperationExecutor:
-        return dimension_point_operation.DimensionPointOperationExecutor(self._tracker)
+    def _executor(self) -> particle_operation.ParticleOperationExecutor:
+        return particle_operation.ParticleOperationExecutor(self._tracker)
 
     @cached_property
     def _implied_quality_list(self) -> list[ast.GlobalTypedNameReference]:
@@ -184,7 +184,7 @@ class DefinitionPostorderValidator(abc.ABC):
         # of the spec (when recording propagated requirements).
         if requirement_key in self._inferred_requirements:
             return
-        # If a position has been touched by a guarantee or any dimension point
+        # If a position has been touched by a guarantee or any particle
         # statement already, no requirement should be emitted. This handles the
         # situation where a position init block creates an EmptyGuarantee and
         # another init block or caller tries to then destroy / move from that
@@ -200,14 +200,14 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         )
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
-            # We can't know exactly what qualities the dimension point has, but we
+            # We can't know exactly what qualities the particle has, but we
             # can know the minimal set that it _must_ have according to the constraints
             # the contracted position has.
             qualities = self._get_transitive_required_qualities(
                 contracted_position, scope
             )
             self._executor.execute_assume_occupied(
-                dimension_point_operation.AssumeOccupied(
+                particle_operation.AssumeOccupied(
                     target=local_position,
                     qualities=qualities,
                     contracted_position_chain=contracted_position,
@@ -215,7 +215,7 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         elif required_state == action_contract.PositionOccupancyState.EMPTY:
             self._executor.execute_assume_empty(
-                dimension_point_operation.AssumeEmpty(target=local_position)
+                particle_operation.AssumeEmpty(target=local_position)
             )
 
     def _chain_for_inferred_requirement(
@@ -223,9 +223,9 @@ class DefinitionPostorderValidator(abc.ABC):
         position: ast.PositionReference,
     ) -> ast.PositionReference | None:
         """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
-        parent_origin = self._parent_dimension_point_comes_from_caller(position)
+        parent_origin = self._parent_particle_comes_from_caller(position)
         if parent_origin is not None:
-            # The dimension point was moved in from a contracted position, so we
+            # The particle was moved in from a contracted position, so we
             # put the requirement on that origin, not whatever position we are
             # inferring a requirement for.
             return position.replace_parent_position_with_prefix(parent_origin)
@@ -275,11 +275,11 @@ class DefinitionPostorderValidator(abc.ABC):
                 scope=scope,
             )
 
-    def _parent_dimension_point_comes_from_caller(
+    def _parent_particle_comes_from_caller(
         self,
         position: ast.ChainedName,
     ) -> ast.PositionReference | None:
-        """Return the parent DP's contracted-position origin chain if it came from the caller."""
+        """Return the parent particle's contracted-position origin chain if it came from the caller."""
         parent = position.parent_position()
         if parent is None:
             return None
@@ -287,27 +287,27 @@ class DefinitionPostorderValidator(abc.ABC):
         # This check is necessary because we have to run _maybe_infer_requirement
         # before the executor runs its parent-occupancy check, so we can run into
         # situations where the developer has written a statement that operates on
-        # the child of a non-existent dimension point. The executor's parent check
+        # the child of a non-existent particle. The executor's parent check
         # will later detect this situation, emit a diagnostic, and mark the
         # relevant position unknown.
         if not self._tracker.is_occupied_by_key(parent_key):
             return None
-        dp_info = self._tracker.get_occupant_by_key(parent_key)
-        if not dp_info.from_caller:
+        particle_info = self._tracker.get_occupant_by_key(parent_key)
+        if not particle_info.from_caller:
             return None
-        return dp_info.origin_position
+        return particle_info.origin_position
 
     def _action_parent_comes_from_contracted_position(
         self,
         trigger_position: ast.PositionReference,
     ) -> tuple[ast.ChainedName, ast.PositionReference | None]:
-        """Return the action's parent DP's contracted-position origin chain if it is from the caller."""
+        """Return the action's parent particle's contracted-position origin chain if it is from the caller."""
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError("not an action")
         return (
             action_chain,
-            self._parent_dimension_point_comes_from_caller(action_chain),
+            self._parent_particle_comes_from_caller(action_chain),
         )
 
     def _maybe_infer_requirements_on_chain(
@@ -363,13 +363,13 @@ class DefinitionPostorderValidator(abc.ABC):
         if not self._tracker.is_occupied(position):
             # Validation checks will throw an error later for this case.
             return []
-        # A dimension point keeps its own qualities across moves, so it is the source
+        # A particle keeps its own qualities across moves, so it is the source
         # of the qualities to check for destructors (not the position).
-        dp = self._tracker.get_occupant(position)
+        particle = self._tracker.get_occupant(position)
         destructors: list[_CascadeDestructor] = []
-        # Here, we walk the tree of dimension points in a depth-frst post-order traversal
+        # Here, we walk the tree of particles in a depth-frst post-order traversal
         # as required by the destruction cascade.
-        for quality in reversed(dp.qualities):
+        for quality in reversed(particle.qualities):
             if quality.name_type == ast.NameType.POSITION:
                 child = ast.PositionReference(
                     location=position.location,
@@ -388,7 +388,7 @@ class DefinitionPostorderValidator(abc.ABC):
                         _CascadeDestructor(
                             quality=quality,
                             position=position,
-                            destroy_target_origin_at=dp.origin_position.location,
+                            destroy_target_origin_at=particle.origin_position.location,
                         )
                     )
                 for interface_position in reversed(definition.interface_positions):
@@ -412,7 +412,7 @@ class DefinitionPostorderValidator(abc.ABC):
         """Trigger each destructor that fires during a destruction cascade."""
         # A destructor's requirements are checked as though it triggered
         # synchronously at the moment of destruction (DLP 41). The destructor is a
-        # quality of the dimension point in `position`, so its interface positions
+        # quality of the particle in `position`, so its interface positions
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
         for destructor in destructors:
@@ -464,7 +464,7 @@ class DefinitionPostorderValidator(abc.ABC):
         action_chain: ast.ChainedName,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Propagate requirements into this action's contract when the destroyed dimension point itself was from a contracted position."""
+        """Propagate requirements into this action's contract when the destroyed particle itself was from a contracted position."""
         # For `move position<incoming> to position<local_box>.` followed by
         # `destroy position<local_box>.`:
         # action_chain:
@@ -473,7 +473,7 @@ class DefinitionPostorderValidator(abc.ABC):
         #   position<incoming>
         # caller_path_to_destructor:
         #   position<incoming>::action</destructor>
-        parent_origin = self._parent_dimension_point_comes_from_caller(action_chain)
+        parent_origin = self._parent_particle_comes_from_caller(action_chain)
         if parent_origin is None:
             return
         caller_path_to_destructor = action_chain.replace_parent_position_with_prefix(
@@ -538,13 +538,13 @@ class DefinitionPostorderValidator(abc.ABC):
         contract: action_contract.ActionContract,
     ):
         """Check that all action requirements are satisfied before triggering."""
-        dp = self._tracker.get_occupant(trigger_position)
+        particle = self._tracker.get_occupant(trigger_position)
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
             raise ValueError(
                 f"no action in chain: {trigger_position.source_chained_name}"
             )
-        self._check_requirements(contract, action_chain, dp.last_position)
+        self._check_requirements(contract, action_chain, particle.last_position)
 
     def _check_init_block_requirements(
         self,
@@ -667,7 +667,7 @@ class DefinitionPostorderValidator(abc.ABC):
         req: action_contract.PositionRequirement,
         acting_on_position: ast.PositionReference,
         position_name: str,
-        occupant: dimension_point_tracker.DimensionPointInfo | None,
+        occupant: particle_tracker.ParticleInfo | None,
         destroy_target_origin_at: ast.SourceLocation,
         auto_destruction_target: ast.PositionReference | None,
     ):
@@ -719,7 +719,7 @@ class DefinitionPostorderValidator(abc.ABC):
         *,
         acting_on_position: ast.PositionReference,
         position_name: str,
-        occupant: dimension_point_tracker.DimensionPointInfo | None,
+        occupant: particle_tracker.ParticleInfo | None,
         action_name: str,
         propagation_chain: list[action_contract.PropagationStep],
     ):
@@ -749,7 +749,7 @@ class DefinitionPostorderValidator(abc.ABC):
         *,
         acting_on_position: ast.PositionReference,
         position_name: str,
-        occupant: dimension_point_tracker.DimensionPointInfo | None,
+        occupant: particle_tracker.ParticleInfo | None,
         init_block_position_name: str,
         propagation_chain: list[action_contract.PropagationStep],
     ):
@@ -784,26 +784,26 @@ class DefinitionPostorderValidator(abc.ABC):
         action_statements: ast.ActionStatementsBlock,
         scope: scope_tracker.ScopeTracker,
     ):
-        validity_iter = iter(self._definition_result.dp_statement_validity)
+        validity_iter = iter(self._definition_result.particle_statement_validity)
         for stmt in action_statements.statements:
             match stmt:
                 case ast.LocalPositionDefinition():
                     scope.add_definition(stmt)
-                case ast.CreateDimensionPointStatement():
+                case ast.CreateParticleStatement():
                     validity = next(validity_iter)
                     self._analyze_create(stmt, validity, scope)
-                case ast.MoveDimensionPointStatement():
+                case ast.MoveParticleStatement():
                     validity = next(validity_iter)
                     self._analyze_move(stmt, validity, scope)
-                case ast.DestroyDimensionPointStatement():
+                case ast.DestroyParticleStatement():
                     validity = next(validity_iter)
                     self._analyze_destroy(stmt, validity, scope)
         self._auto_destruct_locals(scope)
 
     def _auto_destruct_locals(self, scope: scope_tracker.ScopeTracker):
-        """Destroy any dimension points still in positions defined locally in this block.
+        """Destroy any particles still in positions defined locally in this block.
 
-        Per the spec's "Automatic Destruction" section: at block end, dimension points
+        Per the spec's "Automatic Destruction" section: at block end, particles
         still occupying positions defined only within this block are destroyed in
         reverse definition order, firing destructors along the way.
         """
@@ -815,7 +815,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 location=definition.location,
             )
             # Spec: "If the compiler is uncertain about whether a position still
-            # contains a dimension point, it only destroys the dimension point if
+            # contains a particle, it only destroys the particle if
             # one is present."
             if self._tracker.has_unknown_state(position):
                 continue
@@ -830,8 +830,8 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _analyze_create(
         self,
-        stmt: ast.CreateDimensionPointStatement,
-        validity: validation_result.DimensionPointStatementValidity,
+        stmt: ast.CreateParticleStatement,
+        validity: validation_result.ParticleStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
         if not validity.target_ok:
@@ -846,7 +846,7 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         qualities = self._get_transitive_required_qualities(position, scope)
         diags = self._executor.execute_create(
-            dimension_point_operation.Create(target=position, qualities=qualities)
+            particle_operation.Create(target=position, qualities=qualities)
         )
         self._diagnostics.extend(diags)
         if diags:
@@ -856,8 +856,8 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _analyze_destroy(
         self,
-        stmt: ast.DestroyDimensionPointStatement,
-        validity: validation_result.DimensionPointStatementValidity,
+        stmt: ast.DestroyParticleStatement,
+        validity: validation_result.ParticleStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
         if not validity.target_ok:
@@ -869,20 +869,20 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, stmt.target_position, scope
         )
-        # Destructors fire immediately before the dimension point is destroyed, and
+        # Destructors fire immediately before the particle is destroyed, and
         # only when the destroy actually proceeds, so the firing runs as the
         # executor's before_destroy hook.
         destructors = self._collect_cascade_destructors(stmt.target_position)
         diags = self._executor.execute_destroy(
-            dimension_point_operation.Destroy(target=stmt.target_position),
+            particle_operation.Destroy(target=stmt.target_position),
             before_destroy=lambda: self._run_destructors(destructors, scope),
         )
         self._diagnostics.extend(diags)
 
     def _analyze_move(
         self,
-        stmt: ast.MoveDimensionPointStatement,
-        validity: validation_result.DimensionPointStatementValidity,
+        stmt: ast.MoveParticleStatement,
+        validity: validation_result.ParticleStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
         if not (validity.source_ok and validity.target_ok):
@@ -927,7 +927,7 @@ class DefinitionPostorderValidator(abc.ABC):
             to_pos, scope
         )
         move_diagnostics = self._executor.execute_move(
-            dimension_point_operation.Move(
+            particle_operation.Move(
                 source=from_pos,
                 target=to_pos,
                 target_required_qualities=target_required_qualities or [],
@@ -1263,7 +1263,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 # of the action, but we can only assume they have the qualities
                 # they are declared with.
                 self._executor.execute_assume_occupied(
-                    dimension_point_operation.AssumeOccupied(
+                    particle_operation.AssumeOccupied(
                         target=trigger_ref,
                         qualities=qualities,
                         contracted_position_chain=trigger_ref,

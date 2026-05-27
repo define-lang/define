@@ -1,10 +1,10 @@
 define the potential position<my.domain.com:my_lib:/test> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</a>.
     }
     after it is assigned {
-        create a dimension point in position</test>.
-        create a dimension point in position</test>::position</a>.
-        create a dimension point in position</test>::position</a>::action</act>::position<trigger_pos>.
+        create a particle in position</test>.
+        create a particle in position</test>::position</a>.
+        create a particle in position</test>::position</a>::action</act>::position<trigger_pos>.
     }
 }

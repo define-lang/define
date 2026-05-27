@@ -1,9 +1,9 @@
 define the potential action<my.domain.com:my_lib:/do_thing> {
     define the position<pp>.
     it happens when {
-        the position<pp> has a dimension point.
+        the position<pp> has a particle.
     } and it does {
         define the position<noop>.
-        create a dimension point in position<noop>.
+        create a particle in position<noop>.
     }
 }

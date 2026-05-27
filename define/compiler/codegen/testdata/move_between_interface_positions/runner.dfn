@@ -3,8 +3,8 @@ define the potential action<my.domain.com:my_lib:/runner> {
     define the position<source>.
     define the position<dest>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        move the dimension point in position<source> to position<dest>.
+        move the particle in position<source> to position<dest>.
     }
 }

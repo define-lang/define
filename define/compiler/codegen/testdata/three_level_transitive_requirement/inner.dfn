@@ -2,8 +2,8 @@ define the potential action<my.domain.com:my_lib:/inner> {
     define the position<run>.
     define the position<data>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        destroy the dimension point in position<data>.
+        destroy the particle in position<data>.
     }
 }

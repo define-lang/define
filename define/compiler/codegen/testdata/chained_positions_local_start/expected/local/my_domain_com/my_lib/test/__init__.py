@@ -18,19 +18,19 @@ class Test(literal.GlobalPosition):
                 local.my_domain_com.my_lib.b.B,
             ),
         )
-        a.create_dimension_point()
-        a.dimension_point.get_position(
+        a.create_particle()
+        a.particle.get_position(
             "position<my.domain.com:my_lib:/b>"
-        ).create_dimension_point()
-        a.dimension_point.get_position(
+        ).create_particle()
+        a.particle.get_position(
             "position<my.domain.com:my_lib:/b>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/c>"
-        ).create_dimension_point()
-        a.dimension_point.get_position(
+        ).create_particle()
+        a.particle.get_position(
             "position<my.domain.com:my_lib:/b>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/c>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/d>"
-        ).create_dimension_point()
+        ).create_particle()

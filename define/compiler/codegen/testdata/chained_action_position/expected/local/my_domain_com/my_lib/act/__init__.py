@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.inner
 class Act(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition(
                     "position<trigger_pos>",
@@ -27,4 +27,4 @@ class Act(literal.Action):
     @override
     def execute(self):
         result = literal.LocalPosition("position<result>")
-        result.create_dimension_point()
+        result.create_particle()

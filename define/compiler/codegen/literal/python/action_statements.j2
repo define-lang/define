@@ -2,11 +2,11 @@
 {{ expr.start }}
 {%- for e in expr.chain_elements -%}
 {% if e.accessor == ChainAccessor.POSITION_FROM_POSITION -%}
-.dimension_point.get_position(
+.particle.get_position(
 {{ extra_indent }}            "{{ e.typed_name }}"
 {{ extra_indent }}        )
 {%- elif e.accessor == ChainAccessor.ACTION_FROM_POSITION -%}
-.dimension_point.get_action(
+.particle.get_action(
 {{ extra_indent }}            "{{ e.typed_name }}"
 {{ extra_indent }}        )
 {%- elif e.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
@@ -14,11 +14,11 @@
 {{ extra_indent }}            "{{ e.typed_name }}"
 {{ extra_indent }}        )
 {%- elif e.accessor == ChainAccessor.IMPLIED_ACTION -%}
-.on_dimension_point.get_action(
+.on_particle.get_action(
 {{ extra_indent }}            "{{ e.typed_name }}"
 {{ extra_indent }}        )
 {%- elif e.accessor == ChainAccessor.IMPLIED_POSITION -%}
-.on_dimension_point.get_position(
+.on_particle.get_position(
 {{ extra_indent }}            "{{ e.typed_name }}"
 {{ extra_indent }}        )
 {%- endif %}
@@ -38,17 +38,17 @@
 {% else %}
         {{ stmt.local_var_name }} = literal.LocalPosition("{{ stmt.local_typed_name }}")
 {% endif %}
-{% elif stmt.kind == StatementKind.CREATE_DIMENSION_POINT %}
-        {{ pos(stmt.position) }}.create_dimension_point()
-{% elif stmt.kind == StatementKind.DESTROY_DIMENSION_POINT %}
-        {{ pos(stmt.position) }}.destroy_dimension_point()
-{% elif stmt.kind == StatementKind.MOVE_DIMENSION_POINT %}
+{% elif stmt.kind == StatementKind.CREATE_PARTICLE %}
+        {{ pos(stmt.position) }}.create_particle()
+{% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
+        {{ pos(stmt.position) }}.destroy_particle()
+{% elif stmt.kind == StatementKind.MOVE_PARTICLE %}
 {% if stmt.to_position.chain_elements %}
-        {{ pos(stmt.position) }}.move_dimension_point_to(
+        {{ pos(stmt.position) }}.move_particle_to(
             {{ pos(stmt.to_position, "    ") }}
         )
 {% else %}
-        {{ pos(stmt.position) }}.move_dimension_point_to({{ pos(stmt.to_position) }})
+        {{ pos(stmt.position) }}.move_particle_to({{ pos(stmt.to_position) }})
 {% endif %}
 {% endif %}
 {% endfor %}

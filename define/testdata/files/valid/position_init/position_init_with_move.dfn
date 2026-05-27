@@ -2,7 +2,7 @@ define the potential position<mv:define-lang.org:test_files:/valid/position_init
     after it is assigned {
         define the position<from_pos>.
         define the position<to_pos>.
-        create a dimension point in position<from_pos>.
-        move the dimension point in position<from_pos> to position<to_pos>.
+        create a particle in position<from_pos>.
+        move the particle in position<from_pos> to position<to_pos>.
     }
 }

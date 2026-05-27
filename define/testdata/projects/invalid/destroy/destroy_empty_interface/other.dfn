@@ -3,8 +3,8 @@ define the potential action<mv:define-lang.org:test_destroy_empty_interface:/oth
     define the position<item>.
     define the position<_sink>.
     it happens when {
-        the position<trigger_pos> has a dimension point.
+        the position<trigger_pos> has a particle.
     } and it does {
-        move the dimension point in position<item> to position<_sink>.
+        move the particle in position<item> to position<_sink>.
     }
 }

@@ -77,7 +77,7 @@ def test_close_angle_colon_in_action_statements_block(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "        >:\n"
             + "    }\n"
@@ -93,7 +93,7 @@ def test_missing_open_angle_with_close_angle_colon(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "        define the positionrun>:\n"
             + "    }\n"
@@ -148,12 +148,12 @@ def test_position_required_clause_missing_open_brace(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "it may only contain dimension points where\n"
+            + "it may only contain particles where\n"
             + "}\n"
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.line == 2
-    assert exc_info.value.column == 43
+    assert exc_info.value.column == 36
 
 
 def test_action_block_missing_trigger_clause(parse: Parse) -> None:
@@ -184,7 +184,7 @@ def test_action_missing_and_it_does_clause(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    }\n"
             + "}\n"
         )
@@ -199,7 +199,7 @@ def test_action_and_it_does_clause_missing_open_brace(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does\n"
             + "}\n"
         )
@@ -214,7 +214,7 @@ def test_action_and_it_does_block_missing_close_brace(parse: Parse) -> None:
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "}\n"
         )
@@ -232,7 +232,7 @@ def test_local_position_keyword_without_name_in_action_definition_block(
             + "    define the position<run>.\n"
             + "    define the position\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
@@ -251,7 +251,7 @@ def test_local_position_keyword_without_name_in_action_statements_block(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "        define the position\n"
             + "    }\n"
@@ -276,7 +276,7 @@ def test_position_requirement_missing_name(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position\n"
             + "    }\n"
             + "}\n"
@@ -291,7 +291,7 @@ def test_position_requirement_missing_name_after_type(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position.\n"
             + "    }\n"
             + "}\n"
@@ -308,7 +308,7 @@ def test_position_requirement_missing_name_after_type_with_space(
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position .\n"
             + "    }\n"
             + "}\n"
@@ -324,7 +324,7 @@ def test_position_requirement_name_starts_and_then_newline(parse: Parse) -> None
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position<\n"
             + "        /path>.\n"
             + "    }\n"
@@ -341,12 +341,12 @@ def test_position_requirement_missing_space_after_it_has_the(parse: Parse) -> No
             "define the potential action<example.com:my_lib:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"
             + "define the potential position<my_lib:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has theposition<my_lib:/path>.\n"
             + "    }\n"
             + "}\n"
@@ -358,7 +358,7 @@ def test_position_requirement_missing_space_after_it_has_the(parse: Parse) -> No
     assert exc_info.value.column == 19
 
 
-def test_create_dimension_point_missing_reference(
+def test_create_particle_missing_reference(
     parse: Parse,
 ) -> None:
     # TODO: I don't love this error classification here, it's not as clear
@@ -368,9 +368,9 @@ def test_create_dimension_point_missing_reference(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in.\n"
+            + "        create a particle in.\n"
             + "    }\n"
             + "}\n"
         )
@@ -378,7 +378,7 @@ def test_create_dimension_point_missing_reference(
     assert exc_info.value.column == 9
 
 
-def test_create_dimension_point_reference_missing_name_after_chain_separator(
+def test_create_particle_reference_missing_name_after_chain_separator(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -386,18 +386,18 @@ def test_create_dimension_point_reference_missing_name_after_chain_separator(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in position<foo>::.\n"
+            + "        create a particle in position<foo>::.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "."
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 52
+    assert exc_info.value.column == 45
 
 
-def test_create_dimension_point_reference_chain_separator_then_newline(
+def test_create_particle_reference_chain_separator_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -405,18 +405,18 @@ def test_create_dimension_point_reference_chain_separator_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in position<foo>::\n"
+            + "        create a particle in position<foo>::\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 52
+    assert exc_info.value.column == 45
 
 
-def test_create_dimension_point_reference_single_colon_then_newline(
+def test_create_particle_reference_single_colon_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(
@@ -426,19 +426,19 @@ def test_create_dimension_point_reference_single_colon_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in position<foo>:\n"
+            + "        create a particle in position<foo>:\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == ":"
     assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
-def test_create_dimension_point_reference_single_slash_then_newline(
+def test_create_particle_reference_single_slash_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(
@@ -448,16 +448,16 @@ def test_create_dimension_point_reference_single_slash_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in position<foo>/\n"
+            + "        create a particle in position<foo>/\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "/"
     assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
 def test_double_colon_in_create_reference_parses_as_global_name(
@@ -467,9 +467,9 @@ def test_double_colon_in_create_reference_parses_as_global_name(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        create a dimension point in position</foo::bar>.\n"
+        + "        create a particle in position</foo::bar>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -479,7 +479,7 @@ def test_double_colon_in_create_reference_parses_as_global_name(
     ]
 
 
-def test_destroy_dimension_point_missing_reference(
+def test_destroy_particle_missing_reference(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
@@ -487,9 +487,9 @@ def test_destroy_dimension_point_missing_reference(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        destroy the dimension point in.\n"
+            + "        destroy the particle in.\n"
             + "    }\n"
             + "}\n"
         )
@@ -497,7 +497,7 @@ def test_destroy_dimension_point_missing_reference(
     assert exc_info.value.column == 9
 
 
-def test_destroy_dimension_point_reference_missing_name_after_chain_separator(
+def test_destroy_particle_reference_missing_name_after_chain_separator(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -505,18 +505,18 @@ def test_destroy_dimension_point_reference_missing_name_after_chain_separator(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        destroy the dimension point in position<foo>::.\n"
+            + "        destroy the particle in position<foo>::.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "."
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 55
+    assert exc_info.value.column == 48
 
 
-def test_destroy_dimension_point_reference_chain_separator_then_newline(
+def test_destroy_particle_reference_chain_separator_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -524,18 +524,18 @@ def test_destroy_dimension_point_reference_chain_separator_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        destroy the dimension point in position<foo>::\n"
+            + "        destroy the particle in position<foo>::\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 55
+    assert exc_info.value.column == 48
 
 
-def test_destroy_dimension_point_reference_single_colon_then_newline(
+def test_destroy_particle_reference_single_colon_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(
@@ -545,16 +545,16 @@ def test_destroy_dimension_point_reference_single_colon_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        destroy the dimension point in position<foo>:\n"
+            + "        destroy the particle in position<foo>:\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == ":"
     assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 53
+    assert exc_info.value.column == 46
 
 
 def test_double_colon_in_destroy_reference_parses_as_global_name(
@@ -564,9 +564,9 @@ def test_double_colon_in_destroy_reference_parses_as_global_name(
         "define the potential action<mv:define-lang.org:parser:/path> {\n"
         + "    define the position<run>.\n"
         + "    it happens when {\n"
-        + "        the position<run> has a dimension point.\n"
+        + "        the position<run> has a particle.\n"
         + "    } and it does {\n"
-        + "        destroy the dimension point in position</foo::bar>.\n"
+        + "        destroy the particle in position</foo::bar>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -584,18 +584,18 @@ def test_name_chain_invalid_item(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        create a dimension point in position<foo>::a\n"
+            + "        create a particle in position<foo>::a\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "a"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 52
+    assert exc_info.value.column == 45
 
 
-def test_move_dimension_point_missing_source_reference(
+def test_move_particle_missing_source_reference(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
@@ -603,9 +603,9 @@ def test_move_dimension_point_missing_source_reference(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in.\n"
+            + "        move the particle in.\n"
             + "    }\n"
             + "}\n"
         )
@@ -615,7 +615,7 @@ def test_move_dimension_point_missing_source_reference(
     assert exc_info.value.column == 9
 
 
-def test_move_dimension_point_missing_to_keyword(
+def test_move_particle_missing_to_keyword(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
@@ -623,19 +623,19 @@ def test_move_dimension_point_missing_to_keyword(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> position<dest>.\n"
+            + "        move the particle in position<src> position<dest>.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == " "
     assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
-def test_move_dimension_point_missing_destination_reference(
+def test_move_particle_missing_destination_reference(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
@@ -643,19 +643,19 @@ def test_move_dimension_point_missing_destination_reference(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> to.\n"
+            + "        move the particle in position<src> to.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == " "
     assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
-def test_move_dimension_point_chain_separator_after_source_then_terminator(
+def test_move_particle_chain_separator_after_source_then_terminator(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -663,19 +663,19 @@ def test_move_dimension_point_chain_separator_after_source_then_terminator(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<foo>::.\n"
+            + "        move the particle in position<foo>::.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "."
     assert exc_info.value.token.type == "DOT"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 52
+    assert exc_info.value.column == 45
 
 
-def test_move_dimension_point_chain_separator_after_source_then_newline(
+def test_move_particle_chain_separator_after_source_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -683,19 +683,19 @@ def test_move_dimension_point_chain_separator_after_source_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<foo>::\n"
+            + "        move the particle in position<foo>::\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 52
+    assert exc_info.value.column == 45
 
 
-def test_move_dimension_point_chain_separator_after_destination_then_terminator(
+def test_move_particle_chain_separator_after_destination_then_terminator(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -703,19 +703,19 @@ def test_move_dimension_point_chain_separator_after_destination_then_terminator(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> to position<dest>::.\n"
+            + "        move the particle in position<src> to position<dest>::.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "."
     assert exc_info.value.token.type == "DOT"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 70
+    assert exc_info.value.column == 63
 
 
-def test_move_dimension_point_chain_separator_after_destination_then_newline(
+def test_move_particle_chain_separator_after_destination_then_newline(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -723,19 +723,19 @@ def test_move_dimension_point_chain_separator_after_destination_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> to position<dest>::\n"
+            + "        move the particle in position<src> to position<dest>::\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 70
+    assert exc_info.value.column == 63
 
 
-def test_move_dimension_point_single_colon_after_source(
+def test_move_particle_single_colon_after_source(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
@@ -743,19 +743,19 @@ def test_move_dimension_point_single_colon_after_source(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<foo>:\n"
+            + "        move the particle in position<foo>:\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == ":"
     assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
-def test_move_dimension_point_single_colon_after_destination(
+def test_move_particle_single_colon_after_destination(
     parse: Parse,
 ) -> None:
     with pytest.raises(
@@ -765,19 +765,19 @@ def test_move_dimension_point_single_colon_after_destination(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> to position<dest>:\n"
+            + "        move the particle in position<src> to position<dest>:\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == ":"
     assert exc_info.value.token.type == "INVALID"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 68
+    assert exc_info.value.column == 61
 
 
-def test_move_dimension_point_no_space_before_to(
+def test_move_particle_no_space_before_to(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
@@ -785,19 +785,19 @@ def test_move_dimension_point_no_space_before_to(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src>to position<dest>.\n"
+            + "        move the particle in position<src>to position<dest>.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "to"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
-def test_move_dimension_point_no_space_after_to(
+def test_move_particle_no_space_after_to(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
@@ -805,19 +805,19 @@ def test_move_dimension_point_no_space_after_to(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> toposition<dest>.\n"
+            + "        move the particle in position<src> toposition<dest>.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == " "
     assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 50
+    assert exc_info.value.column == 43
 
 
-def test_move_dimension_point_chained_source_missing_to(
+def test_move_particle_chained_source_missing_to(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
@@ -825,19 +825,19 @@ def test_move_dimension_point_chained_source_missing_to(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src>::position<iface>.\n"
+            + "        move the particle in position<src>::position<iface>.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "."
     assert exc_info.value.token.type == "DOT"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 67
+    assert exc_info.value.column == 60
 
 
-def test_move_dimension_point_missing_terminator_after_destination(
+def test_move_particle_missing_terminator_after_destination(
     parse: Parse,
 ) -> None:
     with pytest.raises(
@@ -847,19 +847,19 @@ def test_move_dimension_point_missing_terminator_after_destination(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<src> to position<dest>\n"
+            + "        move the particle in position<src> to position<dest>\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.token.type == "NEWLINE"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 68
+    assert exc_info.value.column == 61
 
 
-def test_move_dimension_point_missing_close_angle_bracket_before_to(
+def test_move_particle_missing_close_angle_bracket_before_to(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
@@ -867,16 +867,16 @@ def test_move_dimension_point_missing_close_angle_bracket_before_to(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in position<from_pos to position<to_pos>.\n"
+            + "        move the particle in position<from_pos to position<to_pos>.\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == " to "
     assert exc_info.value.token.type == "TO"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 54
+    assert exc_info.value.column == 47
 
 
 def test_move_keyword_then_newline(
@@ -887,7 +887,7 @@ def test_move_keyword_then_newline(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "        move\n"
             + "    }\n"
@@ -899,7 +899,7 @@ def test_move_keyword_then_newline(
     assert exc_info.value.column == 9
 
 
-def test_move_dimension_point_in_space_dot(
+def test_move_particle_in_space_dot(
     parse: Parse,
 ) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
@@ -907,13 +907,13 @@ def test_move_dimension_point_in_space_dot(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
-            + "        move the dimension point in .\n"
+            + "        move the particle in .\n"
             + "    }\n"
             + "}\n"
         )
     assert exc_info.value.token == "."
     assert exc_info.value.token.type == "DOT"
     assert exc_info.value.line == 6
-    assert exc_info.value.column == 37
+    assert exc_info.value.column == 30

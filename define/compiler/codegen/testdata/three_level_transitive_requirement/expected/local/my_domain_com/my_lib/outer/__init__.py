@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.middle
 class Outer(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/outer>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
                 literal.InterfacePosition(
@@ -29,19 +29,19 @@ class Outer(literal.Action):
     def execute(self):
         self.get_interface_position(
             "position<middle_iface>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/middle>"
         ).get_interface_position(
             "position<inner_iface>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/inner>"
         ).get_interface_position(
             "position<data>"
-        ).create_dimension_point()
+        ).create_particle()
         self.get_interface_position(
             "position<middle_iface>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/middle>"
         ).get_interface_position(
             "position<run>"
-        ).create_dimension_point()
+        ).create_particle()

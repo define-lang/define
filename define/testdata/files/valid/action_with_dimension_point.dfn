@@ -1,9 +1,0 @@
-define the potential action<mv:define-lang.org:test_files:/valid/action_with_dimension_point> {
-    define the position<run>.
-    define the position<my_pos>.
-    it happens when {
-        the position<run> has a dimension point.
-    } and it does {
-        create a dimension point in position<my_pos>.
-    }
-}

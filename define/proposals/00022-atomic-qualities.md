@@ -16,18 +16,18 @@ define the quality<mv:example.com:example:/color> {
 }
 
 define the position<ball> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the quality<mv:example.com:example:/color>.
     }
 }
-create a dimension point in position<ball>.
+create a particle in position<ball>.
 
 # We can now reference position<ball>::position<hue>.
 ```
 
 This immediately gets us into a problem: if multiple qualities define a thing
 with the same name (a position or action) and you apply those qualities all to
-the same dimension point, what happens?
+the same particle, what happens?
 
 Conceptually, if two qualities want to both talk about the same position in
 space, what happens?
@@ -37,14 +37,14 @@ Here are a few examples where this could happen:
 ```
 define the quality<mv:example.com:example:/ball> {
     define the position<color> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<standard:/color>.
         }
     }
 }
 define the quality<mv:example.com:example:/crayon> {
     define the position<color> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<standard:/color>.
         }
     }
@@ -54,14 +54,14 @@ define the quality<mv:example.com:example:/crayon> {
 ```
 define the quality<mv:example.com:bank:/bank_account> {
     define the position<balance> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<mv:example.com:bank:/money_value>.
         }
     }
 }
 define the quality<mv:example.com:park:/skateboarder> {
     define the position<balance> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<mv:example.com:human:/sense_of_balance>.
         }
     }
@@ -76,8 +76,8 @@ One of the simplest options is to simply say "you may never have conflicts," and
 the compiler just throws an error. The downside of this is that any time a
 quality defines a new position, it potentially breaks every existing program
 that uses that quality. (The new position _might_ have the same name as another
-position that is on the same dimension point.) This breakage would require
-complex human intervention to fix.
+position that is on the same particle.) This breakage would require complex
+human intervention to fix.
 
 #### Rules for What Wins
 
@@ -86,8 +86,8 @@ all later qualities simply don't get a position there.
 
 This leads to numerous complexities and logical conflicts. For example, Quality
 A expects Position X to be a ball. Quality B expects Position X to be a dog. The
-rest of the program thinks "if a dimension point has Quality B, then Position X
-is a dog." But Quality A was applied first, so Position X is a ball. All the
+rest of the program thinks "if a particle has Quality B, then Position X is a
+dog." But Quality A was applied first, so Position X is a ball. All the
 guarantees of the program fail.
 
 Also, this sort of "silently ignore the programmer's instructions" behavior is
@@ -96,7 +96,7 @@ extremely confusing for programmers.
 #### Merge Definitions
 
 In this option, we define an algorithm for how definitions combine when multiple
-qualities are assigned to the same dimension point. It must be predictable,
+qualities are assigned to the same particle. It must be predictable,
 deterministic, and forward compatible for every way we could evolve the language
 in the future.
 
@@ -123,13 +123,13 @@ the _same_ position.
 Real universes most likely use this "merge" solution, because they _know_
 whether two points in space are the same point or not.
 
-#### Create Views of Dimension Points
+#### Create Views of Particles
 
 In this solution, we always have to say what single quality we are considering a
-dimension point to have when we talk about it. For example, if we have a
-`position<x>` that is both a `bank_account` and a `skateboarder`, whenever we
-reference `position<x>`, we have to say whether we are referencing that position
-as a `bank_account` or a `skateboarder`.
+particle to have when we talk about it. For example, if we have a `position<x>`
+that is both a `bank_account` and a `skateboarder`, whenever we reference
+`position<x>`, we have to say whether we are referencing that position as a
+`bank_account` or a `skateboarder`.
 
 C# allows something like this: it allows multiple interfaces to define the same
 function name, and then when you want to be explicit about which function you're
@@ -161,13 +161,13 @@ Document doc = new Document();
 ```
 
 In other words, what positions are _there_ depends on how you're "looking" at
-the dimension point. That's great when different parts of the program each know
-the dimension point has one particular quality. What this doesn't resolve
-inherently is: what if you're looking at a dimension point that you know has
-both qualities and that you _need_ to have both qualities? It also starts to get
-awkward---why even allow multiple qualities on a dimension point if you're just
-going to have to specify which one you're looking at, all the time, in order to
-deterministically avoid name conflicts?
+the particle. That's great when different parts of the program each know the
+particle has one particular quality. What this doesn't resolve inherently is:
+what if you're looking at a particle that you know has both qualities and that
+you _need_ to have both qualities? It also starts to get awkward---why even
+allow multiple qualities on a particle if you're just going to have to specify
+which one you're looking at, all the time, in order to deterministically avoid
+name conflicts?
 
 #### Different Choices Every Time
 
@@ -200,13 +200,13 @@ pretty awkward-looking programs when a developer realizes they used the wrong
 name for something.
 
 It also makes it harder to reason about programs and prevents some necessary
-patterns from being written. For example, let's say you want to have a dimension
-point that represents a bank account. In this model, you give it one quality
-that says "it has a balance" and another quality that says "it has an action
-called deposit" and another one that says "it has an action called withdraw."
-But the constraint on `withdraw` has to be "the requested amount for withdrawal
-is less than or equal to the balance." So the `withdraw` action _has_ to know
-about the balance.
+patterns from being written. For example, let's say you want to have a particle
+that represents a bank account. In this model, you give it one quality that says
+"it has a balance" and another quality that says "it has an action called
+deposit" and another one that says "it has an action called withdraw." But the
+constraint on `withdraw` has to be "the requested amount for withdrawal is less
+than or equal to the balance." So the `withdraw` action _has_ to know about the
+balance.
 
 You could theoretically solve this by saying: "balance must be a position
 defined by the `withdraw` action so you can 'pass in' the balance to the
@@ -219,9 +219,8 @@ Another potential solution is to create a dependency tree: You allow the
 of nice properties. It allows you to re-use every component of a quality instead
 of just re-using the atomic quality. It makes it clear what parts of the code
 actually depend on other parts of the code. However, it still can lead to
-conflicts. For example, if I later give the same dimension point a
-`ride_skateboard` action, it would depend on a `balance` that has a totally
-different meaning.
+conflicts. For example, if I later give the same particle a `ride_skateboard`
+action, it would depend on a `balance` that has a totally different meaning.
 
 One could solve _that_ by requiring that all actions and positions defined as
 part of qualities have names in the global name scope instead of local names
@@ -229,7 +228,7 @@ inside of qualities. A program written with this system might look like:
 
 ```
 define the potential position<mv:example.com:bank:/account/balance> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the quality<standard:/number/decimal>.
         it has the quality<standard:/number/constraints/non_negative>.
     }
@@ -239,7 +238,7 @@ define the potential action<mv:example.com:bank:/account/withdraw> {
     it requires position<mv:example.com:bank:/account/balance>.
 
     define the position<amount> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<standard:/number/decimal>.
             it has the quality<standard:/number/constraints/non_negative>.
         }
@@ -257,14 +256,14 @@ define the potential action<mv:example.com:bank:/account/test_withdraw> {
         this quality is assigned.
     } and it does {
         define the position<my_account> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the action<mv:example.com:bank:/account/withdraw>.
             }
         }
-        create a dimension point in position<my_account> {
+        create a particle in position<my_account> {
             with the required qualities.
         }
-        create a dimension point in position<my_account>::trigger<mv:example.com:bank:/account/withdraw>::position<amount> {
+        create a particle in position<my_account>::trigger<mv:example.com:bank:/account/withdraw>::position<amount> {
             with the required qualities.
             set the value to 100.
         }
@@ -274,10 +273,10 @@ define the potential action<mv:example.com:bank:/account/test_withdraw> {
 
 All of those top-level definitions would have to be in different files.
 
-And then the compiler can run `test_withdraw` by creating a dimension point and
-giving it `action<mv:example.com:bank:/account/test_withdraw>`. In this model,
-the whole concept of "a quality" as an entity mostly disappears, except
-potentially as a convenient grouping of functionality.
+And then the compiler can run `test_withdraw` by creating a particle and giving
+it `action<mv:example.com:bank:/account/test_withdraw>`. In this model, the
+whole concept of "a quality" as an entity mostly disappears, except potentially
+as a convenient grouping of functionality.
 
 One downside is that many more names become very long (global names). Also,
 these names get spread all over the program (though our plans for deterministic
@@ -290,12 +289,12 @@ Engine, Bevy, or the simulation language Ecsact).
 
 #### Only Allow Explicit Composition
 
-We could change the syntax of define such that every dimension point may only be
+We could change the syntax of define such that every particle may only be
 assigned a single quality. Then if you want to assign multiple qualities to the
-same dimension point, you have to create a new quality that's "composed" of
-other qualities. This is how most programming languages work---they only allow
-you to assign a single "type" to a variable, and you have to create a new type
-if you want to compose multiple types together.
+same particle, you have to create a new quality that's "composed" of other
+qualities. This is how most programming languages work---they only allow you to
+assign a single "type" to a variable, and you have to create a new type if you
+want to compose multiple types together.
 
 In other words, instead of having a ball that is `red` and `heavy`, you have a
 ball with the single quality `red_heavy`.
@@ -305,11 +304,11 @@ structure that decides exactly how all conflicts will be resolved. The
 `red_heavy` quality has to decide exactly how `red` and `heavy` combine.
 
 It does get fairly awkward when you have three, four, or more different
-qualities that you potentially want to combine on many different dimension
-points. You have to start creating a _lot_ of composed qualities to solve that
-problem. It also makes removing qualities more awkward. The compiler has to
-understand that a `red_heavy` ball _is_ both `red` and `heavy`, otherwise all
-the parts of the program that expect only a `heavy` ball will fail.
+qualities that you potentially want to combine on many different particles. You
+have to start creating a _lot_ of composed qualities to solve that problem. It
+also makes removing qualities more awkward. The compiler has to understand that
+a `red_heavy` ball _is_ both `red` and `heavy`, otherwise all the parts of the
+program that expect only a `heavy` ball will fail.
 
 Although we are used to this system, as programmers, in reality it is
 unintuitive. I simply want to say that a ball is red and it's heavy, and an
@@ -334,7 +333,7 @@ It has the downside of spreading the name of the quality all over the
 program---at every point you reference any position on the object, instead of
 just where it is assigned. It also means that every time you rename the quality
 or move its file location, you have to fix every position reference for every
-dimension point the quality is assigned to. Theoretically, Define's automated
+particle the quality is assigned to. Theoretically, Define's automated
 refactoring systems should make that easy, though.
 
 ## Solution
@@ -348,20 +347,20 @@ This requires us to make several changes to the language.
 ### Potential Positions and Potential Actions
 
 We introduce the concept of _potential_ positions and actions that don't exist
-until they are "applied" to a dimension point. This concept always existed, but
-it didn't require its own syntax---it was implied by a position being defined
+until they are "applied" to a particle. This concept always existed, but it
+didn't require its own syntax---it was implied by a position being defined
 inside of a quality definition. Now we must be more explicit.
 
 In the global name scope, one may use the syntax:
 `define the potential position<name>` to create a _potential_ position that only
-actually exists once it is assigned to a dimension point. It allows all the same
-syntax as a real position.
+actually exists once it is assigned to a particle. It allows all the same syntax
+as a real position.
 
 Similarly, one may use the syntax: `define the potential action<name>`. This is
 the only way to define a named action, but we use the word "potential" to make
-it clear that the action does not _exist_ until it is assigned to a dimension
-point. All other aspects of action-definition syntax remain the same. They may
-define positions of their own, just as before.
+it clear that the action does not _exist_ until it is assigned to a particle.
+All other aspects of action-definition syntax remain the same. They may define
+positions of their own, just as before.
 
 Potential positions and potential actions may only be defined in the global name
 scope and (as with everything defined in the global name scope) must have global
@@ -371,14 +370,14 @@ names.
 
 At this time, the name type `quality` is removed from the language. Instead,
 when we talk about "qualities" we mean potential positions or potential actions
-that can be assigned to a dimension point.
+that can be assigned to a particle.
 
 ### Assigning Potential Positions or Potential Actions
 
 Instead of writing `assign the quality<name>` one must write
 `assign the position<name>` or `assign the action<name>`. This will cause the
-dimension point to have that position or action on it. The name remains the
-global name. Thus if you assign `position<mv:example.com:example:/foo>` to
+particle to have that position or action on it. The name remains the global
+name. Thus if you assign `position<mv:example.com:example:/foo>` to
 `position<ball>`, you can reference it as
 `position<ball>::position<mv:example.com:example:/foo>`.
 
@@ -386,13 +385,13 @@ global name. Thus if you assign `position<mv:example.com:example:/foo>` to
 
 In position definitions, instead of `it has the quality<name>`, one must write
 `it has the action<name>` or `it has the position<name>`. This will require that
-the dimension point in that position have the specific quality listed.
+the particle in that position have the specific quality listed.
 
 ### Dependencies
 
 Potential positions and actions may express that they auto-assign other
-positions and/or actions to a dimension point when they are assigned to it,
-using this syntax:
+positions and/or actions to a particle when they are assigned to it, using this
+syntax:
 
 `it also assigns the type<name>.`
 
@@ -400,15 +399,15 @@ Where `type` is `position` or `action`. We call this a "quality implication
 statement." In shorthand, we refer to this as "implying" a quality.
 
 Logically, that syntax says that the existence of this quality implies the
-existence of another quality on the same dimension point. Qualities can
-transitively imply other qualities, so this creates a "dependency tree" of
-qualities that are assigned to a dimension point.
+existence of another quality on the same particle. Qualities can transitively
+imply other qualities, so this creates a "dependency tree" of qualities that are
+assigned to a particle.
 
-The actual implementation is that when assigning qualities to a dimension point,
-their implied qualities are automatically assigned to them _first_. In other
-words, if the `withdraw_money` action implies a `balance` position, then the
-`balance` position is assigned to the dimension point _first_, and the
-`withdraw_money` action is assigned second.
+The actual implementation is that when assigning qualities to a particle, their
+implied qualities are automatically assigned to them _first_. In other words, if
+the `withdraw_money` action implies a `balance` position, then the `balance`
+position is assigned to the particle _first_, and the `withdraw_money` action is
+assigned second.
 
 To understand how this works, imagine an action that withdraws money from a bank
 account:
@@ -418,7 +417,7 @@ define the potential action<mv:example.com:bank:/account/withdraw> {
     it also assigns the position<mv:example.com:bank:/account/balance>.
 
     define the position<amount> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             # Imaginary syntax for values and constraints on values.
             it has a value that is a decimal.
             it has the constraint</positive>.
@@ -427,7 +426,7 @@ define the potential action<mv:example.com:bank:/account/withdraw> {
 
     it happens when {
         # Imaginary syntax for a trigger condition.
-        the position<amount> has a dimension point.
+        the position<amount> has a particle.
     } and it does {
         # Imaginary syntax for setting a value.
         set the value in position<mv:example.com:bank:/account/balance> to position<mv:example.com:bank:/account/balance> minus position<amount>.
@@ -437,9 +436,8 @@ define the potential action<mv:example.com:bank:/account/withdraw> {
 
 As we see, the action may then refer to
 `position<mv:example.com:bank:/account/balance>` with no prefix, because it is
-part of the same dimension point as
-`action<mv:example.com:bank:/account/withdraw>`. Any other action on that
-dimension point may also refer to
+part of the same particle as `action<mv:example.com:bank:/account/withdraw>`.
+Any other action on that particle may also refer to
 `position<mv:example.com:bank:/account/balance>` and it will be the exact same
 position. In other words, you can have both a `withdraw` and a `deposit` action
 that both affect the same `balance` position. In this way, multiple actions can
@@ -451,8 +449,8 @@ While manually _writing_ duplicate assignments (multiple `assign the` or
 `it also assigns the` statements with the same exact arguments in the same local
 name scope) should be forbidden by the compiler, quality implication statements
 across different definitions may attempt to assign the same quality more than
-once to the same dimension point. If this happens, only the first assignment
-actually occurs, and all later assignments are ignored by the compiler.
+once to the same particle. If this happens, only the first assignment actually
+occurs, and all later assignments are ignored by the compiler.
 
 For example, imagine this program:
 
@@ -465,19 +463,19 @@ define the potential action<mv:example.com:bank:/account/deposit> {
 }
 
 define the position<account> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action<mv:example.com:bank:/account/withdraw>.
         it has the action<mv:example.com:bank:/account/deposit>.
     }
 }
-create a dimension point in position<account>.
+create a particle in position<account>.
 ```
 
 That program only assigns the `position<mv:example.com:bank:/account/balance>`
 once.
 
 In other words, the `it also assigns the` syntax really means: assign this
-quality to the dimension point _if it does not already have this quality_.
+quality to the particle _if it does not already have this quality_.
 
 ### Forbidding Circular Dependencies
 
@@ -540,24 +538,23 @@ in space, as long as it really is _exactly_ the same point in space.
 ### Alternative Syntaxes
 
 Originally quality implications were called "quality requirements" and the
-syntax was `this dimension point must have the` instead of
-`it also assigns the`. I chose that because it looked similar to the
-`it has the` syntax for position constraints, but that was a significant
-mistake. The AI agent that was helping me write the compiler became extremely
-confused about how "quality requirements" and "position constraints" were
-different, especially because they both essentially _required_ something.
+syntax was `this particle must have the` instead of `it also assigns the`. I
+chose that because it looked similar to the `it has the` syntax for position
+constraints, but that was a significant mistake. The AI agent that was helping
+me write the compiler became extremely confused about how "quality requirements"
+and "position constraints" were different, especially because they both
+essentially _required_ something.
 
 One of the tricks is getting an AI or a programmer to understand that
-implications assign qualities to _this_ dimension point (the same one we are
-assigning the current quality to) and Position Constraint Blocks create _child_
-positions. So I wanted a program syntax and English terminology that makes that
-clear.
+implications assign qualities to _this_ particle (the same one we are assigning
+the current quality to) and Position Constraint Blocks create _child_ positions.
+So I wanted a program syntax and English terminology that makes that clear.
 
-The sense that I wanted to convey was: "assigning this quality to this dimension
-point means that we will first auto-assign another quality to this dimension
-point," and that _logically_ what was happening was implication: the existence
-of quality A implies the existence of quality B. Here are various other syntaxes
-that I considered and discarded:
+The sense that I wanted to convey was: "assigning this quality to this particle
+means that we will first auto-assign another quality to this particle," and that
+_logically_ what was happening was implication: the existence of quality A
+implies the existence of quality B. Here are various other syntaxes that I
+considered and discarded:
 
 - `require position</foo>`: Unclear what it's doing, too brief (forward
   compatibility issue).

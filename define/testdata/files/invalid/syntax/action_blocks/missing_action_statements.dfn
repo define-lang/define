@@ -1,6 +1,6 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/syntax/action_blocks/missing_action_statements> {
     define the position<run>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     }
 }

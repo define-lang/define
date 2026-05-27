@@ -15,13 +15,13 @@ class Host(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.on_dimension_point.get_action(
+        self.on_particle.get_action(
             "action<my.domain.com:my_lib:/worker>"
         ).get_interface_position(
             "position<input>"
-        ).create_dimension_point()
-        self.on_dimension_point.get_action(
+        ).create_particle()
+        self.on_particle.get_action(
             "action<my.domain.com:my_lib:/worker>"
         ).get_interface_position(
             "position<run>"
-        ).create_dimension_point()
+        ).create_particle()

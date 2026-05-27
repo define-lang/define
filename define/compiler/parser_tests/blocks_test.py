@@ -33,7 +33,7 @@ def test_block_with_blank_lines(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "\n"
@@ -48,7 +48,7 @@ def test_block_with_blank_lines(parse: Parse) -> None:
 def test_blank_line_between_constraint_requirement_and_close(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "\n"
         + "    }\n"
@@ -65,7 +65,7 @@ def test_comment_line_between_constraint_requirement_and_close(
 ) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "        # trailing note\n"
         + "    }\n"
@@ -81,7 +81,7 @@ def test_block_with_comment_inside(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    # comment\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
@@ -95,7 +95,7 @@ def test_block_with_comment_inside(parse: Parse) -> None:
 def test_block_with_comment_after_open(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> { # comment\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
@@ -109,7 +109,7 @@ def test_block_with_comment_after_open(parse: Parse) -> None:
 def test_block_with_comment_after_close(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "} # comment\n"
@@ -123,7 +123,7 @@ def test_block_with_comment_after_close(parse: Parse) -> None:
 def test_block_with_full_fqun(parse: Parse) -> None:
     tree = parse(
         "define the potential position<my_mv:example.com:my_lib:/some/path> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the action</some/action>.\n"
         + "    }\n"
         + "}\n"
@@ -137,12 +137,12 @@ def test_block_with_full_fqun(parse: Parse) -> None:
 def test_multiple_definitions_with_blocks(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/first> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</first_child>.\n"
         + "    }\n"
         + "}\n"
         + "define the potential position<standard:/second> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</second_child>.\n"
         + "    }\n"
         + "}\n"
@@ -159,7 +159,7 @@ def test_mixed_block_and_terminator(parse: Parse) -> None:
     tree = parse(
         "define the potential position<standard:/first>.\n"
         + "define the potential position<standard:/second> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the action</do_work>.\n"
         + "    }\n"
         + "}\n"
@@ -208,7 +208,7 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse) -> Non
             "define the potential action<standard:/path> {\n"
             + "    define the position<run>.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
         )
@@ -223,7 +223,7 @@ def test_position_constraint_invalid_type_keyword(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
         parse(
             "define the potential position<my_lib:/path> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the osition<my_lib:/path>.\n"
             + "    }\n"
             + "}\n"

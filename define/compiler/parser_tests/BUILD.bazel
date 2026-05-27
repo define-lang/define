@@ -40,9 +40,9 @@ py_test(
 )
 
 py_test(
-    name = "destroy_dimension_point_test",
+    name = "destroy_particle_test",
     size = "small",
-    srcs = ["destroy_dimension_point_test.py"],
+    srcs = ["destroy_particle_test.py"],
     deps = [
         ":conftest",
         ":test_helpers",
@@ -127,9 +127,9 @@ py_test(
 )
 
 py_test(
-    name = "move_dimension_point_test",
+    name = "move_particle_test",
     size = "small",
-    srcs = ["move_dimension_point_test.py"],
+    srcs = ["move_particle_test.py"],
     deps = [
         ":conftest",
         ":test_helpers",
@@ -236,14 +236,14 @@ pyright_test(
         ":blocks_test",
         ":comments_test",
         ":conftest",
-        ":destroy_dimension_point_test",
+        ":destroy_particle_test",
         ":destructor_condition_test",
         ":error_messages_test",
         ":extra_whitespace_test",
         ":file_encoding_test",
         ":incomplete_statements_test",
         ":local_name_format_test",
-        ":move_dimension_point_test",
+        ":move_particle_test",
         ":multiple_definitions_test",
         ":parser_tests",
         ":position_definition_test",

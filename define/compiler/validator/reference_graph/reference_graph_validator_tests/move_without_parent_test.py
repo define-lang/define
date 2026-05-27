@@ -17,15 +17,15 @@ def test_move_from_child_of_unoccupied_local_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<dest>.\n"
-                "        move the dimension point in position<local>::position</x> to position<dest>.\n"
+                "        move the particle in position<local>::position</x> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -35,7 +35,7 @@ def test_move_from_child_of_unoccupied_local_position(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<local>::position</x>"
     assert all_diags[0].parent_position_name == "position<local>"
@@ -51,16 +51,16 @@ def test_move_to_child_of_unoccupied_local_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<src>.\n"
-                "        create a dimension point in position<src>.\n"
-                "        move the dimension point in position<src> to position<local>::position</x>.\n"
+                "        create a particle in position<src>.\n"
+                "        move the particle in position<src> to position<local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -70,7 +70,7 @@ def test_move_to_child_of_unoccupied_local_position(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 54
+    assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<local>::position</x>"
     assert all_diags[0].parent_position_name == "position<local>"
@@ -86,19 +86,19 @@ def test_both_source_and_target_have_unoccupied_parents(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<src_local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<dest_local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        move the dimension point in position<src_local>::position</x> to position<dest_local>::position</x>.\n"
+                "        move the particle in position<src_local>::position</x> to position<dest_local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -124,22 +124,22 @@ def test_move_from_and_to_child_of_occupied_parent_succeeds(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<src> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
                 "        define the position<dest> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<src>.\n"
-                "        create a dimension point in position<src>::position</x>.\n"
-                "        create a dimension point in position<dest>.\n"
-                "        move the dimension point in position<src>::position</x> to position<dest>::position</x>.\n"
+                "        create a particle in position<src>.\n"
+                "        create a particle in position<src>::position</x>.\n"
+                "        create a particle in position<dest>.\n"
+                "        move the particle in position<src>::position</x> to position<dest>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),

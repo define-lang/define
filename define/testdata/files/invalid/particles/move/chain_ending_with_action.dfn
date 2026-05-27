@@ -1,0 +1,9 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/chain_ending_with_action> {
+    define the position<run>.
+    define the position<pos_a>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<pos_a>::action<act_b> to position<pos_a>.
+    }
+}

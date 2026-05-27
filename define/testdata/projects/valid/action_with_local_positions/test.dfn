@@ -2,9 +2,9 @@ define the potential action<mv:define-lang.org:test_local_pos:/test> {
     define the position<first_pos>.
     define the position<second_pos>.
     it happens when {
-        the position<first_pos> has a dimension point.
+        the position<first_pos> has a particle.
     } and it does {
         define the position<_noop>.
-        create a dimension point in position<_noop>.
+        create a particle in position<_noop>.
     }
 }

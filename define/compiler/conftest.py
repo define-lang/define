@@ -41,10 +41,10 @@ def _make_position_reference(chained_name: str) -> ast.PositionReference:
         f"define the potential action<{_TEST_FQUN}:/test> {{\n"
         "    define the position<_trigger>.\n"
         "    it happens when {\n"
-        "        the position<_trigger> has a dimension point.\n"
+        "        the position<_trigger> has a particle.\n"
         "    } and it does {\n"
         + "".join(local_defs)
-        + f"        create a dimension point in {chained_name}.\n"
+        + f"        create a particle in {chained_name}.\n"
         "    }\n"
         "}\n"
     )
@@ -55,7 +55,7 @@ def _make_position_reference(chained_name: str) -> ast.PositionReference:
     action_def = program.definitions[0]
     assert isinstance(action_def, ast.ActionDefinition)
     for stmt in action_def.action_statements.statements:
-        if isinstance(stmt, ast.CreateDimensionPointStatement):
+        if isinstance(stmt, ast.CreateParticleStatement):
             return stmt.target_position
     raise ValueError(f"No create statement found for: {chained_name}")
 

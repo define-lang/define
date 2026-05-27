@@ -2,9 +2,9 @@ define the potential action<my.domain.com:my_lib:/runner> {
     define the position<run>.
     define the position<slot>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        destroy the dimension point in position<slot>.
-        create a dimension point in position<slot>.
+        destroy the particle in position<slot>.
+        create a particle in position<slot>.
     }
 }

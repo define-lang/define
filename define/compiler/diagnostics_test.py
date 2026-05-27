@@ -31,8 +31,7 @@ def test_move_to_occupied_message_without_line_number():
     )
 
     assert diagnostic.message == (
-        "cannot move a dimension point to 'position<target>'"
-        " because it already contains one"
+        "cannot move a particle to 'position<target>' because it already contains one"
     )
 
 
@@ -50,7 +49,7 @@ def test_move_to_occupied_message_with_position():
     )
 
     assert diagnostic.message == (
-        "cannot move a dimension point to 'position<target>'"
+        "cannot move a particle to 'position<target>'"
         " because it already contains one; it was put there at:\n"
         'File "test.dfn", line 9, column 37'
     )
@@ -64,7 +63,7 @@ def test_move_from_empty_interface_position_default():
     )
 
     assert diagnostic.message == (
-        "cannot move a dimension point from"
+        "cannot move a particle from"
         " 'position<box>::action</other>::position<item>'"
         " because it does not contain one;"
         " action interface positions are empty by default"
@@ -85,7 +84,7 @@ def test_move_from_empty_interface_position_with_inferred_at():
     )
 
     assert diagnostic.message == (
-        "cannot move a dimension point from"
+        "cannot move a particle from"
         " 'position<box>::action</other>::position<trigger_pos>'"
         " because it does not contain one; it was emptied at:\n"
         'File "other.dfn", line 7, column 37'

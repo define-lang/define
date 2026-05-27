@@ -1,7 +1,7 @@
 define the potential position<my.domain.com:my_lib:/implier_one> {
     it also assigns the position</implied>.
     after it is assigned {
-        create a dimension point in position</implied>.
-        destroy the dimension point in position</implied>.
+        create a particle in position</implied>.
+        destroy the particle in position</implied>.
     }
 }

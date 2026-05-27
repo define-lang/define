@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:test_move_bad_constraint:/pos_b> {
+    it may only contain particles where {
+        it has the position</pos_c>.
+    }
+}

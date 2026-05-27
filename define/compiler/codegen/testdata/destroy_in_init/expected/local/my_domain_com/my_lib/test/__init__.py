@@ -10,5 +10,5 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.destroy_dimension_point()
+        self.create_particle()
+        self.destroy_particle()

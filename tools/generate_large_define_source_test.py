@@ -50,13 +50,13 @@ class TestGenerateSourceLines:
         source = "\n".join(gen.generate_source_lines(2000)) + "\n"
         assert "define the potential position" in source
         assert "define the potential action" in source
-        assert "it may only contain dimension points where" in source
+        assert "it may only contain particles where" in source
         assert "it also assigns the" in source
         assert "after it is assigned" in source
-        assert "this dimension point is being destroyed" in source
-        assert "create a dimension point in " in source
-        assert "move the dimension point in " in source
-        assert "destroy the dimension point in " in source
+        assert "this particle is being destroyed" in source
+        assert "create a particle in " in source
+        assert "move the particle in " in source
+        assert "destroy the particle in " in source
         assert "::" in source
         assert "#" in source
 

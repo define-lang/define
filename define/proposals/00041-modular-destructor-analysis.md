@@ -15,8 +15,8 @@ modular analysis.
 
 Imagine that in Action A, we have a position named `position<my_file>` with the
 qualities `position</file>` and `action</destructor>`, where
-`action</destructor>` deletes the file when the dimension point in
-`position</file>` is destroyed.
+`action</destructor>` deletes the file when the particle in `position</file>` is
+destroyed.
 
 We then take `position<my_file>` and pass it into the interface position of
 Action B. That interface position only requires `position</file>`. Thus, Action
@@ -25,10 +25,10 @@ itself, Action B doesn't know that the destructor runs and can't check if
 running the destructor will create an invalid state in the program.
 
 Generating the runtime code for the destructor isn't too difficult; the program
-simply needs to track that a destructor is attached to a dimension point and
-execute that destructor when that dimension point is destroyed. However, modular
-verification that destruction is safe has potentially very complex computational
-cost if not handled correctly.
+simply needs to track that a destructor is attached to a particle and execute
+that destructor when that particle is destroyed. However, modular verification
+that destruction is safe has potentially very complex computational cost if not
+handled correctly.
 
 ### 2: Destructor Ordering
 
@@ -48,9 +48,9 @@ destructors are going to be run in, at compile time?
 When verifying a destructor, what matters is the state of positions at the time
 of destruction. However, let's go back to the problem of "callees don't know
 about destructors their callers added." Only the caller knows that it needs to
-verify the destructor, but only the callee knows the actual state of dimension
-points at the time of destruction---information that we need in order to verify
-the safety of running a destructor. So somehow we need to be able to do modular
+verify the destructor, but only the callee knows the actual state of particles
+at the time of destruction---information that we need in order to verify the
+safety of running a destructor. So somehow we need to be able to do modular
 analysis even though the necessary information to do it is split into multiple
 locations.
 
@@ -58,15 +58,15 @@ locations.
 
 A destructor can imply qualities just like any other action can, which will
 automatically mean that quality gets unassigned only after the destructor runs
-(and thus, any dimension points in implied positions only get destroyed after
-the destructor runs). However, this adds tremendous complexity to the
-destruction cascade, because it means that one destructor could change what's
-actually going to _run_ on another destructor. (It could change the state of the
-world that the next destructor sees.)
+(and thus, any particles in implied positions only get destroyed after the
+destructor runs). However, this adds tremendous complexity to the destruction
+cascade, because it means that one destructor could change what's actually going
+to _run_ on another destructor. (It could change the state of the world that the
+next destructor sees.)
 
-A destructor could move, create, or destroy dimension points in another
-position. It could assign a new quality to any position in another position.
-This includes all children of implied positions.
+A destructor could move, create, or destroy particles in another position. It
+could assign a new quality to any position in another position. This includes
+all children of implied positions.
 
 This adds a potentially enormous computational cost to calculating whether
 destructors are safe, because they can change things that happen after them.
@@ -77,9 +77,9 @@ Each action checks only the destructors that _it_ added. However, it checks them
 as though they were running at the moment of destruction, not running inside of
 their own action.
 
-Thus, the action that destroys a dimension point verifies any destructors that
-_it_ added immediately, acting as though the destructor action was triggered and
-ran synchronously.
+Thus, the action that destroys a particle verifies any destructors that _it_
+added immediately, acting as though the destructor action was triggered and ran
+synchronously.
 
 The complexity of the solution comes in when you have to deal with destructors
 that were added by the caller.
@@ -98,39 +98,38 @@ including adding or removing destructors to positions that would get destroyed
 later in the cascade. Not only was it extremely hard to reason through, it had
 an unacceptable computational complexity where every action in a call chain
 would have to fully recompute the safety of every destructor in the entire
-cascade for every destroyed dimension point.
+cascade for every destroyed particle.
 
-There are four ways that a destructor could modify the state of another
-dimension point that would cause us to have to do this recomputation: they could
-**create** dimension points in contracted positions, **move** dimension points
-into or out of contracted positions, **destroy** dimension points in contracted
-positions, or **assign** new qualities to a contracted dimension point. Some of
-these actions actually can be done, as long as the state the dimension points
-are in at the end of the destructor is identical to the state they were in at
-the start.
+There are four ways that a destructor could modify the state of another particle
+that would cause us to have to do this recomputation: they could **create**
+particles in contracted positions, **move** particles into or out of contracted
+positions, **destroy** particles in contracted positions, or **assign** new
+qualities to a contracted particle. Some of these actions actually can be done,
+as long as the state the particles are in at the end of the destructor is
+identical to the state they were in at the start.
 
 Using the system of
 [DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md),
 we can translate this into a relatively simple requirement:
 
-**Destructors may not create any Automated Guarantees other than "this dimension
-point will be in exactly the same position as it was with the exact same
-qualities it had when we started."**
+**Destructors may not create any Automated Guarantees other than "this particle
+will be in exactly the same position as it was with the exact same qualities it
+had when we started."**
 
 ### Destruction Contracts
 
 We have to modify the action contract to contain additional data for contracted
 positions.
 
-These additions only occur when an action destroys a dimension points in a
-contracted position explicitly or automatically.
+These additions only occur when an action destroys a particles in a contracted
+position explicitly or automatically.
 
 #### Destruction Fact
 
-Action contracts must contain the information that the relevant dimension point
-was destroyed (not just that the contracted position is empty, but specifically
-that _that_ dimension point got destroyed). This is the only way that a caller
-can know to check the verification of destructors that it added.
+Action contracts must contain the information that the relevant particle was
+destroyed (not just that the contracted position is empty, but specifically that
+_that_ particle got destroyed). This is the only way that a caller can know to
+check the verification of destructors that it added.
 
 Destructions must be contained in the contract in the order they were executed,
 so that we know that the requirements of later destructions are fulfilled by the
@@ -139,26 +138,26 @@ guarantees of earlier destructions.
 #### Child State
 
 Action contracts must contain anything known about the state of all children of
-destroyed dimension points immediately before destruction started. This is
-needed because a caller could add a destructor that quality-requires one of the
-other children of the destroyed point, and it will need to know the state of
-that position to know whether what it _does_ with that position is valid.
+destroyed particles immediately before destruction started. This is needed
+because a caller could add a destructor that quality-requires one of the other
+children of the destroyed point, and it will need to know the state of that
+position to know whether what it _does_ with that position is valid.
 
 To be clear, this is the full state of all transitive child positions that would
-be destroyed. It's not just the state of direct child dimension points. What we
-need to know is whether or not there are dimension points in all transitive
-child positions, right before destruction happens.
+be destroyed. It's not just the state of direct child particles. What we need to
+know is whether or not there are particles in all transitive child positions,
+right before destruction happens.
 
 Because the action that is performing the destruction may not be aware of every
-quality on the destroyed dimension point, it may not _know_ the state of every
-dimension point in every child. For example, you might have an interface
-position with just `value<standard:/number/integer>` on it, but really that
-position also had a bunch of child positions when it was passed in. Thus, each
-Action in a call chain must update the destruction contract if it knows about
-the last update to a position before its parent was destroyed.
+quality on the destroyed particle, it may not _know_ the state of every particle
+in every child. For example, you might have an interface position with just
+`value<standard:/number/integer>` on it, but really that position also had a
+bunch of child positions when it was passed in. Thus, each Action in a call
+chain must update the destruction contract if it knows about the last update to
+a position before its parent was destroyed.
 
 Thus, each action in the call chain actually has its own, separate cumulative
-Child State for the destruction contract of that dimension point.
+Child State for the destruction contract of that particle.
 
 Note that there is a more memory-efficient version of this possible, too, where
 we do a forward pass through the reference graph that lets called actions know
@@ -172,23 +171,23 @@ to add.)
 
 Destructors have automated requirements just like any other action does. Their
 requirements must be checked by the compiler before they run. Thus, whenever an
-action adds a destructor to a dimension point that has a destruction contract,
-it must use the Child State to validate that the destructor's requirements are
+action adds a destructor to a particle that has a destruction contract, it must
+use the Child State to validate that the destructor's requirements are
 fulfilled. This also happens within the action that actually does the
 destruction, if the action that does the destruction either (a) created the
-dimension point or (b) assigned a destructor to that dimension point.
+particle or (b) assigned a destructor to that particle.
 
 Since we forbid destructors from creating Automated Guarantees, each
 destructor's requirements can be independently verified.
 
-It is worth noting that an action might not _know_ the state of the dimension
-points a destructor depends on (because they aren't yet populated in the Child
-State---a caller higher up the chain needs to populate them). In this case the
-destructor creates a new Automatic Requirement for the action in which it is
-added, which behaves just like a normal Automatic Requirement from
+It is worth noting that an action might not _know_ the state of the particles a
+destructor depends on (because they aren't yet populated in the Child State---a
+caller higher up the chain needs to populate them). In this case the destructor
+creates a new Automatic Requirement for the action in which it is added, which
+behaves just like a normal Automatic Requirement from
 [DLP 37 (Automatic Position Presence Constraints)](00037-automatic-position-presence-constraints.md).
 It should, however, note in any error messages where the requirement comes from
-and why (ideally indicating where the dimension point gets destroyed).
+and why (ideally indicating where the particle gets destroyed).
 
 ### Runtime Implementations
 
@@ -197,9 +196,9 @@ compile time to prove that destructors are safe. However, the algorithm does
 expose the complexity that different destructors run based on different call
 chains. There are three ways a compiler could implement this in code generation:
 
-1. **Tables**: Use some lookup mechanism to "attach" destructors to dimension
-   points at runtime. When the dimension point is freed, inject code to check if
-   it has destructors and do a lookup. This is inefficient and adds a mandatory
+1. **Tables**: Use some lookup mechanism to "attach" destructors to particles at
+   runtime. When the particle is freed, inject code to check if it has
+   destructors and do a lookup. This is inefficient and adds a mandatory
    "runtime library" to Define programs that I would like to avoid.
 2. **Branching**: Use branching to say "run Destructor B if a special flag is
    set on this function" and then always pass in to that function whether it
@@ -224,35 +223,35 @@ about the Child State.
 
 ```
 define the potential position<mv:example.com:example:/file_name> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the value<standard:/string>.
     }
 }
 
 define the potential position<mv:example.com:example:/file> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</file_name>.
     }
 }
 
-# Generic utility that destroys any DP carrying /file. It
+# Generic utility that destroys any particle carrying /file. It
 # adds no destructors of its own and cannot see what destructors
-# callers have baked into the dimension point.
+# callers have baked into the particle.
 define the potential action<mv:example.com:example:/close_file> {
     define the position<target> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the position</file>.
         }
     }
     it happens when {
-        the position<target> has a dimension point.
+        the position<target> has a particle.
     } and it does {
         # The destruction event. We record the  Destruction Fact:
-        # the DP in position<target> was destroyed.
+        # the particle in position<target> was destroyed.
         #
         # No Child State is recorded because this action does
         # not know anything about Child State.
-        destroy the dimension point in position<target>.
+        destroy the particle in position<target>.
     }
 }
 
@@ -260,7 +259,7 @@ define the potential action<mv:example.com:example:/close_file> {
 define the potential action<mv:example.com:example:/delete_file_destructor> {
     it also assigns the position</file>.
     it happens when {
-        this dimension point is being destroyed.
+        this particle is being destroyed.
     } and it does {
         # Imaginary syntax.
         delete the file at the value in position</file>::position</file_name>.
@@ -271,29 +270,29 @@ define the potential action<mv:example.com:example:/delete_file_destructor> {
 define the potential action<mv:example.com:example:/make_and_close> {
     define the position<run>.
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<my_file> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</file>.
                 it has the action</delete_file_destructor>.
             }
         }
-        create a dimension point in position<my_file>.
-        create a dimension point in position<my_file>::position</file>.
-        create a dimension point in position<my_file>::position</file>::position</file_name>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::position</file>.
+        create a particle in position<my_file>::position</file>::position</file_name>.
 
         # We trigger /close_file which causes us to read its destruction contract,
         # indicating position<target> gets destroyed.
         #
-        # We know that that dimension point had action</delete_file_destructor>
+        # We know that that particle had action</delete_file_destructor>
         # assigned to it. We also know that action</delete_file_destructor>
         # has a contract that says that position</file> and
         # position</file>::position</file_name> must be occupied.
         #
-        # We know from our own dimension point state that those positions
+        # We know from our own particle state that those positions
         # are occupied, so the verification passes!
-        move the dimension point in position<my_file> to action</close_file>::position<target>.
+        move the particle in position<my_file> to action</close_file>::position<target>.
     }
 }
 ```
@@ -349,5 +348,5 @@ To my knowledge there is no other programming language that has a
 similarly-powerful automatic destructor system. Thus, I believe that all
 destructors in all languages would be able to be translated into this system.
 The one tricky part will be the inability of a destructor to self-reference the
-dimension point to which it is assigned, which could dictate aspects of how you
-have to design Define programs when translating them from other languages.
+particle to which it is assigned, which could dictate aspects of how you have to
+design Define programs when translating them from other languages.

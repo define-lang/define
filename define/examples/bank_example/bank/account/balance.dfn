@@ -1,10 +1,10 @@
 define the potential position<define-lang.org:bank:/account/balance> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is a decimal.
         it has the constraint</non_negative>.
     }
     after it is assigned {
-        create a dimension point in position</account/balance>.
+        create a particle in position</account/balance>.
         set the value in position</account/balance> to 0.
     }
 }

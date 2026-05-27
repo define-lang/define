@@ -8,9 +8,9 @@ from define.runtime import literal
 class ReactB(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/react_b>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
             ],
@@ -20,4 +20,4 @@ class ReactB(literal.Action):
     @override
     def execute(self):
         local_result = literal.LocalPosition("position<local_result>")
-        local_result.create_dimension_point()
+        local_result.create_particle()

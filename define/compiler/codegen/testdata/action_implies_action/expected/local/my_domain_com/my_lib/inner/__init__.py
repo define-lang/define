@@ -8,9 +8,9 @@ from define.runtime import literal
 class Inner(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/inner>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<run>"),
             ],
@@ -20,4 +20,4 @@ class Inner(literal.Action):
     @override
     def execute(self):
         noop = literal.LocalPosition("position<noop>")
-        noop.create_dimension_point()
+        noop.create_particle()

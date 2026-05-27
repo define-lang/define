@@ -44,8 +44,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
-        ":dimension_point_operation",
-        ":dimension_point_tracker",
+        ":particle_operation",
+        ":particle_tracker",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
@@ -55,19 +55,19 @@ py_library(
 )
 
 py_library(
-    name = "dimension_point_operation",
-    srcs = ["dimension_point_operation.py"],
+    name = "particle_operation",
+    srcs = ["particle_operation.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":dimension_point_tracker",
+        ":particle_tracker",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
 )
 
 py_library(
-    name = "dimension_point_tracker",
-    srcs = ["dimension_point_tracker.py"],
+    name = "particle_tracker",
+    srcs = ["particle_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
@@ -78,12 +78,12 @@ py_library(
 )
 
 py_test(
-    name = "dimension_point_tracker_test",
+    name = "particle_tracker_test",
     size = "small",
-    srcs = ["dimension_point_tracker_test.py"],
+    srcs = ["particle_tracker_test.py"],
     deps = [
         ":action_contract",
-        ":dimension_point_tracker",
+        ":particle_tracker",
         "//define/compiler:ast",
         "//define/compiler/validator:scope_tracker",
     ],
@@ -124,9 +124,9 @@ pyright_test(
         ":action_contract_test",
         ":definition_postorder_validator",
         ":definition_postorder_validator_test",
-        ":dimension_point_operation",
-        ":dimension_point_tracker",
-        ":dimension_point_tracker_test",
+        ":particle_operation",
+        ":particle_tracker",
+        ":particle_tracker_test",
         ":reference_graph",
         ":reference_graph_validator",
         "//define/compiler/validator:validation_result",

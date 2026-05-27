@@ -1,9 +1,9 @@
 define the potential action<my.domain.com:my_library_collection:/perform_operation> {
     define the position<operation_trigger>.
     it happens when {
-        the position<operation_trigger> has a dimension point.
+        the position<operation_trigger> has a particle.
     } and it does {
         define the position<result>.
-        create a dimension point in position<result>.
+        create a particle in position<result>.
     }
 }

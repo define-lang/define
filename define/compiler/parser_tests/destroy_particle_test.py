@@ -1,0 +1,225 @@
+# pyright: reportUnusedCallResult=false
+"""Destroy particle statement parser tests.
+
+Follow parser test authoring rules in parser_tests/AGENTS.md.
+"""
+
+from define.compiler.parser_tests.conftest import Parse
+from define.compiler.parser_tests.test_helpers import get_tokens_by_type
+
+
+def test_action_statements_block_with_destroy_particle_local_position(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action"
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "run",
+    ]
+
+
+def test_action_statements_block_with_destroy_particle_short_global_position(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in position</run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "/run",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+
+
+def test_action_statements_block_with_destroy_particle_full_global_position(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in position<mv:define-lang.org:parser:/run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "mv:define-lang.org:parser:/run",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+
+
+def test_action_statements_block_with_destroy_particle_chained_position(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in position<to>::action</deposit>::position<run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "/deposit",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "to",
+        "run",
+    ]
+
+
+def test_action_statements_block_with_destroy_particle_short_global_chain(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in position</to>::action</deposit>::position</run>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "/to",
+        "/deposit",
+        "/run",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
+
+
+def test_action_statements_block_with_destroy_particle_any_typed_chain(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in action</start>::position<mid>::action</end>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "/start",
+        "/end",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "mid",
+    ]
+
+
+def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        create a particle in position<run>.\n"
+        + "        move the particle in position<run> to position<done>.\n"
+        + "        destroy the particle in position<done>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action"
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "run",
+        "run",
+        "done",
+        "done",
+    ]
+
+
+def test_action_statements_block_with_mixed_statements_and_multiple_destroy_particles(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        define the position<inner_pos>.\n"
+        + "        destroy the particle in position<inner_pos>.\n"
+        + "        destroy the particle in position</global_run>::action</deposit>::position<inner_pos>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "/global_run",
+        "/deposit",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "inner_pos",
+        "inner_pos",
+        "inner_pos",
+    ]
+
+
+def test_action_statements_block_with_destroy_particle_mixed_local_and_global(
+    parse: Parse,
+) -> None:
+    tree = parse(
+        "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        destroy the particle in position<local_pos>::action</global_act>::position<inner>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/my_action",
+        "/global_act",
+    ]
+    assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == [
+        "run",
+        "run",
+        "local_pos",
+        "inner",
+    ]

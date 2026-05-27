@@ -15,7 +15,7 @@ Action Statements Block?
 Action Statement Blocks may define positions. To be clear, this means they
 define concrete positions with local names, not potential positions.
 
-Action Statement Blocks may create, move, and destroy dimension points.
+Action Statement Blocks may create, move, and destroy particles.
 
 Action Statement Blocks may contain quality assignment statements.
 
@@ -37,12 +37,12 @@ define the potential action<mv:example.com:bank:/account/transfer_to> {
 
     define the position<run>.
     define the position<to> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the action</account/deposit>.
         }
     }
     define the position<amount> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             # Imaginary syntax.
             it has a value that is a decimal.
             it has the constraint</positive>.
@@ -50,35 +50,35 @@ define the potential action<mv:example.com:bank:/account/transfer_to> {
     }
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
         AND
-        the position<to> has a dimension point.
+        the position<to> has a particle.
         AND
-        the position<amount> has a dimension point.
+        the position<amount> has a particle.
     } and it does {
         define the position<original_balance> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has a value that is a decimal.
             }
         }
-        create a dimension point in position<original_balance>.
+        create a particle in position<original_balance>.
         set the value in position<original_balance> to position</account/balance>.
 
-        create a dimension point in action</account/withdraw>::position<amount>.
+        create a particle in action</account/withdraw>::position<amount>.
         set the value in action</account/withdraw>::position<amount> to position<amount>. # Imaginary syntax
-        create a dimension point in action</account/withdraw>::position<run>.
+        create a particle in action</account/withdraw>::position<run>.
 
         wait until {
-            NOT action</account/withdraw>::position<run> has a dimension point.
+            NOT action</account/withdraw>::position<run> has a particle.
         }
-        create a dimension point in position<to>::action</account/deposit>::position<amount>.
+        create a particle in position<to>::action</account/deposit>::position<amount>.
         set the value in position<to>::action</account/deposit>::position<amount> to position<amount>.
-        create a dimension point in position<to>::action</account/deposit>::position<run>.
+        create a particle in position<to>::action</account/deposit>::position<run>.
 
         wait until {
-            NOT position<to>::action</account/deposit>::position<run> has a dimension point.
+            NOT position<to>::action</account/deposit>::position<run> has a particle.
         }
-        destroy the dimension point in position<run>. # Imaginary syntax.
+        destroy the particle in position<run>. # Imaginary syntax.
     }
 }
 ```

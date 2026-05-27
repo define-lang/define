@@ -2,12 +2,12 @@ define the potential action<my.domain.com:my_lib:/act> {
     define the position<trigger>.
     define the position<iface_dest>.
     define the position<chain_dest> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the position</mid_dest>.
         }
     }
     it happens when {
-        the position<trigger> has a dimension point.
+        the position<trigger> has a particle.
     } and it does {
         define the position<src_a>.
         define the position<src_b>.
@@ -15,19 +15,19 @@ define the potential action<my.domain.com:my_lib:/act> {
         define the position<src_d>.
         define the position<local_dest>.
         define the position<local_chain_dest> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</mid_local>.
             }
         }
-        create a dimension point in position<src_a>.
-        create a dimension point in position<src_b>.
-        create a dimension point in position<src_c>.
-        create a dimension point in position<src_d>.
-        create a dimension point in position<local_chain_dest>.
-        create a dimension point in position<local_chain_dest>::position</mid_local>.
-        move the dimension point in position<src_a> to position<local_dest>.
-        move the dimension point in position<src_b> to position<iface_dest>.
-        move the dimension point in position<src_c> to position<chain_dest>::position</mid_dest>::position</end_dest>.
-        move the dimension point in position<src_d> to position<local_chain_dest>::position</mid_local>::position</end_local>.
+        create a particle in position<src_a>.
+        create a particle in position<src_b>.
+        create a particle in position<src_c>.
+        create a particle in position<src_d>.
+        create a particle in position<local_chain_dest>.
+        create a particle in position<local_chain_dest>::position</mid_local>.
+        move the particle in position<src_a> to position<local_dest>.
+        move the particle in position<src_b> to position<iface_dest>.
+        move the particle in position<src_c> to position<chain_dest>::position</mid_dest>::position</end_dest>.
+        move the particle in position<src_d> to position<local_chain_dest>::position</mid_local>::position</end_local>.
     }
 }

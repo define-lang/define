@@ -15,84 +15,84 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.dimension_point.get_action(
+        self.create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_a>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_a>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_src_a>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_a>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_src_a>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/end_src_a>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_b>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_b>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_src_b>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_b>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_src_b>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/end_src_b>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_c>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_c>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_src_c>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_src_c>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_src_c>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/end_src_c>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_dest>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<chain_dest>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid_dest>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/act>"
         ).get_interface_position(
             "position<trigger>"
-        ).create_dimension_point()
+        ).create_particle()

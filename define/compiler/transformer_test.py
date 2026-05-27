@@ -40,12 +40,12 @@ _AUTHORITY_PATH_FQUN_POSITION = (
 _FULL_POSITION = (
     "define the potential position<standard:/path> {\n"
     + "    it also assigns the position</a>.\n"
-    + "    it may only contain dimension points where {\n"
+    + "    it may only contain particles where {\n"
     + "        it has the position</child>.\n"
     + "        it has the action</other>.\n"
     + "    }\n"
     + "    after it is assigned {\n"
-    + "        create a dimension point in position</other>.\n"
+    + "        create a particle in position</other>.\n"
     + "    }\n"
     + "}\n"
 )
@@ -56,11 +56,11 @@ _FULL_ACTION = (
     + "    define the position<run>.\n"
     + "    define the position<other_pos>.\n"
     + "    it happens when {\n"
-    + "        the position<run> has a dimension point.\n"
+    + "        the position<run> has a particle.\n"
     + "    } and it does {\n"
-    + "        create a dimension point in position<run>.\n"
-    + "        move the dimension point in position<src> to position<dest>.\n"
-    + "        destroy the dimension point in position<run>.\n"
+    + "        create a particle in position<run>.\n"
+    + "        move the particle in position<src> to position<dest>.\n"
+    + "        destroy the particle in position<run>.\n"
     + "    }\n"
     + "}\n"
 )
@@ -68,7 +68,7 @@ _FULL_ACTION = (
 _DESTRUCTOR_ACTION = (
     "define the potential action<standard:/path> {\n"
     + "    it happens when {\n"
-    + "        this dimension point is being destroyed.\n"
+    + "        this particle is being destroyed.\n"
     + "    } and it does {\n"
     + "    }\n"
     + "}\n"
@@ -77,12 +77,12 @@ _DESTRUCTOR_ACTION = (
 _LOCAL_CONSTRAINED_ACTION = (
     "define the potential action<standard:/path> {\n"
     + "    define the position<my_pos> {\n"
-    + "        it may only contain dimension points where {\n"
+    + "        it may only contain particles where {\n"
     + "            it has the action</child>.\n"
     + "        }\n"
     + "    }\n"
     + "    it happens when {\n"
-    + "        the position<my_pos> has a dimension point.\n"
+    + "        the position<my_pos> has a particle.\n"
     + "    } and it does {\n"
     + "    }\n"
     + "}\n"
@@ -92,9 +92,9 @@ _LOCAL_CHAIN_CREATE = (
     "define the potential action<standard:/path> {\n"
     + "    define the position<run>.\n"
     + "    it happens when {\n"
-    + "        the position<run> has a dimension point.\n"
+    + "        the position<run> has a particle.\n"
     + "    } and it does {\n"
-    + "        create a dimension point in position<to>::action<deposit>::position<run>.\n"
+    + "        create a particle in position<to>::action<deposit>::position<run>.\n"
     + "    }\n"
     + "}\n"
 )
@@ -103,9 +103,9 @@ _GLOBAL_CHAIN_CREATE = (
     "define the potential action<standard:/path> {\n"
     + "    define the position<run>.\n"
     + "    it happens when {\n"
-    + "        the position<run> has a dimension point.\n"
+    + "        the position<run> has a particle.\n"
     + "    } and it does {\n"
-    + "        create a dimension point in position</a>::action</b>::position</c>.\n"
+    + "        create a particle in position</a>::action</b>::position</c>.\n"
     + "    }\n"
     + "}\n"
 )
@@ -114,21 +114,21 @@ _FULL_FQUN_CREATE = (
     "define the potential action<standard:/path> {\n"
     + "    define the position<run>.\n"
     + "    it happens when {\n"
-    + "        the position<run> has a dimension point.\n"
+    + "        the position<run> has a particle.\n"
     + "    } and it does {\n"
-    + "        create a dimension point in position<mv:define-lang.org:parser:/run>.\n"
+    + "        create a particle in position<mv:define-lang.org:parser:/run>.\n"
     + "    }\n"
     + "}\n"
 )
 
 _TWO_DEFINITIONS = (
     "define the potential position<my_mv:example.com:lib_a:/pos_a> {\n"
-    + "    it may only contain dimension points where {\n"
+    + "    it may only contain particles where {\n"
     + "        it has the position</child>.\n"
     + "    }\n"
     + "}\n"
     + "define the potential position<my_mv:example.com:lib_b:/pos_b> {\n"
-    + "    it may only contain dimension points where {\n"
+    + "    it may only contain particles where {\n"
     + "        it has the position</other>.\n"
     + "    }\n"
     + "}\n"
@@ -279,14 +279,14 @@ def test_reference_global_name_content_without_fqun_fields():
 
 def test_reference_global_name_content_with_fqun_fields():
     stmt = _only_action(_FULL_FQUN_CREATE).action_statements.statements[0]
-    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert isinstance(stmt, ast.CreateParticleStatement)
     typed_name = stmt.target_position.typed_names[0]
     assert isinstance(typed_name, ast.GlobalTypedNameReference)
     name_content = typed_name.name_content
     assert _require_fqun(name_content).universe.name == "parser"
     assert name_content.path.name == "/run"
     assert name_content.location == ast.SourceLocation(
-        line=6, column=46, end_line=6, end_column=76
+        line=6, column=39, end_line=6, end_column=69
     )
 
 
@@ -316,56 +316,56 @@ def test_local_typed_name_reference_fields():
 
 def test_position_reference_single_fields():
     stmt = _only_action(_FULL_ACTION).action_statements.statements[0]
-    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert isinstance(stmt, ast.CreateParticleStatement)
     reference = stmt.target_position
     assert len(reference.typed_names) == 1
     assert isinstance(reference.typed_names[0], ast.LocalTypedNameReference)
     assert reference.location == ast.SourceLocation(
-        line=8, column=37, end_line=8, end_column=50
+        line=8, column=30, end_line=8, end_column=43
     )
 
 
 def test_position_reference_chained_local_fields():
     stmt = _only_action(_LOCAL_CHAIN_CREATE).action_statements.statements[0]
-    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert isinstance(stmt, ast.CreateParticleStatement)
     reference = stmt.target_position
     assert len(reference.typed_names) == 3
     assert all(
         isinstance(name, ast.LocalTypedNameReference) for name in reference.typed_names
     )
     assert reference.location == ast.SourceLocation(
-        line=6, column=37, end_line=6, end_column=81
+        line=6, column=30, end_line=6, end_column=74
     )
 
 
 def test_position_reference_chained_global_fields():
     stmt = _only_action(_GLOBAL_CHAIN_CREATE).action_statements.statements[0]
-    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert isinstance(stmt, ast.CreateParticleStatement)
     reference = stmt.target_position
     assert len(reference.typed_names) == 3
     assert all(
         isinstance(name, ast.GlobalTypedNameReference) for name in reference.typed_names
     )
     assert reference.location == ast.SourceLocation(
-        line=6, column=37, end_line=6, end_column=75
+        line=6, column=30, end_line=6, end_column=68
     )
 
 
-# Dimension point statements
+# Particle statements
 
 
-def test_create_dimension_point_statement_fields():
+def test_create_particle_statement_fields():
     stmt = _only_action(_FULL_ACTION).action_statements.statements[0]
-    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert isinstance(stmt, ast.CreateParticleStatement)
     assert isinstance(stmt.target_position, ast.PositionReference)
     assert stmt.location == ast.SourceLocation(
         line=8, column=9, end_line=9, end_column=1
     )
 
 
-def test_move_dimension_point_statement_fields():
+def test_move_particle_statement_fields():
     stmt = _only_action(_FULL_ACTION).action_statements.statements[1]
-    assert isinstance(stmt, ast.MoveDimensionPointStatement)
+    assert isinstance(stmt, ast.MoveParticleStatement)
     assert isinstance(stmt.source_position, ast.PositionReference)
     source_name = stmt.source_position.typed_names[0]
     assert isinstance(source_name, ast.LocalTypedNameReference)
@@ -379,9 +379,9 @@ def test_move_dimension_point_statement_fields():
     )
 
 
-def test_destroy_dimension_point_statement_fields():
+def test_destroy_particle_statement_fields():
     stmt = _only_action(_FULL_ACTION).action_statements.statements[2]
-    assert isinstance(stmt, ast.DestroyDimensionPointStatement)
+    assert isinstance(stmt, ast.DestroyParticleStatement)
     assert isinstance(stmt.target_position, ast.PositionReference)
     assert stmt.location == ast.SourceLocation(
         line=10, column=9, end_line=11, end_column=1
@@ -456,9 +456,9 @@ def test_quality_implication_statement_fields():
 def test_action_statements_block_fields():
     block = _only_action(_FULL_ACTION).action_statements
     assert len(block.statements) == 3
-    assert isinstance(block.statements[0], ast.CreateDimensionPointStatement)
-    assert isinstance(block.statements[1], ast.MoveDimensionPointStatement)
-    assert isinstance(block.statements[2], ast.DestroyDimensionPointStatement)
+    assert isinstance(block.statements[0], ast.CreateParticleStatement)
+    assert isinstance(block.statements[1], ast.MoveParticleStatement)
+    assert isinstance(block.statements[2], ast.DestroyParticleStatement)
     assert block.location == ast.SourceLocation(
         line=7, column=6, end_line=12, end_column=1
     )
@@ -477,7 +477,7 @@ def test_position_init_block_fields():
     assert definition.initialization is not None
     block = definition.initialization
     assert len(block.statements) == 1
-    assert isinstance(block.statements[0], ast.CreateDimensionPointStatement)
+    assert isinstance(block.statements[0], ast.CreateParticleStatement)
     assert block.location == ast.SourceLocation(
         line=7, column=5, end_line=10, end_column=1
     )
@@ -608,7 +608,7 @@ def test_enclosing_fqun_dispatched_per_definition():
 
 def test_enclosing_fqun_on_every_chain_segment():
     stmt = _only_action(_GLOBAL_CHAIN_CREATE).action_statements.statements[0]
-    assert isinstance(stmt, ast.CreateDimensionPointStatement)
+    assert isinstance(stmt, ast.CreateParticleStatement)
     chain = stmt.target_position.typed_names
     assert len(chain) == 3
     for segment in chain:

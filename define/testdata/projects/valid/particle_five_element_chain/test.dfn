@@ -1,0 +1,13 @@
+define the potential action<mv:define-lang.org:test_dim_five_chain:/test> {
+    define the position<pos_a> {
+        it may only contain particles where {
+            it has the action</act_a>.
+        }
+    }
+    it happens when {
+        the position<pos_a> has a particle.
+    } and it does {
+        create a particle in position<pos_a>::action</act_a>::position<pos_b>.
+        create a particle in position<pos_a>::action</act_a>::position<pos_b>::action</act_b>::position<pos_c>.
+    }
+}

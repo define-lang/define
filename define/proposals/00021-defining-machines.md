@@ -11,7 +11,7 @@ Programs are not just static descriptions of positions in space. Something needs
 to _happen_ to those positions in space. There needs to be some way to cause
 action to occur.
 
-The [Concepts](../spec/concepts.md) describe machines---dimension points that do
+The [Concepts](../spec/concepts.md) describe machines---particles that do
 something under certain circumstances. We need syntax for these.
 
 There are numerous problems involved in creating machines. We will solve them
@@ -57,7 +57,7 @@ Empty space can't take actions.
 
 If you want to model a pure functional universe (a functional programming
 language) you would create qualities that do nothing but each define a single
-action, and then assign those qualities to dimension points.
+action, and then assign those qualities to particles.
 
 ### Local Name Scopes
 
@@ -78,14 +78,14 @@ here might look like:
 ```
 define the quality<mv:example.com:example:/car> {
     define the position<car_location> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<mv:example.com:example:/coordinates>
         }
     }
 
     define the action<start_car> {
         define the position<key_slot> {
-            it only contains dimension points where {
+            it only contains particles where {
                 it has the quality<mv:example.com:example:/key>
             }
         }
@@ -93,7 +93,7 @@ define the quality<mv:example.com:example:/car> {
         it happens when {
             the position<key_slot> is not empty.
         } and it does {
-            create a dimension point in position<car_location> {
+            create a particle in position<car_location> {
                 with the required qualities.
             }
             set the value in position<car_location> to 0.
@@ -128,5 +128,5 @@ There are no existing systems to refactor. The function syntax of every language
 I'm familiar with could be refactored deterministically into this syntax,
 however, as they all involve named arguments and a trigger (a function call) and
 actions they do. Return values would be converted into positions that the
-function knows about, with the caller moving dimension points out of that
-position and into a position for their own use.
+function knows about, with the caller moving particles out of that position and
+into a position for their own use.

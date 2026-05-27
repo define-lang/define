@@ -7,14 +7,14 @@
 
 ## Problems
 
-### 1: Atomic Creation of Dimension Points and Assignment of Qualities
+### 1: Atomic Creation of Particles and Assignment of Qualities
 
 In [DLP 19](00019-guaranteeing-qualities-in-positions.md), I decided that we
-needed a syntax that, in essence, atomically creates a dimension point and then
-assigns qualities to it. Since nothing like that is truly "atomic," what that
-really means is we need a syntax that automatically creates a dimension point
-with no constraints, assigns qualities to it, and then moves it into a position
-that does have constraints.
+needed a syntax that, in essence, atomically creates a particle and then assigns
+qualities to it. Since nothing like that is truly "atomic," what that really
+means is we need a syntax that automatically creates a particle with no
+constraints, assigns qualities to it, and then moves it into a position that
+does have constraints.
 
 ### 2: Duplication
 
@@ -30,44 +30,43 @@ correct maintenance of systems.
 
 When we create this new syntax, there's a danger of giving the programmer a set
 of confusing options for how they are supposed to assign qualities to a
-dimension point. That is, we could create more than one way to accomplish the
-same thing, without a clear reason for a developer to choose one or the other.
+particle. That is, we could create more than one way to accomplish the same
+thing, without a clear reason for a developer to choose one or the other.
 
 ## Solution
 
-We do not change the syntax for creating dimension points. Instead, we simply
-say that dimension points will always be created with any mandatory qualities
-required by their position.
+We do not change the syntax for creating particles. Instead, we simply say that
+particles will always be created with any mandatory qualities required by their
+position.
 
-When creating a dimension point, the compiler will look at the position
-definition and then go through the qualities listed in order and assign those
-qualities in that sequence. However, the
-`it may only contain dimension points where` constraint on that position will
-not be checked until the end of the block.
+When creating a particle, the compiler will look at the position definition and
+then go through the qualities listed in order and assign those qualities in that
+sequence. However, the `it may only contain particles where` constraint on that
+position will not be checked until the end of the block.
 
-Conceptually, what is happening here is that a dimension point is being created
-in an anonymous position, and then being moved into the position that has the
+Conceptually, what is happening here is that a particle is being created in an
+anonymous position, and then being moved into the position that has the
 constraint. The compiler could (and perhaps should) implement this exactly that
 way.
 
 ### Optimization
 
 In reality, the compiler doesn't need to check the constraint after assigning
-the qualities, because it knows for sure that the dimension point has exactly
-the qualities assigned.
+the qualities, because it knows for sure that the particle has exactly the
+qualities assigned.
 
 ### Parallelization
 
 If the compiler can prove that it is safe to do so, the compiler may choose to
-apply qualities to the dimension point concurrently. "Safe" means that applying
-them concurrently would have the same outcome as applying them in sequence.
+apply qualities to the particle concurrently. "Safe" means that applying them
+concurrently would have the same outcome as applying them in sequence.
 
 ### Recursion
 
 In the future, we will have syntax that causes quality assignment to create
-other dimension points and assign them qualities. That happens exactly the same
-way as this syntax and resolves in the same way. Each creation resolves and
-constraints are enforced when each block ends.
+other particles and assign them qualities. That happens exactly the same way as
+this syntax and resolves in the same way. Each creation resolves and constraints
+are enforced when each block ends.
 
 In order to guarantee logical constraint safety, we _may_ have to enforce that
 all such triggers happen synchronously and atomically in sequence, but we will
@@ -87,19 +86,19 @@ based on what's written in the position definition.
 
 ```
 define the position<ball> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the quality<mv:example.com:example:/red>.
         it has the quality<mv:example.com:example:/blue>.
     }
 }
 
-create a dimension point in position<ball>.
+create a particle in position<ball>.
 ```
 
-That creates a dimension point in `position<ball>`, assigns it the quality red,
-assigns it the quality blue, and then checks that it has the right qualities.
-(In reality, since the compiler knows exactly what it's doing, it doesn't have
-to check the constraint, in this situation.)
+That creates a particle in `position<ball>`, assigns it the quality red, assigns
+it the quality blue, and then checks that it has the right qualities. (In
+reality, since the compiler knows exactly what it's doing, it doesn't have to
+check the constraint, in this situation.)
 
 ## Why This is the Right Solution
 
@@ -108,9 +107,8 @@ in almost all situations.
 
 It does _not_ create multiple ways to do the same thing, because this is the
 _only_ way you can successfully apply a quality to a constrained position.
-Trying to create the dimension point and then assigning it a quality will fail
-because you will momentarily have a dimension point without the required
-qualities.
+Trying to create the particle and then assigning it a quality will fail because
+you will momentarily have a particle without the required qualities.
 
 The one thing I don't like about it is that it hides the fact that those
 qualities will be assigned in a particular order. However, the order is still
@@ -119,10 +117,10 @@ hard to re-order the `it must have the` statements in code in the future, but I
 think that's an acceptable trade-off.
 
 This syntax _does_ mean that the compiler has to know the full definition of a
-position when it creates a dimension point in it. That should be fine, since all
-dimension points must be defined before you can put something into them. The one
-thing we would have to address is: what happens if you want to call an API but
-you don't have the full source code for the API? We will perhaps need "interface
+position when it creates a particle in it. That should be fine, since all
+particles must be defined before you can put something into them. The one thing
+we would have to address is: what happens if you want to call an API but you
+don't have the full source code for the API? We will perhaps need "interface
 definition" files in the future that contain the interfaces without the contents
 of the triggers.
 
@@ -131,21 +129,21 @@ of the triggers.
 This proposal originally proposed the syntax:
 
 ```
-create a dimension point in position<foo> {
+create a particle in position<foo> {
     with the required qualities.
 }
 ```
 
 The problem is: you _always_ want to do that. You literally _can't_ create a
-dimension point in that position any other way. All this does is add two more
-lines with no value.
+particle in that position any other way. All this does is add two more lines
+with no value.
 
 ### Alternative: "Assign" Statements Inside of the Block
 
 Another way we could have done this is:
 
 ```
-create a dimension point in position<ball> {
+create a particle in position<ball> {
     assign the quality<mv:example.com:example:/red>.
     assign the quality<mv:example.com:example:/blue>.
 }
@@ -175,9 +173,9 @@ something and has unambiguous syntax.
 A syntax _did_ exist before this:
 
 ```
-create a dimension point in position<ball>.
-assign the quality<mv:example.com:example:/red> to the dimension point in position<ball>.
-assign the quality<mv:example.com:example:/blue> to the dimension point in position<ball>.
+create a particle in position<ball>.
+assign the quality<mv:example.com:example:/red> to the particle in position<ball>.
+assign the quality<mv:example.com:example:/blue> to the particle in position<ball>.
 ```
 
 As long as the assignment statements are in the same order as the position

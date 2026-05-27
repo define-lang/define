@@ -49,7 +49,7 @@ When a Define program starts, it does the following:
 
 1. Define a position with a single required quality. This position is called the
    "view point."
-2. Create a dimension point in that position.
+2. Create a particle in that position.
 
 In order for a program to actually _run_, the single required quality has to be
 a `potential position`, because its Position Assignment Block will run when the
@@ -58,8 +58,8 @@ potential position is assigned to the view point.
 Thus, in essence, when a program starts, it does:
 
 1. Create an empty position with no constraints.
-2. Create a dimension point in that empty position (the view point).
-3. Assign that dimension point a quality (a potential position).
+2. Create a particle in that empty position (the view point).
+3. Assign that particle a quality (a potential position).
 4. The Position Assignment Block of that position runs.
 
 ### Compiling Define Programs
@@ -84,19 +84,19 @@ ends. They only terminate as described in a later proposal.
 define the potential action<mv:example.com:example:/start> {
     define the position<run>.
     it triggers when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # The actual code of the program.
     }
 }
 
 define the potential position<mv:example.com:example:/main> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action</start>.
     }
     after it is assigned {
-        create a dimension point in position</main>.
-        create a dimension point in action</start>::position<run>.
+        create a particle in position</main>.
+        create a particle in action</start>::position<run>.
     }
 }
 ```

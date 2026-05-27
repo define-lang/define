@@ -109,13 +109,13 @@ An operation is somewhat similar to an action, with the following differences:
    execute atomically on the hardware, the compiler guarantees its logical
    behavior is as though it were so executed).
 
-To be clear, this means an operation cannot interact with dimension points
-outside of itself in any way other than by interacting with their _values_. It
-cannot trigger actions under any circumstances.
+To be clear, this means an operation cannot interact with particles outside of
+itself in any way other than by interacting with their _values_. It cannot
+trigger actions under any circumstances.
 
 An operation exists entirely in the abstract universe of symbols, not in the
-"concrete" universe of dimension points. It is the thing that an action _does_
-with symbols; it is not an action itself.
+"concrete" universe of particles. It is the thing that an action _does_ with
+symbols; it is not an action itself.
 
 ### Syntax for Logical Operations
 
@@ -148,10 +148,9 @@ A             B
        C
 ```
 
-Where `A` and `B` are dimension points that each have a value, and `C` is a
-dimension point that will store the result of some operation or set of
-operations. The operation "looks" at the values on `A` and `B` and then "sets"
-the value on `C`.
+Where `A` and `B` are particles that each have a value, and `C` is a particle
+that will store the result of some operation or set of operations. The operation
+"looks" at the values on `A` and `B` and then "sets" the value on `C`.
 
 In Define's model of the universe, what is actually happening is that the
 machine is looking at the qualities on A and B and setting or changing a quality
@@ -194,7 +193,7 @@ define the encoding_operation<mv:example.com:example:/my/operation/encoded> {
 
     # Interface View
     define the view<name> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the encoding<mv:example.com:example:/my/integer>.
         }
     }
@@ -267,9 +266,9 @@ necessary to perform the operation and executes the actual encoding operation.
 
 ### Views May Not Alias
 
-Two views in an operation may not point to the same dimension point. Views must
-point to distinct dimension points. This is very important for making
-verification computationally feasible.
+Two views in an operation may not point to the same particle. Views must point
+to distinct particles. This is very important for making verification
+computationally feasible.
 
 ### This Solution is Incomplete
 
@@ -305,17 +304,17 @@ A basic integer addition operation:
 # This is the operation actually used logically in the program.
 define the operation<standard:/number/integer/add> {
     define the view<a> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the value<standard:/number/integer>.
         }
     }
     define the view<b> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the value<standard:/number/integer>.
         }
     }
     define the view<sum> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the value<standard:/number/integer>.
         }
     }
@@ -329,17 +328,17 @@ define the encoding_operation<standard:/number/cpu/integer/64bit/add> {
     it implements the operation<standard:/number/integer/add>.
 
     define the view<a> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the encoding<standard:/number/cpu/integer/64bit>.
         }
     }
     define the view<b> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the encoding<standard:/number/cpu/integer/64bit>.
         }
     }
     define the view<sum> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the encoding<standard:/number/cpu/integer/64bit>.
         }
     }
@@ -351,23 +350,23 @@ define the encoding_operation<standard:/number/cpu/integer/64bit/add> {
 
 define the potential action<mv:example.com:example:/add_numbers> {
     define the position<augend> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the value<standard:/number/integer>.
         }
     }
     define the position<addend> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the value<standard:/number/integer>.
         }
     }
     define the position<result> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the value<standard:/number/integer>.
         }
     }
 
     it happens when {
-        the position<result> has a dimension point.
+        the position<result> has a particle.
     } and it does {
         execute the operation<standard:/number/integer/add> {
             with view<a> looking at position<augend>.
@@ -409,21 +408,21 @@ defined as concepts on their own---an action that occurs based on its inputs.
 ### Why Global, Unattached Concepts?
 
 So, logically, an operation is something that an action is doing. It's a
-decision by a view point: this other dimension point will change its quality in
-this way. So it is somehow logically attached to a machine (a dimension point
-taking an action).
+decision by a view point: this other particle will change its quality in this
+way. So it is somehow logically attached to a machine (a particle taking an
+action).
 
-One option I considered was to have a dimension point that represented the
-computer, and have operations be attached to it. I may still change my mind and
-go down that path. The awkward part of that is, where does the "computer"
-dimension point come from? Does every action have to create it? It actually
-exists in another universe, so it wouldn't even be a normal type of position.
-And what does having the "computer" dimension point get us? It can't be created,
-destroyed, or moved by the program. It's not clear that it would be meaningful
-for it to have other positions or actions on it.
+One option I considered was to have a particle that represented the computer,
+and have operations be attached to it. I may still change my mind and go down
+that path. The awkward part of that is, where does the "computer" particle come
+from? Does every action have to create it? It actually exists in another
+universe, so it wouldn't even be a normal type of position. And what does having
+the "computer" particle get us? It can't be created, destroyed, or moved by the
+program. It's not clear that it would be meaningful for it to have other
+positions or actions on it.
 
-So basically, from the perspective of the program, a "computer" dimension point
-would be a single, static object that just "has" operations on it.
+So basically, from the perspective of the program, a "computer" particle would
+be a single, static object that just "has" operations on it.
 
 Conceptually, this might be interesting for representing other computers or a
 multi-chip system (like CPU / GPU or some DSP), but it's not completely clear
@@ -433,25 +432,25 @@ suspicion, though, is that instead we'll have operations like
 system. After all, they will actually be different operations that could require
 different reasoning, since the hardware is different.
 
-### Why Not Move Dimension Points Into Operations?
+### Why Not Move Particles Into Operations?
 
-One thing I considered was making developers move dimension points into
-positions owned by operations, in the same way they have to do it for actions.
-However, it wasn't clear what the point of that would be, or what it would
-logically be representing. Operations are what an action _does_ to symbols, they
-aren't themselves a machine (except in the universe of the computer, where they
-very much are machines).
+One thing I considered was making developers move particles into positions owned
+by operations, in the same way they have to do it for actions. However, it
+wasn't clear what the point of that would be, or what it would logically be
+representing. Operations are what an action _does_ to symbols, they aren't
+themselves a machine (except in the universe of the computer, where they very
+much are machines).
 
-Also, if operations can't move, destroy, or create dimension points, and they
-are logically atomic and synchronous, what would the point of moving the
-dimension points be? You'd just move them in to move them out.
+Also, if operations can't move, destroy, or create particles, and they are
+logically atomic and synchronous, what would the point of moving the particles
+be? You'd just move them in to move them out.
 
 Mentally, when I conceive of a machine operating, I conceive of it changing the
-qualities of dimension points after they have come into a location where the
-machine triggers on them. It knows where they are, they aren't moving, and it
-changes their qualities. So I decided that the concept of Views could finally be
-used, but only in this very narrow case where we are just referring to the
-significance attached to a dimension point, not the dimension point itself.
+qualities of particles after they have come into a location where the machine
+triggers on them. It knows where they are, they aren't moving, and it changes
+their qualities. So I decided that the concept of Views could finally be used,
+but only in this very narrow case where we are just referring to the
+significance attached to a particle, not the particle itself.
 
 ### Why Separate Logical and Encoding Operations?
 

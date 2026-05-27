@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.mid_dest
 class Act(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/act>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
                 literal.InterfacePosition("position<src_a>"),
@@ -34,31 +34,31 @@ class Act(literal.Action):
         local_dest = literal.LocalPosition("position<local_dest>")
         self.get_interface_position(
             "position<src_a>"
-        ).create_dimension_point()
+        ).create_particle()
         self.get_interface_position(
             "position<src_b>"
-        ).create_dimension_point()
+        ).create_particle()
         self.get_interface_position(
             "position<src_c>"
-        ).create_dimension_point()
+        ).create_particle()
         self.get_interface_position(
             "position<src_a>"
-        ).move_dimension_point_to(local_dest)
+        ).move_particle_to(local_dest)
         self.get_interface_position(
             "position<src_b>"
-        ).move_dimension_point_to(
+        ).move_particle_to(
             self.get_interface_position(
                 "position<iface_dest>"
             )
         )
         self.get_interface_position(
             "position<src_c>"
-        ).move_dimension_point_to(
+        ).move_particle_to(
             self.get_interface_position(
                 "position<chain_dest>"
-            ).dimension_point.get_position(
+            ).particle.get_position(
                 "position<my.domain.com:my_lib:/mid_dest>"
-            ).dimension_point.get_position(
+            ).particle.get_position(
                 "position<my.domain.com:my_lib:/end_dest>"
             )
         )

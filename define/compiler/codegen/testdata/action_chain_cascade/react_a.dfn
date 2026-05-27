@@ -1,14 +1,14 @@
 define the potential action<my.domain.com:my_lib:/react_a> {
     define the position<trigger>.
     define the position<result> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the action</final>.
         }
     }
     it happens when {
-        the position<trigger> has a dimension point.
+        the position<trigger> has a particle.
     } and it does {
         define the position<local_result>.
-        create a dimension point in position<local_result>.
+        create a particle in position<local_result>.
     }
 }

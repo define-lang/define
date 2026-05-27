@@ -167,7 +167,7 @@ types. That could take any value for any of those arguments, including `None`,
 and could return any value, including `None`. What `+` and `*` mean there would
 be different depending on what is inside of `foo`, `bar`, and `baz`.
 
-In Define, you can't do addition and multiplication on dimension points with no
+In Define, you can't do addition and multiplication on particles with no
 qualities. So either you would have to create a quality called something like
 `NumberOrString` (which would be sort of crazy, but still be way better than the
 code above), or you would have to define a very complex machine to execute that

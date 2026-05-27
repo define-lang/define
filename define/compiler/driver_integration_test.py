@@ -203,60 +203,60 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.IncorrectIndentationDiagnostic,
         diagnostics.IncorrectIndentationDiagnostic,
     ],
-    "dimension_points/create/chain_ending_with_action.dfn": [
+    "particles/create/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/create/duplicate_local_dimension_point.dfn": [
+    "particles/create/duplicate_local_particle.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
-    "dimension_points/create/single_action_reference.dfn": [
+    "particles/create/single_action_reference.dfn": [
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/create/undefined_local_position.dfn": [
+    "particles/create/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "dimension_points/move/chain_ending_with_action.dfn": [
+    "particles/move/chain_ending_with_action.dfn": [
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/move/dest_occupied_after_move.dfn": [
+    "particles/move/dest_occupied_after_move.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/from_empty_position.dfn": [
+    "particles/move/from_empty_position.dfn": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
     ],
-    "dimension_points/move/move_to_same_position.dfn": [
+    "particles/move/move_to_same_position.dfn": [
         diagnostics.MoveToSamePositionDiagnostic,
     ],
-    "dimension_points/move/repeated_same_direction.dfn": [
+    "particles/move/repeated_same_direction.dfn": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/round_trip_fails.dfn": [
+    "particles/move/round_trip_fails.dfn": [
         diagnostics.MoveFromEmptyPositionDiagnostic,
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/single_action_reference.dfn": [
+    "particles/move/single_action_reference.dfn": [
         diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
     ],
-    "dimension_points/move/to_occupied_position.dfn": [
+    "particles/move/to_occupied_position.dfn": [
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
-    "dimension_points/move/undefined_local_position.dfn": [
+    "particles/move/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
-    "dimension_points/move/violates_dest_constraints.dfn": [
+    "particles/move/violates_dest_constraints.dfn": [
         diagnostics.MoveViolatesConstraintsDiagnostic,
     ],
-    "dimension_points/move/violates_dest_constraints_unconstrained_source.dfn": [
+    "particles/move/violates_dest_constraints_unconstrained_source.dfn": [
         diagnostics.MoveViolatesConstraintsDiagnostic,
     ],
     "syntax/short_form_required/full_form_same_fqun.dfn": [
@@ -301,10 +301,10 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "destroy/destroy_empty_local.dfn": [
         diagnostics.DestroyInEmptyPositionDiagnostic,
     ],
-    "dimension_points/create/parent_not_occupied.dfn": [
+    "particles/create/parent_not_occupied.dfn": [
         diagnostics.ParentPositionNotOccupiedDiagnostic,
     ],
-    "dimension_points/move/parent_not_occupied.dfn": [
+    "particles/move/parent_not_occupied.dfn": [
         diagnostics.ParentPositionNotOccupiedDiagnostic,
     ],
     "quality_implications/duplicate.dfn": [
@@ -350,19 +350,19 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "global_name_walk/wrong_type": [
         diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
     ],
-    "dimension_points/create/chain_not_in_action": [
+    "particles/create/chain_not_in_action": [
         diagnostics.ChainElementNotInActionDiagnostic,
     ],
-    "dimension_points/create/chain_not_in_constraints": [
+    "particles/create/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
-    "dimension_points/move/chain_not_in_action": [
+    "particles/move/chain_not_in_action": [
         diagnostics.ChainElementNotInActionDiagnostic,
     ],
-    "dimension_points/move/chain_not_in_constraints": [
+    "particles/move/chain_not_in_constraints": [
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
-    "dimension_points/move/move_into_defining_position": [
+    "particles/move/move_into_defining_position": [
         diagnostics.MoveIntoDefiningPositionDiagnostic,
     ],
     "sub_root_conflict_load": [

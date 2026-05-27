@@ -126,8 +126,8 @@ using the syntax:
 ```
 define the quality<adder> {
     define the potential_form<add> {
-        a dimension point in position<first_addend>.
-        a dimension point in position<second_addend>
+        a particle in position<first_addend>.
+        a particle in position<second_addend>
     }
     define the trigger<add> {
         take potential_form<add> as form<args>

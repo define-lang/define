@@ -22,51 +22,51 @@ define the potential action<mv:example.com:bank:/do_transfers> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<account1> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the action<mv:example.com:bank:/account/withdraw>.
                 it has the action<mv:example.com:bank:/account/deposit>.
                 it has the action<mv:example.com:bank:/account/transfer_to>.
             }
         }
-        create a dimension point in position<account1>.
-        create a dimension point in position<account1>::action<mv:example.com:bank:/account/deposit>::position<amount>.
+        create a particle in position<account1>.
+        create a particle in position<account1>::action<mv:example.com:bank:/account/deposit>::position<amount>.
         set the value in position<account1>::action<mv:example.com:bank:/account/deposit>::position<amount> to 100.
-        create a dimension point in position<account1>::action<mv:example.com:bank:/account/deposit>::position<run>.
+        create a particle in position<account1>::action<mv:example.com:bank:/account/deposit>::position<run>.
 
         define the position<account2> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the action<mv:example.com:bank:/account/withdraw>.
                 it has the action<mv:example.com:bank:/account/deposit>.
                 it has the action<mv:example.com:bank:/account/transfer_to>.
             }
         }
-        create a dimension point in position<account2>.
-        create a dimension point in position<account2>::action<mv:example.com:bank:/account/deposit>::position<amount>.
+        create a particle in position<account2>.
+        create a particle in position<account2>::action<mv:example.com:bank:/account/deposit>::position<amount>.
         set the value in position<account2>::action<mv:example.com:bank:/account/deposit>::position<amount> to 50.
-        create a dimension point in position<account2>::action<mv:example.com:bank:/account/deposit>::position<run>.
+        create a particle in position<account2>::action<mv:example.com:bank:/account/deposit>::position<run>.
 
         wait until {
             the position<account1>::action<mv:example.com:bank:/account/deposit>::position<run> is empty.
             AND
             the position<account2>::action<mv:example.com:bank:/account/deposit>::position<run> is empty.
         }
-        create a dimension point in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<amount>.
+        create a particle in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<amount>.
         set the value in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<amount> to 50.
-        move the dimension point in position<account2> to position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<to>.
-        create a dimension point in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<run>.
+        move the particle in position<account2> to position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<to>.
+        create a particle in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<run>.
 
         wait until {
             the position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<run> is empty.
         }
 
-        move the dimension point in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<to> to position<account2>.
-        create a dimension point in position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<amount>.
+        move the particle in position<account1>::action<mv:example.com:bank:/account/transfer_to>::position<to> to position<account2>.
+        create a particle in position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<amount>.
         set the value in position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<amount> to 200.
-        move the dimension point in position<account1> to position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<to>.
-        create a dimension point in position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<run>.
+        move the particle in position<account1> to position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<to>.
+        create a particle in position<account2>::action<mv:example.com:bank:/account/transfer_to>::position<run>.
     }
 }
 ```
@@ -101,51 +101,51 @@ define the potential action<mv:example.com:bank:/do_transfers> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<account1> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the action</account/withdraw>.
                 it has the action</account/deposit>.
                 it has the action</account/transfer_to>.
             }
         }
-        create a dimension point in position<account1>.
-        create a dimension point in position<account1>::action</account/deposit>::position<amount>.
+        create a particle in position<account1>.
+        create a particle in position<account1>::action</account/deposit>::position<amount>.
         set the value in position<account1>::action</account/deposit>::position<amount> to 100.
-        create a dimension point in position<account1>::action</account/deposit>::position<run>.
+        create a particle in position<account1>::action</account/deposit>::position<run>.
 
         define the position<account2> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the action</account/withdraw>.
                 it has the action</account/deposit>.
                 it has the action</account/transfer_to>.
             }
         }
-        create a dimension point in position<account2>.
-        create a dimension point in position<account2>::action</account/deposit>::position<amount>.
+        create a particle in position<account2>.
+        create a particle in position<account2>::action</account/deposit>::position<amount>.
         set the value in position<account2>::action</account/deposit>::position<amount> to 50.
-        create a dimension point in position<account2>::action</account/deposit>::position<run>.
+        create a particle in position<account2>::action</account/deposit>::position<run>.
 
         wait until {
             the position<account1>::action</account/deposit>::position<run> is empty.
             AND
             the position<account2>::action</account/deposit>::position<run> is empty.
         }
-        create a dimension point in position<account1>::action</account/transfer_to>::position<amount>.
+        create a particle in position<account1>::action</account/transfer_to>::position<amount>.
         set the value in position<account1>::action</account/transfer_to>::position<amount> to 50.
-        move the dimension point in position<account2> to position<account1>::action</account/transfer_to>::position<to>.
-        create a dimension point in position<account1>::action</account/transfer_to>::position<run>.
+        move the particle in position<account2> to position<account1>::action</account/transfer_to>::position<to>.
+        create a particle in position<account1>::action</account/transfer_to>::position<run>.
 
         wait until {
             the position<account1>::action</account/transfer_to>::position<run> is empty.
         }
 
-        move the dimension point in position<account1>::action</account/transfer_to>::position<to> to position<account2>.
-        create a dimension point in position<account2>::action</account/transfer_to>::position<amount>.
+        move the particle in position<account1>::action</account/transfer_to>::position<to> to position<account2>.
+        create a particle in position<account2>::action</account/transfer_to>::position<amount>.
         set the value in position<account2>::action</account/transfer_to>::position<amount> to 200.
-        move the dimension point in position<account1> to position<account2>::action</account/transfer_to>::position<to>.
-        create a dimension point in position<account2>::action</account/transfer_to>::position<run>.
+        move the particle in position<account1> to position<account2>::action</account/transfer_to>::position<to>.
+        create a particle in position<account2>::action</account/transfer_to>::position<run>.
     }
 }
 ```

@@ -99,11 +99,11 @@ def test_move_to_same_position_format():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
+        "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        define the position<pos>.\n"
-        "        create a dimension point in position<pos>.\n"
-        "        move the dimension point in position<pos> to position<pos>.\n"
+        "        create a particle in position<pos>.\n"
+        "        move the particle in position<pos> to position<pos>.\n"
         "    }\n"
         "}\n"
     )
@@ -116,10 +116,10 @@ def test_move_to_same_position_format():
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        "line 8, column 54\n"
-        "        move the dimension point in position<pos> to position<pos>.\n"
-        "                                                     ^\n"
-        "source and destination cannot be identical when moving dimension points"
+        "line 8, column 47\n"
+        "        move the particle in position<pos> to position<pos>.\n"
+        "                                              ^\n"
+        "source and destination cannot be identical when moving particles"
         " ('position<pos>' is the name of both"
         " the source and destination here)"
     )
@@ -129,14 +129,14 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<local_pos> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the position</mid_pos>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<local_pos> has a dimension point.\n"
+        "        the position<local_pos> has a particle.\n"
         "    } and it does {\n"
-        "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
+        "        move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
         "    }\n"
         "}\n"
     )
@@ -145,7 +145,7 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
             "test.dfn": source,
             "mid_pos.dfn": (
                 "define the potential position<my.domain.com:my_lib:/mid_pos> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</end_pos>.\n"
                 "    }\n"
                 "}\n"
@@ -160,10 +160,10 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == (
-        'File "test.dfn", line 10, column 81\n'
-        "        move the dimension point in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
-        "                                                                                ^\n"
-        "cannot move a dimension point\n"
+        'File "test.dfn", line 10, column 74\n'
+        "        move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
+        "                                                                         ^\n"
+        "cannot move a particle\n"
         "  from: position<local_pos>\n"
         "    to: position<local_pos>::position</mid_pos>::position</end_pos>\n"
         "because the source position defines the destination position"
@@ -179,7 +179,7 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     wrong_child_universe = "mv:define-lang.org:wrong_universe"
     source = (
         f"define the potential position<{parent_universe}:/test> {{\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         f"        it has the position<{child_universe}:/target>.\n"
         "    }\n"
         "}\n"
@@ -239,7 +239,7 @@ def test_not_project_root_error_message_for_subroot(
     child_universe = "mv:define-lang.org:child"
     source = (
         f"define the potential position<{parent_universe}:/test> {{\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         f"        it has the position<{child_universe}:/target>.\n"
         "    }\n"
         "}\n"
@@ -269,7 +269,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     child_fqun = "mv:define-lang.org:child"
     source = (
         f"define the potential position<{parent_fqun}:/test> {{\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         f"        it has the position<{child_fqun}:/target>.\n"
         "    }\n"
         "}\n"
@@ -283,7 +283,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     _ = (tmp_path / "lib" / "target.dfn").write_text(
         (
             f"define the potential position<{child_fqun}:/target> {{\n"
-            "    it may only contain dimension points where {\n"
+            "    it may only contain particles where {\n"
             f"        it has the position<{parent_fqun}:/leaf>.\n"
             "    }\n"
             "}\n"

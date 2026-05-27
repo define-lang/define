@@ -45,18 +45,18 @@ class ActionStatementsBlockGenerator:
                     stmt.constraints,
                 ),
             )
-        if isinstance(stmt, ast.CreateDimensionPointStatement):
+        if isinstance(stmt, ast.CreateParticleStatement):
             return template_context.ActionStatementContext(
-                kind=template_context.StatementKind.CREATE_DIMENSION_POINT,
+                kind=template_context.StatementKind.CREATE_PARTICLE,
                 position=self._build_position_expr(stmt.target_position),
             )
-        if isinstance(stmt, ast.DestroyDimensionPointStatement):
+        if isinstance(stmt, ast.DestroyParticleStatement):
             return template_context.ActionStatementContext(
-                kind=template_context.StatementKind.DESTROY_DIMENSION_POINT,
+                kind=template_context.StatementKind.DESTROY_PARTICLE,
                 position=self._build_position_expr(stmt.target_position),
             )
         return template_context.ActionStatementContext(
-            kind=template_context.StatementKind.MOVE_DIMENSION_POINT,
+            kind=template_context.StatementKind.MOVE_PARTICLE,
             position=self._build_position_expr(stmt.source_position),
             to_position=self._build_position_expr(stmt.target_position),
         )

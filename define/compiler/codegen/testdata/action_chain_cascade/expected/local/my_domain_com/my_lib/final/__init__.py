@@ -8,9 +8,9 @@ from define.runtime import literal
 class Final(literal.Action):
     typed_name: ClassVar[str] = "action<my.domain.com:my_lib:/final>"
 
-    def __init__(self, on_dimension_point: literal.DimensionPoint):
+    def __init__(self, on_particle: literal.Particle):
         super().__init__(
-            on_dimension_point,
+            on_particle,
             interface_positions=[
                 literal.InterfacePosition("position<trigger>"),
             ],
@@ -20,4 +20,4 @@ class Final(literal.Action):
     @override
     def execute(self):
         complete = literal.LocalPosition("position<complete>")
-        complete.create_dimension_point()
+        complete.create_particle()

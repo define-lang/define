@@ -262,7 +262,7 @@ class InvalidMoveStatementSyntax(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "The syntax for a move statement looks like:"
-        " move the dimension point in position<foo> to position<bar>."
+        " move the particle in position<foo> to position<bar>."
         " Expected a 'to' or a longer chained name (a '::' followed by another name) here."
     )
 
@@ -331,13 +331,13 @@ class MissingCloseBrace(DefineTokenError):
     message_format: ClassVar[str] = "Missing a closing '}}' somewhere in this block."
 
 
-class InvalidHasADimensionPointSyntax(DefineTokenError):
-    """Expected ' has a dimension point' after a local name in a trigger condition."""
+class InvalidHasAParticleSyntax(DefineTokenError):
+    """Expected ' has a particle' after a local name in a trigger condition."""
 
     message_format: ClassVar[str] = (
-        "The syntax for a dimension point presence check looks like:"
-        " the position<foo> has a dimension point."
-        " Expected ' has a dimension point' here."
+        "The syntax for a particle presence check looks like:"
+        " the position<foo> has a particle."
+        " Expected ' has a particle' here."
     )
 
 
@@ -403,7 +403,7 @@ class MissingPositionDefinitionContent(DefineTokenError):
     """Left out mandatory content from a position definition block."""
 
     message_format: ClassVar[str] = (
-        "Position definition blocks must contain at least a 'it may only contain the dimension points where' block."
+        "Position definition blocks must contain at least a 'it may only contain the particles where' block."
         + " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
     )
 
@@ -413,7 +413,7 @@ class MissingPotentialPositionDefinitionContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Potential position definition blocks must contain an"
-        " 'it may only contain dimension points where' block"
+        " 'it may only contain particles where' block"
         " and/or an 'after it is assigned' block."
         " If you want an empty position definition, end it with a period (.) instead of a block ({{}})."
     )
@@ -435,7 +435,7 @@ class MissingTriggerConditionContent(DefineTokenError):
     """Left out content from a trigger conditions block."""
 
     message_format: ClassVar[str] = (
-        "Trigger conditions blocks must contain at least one 'the ... has a dimension point.' statement."
+        "Trigger conditions blocks must contain at least one 'the ... has a particle.' statement."
     )
 
 

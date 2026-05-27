@@ -1,0 +1,15 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/parent_not_occupied> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</valid/minimal_position>.
+            }
+        }
+        define the position<src>.
+        create a particle in position<src>.
+        move the particle in position<src> to position<local>::position</valid/minimal_position>.
+    }
+}

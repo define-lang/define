@@ -1,0 +1,17 @@
+define the potential action<mv:define-lang.org:test_move_chain_pos:/test> {
+    define the position<run>.
+    define the position<pos_a> {
+        it may only contain particles where {
+            it has the position</pos_b>.
+        }
+    }
+    define the position<dest>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<pos_a>.
+        create a particle in position<pos_a>::position</pos_b>.
+        create a particle in position<pos_a>::position</pos_b>::position</pos_c>.
+        move the particle in position<pos_a>::position</pos_b>::position</pos_c> to position<dest>.
+    }
+}

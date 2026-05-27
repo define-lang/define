@@ -1,13 +1,13 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/references/action_local_pos_requires_missing_global> {
     define the position<my_pos> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the position</invalid/references/action_local_pos_requires_missing_global>.
         }
     }
     it happens when {
-        the position<my_pos> has a dimension point.
+        the position<my_pos> has a particle.
     } and it does {
         define the position<_noop>.
-        create a dimension point in position<_noop>.
+        create a particle in position<_noop>.
     }
 }

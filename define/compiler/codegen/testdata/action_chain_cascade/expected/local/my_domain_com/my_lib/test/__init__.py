@@ -15,54 +15,54 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.dimension_point.get_action(
+        self.create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/kick_off>"
         ).get_interface_position(
             "position<trigger>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/kick_off>"
         ).get_interface_position(
             "position<output>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/kick_off>"
         ).get_interface_position(
             "position<output>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/react_a>"
         ).get_interface_position(
             "position<trigger>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/kick_off>"
         ).get_interface_position(
             "position<output>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/react_b>"
         ).get_interface_position(
             "position<trigger>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/kick_off>"
         ).get_interface_position(
             "position<output>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/react_a>"
         ).get_interface_position(
             "position<result>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/kick_off>"
         ).get_interface_position(
             "position<output>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/react_a>"
         ).get_interface_position(
             "position<result>"
-        ).dimension_point.get_action(
+        ).particle.get_action(
             "action<my.domain.com:my_lib:/final>"
         ).get_interface_position(
             "position<trigger>"
-        ).create_dimension_point()
+        ).create_particle()

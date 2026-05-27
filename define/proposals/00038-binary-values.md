@@ -12,20 +12,20 @@ write computer programs to make computers take some sort of action, and there
 are very few actions they can take without using values in some way.
 
 The [Concepts](../spec/concepts.md) describe a value as a meaning assigned to a
-dimension point, essentially an opinion about a dimension point.
+particle, essentially an opinion about a particle.
 
 Define will be theoretically capable of doing computation without assigning any
-values to dimension points, purely by checking presence or absence on dimension
-points in positions (which would represent bits). Define could in this way model
-any circuits or any real computation mechanism for discrete data that could
-exist in the physical universe. (And in the future, Define Approximately would
-be able to represent infinite math as well, giving us the power to represent any
-possible form of computation that could _actually_ exist.) However, most
-practical programs will want to rely on the simulator (the computer) to do
-computation, as it's much more efficient and able to respond to situations from
-outside the program (like user input) more dynamically.
+values to particles, purely by checking presence or absence on particles in
+positions (which would represent bits). Define could in this way model any
+circuits or any real computation mechanism for discrete data that could exist in
+the physical universe. (And in the future, Define Approximately would be able to
+represent infinite math as well, giving us the power to represent any possible
+form of computation that could _actually_ exist.) However, most practical
+programs will want to rely on the simulator (the computer) to do computation, as
+it's much more efficient and able to respond to situations from outside the
+program (like user input) more dynamically.
 
-Thus, we do need to have a way to assign meaning (values) to dimension points.
+Thus, we do need to have a way to assign meaning (values) to particles.
 
 ### 1: Infinite Complexity
 
@@ -35,16 +35,16 @@ relate to other opinions in infinite ways.
 
 However, there are a few saving graces here, for us:
 
-1. We only care about the opinions that are relevant to assign to dimension
-   points in order to write computer programs.
+1. We only care about the opinions that are relevant to assign to particles in
+   order to write computer programs.
 2. At any given moment, a computer program does not have multiple viewers who
-   have different opinions about what the same dimension point "means." The only
+   have different opinions about what the same particle "means." The only
    situation in which this would happen is in parallelism conflicts, and we
    eliminate those through paradox detection.
 
 As the [Concepts](../spec/concepts.md) point out, this means that what we really
-care about is assigning a meaning to a dimension point that represents something
-in the physical universe. In particular, something about a computer.
+care about is assigning a meaning to a particle that represents something in the
+physical universe. In particular, something about a computer.
 
 ### 2: Abstractions
 
@@ -95,40 +95,39 @@ world require us to focus on binary data.
 ## Solution
 
 In a Define program, there is only one _real_ type of value: binary data.
-Dimension points can only be given the meaning "a sequence of bits."
+Particles can only be given the meaning "a sequence of bits."
 
-Dimension points may have only a single value. That value _may_ be an infinite
-number of bits (though later proposals will explain how to constrain this), but
-those bits all conceptually represent a single value: a single number, a single
+Particles may have only a single value. That value _may_ be an infinite number
+of bits (though later proposals will explain how to constrain this), but those
+bits all conceptually represent a single value: a single number, a single
 character, etc.
 
-### Declaring that a Dimension Point May Have a Value
+### Declaring that a Particle May Have a Value
 
-Developers can indicate that a dimension point accepts a binary value by adding
-this as a line in the definition of a position:
+Developers can indicate that a particle accepts a binary value by adding this as
+a line in the definition of a position:
 
 `it has a value.`
 
 This is called a Value Declaration.
 
-There is no syntax to add this property to a dimension point later; it must be
-assigned at the creation of a dimension point. If a dimension point moves
-through a position that does not have a value, the dimension point does not lose
-its value. However, referring to the dimension point via that position does not
-allow accessing or interacting with its value.
+There is no syntax to add this property to a particle later; it must be assigned
+at the creation of a particle. If a particle moves through a position that does
+not have a value, the particle does not lose its value. However, referring to
+the particle via that position does not allow accessing or interacting with its
+value.
 
-### Initial Values of Dimension Points
+### Initial Values of Particles
 
-Once a dimension point is placed into a position with a value, it is considered
+Once a particle is placed into a position with a value, it is considered
 logically to always have a default value. If not specified, that value is
 logically a 1-bit 0. However, most often the code the compiler generates will
-actually assume that the first value that the dimension gets set to in the
+actually assume that the first value that the particle gets set to in the
 program is actually its initial value.
 
-### Setting a Value on a Dimension Point
+### Setting a Value on a Particle
 
-A value may be set on a dimension point via this syntax in an Action Statements
-Block:
+A value may be set on a particle via this syntax in an Action Statements Block:
 
 `set the value of position<recipient> to position<source>.`
 
@@ -166,7 +165,7 @@ define the potential action<example.com:example:/set_value> {
         it has a value.
     }
     it happens when {
-        the position<has_a_value> has a dimension point.
+        the position<has_a_value> has a particle.
     } and it does {
         set the value of position<recipient> to position<has_a_value>.
     }
@@ -178,20 +177,20 @@ define the potential action<example.com:example:/set_value> {
 This is one of the parts of Define that I have done the most reasoning and
 research about.
 
-The first key breakthrough was that assigning a value to a dimension point makes
-that dimension point into a symbol: a particle with meaning. However, real
-living beings can assign any possible meaning to any particle, which creates an
-infinite complexity that can't be reasoned about via a programming language.
+The first key breakthrough was that assigning a value to a particle makes that
+particle into a symbol: a particle with meaning. However, real living beings can
+assign any possible meaning to any particle, which creates an infinite
+complexity that can't be reasoned about via a programming language.
 
 Thus, I had to create some framework in which values could live and relate to
 each other. To start this, I had to reason through _why_ we want to assign
-meaning to dimension points in a program, and I determined that it's because we
-want to actually _use_ the "simulator" (the computer), like provide actual
-concrete instructions to it, not just reason through abstract things inside the
-universe of the program itself. Thinking through that further, it became
-apparent that computers only care about electromagnetic states, which they
-translate into binary. Thus, with most current computers, the only "meaning"
-that anything can actually have in a program is "this binary data."
+meaning to particles in a program, and I determined that it's because we want to
+actually _use_ the "simulator" (the computer), like provide actual concrete
+instructions to it, not just reason through abstract things inside the universe
+of the program itself. Thinking through that further, it became apparent that
+computers only care about electromagnetic states, which they translate into
+binary. Thus, with most current computers, the only "meaning" that anything can
+actually have in a program is "this binary data."
 
 Also, information theory, specifically Claude Shannon's work, dictates that any
 discrete information can be losslessly encoded into binary digits (bits). So we
@@ -214,11 +213,11 @@ change both the syntax and the semantics here in the future.
 
 The potential danger is if that future change would involve inserting behavior
 at _runtime_ into the program. Since we have chosen the current fundamental of
-computers (binary data) as the "meaning" of dimension points, it seems unlikely
-that we would encounter such a difficult transition in the future. I'm
-optimistic that even if such a transition occurred, we would be able to
-deterministically transform Define programs in a way that still preserved
-optimal performance characteristics.
+computers (binary data) as the "meaning" of particles, it seems unlikely that we
+would encounter such a difficult transition in the future. I'm optimistic that
+even if such a transition occurred, we would be able to deterministically
+transform Define programs in a way that still preserved optimal performance
+characteristics.
 
 If we need new types of values (electromagnetic states, quantum states) in the
 future, it doesn't seem too hard to create a new value system or additional

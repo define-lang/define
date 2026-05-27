@@ -36,14 +36,14 @@ def test_walk_returns_results_in_encounter_order(validate_project: ValidateProje
         {
             "test.dfn": (
                 "define the potential position<mv:define-lang.org:walk_order:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</middle>.\n"
                 "    }\n"
                 "}\n"
             ),
             "middle.dfn": (
                 "define the potential position<mv:define-lang.org:walk_order:/middle> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</leaf>.\n"
                 "    }\n"
                 "}\n"
@@ -66,7 +66,7 @@ def test_duplicate_does_not_corrupt_reference_resolution(
         {
             "root.dfn": (
                 "define the potential position<my.domain.com:my_lib:/root> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</target>.\n"
                 "        it has the position</dup>.\n"
                 "    }\n"
@@ -105,14 +105,14 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test>.\n"
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</other>.\n"
                 "    }\n"
                 "}\n"
             ),
             "other.dfn": (
                 "define the potential position<my.domain.com:my_lib:/other> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</test>.\n"
                 "    }\n"
                 "}\n"
@@ -134,7 +134,7 @@ def test_self_cycle_emits_diagnostic(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</test>.\n"
         "    }\n"
         "}\n"
@@ -163,14 +163,14 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
         {
             "test.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</loop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "loop.dfn": (
                 "define the potential position<mv:define-lang.org:test_walk_cycle:/loop> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</test>.\n"
                 "    }\n"
                 "}\n"
@@ -205,7 +205,7 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
 
 _EXTERNAL_UNIVERSE_SOURCE = (
     "define the potential position<my.domain.com:my_lib:/test> {\n"
-    "    it may only contain dimension points where {\n"
+    "    it may only contain particles where {\n"
     "        it has the position<other.example.com:other_universe:/target>.\n"
     "    }\n"
     "}\n"
@@ -237,13 +237,13 @@ def test_config_failure_still_validates_same_file_cycles(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/a> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<other.example.com:other_universe:/target>.\n"
         "        it has the position</b>.\n"
         "    }\n"
         "}\n"
         "define the potential position<my.domain.com:my_lib:/b> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</a>.\n"
         "    }\n"
         "}\n"
@@ -370,7 +370,7 @@ def test_unknown_universe_emits_diagnostic(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<other.example.com:other_universe:/target>.\n"
         "    }\n"
         "}\n"
@@ -390,7 +390,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<other.example.com:other_universe:/target>.\n"
         "        it has the position<other.example.com:other_universe:/another>.\n"
         "    }\n"
@@ -413,7 +413,7 @@ def test_unknown_universe_across_files_reported_per_file(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position<other.example.com:other_universe:/target>.\n"
                 "        it has the position</other>.\n"
                 "    }\n"
@@ -421,7 +421,7 @@ def test_unknown_universe_across_files_reported_per_file(
             ),
             "other.dfn": (
                 "define the potential position<my.domain.com:my_lib:/other> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position<other.example.com:other_universe:/another>.\n"
                 "    }\n"
                 "}\n"
@@ -445,7 +445,7 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</middle>.\n"
                 "        it has the position</shared>.\n"
                 "    }\n"
@@ -453,7 +453,7 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
             ),
             "middle.dfn": (
                 "define the potential position<my.domain.com:my_lib:/middle> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</shared>.\n"
                 "        it has the position</leaf>.\n"
                 "    }\n"
@@ -481,7 +481,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</test>.\n"
                 "        it has the position</wrong_type>.\n"
                 "    }\n"
@@ -491,10 +491,10 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
                 "define the potential action<my.domain.com:my_lib:/wrong_type> {\n"
                 "    define the position<_noop>.\n"
                 "    it happens when {\n"
-                "        the position<_noop> has a dimension point.\n"
+                "        the position<_noop> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<__noop>.\n"
-                "        create a dimension point in position<__noop>.\n"
+                "        create a particle in position<__noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -535,7 +535,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     monkeypatch.chdir(tmp_path)
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         f"        it has the position<{child_a}:/target_a>.\n"
         f"        it has the position<{child_b}:/target_b>.\n"
         "    }\n"
@@ -567,7 +567,7 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
     monkeypatch.chdir(tmp_path)
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position<unknown.com:lib_a:/target_a>.\n"
         "        it has the position<unknown.com:lib_a:/target_b>.\n"
         "        it has the position<unknown.com:lib_b:/target_c>.\n"

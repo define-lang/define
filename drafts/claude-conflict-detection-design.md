@@ -2,11 +2,11 @@
 
 ## Context
 
-Define needs a compile-time system to track which positions contain dimension
-points at every point during program execution, so the compiler can detect:
+Define needs a compile-time system to track which positions contain particles at
+every point during program execution, so the compiler can detect:
 
-- Creating a dimension point in an already-occupied position
-- Moving a dimension point to an occupied position
+- Creating a particle in an already-occupied position
+- Moving a particle to an occupied position
 - Moving/destroying from an empty position
 - Referencing through an empty intermediate position in a chain
 - Two concurrent actions modifying the same position (paradoxes)
@@ -30,8 +30,8 @@ essential to the design.
 
 - Edges: `it also assigns the position<...>` / `action<...>`
 - Makes names accessible in the current scope
-- Determines quality assignment order and dimension point structure
-- Multiple actions on the same dimension point share positions through this tree
+- Determines quality assignment order and particle structure
+- Multiple actions on the same particle share positions through this tree
 
 **Trigger relationships** (can cycle, derived from the other two):
 
@@ -39,27 +39,27 @@ essential to the design.
   quality implication tree
 - Trigger edges either follow reference edges (caller triggers callee through
   position chain), go between quality implication siblings (actions on the same
-  dimension point sharing a position), or go in reverse along reference edges
-  (callee satisfies caller's `wait until`)
-- Cycles can only form between sibling actions on the same dimension point via
-  shared implied positions. Cross-dimension-point cycles would require reference
-  graph cycles, which are forbidden.
+  particle sharing a position), or go in reverse along reference edges (callee
+  satisfies caller's `wait until`)
+- Cycles can only form between sibling actions on the same particle via shared
+  implied positions. Cross-particle cycles would require reference graph cycles,
+  which are forbidden.
 
 ---
 
 ## 2. The Position Ownership Tree
 
 Positions form a dynamic tree. Each level alternates between positions and
-dimension points:
+particles:
 
 ```
 root position
-└── dimension point (occupies the position)
-    ├── quality position A (assigned to the dimension point)
-    │   └── dimension point
+└── particle (occupies the position)
+    ├── quality position A (assigned to the particle)
+    │   └── particle
     │       └── ...
     └── quality position B
-        └── dimension point
+        └── particle
             └── ...
 ```
 
@@ -73,7 +73,7 @@ to be valid:
 4. The dim point at `position</b>` must have `position</c>` assigned
 
 If any intermediate is empty, the entire subtree below it is unreachable.
-Creating a dimension point _activates_ a branch. Destroying one _deactivates_
+Creating a particle _activates_ a branch. Destroying one _deactivates_
 everything below (cascading destruction).
 
 **Concurrency is always rooted in this tree.** If two actions execute
@@ -86,11 +86,11 @@ both of them. This common ancestor bounds the scope of potential conflicts.
 
 For each position known to the compiler at a given program point:
 
-| State         | Meaning                                      |
-| ------------- | -------------------------------------------- |
-| **Undefined** | Position not yet defined in scope            |
-| **Empty**     | Position exists, contains no dimension point |
-| **Occupied**  | Position exists, contains a dimension point  |
+| State         | Meaning                               |
+| ------------- | ------------------------------------- |
+| **Undefined** | Position not yet defined in scope     |
+| **Empty**     | Position exists, contains no particle |
+| **Occupied**  | Position exists, contains a particle  |
 
 Because Define lacks conditionals and loops within action bodies, there is no
 need for an "Unknown" state within a single execution segment. Across
@@ -135,33 +135,33 @@ and `position</b>` (both must be Occupied) plus whatever operation applies to
 
 **`define the position<x>`**: `state[x] = Empty`
 
-**`create a dimension point in position<R>`**:
+**`create a particle in position<R>`**:
 
 - Precondition: `state[R] == Empty`, all intermediates Occupied
 - Postcondition: `state[R] = Occupied`
 - Compound: constraints assigned atomically (DLP 20), init blocks run
   synchronously (DLP 32), potentially filling child positions
 
-**`move the dimension point in position<R1> to position<R2>`**:
+**`move the particle in position<R1> to position<R2>`**:
 
 - Precondition: `state[R1] == Occupied`, `state[R2] == Empty`, all intermediates
   Occupied, R2 not a descendant of R1 (DLP 25)
 - Postcondition: `state[R1] = Empty`, `state[R2] = Occupied`
-- Child positions transfer with the dimension point
+- Child positions transfer with the particle
 
-**`destroy the dimension point in position<R>`**:
+**`destroy the particle in position<R>`**:
 
 - Precondition: `state[R] == Occupied`, all intermediates Occupied
 - Postcondition: `state[R] = Empty`
 - Cascade: destructors run synchronously in reverse-assignment order (DLP 34),
   child positions emptied recursively (DLP 31)
 
-**`assign the position<P> to dimension point in position<R>`**:
+**`assign the position<P> to particle in position<R>`**:
 
 - Precondition: `state[R] == Occupied`
 - Postcondition: `state[R::P] = Empty` (or post-init state if P has init block)
 
-**End of action block**: locally-defined positions with dimension points are
+**End of action block**: locally-defined positions with particles are
 automatically destroyed in reverse definition order (DLP 31). The tracker
 simulates these implicit destructions.
 
@@ -233,8 +233,8 @@ depending on the operation. Any concurrent write to an intermediate invalidates
 the entire reference chain.
 
 **Position references are relative.** An action's effects are expressed relative
-to `this dimension point`. At the concurrency root, the compiler instantiates
-against concrete positions.
+to `this particle`. At the concurrency root, the compiler instantiates against
+concrete positions.
 
 ### Concurrency via the Ownership Tree
 
@@ -249,8 +249,7 @@ Two concurrent actions can only conflict on positions they can both name:
 - **Local positions**: each concurrent subtree's local positions are private. No
   conflict possible.
 - **Shared implied positions**: positions accessible to multiple concurrent
-  siblings because they're on the same dimension point. This is where conflicts
-  happen.
+  siblings because they're on the same particle. This is where conflicts happen.
 - **Intermediate positions**: one concurrent action traverses through a position
   that another concurrent action writes to (chain invalidation).
 
@@ -273,21 +272,21 @@ For each concurrency root, check the concurrent children's effect summaries:
 
 ### Where Cycles Can Form
 
-Trigger cycles can only form between sibling actions on the same dimension
-point, connected through shared implied positions. Cross-dimension-point cycles
-are prevented by reference graph acyclicity.
+Trigger cycles can only form between sibling actions on the same particle,
+connected through shared implied positions. Cross-particle cycles are prevented
+by reference graph acyclicity.
 
-This means cycle detection is **local per dimension point**, not global. For
-each dimension point with multiple actions, check whether the sibling actions
-can trigger each other in a cycle through shared positions.
+This means cycle detection is **local per particle**, not global. For each
+particle with multiple actions, check whether the sibling actions can trigger
+each other in a cycle through shared positions.
 
 ### Termination Analysis
 
 Since the state space is finite (2^|P| position states), termination is always
 decidable. A layered checker:
 
-**Layer 1 -- DAG check**: If no cycles among this dimension point's sibling
-actions → done.
+**Layer 1 -- DAG check**: If no cycles among this particle's sibling actions →
+done.
 
 **Layer 2 -- T-invariant analysis**: For each cycle, compute the Petri net
 incidence matrix. If no non-negative solution to Ax=0 exists → cycle provably
@@ -323,8 +322,8 @@ During cascading destruction, position constraints are suspended (DLP 31) and
 actions triggered by quality removal do NOT fire. Only explicit destructors need
 to be traced.
 
-**Chain invalidation during cascades**: destroying a dimension point deactivates
-its entire subtree. Any concurrent action traversing through that subtree's
+**Chain invalidation during cascades**: destroying a particle deactivates its
+entire subtree. Any concurrent action traversing through that subtree's
 positions is in conflict.
 
 ---
@@ -352,7 +351,7 @@ infrastructure needed beyond the occupancy map.
 **Only when async triggers are detected (Mode 2):** Compute effect summaries for
 the concurrent subtrees at the concurrency root. Check for conflicts on shared
 positions. Cycle detection and termination analysis for sibling actions on the
-same dimension point.
+same particle.
 
 No global trigger graph. No global Tarjan's. No global concurrency sets. No
 global causal reachability. The ownership tree structure makes all of those
@@ -381,7 +380,7 @@ This is the same order as existing compilation. No new bottleneck.
 | ------------------------------- | ------------------------------ | -------------------- |
 | Effect summary computation      | O(concurrent subtree size)     | Per concurrency root |
 | Conflict checking               | O(A² × P) per concurrency root | Per concurrency root |
-| Cycle detection (per dim point) | O(sibling actions)             | Per dimension point  |
+| Cycle detection (per dim point) | O(sibling actions)             | Per particle         |
 
 Where A = number of concurrent siblings, P = number of shared positions. For
 typical programs, A is small (a few async tasks at startup) and P is small (a
@@ -406,7 +405,7 @@ few shared implied positions). Mode 2 is rarely invoked and cheap when it is.
 - **Effect summaries computed on-demand**: only for concurrent subtrees at async
   trigger points, not for the entire program.
 - **Cycles are local**: can only form between sibling actions on the same
-  dimension point. Detected per dimension point, not globally.
+  particle. Detected per particle, not globally.
 - **Chain reads are tracked**: every intermediate position in a chain is an
   implicit read. Chain invalidation is a conflict type.
 - **Read-write conflicts**: only paradoxes when truly concurrent with no causal

@@ -1,8 +1,0 @@
-define the potential action<mv:define-lang.org:test_files:/invalid/dimension_points/move/undefined_local_position> {
-    define the position<run>.
-    it happens when {
-        the position<run> has a dimension point.
-    } and it does {
-        move the dimension point in position<no_such_pos> to position<also_missing>.
-    }
-}

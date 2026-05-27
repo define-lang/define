@@ -50,12 +50,12 @@ keywords and put the name inside of the statement.
 
 Just as one point, it makes it much harder for developers to do dumb parsing of
 files. For example, imagine you want to write a regular expression to
-successfully find all dimension point creations. It's much harder for
-programmers to get it right if the name starts the line. The regex
-`/^(\w+<\w+>) now has a dimension point/` is much harder than
-`/^create a dimension point in (.+)\./`. Also, the first regex is what
-developers would probably write and it would actually be wrong, because names
-can be configured to have more characters allowed than `\w`.
+successfully find all particle creations. It's much harder for programmers to
+get it right if the name starts the line. The regex
+`/^(\w+<\w+>) now has a particle/` is much harder than
+`/^create a particle in (.+)\./`. Also, the first regex is what developers would
+probably write and it would actually be wrong, because names can be configured
+to have more characters allowed than `\w`.
 
 It's also the only way we can both be consistent _and_ create intuitive
 sentences. We want there to be one right way in Define, and so if names are

@@ -1,0 +1,12 @@
+define the potential action<mv:define-lang.org:test_files:/invalid/particles/move/to_occupied_position> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<pos_a>.
+        define the position<pos_b>.
+        create a particle in position<pos_a>.
+        create a particle in position<pos_b>.
+        move the particle in position<pos_a> to position<pos_b>.
+    }
+}

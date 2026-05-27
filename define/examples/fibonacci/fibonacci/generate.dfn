@@ -4,24 +4,24 @@ define the potential action<define-lang.org:fibonacci:/generate> {
     }
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<sequence> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</sequence/current>.
                 it has the position</sequence/previous>.
                 it has the action</sequence/next>.
             }
         }
-        create a dimension point in position<sequence>.
+        create a particle in position<sequence>.
 
         # Generate 500 Fibonacci numbers using bounded loop
         # Position constraints (non_negative) serve as implicit invariants
         # Z3 proves: non_negative preserved by current + previous (O(1) proof)
         repeat 500 times {
-            create a dimension point in position<sequence>::action</sequence/next>::position<run>.
+            create a particle in position<sequence>::action</sequence/next>::position<run>.
             wait until {
-                NOT position<sequence>::action</sequence/next>::position<run> has a dimension point.
+                NOT position<sequence>::action</sequence/next>::position<run> has a particle.
             }
         }
 

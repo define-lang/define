@@ -83,10 +83,10 @@ def _action_simple(universe_name: str, rel_def_file: str) -> str:
         f"define the potential action<{name}> {{\n"
         f"    define the position<_noop>.\n"
         f"    it happens when {{\n"
-        f"        the position<_noop> has a dimension point.\n"
+        f"        the position<_noop> has a particle.\n"
         f"    }} and it does {{\n"
         f"        define the position<__noop>.\n"
-        f"        create a dimension point in position<__noop>.\n"
+        f"        create a particle in position<__noop>.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -101,7 +101,7 @@ def _position_with_requirements(
 ) -> str:
     lines = [
         f"define the potential position<{_global_name(universe_name, rel_def_file)}> {{",
-        f"{indent}it may only contain dimension points where {{",
+        f"{indent}it may only contain particles where {{",
     ]
     for req_type, req_name in requirements:
         lines.append(f"{indent * 2}it has the {req_type}<{req_name}>.")
@@ -129,7 +129,7 @@ def _position_with_init_block(
         for typed_kind, impl_name in quality_implications:
             lines.append(f"{indent}it also assigns the {typed_kind}<{impl_name}>.")
     if requirements is not None:
-        lines.append(f"{indent}it may only contain dimension points where {{")
+        lines.append(f"{indent}it may only contain particles where {{")
         for req_type, req_name in requirements:
             lines.append(f"{indent * 2}it has the {req_type}<{req_name}>.")
         lines.append(f"{indent}}}")
@@ -157,7 +157,7 @@ def _local_position_with_requirements(
 ) -> str:
     lines = [
         f"{indent}define the position<{name}> {{",
-        f"{indent}    it may only contain dimension points where {{",
+        f"{indent}    it may only contain particles where {{",
     ]
     for req_type, req_name in requirements:
         lines.append(f"{indent}        it has the {req_type}<{req_name}>.")
@@ -170,16 +170,16 @@ def _local_position_with_requirements(
     return _join_lines(lines)
 
 
-def _create_dimension_point_statement(position_reference: str, *, indent: str) -> str:
-    return f"{indent}create a dimension point in {position_reference}.\n"
+def _create_particle_statement(position_reference: str, *, indent: str) -> str:
+    return f"{indent}create a particle in {position_reference}.\n"
 
 
-def _move_dimension_point_statement(from_ref: str, to_ref: str, *, indent: str) -> str:
-    return f"{indent}move the dimension point in {from_ref} to {to_ref}.\n"
+def _move_particle_statement(from_ref: str, to_ref: str, *, indent: str) -> str:
+    return f"{indent}move the particle in {from_ref} to {to_ref}.\n"
 
 
-def _destroy_dimension_point_statement(position_reference: str, *, indent: str) -> str:
-    return f"{indent}destroy the dimension point in {position_reference}.\n"
+def _destroy_particle_statement(position_reference: str, *, indent: str) -> str:
+    return f"{indent}destroy the particle in {position_reference}.\n"
 
 
 @st.composite
@@ -206,7 +206,7 @@ def _local_start_chain_references(draw: st.DrawFn) -> str:
 
 
 @st.composite
-def create_dimension_point_references(draw: st.DrawFn) -> str:
+def create_particle_references(draw: st.DrawFn) -> str:
     return cast(
         "str",
         draw(
@@ -264,7 +264,7 @@ def _action_block_with_name(
     if include_trigger_comment:
         trigger_line += " # trigger comment"
     lines.append(trigger_line)
-    lines.append(f"{indent}{indent}the {trigger_condition_ref} has a dimension point.")
+    lines.append(f"{indent}{indent}the {trigger_condition_ref} has a particle.")
     if blank_lines_in_blocks:
         lines.append("")
     action_open = f"{indent}}} and it does {{"
@@ -413,10 +413,8 @@ def position_definitions(draw: st.DrawFn) -> str:
         num_stmts = draw(st.integers(min_value=1, max_value=4))
         init_stmts: list[str] = []
         for _ in range(num_stmts):
-            ref = draw(create_dimension_point_references())
-            init_stmts.append(
-                _create_dimension_point_statement(ref, indent=inner_indent)
-            )
+            ref = draw(create_particle_references())
+            init_stmts.append(_create_particle_statement(ref, indent=inner_indent))
         if definition_kind == "position_constrained_init":
             num_reqs = draw(st.integers(min_value=1, max_value=5))
             reqs: list[tuple[str, str]] = []
@@ -429,7 +427,7 @@ def position_definitions(draw: st.DrawFn) -> str:
                 )
             lines = [
                 f"define the potential position<{name}> {{",
-                "    it may only contain dimension points where {",
+                "    it may only contain particles where {",
             ]
             for req_type, req_name in reqs:
                 lines.append(f"        it has the {req_type}<{req_name}>.")
@@ -455,7 +453,7 @@ def position_definitions(draw: st.DrawFn) -> str:
         requirements.append((child_type, child_name))
     lines = [
         f"define the potential position<{name}> {{",
-        "    it may only contain dimension points where {",
+        "    it may only contain particles where {",
     ]
     for child_type, child_name in requirements:
         lines.append(f"        it has the {child_type}<{child_name}>.")
@@ -470,10 +468,10 @@ def action_definitions_simple(draw: st.DrawFn) -> str:
         f"define the potential action<{name}> {{\n"
         f"    define the position<_noop>.\n"
         f"    it happens when {{\n"
-        f"        the position<_noop> has a dimension point.\n"
+        f"        the position<_noop> has a particle.\n"
         f"    }} and it does {{\n"
         f"        define the position<__noop>.\n"
-        f"        create a dimension point in position<__noop>.\n"
+        f"        create a particle in position<__noop>.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -528,24 +526,24 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
             )
     create_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(create_count):
-        position_reference = draw(create_dimension_point_references())
+        position_reference = draw(create_particle_references())
         inner_locals.append(
-            _create_dimension_point_statement(position_reference, indent=inner_indent)
+            _create_particle_statement(position_reference, indent=inner_indent)
         )
     move_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(move_count):
-        from_ref = draw(create_dimension_point_references())
-        to_ref = draw(create_dimension_point_references())
+        from_ref = draw(create_particle_references())
+        to_ref = draw(create_particle_references())
         inner_locals.append(
-            _move_dimension_point_statement(from_ref, to_ref, indent=inner_indent)
+            _move_particle_statement(from_ref, to_ref, indent=inner_indent)
         )
     destroy_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(destroy_count):
-        position_reference = draw(create_dimension_point_references())
+        position_reference = draw(create_particle_references())
         inner_locals.append(
-            _destroy_dimension_point_statement(position_reference, indent=inner_indent)
+            _destroy_particle_statement(position_reference, indent=inner_indent)
         )
-    trigger_condition_ref = draw(create_dimension_point_references())
+    trigger_condition_ref = draw(create_particle_references())
     return _action_block_with_name(
         name,
         outer_locals=outer_locals,
@@ -716,7 +714,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             implications = draw(_valid_implications_strategy())
             for impl_kind, impl_name in implications:
                 init_stmts.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         _implication_chain_reference(impl_kind, impl_name),
                         indent=inner_indent,
                     )
@@ -724,9 +722,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             use_self_ref = draw(st.booleans())
             if use_self_ref:
                 init_stmts.append(
-                    _create_dimension_point_statement(
-                        "position</test>", indent=inner_indent
-                    )
+                    _create_particle_statement("position</test>", indent=inner_indent)
                 )
             num_local = draw(st.integers(min_value=0, max_value=4))
             for i in range(num_local):
@@ -735,15 +731,13 @@ def valid_sources(draw: st.DrawFn) -> str:
                     _local_position_simple(local_name, indent=inner_indent)
                 )
                 init_stmts.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         f"position<{local_name}>", indent=inner_indent
                     )
                 )
             if not init_stmts:
                 init_stmts.append(
-                    _create_dimension_point_statement(
-                        "position</test>", indent=inner_indent
-                    )
+                    _create_particle_statement("position</test>", indent=inner_indent)
                 )
             fragments.append(
                 _position_with_init_block(
@@ -760,7 +754,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             init_stmts_c: list[str] = []
             for impl_kind, impl_name in implications_c:
                 init_stmts_c.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         _implication_chain_reference(impl_kind, impl_name),
                         indent=inner_indent,
                     )
@@ -768,9 +762,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             use_self_ref_c = draw(st.booleans())
             if use_self_ref_c:
                 init_stmts_c.append(
-                    _create_dimension_point_statement(
-                        "position</test>", indent=inner_indent
-                    )
+                    _create_particle_statement("position</test>", indent=inner_indent)
                 )
             num_local_c = draw(st.integers(min_value=0, max_value=4))
             for i in range(num_local_c):
@@ -779,15 +771,13 @@ def valid_sources(draw: st.DrawFn) -> str:
                     _local_position_simple(local_name, indent=inner_indent)
                 )
                 init_stmts_c.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         f"position<{local_name}>", indent=inner_indent
                     )
                 )
             if not init_stmts_c:
                 init_stmts_c.append(
-                    _create_dimension_point_statement(
-                        "position</test>", indent=inner_indent
-                    )
+                    _create_particle_statement("position</test>", indent=inner_indent)
                 )
             fragments.append(
                 _position_with_init_block(
@@ -812,7 +802,7 @@ def valid_sources(draw: st.DrawFn) -> str:
         action_kind = draw(st.sampled_from(["simple", "block"]))
         if action_kind == "simple":
             fragments.append(
-                f"define the potential action<{_VALID_NAME}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a dimension point.\n    }} and it does {{\n        define the position<__noop>.\n        create a dimension point in position<__noop>.\n    }}\n}}\n"
+                f"define the potential action<{_VALID_NAME}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a particle.\n    }} and it does {{\n        define the position<__noop>.\n        create a particle in position<__noop>.\n    }}\n}}\n"
             )
         else:
             outer_indent = "    "
@@ -836,7 +826,7 @@ def valid_sources(draw: st.DrawFn) -> str:
             inner_locals: list[str] = []
             for impl_kind, impl_name in action_implications:
                 inner_locals.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         _implication_chain_reference(impl_kind, impl_name),
                         indent=inner_indent,
                     )
@@ -863,7 +853,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                 elif _INNER_POS_IN_ACTION in last_segment:
                     inner_pos_targeted = True
                 inner_locals.append(
-                    _create_dimension_point_statement(ref, indent=inner_indent)
+                    _create_particle_statement(ref, indent=inner_indent)
                 )
             move_count = draw(
                 st.integers(min_value=0, max_value=len(_MOVE_POSITION_NAMES) - 1)
@@ -875,13 +865,13 @@ def valid_sources(draw: st.DrawFn) -> str:
                         _local_position_simple(pos_name, indent=outer_indent)
                     )
                 inner_locals.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         f"position<{needed[0]}>", indent=inner_indent
                     )
                 )
                 for i in range(move_count):
                     inner_locals.append(
-                        _move_dimension_point_statement(
+                        _move_particle_statement(
                             f"position<{needed[i]}>",
                             f"position<{needed[i + 1]}>",
                             indent=inner_indent,
@@ -894,12 +884,12 @@ def valid_sources(draw: st.DrawFn) -> str:
                     _local_position_simple(destroy_local, indent=inner_indent)
                 )
                 inner_locals.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         f"position<{destroy_local}>", indent=inner_indent
                     )
                 )
                 inner_locals.append(
-                    _destroy_dimension_point_statement(
+                    _destroy_particle_statement(
                         f"position<{destroy_local}>", indent=inner_indent
                     )
                 )
@@ -917,7 +907,7 @@ def valid_sources(draw: st.DrawFn) -> str:
                     _local_position_simple(fallback_name, indent=outer_indent)
                 )
                 inner_locals.append(
-                    _create_dimension_point_statement(
+                    _create_particle_statement(
                         f"position<{fallback_name}>", indent=inner_indent
                     )
                 )
@@ -967,7 +957,7 @@ def position_definitions_with_implications(draw: st.DrawFn) -> str:
         f"define the potential position<{name}> {{\n"
         f"    it also assigns the {impl_kind}<{impl_name}>.\n"
         f"    after it is assigned {{\n"
-        f"        create a dimension point in {body_ref}.\n"
+        f"        create a particle in {body_ref}.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -988,10 +978,10 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
         f"    it also assigns the {impl_kind}<{impl_name}>.\n"
         f"    define the position<_noop>.\n"
         f"    it happens when {{\n"
-        f"        the position<_noop> has a dimension point.\n"
+        f"        the position<_noop> has a particle.\n"
         f"    }} and it does {{\n"
         f"        define the position<__noop>.\n"
-        f"        create a dimension point in {body_ref}.\n"
+        f"        create a particle in {body_ref}.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -1037,7 +1027,7 @@ _MUTATIONS = [
     "remove_newline",
     "remove_angle_bracket",
     "remove_structural_char",
-    "remove_dimension_point_statement_space",
+    "remove_particle_statement_space",
     "insert_unicode",
 ]
 
@@ -1066,9 +1056,9 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "potential",
             "position",
             "action",
-            "create a dimension point in",
-            "move the dimension point in",
-            "destroy the dimension point in",
+            "create a particle in",
+            "move the particle in",
+            "destroy the particle in",
             "it happens when",
             "and it does",
             "after it is assigned",
@@ -1105,11 +1095,11 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             idx = draw(st.sampled_from(indices))
             return source[:idx] + source[idx + 1 :]
 
-    if mutation == "remove_dimension_point_statement_space":
+    if mutation == "remove_particle_statement_space":
         prefixes = [
-            "create a dimension point in ",
-            "move the dimension point in ",
-            "destroy the dimension point in ",
+            "create a particle in ",
+            "move the particle in ",
+            "destroy the particle in ",
         ]
         present_prefixes = [prefix for prefix in prefixes if prefix in source]
         if present_prefixes:
@@ -1349,7 +1339,7 @@ def _build_cross_fqun_action_statements_project(
     )
 
 
-def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
+def _build_move_particle_project(root_universe: str) -> ProjectCase:
     root_files = {
         "test.dfn": _action_with_block(
             root_universe,
@@ -1359,10 +1349,8 @@ def _build_move_dimension_point_project(root_universe: str) -> ProjectCase:
                 _local_position_simple("to_pos", indent="    "),
             ],
             inner_locals=[
-                _create_dimension_point_statement(
-                    "position<from_pos>", indent="        "
-                ),
-                _move_dimension_point_statement(
+                _create_particle_statement("position<from_pos>", indent="        "),
+                _move_particle_statement(
                     "position<from_pos>", "position<to_pos>", indent="        "
                 ),
             ],
@@ -1383,7 +1371,7 @@ def _build_position_init_self_reference_project(
             root_universe,
             "test.dfn",
             [
-                _create_dimension_point_statement("position</test>", indent="        "),
+                _create_particle_statement("position</test>", indent="        "),
             ],
             [("position", other_path)],
         ),
@@ -1404,7 +1392,7 @@ def _build_position_quality_implication_project(
             root_universe,
             "test.dfn",
             [
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"position<{target_path}>", indent="        "
                 ),
             ],
@@ -1429,7 +1417,7 @@ def _build_action_quality_implication_project(
             "test.dfn",
             outer_locals=[],
             inner_locals=[
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"action<{target_global}>::position<_noop>",
                     indent="        ",
                 ),
@@ -1457,7 +1445,7 @@ def _build_action_quality_implication_project(
     )
 
 
-def _build_destroy_dimension_point_project(root_universe: str) -> ProjectCase:
+def _build_destroy_particle_project(root_universe: str) -> ProjectCase:
     root_files = {
         "test.dfn": _action_with_block(
             root_universe,
@@ -1465,12 +1453,8 @@ def _build_destroy_dimension_point_project(root_universe: str) -> ProjectCase:
             outer_locals=[],
             inner_locals=[
                 _local_position_simple("destroy_pos", indent="        "),
-                _create_dimension_point_statement(
-                    "position<destroy_pos>", indent="        "
-                ),
-                _destroy_dimension_point_statement(
-                    "position<destroy_pos>", indent="        "
-                ),
+                _create_particle_statement("position<destroy_pos>", indent="        "),
+                _destroy_particle_statement("position<destroy_pos>", indent="        "),
             ],
         ),
     }
@@ -1527,7 +1511,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
             root_universe, child_universe
         )
     elif project_kind == "move_local":
-        project_case = _build_move_dimension_point_project(root_universe)
+        project_case = _build_move_particle_project(root_universe)
     elif project_kind == "position_init_self_reference":
         project_case = _build_position_init_self_reference_project(root_universe)
     elif project_kind == "position_quality_implication":
@@ -1537,7 +1521,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
             root_universe, child_universe
         )
     else:
-        project_case = _build_destroy_dimension_point_project(root_universe)
+        project_case = _build_destroy_particle_project(root_universe)
     if draw(st.booleans()):
         decorated_roots: list[ProjectRootCase] = []
         for root in project_case.roots:
@@ -1598,7 +1582,7 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             _ACTION_WITH_INNER_FILE,
             outer_locals=[_local_position_simple(_INNER_POS_IN_ACTION, indent="    ")],
             inner_locals=[
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"position<{_INNER_POS_IN_ACTION}>", indent="        "
                 ),
             ],
@@ -1735,7 +1719,7 @@ def _global_name_context_template(context: str) -> str:
     if context == "position_def":
         return f"define the potential position<{_NAME_MARKER}>.\n"
     if context == "action_def":
-        return f"define the potential action<{_NAME_MARKER}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a dimension point.\n    }} and it does {{\n        define the position<__noop>.\n        create a dimension point in position<__noop>.\n    }}\n}}\n"
+        return f"define the potential action<{_NAME_MARKER}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a particle.\n    }} and it does {{\n        define the position<__noop>.\n        create a particle in position<__noop>.\n    }}\n}}\n"
     if context == "position_req":
         return _position_with_requirements(
             _PROJECT_FQUN, "test.dfn", [("position", _NAME_MARKER)]
@@ -1750,7 +1734,7 @@ def _global_name_context_template(context: str) -> str:
             "test.dfn",
             outer_locals=[],
             inner_locals=[
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"position<{_NAME_MARKER}>", indent="        "
                 )
             ],
@@ -1764,10 +1748,8 @@ def _global_name_context_template(context: str) -> str:
                 _local_position_simple("to_pos", indent="    "),
             ],
             inner_locals=[
-                _create_dimension_point_statement(
-                    "position<from_pos>", indent="        "
-                ),
-                _move_dimension_point_statement(
+                _create_particle_statement("position<from_pos>", indent="        "),
+                _move_particle_statement(
                     f"position<{_NAME_MARKER}>",
                     "position<to_pos>",
                     indent="        ",
@@ -1782,10 +1764,8 @@ def _global_name_context_template(context: str) -> str:
                 _local_position_simple("from_pos", indent="    "),
             ],
             inner_locals=[
-                _create_dimension_point_statement(
-                    "position<from_pos>", indent="        "
-                ),
-                _move_dimension_point_statement(
+                _create_particle_statement("position<from_pos>", indent="        "),
+                _move_particle_statement(
                     "position<from_pos>",
                     f"position<{_NAME_MARKER}>",
                     indent="        ",
@@ -1798,7 +1778,7 @@ def _global_name_context_template(context: str) -> str:
             "test.dfn",
             outer_locals=[],
             inner_locals=[
-                _destroy_dimension_point_statement(
+                _destroy_particle_statement(
                     f"position<{_NAME_MARKER}>", indent="        "
                 )
             ],
@@ -1808,7 +1788,7 @@ def _global_name_context_template(context: str) -> str:
             _PROJECT_FQUN,
             "test.dfn",
             [
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"position<{_ANOTHER_VALID_PATH}>", indent="        "
                 ),
             ],
@@ -1820,7 +1800,7 @@ def _global_name_context_template(context: str) -> str:
             "test.dfn",
             outer_locals=[],
             inner_locals=[
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"position<{_ANOTHER_VALID_PATH}>", indent="        "
                 ),
             ],
@@ -1829,9 +1809,7 @@ def _global_name_context_template(context: str) -> str:
     return _action_block_with_name(
         _global_name(_PROJECT_FQUN, "test.dfn"),
         outer_locals=[],
-        inner_locals=[
-            _create_dimension_point_statement("position<run>", indent="        ")
-        ],
+        inner_locals=[_create_particle_statement("position<run>", indent="        ")],
         trigger_condition_ref=f"position<{_NAME_MARKER}>",
     )
 
@@ -1854,7 +1832,7 @@ def _local_name_context_template(context: str) -> str:
             "test.dfn",
             outer_locals=[f"    define the position<{_NAME_MARKER}>.\n"],
             inner_locals=[
-                _create_dimension_point_statement("position<run>", indent="        ")
+                _create_particle_statement("position<run>", indent="        ")
             ],
         )
     if context == "local_def_constrained":
@@ -1869,7 +1847,7 @@ def _local_name_context_template(context: str) -> str:
                 )
             ],
             inner_locals=[
-                _create_dimension_point_statement("position<run>", indent="        ")
+                _create_particle_statement("position<run>", indent="        ")
             ],
         )
     if context == "create_ref":
@@ -1878,7 +1856,7 @@ def _local_name_context_template(context: str) -> str:
             "test.dfn",
             outer_locals=[],
             inner_locals=[
-                _create_dimension_point_statement(
+                _create_particle_statement(
                     f"position<{_NAME_MARKER}>", indent="        "
                 )
             ],
@@ -1892,10 +1870,8 @@ def _local_name_context_template(context: str) -> str:
                 _local_position_simple("to_pos", indent="    "),
             ],
             inner_locals=[
-                _create_dimension_point_statement(
-                    "position<from_pos>", indent="        "
-                ),
-                _move_dimension_point_statement(
+                _create_particle_statement("position<from_pos>", indent="        "),
+                _move_particle_statement(
                     f"position<{_NAME_MARKER}>",
                     "position<to_pos>",
                     indent="        ",
@@ -1910,10 +1886,8 @@ def _local_name_context_template(context: str) -> str:
                 _local_position_simple("from_pos", indent="    "),
             ],
             inner_locals=[
-                _create_dimension_point_statement(
-                    "position<from_pos>", indent="        "
-                ),
-                _move_dimension_point_statement(
+                _create_particle_statement("position<from_pos>", indent="        "),
+                _move_particle_statement(
                     "position<from_pos>",
                     f"position<{_NAME_MARKER}>",
                     indent="        ",
@@ -1926,7 +1900,7 @@ def _local_name_context_template(context: str) -> str:
             "test.dfn",
             outer_locals=[],
             inner_locals=[
-                _destroy_dimension_point_statement(
+                _destroy_particle_statement(
                     f"position<{_NAME_MARKER}>", indent="        "
                 )
             ],
@@ -1934,9 +1908,7 @@ def _local_name_context_template(context: str) -> str:
     return _action_block_with_name(
         _global_name(_PROJECT_FQUN, "test.dfn"),
         outer_locals=[],
-        inner_locals=[
-            _create_dimension_point_statement("position<run>", indent="        ")
-        ],
+        inner_locals=[_create_particle_statement("position<run>", indent="        ")],
         trigger_condition_ref=f"position<{_NAME_MARKER}>",
     )
 

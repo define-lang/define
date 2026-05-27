@@ -24,9 +24,9 @@ def test_non_self_ref_global_in_action_body(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</other>::position<x>.\n"
+                "        create a particle in action</other>::position<x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -34,10 +34,10 @@ def test_non_self_ref_global_in_action_body(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<x>.\n"
                 "    it happens when {\n"
-                "        the position<x> has a dimension point.\n"
+                "        the position<x> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -49,7 +49,7 @@ def test_non_self_ref_global_in_action_body(
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 6
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
 
 
 def test_non_self_ref_global_in_position_init(
@@ -60,7 +60,7 @@ def test_non_self_ref_global_in_position_init(
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                "        create a particle in action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -68,10 +68,10 @@ def test_non_self_ref_global_in_position_init(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -83,7 +83,7 @@ def test_non_self_ref_global_in_position_init(
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
 
 
 def test_constraint_does_not_make_global_available_as_chain_start(
@@ -93,11 +93,11 @@ def test_constraint_does_not_make_global_available_as_chain_start(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</other>::position<trigger_pos>.\n"
+                "        create a particle in action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -105,10 +105,10 @@ def test_constraint_does_not_make_global_available_as_chain_start(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -120,7 +120,7 @@ def test_constraint_does_not_make_global_available_as_chain_start(
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 6
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
 
 
 def test_self_reference_in_position_init_is_valid(
@@ -130,12 +130,12 @@ def test_self_reference_in_position_init_is_valid(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>.\n"
-                "        create a dimension point in position</test>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position</test>.\n"
+                "        create a particle in position</test>::action</other>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -143,10 +143,10 @@ def test_self_reference_in_position_init_is_valid(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -168,8 +168,8 @@ def test_two_distinct_used_quality_implication_statements():
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</bar>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>.\n"
-        "        create a dimension point in position</bar>.\n"
+        "        create a particle in position</foo>.\n"
+        "        create a particle in position</bar>.\n"
         "    }\n"
         "}\n"
     )
@@ -186,16 +186,16 @@ def test_action_implication_used_via_interface_position_chain():
         "define the potential action<my.domain.com:my_lib:/foo> {\n"
         "    define the position<x>.\n"
         "    it happens when {\n"
-        "        the position<x> has a dimension point.\n"
+        "        the position<x> has a particle.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the action</foo>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in action</foo>::position<x>.\n"
+        "        create a particle in action</foo>::position<x>.\n"
         "    }\n"
         "}\n"
     )
@@ -212,21 +212,21 @@ def test_position_implication_used_only_via_implied_position_chain():
         "define the potential action<my.domain.com:my_lib:/bar> {\n"
         "    define the position<x>.\n"
         "    it happens when {\n"
-        "        the position<x> has a dimension point.\n"
+        "        the position<x> has a particle.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
         "define the potential position<my.domain.com:my_lib:/foo> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the action</bar>.\n"
         "    }\n"
         "}\n"
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>::action</bar>::position<x>.\n"
+        "        create a particle in position</foo>::action</bar>::position<x>.\n"
         "    }\n"
         "}\n"
     )
@@ -243,7 +243,7 @@ def test_global_used_without_implication_is_unknown():
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>.\n"
+        "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -258,7 +258,7 @@ def test_global_used_without_implication_is_unknown():
     assert diags[0].source_global_name == "position</foo>"
     assert diags[0].full_global_name == "position<my.domain.com:my_lib:/foo>"
     assert diags[0].location.line == 4
-    assert diags[0].location.column == 37
+    assert diags[0].location.column == 30
 
 
 def test_duplicate_implication_in_global_position_error():
@@ -268,7 +268,7 @@ def test_duplicate_implication_in_global_position_error():
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</foo>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>.\n"
+        "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -294,9 +294,9 @@ def test_duplicate_implication_in_action_error():
         "    it also assigns the position</foo>.\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
+        "        the position<run> has a particle.\n"
         "    } and it does {\n"
-        "        create a dimension point in position</foo>.\n"
+        "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -322,7 +322,7 @@ def test_three_duplicate_implication_two_errors():
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</foo>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>.\n"
+        "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -357,7 +357,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
                 f"    it also assigns the position<{implied_fqun}:/foo>.\n"
                 f"    it also assigns the position<{implied_fqun}:/foo>.\n"
                 "    after it is assigned {\n"
-                f"        create a dimension point in position<{implied_fqun}:/foo>.\n"
+                f"        create a particle in position<{implied_fqun}:/foo>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -395,8 +395,8 @@ def test_implication_same_path_different_fquns_are_not_duplicates(
                 f"    it also assigns the position<{a_fqun}:/foo>.\n"
                 f"    it also assigns the position<{b_fqun}:/foo>.\n"
                 "    after it is assigned {\n"
-                f"        create a dimension point in position<{a_fqun}:/foo>.\n"
-                f"        create a dimension point in position<{b_fqun}:/foo>.\n"
+                f"        create a particle in position<{a_fqun}:/foo>.\n"
+                f"        create a particle in position<{b_fqun}:/foo>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -415,7 +415,7 @@ def test_duplicate_via_full_form_and_short_form_implication():
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position<my.domain.com:my_lib:/foo>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>.\n"
+        "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -437,7 +437,7 @@ def test_implication_with_invalid_path_format_error():
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</bad/>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</root>.\n"
+        "        create a particle in position</root>.\n"
         "    }\n"
         "}\n"
     )
@@ -460,7 +460,7 @@ def test_implication_invalid_name_does_not_become_duplicate():
         "    it also assigns the position</bad/>.\n"
         "    it also assigns the position</bad/>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</root>.\n"
+        "        create a particle in position</root>.\n"
         "    }\n"
         "}\n"
     )
@@ -486,7 +486,7 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start():
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</bad/>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</bad/>.\n"
+        "        create a particle in position</bad/>.\n"
         "    }\n"
         "}\n"
     )
@@ -505,11 +505,11 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start():
     assert diags[1].source_global_name == "position</bad/>"
     assert diags[1].full_global_name == "position<my.domain.com:my_lib:/bad/>"
     assert diags[1].location.line == 4
-    assert diags[1].location.column == 37
+    assert diags[1].location.column == 30
     assert isinstance(diags[2], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[2].path == "/bad/"
     assert diags[2].location.line == 4
-    assert diags[2].location.column == 50
+    assert diags[2].location.column == 43
 
 
 def test_circular_implication_emits_diagnostic(validate_project: ValidateProject):
@@ -519,7 +519,7 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
                 "define the potential position<my.domain.com:my_lib:/foo> {\n"
                 "    it also assigns the position</bar>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</bar>.\n"
+                "        create a particle in position</bar>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -527,7 +527,7 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
                 "define the potential position<my.domain.com:my_lib:/bar> {\n"
                 "    it also assigns the position</foo>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</foo>.\n"
+                "        create a particle in position</foo>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -556,7 +556,7 @@ def test_unused_implication_on_global_position_error():
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</root>.\n"
+        "        create a particle in position</root>.\n"
         "    }\n"
         "}\n"
     )
@@ -580,10 +580,10 @@ def test_unused_implication_on_action_error():
         "    it also assigns the position</foo>.\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
+        "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )
@@ -605,11 +605,11 @@ def test_implication_used_only_in_constraint_block_is_unused():
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</foo>.\n"
         "    }\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</root>.\n"
+        "        create a particle in position</root>.\n"
         "    }\n"
         "}\n"
     )
@@ -631,11 +631,11 @@ def test_implication_used_only_mid_chain_via_self_ref_is_unused():
         "define the potential position<my.domain.com:my_lib:/foo>.\n"
         "define the potential position<my.domain.com:my_lib:/root> {\n"
         "    it also assigns the position</foo>.\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</foo>.\n"
         "    }\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</root>::position</foo>.\n"
+        "        create a particle in position</root>::position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -660,7 +660,7 @@ def test_two_implication_one_used_one_unused():
         "    it also assigns the position</foo>.\n"
         "    it also assigns the position</bar>.\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</foo>.\n"
+        "        create a particle in position</foo>.\n"
         "    }\n"
         "}\n"
     )
@@ -686,7 +686,7 @@ def test_implication_for_nonexistent_quality_used_in_body(
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the position</nonexistent>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</nonexistent>.\n"
+                "        create a particle in position</nonexistent>.\n"
                 "    }\n"
                 "}\n"
             ),

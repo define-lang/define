@@ -8,13 +8,13 @@
 ## Problems
 
 As described in [DLP 18 (Modular Constraints)](00018-modular-constraints.md),
-the Define compiler must be able to analyze and prove the state of dimension
-points within an action without having to first analyze the whole program (steps
-3 and 4 of that proposal). Otherwise, proving correctness becomes an intractable
+the Define compiler must be able to analyze and prove the state of particles
+within an action without having to first analyze the whole program (steps 3 and
+4 of that proposal). Otherwise, proving correctness becomes an intractable
 problem.
 
 In particular, one of the key aspects that Define must be able to prove is the
-presence or absence of dimension points in positions.
+presence or absence of particles in positions.
 
 This gets us into a discussion of modular action analysis in general, as well as
 pointing out some specific problems that we face in Define.
@@ -98,10 +98,10 @@ has to be within the bounds of the array. Theoretically, it should not have been
 necessary for a compiler to make me, the developer, actually write that. The
 compiler should have been able to figure that out.
 
-In our case, in Define, the fact that a statement requires a dimension point to
-exist or not exist in a position is completely obvious. If you're putting a new
-dimension point there, it has to be empty. If you're removing a dimension point,
-it has to be present.
+In our case, in Define, the fact that a statement requires a particle to exist
+or not exist in a position is completely obvious. If you're putting a new
+particle there, it has to be empty. If you're removing a particle, it has to be
+present.
 
 ### 4: Duplicating the Code in the Postcondition
 
@@ -126,22 +126,22 @@ That postcondition is tedious, pointless duplication. It's necessary in JML, but
 a language designed for verification can do better.
 
 In particular, in Define, we should always (or nearly always) be able to tell
-which dimension point is located where, at the end of an action.
+which particle is located where, at the end of an action.
 
 ### 5: The State of Quality-Required Positions and Actions
 
 As described in [DLP 22 (Atomic Qualities)](00022-atomic-qualities.md),
 positions and actions can require other positions and actions to exist on the
-same dimension point.
+same particle.
 
 This creates a subtle problem for modular analysis. In order to safely interact
 with a required position, or with the interface positions of a required action,
 the compiler also has to know whether those positions are occupied or empty.
 
 The difficulty is that a required action may have already existed on the
-dimension point before the current action was assigned. Other actions may have
-already interacted with its interface positions. Thus, the current action cannot
-simply assume that those interface positions are in some initial empty state.
+particle before the current action was assigned. Other actions may have already
+interacted with its interface positions. Thus, the current action cannot simply
+assume that those interface positions are in some initial empty state.
 
 For example, imagine this Define code:
 
@@ -151,10 +151,10 @@ define the potential action<mv:example.com:bank:/account/withdraw> {
     define the position<amount>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        destroy the dimension point in position<amount>.
-        destroy the dimension point in position<run>.
+        destroy the particle in position<amount>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -164,21 +164,21 @@ define the potential action<mv:example.com:bank:/account/charge_monthly_fee> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        create a dimension point in action</account/withdraw>::position<amount>.
-        create a dimension point in action</account/withdraw>::position<run>.
-        destroy the dimension point in position<run>.
+        create a particle in action</account/withdraw>::position<amount>.
+        create a particle in action</account/withdraw>::position<run>.
+        destroy the particle in position<run>.
     }
 }
 ```
 
 `charge_monthly_fee` requires `withdraw`, so it knows that
-`action</account/withdraw>` exists on the same dimension point. However, that
-does not tell us whether `action</account/withdraw>::position<amount>` is empty
-at the moment when `charge_monthly_fee` tries to create a dimension point there.
-Some other action may already have interacted with `withdraw`'s interface
-positions earlier.
+`action</account/withdraw>` exists on the same particle. However, that does not
+tell us whether `action</account/withdraw>::position<amount>` is empty at the
+moment when `charge_monthly_fee` tries to create a particle there. Some other
+action may already have interacted with `withdraw`'s interface positions
+earlier.
 
 Thus, if Define is going to support modular analysis, actions must somehow carry
 information not just about the positions they define directly, but also about
@@ -242,11 +242,11 @@ actual code.
 
 In Define, the compiler can automatically determine:
 
-1. **Action Position Requirements**: Which external dimension points an action
-   requires to be occupied or empty.
-2. **Action Position Guarantees**: Which dimension point is in any interface
-   position or quality-required position that the action defines after the
-   action completes.
+1. **Action Position Requirements**: Which external particles an action requires
+   to be occupied or empty.
+2. **Action Position Guarantees**: Which particle is in any interface position
+   or quality-required position that the action defines after the action
+   completes.
 
 That is simply stated. However, the details of this are fairly involved.
 
@@ -259,49 +259,45 @@ position. These requirements are treated as satisfied while compiling the action
 itself, and are lifted into the action's definition automatically by the
 compiler, to be used when analyzing requirements for other actions.
 
-If the first reference is creating a dimension point in that position or moving
-a dimension point to that position, the requirement is that the position must be
-empty.
+If the first reference is creating a particle in that position or moving a
+particle to that position, the requirement is that the position must be empty.
 
-If the first reference is moving a dimension point from that position or
-destroying a dimension point in that position, the requirement is that the
-position must be occupied.
+If the first reference is moving a particle from that position or destroying a
+particle in that position, the requirement is that the position must be
+occupied.
 
 ### Implicit Requirements on Chained Names
 
 If an action accesses an inner member via a chained name, that implicitly
-creates the requirement that all positions in that chain must have a dimension
-point.
+creates the requirement that all positions in that chain must have a particle.
 
 For example, imagine an action that has the interface position `position<foo>`
 with the constraint `position</bar>` on it. When we look at this statement:
 
-`create a dimension point in position<foo>::position</bar>::position</baz>`
+`create a particle in position<foo>::position</bar>::position</baz>`
 
 If that were the first statement in the action, it would implicitly create
 _three_ requirements:
 
-- `position<foo>` must have a dimension point
-- `position<foo>::position</bar>` must have a dimension point
+- `position<foo>` must have a particle
+- `position<foo>::position</bar>` must have a particle
 - `position<foo>::position</bar>::position</baz>` must be empty
 
 ### Auto-Generating Guarantees
 
 On completion of an action, the compiler can automatically determine not just
-the action's guarantees for presence or absence of dimension points, but also
-its guarantees about the _identity_ of dimension points.
+the action's guarantees for presence or absence of particles, but also its
+guarantees about the _identity_ of particles.
 
-For example, if dimension point A was passed in to interface position P,
-operated on in some way, then moved to interface position R, we automatically
-know that the dimension point in position R is dimension point A. This is
-important because it means that the exact qualities on point A have been
-preserved, even if position P had narrower quality requirements than the actual
-set of qualities on dimension point A.
+For example, if particle A was passed in to interface position P, operated on in
+some way, then moved to interface position R, we automatically know that the
+particle in position R is particle A. This is important because it means that
+the exact qualities on point A have been preserved, even if position P had
+narrower quality requirements than the actual set of qualities on particle A.
 
-If an output dimension point is not identifiable as being an input dimension
-point, then we know it came from somewhere else (such as a creation statement
-inside of this action) and should be able to guarantee what its exact qualities
-are.
+If an output particle is not identifiable as being an input particle, then we
+know it came from somewhere else (such as a creation statement inside of this
+action) and should be able to guarantee what its exact qualities are.
 
 For positions that get passed to another action's interface positions, or which
 are moved into quality-required positions that are operated on by another
@@ -332,21 +328,20 @@ positions that are treated as satisfied when compiling any individual action.
 In addition to generating guarantees on referenced quality-required positions,
 Position Initialization Blocks also have one special guarantee they create that
 other Action Statement Blocks cannot create: they create guarantees when they
-affect dimension points in their self-referenced position or children of that
-position.
+affect particles in their self-referenced position or children of that position.
 
 Let's take an example where `position</a>` has an init block that creates a
-dimension point in itself. `position</a>` has the contract:
+particle in itself. `position</a>` has the contract:
 `it has the position</dep>`, and `position</dep>` also has an init block that
-creates a dimension point in itself. So when I do:
+creates a particle in itself. So when I do:
 
 ```define
 define the position<local> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</a>.
     }
 }
-create a dimension point in position<local>.
+create a particle in position<local>.
 ```
 
 Then I can _guarantee_ that `position<local>::position</a>` is filled, and also
@@ -355,18 +350,18 @@ position init block of `position</a>` itself can guarantee that `position</dep>`
 is filled and could actually move or destroy that position, thus creating a
 _different_ guarantee than what `position</dep>` normally provides.
 
-### Requirements Follow Dimension Points
+### Requirements Follow Particles
 
 Above I described how _positions_ are affected, but the reality is that
-requirements follow dimension points, not actually positions. If I move a
-dimension point from an interface position into a local position and then do
-something with one of the children of that dimension point, it still creates a
-requirement in the caller. This is true for all forms of requirements.
+requirements follow particles, not actually positions. If I move a particle from
+an interface position into a local position and then do something with one of
+the children of that particle, it still creates a requirement in the caller.
+This is true for all forms of requirements.
 
-So if I have `position<interface_pos>` and I move the dimension point of that
-into `position<some_local>` and then do
-`create a dimension point in position<some_local>::position</should_be_filled>`,
-that creates a requirement for the caller to fill
+So if I have `position<interface_pos>` and I move the particle of that into
+`position<some_local>` and then do
+`create a particle in position<some_local>::position</should_be_filled>`, that
+creates a requirement for the caller to fill
 `position<interface_pos>::position</should_be_filled>`.
 
 ### Error States from External Interactions
@@ -381,19 +376,16 @@ are not valid under the callee's guarantees.
 For example, let's say we have the following situation:
 
 1. Action A has a local position L that requires qualities Q, R, and S.
-2. Action A creates a dimension point (which we will call D) in local position
-   L.
+2. Action A creates a particle (which we will call D) in local position L.
 3. Action A wants to call Action B.
-4. Action A moves dimension point D into Action B's trigger position T, which
-   only requires quality Q.
-5. At this point, if Action B required some other dimension point to be filled
-   before running, the compiler would register an error in Action A.
+4. Action A moves particle D into Action B's trigger position T, which only
+   requires quality Q.
+5. At this point, if Action B required some other particle to be filled before
+   running, the compiler would register an error in Action A.
 6. If everything is okay, Action B runs.
-7. Action A attempts to move the dimension point in position T back into
-   position L.
-8. If it's the same dimension point, this works! If it's a new dimension point,
-   the guarantees provided by Action B dictate whether or not that move is
-   allowed.
+7. Action A attempts to move the particle in position T back into position L.
+8. If it's the same particle, this works! If it's a new particle, the guarantees
+   provided by Action B dictate whether or not that move is allowed.
 
 ### Internal Error States
 
@@ -408,8 +400,8 @@ that guarantee must be carried transitively up the call chain until something
 higher in the call chain makes a different guarantee about that position.
 
 In other words, let's say you have a call chain like A -> B -> C. C creates a
-dimension point in `position</slot>` in its code. This guarantee is provided to
-B, and B also provides that guarantee to A.
+particle in `position</slot>` in its code. This guarantee is provided to B, and
+B also provides that guarantee to A.
 
 That said, any other limitations on external guarantees still apply. At some
 point in the call chain, `position</slot>` is something that was assigned to a
@@ -462,16 +454,15 @@ graph TD
 
 Action C has an interface position named `position<c_iface>` with a child
 position like `position<c_iface>::position</should_be_empty>`. In its body, it
-does
-`create a dimension point in position<c_iface>::position</should_be_empty>`.
+does `create a particle in position<c_iface>::position</should_be_empty>`.
 Action B doesn't fill this, correctly. However, Action A does fill it. That's an
 error! So Action A has to know that Action C creates a transitive requirement
 through Action B.
 
 Now imagine that instead, Action C had
 `position<c_iface>::position</should_be_filled>` and was doing
-`destroy the dimension point in position<c_iface>::position</should_be_filled>`.
-In that case, either Action A _or_ Action B must fill
+`destroy the particle in position<c_iface>::position</should_be_filled>`. In
+that case, either Action A _or_ Action B must fill
 `position</should_be_filled>`. Honestly, it is probably bad software design to
 force Action A to fill an interface position in a deeply-nested action, but if
 we _didn't_ propagate requirements like this, it would be logically inconsistent
@@ -497,12 +488,12 @@ define the potential action<mv:example.com:example:/store_in_slot> {
 
     it happens when {
         # Only the trigger position is explicit here.
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # This first reference means position<item> must already be occupied.
         # It also means position</slot> must be empty.
-        move the dimension point in position<item> to position</slot>.
-        destroy the dimension point in position<run>.
+        move the particle in position<item> to position</slot>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -510,31 +501,31 @@ define the potential action<mv:example.com:example:/valid_direct_example> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<drawer> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</slot>.
                 it has the action</store_in_slot>.
             }
         }
         define the position<spare_item>.
 
-        create a dimension point in position<spare_item>.
-        create a dimension point in position<drawer>.
+        create a particle in position<spare_item>.
+        create a particle in position<drawer>.
 
         # This satisfies store_in_slot's implicit requirement that item be
         # occupied before the action runs.
-        move the dimension point in position<spare_item> to position<drawer>::action</store_in_slot>::position<item>.
-        create a dimension point in position<drawer>::action</store_in_slot>::position<run>.
+        move the particle in position<spare_item> to position<drawer>::action</store_in_slot>::position<item>.
+        create a particle in position<drawer>::action</store_in_slot>::position<run>.
 
         wait until {
-            NOT position<drawer>::action</store_in_slot>::position<run> has a dimension point.
+            NOT position<drawer>::action</store_in_slot>::position<run> has a particle.
         }
 
-        # This is valid because the action guarantees that the same dimension
-        # point now exists in position</slot>.
-        move the dimension point in position<drawer>::position</slot> to position<spare_item>.
+        # This is valid because the action guarantees that the same particle
+        # now exists in position</slot>.
+        move the particle in position<drawer>::position</slot> to position<spare_item>.
     }
 }
 ```
@@ -554,10 +545,10 @@ define the potential action<mv:example.com:example:/store_in_slot> {
     define the position<item>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        move the dimension point in position<item> to position</slot>.
-        destroy the dimension point in position<run>.
+        move the particle in position<item> to position</slot>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -567,11 +558,11 @@ define the potential action<mv:example.com:example:/clear_slot> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # This first reference means position</slot> must already be occupied.
-        destroy the dimension point in position</slot>.
-        destroy the dimension point in position<run>.
+        destroy the particle in position</slot>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -579,10 +570,10 @@ define the potential action<mv:example.com:example:/invalid_direct_example> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<drawer> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</slot>.
                 it has the action</store_in_slot>.
                 it has the action</clear_slot>.
@@ -590,19 +581,19 @@ define the potential action<mv:example.com:example:/invalid_direct_example> {
         }
         define the position<spare_item>.
 
-        create a dimension point in position<drawer>.
-        create a dimension point in position<drawer>::position</slot>.
-        create a dimension point in position<spare_item>.
+        create a particle in position<drawer>.
+        create a particle in position<drawer>::position</slot>.
+        create a particle in position<spare_item>.
 
         # Compiler error: store_in_slot requires position</slot> to be empty,
         # but this code has already occupied it.
-        move the dimension point in position<spare_item> to position<drawer>::action</store_in_slot>::position<item>.
-        create a dimension point in position<drawer>::action</store_in_slot>::position<run>.
+        move the particle in position<spare_item> to position<drawer>::action</store_in_slot>::position<item>.
+        create a particle in position<drawer>::action</store_in_slot>::position<run>.
 
         # Compiler error: clear_slot requires position</slot> to be occupied
         # before it runs, but nothing in this branch re-establishes that fact
         # after store_in_slot finishes.
-        create a dimension point in position<drawer>::action</clear_slot>::position<run>.
+        create a particle in position<drawer>::action</clear_slot>::position<run>.
     }
 }
 ```
@@ -610,13 +601,13 @@ define the potential action<mv:example.com:example:/invalid_direct_example> {
 ### Chained Name Requirements
 
 This example shows how a chained name requires every intermediate position in
-the chain to already contain a dimension point.
+the chain to already contain a particle.
 
 ```
 define the potential position<mv:example.com:example:/tag>.
 
 define the potential position<mv:example.com:example:/selected_item> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</tag>.
     }
 }
@@ -627,13 +618,13 @@ define the potential action<mv:example.com:example:/tag_selected_item> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # This chained reference means:
-        # 1. position</selected_item> must already contain a dimension point.
+        # 1. position</selected_item> must already contain a particle.
         # 2. position</selected_item>::position</tag> must be empty.
-        create a dimension point in position</selected_item>::position</tag>.
-        destroy the dimension point in position<run>.
+        create a particle in position</selected_item>::position</tag>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -641,30 +632,30 @@ define the potential action<mv:example.com:example:/chained_name_examples> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<valid_box> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</selected_item>.
                 it has the action</tag_selected_item>.
             }
         }
         define the position<invalid_box> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</selected_item>.
                 it has the action</tag_selected_item>.
             }
         }
 
-        create a dimension point in position<valid_box>.
-        create a dimension point in position<valid_box>::position</selected_item>.
+        create a particle in position<valid_box>.
+        create a particle in position<valid_box>::position</selected_item>.
         # Valid: every intermediate position in the chain is occupied.
-        create a dimension point in position<valid_box>::action</tag_selected_item>::position<run>.
+        create a particle in position<valid_box>::action</tag_selected_item>::position<run>.
 
-        create a dimension point in position<invalid_box>.
+        create a particle in position<invalid_box>.
         # Compiler error: invalid_box::position</selected_item> is still empty,
         # so the chained requirement is not satisfied here.
-        create a dimension point in position<invalid_box>::action</tag_selected_item>::position<run>.
+        create a particle in position<invalid_box>::action</tag_selected_item>::position<run>.
     }
 }
 ```
@@ -683,10 +674,10 @@ define the potential action<mv:example.com:example:/clear_slot> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        destroy the dimension point in position</slot>.
-        destroy the dimension point in position<run>.
+        destroy the particle in position</slot>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -697,18 +688,18 @@ define the potential action<mv:example.com:example:/prepare_slot> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # prepare_slot satisfies clear_slot's requirement internally.
-        create a dimension point in position</slot>.
-        create a dimension point in action</clear_slot>::position<run>.
+        create a particle in position</slot>.
+        create a particle in action</clear_slot>::position<run>.
 
         wait until {
-            NOT action</clear_slot>::position<run> has a dimension point.
+            NOT action</clear_slot>::position<run> has a particle.
         }
 
         # clear_slot guaranteed that position</slot> is empty again.
-        destroy the dimension point in position<run>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -719,22 +710,22 @@ define the potential action<mv:example.com:example:/invalid_after_prepare> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        create a dimension point in action</prepare_slot>::position<run>.
+        create a particle in action</prepare_slot>::position<run>.
 
         wait until {
-            NOT action</prepare_slot>::position<run> has a dimension point.
+            NOT action</prepare_slot>::position<run> has a particle.
         }
 
         # Compiler error: prepare_slot guarantees that position</slot> is empty
         # when it finishes. That fact originated in clear_slot, but it chains
         # upward through prepare_slot and is still known here.
         #
-        # Because of that transitive guarantee, trying to destroy the dimension
-        # point in position</slot> is invalid.
-        destroy the dimension point in position</slot>.
-        destroy the dimension point in position<run>.
+        # Because of that transitive guarantee, trying to destroy the particle
+        # in position</slot> is invalid.
+        destroy the particle in position</slot>.
+        destroy the particle in position<run>.
     }
 }
 ```
@@ -753,11 +744,11 @@ define the potential action<mv:example.com:example:/clear_slot> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # This means clear_slot requires position</slot> to already be occupied.
-        destroy the dimension point in position</slot>.
-        destroy the dimension point in position<run>.
+        destroy the particle in position</slot>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -768,17 +759,17 @@ define the potential action<mv:example.com:example:/request_slot_clear> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # request_slot_clear does not satisfy clear_slot's requirement itself.
         # That means the requirement on position</slot> chains upward.
-        create a dimension point in action</clear_slot>::position<run>.
+        create a particle in action</clear_slot>::position<run>.
 
         wait until {
-            NOT action</clear_slot>::position<run> has a dimension point.
+            NOT action</clear_slot>::position<run> has a particle.
         }
 
-        destroy the dimension point in position<run>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -786,20 +777,20 @@ define the potential action<mv:example.com:example:/transitive_requirement_examp
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<box> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</slot>.
                 it has the action</request_slot_clear>.
             }
         }
 
-        create a dimension point in position<box>.
+        create a particle in position<box>.
         # Compiler error: request_slot_clear exports clear_slot's requirement
         # that position</slot> already be occupied, and box does not
         # satisfy that requirement before the call.
-        create a dimension point in position<box>::action</request_slot_clear>::position<run>.
+        create a particle in position<box>::action</request_slot_clear>::position<run>.
     }
 }
 ```
@@ -818,10 +809,10 @@ define the potential action<mv:example.com:example:/clear_slot> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        destroy the dimension point in position</slot>.
-        destroy the dimension point in position<run>.
+        destroy the particle in position</slot>.
+        destroy the particle in position<run>.
     }
 }
 
@@ -829,23 +820,23 @@ define the potential action<mv:example.com:example:/local_action_example> {
     define the position<run>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         define the position<local_box> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the position</slot>.
                 it has the action</clear_slot>.
             }
         }
 
-        create a dimension point in position<local_box>.
+        create a particle in position<local_box>.
 
         # Compiler error inside local_action_example: clear_slot requires
         # position<local_box>::position</slot> to already be occupied.
         #
         # This requirement does not chain upward to callers of
         # local_action_example, because local_box is local state.
-        create a dimension point in position<local_box>::action</clear_slot>::position<run>.
+        create a particle in position<local_box>::action</clear_slot>::position<run>.
     }
 }
 ```

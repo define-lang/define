@@ -24,9 +24,9 @@ _SHARED_OCCUPIED_REQ = (
     "    define the position<item>.\n"
     "    define the position<dest>.\n"
     "    it happens when {\n"
-    "        the position<trigger_pos> has a dimension point.\n"
+    "        the position<trigger_pos> has a particle.\n"
     "    } and it does {\n"
-    "        move the dimension point in position<item> to position<dest>.\n"
+    "        move the particle in position<item> to position<dest>.\n"
     "    }\n"
     "}\n"
 )
@@ -36,9 +36,9 @@ _SHARED_EMPTY_REQ = (
     "    define the position<trigger_pos>.\n"
     "    define the position<item>.\n"
     "    it happens when {\n"
-    "        the position<trigger_pos> has a dimension point.\n"
+    "        the position<trigger_pos> has a particle.\n"
     "    } and it does {\n"
-    "        create a dimension point in position<item>.\n"
+    "        create a particle in position<item>.\n"
     "    }\n"
     "}\n"
 )
@@ -47,14 +47,14 @@ _ACT_B_TRIGGERS_SHARED = (
     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
     "    define the position<pp>.\n"
     "    define the position<gateway> {\n"
-    "        it may only contain dimension points where {\n"
+    "        it may only contain particles where {\n"
     "            it has the action</shared>.\n"
     "        }\n"
     "    }\n"
     "    it happens when {\n"
-    "        the position<pp> has a dimension point.\n"
+    "        the position<pp> has a particle.\n"
     "    } and it does {\n"
-    "        create a dimension point in position<gateway>::action</shared>::position<trigger_pos>.\n"
+    "        create a particle in position<gateway>::action</shared>::position<trigger_pos>.\n"
     "    }\n"
     "}\n"
 )
@@ -63,14 +63,14 @@ _ACT_C_TRIGGERS_SHARED = (
     "define the potential action<my.domain.com:my_lib:/act_c> {\n"
     "    define the position<pp>.\n"
     "    define the position<gateway> {\n"
-    "        it may only contain dimension points where {\n"
+    "        it may only contain particles where {\n"
     "            it has the action</shared>.\n"
     "        }\n"
     "    }\n"
     "    it happens when {\n"
-    "        the position<pp> has a dimension point.\n"
+    "        the position<pp> has a particle.\n"
     "    } and it does {\n"
-    "        create a dimension point in position<gateway>::action</shared>::position<trigger_pos>.\n"
+    "        create a particle in position<gateway>::action</shared>::position<trigger_pos>.\n"
     "    }\n"
     "}\n"
 )
@@ -94,24 +94,24 @@ def test_diamond_both_paths_satisfy_empty_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -141,25 +141,25 @@ def test_diamond_one_path_violates_empty_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -196,25 +196,25 @@ def test_diamond_other_path_violates_empty_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -252,9 +252,9 @@ def test_diamond_occupied_requirement_independent_per_path(
                 "    define the position<item>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<item> to position<dest>.\n"
+                "        move the particle in position<item> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -262,15 +262,15 @@ def test_diamond_occupied_requirement_independent_per_path(
                 "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                 "    define the position<pp>.\n"
                 "    define the position<gateway> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</shared>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<pp> has a dimension point.\n"
+                "        the position<pp> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<gateway>::action</shared>::position<item>.\n"
-                "        create a dimension point in position<gateway>::action</shared>::position<trigger_pos>.\n"
+                "        create a particle in position<gateway>::action</shared>::position<item>.\n"
+                "        create a particle in position<gateway>::action</shared>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -278,14 +278,14 @@ def test_diamond_occupied_requirement_independent_per_path(
                 "define the potential action<my.domain.com:my_lib:/act_c> {\n"
                 "    define the position<pp>.\n"
                 "    define the position<gateway> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</shared>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<pp> has a dimension point.\n"
+                "        the position<pp> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<gateway>::action</shared>::position<trigger_pos>.\n"
+                "        create a particle in position<gateway>::action</shared>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -293,24 +293,24 @@ def test_diamond_occupied_requirement_independent_per_path(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -328,7 +328,7 @@ def test_diamond_occupied_requirement_independent_per_path(
     )
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 21
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert_propagation_chain(
         all_diags[0],
         {
@@ -336,7 +336,7 @@ def test_diamond_occupied_requirement_independent_per_path(
             "enclosing_quality_name": _ACT_C,
             "triggered_quality_name": _SHARED,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "act_c.dfn",
         },
         {
@@ -344,7 +344,7 @@ def test_diamond_occupied_requirement_independent_per_path(
             "enclosing_quality_name": _SHARED,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "shared.dfn",
         },
     )
@@ -370,26 +370,26 @@ def test_diamond_top_caller_satisfies_occupied_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -417,25 +417,25 @@ def test_diamond_one_path_violates_occupied_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -452,7 +452,7 @@ def test_diamond_one_path_violates_occupied_requirement(
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
     )
     assert all_diags[0].location.line == 22
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -461,7 +461,7 @@ def test_diamond_one_path_violates_occupied_requirement(
             "enclosing_quality_name": _ACT_C,
             "triggered_quality_name": _SHARED,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "act_c.dfn",
         },
         {
@@ -469,7 +469,7 @@ def test_diamond_one_path_violates_occupied_requirement(
             "enclosing_quality_name": _SHARED,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "shared.dfn",
         },
     )
@@ -494,24 +494,24 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<box_b> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_b>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the position<box_c> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</act_c>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<box_b>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<gateway>.\n"
-                "        create a dimension point in position<box_b>::action</act_b>::position<pp>.\n"
-                "        create a dimension point in position<box_c>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<gateway>.\n"
-                "        create a dimension point in position<box_c>::action</act_c>::position<pp>.\n"
+                "        create a particle in position<box_b>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<gateway>.\n"
+                "        create a particle in position<box_b>::action</act_b>::position<pp>.\n"
+                "        create a particle in position<box_c>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<gateway>.\n"
+                "        create a particle in position<box_c>::action</act_c>::position<pp>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -528,7 +528,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
         == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
     )
     assert all_diags[0].location.line == 18
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
@@ -537,7 +537,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "enclosing_quality_name": _ACT_B,
             "triggered_quality_name": _SHARED,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "act_b.dfn",
         },
         {
@@ -545,7 +545,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "enclosing_quality_name": _SHARED,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "shared.dfn",
         },
     )
@@ -558,7 +558,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
     )
     assert all_diags[1].location.line == 21
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
@@ -567,7 +567,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "enclosing_quality_name": _ACT_C,
             "triggered_quality_name": _SHARED,
             "line": 11,
-            "column": 37,
+            "column": 30,
             "file_path": "act_c.dfn",
         },
         {
@@ -575,7 +575,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "enclosing_quality_name": _SHARED,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "shared.dfn",
         },
     )

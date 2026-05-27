@@ -27,9 +27,9 @@ define the potential action<mv:example.com:example:/move_left> {
 
 
     it happens when {
-        the position<mv:example.com:example:/run_triggers> has a dimension point.
+        the position<mv:example.com:example:/run_triggers> has a particle.
     } and it does {
-        move the dimension point in position<mv:example.com:example:/my_ball> to position<mv:example.com:example:/left>.
+        move the particle in position<mv:example.com:example:/my_ball> to position<mv:example.com:example:/left>.
     }
 }
 
@@ -39,25 +39,25 @@ define the potential action<mv:example.com:example:/move_right> {
     it also assigns the position<mv:example.com:example:/run_triggers>.
 
     it happens when {
-        the position<mv:example.com:example:/run_triggers> has a dimension point.
+        the position<mv:example.com:example:/run_triggers> has a particle.
     } and it does {
-        move the dimension point in position<mv:example.com:example:/my_ball> to position<mv:example.com:example:/right>.
+        move the particle in position<mv:example.com:example:/my_ball> to position<mv:example.com:example:/right>.
     }
 }
 
 define the position<x> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action<mv:example.com:example:/move_right>.
         it has the action<mv:example.com:example:/move_left>.
     }
 }
-create a dimension point in position<x>.
-create a dimension point in position<x>::position<mv:example.com:example:/my_ball>.
-create a dimension point in position<x>::position<run_triggers>.
+create a particle in position<x>.
+create a particle in position<x>::position<mv:example.com:example:/my_ball>.
+create a particle in position<x>::position<run_triggers>.
 
 define the position<new_spot>.
-create a dimension point in position<x>::position<mv:example.com:example:/my_ball>.
-move the dimension point in position<x>::position<mv:example.com:example:/my_ball> to position<new_spot>.
+create a particle in position<x>::position<mv:example.com:example:/my_ball>.
+move the particle in position<x>::position<mv:example.com:example:/my_ball> to position<new_spot>.
 ```
 
 Essentially what that program does is create a ball, move it to two different
@@ -128,18 +128,18 @@ order might as well be random. So this option doesn't work.
 #### Assignment Order
 
 We could choose to order actions in the sequence that they were _assigned_ to
-the dimension point. In the above example, this would cause the ball to move
-right, then move left, and then we would create a new ball and then move it to
+the particle. In the above example, this would cause the ball to move right,
+then move left, and then we would create a new ball and then move it to
 `new_spot`.
 
 This gives some very unintuitive and unexpected semantics to the order in which
 you write the `it has the` statements in a position definition (or the order in
-which you manually assign qualities to a dimension point). However, more
-importantly, it's possible for actions to be assigned to a dimension point via
-quality implication statements. (In other words, it's possible for actions to be
-dependencies of other actions.) This means that actions get assigned to a
-dimension point in an order that is invisible to the programmer and can randomly
-change as you change what actions imply what other actions.
+which you manually assign qualities to a particle). However, more importantly,
+it's possible for actions to be assigned to a particle via quality implication
+statements. (In other words, it's possible for actions to be dependencies of
+other actions.) This means that actions get assigned to a particle in an order
+that is invisible to the programmer and can randomly change as you change what
+actions imply what other actions.
 
 #### Explicit Ordering
 
@@ -191,9 +191,9 @@ This would require us to solve a few problems.
 
 The program we described above creates a paradox. It moves `my_ball` into both
 `left` and `right` simultaneously: a fundamental violation of the nature of
-universes: one dimension point cannot be in multiple places at once. Now,
-perhaps there are universes where what would really happen is that space would
-_bend_ so that `left` and `right` _became the same position_.
+universes: one particle cannot be in multiple places at once. Now, perhaps there
+are universes where what would really happen is that space would _bend_ so that
+`left` and `right` _became the same position_.
 
 This is one of the first places we have to acknowledge the limits of Define
 Exactly and hope there is a better solution in Define Approximately. In Define
@@ -201,11 +201,11 @@ Exactly, we can't "bend space." All positions are in exact locations that can't
 "become each other."
 
 There are other versions of this paradox. One action could assign a quality to
-the dimension point while another action destroys the dimension point, or take
-any other action on a dimension point while destroying it simultaneously. (The
-physical universe in which we live seems to have solved this specific one by
-forbidding the destruction of dimension points, but we have to allow destruction
-in our universes in order for Define programs to function.)
+the particle while another action destroys the particle, or take any other
+action on a particle while destroying it simultaneously. (The physical universe
+in which we live seems to have solved this specific one by forbidding the
+destruction of particles, but we have to allow destruction in our universes in
+order for Define programs to function.)
 
 #### Returning to the Caller
 
@@ -263,9 +263,9 @@ determine what should be executed in parallel and what should be executed
 synchronously, instead of forcing the developer to figure that out.
 
 One of the downsides of this model is that the programmer has to _know_ that a
-trigger will happen when they move a dimension point, and also know what the
-"return condition" is of that action (like, "I see a dimension point is created
-in `position<return_value>` and so I will move that into my own position"). This
+trigger will happen when they move a particle, and also know what the "return
+condition" is of that action (like, "I see a particle is created in
+`position<return_value>` and so I will move that into my own position"). This
 means that adding simultaneous actions into an existing program could trigger
 unexpected behavior that the programmer now has to "hunt" through their program
 to solve.
@@ -464,18 +464,18 @@ all of our guarantees and safety.
 One option is to simply deny _both_ paradox actions from happening. In our
 example above, `move_left` and `move_right` would both try to move `my_ball` to
 a different position, and it would simply _fail_. That is, `my_ball` would stay
-right where it is, and then the code that attempts to create a new dimension
-point in `my_ball` would fail, as would any code later in `move_left` and
-`move_right` that depended on something being in `left` or `right`.
+right where it is, and then the code that attempts to create a new particle in
+`my_ball` would fail, as would any code later in `move_left` and `move_right`
+that depended on something being in `left` or `right`.
 
 I suspect that this is what happens in the physical universe, but it is nearly
 impossible to observe because it is nearly impossible to make two things happen
 at "the exact same time."
 
 For us, this is _very_ similar to "forbid paradoxes," since the compiler will
-know that the dimension point didn't move and then some later code will fail. It
-will be a much more confusing error message, though, because it won't tell you
-when the paradox occurred.
+know that the particle didn't move and then some later code will fail. It will
+be a much more confusing error message, though, because it won't tell you when
+the paradox occurred.
 
 ## Solution
 
@@ -484,12 +484,11 @@ introduce a new syntax for waiting for async actions to return.
 
 ### Simultaneous Triggers
 
-All actions triggered by the state of a set of dimension points conceptually
-trigger and complete their actions instantaneously at the same time. The
-compiler may choose to run them in sequence or with any form of
-concurrency/parallelism it deems most efficient and effective, when it delivers
-the actual implementation, but conceptually it treats them as instantaneously
-simultaneous.
+All actions triggered by the state of a set of particles conceptually trigger
+and complete their actions instantaneously at the same time. The compiler may
+choose to run them in sequence or with any form of concurrency/parallelism it
+deems most efficient and effective, when it delivers the actual implementation,
+but conceptually it treats them as instantaneously simultaneous.
 
 ### Full Async
 
@@ -571,7 +570,7 @@ idiomatic, performant code in various languages.
 
 The program in the Problems section throws an error about a paradox. It is only
 required to inform the developer about two of the three conflicts involved
-(between `move_left`, `move_right`, and the creation of a new dimension point in
+(between `move_left`, `move_right`, and the creation of a new particle in
 `my_ball`) but it may inform the developer of all three.
 
 A valid program would look like this:
@@ -582,26 +581,26 @@ define the potential action<mv:example.com:example:/create_ball> {
     define the position<ball>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        create a dimension point in position<ball>.
+        create a particle in position<ball>.
     }
 }
 
 define the position<ball_creator> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action<mv:example.com:example:/create_ball>.
     }
 }
-create a dimension point in position<ball_creator>.
-create a dimension point in position<ball_creator>:: action<mv:example.com:example:/create_ball>::position<run>.
+create a particle in position<ball_creator>.
+create a particle in position<ball_creator>:: action<mv:example.com:example:/create_ball>::position<run>.
 
 wait until {
-    the position<ball_creator>:: action<mv:example.com:example:/create_ball>::position<ball> has a dimension point.
+    the position<ball_creator>:: action<mv:example.com:example:/create_ball>::position<ball> has a particle.
 }
 
 define the position<new_spot>.
-move the dimension point in position<ball_creator>:: action<mv:example.com:example:/create_ball>::position<ball> to position<new_spot>.
+move the particle in position<ball_creator>:: action<mv:example.com:example:/create_ball>::position<ball> to position<new_spot>.
 ```
 
 That triggers an action that creates a ball, "waits" for the ball to be created,

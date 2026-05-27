@@ -34,7 +34,7 @@ class DiscoveredFile:
 
 
 @dataclass(frozen=True)
-class DimensionPointStatementValidity:
+class ParticleStatementValidity:
     """Name validation results for a create or move statement."""
 
     target_ok: bool
@@ -51,7 +51,7 @@ class DefinitionValidationResult:
 
     reference_edges: list[reference_graph.ReferenceEdge] = field(default_factory=list)
     discovered_files: list[DiscoveredFile] = field(default_factory=list)
-    dp_statement_validity: list[DimensionPointStatementValidity] = field(
+    particle_statement_validity: list[ParticleStatementValidity] = field(
         default_factory=list
     )
 

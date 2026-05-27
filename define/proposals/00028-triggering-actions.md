@@ -15,12 +15,12 @@ what that block means.
 ## Solution
 
 First we need some very basic syntax for triggering actions. The simplest
-condition that an action can trigger on is: "is there any dimension point at all
-in the named position?"
+condition that an action can trigger on is: "is there any particle at all in the
+named position?"
 
 Trigger Conditions Blocks express this with the statement:
 
-`the position<name> has a dimension point.`
+`the position<name> has a particle.`
 
 This is a trigger condition statement. There will be other types of trigger
 condition statements in the future.
@@ -36,14 +36,13 @@ trigger again.
 ### Actions Only Trigger On Something Changing
 
 Conditions for a trigger are only checked after assignment of the action is
-complete on a dimension point, and only checked when the state of dimension
-points change in the program.
+complete on a particle, and only checked when the state of particles change in
+the program.
 
-In other words, if an action would trigger upon the presence of a dimension
-point, and that dimension point is already present when the action is assigned,
-the action does not _check_ its conditions unless that dimension point becomes
-empty and then filled again. Thus, the action does not fire when it is first
-assigned.
+In other words, if an action would trigger upon the presence of a particle, and
+that particle is already present when the action is assigned, the action does
+not _check_ its conditions unless that particle becomes empty and then filled
+again. Thus, the action does not fire when it is first assigned.
 
 ## A Real Program
 
@@ -53,7 +52,7 @@ define the potential action<mv:example.com:bank:/account/deposit> {
 
     define the position<run>.
     define the position<amount> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             # Imaginary syntax.
             it has a value that is a decimal.
             it has the constraint</positive>.
@@ -61,7 +60,7 @@ define the potential action<mv:example.com:bank:/account/deposit> {
     }
 
     it happens when {
-        the position<amount> has a dimension point.
+        the position<amount> has a particle.
     } and it does {
         # Imaginary syntax.
         set the value in position</account/balance> to position</account/balance> plus position<amount>.
@@ -73,7 +72,7 @@ define the potential action<mv:example.com:bank:/account/deposit> {
 
 My original syntax for this was `the position<name> is not empty.` However, I
 generally prefer that all boolean statements be positive---it makes programs
-much easier to read. So I switch it to the positive `has a dimension point`.
+much easier to read. So I switch it to the positive `has a particle`.
 
 This matches our `has the [quality]<name>` syntax for constraints.
 
@@ -104,22 +103,22 @@ Translates directly into this:
 ```
 define the potential action<mv:example.com:bank:/increment> {
     define the position<value> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             # Imaginary syntax.
             it has a value that is a integer.
         }
     }
     define the position<return> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             # Imaginary syntax
             it has a value that is an integer.
         }
     }
 
     it happens when {
-        the position<value> has a dimension point.
+        the position<value> has a particle.
     } and it does {
-        create a dimension point in position<return>.
+        create a particle in position<return>.
         # Imaginary syntax.
         set the value in position<return> to position<value> plus 1.
     }

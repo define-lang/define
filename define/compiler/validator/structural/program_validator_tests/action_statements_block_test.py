@@ -25,7 +25,7 @@ def test_valid_create_in_position_init_block():
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
         "        define the position<inner>.\n"
-        "        create a dimension point in position<inner>.\n"
+        "        create a particle in position<inner>.\n"
         "    }\n"
         "}\n"
     )
@@ -42,7 +42,7 @@ def test_undefined_local_position_in_position_init_block():
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position<undefined>.\n"
+        "        create a particle in position<undefined>.\n"
         "    }\n"
         "}\n"
     )
@@ -61,7 +61,7 @@ def test_empty_action_statements_block():
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<pp>.\n"
         "    it happens when {\n"
-        "        the position<pp> has a dimension point.\n"
+        "        the position<pp> has a particle.\n"
         "    } and it does {\n"
         "    }\n"
         "}\n"

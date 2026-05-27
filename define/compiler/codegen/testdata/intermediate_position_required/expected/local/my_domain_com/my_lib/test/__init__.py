@@ -15,30 +15,30 @@ class Test(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
-        self.dimension_point.get_action(
+        self.create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<wrap>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<wrap>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<wrap>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/mid>"
-        ).dimension_point.get_position(
+        ).particle.get_position(
             "position<my.domain.com:my_lib:/leaf>"
-        ).create_dimension_point()
-        self.dimension_point.get_action(
+        ).create_particle()
+        self.particle.get_action(
             "action<my.domain.com:my_lib:/runner>"
         ).get_interface_position(
             "position<run>"
-        ).create_dimension_point()
+        ).create_particle()

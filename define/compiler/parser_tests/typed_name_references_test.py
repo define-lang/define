@@ -14,7 +14,7 @@ from define.compiler.parser_tests.test_helpers import get_tokens_by_type
 def test_typed_global_name_reference_short_position_name(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the position</child>.\n"
         + "    }\n"
         + "}\n"
@@ -28,7 +28,7 @@ def test_typed_global_name_reference_short_position_name(parse: Parse) -> None:
 def test_typed_global_name_reference_short_action_name(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the action</do_work>.\n"
         + "    }\n"
         + "}\n"
@@ -42,7 +42,7 @@ def test_typed_global_name_reference_short_action_name(parse: Parse) -> None:
 def test_typed_global_name_reference_full_name(parse: Parse) -> None:
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
-        + "    it may only contain dimension points where {\n"
+        + "    it may only contain particles where {\n"
         + "        it has the action<mv:define-lang.org:parser:/do_work>.\n"
         + "    }\n"
         + "}\n"
@@ -59,7 +59,7 @@ def test_typed_global_name_reference_local_style_name_is_global_terminal(
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/root> {\n"
-            + "    it may only contain dimension points where {\n"
+            + "    it may only contain particles where {\n"
             + "        it has the position<foo>.\n"
             + "    }\n"
             + "}\n"

@@ -2,9 +2,9 @@ define the potential position<mv:define-lang.org:test_files:/valid/action_and_po
 define the potential action<mv:define-lang.org:test_files:/valid/action_and_position_same_file> {
     define the position<my_pos>.
     it happens when {
-        the position<my_pos> has a dimension point.
+        the position<my_pos> has a particle.
     } and it does {
         define the position<_noop>.
-        create a dimension point in position<_noop>.
+        create a particle in position<_noop>.
     }
 }

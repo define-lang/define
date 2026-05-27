@@ -25,17 +25,17 @@ to demonstrate an interesting problem that we have to solve with syntax.
 Essentially, the concept of a position must exist before one can put something
 into it. Logically there's a sequence: "First there's a place I'm going to put
 something, and then something is there." That involves two concepts: the
-intended position and the created dimension point.
+intended position and the created particle.
 
 However, "an unoccupied position" has no mass; it's not really "real." It's an
 idea that the view point has. In other words, "an unoccupied position" is a
 concept that lives in the universe of reflection, even if we later use that name
-to refer to a dimension point in the "real" universe.
+to refer to a particle in the "real" universe.
 
 There are two ways to think about an intended position: relative to the
-viewpoint (it's just a dimension point that we create relative to ourselves and
-we are looking at) or relative to other dimension points (a single position in a
-potential form).
+viewpoint (it's just a particle that we create relative to ourselves and we are
+looking at) or relative to other particles (a single position in a potential
+form).
 
 ## Solution
 

@@ -1,5 +1,0 @@
-define the potential position<mv:define-lang.org:test_dim_bad_constraint:/pos_b> {
-    it may only contain dimension points where {
-        it has the position</pos_c>.
-    }
-}

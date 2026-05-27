@@ -1,14 +1,14 @@
 define the potential position<my.domain.com:my_lib:/test> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the action</kick_off>.
     }
     after it is assigned {
-        create a dimension point in position</test>.
-        create a dimension point in position</test>::action</kick_off>::position<trigger>.
-        create a dimension point in position</test>::action</kick_off>::position<output>.
-        create a dimension point in position</test>::action</kick_off>::position<output>::action</react_a>::position<trigger>.
-        create a dimension point in position</test>::action</kick_off>::position<output>::action</react_b>::position<trigger>.
-        create a dimension point in position</test>::action</kick_off>::position<output>::action</react_a>::position<result>.
-        create a dimension point in position</test>::action</kick_off>::position<output>::action</react_a>::position<result>::action</final>::position<trigger>.
+        create a particle in position</test>.
+        create a particle in position</test>::action</kick_off>::position<trigger>.
+        create a particle in position</test>::action</kick_off>::position<output>.
+        create a particle in position</test>::action</kick_off>::position<output>::action</react_a>::position<trigger>.
+        create a particle in position</test>::action</kick_off>::position<output>::action</react_b>::position<trigger>.
+        create a particle in position</test>::action</kick_off>::position<output>::action</react_a>::position<result>.
+        create a particle in position</test>::action</kick_off>::position<output>::action</react_a>::position<result>::action</final>::position<trigger>.
     }
 }

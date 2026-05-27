@@ -241,7 +241,7 @@ class DefinitionStructuralValidator:
     _seen_edge_targets: set[str]
     _discovered_files: list[validation_result.DiscoveredFile]
     _discovered_file_keys: set[tuple[pathlib.PurePosixPath, str]]
-    _dp_statement_validity: list[validation_result.DimensionPointStatementValidity]
+    _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _seen_definitions: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameInDefinition, ast.QualityDefinition
     ]
@@ -267,7 +267,7 @@ class DefinitionStructuralValidator:
         self._seen_edge_targets = set()
         self._discovered_files = []
         self._discovered_file_keys = set()
-        self._dp_statement_validity = []
+        self._particle_statement_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
@@ -297,7 +297,7 @@ class DefinitionStructuralValidator:
             _diagnostics=self._diagnostics,
             reference_edges=self._reference_edges,
             discovered_files=self._discovered_files,
-            dp_statement_validity=self._dp_statement_validity,
+            particle_statement_validity=self._particle_statement_validity,
         )
 
     def _validate_path_matches_file(self):
@@ -409,16 +409,16 @@ class DefinitionStructuralValidator:
             match stmt:
                 case ast.LocalPositionDefinition():
                     self._validate_local_position_definition(stmt, scope)
-                case ast.CreateDimensionPointStatement():
-                    self._validate_create_dimension_point(
+                case ast.CreateParticleStatement():
+                    self._validate_create_particle(
                         stmt, scope, allow_self_reference=allow_self_reference
                     )
-                case ast.MoveDimensionPointStatement():
-                    self._validate_move_dimension_point(
+                case ast.MoveParticleStatement():
+                    self._validate_move_particle(
                         stmt, scope, allow_self_reference=allow_self_reference
                     )
-                case ast.DestroyDimensionPointStatement():
-                    self._validate_destroy_dimension_point(
+                case ast.DestroyParticleStatement():
+                    self._validate_destroy_particle(
                         stmt, scope, allow_self_reference=allow_self_reference
                     )
 
@@ -453,9 +453,9 @@ class DefinitionStructuralValidator:
             return
         scope.add_definition(local_def)
 
-    def _validate_create_dimension_point(
+    def _validate_create_particle(
         self,
-        stmt: ast.CreateDimensionPointStatement,
+        stmt: ast.CreateParticleStatement,
         scope: scope_tracker.ScopeTracker,
         *,
         allow_self_reference: bool = False,
@@ -465,15 +465,15 @@ class DefinitionStructuralValidator:
             scope,
             allow_self_reference=allow_self_reference,
         )
-        self._dp_statement_validity.append(
-            validation_result.DimensionPointStatementValidity(
+        self._particle_statement_validity.append(
+            validation_result.ParticleStatementValidity(
                 target_ok=target_ok,
             )
         )
 
-    def _validate_move_dimension_point(
+    def _validate_move_particle(
         self,
-        stmt: ast.MoveDimensionPointStatement,
+        stmt: ast.MoveParticleStatement,
         scope: scope_tracker.ScopeTracker,
         *,
         allow_self_reference: bool = False,
@@ -489,8 +489,8 @@ class DefinitionStructuralValidator:
             allow_self_reference=allow_self_reference,
         )
         from_is_prefix_of_to = self._check_if_from_is_a_prefix_of_to(stmt)
-        self._dp_statement_validity.append(
-            validation_result.DimensionPointStatementValidity(
+        self._particle_statement_validity.append(
+            validation_result.ParticleStatementValidity(
                 source_ok=source_ok,
                 target_ok=target_ok,
                 from_is_prefix_of_to=from_is_prefix_of_to,
@@ -499,7 +499,7 @@ class DefinitionStructuralValidator:
 
     def _check_if_from_is_a_prefix_of_to(
         self,
-        stmt: ast.MoveDimensionPointStatement,
+        stmt: ast.MoveParticleStatement,
     ) -> bool:
         """Check if the from chain is a prefix of the to chain, and emit a diagnostic if so.
 
@@ -534,9 +534,9 @@ class DefinitionStructuralValidator:
         )
         return True
 
-    def _validate_destroy_dimension_point(
+    def _validate_destroy_particle(
         self,
-        stmt: ast.DestroyDimensionPointStatement,
+        stmt: ast.DestroyParticleStatement,
         scope: scope_tracker.ScopeTracker,
         *,
         allow_self_reference: bool = False,
@@ -546,8 +546,8 @@ class DefinitionStructuralValidator:
             scope,
             allow_self_reference=allow_self_reference,
         )
-        self._dp_statement_validity.append(
-            validation_result.DimensionPointStatementValidity(
+        self._particle_statement_validity.append(
+            validation_result.ParticleStatementValidity(
                 target_ok=target_ok,
             )
         )

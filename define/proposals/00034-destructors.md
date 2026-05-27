@@ -7,15 +7,15 @@
 
 ## Problems
 
-Due to the way that dimension point destruction is defined in
-[DLP 31](00031-destroying-dimension-points.md), there is no way to guarantee
-that any sort of "cleanup" code will run when you destroy a dimension point.
-This happens because actions that a dimension point has are removed before the
-dimension point is destroyed, so there can't be any actions that reference the
-position by the time it is removed.
+Due to the way that particle destruction is defined in
+[DLP 31](00031-destroying-particles.md), there is no way to guarantee that any
+sort of "cleanup" code will run when you destroy a particle. This happens
+because actions that a particle has are removed before the particle is
+destroyed, so there can't be any actions that reference the position by the time
+it is removed.
 
 However, it's often necessary to guarantee that some action happens when a
-dimension point is destroyed. For example, if you have a library that generates
+particle is destroyed. For example, if you have a library that generates
 temporary files, you need to be confident the file will be deleted when the
 program ends. If you open a socket, you need to close it. And so forth.
 
@@ -29,7 +29,7 @@ We have a particularly special problem. Imagine this program:
 
 ```
 define the potential position<mv:example.com:example:/file_name> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is a string.
     }
 }
@@ -37,11 +37,11 @@ define the potential position<mv:example.com:example:/file_name> {
 define the potential position<mv:example.com:example:/file_handle> {
     it also assigns the position</file_system>.
 
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is an integer.
     }
     after it is assigned {
-        create a dimension point in position</file_system>.
+        create a particle in position</file_system>.
         # Some code that interacts with position</file_system>.
     }
 }
@@ -51,7 +51,7 @@ define the potential position<mv:example.com:example:/buffer> {
     # need to write to the disk before the program terminates.
 
     after it is assigned {
-        create a dimension point in this position.
+        create a particle in this position.
     }
 }
 
@@ -63,37 +63,37 @@ define the potential position<mv:example.com:example:/temp_file/create> {
     define the position<completed>.
 
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        create a dimension point in position</file_name>.
+        create a particle in position</file_name>.
         set the value in position</file_name> to "/tmp/foo". # Imaginary syntax
-        create a dimension point in position</file_handle>.
+        create a particle in position</file_handle>.
         set the value in position</file_handle> to 1.
-        create a dimension point in position<completed>.
+        create a particle in position<completed>.
     }
 }
 
 define the potential position<mv:example.com:example:/temp_file> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</buffer>.
         it has the action</temp_file/create>.
     }
     after it is assigned {
-        create a dimension point in this position.
+        create a particle in this position.
     }
 }
 
 define the position<x> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position<mv:example.com:example:/temp_file>.
     }
 }
-create a dimension point in position<x>.
-create a dimension point in position<x>::action</temp_file/create>::position<run>.
+create a particle in position<x>.
+create a particle in position<x>::action</temp_file/create>::position<run>.
 wait until {
-    the position<x>::action</temp_file/create>::position<completed> has a dimension point.
+    the position<x>::action</temp_file/create>::position<completed> has a particle.
 }
-destroy the dimension point in position<x>.
+destroy the particle in position<x>.
 ```
 
 This results in a dependency tree that looks like this, respecting the order in
@@ -114,25 +114,24 @@ position<x>
       -- position<completed>
 ```
 
-According to [DLP 31](00031-destroying-dimension-points.md), that destruction
-statement cascades like this:
+According to [DLP 31](00031-destroying-particles.md), that destruction statement
+cascades like this:
 
-1. Destroy the dimension point in
-   `action</temp_file/create>::position<completed>`.
-2. Destroy the dimension point in `action</temp_file/create>::position<run>`.
+1. Destroy the particle in `action</temp_file/create>::position<completed>`.
+2. Destroy the particle in `action</temp_file/create>::position<run>`.
 3. Unassign `action</temp_file/create>` from
    `position<x>::position</temp_file>`.
-4. Destroy the dimension point in `position</file_handle>`.
+4. Destroy the particle in `position</file_handle>`.
 5. Unassign `position</file_handle>` from `position<x>::position</temp_file>`.
-6. Destroy the dimension point in `position</file_system>`.
+6. Destroy the particle in `position</file_system>`.
 7. Unassign `position</file_system>` from `position<x>::position</temp_file>`.
-8. Destroy the dimension point in `position</file_name>`.
+8. Destroy the particle in `position</file_name>`.
 9. Unassign `position</file_name>` from `position<x>::position</temp_file>`.
-10. Destroy the dimension point in `position</buffer>`.
+10. Destroy the particle in `position</buffer>`.
 11. Unassign `position</buffer>` from `position<x>::position</temp_file>`.
-12. Destroy the dimension point in `position<x>::position</temp_file>`.
+12. Destroy the particle in `position<x>::position</temp_file>`.
 13. Unassign `position</temp_file>` from `position<x>`.
-14. Destroy the dimension point in `position<x>`.
+14. Destroy the particle in `position<x>`.
 
 However, during destruction, we need to do the following:
 
@@ -146,9 +145,9 @@ that we need to do that for some reason in our program.)
 Those three things have to happen in exactly that order, but the cascade doesn't
 indicate that they depend on each other at all. The only thing that knows all
 three of those positions exist is `position</temp_file>`. However, by the time
-we get to destroying the dimension point in `position</temp_file>`, it no longer
-has any qualities and so it can't _know_ about those other positions in order to
-use them for cleanup.
+we get to destroying the particle in `position</temp_file>`, it no longer has
+any qualities and so it can't _know_ about those other positions in order to use
+them for cleanup.
 
 ### Local Destructors
 
@@ -170,10 +169,10 @@ func (d *Door) goInBathroom() {
 Basically, we want to be sure that door unlocks even if we never come out of the
 bathroom.
 
-### Moving Dimension Points
+### Moving Particles
 
 We can't just check what positions destructors are registered to, because
-dimension points can move between positions. For example, imagine this program:
+particles can move between positions. For example, imagine this program:
 
 ```
 # Inside an Action Statements Block:
@@ -183,12 +182,12 @@ define the position<temp_file> {
     }
 }
 define the position<file>.
-create a dimension point in position<temp_file>.
-move the dimension point in position<temp_file> to position<file>.
+create a particle in position<temp_file>.
+move the particle in position<temp_file> to position<file>.
 ```
 
-When that Action Statements Block ends, only `file` has a dimension point in it,
-but the destructor that was defined in `temp_file` needs to fire.
+When that Action Statements Block ends, only `file` has a particle in it, but
+the destructor that was defined in `temp_file` needs to fire.
 
 ## Solution
 
@@ -196,7 +195,7 @@ but the destructor that was defined in `temp_file` needs to fire.
 
 We add a new trigger condition that actions can check:
 
-`this dimension point is being destroyed`
+`this particle is being destroyed`
 
 We refer to this as a "destructor condition," and any action that checks this
 condition as a "destructor."
@@ -205,33 +204,33 @@ Actions containing this condition may check any other condition they wish, as
 well, which allows for the implementation of conditional destructors.
 
 Note that unlike Position Assignment Blocks, destructors have normal Action
-Statement Blocks that may _not_ refer to `this dimension point`.
+Statement Blocks that may _not_ refer to `this particle`.
 
 ### When It Is Checked
 
 During the destruction cascade defined in
-[DLP 31](00031-destroying-dimension-points.md), destruction conditions are
-checked before the dimension points of an action would be destroyed. If the
-action would trigger, it runs _synchronously_ during the cascade, completing
-before the cascade continues.
+[DLP 31](00031-destroying-particles.md), destruction conditions are checked
+before the particles of an action would be destroyed. If the action would
+trigger, it runs _synchronously_ during the cascade, completing before the
+cascade continues.
 
 This is an exception to the rule that actions may not trigger during the
 cascade.
 
 For clarity, this means destructors will trigger in the reverse order they were
-assigned to a dimension point (the cascade inherently behaves that way).
+assigned to a particle (the cascade inherently behaves that way).
 
 Any actions triggered _by_ a destructor are still run asynchronously. This means
 they must detect the paradox of attempting to work on positions that may be in
-the middle of being deleted. (Attempting to destroy a dimension point and do any
-other action to it simultaneously is a paradox.) In reality, this means that
+the middle of being deleted. (Attempting to destroy a particle and do any other
+action to it simultaneously is a paradox.) In reality, this means that
 essentially all actions triggered during a destructor will require appropriate
 `wait until` blocks, because actions can only reference positions the action
-knows about (which are inherently positions assigned to this dimension point).
+knows about (which are inherently positions assigned to this particle).
 
-Note that these semantics make position initialization and dimension point
-destruction very different: init runs when a _position_ is _assigned_, and
-destructors run when a _dimension point_ is _destroyed_.
+Note that these semantics make position initialization and particle destruction
+very different: init runs when a _position_ is _assigned_, and destructors run
+when a _particle_ is _destroyed_.
 
 ### Static Analysis Requirement
 
@@ -253,9 +252,9 @@ define the potential action<mv:example.com:example:/temp_file/destroy> {
     define the position<run>.
 
     it happens when {
-        this dimension point is being destroyed.
+        this particle is being destroyed.
         OR
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
         # All totally imaginary syntax that will never exist.
         flush the value in position</buffer> to the file in position</file_handle>.
@@ -266,34 +265,33 @@ define the potential action<mv:example.com:example:/temp_file/destroy> {
 
 # And add it to temp_file.
 define the potential position<mv:example.com:example:/temp_file> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the position</buffer>.
         it has the action</temp_file/create>.
         it has the action</temp_file/destroy>.
     }
     after it is assigned {
-        create a dimension point in this position.
+        create a particle in this position.
     }
 }
 ```
 
 That would then trigger as Step 2 of the cascade described in the Problems
 section, because `/temp_file/destroy` is the last action assigned to the
-dimension point.
+particle.
 
-Local dimension points would be destroyed exactly the same way---by defining a
-potential action and assigning it to that dimension point. That does mean that
-anything a local destructor touches has to be something defined by that
-dimension point. (In other words, it can't refer to other local positions in the
-Action Statements Block.) I currently think that's okay in terms of a software
-design requirement.
+Local particles would be destroyed exactly the same way---by defining a
+potential action and assigning it to that particle. That does mean that anything
+a local destructor touches has to be something defined by that particle. (In
+other words, it can't refer to other local positions in the Action Statements
+Block.) I currently think that's okay in terms of a software design requirement.
 
 ## Why This is the Right Solution
 
 I had a whole other solution mapped out here that defined "destruction blocks"
 on positions. You can actually see it in the history of this file, because I
-checked it in for posterity. The problem is that dimension points can move! So
-you have to be able to assign destructors to _dimension points_, not positions.
+checked it in for posterity. The problem is that particles can move! So you have
+to be able to assign destructors to _particles_, not positions.
 
 The destructor semantics for position-defined destructors were also very complex
 (you can see them in the commit history of this doc.)

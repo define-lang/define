@@ -17,14 +17,14 @@ def test_create_in_child_of_unoccupied_local_position(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>::position</x>.\n"
+                "        create a particle in position<local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -34,7 +34,7 @@ def test_create_in_child_of_unoccupied_local_position(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<local>::position</x>"
     assert all_diags[0].parent_position_name == "position<local>"
@@ -47,7 +47,7 @@ def test_create_in_multilevel_chain_without_parents(
         {
             "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
@@ -57,14 +57,14 @@ def test_create_in_multilevel_chain_without_parents(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>::position</x>::position</y>.\n"
+                "        create a particle in position<local>::position</x>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -87,7 +87,7 @@ def test_create_in_child_when_parent_occupied_but_grandchild_not(
         {
             "x.dfn": (
                 "define the potential position<my.domain.com:my_lib:/x> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</y>.\n"
                 "    }\n"
                 "}\n"
@@ -97,15 +97,15 @@ def test_create_in_child_when_parent_occupied_but_grandchild_not(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>.\n"
-                "        create a dimension point in position<local>::position</x>::position</y>.\n"
+                "        create a particle in position<local>.\n"
+                "        create a particle in position<local>::position</x>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -115,7 +115,7 @@ def test_create_in_child_when_parent_occupied_but_grandchild_not(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].position_name == "position<local>::position</x>::position</y>"
     assert all_diags[0].parent_position_name == "position<local>::position</x>"
 
@@ -130,15 +130,15 @@ def test_create_parent_then_child_succeeds(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>.\n"
-                "        create a dimension point in position<local>::position</x>.\n"
+                "        create a particle in position<local>.\n"
+                "        create a particle in position<local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -157,14 +157,14 @@ def test_interface_position_parent_succeeds(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</x>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<iface>::position</x>.\n"
+                "        create a particle in position<iface>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -181,12 +181,12 @@ def test_position_init_create_self_then_child_succeeds(
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>.\n"
-                "        create a dimension point in position</test>::position</x>.\n"
+                "        create a particle in position</test>.\n"
+                "        create a particle in position</test>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -203,11 +203,11 @@ def test_position_init_create_child_without_self_create(
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>::position</x>.\n"
+                "        create a particle in position</test>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -217,7 +217,7 @@ def test_position_init_create_child_without_self_create(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 6
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].position_name == "position</test>::position</x>"
     assert all_diags[0].parent_position_name == "position</test>"
 
@@ -232,16 +232,16 @@ def test_unknown_parent_suppresses_diagnostic(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>.\n"
-                "        move the dimension point in position<local> to position<local>.\n"
-                "        create a dimension point in position<local>::position</x>.\n"
+                "        create a particle in position<local>.\n"
+                "        move the particle in position<local> to position<local>.\n"
+                "        create a particle in position<local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -262,15 +262,15 @@ def test_subsequent_create_after_unknown_child_does_not_cascade(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<local>::position</x>.\n"
-                "        create a dimension point in position<local>::position</x>.\n"
+                "        create a particle in position<local>::position</x>.\n"
+                "        create a particle in position<local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -280,4 +280,4 @@ def test_subsequent_create_after_unknown_child_does_not_cascade(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30

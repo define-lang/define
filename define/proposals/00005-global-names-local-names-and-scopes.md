@@ -238,24 +238,24 @@ fully specified):
 ```
 define the quality<fqun:/drawings/graph> {
     define the potential_form<coordinate> {
-        a dimension point in position<x> {
+        a particle in position<x> {
             it has the quality<standard:/integer>
         }
-        a dimension point in position<y> {
+        a particle in position<y> {
             it has the quality<standard:/integer>
         }
         a potential_form<extra_info> {
-            a dimension point in position<label> {
+            a particle in position<label> {
                 it has the quality<standard:/string>
             }
         }
     }
 
     define the potential_form<graph> {
-        a dimension point in position<x_axis> {
+        a particle in position<x_axis> {
             it has the quality<example.com:graphs:/axis>.
         }
-        a dimension point in position<y_axis> {
+        a particle in position<y_axis> {
             it has the quality<example.com:graphs:/axis>
         }
     }
@@ -343,10 +343,10 @@ defined. For example, if we wanted to change our example above about
 
 ```
 define the potential_form<coordinate> {
-    a dimension point in position<x> {
+    a particle in position<x> {
         it has the quality<standard:/integer>
     }
-    a dimension point in position<y> {
+    a particle in position<y> {
         it has the same quality as position<x>
     }
 }
@@ -360,11 +360,11 @@ example:
 
 ```
 define the potential_form<coordinate> {
-    a dimension point in position<x> {
+    a particle in position<x> {
         it has the quality<standard:/integer>
     }
     it has the potential_form<y_info> {
-        a dimension point in position<y> {
+        a particle in position<y> {
             it has the same quality as position<x>
         }
     }
@@ -428,10 +428,10 @@ For example, this code is not valid:
 ```
 define the quality<fqun:/drawings/graph> {
     it has a potential_form<graph> {
-        it has a dimension point in position<x> {
+        it has a particle in position<x> {
             it has the quality<standard:/integer>.
         }
-        it has a dimension point in position<y> {
+        it has a particle in position<y> {
             it has the same quality as quality<fqun:/drawings/graph>::potential_form<graph>::position<x>.
         }
     }

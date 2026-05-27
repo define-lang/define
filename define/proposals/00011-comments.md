@@ -22,9 +22,8 @@ does still leave some valid things that should be expressed in comments:
   plans ("We will delete this in January 2024 when Joe fixes his library.")
 
 Conceptually, you can think of comments as "the thoughts of the view point that
-do not cause dimension points to be created, changed, or destroyed in the
-universe, and which do not assign, change, or remove qualities from those
-dimension points."
+do not cause particles to be created, changed, or destroyed in the universe, and
+which do not assign, change, or remove qualities from those particles."
 
 ### 2: Temporarily Disabling Lines of Code
 
@@ -70,7 +69,7 @@ define the quality<example.com:my_project:/data_processor> {
   define the potential_form<process> {
     # The data structure below was chosen after benchmarking three alternatives.
     # See Issue #4763 for a record of that investigation.
-    it has a dimension point in position<x> {
+    it has a particle in position<x> {
     }
   }
 }

@@ -10,4 +10,4 @@ class Other(literal.GlobalPosition):
 
     @override
     def after_assigned(self):
-        self.create_dimension_point()
+        self.create_particle()

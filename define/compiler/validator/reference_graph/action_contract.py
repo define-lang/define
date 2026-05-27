@@ -22,13 +22,13 @@ class PropagationKind(enum.Enum):
     # The deepest step in the chain: the definition's own body inferred the
     # requirement directly.
     DIRECT_INFERENCE = enum.auto()
-    # The current definition's body destroyed a caller-passed dimension point,
+    # The current definition's body destroyed a caller-passed particle,
     # firing a destructor; the destructor's requirements propagated up.
     DESTRUCTOR_CASCADE = enum.auto()
     # The current definition's body triggered an action; the action's
     # requirements propagated up.
     ACTION_TRIGGER = enum.auto()
-    # The current definition's body created a dimension point in a position
+    # The current definition's body created a particle in a position
     # with an init block; the init block's requirements propagated up.
     INIT_BLOCK_TRIGGER = enum.auto()
 
@@ -62,7 +62,7 @@ class PositionRequirement:
     # If this is a requirement imposed directly by this action,
     # this contains the full chained name used in the statement that imposed
     # the requirement (like `position<iface>::position</x>` for
-    # `create a dimension point in position<iface>::position</x>.`)
+    # `create a particle in position<iface>::position</x>.`)
     #
     # If this is a requirement that has been propagated from a called
     # action, then it contains only the prefix of the chain that is unique
@@ -154,14 +154,14 @@ class EmptyGuarantee(PositionGuarantee):
 
 @dataclass(frozen=True)
 class OccupiedByExistingGuarantee(PositionGuarantee):
-    """The position contains the same DP that was passed into another interface position."""
+    """The position contains the same particle that was passed into another interface position."""
 
     origin_position: ast.PositionReference
 
 
 @dataclass(frozen=True)
 class OccupiedByNewGuarantee(PositionGuarantee):
-    """The position contains a new DP created by the action."""
+    """The position contains a new particle created by the action."""
 
     qualities: list[ast.GlobalTypedNameReference]
 

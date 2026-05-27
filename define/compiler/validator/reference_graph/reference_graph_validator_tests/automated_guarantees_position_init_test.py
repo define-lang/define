@@ -13,13 +13,13 @@ from define.compiler.validator.test_helpers import assert_no_errors
 def test_self_create_guarantee_visible_to_caller(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Position /a creates in itself. Action creates DP requiring /a, then creating in child gives error."""
+    """Position /a creates in itself. Action creates particle requiring /a, then creating in child gives error."""
     result = validate_project_with_reference_graph(
         {
             "a.dfn": (
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</a>.\n"
+                "        create a particle in position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -27,15 +27,15 @@ def test_self_create_guarantee_visible_to_caller(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</a>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -56,17 +56,17 @@ def test_nested_init_block_guarantees(
             "dep.dfn": (
                 "define the potential position<my.domain.com:my_lib:/dep> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</dep>.\n"
+                "        create a particle in position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
             "a.dfn": (
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</dep>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</a>.\n"
+                "        create a particle in position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -74,16 +74,16 @@ def test_nested_init_block_guarantees(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</a>.\n"
-                "        create a dimension point in position<box>::position</a>::position</dep>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</a>.\n"
+                "        create a particle in position<box>::position</a>::position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -101,25 +101,25 @@ def test_nested_init_block_guarantees(
 def test_init_block_overrides_inner_guarantee(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """/a requires /dep. /dep creates in itself. /a moves DP out of /dep to a sink. Caller sees /dep empty."""
+    """/a requires /dep. /dep creates in itself. /a moves particle out of /dep to a sink. Caller sees /dep empty."""
     result = validate_project_with_reference_graph(
         {
             "dep.dfn": (
                 "define the potential position<my.domain.com:my_lib:/dep> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</dep>.\n"
+                "        create a particle in position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
             "a.dfn": (
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</dep>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</a>.\n"
+                "        create a particle in position</a>.\n"
                 "        define the position<_sink>.\n"
-                "        move the dimension point in position</a>::position</dep> to position<_sink>.\n"
+                "        move the particle in position</a>::position</dep> to position<_sink>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -127,15 +127,15 @@ def test_init_block_overrides_inner_guarantee(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</a>::position</dep>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</a>::position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -156,15 +156,15 @@ def test_no_init_block_no_effect(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</a>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</a>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -183,7 +183,7 @@ def test_inferred_occupied_does_not_apply_init_guarantees(
             "a.dfn": (
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</a>.\n"
+                "        create a particle in position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -191,14 +191,14 @@ def test_inferred_occupied_does_not_apply_init_guarantees(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>::position</a>.\n"
+                "        create a particle in position<item>::position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -220,7 +220,7 @@ def test_caller_sees_init_block_child_guarantees_through_action(
             "a.dfn": (
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</a>.\n"
+                "        create a particle in position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -228,14 +228,14 @@ def test_caller_sees_init_block_child_guarantees_through_action(
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -243,23 +243,23 @@ def test_caller_sees_init_block_child_guarantees_through_action(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<item>::position</a>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</inner>::position<item>::position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     all_diags = result.program_result.all_diagnostics
-    # /inner created a DP in position<item>, which assigned quality /a.
+    # /inner created a particle in position<item>, which assigned quality /a.
     # /a's init block filled position</a>. That guarantee should propagate
     # through /inner's contract to /test. The create should fail.
     assert len(all_diags) == 1
@@ -273,23 +273,23 @@ def test_caller_sees_init_block_child_guarantees_through_action(
 def test_nested_quality_guarantees_visible_through_action_chain(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """/a requires /dep. Both create in themselves. /inner creates DP requiring /a. /outer sees full chain."""
+    """/a requires /dep. Both create in themselves. /inner creates particle requiring /a. /outer sees full chain."""
     result = validate_project_with_reference_graph(
         {
             "dep.dfn": (
                 "define the potential position<my.domain.com:my_lib:/dep> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</dep>.\n"
+                "        create a particle in position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
             "a.dfn": (
                 "define the potential position<my.domain.com:my_lib:/a> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</dep>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</a>.\n"
+                "        create a particle in position</a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -297,14 +297,14 @@ def test_nested_quality_guarantees_visible_through_action_chain(
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<trigger_pos>.\n"
                 "    define the position<item> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the position</a>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -312,23 +312,23 @@ def test_nested_quality_guarantees_visible_through_action_chain(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<trigger_pos>.\n"
-                "        create a dimension point in position<box>::action</inner>::position<item>::position</a>::position</dep>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</inner>::position<item>::position</a>::position</dep>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     all_diags = result.program_result.all_diagnostics
-    # /inner created DP in position<item> requiring /a.
+    # /inner created particle in position<item> requiring /a.
     # /a's init block filled position</a>. /a requires /dep.
     # /dep's init block filled position</dep>.
     # So the full chain ...::position</a>::position</dep> is occupied.
@@ -352,17 +352,17 @@ def test_cross_universe_constraint_triggers_init_block(
             "lib/a.dfn": (
                 f"define the potential position<{_CHILD_FQUN}:/a> {{\n"
                 f"    after it is assigned {{\n"
-                f"        create a dimension point in position</a>.\n"
+                f"        create a particle in position</a>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
             "lib/b.dfn": (
                 f"define the potential position<{_CHILD_FQUN}:/b> {{\n"
-                f"    it may only contain dimension points where {{\n"
+                f"    it may only contain particles where {{\n"
                 f"        it has the position</a>.\n"
                 f"    }}\n"
                 f"    after it is assigned {{\n"
-                f"        create a dimension point in position</b>.\n"
+                f"        create a particle in position</b>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -370,16 +370,16 @@ def test_cross_universe_constraint_triggers_init_block(
                 f"define the potential action<{_PARENT_FQUN}:/test> {{\n"
                 f"    define the position<run>.\n"
                 f"    it happens when {{\n"
-                f"        the position<run> has a dimension point.\n"
+                f"        the position<run> has a particle.\n"
                 f"    }} and it does {{\n"
                 f"        define the position<box> {{\n"
-                f"            it may only contain dimension points where {{\n"
+                f"            it may only contain particles where {{\n"
                 f"                it has the position<{_CHILD_FQUN}:/b>.\n"
                 f"            }}\n"
                 f"        }}\n"
-                f"        create a dimension point in position<box>.\n"
-                f"        create a dimension point in position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>.\n"
-                f"        create a dimension point in position<box>::position<{_CHILD_FQUN}:/b>.\n"
+                f"        create a particle in position<box>.\n"
+                f"        create a particle in position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>.\n"
+                f"        create a particle in position<box>::position<{_CHILD_FQUN}:/b>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -392,30 +392,30 @@ def test_cross_universe_constraint_triggers_init_block(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
-    assert all_diags[0].location.end_column == 128
+    assert all_diags[0].location.end_column == 121
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == f"position<box>::position<{_CHILD_FQUN}:/b>::position<{_CHILD_FQUN}:/a>"
     )
     assert all_diags[0].populated_at.line == 3
-    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 3
-    assert all_diags[0].populated_at.end_column == 49
+    assert all_diags[0].populated_at.end_column == 42
     assert all_diags[0].populated_at.file_path == PurePosixPath("lib/a.dfn")
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 13
-    assert all_diags[1].location.column == 37
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 13
-    assert all_diags[1].location.end_column == 89
+    assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == f"position<box>::position<{_CHILD_FQUN}:/b>"
     assert all_diags[1].populated_at.line == 6
-    assert all_diags[1].populated_at.column == 37
+    assert all_diags[1].populated_at.column == 30
     assert all_diags[1].populated_at.end_line == 6
-    assert all_diags[1].populated_at.end_column == 49
+    assert all_diags[1].populated_at.end_column == 42
     assert all_diags[1].populated_at.file_path == PurePosixPath("lib/b.dfn")
 
 
@@ -425,7 +425,7 @@ def test_init_block_applies_after_non_position_quality_in_constraints(
     """Init block applies even when an action quality precedes its position in constraints.
 
     /target has constraints [action</foo>, position</bar>] in source order.
-    /bar has an init block creating in itself. When the caller creates a DP at
+    /bar has an init block creating in itself. When the caller creates a particle at
     position</target>, /bar's init block must run for position</bar> even
     though an action quality precedes it in the constraint list.
     """
@@ -435,23 +435,23 @@ def test_init_block_applies_after_non_position_quality_in_constraints(
                 "define the potential action<my.domain.com:my_lib:/foo> {\n"
                 "    define the position<_iface>.\n"
                 "    it happens when {\n"
-                "        the position<_iface> has a dimension point.\n"
+                "        the position<_iface> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "bar.dfn": (
                 "define the potential position<my.domain.com:my_lib:/bar> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</bar>.\n"
+                "        create a particle in position</bar>.\n"
                 "    }\n"
                 "}\n"
             ),
             "target.dfn": (
                 "define the potential position<my.domain.com:my_lib:/target> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</foo>.\n"
                 "        it has the position</bar>.\n"
                 "    }\n"
@@ -461,16 +461,16 @@ def test_init_block_applies_after_non_position_quality_in_constraints(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</target>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::position</target>.\n"
-                "        create a dimension point in position<box>::position</target>::position</bar>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</target>.\n"
+                "        create a particle in position<box>::position</target>::position</bar>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -480,15 +480,15 @@ def test_init_block_applies_after_non_position_quality_in_constraints(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
-    assert all_diags[0].location.end_column == 85
+    assert all_diags[0].location.end_column == 78
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name == "position<box>::position</target>::position</bar>"
     )
     assert all_diags[0].populated_at.line == 3
-    assert all_diags[0].populated_at.column == 37
+    assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.end_line == 3
-    assert all_diags[0].populated_at.end_column == 51
+    assert all_diags[0].populated_at.end_column == 44
     assert all_diags[0].populated_at.file_path == PurePosixPath("bar.dfn")

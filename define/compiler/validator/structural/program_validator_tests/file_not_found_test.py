@@ -31,7 +31,7 @@ def test_referenced_file_not_found(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</missing>.\n"
         "    }\n"
         "}\n"
@@ -60,7 +60,7 @@ def test_non_filesystem_cross_universe_reference(
     monkeypatch.chdir(tmp_path)
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         f"        it has the position<{child_universe}:/target>.\n"
         f"        it has the position<{child_universe}:/missing>.\n"
         "    }\n"
@@ -97,7 +97,7 @@ def test_forward_reference_within_non_filesystem_source_is_broken(
     monkeypatch.chdir(tmp_path)
     source = (
         "define the potential position<my.domain.com:my_lib:/a> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</b>.\n"
         "    }\n"
         "}\n"
@@ -128,7 +128,7 @@ def test_referenced_file_not_found_via_already_completed_target(
         {
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</missing>.\n"
                 "        it has the position</target>.\n"
                 "    }\n"
@@ -136,7 +136,7 @@ def test_referenced_file_not_found_via_already_completed_target(
             ),
             "target.dfn": (
                 "define the potential position<my.domain.com:my_lib:/target> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</missing>.\n"
                 "    }\n"
                 "}\n"
@@ -168,21 +168,21 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</missing>.\n"
         "    }\n"
         "}\n"
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    define the position<local> {\n"
-        "        it may only contain dimension points where {\n"
+        "        it may only contain particles where {\n"
         "            it has the position</missing>.\n"
         "        }\n"
         "    }\n"
         "    it happens when {\n"
-        "        the position<local> has a dimension point.\n"
+        "        the position<local> has a particle.\n"
         "    } and it does {\n"
         "        define the position<_noop>.\n"
-        "        create a dimension point in position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
         "    }\n"
         "}\n"
     )

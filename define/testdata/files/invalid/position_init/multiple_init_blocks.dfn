@@ -1,10 +1,10 @@
 define the potential position<mv:define-lang.org:test_files:/invalid/position_init/multiple_init_blocks> {
     after it is assigned {
         define the position<local_a>.
-        create a dimension point in position<local_a>.
+        create a particle in position<local_a>.
     }
     after it is assigned {
         define the position<local_b>.
-        create a dimension point in position<local_b>.
+        create a particle in position<local_b>.
     }
 }

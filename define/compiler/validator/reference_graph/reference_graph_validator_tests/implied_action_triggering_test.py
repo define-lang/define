@@ -21,10 +21,10 @@ _IMPLIED_ACTION_NOOP = (
     "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
     "    define the position<trigger_pos>.\n"
     "    it happens when {\n"
-    "        the position<trigger_pos> has a dimension point.\n"
+    "        the position<trigger_pos> has a particle.\n"
     "    } and it does {\n"
     "        define the position<_noop>.\n"
-    "        create a dimension point in position<_noop>.\n"
+    "        create a particle in position<_noop>.\n"
     "    }\n"
     "}\n"
 )
@@ -41,9 +41,9 @@ def test_action_triggers_implied_action_directly(
                 "    it also assigns the action</implied_action>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -64,11 +64,11 @@ def test_action_triggers_implied_action_via_move(
                 "    it also assigns the action</implied_action>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<tmp>.\n"
-                "        create a dimension point in position<tmp>.\n"
-                "        move the dimension point in position<tmp> to action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in position<tmp>.\n"
+                "        move the particle in position<tmp> to action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -88,7 +88,7 @@ def test_position_init_triggers_implied_action(
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    it also assigns the action</implied_action>.\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -109,9 +109,9 @@ def test_implied_action_iface_requirement_propagates_to_caller(
                 "    define the position<extra>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<extra> to position<dest>.\n"
+                "        move the particle in position<extra> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -120,9 +120,9 @@ def test_implied_action_iface_requirement_propagates_to_caller(
                 "    it also assigns the action</implied_action>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -130,15 +130,15 @@ def test_implied_action_iface_requirement_propagates_to_caller(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</middle>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -150,7 +150,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert (
@@ -164,7 +164,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _IMPLIED,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -172,7 +172,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
             "enclosing_quality_name": _IMPLIED,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "implied_action.dfn",
         },
     )
@@ -194,9 +194,9 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
                 "    define the position<extra>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<extra> to position<dest>.\n"
+                "        move the particle in position<extra> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -204,15 +204,15 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
                 "define the potential action<my.domain.com:my_lib:/implied_outer> {\n"
                 "    define the position<run>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -221,10 +221,10 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
                 "    it also assigns the action</implied_outer>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_outer>::position<iface>.\n"
-                "        create a dimension point in action</implied_outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_outer>::position<iface>.\n"
+                "        create a particle in action</implied_outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -232,15 +232,15 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</middle>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -252,7 +252,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert (
@@ -266,7 +266,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -274,7 +274,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -291,9 +291,9 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
                 "    define the position<extra>.\n"
                 "    define the position<dest>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        move the dimension point in position<extra> to position<dest>.\n"
+                "        move the particle in position<extra> to position<dest>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -301,15 +301,15 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
                 "define the potential action<my.domain.com:my_lib:/implied_outer> {\n"
                 "    define the position<run>.\n"
                 "    define the position<iface> {\n"
-                "        it may only contain dimension points where {\n"
+                "        it may only contain particles where {\n"
                 "            it has the action</inner>.\n"
                 "        }\n"
                 "    }\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -318,9 +318,9 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
                 "    it also assigns the action</implied_outer>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_outer>::position<iface>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -328,16 +328,16 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</middle>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</implied_outer>::position<iface>.\n"
-                "        create a dimension point in position<box>::action</middle>::position<run>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</implied_outer>::position<iface>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -349,7 +349,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert (
@@ -363,7 +363,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
             "enclosing_quality_name": _MIDDLE,
             "triggered_quality_name": _INNER,
             "line": 7,
-            "column": 37,
+            "column": 30,
             "file_path": "middle.dfn",
         },
         {
@@ -371,7 +371,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
             "line": 8,
-            "column": 37,
+            "column": 30,
             "file_path": "inner.dfn",
         },
     )
@@ -387,10 +387,10 @@ def test_caller_triggers_action_implied_by_constraint(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<spare_iface>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -399,9 +399,9 @@ def test_caller_triggers_action_implied_by_constraint(
                 "    it also assigns the action</implied_action>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_action>::position<spare_iface>.\n"
+                "        create a particle in action</implied_action>::position<spare_iface>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -409,15 +409,15 @@ def test_caller_triggers_action_implied_by_constraint(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -437,9 +437,9 @@ def test_implied_action_guarantees_propagate_to_caller(
                 "    define the position<trigger_pos>.\n"
                 "    define the position<output>.\n"
                 "    it happens when {\n"
-                "        the position<trigger_pos> has a dimension point.\n"
+                "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in position<output>.\n"
+                "        create a particle in position<output>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -449,10 +449,10 @@ def test_implied_action_guarantees_propagate_to_caller(
                 "    define the position<run>.\n"
                 "    define the position<sink>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
-                "        move the dimension point in action</implied_action>::position<output> to position<sink>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        move the particle in action</implied_action>::position<output> to position<sink>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -473,9 +473,9 @@ def test_transitive_implication_triggers_action(
                 "    it also assigns the action</implied_action>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -484,9 +484,9 @@ def test_transitive_implication_triggers_action(
                 "    it also assigns the action</forwarder>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a dimension point in action</forwarder>::position<run>.\n"
+                "        create a particle in action</forwarder>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -494,15 +494,15 @@ def test_transitive_implication_triggers_action(
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
-                "        the position<run> has a dimension point.\n"
+                "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<box> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the action</implier>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position<box>.\n"
-                "        create a dimension point in position<box>::action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),

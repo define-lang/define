@@ -12,8 +12,8 @@ realistically possible.
 
 Conceptually, a constraint is a sort of limited machine that operates in the
 universe of reflection. A view point says "I would like to create, change, or
-destroy a dimension point in some fashion," and the machine stops that from
-happening. The questions that arise are things like:
+destroy a particle in some fashion," and the machine stops that from happening.
+The questions that arise are things like:
 
 1. How much freedom do I need to allow to such machines in order to enable them
    to enforce every constraint that anybody could realistically need?
@@ -58,20 +58,19 @@ fill in the details for each part.
 I have been doing some experiments, and I believe that every constraint we need
 can be enforced by having the following system:
 
-1. Positions statically declare what qualities are required for dimension points
-   in that position. Attempting to create a dimension point without those
-   qualities in that position, or move a dimension point into that position that
-   does not have those qualities, will produce an error at compile time.
-   Dimension points may have _more_ qualities than the ones listed, but they
-   guarantee that they will _always_ have the ones listed.
-2. Qualities define constraints on the dimension points to which they are
-   assigned. This enforces a significant degree of modularity, as it prevents
-   constraints from being able to grow in complexity beyond what the quality
-   definition knows about. When multiple qualities are on a dimension point,
-   their conditions are joined together with a logical AND. These are enforced
-   statically by the compiler. If constraints inherently create a logical
-   conflict when merged onto the same dimension point, ideally the compiler will
-   catch that.
+1. Positions statically declare what qualities are required for particles in
+   that position. Attempting to create a particle without those qualities in
+   that position, or move a particle into that position that does not have those
+   qualities, will produce an error at compile time. Particles may have _more_
+   qualities than the ones listed, but they guarantee that they will _always_
+   have the ones listed.
+2. Qualities define constraints on the particles to which they are assigned.
+   This enforces a significant degree of modularity, as it prevents constraints
+   from being able to grow in complexity beyond what the quality definition
+   knows about. When multiple qualities are on a particle, their conditions are
+   joined together with a logical AND. These are enforced statically by the
+   compiler. If constraints inherently create a logical conflict when merged
+   onto the same particle, ideally the compiler will catch that.
 3. Triggers declare preconditions that must be true before they start. This is
    what allows for a lot of local evaluation of constraint satisfaction. You
    know what is true inside the boundary of the trigger, so you don't have to
@@ -85,13 +84,13 @@ can be enforced by having the following system:
    compiler knows that those requirements are guaranteed to hold, it can
    optimize away the check. Otherwise, the check remains in the code at runtime
    and the "or" condition executes when it fails.
-5. Constraints that involve statements about multiple dimension points may be
-   defined as part of forms, but only about dimension points that are in the
-   form. This is also going to matter for forms where the internal points are
-   anonymous, like a bag, but where you want to say "every ball in this bag is
-   green." Some nuance is necessary here to make it clear to the programmer when
-   constraints should be defined on forms vs when they should just be part of a
-   quality that itself defines multiple positions.
+5. Constraints that involve statements about multiple particles may be defined
+   as part of forms, but only about particles that are in the form. This is also
+   going to matter for forms where the internal points are anonymous, like a
+   bag, but where you want to say "every ball in this bag is green." Some nuance
+   is necessary here to make it clear to the programmer when constraints should
+   be defined on forms vs when they should just be part of a quality that itself
+   defines multiple positions.
 
 It is possible that 3 and 4 can be merged and there just needs to be a syntax
 that indicates "this check may survive until runtime, in some cases, because it
@@ -114,20 +113,20 @@ define the quality<example.com:bank:/account/nonzero> {
 
 define the quality<example.com:bank:/account> {
     define the position<balance> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<example.com:bank:/nonzero>.
         }
     }
     define the form<transactions> {
         it is a bag.
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the quality<standard:/integer>
         }
     }
 
     define the trigger<withdraw> {
         define the position<amount> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the quality<example.com:bank:/nonzero>.
             }
         }
@@ -138,17 +137,17 @@ define the quality<example.com:bank:/account> {
 
     define the trigger<adjust> {
         define the position<add> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the quality<example.com:bank:/nonzero>.
             }
         }
         define the position<remove> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the quality<example.com:bank:/nonzero>.
             }
         }
         define the position<error> {
-            it may only contain dimension points where {
+            it may only contain particles where {
                 it has the quality<standard:/error>.
             }
         }
@@ -202,13 +201,13 @@ true, and it would become complex to track it).
 
 The key insight that simplified things was the idea that qualities and
 constraints could be merged, and that thus the constraints could only refer to
-the dimension point the quality was assigned on and other positions the quality
+the particle the quality was assigned on and other positions the quality
 defined. That then led to only a few real problems:
 
 1. If constraints were only part of qualities, how did you constrain which
-   dimension points were allowed in a position in a way that was simple and
-   guaranteed so the compiler can always figure it out? (The problem is that
-   qualities, when assigned, are assigned to _dimension points_, not positions.)
+   particles were allowed in a position in a way that was simple and guaranteed
+   so the compiler can always figure it out? (The problem is that qualities,
+   when assigned, are assigned to _particles_, not positions.)
 2. Triggers could be triggered from multiple locations (multiple different code
    pathways could call the same function) and so it was not modularly solvable
    whether they were correct.

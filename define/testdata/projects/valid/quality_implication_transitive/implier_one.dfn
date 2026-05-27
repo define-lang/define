@@ -1,7 +1,7 @@
 define the potential position<mv:define-lang.org:test_qual_impl_transitive:/implier_one> {
     it also assigns the position</implied>.
     after it is assigned {
-        create a dimension point in position</implied>.
-        destroy the dimension point in position</implied>.
+        create a particle in position</implied>.
+        destroy the particle in position</implied>.
     }
 }

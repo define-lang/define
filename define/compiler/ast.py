@@ -481,34 +481,34 @@ class PositionReference(ChainedName):
 
 
 @dataclass(frozen=True, slots=True)
-class DimensionPointStatement(ASTNode):
-    """Base class for statements that operate on a target dimension point position."""
+class ParticleStatement(ASTNode):
+    """Base class for statements that operate on a target particle position."""
 
     target_position: PositionReference
 
 
 @dataclass(frozen=True, slots=True)
-class CreateDimensionPointStatement(DimensionPointStatement):
-    """Represents a 'create a dimension point in' statement."""
+class CreateParticleStatement(ParticleStatement):
+    """Represents a 'create a particle in' statement."""
 
 
 @dataclass(frozen=True, slots=True)
-class MoveDimensionPointStatement(DimensionPointStatement):
-    """Represents a 'move the dimension point in ... to' statement."""
+class MoveParticleStatement(ParticleStatement):
+    """Represents a 'move the particle in ... to' statement."""
 
     source_position: PositionReference
 
 
 @dataclass(frozen=True, slots=True)
-class DestroyDimensionPointStatement(DimensionPointStatement):
-    """Represents a 'destroy the dimension point in' statement."""
+class DestroyParticleStatement(ParticleStatement):
+    """Represents a 'destroy the particle in' statement."""
 
 
 type ActionStatement = (
     LocalPositionDefinition
-    | CreateDimensionPointStatement
-    | MoveDimensionPointStatement
-    | DestroyDimensionPointStatement
+    | CreateParticleStatement
+    | MoveParticleStatement
+    | DestroyParticleStatement
 )
 
 
@@ -702,7 +702,7 @@ class ActionDefinition(QualityDefinition):
 
     @property
     def is_destructor(self) -> bool:
-        """Whether this action triggers when its dimension point is destroyed."""
+        """Whether this action triggers when its particle is destroyed."""
         return isinstance(
             self.trigger_conditions.conditions[0], DestructorConditionStatement
         )

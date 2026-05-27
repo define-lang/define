@@ -8,7 +8,7 @@ from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
-class TestCreateDimensionPoint:
+class TestCreateParticle:
     def test_chain_third_element_in_position_constraints(
         self, validate_project_with_reference_graph: ValidateProjectWithReferenceGraph
     ):
@@ -17,21 +17,21 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</pos_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>.\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>::position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
@@ -49,20 +49,20 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</pos_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>::position</wrong>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>::position</wrong>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
@@ -79,7 +79,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 72
+        assert all_diags[0].location.column == 65
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_third_element_position_no_constraints(
@@ -90,14 +90,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</pos_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>::position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -113,7 +113,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/pos_c>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 72
+        assert all_diags[0].location.column == 65
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_element_inside_action_valid(
@@ -124,14 +124,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -139,10 +139,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_c> has a dimension point.\n"
+                    "        the position<pos_c> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -165,14 +165,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>::position</later>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<no_such>::position</later>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -180,10 +180,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -198,9 +198,9 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "position<no_such>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 70
+        assert all_diags[0].location.column == 63
         assert all_diags[0].location.end_line == 10
-        assert all_diags[0].location.end_column == 87
+        assert all_diags[0].location.end_column == 80
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_element_inside_action_not_found(
@@ -211,14 +211,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</act_b>::position<no_such>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<no_such>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -226,10 +226,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_c> has a dimension point.\n"
+                    "        the position<pos_c> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -241,7 +241,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "position<no_such>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 70
+        assert all_diags[0].location.column == 63
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_element_inside_action_no_block(
@@ -252,14 +252,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -267,10 +267,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<_noop>.\n"
                     "    it happens when {\n"
-                    "        the position<_noop> has a dimension point.\n"
+                    "        the position<_noop> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<__noop>.\n"
-                    "        create a dimension point in position<__noop>.\n"
+                    "        create a particle in position<__noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -282,7 +282,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "position<pos_c>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 70
+        assert all_diags[0].location.column == 63
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_five_element_alternating_chain(
@@ -293,30 +293,30 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>.\n"
-                    "        create a dimension point in position<pos_a>::action</act_b>::position<pos_c>::action</act_d>::position<pos_e>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>::action</act_d>::position<pos_e>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "act_b.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
                     "    define the position<pos_c> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act_d>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_c> has a dimension point.\n"
+                    "        the position<pos_c> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -324,10 +324,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/act_d> {\n"
                     "    define the position<pos_e>.\n"
                     "    it happens when {\n"
-                    "        the position<pos_e> has a dimension point.\n"
+                    "        the position<pos_e> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -343,29 +343,29 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<pos_a> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</pos_b>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<pos_a> has a dimension point.\n"
+                    "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>.\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>.\n"
-                    "        create a dimension point in position<pos_a>::position</pos_b>::position</pos_c>::position</pos_d>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>::position</pos_c>.\n"
+                    "        create a particle in position<pos_a>::position</pos_b>::position</pos_c>::position</pos_d>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "pos_b.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_b> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "pos_c.dfn": (
                     "define the potential position<my.domain.com:my_lib:/pos_c> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</pos_d>.\n"
                     "    }\n"
                     "}\n"
@@ -383,14 +383,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</foo>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</foo>::action</bar>::position<y>.\n"
+                    "        create a particle in position<x>::action</foo>::action</bar>::position<y>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -398,10 +398,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/foo> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -409,10 +409,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/bar> {\n"
                     "    define the position<y>.\n"
                     "    it happens when {\n"
-                    "        the position<y> has a dimension point.\n"
+                    "        the position<y> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -424,7 +424,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/bar>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/foo>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 64
+        assert all_diags[0].location.column == 57
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_action_cannot_contain_action_stops_at_first_failure(
@@ -435,14 +435,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</a>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</a>::action</b>::position<bogus>.\n"
+                    "        create a particle in position<x>::action</a>::action</b>::position<bogus>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -450,10 +450,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/a> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -461,10 +461,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/b> {\n"
                     "    define the position<other>.\n"
                     "    it happens when {\n"
-                    "        the position<other> has a dimension point.\n"
+                    "        the position<other> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -476,7 +476,7 @@ class TestCreateDimensionPoint:
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/b>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/a>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 62
+        assert all_diags[0].location.column == 55
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_action_then_action_short(
@@ -487,14 +487,14 @@ class TestCreateDimensionPoint:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</a>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</a>::action</b>.\n"
+                    "        create a particle in position<x>::action</a>::action</b>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -502,10 +502,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/a> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -513,10 +513,10 @@ class TestCreateDimensionPoint:
                     "define the potential action<my.domain.com:my_lib:/b> {\n"
                     "    define the position<_noop>.\n"
                     "    it happens when {\n"
-                    "        the position<_noop> has a dimension point.\n"
+                    "        the position<_noop> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<__noop>.\n"
-                    "        create a dimension point in position<__noop>.\n"
+                    "        create a particle in position<__noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -526,7 +526,7 @@ class TestCreateDimensionPoint:
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 62
+        assert all_diags[0].location.column == 55
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
@@ -539,14 +539,14 @@ class TestChainActionValidation:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</a>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</a>::action<bad>.\n"
+                    "        create a particle in position<x>::action</a>::action<bad>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -554,10 +554,10 @@ class TestChainActionValidation:
                     "define the potential action<my.domain.com:my_lib:/a> {\n"
                     "    define the position<inner>.\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -568,12 +568,12 @@ class TestChainActionValidation:
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 62
+        assert all_diags[0].location.column == 55
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
         assert isinstance(all_diags[1], diagnostics.LocalActionNameDiagnostic)
         assert all_diags[1].local_name == "bad"
         assert all_diags[1].location.line == 10
-        assert all_diags[1].location.column == 69
+        assert all_diags[1].location.column == 62
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_through_action_with_constrained_local_position(
@@ -584,29 +584,29 @@ class TestChainActionValidation:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</act>::position<inner>::position</wrong>.\n"
+                    "        create a particle in position<x>::action</act>::position<inner>::position</wrong>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "act.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act> {\n"
                     "    define the position<inner> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</allowed>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -623,7 +623,7 @@ class TestChainActionValidation:
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<inner>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 81
+        assert all_diags[0].location.column == 74
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_through_action_valid_continuation(
@@ -634,30 +634,30 @@ class TestChainActionValidation:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</act>::position<inner>.\n"
-                    "        create a dimension point in position<x>::action</act>::position<inner>::position</deeper>.\n"
+                    "        create a particle in position<x>::action</act>::position<inner>.\n"
+                    "        create a particle in position<x>::action</act>::position<inner>::position</deeper>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "act.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act> {\n"
                     "    define the position<inner> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</deeper>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -675,35 +675,35 @@ class TestChainActionValidation:
                 "test.dfn": (
                     "define the potential action<my.domain.com:my_lib:/test> {\n"
                     "    define the position<x> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the action</act>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<x> has a dimension point.\n"
+                    "        the position<x> has a particle.\n"
                     "    } and it does {\n"
-                    "        create a dimension point in position<x>::action</act>::position<inner>::position</target>::position</leaf>.\n"
+                    "        create a particle in position<x>::action</act>::position<inner>::position</target>::position</leaf>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "act.dfn": (
                     "define the potential action<my.domain.com:my_lib:/act> {\n"
                     "    define the position<inner> {\n"
-                    "        it may only contain dimension points where {\n"
+                    "        it may only contain particles where {\n"
                     "            it has the position</target>.\n"
                     "        }\n"
                     "    }\n"
                     "    it happens when {\n"
-                    "        the position<inner> has a dimension point.\n"
+                    "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
-                    "        create a dimension point in position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
                 "target.dfn": (
                     "define the potential position<my.domain.com:my_lib:/target> {\n"
-                    "    it may only contain dimension points where {\n"
+                    "    it may only contain particles where {\n"
                     "        it has the position</allowed_leaf>.\n"
                     "    }\n"
                     "}\n"
@@ -721,5 +721,5 @@ class TestChainActionValidation:
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/leaf>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/target>"
         assert all_diags[0].location.line == 10
-        assert all_diags[0].location.column == 100
+        assert all_diags[0].location.column == 93
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

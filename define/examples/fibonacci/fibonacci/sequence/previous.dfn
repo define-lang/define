@@ -1,10 +1,10 @@
 define the potential position<define-lang.org:fibonacci:/sequence/previous> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has a value that is an integer.
         it has the constraint</non_negative>.
     }
     after it is assigned {
-        create a dimension point in position</sequence/previous>.
+        create a particle in position</sequence/previous>.
         set the value in position</sequence/previous> to 0.
     }
 }

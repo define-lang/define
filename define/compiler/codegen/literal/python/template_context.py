@@ -27,9 +27,9 @@ class StatementKind(enum.Enum):
     """Discriminator for statement types in templates."""
 
     LOCAL_POSITION = enum.auto()
-    CREATE_DIMENSION_POINT = enum.auto()
-    MOVE_DIMENSION_POINT = enum.auto()
-    DESTROY_DIMENSION_POINT = enum.auto()
+    CREATE_PARTICLE = enum.auto()
+    MOVE_PARTICLE = enum.auto()
+    DESTROY_PARTICLE = enum.auto()
 
 
 class ChainAccessor(enum.Enum):

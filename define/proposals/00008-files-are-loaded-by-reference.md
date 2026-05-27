@@ -75,7 +75,7 @@ Here is an example of a multi-file program.
 ```
 define the quality<example.com:my_project:/foo> {
   define the potential_form<bar> {
-    it has a dimension point in position<x> {
+    it has a particle in position<x> {
       it has the quality<example.com:my_project:/baz>
     }
   }

@@ -149,7 +149,7 @@ class StrictReparentingTrie[V]:
         """
         # This could be implemented as just pop_subtree and then graft_subtree,
         # but this implementation is slightly more efficient, and since this
-        # is a core primitive of Define (it backs the dimension point tracker)
+        # is a core primitive of Define (it backs the particle tracker)
         # I decided to care about efficiency (perhaps unnecessarily so, though, so
         # open to changing this in the future).
         self._validate_key(source)

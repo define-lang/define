@@ -74,7 +74,7 @@ flowchart LR
 flowchart LR
     ReferenceGraphValidator["validator/reference_graph/reference_graph_validator.py"]
     DefinitionPostorderValidator["validator/reference_graph/definition_postorder_validator.py"] --> ReferenceGraphValidator
-    DPTracker["validator/reference_graph/dimension_point_tracker.py"] --> DefinitionPostorderValidator
+    DPTracker["validator/reference_graph/particle_tracker.py"] --> DefinitionPostorderValidator
     ReferenceGraph["graphs/reference_graph.py"] --> ReferenceGraphValidator
     ActionCallGraph["graphs/action_call_graph.py"] --> ReferenceGraphValidator
     ValidationResult["validator/validation_result.py"] --> ReferenceGraphValidator

@@ -14,7 +14,7 @@ way to indicate what qualities a position must have.
 This can get into many complexities. For example, you can have full boolean
 logic on what qualities are allowed. However, almost all real situations that
 arise in programming require only knowing a list of qualities that we guarantee
-are assigned to a dimension point in a position.
+are assigned to a particle in a position.
 
 I will create a proposal for the other complexities in the future as I discover
 they are needed, but for now we want to start with just a simple list of
@@ -24,34 +24,34 @@ Even with this, there are a few problems to solve.
 
 ### Open World vs Closed World
 
-Can view points assign qualities to the dimension point that aren't in the list
-of required qualities? In other words, is the universe open (view points can do
+Can view points assign qualities to the particle that aren't in the list of
+required qualities? In other words, is the universe open (view points can do
 anything they want, unless a constraint tells them otherwise) or closed (view
 points can only do what is allowed by the constraints and nothing else)?
 
 ### The Timing of Constraint Enforcement
 
 When do constraints get enforced? This question is the most difficult to answer
-during the creation of dimension points. When you first create a dimension
-point, it has no qualities, and then you assign them in sequence. How do we know
-when we need to check the constraint?
+during the creation of particles. When you first create a particle, it has no
+qualities, and then you assign them in sequence. How do we know when we need to
+check the constraint?
 
 There are essentially two options:
 
 1. You can make constraint enforcement on positions "lazy." That is, you don't
-   enforce it until something else inspects the dimension point and needs to
-   know what qualities it has.
-2. You can create a syntax for "atomic" dimension point creation, where you
-   basically turn off the constraint enforcer at the start of a block and then
-   run it at the end of that block.
+   enforce it until something else inspects the particle and needs to know what
+   qualities it has.
+2. You can create a syntax for "atomic" particle creation, where you basically
+   turn off the constraint enforcer at the start of a block and then run it at
+   the end of that block.
 
 ## Solution
 
 ### The World is Open
 
 The world is open by default---everything is allowed unless a constraint says
-otherwise. In this case, constraints only say what qualities a dimension point
-in the position must have. The dimension point may also have other qualities.
+otherwise. In this case, constraints only say what qualities a particle in the
+position must have. The particle may also have other qualities.
 
 ### Syntax
 
@@ -65,7 +65,7 @@ certain qualities in them are now written in this form:
 
 ```
 define the position<name> {
-    it may only contain dimension points where {
+    it may only contain particles where {
         it has the quality<mv:example.com:example:/foo>.
         it has the quality<mv:example.com:example:/bar>.
     }
@@ -76,13 +76,13 @@ Quality requirements are joined together with a logical AND.
 
 ### Enforcement
 
-If the programmer attempts to move a dimension point into a different position,
-and that dimension point does not have the required qualities, the compiler must
-throw an error. This may _never_ be a runtime check. It must always be
-statically detectable.
+If the programmer attempts to move a particle into a different position, and
+that particle does not have the required qualities, the compiler must throw an
+error. This may _never_ be a runtime check. It must always be statically
+detectable.
 
 If we have a syntax for removing qualities, enforcement would also occur when
-attempting to remove qualities from a dimension point.
+attempting to remove qualities from a particle.
 
 Creation is slightly more complex, as noted in the problems section above. The
 conceptual solution is to create an unconstrained position, assign all the
@@ -94,26 +94,26 @@ that does it, which I will specify in a later proposal.
 
 ```
 define the position<green_blue_ball> {
-  it may only contain dimension points where {
+  it may only contain particles where {
     it has the quality<mv:example.com:example:/green>.
     it has the quality<mv:example.com:example:/blue>.
   }
 }
 
 define the position<red_ball> {
-  it may only contain dimension points where {
+  it may only contain particles where {
     it has the quality<mv:example.com:example:/red>.
   }
 }
 
 # Then you have to imagine a creation syntax here, like:
-create a dimension point in position<green_blue_ball> {
+create a particle in position<green_blue_ball> {
   assign the quality<mv:example.com:example:/green>.
   assign the quality<mv:example.com:example:/blue>.
 }
 
 # Throws a compiler error.
-move the dimension point in position<green_blue_ball> to position<red_ball>.
+move the particle in position<green_blue_ball> to position<red_ball>.
 ```
 
 ## Why This is the Right Solution
@@ -138,19 +138,19 @@ desire for programming.
 ### Syntax
 
 The primary syntax I need to justify is the addition of
-`it may only contain dimension points where` instead of just writing lines
-directly like `it must have the quality<foo>`.
+`it may only contain particles where` instead of just writing lines directly
+like `it must have the quality<foo>`.
 
 Basically, there are two reasons for this:
 
 1. We want to keep it clear everywhere that we are making statements about
-   dimension points, not about empty space.
+   particles, not about empty space.
 2. There will have to be some way to also specify constraints on forms, and this
    keeps the wording identical between positions and forms.
 
 The one awkward part is that you can't use the same wording for defining
-constraints that a quality applies to a dimension point. Maybe that's okay,
-though, because those are conceptually different things.
+constraints that a quality applies to a particle. Maybe that's okay, though,
+because those are conceptually different things.
 
 ### Laziness vs Atomic Creation
 
@@ -166,7 +166,7 @@ enforced. (That does have some advantages in dead code detection, though.)
 Eventually I realized that the builder pattern can still be implemented even
 with static, immediate constraint enforcement, because you can simply create
 unconstrained positions, do whatever you want in them, and then move the
-dimension point into the constrained position.
+particle into the constrained position.
 
 ## Forward Compatibility
 

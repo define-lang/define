@@ -90,7 +90,7 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse) -> None:
             + "    define the position<run>.\n"
             + "    define the position<local_name.\n"
             + "    it happens when {\n"
-            + "        the position<run> has a dimension point.\n"
+            + "        the position<run> has a particle.\n"
             + "    } and it does {\n"
             + "    }\n"
             + "}\n"

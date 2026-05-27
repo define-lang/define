@@ -2,9 +2,9 @@ define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_
     define the position<same_name>.
     define the position<same_name>.
     it happens when {
-        the position<same_name> has a dimension point.
+        the position<same_name> has a particle.
     } and it does {
         define the position<_noop>.
-        create a dimension point in position<_noop>.
+        create a particle in position<_noop>.
     }
 }

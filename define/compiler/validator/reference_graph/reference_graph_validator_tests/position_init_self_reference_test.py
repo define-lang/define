@@ -17,7 +17,7 @@ def test_create_in_self(
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</test>.\n"
+        "        create a particle in position</test>.\n"
         "    }\n"
         "}\n"
     )
@@ -34,11 +34,11 @@ def test_create_in_self_with_constraints(
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>.\n"
+                "        create a particle in position</test>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -54,8 +54,8 @@ def test_move_from_local_to_self(
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
         "        define the position<local>.\n"
-        "        create a dimension point in position<local>.\n"
-        "        move the dimension point in position<local> to position</test>.\n"
+        "        create a particle in position<local>.\n"
+        "        move the particle in position<local> to position</test>.\n"
         "    }\n"
         "}\n"
     )
@@ -71,8 +71,8 @@ def test_move_from_self_to_local(
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
         "        define the position<local>.\n"
-        "        create a dimension point in position</test>.\n"
-        "        move the dimension point in position</test> to position<local>.\n"
+        "        create a particle in position</test>.\n"
+        "        move the particle in position</test> to position<local>.\n"
         "    }\n"
         "}\n"
     )
@@ -89,13 +89,13 @@ def test_move_to_self_violates_constraints(
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</x>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
                 "        define the position<local>.\n"
-                "        create a dimension point in position<local>.\n"
-                "        move the dimension point in position<local> to position</test>.\n"
+                "        create a particle in position<local>.\n"
+                "        move the particle in position<local> to position</test>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -105,7 +105,7 @@ def test_move_to_self_violates_constraints(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].location.line == 8
-    assert all_diags[0].location.column == 56
+    assert all_diags[0].location.column == 49
     assert all_diags[0].source_position == "position<local>"
     assert all_diags[0].target_position == "position</test>"
     assert all_diags[0].missing_qualities == [
@@ -123,12 +123,12 @@ def test_move_from_self_violates_constraints(
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
                 "        define the position<local> {\n"
-                "            it may only contain dimension points where {\n"
+                "            it may only contain particles where {\n"
                 "                it has the position</x>.\n"
                 "            }\n"
                 "        }\n"
-                "        create a dimension point in position</test>.\n"
-                "        move the dimension point in position</test> to position<local>.\n"
+                "        create a particle in position</test>.\n"
+                "        move the particle in position</test> to position<local>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -138,7 +138,7 @@ def test_move_from_self_violates_constraints(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
     assert all_diags[0].location.line == 9
-    assert all_diags[0].location.column == 56
+    assert all_diags[0].location.column == 49
     assert all_diags[0].source_position == "position</test>"
     assert all_diags[0].target_position == "position<local>"
     assert all_diags[0].missing_qualities == [
@@ -155,8 +155,8 @@ def test_self_reference_mixed_with_other_reference(
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>.\n"
-                "        create a dimension point in position</other>.\n"
+                "        create a particle in position</test>.\n"
+                "        create a particle in position</other>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -168,7 +168,7 @@ def test_self_reference_mixed_with_other_reference(
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 4
-    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.column == 30
 
 
 def test_chained_name_starting_with_self_two_items_valid(
@@ -179,12 +179,12 @@ def test_chained_name_starting_with_self_two_items_valid(
             "other.dfn": "define the potential position<my.domain.com:my_lib:/other>.\n",
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the position</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>.\n"
-                "        create a dimension point in position</test>::position</other>.\n"
+                "        create a particle in position</test>.\n"
+                "        create a particle in position</test>::position</other>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -202,7 +202,7 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>::position</other>.\n"
+                "        create a particle in position</test>::position</other>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -212,7 +212,7 @@ def test_chained_name_starting_with_self_two_items_invalid_global(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotInConstraintsDiagnostic)
     assert all_diags[0].location.line == 3
-    assert all_diags[0].location.column == 54
+    assert all_diags[0].location.column == 47
     assert all_diags[0].element_name == "position<my.domain.com:my_lib:/other>"
     assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/test>"
 
@@ -223,7 +223,7 @@ def test_chained_name_starting_with_self_two_items_invalid_local(
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</test>::position<inner>.\n"
+        "        create a particle in position</test>::position<inner>.\n"
         "    }\n"
         "}\n"
     )
@@ -232,7 +232,7 @@ def test_chained_name_starting_with_self_two_items_invalid_local(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic)
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 54
+    assert diags[0].location.column == 47
     assert diags[0].local_name == "position<inner>"
     assert diags[0].preceding_name == "position<my.domain.com:my_lib:/test>"
 
@@ -246,21 +246,21 @@ def test_chained_name_starting_with_self_three_items_valid(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<local>.\n"
                 "    it happens when {\n"
-                "        the position<local> has a dimension point.\n"
+                "        the position<local> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>.\n"
-                "        create a dimension point in position</test>::action</other>::position<local>.\n"
+                "        create a particle in position</test>.\n"
+                "        create a particle in position</test>::action</other>::position<local>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -278,20 +278,20 @@ def test_chained_name_starting_with_self_three_items_invalid(
                 "define the potential action<my.domain.com:my_lib:/other> {\n"
                 "    define the position<local>.\n"
                 "    it happens when {\n"
-                "        the position<local> has a dimension point.\n"
+                "        the position<local> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
-                "        create a dimension point in position<_noop>.\n"
+                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
             "test.dfn": (
                 "define the potential position<my.domain.com:my_lib:/test> {\n"
-                "    it may only contain dimension points where {\n"
+                "    it may only contain particles where {\n"
                 "        it has the action</other>.\n"
                 "    }\n"
                 "    after it is assigned {\n"
-                "        create a dimension point in position</test>::action</other>::position<nonexistent>.\n"
+                "        create a particle in position</test>::action</other>::position<nonexistent>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -303,7 +303,7 @@ def test_chained_name_starting_with_self_three_items_invalid(
     assert len(test_diags) == 1
     assert isinstance(test_diags[0], diagnostics.ChainElementNotInActionDiagnostic)
     assert test_diags[0].location.line == 6
-    assert test_diags[0].location.column == 70
+    assert test_diags[0].location.column == 63
     assert test_diags[0].element_name == "position<nonexistent>"
     assert test_diags[0].parent_name == "action<my.domain.com:my_lib:/other>"
 
@@ -314,7 +314,7 @@ def test_self_reference_does_not_trigger_file_loading(
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</test>.\n"
+        "        create a particle in position</test>.\n"
         "    }\n"
         "}\n"
     )
@@ -329,11 +329,11 @@ def test_self_reference_in_constraint_block_is_still_circular(
 ):
     source = (
         "define the potential position<my.domain.com:my_lib:/test> {\n"
-        "    it may only contain dimension points where {\n"
+        "    it may only contain particles where {\n"
         "        it has the position</test>.\n"
         "    }\n"
         "    after it is assigned {\n"
-        "        create a dimension point in position</test>.\n"
+        "        create a particle in position</test>.\n"
         "    }\n"
         "}\n"
     )

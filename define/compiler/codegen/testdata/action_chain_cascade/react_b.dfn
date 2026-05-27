@@ -1,9 +1,9 @@
 define the potential action<my.domain.com:my_lib:/react_b> {
     define the position<trigger>.
     it happens when {
-        the position<trigger> has a dimension point.
+        the position<trigger> has a particle.
     } and it does {
         define the position<local_result>.
-        create a dimension point in position<local_result>.
+        create a particle in position<local_result>.
     }
 }

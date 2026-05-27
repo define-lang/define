@@ -1,13 +1,13 @@
 define the potential action<my.domain.com:my_lib:/middle> {
     define the position<run>.
     define the position<inner_iface> {
-        it may only contain dimension points where {
+        it may only contain particles where {
             it has the action</inner>.
         }
     }
     it happens when {
-        the position<run> has a dimension point.
+        the position<run> has a particle.
     } and it does {
-        create a dimension point in position<inner_iface>::action</inner>::position<run>.
+        create a particle in position<inner_iface>::action</inner>::position<run>.
     }
 }
