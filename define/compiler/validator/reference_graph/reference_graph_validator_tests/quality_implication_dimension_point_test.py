@@ -3,6 +3,10 @@
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _IMPLIED_DFN = "define the potential position<my.domain.com:my_lib:/implied>.\n"
@@ -506,17 +510,22 @@ def test_parent_and_child_implied_init_blocks_conflict(
     assert diag.location.end_line == 11
     assert diag.location.end_column == 50
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.end_line == 4
-    assert diag.inferred_at.end_column == 55
-    assert diag.inferred_at.file_path == PurePosixPath("implier.dfn")
     assert diag.filled_at.line == 3
     assert diag.filled_at.column == 37
     assert diag.filled_at.end_line == 3
     assert diag.filled_at.end_column == 55
     assert diag.filled_at.file_path == PurePosixPath("implied.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/implier>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "implier.dfn",
+        },
+    )
 
 
 def test_two_different_implier_init_blocks_conflict(
@@ -576,17 +585,22 @@ def test_two_different_implier_init_blocks_conflict(
     assert diag.location.end_line == 12
     assert diag.location.end_column == 50
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.end_line == 4
-    assert diag.inferred_at.end_column == 55
-    assert diag.inferred_at.file_path == PurePosixPath("second_implier.dfn")
     assert diag.filled_at.line == 4
     assert diag.filled_at.column == 37
     assert diag.filled_at.end_line == 4
     assert diag.filled_at.end_column == 55
     assert diag.filled_at.file_path == PurePosixPath("first_implier.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/second_implier>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "second_implier.dfn",
+        },
+    )
 
 
 def test_three_level_chain_create_destroy_create_init_blocks(
@@ -691,12 +705,17 @@ def test_sibling_init_block_empty_guarantee_violates_later_occupied_requirement(
     assert diag.location.end_line == 11
     assert diag.location.end_column == 50
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 40
-    assert diag.inferred_at.end_line == 4
-    assert diag.inferred_at.end_column == 58
-    assert diag.inferred_at.file_path == PurePosixPath("requirer.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/requirer>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 40,
+            "file_path": "requirer.dfn",
+        },
+    )
 
 
 def test_destroy_in_emptied_interface_child_after_init_block_empties_it(

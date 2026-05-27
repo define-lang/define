@@ -4,7 +4,15 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
+
+_P = "position<my.domain.com:my_lib:/p>"
+_Q = "position<my.domain.com:my_lib:/q>"
+_IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"
 
 
 def test_init_block_occupied_violation_via_destroy_of_implied(
@@ -46,15 +54,22 @@ def test_init_block_occupied_violation_via_destroy_of_implied(
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 40
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_occupied_violation_via_move_source_of_implied(
@@ -97,15 +112,22 @@ def test_init_block_occupied_violation_via_move_source_of_implied(
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 5
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 5,
+            "column": 37,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_empty_violation_via_create_in_implied(
@@ -153,18 +175,25 @@ def test_init_block_empty_violation_via_create_in_implied(
         diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
     assert diag.filled_at.line == 3
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("q.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_satisfied_requirement_emits_no_diagnostic(
@@ -249,28 +278,42 @@ def test_init_block_multiple_implied_positions_each_check_runs(
         diag_q, diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert diag_q.create_target_name == "position<box>"
-    assert diag_q.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag_q.init_block_position_name == _P
     assert diag_q.position_name == "position<box>::position</q>"
     assert diag_q.location.line == 11
     assert diag_q.location.column == 37
     assert diag_q.location.file_path == PurePosixPath("test.dfn")
-    assert diag_q.inferred_at.line == 5
-    assert diag_q.inferred_at.column == 40
-    assert diag_q.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag_q.propagated_from_locations == []
+    assert_propagation_chain(
+        diag_q,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 5,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
     assert isinstance(
         diag_r, diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert diag_r.create_target_name == "position<box>"
-    assert diag_r.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag_r.init_block_position_name == _P
     assert diag_r.position_name == "position<box>::position</r>"
     assert diag_r.location.line == 11
     assert diag_r.location.column == 37
     assert diag_r.location.file_path == PurePosixPath("test.dfn")
-    assert diag_r.inferred_at.line == 6
-    assert diag_r.inferred_at.column == 40
-    assert diag_r.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag_r.propagated_from_locations == []
+    assert_propagation_chain(
+        diag_r,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_self_reference_in_init_block_publishes_no_requirement(
@@ -359,15 +402,22 @@ def test_init_block_occupied_violation_via_destroy_of_child_of_implied(
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 40
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_occupied_violation_via_move_source_of_child_of_implied(
@@ -420,15 +470,22 @@ def test_init_block_occupied_violation_via_move_source_of_child_of_implied(
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 5
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 5,
+            "column": 37,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_empty_violation_via_create_in_child_of_implied(
@@ -481,18 +538,25 @@ def test_init_block_empty_violation_via_create_in_child_of_implied(
         diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
     assert diag.filled_at.line == 7
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("q.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_satisfied_requirement_for_child_of_implied_emits_no_diagnostic(
@@ -597,7 +661,7 @@ def test_init_block_occupied_violation_via_destroy_of_grandchild_of_implied(
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert (
         diag.position_name
         == "position<box>::position</q>::position</child>::position</grandchild>"
@@ -605,10 +669,17 @@ def test_init_block_occupied_violation_via_destroy_of_grandchild_of_implied(
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 40
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_occupied_violation_via_destroy_of_iface_of_action_in_implied_chain(
@@ -679,7 +750,7 @@ def test_init_block_occupied_violation_via_destroy_of_iface_of_action_in_implied
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert (
         diag.position_name
         == "position<box>::position</q>::position</outer>::action</a>::position<iface>"
@@ -687,10 +758,17 @@ def test_init_block_occupied_violation_via_destroy_of_iface_of_action_in_implied
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 40
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_occupied_violation_via_destroy_of_child_of_iface_of_action_in_implied_chain(
@@ -767,7 +845,7 @@ def test_init_block_occupied_violation_via_destroy_of_child_of_iface_of_action_i
         diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
     )
     assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert diag.init_block_position_name == _P
     assert (
         diag.position_name
         == "position<box>::position</q>::position</outer>::action</a>::position<iface>::position</child>"
@@ -775,10 +853,17 @@ def test_init_block_occupied_violation_via_destroy_of_child_of_iface_of_action_i
     assert diag.location.line == 11
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 40
-    assert diag.inferred_at.file_path == PurePosixPath("p.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 40,
+            "file_path": "p.dfn",
+        },
+    )
 
 
 def test_init_block_action_requirement_violation_via_triggering_implied_action(
@@ -840,10 +925,19 @@ def test_init_block_action_requirement_violation_via_triggering_implied_action(
     assert diag.location.end_line == 6
     assert diag.location.end_column == 103
     assert diag.location.file_path == PurePosixPath("p.dfn")
-    assert diag.action_name == "action<my.domain.com:my_lib:/implied_action>"
+    assert diag.action_name == _IMPLIED_ACTION
     assert (
         diag.position_name
         == "position</carrier>::action</implied_action>::position<item>"
     )
-    assert diag.inferred_at.file_path == PurePosixPath("implied_action.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _IMPLIED_ACTION,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 40,
+            "file_path": "implied_action.dfn",
+        },
+    )

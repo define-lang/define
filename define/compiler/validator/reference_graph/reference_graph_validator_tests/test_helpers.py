@@ -6,16 +6,15 @@ from pprint import pformat
 from typing import TypedDict
 
 from define.compiler import diagnostics
+from define.compiler.validator.reference_graph import action_contract
 
 
-# TODO: When the rest of the tests are migrated to assert directly on
-# RequirementDiagnostic.propagation_chain, drop this helper in favor of a
-# version that takes full PropagationStep data (kind, enclosing_quality_name,
-# triggered_quality_name) instead of just locations.
-class InferredFromEntry(TypedDict):
-    """Expected per-level data for an entry in a propagated_from chain."""
+class ExpectedPropagationStep(TypedDict):
+    """Expected per-step data for an entry in a requirement's propagation chain."""
 
-    full_typed_name: str
+    kind: action_contract.PropagationKind
+    enclosing_quality_name: str
+    triggered_quality_name: str | None
     line: int
     column: int
     file_path: str
@@ -23,35 +22,33 @@ class InferredFromEntry(TypedDict):
 
 def assert_propagation_chain(
     diag: diagnostics.RequirementDiagnostic,
-    *inferred_from: InferredFromEntry,
+    *expected_steps: ExpectedPropagationStep,
 ) -> None:
-    """Assert a requirement diagnostic exposes the expected propagated_from chain."""
+    """Assert a requirement diagnostic's full propagation chain, outer to inner."""
     __tracebackhide__ = True
-    # TODO: Update RequirementDiagnostic to actually have the names at each level.
-    composed_tail = "::".join(
-        entry["full_typed_name"] for entry in inferred_from if entry["full_typed_name"]
-    )
-    assert composed_tail == "" or diag.position_name.endswith(composed_tail), (
-        f"per-level full_typed_name segments compose to {composed_tail!r},"
-        f" but position_name {diag.position_name!r} does not end with that"
-    )
     actual = [
         {
-            "line": loc.line,
-            "column": loc.column,
-            "file_path": loc.file_path,
+            "kind": step.kind,
+            "enclosing_quality_name": step.enclosing_quality_name,
+            "triggered_quality_name": step.triggered_quality_name,
+            "line": step.location.line,
+            "column": step.location.column,
+            "file_path": step.location.file_path,
         }
-        for loc in diag.propagated_from_locations
+        for step in diag.propagation_chain
     ]
     expected = [
         {
+            "kind": entry["kind"],
+            "enclosing_quality_name": entry["enclosing_quality_name"],
+            "triggered_quality_name": entry["triggered_quality_name"],
             "line": entry["line"],
             "column": entry["column"],
             "file_path": PurePosixPath(entry["file_path"]),
         }
-        for entry in inferred_from
+        for entry in expected_steps
     ]
     assert actual == expected, (
-        f"propagated_from chain locations mismatch:\nactual:\n{pformat(actual)}\n"
+        f"propagation chain mismatch:\nactual:\n{pformat(actual)}\n"
         f"expected:\n{pformat(expected)}"
     )

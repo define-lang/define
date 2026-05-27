@@ -712,19 +712,6 @@ class RequirementDiagnostic(Diagnostic):
     position_name: str
     propagation_chain: list[action_contract.PropagationStep]
 
-    # TODO: Migrate the remaining tests to assert on propagation_chain directly
-    # (and to pass the new entry shape to assert_propagation_chain) so these
-    # backward-compat shims can be removed.
-    @property
-    def inferred_at(self) -> ast.SourceLocation:
-        """The location of the outermost step in the propagation chain."""
-        return self.propagation_chain[0].location
-
-    @property
-    def propagated_from_locations(self) -> list[ast.SourceLocation]:
-        """Locations of the remaining propagation steps, outer to inner."""
-        return [step.location for step in self.propagation_chain[1:]]
-
     # TODO: This really needs to be able to show all the relevant
     # source lines. I think we could do that by passing in a
     # source_map to format() and providing some sort of get_context

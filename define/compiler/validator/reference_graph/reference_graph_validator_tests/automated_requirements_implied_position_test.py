@@ -4,6 +4,10 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -54,13 +58,20 @@ def test_caller_violates_empty_via_create_in_implied_position(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 12
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -110,10 +121,17 @@ def test_caller_violates_occupied_via_move_from_implied_position(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -162,10 +180,17 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::position</implied>"
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 40,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -303,13 +328,20 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
         all_diags[0].position_name
         == "position<box>::position</implied>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -370,10 +402,17 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
         all_diags[0].position_name
         == "position<box>::position</implied>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -433,10 +472,17 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
         all_diags[0].position_name
         == "position<box>::position</implied>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 40,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -590,13 +636,20 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 12
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -657,10 +710,17 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -720,10 +780,17 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 40,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -791,13 +858,20 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
         all_diags[0].position_name
         == "position<box>::action</sub>::position<iface>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -867,10 +941,17 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
         all_diags[0].position_name
         == "position<box>::action</sub>::position<iface>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)
 
 
@@ -939,8 +1020,15 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
         all_diags[0].position_name
         == "position<box>::action</sub>::position<iface>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 40,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _INNER)

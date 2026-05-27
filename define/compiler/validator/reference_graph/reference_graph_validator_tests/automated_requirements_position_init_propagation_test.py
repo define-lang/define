@@ -10,9 +10,16 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+
+_INNER = "action<my.domain.com:my_lib:/inner>"
+_IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"
+_P = "position<my.domain.com:my_lib:/p>"
+_OUTER_P = "position<my.domain.com:my_lib:/outer_p>"
+_INNER_P = "position<my.domain.com:my_lib:/inner_p>"
 
 
 def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
@@ -72,20 +79,25 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == _INNER
     assert (
         all_diags[0].position_name
         == "position<box>::action</inner>::position<iface>::position</q>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 11
-    assert all_diags[0].inferred_at.end_column == 52
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</q>",
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _P,
+            "line": 11,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
             "line": 4,
             "column": 40,
             "file_path": "p.dfn",
@@ -153,20 +165,25 @@ def test_init_block_occupied_propagates_via_implied_position(
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == _INNER
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied_pos>::position</q>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 7
-    assert all_diags[0].inferred_at.end_column == 59
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</q>",
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _P,
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
             "line": 4,
             "column": 40,
             "file_path": "p.dfn",
@@ -245,21 +262,32 @@ def test_init_block_occupied_propagates_via_implied_action(
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == _INNER
     assert (
         all_diags[0].position_name == "position<box>::position</carrier>::position</q>"
     )
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</carrier>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _IMPLIED_ACTION,
+            "line": 7,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _IMPLIED_ACTION,
+            "triggered_quality_name": _P,
             "line": 7,
             "column": 37,
             "file_path": "implied_action.dfn",
         },
         {
-            "full_typed_name": "position</q>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
             "line": 4,
             "column": 40,
             "file_path": "p.dfn",
@@ -324,23 +352,25 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
-    assert (
-        all_diags[0].init_block_position_name
-        == "position<my.domain.com:my_lib:/outer_p>"
-    )
+    assert all_diags[0].init_block_position_name == _OUTER_P
     assert (
         all_diags[0].position_name
         == "position<box>::position</something>::position</r>"
     )
-    assert all_diags[0].inferred_at.line == 4
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 4
-    assert all_diags[0].inferred_at.end_column == 57
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer_p.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</r>",
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _OUTER_P,
+            "triggered_quality_name": _INNER_P,
+            "line": 4,
+            "column": 37,
+            "file_path": "outer_p.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER_P,
+            "triggered_quality_name": None,
             "line": 4,
             "column": 40,
             "file_path": "inner_p.dfn",
@@ -418,17 +448,22 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 95
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == _INNER
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</inner>::position<iface>"
     )
-    assert all_diags[0].inferred_at.line == 16
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 16
-    assert all_diags[0].inferred_at.end_column == 52
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert isinstance(
         all_diags[1],
         diagnostics.ActionRequiresOccupiedPositionDiagnostic,
@@ -438,20 +473,25 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     assert all_diags[1].location.end_line == 12
     assert all_diags[1].location.end_column == 95
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[1].action_name == _INNER
     assert (
         all_diags[1].position_name
         == "position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>"
     )
-    assert all_diags[1].inferred_at.line == 17
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.end_line == 17
-    assert all_diags[1].inferred_at.end_column == 73
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[1],
         {
-            "full_typed_name": "position</q>",
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _P,
+            "line": 17,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": None,
             "line": 4,
             "column": 40,
             "file_path": "p.dfn",
@@ -511,16 +551,25 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
-    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert all_diags[0].init_block_position_name == _P
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<item>"
     )
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("p.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": _IMPLIED_ACTION,
+            "line": 4,
+            "column": 37,
+            "file_path": "p.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _IMPLIED_ACTION,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 40,
             "file_path": "implied_action.dfn",
@@ -581,13 +630,22 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].create_target_name == "position<box>"
-    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert all_diags[0].init_block_position_name == _P
     assert all_diags[0].position_name == "position<box>::position</q>"
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("p.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</q>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": _IMPLIED_ACTION,
+            "line": 4,
+            "column": 37,
+            "file_path": "p.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _IMPLIED_ACTION,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 40,
             "file_path": "implied_action.dfn",

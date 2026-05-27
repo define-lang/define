@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -92,15 +93,20 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 13
-    assert all_diags[0].inferred_at.column == 54
-    assert all_diags[0].inferred_at.end_line == 13
-    assert all_diags[0].inferred_at.end_column == 108
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 13,
+            "column": 54,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 40,
             "file_path": "inner.dfn",
@@ -178,13 +184,20 @@ def test_inner_chained_action_empty_requirement_propagates(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "inner.dfn",
@@ -324,13 +337,20 @@ def test_inner_chained_action_occupied_requirement_propagates(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "inner.dfn",
@@ -485,9 +505,6 @@ def test_doubly_nested_action_requirement_propagates(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
@@ -496,7 +513,17 @@ def test_doubly_nested_action_requirement_propagates(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
     )
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+    )
     # /test fills position<item> which /inner requires empty (propagated through /middle and /outer)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
@@ -507,22 +534,31 @@ def test_doubly_nested_action_requirement_propagates(
         all_diags[1].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
     )
-    assert all_diags[1].inferred_at.line == 12
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
         {
-            "full_typed_name": "position<mid_iface>::action</inner>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 12,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
             "line": 11,
             "column": 37,
             "file_path": "middle.dfn",
         },
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "inner.dfn",
@@ -632,28 +668,39 @@ def test_four_deep_action_chain_requirement_propagates(
         all_diags[0].position_name
         == "position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("a.dfn")
     assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<b_iface>::action</c>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/a>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/b>",
+            "line": 11,
+            "column": 37,
+            "file_path": "a.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/b>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/c>",
             "line": 11,
             "column": 37,
             "file_path": "b.dfn",
         },
         {
-            "full_typed_name": "position<c_iface>::action</d>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/c>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/d>",
             "line": 11,
             "column": 37,
             "file_path": "c.dfn",
         },
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/d>",
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "d.dfn",
@@ -739,12 +786,28 @@ def test_both_requirements_propagate_when_inner_has_both(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<dest>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 14
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 54,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -834,13 +897,20 @@ def test_trigger_position_child_empty_requirement_propagates(
         all_diags[1].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>"
     )
-    assert all_diags[1].inferred_at.line == 11
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].filled_at.line == 13
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+    )
     # /test fills position<trigger_pos>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[2], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[2].location.line == 15
@@ -851,16 +921,23 @@ def test_trigger_position_child_empty_requirement_propagates(
         all_diags[2].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>"
     )
-    assert all_diags[2].inferred_at.line == 11
-    assert all_diags[2].inferred_at.column == 37
-    assert all_diags[2].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[2].filled_at.line == 10
     assert all_diags[2].filled_at.column == 37
     assert all_diags[2].filled_at.file_path == PurePosixPath("inner.dfn")
     assert_propagation_chain(
         all_diags[2],
         {
-            "full_typed_name": "position<trigger_pos>::position</x>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 10,
             "column": 37,
             "file_path": "inner.dfn",
@@ -938,13 +1015,20 @@ def test_trigger_position_child_occupied_requirement_propagates(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>"
     )
-    assert all_diags[0].inferred_at.line == 12
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<trigger_pos>::position</x>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 12,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 11,
             "column": 37,
             "file_path": "inner.dfn",
@@ -1026,16 +1110,23 @@ def test_inner_action_requirement_propagates_after_move(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 17
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _INNER,
+            "line": 17,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "inner.dfn",
@@ -1136,13 +1227,20 @@ def test_doubly_nested_requirement_propagates_after_move(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+    )
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 37
@@ -1152,22 +1250,31 @@ def test_doubly_nested_requirement_propagates_after_move(
         all_diags[1].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
     )
-    assert all_diags[1].inferred_at.line == 12
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
         {
-            "full_typed_name": "position<mid_iface>::action</inner>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 12,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
             "line": 17,
             "column": 37,
             "file_path": "middle.dfn",
         },
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "inner.dfn",
@@ -1329,13 +1436,20 @@ def test_cross_fqun_inner_requirement_renders_correctly(
         all_diags[0].position_name
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+    )
     # /test fills position<item>::position</x> which /inner requires empty (propagated)
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
@@ -1346,16 +1460,23 @@ def test_cross_fqun_inner_requirement_renders_correctly(
         all_diags[1].position_name
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
     )
-    assert all_diags[1].inferred_at.line == 12
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
         {
-            "full_typed_name": f"position<item>::position<{_DEP_FQUN}:/x>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
+            "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
+            "line": 12,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": f"action<{_DEP_FQUN}:/inner>",
+            "triggered_quality_name": None,
             "line": 11,
             "column": 37,
             "file_path": "lib/inner.dfn",
@@ -1524,13 +1645,20 @@ def test_cross_fqun_occupied_requirement_violated(
         all_diags[0].position_name
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": f"position<item>::position<{_DEP_FQUN}:/x>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/outer>",
+            "triggered_quality_name": f"action<{_DEP_FQUN}:/inner>",
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": f"action<{_DEP_FQUN}:/inner>",
+            "triggered_quality_name": None,
             "line": 12,
             "column": 37,
             "file_path": "lib/inner.dfn",
@@ -1638,22 +1766,31 @@ def test_complex_chain_same_fqun_position_name(
         all_diags[0].position_name
         == "position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("foo.dfn")
     assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<mid_iface>::action</bar>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/foo>",
+            "triggered_quality_name": _MIDDLE,
+            "line": 11,
+            "column": 37,
+            "file_path": "foo.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/bar>",
             "line": 11,
             "column": 37,
             "file_path": "middle.dfn",
         },
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/bar>",
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "bar.dfn",
@@ -1772,18 +1909,23 @@ def test_complex_chain_cross_fqun_position_name(
         all_diags[0].position_name
         == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("foo.dfn")
     assert all_diags[0].filled_at.line == 15
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": (
-                f"position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>"
-            ),
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/foo>",
+            "triggered_quality_name": f"action<{_MAIN_FQUN}:/middle>",
+            "line": 11,
+            "column": 37,
+            "file_path": "foo.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/middle>",
+            "triggered_quality_name": None,
             "line": 11,
             "column": 37,
             "file_path": "middle.dfn",
@@ -1798,22 +1940,31 @@ def test_complex_chain_cross_fqun_position_name(
         all_diags[1].position_name
         == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>"
     )
-    assert all_diags[1].inferred_at.line == 11
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("foo.dfn")
     assert all_diags[1].filled_at.line == 16
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
         {
-            "full_typed_name": f"position<mid_iface>::action<{_DEP_FQUN}:/bar>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/foo>",
+            "triggered_quality_name": f"action<{_MAIN_FQUN}:/middle>",
+            "line": 11,
+            "column": 37,
+            "file_path": "foo.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": f"action<{_MAIN_FQUN}:/middle>",
+            "triggered_quality_name": f"action<{_DEP_FQUN}:/bar>",
             "line": 12,
             "column": 37,
             "file_path": "middle.dfn",
         },
         {
-            "full_typed_name": f"position<item>::position<{_DEP_FQUN}:/x>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": f"action<{_DEP_FQUN}:/bar>",
+            "triggered_quality_name": None,
             "line": 11,
             "column": 37,
             "file_path": "lib/bar.dfn",

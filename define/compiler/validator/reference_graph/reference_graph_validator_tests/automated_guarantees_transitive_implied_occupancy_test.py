@@ -3,6 +3,10 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -631,17 +635,22 @@ def test_implied_position_self_create_init_block_fires_on_caller_create(
     assert first.location.end_line == 11
     assert first.location.end_column == 50
     assert first.location.file_path == PurePosixPath("test.dfn")
-    assert first.inferred_at.line == 4
-    assert first.inferred_at.column == 37
-    assert first.inferred_at.end_line == 4
-    assert first.inferred_at.end_column == 61
-    assert first.inferred_at.file_path == PurePosixPath("implier.dfn")
     assert first.filled_at.line == 3
     assert first.filled_at.column == 37
     assert first.filled_at.end_line == 3
     assert first.filled_at.end_column == 61
     assert first.filled_at.file_path == PurePosixPath("first_implied.dfn")
-    assert first.propagated_from_locations == []
+    assert_propagation_chain(
+        first,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/implier>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "implier.dfn",
+        },
+    )
     second = all_diags[1]
     assert isinstance(second, diagnostics.CreateInOccupiedPositionDiagnostic)
     assert second.location.line == 12
@@ -722,17 +731,22 @@ def test_transitively_implied_position_self_create_init_block_fires_on_caller_cr
     assert first.location.end_line == 11
     assert first.location.end_column == 50
     assert first.location.file_path == PurePosixPath("test.dfn")
-    assert first.inferred_at.line == 4
-    assert first.inferred_at.column == 37
-    assert first.inferred_at.end_line == 4
-    assert first.inferred_at.end_column == 62
-    assert first.inferred_at.file_path == PurePosixPath("first_implied.dfn")
     assert first.filled_at.line == 3
     assert first.filled_at.column == 37
     assert first.filled_at.end_line == 3
     assert first.filled_at.end_column == 62
     assert first.filled_at.file_path == PurePosixPath("second_implied.dfn")
-    assert first.propagated_from_locations == []
+    assert_propagation_chain(
+        first,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/first_implied>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "first_implied.dfn",
+        },
+    )
     second = all_diags[1]
     assert isinstance(second, diagnostics.CreateInOccupiedPositionDiagnostic)
     assert second.location.line == 12

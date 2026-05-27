@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -124,13 +125,20 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].position_name == "position<box>::position</x>"
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</x>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 7,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 40,
             "file_path": "inner.dfn",
@@ -173,16 +181,23 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].position_name == "position<box>::position</x>"
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert all_diags[0].filled_at.line == 12
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</x>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 7,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "inner.dfn",
@@ -264,13 +279,20 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
         all_diags[0].position_name
         == "position<box>::position</x>::action</inner>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 7,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "inner.dfn",
@@ -327,10 +349,17 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
     assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 37,
+            "file_path": "inner.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _MIDDLE, _INNER)
 
 
@@ -401,19 +430,28 @@ def test_doubly_nested_implied_action_chain_propagates(
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
     assert diag.position_name == "position<box>::action</inner>::position<extra>"
-    assert diag.inferred_at.line == 7
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         diag,
         {
-            "full_typed_name": "action</inner>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 7,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
             "line": 7,
             "column": 37,
             "file_path": "middle.dfn",
         },
         {
-            "full_typed_name": "position<extra>",
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "inner.dfn",

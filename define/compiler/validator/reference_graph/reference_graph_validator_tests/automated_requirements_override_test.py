@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -347,13 +348,20 @@ def test_doubly_nested_both_outer_and_caller_fill(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+    )
     assert isinstance(all_diags[1], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 37
@@ -363,13 +371,20 @@ def test_doubly_nested_both_outer_and_caller_fill(
         all_diags[1].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
     )
-    assert all_diags[1].inferred_at.line == 12
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[1].filled_at.line == 14
     assert all_diags[1].filled_at.column == 37
     assert all_diags[1].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 37,
+            "file_path": "outer.dfn",
+        },
+    )
     assert isinstance(all_diags[2], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[2].location.line == 13
     assert all_diags[2].location.column == 37
@@ -379,16 +394,23 @@ def test_doubly_nested_both_outer_and_caller_fill(
         all_diags[2].position_name
         == "position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
     )
-    assert all_diags[2].inferred_at.line == 11
-    assert all_diags[2].inferred_at.column == 37
-    assert all_diags[2].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert all_diags[2].filled_at.line == 12
     assert all_diags[2].filled_at.column == 37
     assert all_diags[2].filled_at.file_path == PurePosixPath("outer.dfn")
     assert_propagation_chain(
         all_diags[2],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/inner>",
+            "line": 11,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/inner>",
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "inner.dfn",

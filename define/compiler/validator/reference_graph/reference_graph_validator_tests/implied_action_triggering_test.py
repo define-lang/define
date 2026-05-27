@@ -2,6 +2,7 @@
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -156,13 +157,20 @@ def test_implied_action_iface_requirement_propagates_to_caller(
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<extra>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<extra>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _IMPLIED,
+            "line": 7,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _IMPLIED,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "implied_action.dfn",
@@ -251,13 +259,20 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
         all_diags[0].position_name
         == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"
     )
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<extra>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 8,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "inner.dfn",
@@ -341,13 +356,20 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
         all_diags[0].position_name
         == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"
     )
-    assert all_diags[0].inferred_at.line == 7
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("middle.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<extra>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 7,
+            "column": 37,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "inner.dfn",

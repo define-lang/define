@@ -4,6 +4,10 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -125,10 +129,17 @@ def test_interface_to_local_occupied_violated(
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 17
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 37,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
 
 
@@ -194,13 +205,20 @@ def test_interface_to_local_empty_violated(
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 16
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 37,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
 
 
@@ -269,10 +287,17 @@ def test_implied_to_local_occupied_violated(
         all_diags[0].position_name
         == "position<box>::position</marker>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 13
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 37,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
 
 
@@ -341,13 +366,20 @@ def test_implied_to_local_empty_violated(
         all_diags[0].position_name
         == "position<box>::position</marker>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 12
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
-    assert all_diags[0].propagated_from_locations == []
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 37,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
 
 
@@ -416,10 +448,17 @@ def test_interface_to_implied_occupied_violated(
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 13
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 37,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
 
 
@@ -491,8 +530,15 @@ def test_implied_to_implied_occupied_violated(
         all_diags[0].position_name
         == "position<box>::position</source_marker>::position</child>"
     )
-    assert all_diags[0].inferred_at.line == 9
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("destructor.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 9,
+            "column": 37,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}

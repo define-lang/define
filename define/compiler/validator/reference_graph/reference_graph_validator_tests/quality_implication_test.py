@@ -2,6 +2,10 @@
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
@@ -204,13 +208,20 @@ def test_diamond_transitivity_create_conflict_detected(
     assert diag.location.line == 17
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.inferred_at.line == 4
-    assert diag.inferred_at.column == 37
-    assert diag.inferred_at.file_path == PurePosixPath("implier_two.dfn")
     assert diag.filled_at.line == 4
     assert diag.filled_at.column == 37
     assert diag.filled_at.file_path == PurePosixPath("implier_one.dfn")
-    assert diag.propagated_from_locations == []
+    assert_propagation_chain(
+        diag,
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/implier_two>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 37,
+            "file_path": "implier_two.dfn",
+        },
+    )
 
 
 def test_diamond_transitivity_with_create_destroy_succeeds(

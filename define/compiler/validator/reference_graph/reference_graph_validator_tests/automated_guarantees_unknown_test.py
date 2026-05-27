@@ -7,6 +7,10 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -951,9 +955,17 @@ def test_swap_guarantee_both_positions_unfilled(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
-    assert all_diags[0].inferred_at.line == 9
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 9,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
     assert isinstance(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
@@ -962,9 +974,17 @@ def test_swap_guarantee_both_positions_unfilled(
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
-    assert all_diags[1].inferred_at.line == 10
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[1].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 10,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -1029,13 +1049,17 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<b>"
-    assert all_diags[0].inferred_at is not None
-    assert all_diags[0].inferred_at.line == 10
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 10
-    assert all_diags[0].inferred_at.end_column == 48
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 10,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
     # position<b> is now occupied: the swap moved position<a>'s DP there.
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[1].location.line == 17
@@ -1119,12 +1143,17 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
-    assert all_diags[0].inferred_at.line == 18
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 18
-    assert all_diags[0].inferred_at.end_column == 63
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
     assert isinstance(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
@@ -1138,12 +1167,17 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
         all_diags[1].position_name
         == "position<box>::action</other>::position<a>::position</c1>"
     )
-    assert all_diags[1].inferred_at.line == 18
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.end_line == 18
-    assert all_diags[1].inferred_at.end_column == 63
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[1].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
     assert isinstance(
         all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
@@ -1154,12 +1188,17 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[2].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[2].position_name == "position<box>::action</other>::position<b>"
-    assert all_diags[2].inferred_at.line == 19
-    assert all_diags[2].inferred_at.column == 37
-    assert all_diags[2].inferred_at.end_line == 19
-    assert all_diags[2].inferred_at.end_column == 63
-    assert all_diags[2].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[2].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[2],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
     assert isinstance(
         all_diags[3], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
@@ -1173,12 +1212,17 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
         all_diags[3].position_name
         == "position<box>::action</other>::position<b>::position</c2>"
     )
-    assert all_diags[3].inferred_at.line == 19
-    assert all_diags[3].inferred_at.column == 37
-    assert all_diags[3].inferred_at.end_line == 19
-    assert all_diags[3].inferred_at.end_column == 63
-    assert all_diags[3].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[3].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[3],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
 
 
 def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
@@ -1236,12 +1280,17 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
-    assert all_diags[0].inferred_at.line == 8
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.end_line == 8
-    assert all_diags[0].inferred_at.end_column == 50
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert all_diags[0].propagated_from_locations == []
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 37,
+            "file_path": "other.dfn",
+        },
+    )
 
 
 def test_swap_propagates_prior_unknown_state_from_origin_to_destination(

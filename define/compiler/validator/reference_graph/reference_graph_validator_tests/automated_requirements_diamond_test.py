@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -328,13 +329,20 @@ def test_diamond_occupied_requirement_independent_per_path(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 37
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("act_c.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _ACT_C,
+            "triggered_quality_name": _SHARED,
+            "line": 11,
+            "column": 37,
+            "file_path": "act_c.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SHARED,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "shared.dfn",
@@ -446,13 +454,20 @@ def test_diamond_one_path_violates_occupied_requirement(
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("act_c.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _ACT_C,
+            "triggered_quality_name": _SHARED,
+            "line": 11,
+            "column": 37,
+            "file_path": "act_c.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SHARED,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "shared.dfn",
@@ -515,13 +530,20 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 37
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("act_b.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _ACT_B,
+            "triggered_quality_name": _SHARED,
+            "line": 11,
+            "column": 37,
+            "file_path": "act_b.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SHARED,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "shared.dfn",
@@ -538,13 +560,20 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert all_diags[1].location.line == 21
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].inferred_at.line == 11
-    assert all_diags[1].inferred_at.column == 37
-    assert all_diags[1].inferred_at.file_path == PurePosixPath("act_c.dfn")
     assert_propagation_chain(
         all_diags[1],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _ACT_C,
+            "triggered_quality_name": _SHARED,
+            "line": 11,
+            "column": 37,
+            "file_path": "act_c.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SHARED,
+            "triggered_quality_name": None,
             "line": 8,
             "column": 37,
             "file_path": "shared.dfn",

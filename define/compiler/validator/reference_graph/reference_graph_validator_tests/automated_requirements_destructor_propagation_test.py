@@ -3,6 +3,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
@@ -118,23 +119,25 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 79
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    # action_name is the immediate triggered action (mid); the destructor that
-    # fires through mid's destruction-of-incoming shows up as a step in the
-    # propagation chain.
     assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.end_line == 11
-    assert all_diags[0].inferred_at.end_column == 58
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("mid.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 11,
+            "column": 40,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "destructor.dfn",
@@ -195,26 +198,28 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 79
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    # action_name is the immediate triggered action (mid); the destructor that
-    # fires through mid's destruction-of-incoming shows up as a step in the
-    # propagation chain.
     assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.end_line == 11
-    assert all_diags[0].inferred_at.end_column == 58
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("mid.dfn")
     assert all_diags[0].filled_at.line == 13
     assert all_diags[0].filled_at.column == 37
     assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 11,
+            "column": 40,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
             "line": 6,
             "column": 37,
             "file_path": "destructor.dfn",
@@ -277,23 +282,25 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 79
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    # action_name is the immediate triggered action (mid); the destructor that
-    # fires through mid's destruction-of-incoming shows up as a step in the
-    # propagation chain.
     assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::position</marker>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.end_line == 11
-    assert all_diags[0].inferred_at.end_column == 58
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("mid.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</marker>",
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 11,
+            "column": 40,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "destructor.dfn",
@@ -357,23 +364,25 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 79
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    # action_name is the immediate triggered action (mid); the destructor that
-    # fires through mid's destruction-of-incoming shows up as a step in the
-    # propagation chain.
     assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<holder>::position</leaf>"
     )
-    assert all_diags[0].inferred_at.line == 11
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.end_line == 11
-    assert all_diags[0].inferred_at.end_column == 58
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("mid.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position</leaf>",
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 11,
+            "column": 40,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
             "line": 11,
             "column": 37,
             "file_path": "destructor.dfn",
@@ -437,23 +446,25 @@ def test_requirement_follows_moved_in_dimension_point_to_contracted_origin(
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 79
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    # action_name is the immediate triggered action (mid); the destructor that
-    # fires through mid's destruction-of-incoming shows up as a step in the
-    # propagation chain.
     assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>"
     )
-    assert all_diags[0].inferred_at.line == 13
-    assert all_diags[0].inferred_at.column == 40
-    assert all_diags[0].inferred_at.end_line == 13
-    assert all_diags[0].inferred_at.end_column == 59
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("mid.dfn")
     assert_propagation_chain(
         all_diags[0],
         {
-            "full_typed_name": "position<item>",
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 13,
+            "column": 40,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
             "line": 7,
             "column": 37,
             "file_path": "destructor.dfn",
