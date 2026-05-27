@@ -8,6 +8,10 @@ from typing import TypedDict
 from define.compiler import diagnostics
 
 
+# TODO: When the rest of the tests are migrated to assert directly on
+# RequirementDiagnostic.propagation_chain, drop this helper in favor of a
+# version that takes full PropagationStep data (kind, enclosing_quality_name,
+# triggered_quality_name) instead of just locations.
 class InferredFromEntry(TypedDict):
     """Expected per-level data for an entry in a propagated_from chain."""
 

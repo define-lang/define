@@ -16,6 +16,37 @@ class PositionOccupancyState(enum.Enum):
     UNKNOWN = enum.auto()
 
 
+class PropagationKind(enum.Enum):
+    """How a requirement reached a given step in its propagation chain."""
+
+    # The deepest step in the chain: the definition's own body inferred the
+    # requirement directly.
+    DIRECT_INFERENCE = enum.auto()
+    # The current definition's body destroyed a caller-passed dimension point,
+    # firing a destructor; the destructor's requirements propagated up.
+    DESTRUCTOR_CASCADE = enum.auto()
+    # The current definition's body triggered an action; the action's
+    # requirements propagated up.
+    ACTION_TRIGGER = enum.auto()
+    # The current definition's body created a dimension point in a position
+    # with an init block; the init block's requirements propagated up.
+    INIT_BLOCK_TRIGGER = enum.auto()
+
+
+@dataclass(frozen=True, slots=True)
+class PropagationStep:
+    """One step in a requirement's propagation chain, with its source location."""
+
+    location: ast.SourceLocation
+    kind: PropagationKind
+    # The definition whose body did the thing this step describes (where
+    # ``location`` points).
+    enclosing_quality_name: str
+    # For non-root steps: the quality (destructor / triggered action / position
+    # whose init block ran) that the next step downward is inside.
+    triggered_quality_name: str | None
+
+
 @dataclass(frozen=True)
 class PositionRequirement:
     """An automatically inferred requirement on a contracted position.
@@ -74,6 +105,39 @@ class PositionRequirement:
             locations.append(current.inferred_from.location)
             current = current.propagated_from
         return locations
+
+    def propagation_chain(self) -> list[PropagationStep]:
+        """Return the chain of propagation steps from this requirement down to its root cause."""
+        chain: list[PropagationStep] = []
+        current: PositionRequirement | None = self
+        while current is not None:
+            chain.append(current._propagation_step())
+            current = current.propagated_from
+        return chain
+
+    def _propagation_step(self) -> PropagationStep:
+        enclosing_name = self.enclosing_quality.typed_name.source_typed_name
+        if self.propagated_from is None:
+            return PropagationStep(
+                location=self.inferred_from.location,
+                kind=PropagationKind.DIRECT_INFERENCE,
+                enclosing_quality_name=enclosing_name,
+                triggered_quality_name=None,
+            )
+        other_quality = self.propagated_from.enclosing_quality
+        if isinstance(other_quality, ast.ActionDefinition):
+            if other_quality.is_destructor:
+                kind = PropagationKind.DESTRUCTOR_CASCADE
+            else:
+                kind = PropagationKind.ACTION_TRIGGER
+        else:
+            kind = PropagationKind.INIT_BLOCK_TRIGGER
+        return PropagationStep(
+            location=self.inferred_from.location,
+            kind=kind,
+            enclosing_quality_name=enclosing_name,
+            triggered_quality_name=other_quality.typed_name.source_typed_name,
+        )
 
 
 @dataclass(frozen=True)

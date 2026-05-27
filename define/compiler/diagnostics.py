@@ -6,12 +6,13 @@ import typing
 from dataclasses import dataclass
 from typing import ClassVar
 
+from define.compiler import constants
+from define.compiler.validator.reference_graph import action_contract
+
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from define.compiler import ast, exceptions
-
-from define.compiler import constants
 
 
 def _format_location(location: ast.SourceLocation) -> str:
@@ -709,8 +710,20 @@ class RequirementDiagnostic(Diagnostic):
     """Base class for diagnostics about a contracted position's occupancy requirement."""
 
     position_name: str
-    inferred_at: ast.SourceLocation
-    propagated_from_locations: list[ast.SourceLocation]
+    propagation_chain: list[action_contract.PropagationStep]
+
+    # TODO: Migrate the remaining tests to assert on propagation_chain directly
+    # (and to pass the new entry shape to assert_propagation_chain) so these
+    # backward-compat shims can be removed.
+    @property
+    def inferred_at(self) -> ast.SourceLocation:
+        """The location of the outermost step in the propagation chain."""
+        return self.propagation_chain[0].location
+
+    @property
+    def propagated_from_locations(self) -> list[ast.SourceLocation]:
+        """Locations of the remaining propagation steps, outer to inner."""
+        return [step.location for step in self.propagation_chain[1:]]
 
     # TODO: This really needs to be able to show all the relevant
     # source lines. I think we could do that by passing in a
@@ -720,15 +733,37 @@ class RequirementDiagnostic(Diagnostic):
     # means that everything in all of the compiler has to be able
     # to access source_lines for all files.
     @property
-    def formatted_inferred_at(self) -> str:
-        """Format the inferred_at location and any propagation chain."""
-        lines: list[str] = []
-        lines.append("This requirement happens because of:")
-        lines.append(_format_location(self.inferred_at))
-        for i, location in enumerate(self.propagated_from_locations):
-            indent = "  " * (i + 1)
-            lines.append(f"{indent}{_format_location(location)}")
+    def formatted_propagation_chain(self) -> str:
+        """Render the labeled propagation chain for the diagnostic message."""
+        if not self.propagation_chain:
+            return ""
+        lines = ["This requirement happens because:"]
+        for step in self.propagation_chain:
+            lines.append(f"  {self._format_propagation_step(step)}:")
+            lines.append(f"    {_format_location(step.location)}")
         return "\n".join(lines)
+
+    def _format_propagation_step(self, step: action_contract.PropagationStep) -> str:
+        """Render a propagation step as a human-readable label line."""
+        match step.kind:
+            case action_contract.PropagationKind.DIRECT_INFERENCE:
+                return f"'{step.enclosing_quality_name}' inferred this requirement"
+            case action_contract.PropagationKind.DESTRUCTOR_CASCADE:
+                return (
+                    f"'{step.enclosing_quality_name}' destroys a dimension"
+                    f" point, triggering the destructor '{step.triggered_quality_name}'"
+                )
+            case action_contract.PropagationKind.ACTION_TRIGGER:
+                return (
+                    f"'{step.enclosing_quality_name}' triggers"
+                    f" '{step.triggered_quality_name}'"
+                )
+            case action_contract.PropagationKind.INIT_BLOCK_TRIGGER:
+                return (
+                    f"'{step.enclosing_quality_name}' creates a dimension"
+                    f" point that runs the Position Initialization Block of"
+                    f" '{step.triggered_quality_name}'"
+                )
 
 
 @dataclass
@@ -738,10 +773,11 @@ class ActionRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
     action_name: str
     filled_at: ast.SourceLocation
     message_format: ClassVar[str] = (
-        "this line is triggering `{self.action_name}` to run.\n"
-        "However, '{self.position_name}' must be empty before that action runs, and it is not empty.\n"
+        "this line is triggering '{self.action_name}' to run.\n"
+        "However, '{self.position_name}' must be empty before that action runs,"
+        " and it is not empty.\n"
         "It was filled at:\n{self.formatted_filled_at}\n\n"
-        "{self.formatted_inferred_at}"
+        "{self.formatted_propagation_chain}"
     )
 
     @property
@@ -756,9 +792,10 @@ class ActionRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
 
     action_name: str
     message_format: ClassVar[str] = (
-        "this line is triggering `{self.action_name}` to run.\n"
-        "However, '{self.position_name}' must be occupied before that action runs, and it not occupied.\n\n"
-        "{self.formatted_inferred_at}"
+        "this line is triggering '{self.action_name}' to run.\n"
+        "However, '{self.position_name}' must be occupied before that action runs,"
+        " and it is not occupied.\n\n"
+        "{self.formatted_propagation_chain}"
     )
 
 
@@ -790,7 +827,7 @@ class DestructorRequirementDiagnostic(RequirementDiagnostic):
         if self.auto_destruction_local_position_name is None:
             lines.append(
                 f"Destroying the dimension point in '{self.destroy_target_name}'"
-                + f" runs the destructor `{self.destructor_name}`."
+                + f" triggers the destructor '{self.destructor_name}'."
             )
         else:
             lines.append(
@@ -816,12 +853,12 @@ class DestructorRequirementDiagnostic(RequirementDiagnostic):
         lines.append("")
         if self.auto_destruction_local_position_name is not None:
             lines.append(
-                f"Destroying '{self.destroy_target_name}' runs the destructor"
-                + f" `{self.destructor_name}`."
+                f"Destroying '{self.destroy_target_name}' triggers the destructor"
+                + f" '{self.destructor_name}'."
             )
         lines.append(self.requirement_text)
         lines.append("")
-        lines.append(self.formatted_inferred_at)
+        lines.append(self.formatted_propagation_chain)
         return "\n".join(lines)
 
 
@@ -908,13 +945,13 @@ class PositionInitBlockRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
     init_block_position_name: str
     filled_at: ast.SourceLocation
     message_format: ClassVar[str] = (
-        "this line creates a dimension point in `{self.create_target_name}`."
-        " Doing so assigns `{self.init_block_position_name}` to that dimension point,"
+        "this line creates a dimension point in '{self.create_target_name}'."
+        " Doing so assigns '{self.init_block_position_name}' to that dimension point,"
         " running its Position Initialization Block.\n"
         "However, '{self.position_name}' must be empty before that block runs,"
         " and it is not empty.\n"
         "It was filled at:\n{self.formatted_filled_at}\n\n"
-        "{self.formatted_inferred_at}"
+        "{self.formatted_propagation_chain}"
     )
 
     @property
@@ -930,12 +967,12 @@ class PositionInitBlockRequiresOccupiedPositionDiagnostic(RequirementDiagnostic)
     create_target_name: str
     init_block_position_name: str
     message_format: ClassVar[str] = (
-        "this line creates a dimension point in `{self.create_target_name}`."
-        " Doing so assigns `{self.init_block_position_name}` to that dimension point,"
+        "this line creates a dimension point in '{self.create_target_name}'."
+        " Doing so assigns '{self.init_block_position_name}' to that dimension point,"
         " running its Position Initialization Block.\n"
         "However, '{self.position_name}' must be occupied before that block runs,"
         " and it is not occupied.\n\n"
-        "{self.formatted_inferred_at}"
+        "{self.formatted_propagation_chain}"
     )
 
 

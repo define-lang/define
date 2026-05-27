@@ -640,19 +640,25 @@ class DefinitionPostorderValidator(abc.ABC):
                 destroy_target_origin_at=destroy_target_origin_at,
                 auto_destruction_target=auto_destruction_target,
             )
-        elif isinstance(req.root_cause_quality(), ast.ActionDefinition):
+            return
+        originating_quality = req.enclosing_quality
+        originating_quality_name = originating_quality.typed_name.source_typed_name
+        propagation_chain = req.propagation_chain()
+        if isinstance(originating_quality, ast.ActionDefinition):
             self._emit_action_violation(
-                req=req,
                 acting_on_position=acting_on_position,
                 position_name=position_name,
                 occupant=occupant,
+                action_name=originating_quality_name,
+                propagation_chain=propagation_chain,
             )
         else:
             self._emit_init_block_violation(
-                req=req,
                 acting_on_position=acting_on_position,
                 position_name=position_name,
                 occupant=occupant,
+                init_block_position_name=originating_quality_name,
+                propagation_chain=propagation_chain,
             )
 
     def _emit_destructor_violation(
@@ -679,6 +685,7 @@ class DefinitionPostorderValidator(abc.ABC):
         destroy_target_name = acting_on_position.source_form_in_universe(
             self._enclosing_fqun
         )
+        propagation_chain = req.propagation_chain()
         if occupant is not None:
             self._diagnostics.append(
                 diagnostics.DestructorRequiresEmptyPositionDiagnostic(
@@ -687,8 +694,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     destroy_target_name=destroy_target_name,
                     destroy_target_origin_at=destroy_target_origin_at,
                     position_name=position_name,
-                    inferred_at=req.inferred_from.location,
-                    propagated_from_locations=req.propagated_from_locations(),
+                    propagation_chain=propagation_chain,
                     filled_at=occupant.last_position.location,
                     auto_destruction_local_position_name=auto_local_name,
                     containing_definition_name=containing_name,
@@ -702,8 +708,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     destroy_target_name=destroy_target_name,
                     destroy_target_origin_at=destroy_target_origin_at,
                     position_name=position_name,
-                    inferred_at=req.inferred_from.location,
-                    propagated_from_locations=req.propagated_from_locations(),
+                    propagation_chain=propagation_chain,
                     auto_destruction_local_position_name=auto_local_name,
                     containing_definition_name=containing_name,
                 )
@@ -712,20 +717,20 @@ class DefinitionPostorderValidator(abc.ABC):
     def _emit_action_violation(
         self,
         *,
-        req: action_contract.PositionRequirement,
         acting_on_position: ast.PositionReference,
         position_name: str,
         occupant: dimension_point_tracker.DimensionPointInfo | None,
+        action_name: str,
+        propagation_chain: list[action_contract.PropagationStep],
     ):
         """Append an action-requirement violation diagnostic."""
         if occupant is not None:
             self._diagnostics.append(
                 diagnostics.ActionRequiresEmptyPositionDiagnostic(
                     location=acting_on_position.location,
-                    action_name=req.root_cause_quality_name(),
+                    action_name=action_name,
                     position_name=position_name,
-                    inferred_at=req.inferred_from.location,
-                    propagated_from_locations=req.propagated_from_locations(),
+                    propagation_chain=propagation_chain,
                     filled_at=occupant.last_position.location,
                 )
             )
@@ -733,20 +738,20 @@ class DefinitionPostorderValidator(abc.ABC):
             self._diagnostics.append(
                 diagnostics.ActionRequiresOccupiedPositionDiagnostic(
                     location=acting_on_position.location,
-                    action_name=req.root_cause_quality_name(),
+                    action_name=action_name,
                     position_name=position_name,
-                    inferred_at=req.inferred_from.location,
-                    propagated_from_locations=req.propagated_from_locations(),
+                    propagation_chain=propagation_chain,
                 )
             )
 
     def _emit_init_block_violation(
         self,
         *,
-        req: action_contract.PositionRequirement,
         acting_on_position: ast.PositionReference,
         position_name: str,
         occupant: dimension_point_tracker.DimensionPointInfo | None,
+        init_block_position_name: str,
+        propagation_chain: list[action_contract.PropagationStep],
     ):
         """Append a position-init-block requirement violation diagnostic."""
         create_target_name = acting_on_position.source_form_in_universe(
@@ -757,10 +762,9 @@ class DefinitionPostorderValidator(abc.ABC):
                 diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic(
                     location=acting_on_position.location,
                     create_target_name=create_target_name,
-                    init_block_position_name=req.root_cause_quality_name(),
+                    init_block_position_name=init_block_position_name,
                     position_name=position_name,
-                    inferred_at=req.inferred_from.location,
-                    propagated_from_locations=req.propagated_from_locations(),
+                    propagation_chain=propagation_chain,
                     filled_at=occupant.last_position.location,
                 )
             )
@@ -769,10 +773,9 @@ class DefinitionPostorderValidator(abc.ABC):
                 diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic(
                     location=acting_on_position.location,
                     create_target_name=create_target_name,
-                    init_block_position_name=req.root_cause_quality_name(),
+                    init_block_position_name=init_block_position_name,
                     position_name=position_name,
-                    inferred_at=req.inferred_from.location,
-                    propagated_from_locations=req.propagated_from_locations(),
+                    propagation_chain=propagation_chain,
                 )
             )
 

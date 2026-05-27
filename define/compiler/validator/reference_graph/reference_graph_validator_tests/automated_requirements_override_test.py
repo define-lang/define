@@ -374,7 +374,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[2].location.line == 13
     assert all_diags[2].location.column == 37
     assert all_diags[2].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/middle>"
     assert (
         all_diags[2].position_name
         == "position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"

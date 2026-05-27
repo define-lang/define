@@ -151,7 +151,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _IMPLIED
+    assert all_diags[0].action_name == _MIDDLE
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<extra>"
@@ -246,7 +246,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _MIDDLE
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"
@@ -336,7 +336,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _MIDDLE
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"

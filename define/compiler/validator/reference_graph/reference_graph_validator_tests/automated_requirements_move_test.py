@@ -80,15 +80,12 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    # Filling the nested trigger at line 13 fires /inner, which fills
-    # position<item> via guarantee. When /outer triggers at line 14 and
-    # tries to trigger /inner again, position<item> is already occupied.
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
@@ -360,7 +357,7 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     assert diag.location.line == 15
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>"
@@ -463,7 +460,7 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     assert diag.location.line == 16
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>"
@@ -582,7 +579,7 @@ def test_complex_chain_interaction_iface(
     assert diag.location.line == 18
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
@@ -672,7 +669,7 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _OUTER
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied>::action</inner>::position<item>"
@@ -759,7 +756,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _OUTER
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied>::action</inner>::position<item>"
@@ -854,7 +851,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     assert diag.location.line == 15
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert (
         diag.position_name
         == "position<box>::position</implied>::position</child>::action</inner>::position<item>"
@@ -960,7 +957,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     assert diag.location.line == 16
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert (
         diag.position_name
         == "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>"
@@ -1082,7 +1079,7 @@ def test_complex_chain_interaction_implied(
     assert diag.location.line == 18
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert (
         diag.position_name
         == "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
@@ -1310,7 +1307,7 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _OUTER
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"

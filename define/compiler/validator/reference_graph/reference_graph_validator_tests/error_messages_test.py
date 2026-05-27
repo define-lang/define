@@ -215,18 +215,18 @@ def test_action_requires_empty_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(test_source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 13, column 37\n'
-        "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-        "                                    ^\n"
-        "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
-        "However, 'position<box>::action</other>::position<item>'"
-        " must be empty before that action runs, and it is not empty.\n"
-        "It was filled at:\n"
-        'File "test.dfn", line 12, column 37\n\n'
-        "This requirement happens because of:\n"
-        'File "other.dfn", line 7, column 37'
-    )
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 13, column 37
+                create a dimension point in position<box>::action</other>::position<trigger_pos>.
+                                            ^
+        this line is triggering 'action<my.domain.com:my_lib:/other>' to run.
+        However, 'position<box>::action</other>::position<item>' must be empty before that action runs, and it is not empty.
+        It was filled at:
+        File "test.dfn", line 12, column 37
+
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/other>' inferred this requirement:
+            File "other.dfn", line 7, column 37""")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -269,16 +269,16 @@ def test_action_requires_occupied_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(test_source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 12, column 37\n'
-        "        create a dimension point in position<box>::action</other>::position<trigger_pos>.\n"
-        "                                    ^\n"
-        "this line is triggering `action<my.domain.com:my_lib:/other>` to run.\n"
-        "However, 'position<box>::action</other>::position<item>'"
-        " must be occupied before that action runs, and it not occupied.\n\n"
-        "This requirement happens because of:\n"
-        'File "other.dfn", line 8, column 37'
-    )
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 12, column 37
+                create a dimension point in position<box>::action</other>::position<trigger_pos>.
+                                            ^
+        this line is triggering 'action<my.domain.com:my_lib:/other>' to run.
+        However, 'position<box>::action</other>::position<item>' must be occupied before that action runs, and it is not occupied.
+
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/other>' inferred this requirement:
+            File "other.dfn", line 8, column 37""")
 
 
 def test_propagated_action_requires_empty_position_format(
@@ -350,21 +350,22 @@ def test_propagated_action_requires_empty_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
-    assert formatted == (
-        'File "test.dfn", line 15, column 37\n'
-        "        create a dimension point in position<box>::action</outer>::position<trigger_pos>.\n"
-        "                                    ^\n"
-        "this line is triggering `action<my.domain.com:my_lib:/inner>` to run.\n"
-        "However, 'position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>'"
-        " must be empty before that action runs, and it is not empty.\n"
-        "It was filled at:\n"
-        'File "test.dfn", line 14, column 37\n'
-        "\n"
-        "This requirement happens because of:\n"
-        'File "outer.dfn", line 11, column 37\n'
-        '  File "middle.dfn", line 11, column 37\n'
-        '    File "inner.dfn", line 7, column 37'
-    )
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 15, column 37
+                create a dimension point in position<box>::action</outer>::position<trigger_pos>.
+                                            ^
+        this line is triggering 'action<my.domain.com:my_lib:/outer>' to run.
+        However, 'position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>' must be empty before that action runs, and it is not empty.
+        It was filled at:
+        File "test.dfn", line 14, column 37
+
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
+            File "outer.dfn", line 11, column 37
+          'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
+            File "middle.dfn", line 11, column 37
+          'action<my.domain.com:my_lib:/inner>' inferred this requirement:
+            File "inner.dfn", line 7, column 37""")
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _MIDDLE, _INNER)
 
 
@@ -463,20 +464,18 @@ def test_position_init_block_requires_empty_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(test_source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 11, column 37\n'
-        "        create a dimension point in position<box>.\n"
-        "                                    ^\n"
-        "this line creates a dimension point in `position<box>`."
-        " Doing so assigns `position<my.domain.com:my_lib:/p>`"
-        " to that dimension point, running its Position Initialization Block.\n"
-        "However, 'position<box>::position</q>' must be empty before"
-        " that block runs, and it is not empty.\n"
-        "It was filled at:\n"
-        'File "q.dfn", line 3, column 37\n\n'
-        "This requirement happens because of:\n"
-        'File "p.dfn", line 4, column 37'
-    )
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 11, column 37
+                create a dimension point in position<box>.
+                                            ^
+        this line creates a dimension point in 'position<box>'. Doing so assigns 'position<my.domain.com:my_lib:/p>' to that dimension point, running its Position Initialization Block.
+        However, 'position<box>::position</q>' must be empty before that block runs, and it is not empty.
+        It was filled at:
+        File "q.dfn", line 3, column 37
+
+        This requirement happens because:
+          'position<my.domain.com:my_lib:/p>' inferred this requirement:
+            File "p.dfn", line 4, column 37""")
 
 
 def test_position_init_block_requires_occupied_position_format(
@@ -514,18 +513,16 @@ def test_position_init_block_requires_occupied_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(test_source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 11, column 37\n'
-        "        create a dimension point in position<box>.\n"
-        "                                    ^\n"
-        "this line creates a dimension point in `position<box>`."
-        " Doing so assigns `position<my.domain.com:my_lib:/p>`"
-        " to that dimension point, running its Position Initialization Block.\n"
-        "However, 'position<box>::position</q>' must be occupied before"
-        " that block runs, and it is not occupied.\n\n"
-        "This requirement happens because of:\n"
-        'File "p.dfn", line 4, column 40'
-    )
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 11, column 37
+                create a dimension point in position<box>.
+                                            ^
+        this line creates a dimension point in 'position<box>'. Doing so assigns 'position<my.domain.com:my_lib:/p>' to that dimension point, running its Position Initialization Block.
+        However, 'position<box>::position</q>' must be occupied before that block runs, and it is not occupied.
+
+        This requirement happens because:
+          'position<my.domain.com:my_lib:/p>' inferred this requirement:
+            File "p.dfn", line 4, column 40""")
 
 
 def test_destroy_in_emptied_interface_position_format(
@@ -685,15 +682,16 @@ def test_destructor_requires_occupied_position_format(
         File "test.dfn", line 19, column 40
                 destroy the dimension point in position<box>.
                                                ^
-        Destroying the dimension point in 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor>`.
+        Destroying the dimension point in 'position<box>::position</child_q>' triggers the destructor 'action<my.domain.com:my_lib:/destructor>'.
 
         The dimension point in 'position<box>::position</child_q>' was originally created at:
         File "test.dfn", line 17, column 37
 
         However, 'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before that destructor runs, and it is not occupied.
 
-        This requirement happens because of:
-        File "destructor.dfn", line 7, column 37""")
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/destructor>' inferred this requirement:
+            File "destructor.dfn", line 7, column 37""")
 
 
 def test_destructor_requires_empty_position_format(
@@ -751,7 +749,7 @@ def test_destructor_requires_empty_position_format(
         File "test.dfn", line 20, column 40
                 destroy the dimension point in position<box>.
                                                ^
-        Destroying the dimension point in 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.
+        Destroying the dimension point in 'position<box>::position</child_q>' triggers the destructor 'action<my.domain.com:my_lib:/destructor_empty>'.
 
         The dimension point in 'position<box>::position</child_q>' was originally created at:
         File "test.dfn", line 17, column 37
@@ -760,8 +758,9 @@ def test_destructor_requires_empty_position_format(
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' was filled at:
         File "test.dfn", line 19, column 37
 
-        This requirement happens because of:
-        File "destructor_empty.dfn", line 6, column 37""")
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/destructor_empty>' inferred this requirement:
+            File "destructor_empty.dfn", line 6, column 37""")
 
 
 def test_destructor_moved_guarantee_names_contracted_origin_format(
@@ -904,13 +903,14 @@ def test_auto_destruction_destructor_requires_empty_position_format(
         The dimension point in 'position<box>::position</child_q>' was originally created at:
         File "test.dfn", line 17, column 37
 
-        Destroying 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.
+        Destroying 'position<box>::position</child_q>' triggers the destructor 'action<my.domain.com:my_lib:/destructor_empty>'.
         However, 'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before that destructor runs, and it is not empty.
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' was filled at:
         File "test.dfn", line 19, column 37
 
-        This requirement happens because of:
-        File "destructor_empty.dfn", line 6, column 37""")
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/destructor_empty>' inferred this requirement:
+            File "destructor_empty.dfn", line 6, column 37""")
 
 
 def test_auto_destruction_destructor_requires_occupied_position_format(
@@ -974,11 +974,12 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
         The dimension point in 'position<box>::position</child_q>' was originally created at:
         File "test.dfn", line 17, column 37
 
-        Destroying 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor>`.
+        Destroying 'position<box>::position</child_q>' triggers the destructor 'action<my.domain.com:my_lib:/destructor>'.
         However, 'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before that destructor runs, and it is not occupied.
 
-        This requirement happens because of:
-        File "destructor.dfn", line 7, column 37""")
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/destructor>' inferred this requirement:
+            File "destructor.dfn", line 7, column 37""")
 
 
 def test_auto_destruction_in_position_init_block_format(
@@ -1039,10 +1040,155 @@ def test_auto_destruction_in_position_init_block_format(
         The dimension point in 'position<box>::position</child_q>' was originally created at:
         File "test.dfn", line 14, column 37
 
-        Destroying 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.
+        Destroying 'position<box>::position</child_q>' triggers the destructor 'action<my.domain.com:my_lib:/destructor_empty>'.
         However, 'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before that destructor runs, and it is not empty.
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' was filled at:
         File "test.dfn", line 16, column 37
 
-        This requirement happens because of:
-        File "destructor_empty.dfn", line 6, column 37""")
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/destructor_empty>' inferred this requirement:
+            File "destructor_empty.dfn", line 6, column 37""")
+
+
+def test_destructor_cascade_through_action_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "destructor_empty.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "inner.dfn": (
+            "define the potential action<my.domain.com:my_lib:/inner> {\n"
+            "    define the position<incoming> {\n"
+            "        it may only contain dimension points where {\n"
+            "            it has the action</destructor_empty>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<local> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the action</destructor_empty>.\n"
+            "            }\n"
+            "        }\n"
+            "        move the dimension point in position<incoming> to position<local>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<entry>.\n"
+            "    it happens when {\n"
+            "        the position<entry> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the action</inner>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<box>.\n"
+            "        create a dimension point in position<box>::action</inner>::position<incoming>.\n"
+            "        create a dimension point in position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>.\n"
+            "        create a dimension point in position<box>::action</inner>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 14, column 37
+                create a dimension point in position<box>::action</inner>::position<run>.
+                                            ^
+        this line is triggering 'action<my.domain.com:my_lib:/inner>' to run.
+        However, 'position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>' must be empty before that action runs, and it is not empty.
+        It was filled at:
+        File "test.dfn", line 13, column 37
+
+        This requirement happens because:
+          'action<my.domain.com:my_lib:/inner>' destroys a dimension point, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
+            File "inner.dfn", line 11, column 9
+          'action<my.domain.com:my_lib:/destructor_empty>' inferred this requirement:
+            File "destructor_empty.dfn", line 6, column 37""")
+
+
+def test_destructor_cascade_through_position_init_block_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "destructor_empty.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "q.dfn": (
+            "define the potential position<my.domain.com:my_lib:/q> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the action</destructor_empty>.\n"
+            "    }\n"
+            "    after it is assigned {\n"
+            "        create a dimension point in position</q>.\n"
+            "        create a dimension point in position</q>::action</destructor_empty>::position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "p.dfn": (
+            "define the potential position<my.domain.com:my_lib:/p> {\n"
+            "    it also assigns the position</q>.\n"
+            "    after it is assigned {\n"
+            "        destroy the dimension point in position</q>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</p>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 11, column 37
+                create a dimension point in position<box>.
+                                            ^
+        this line creates a dimension point in 'position<box>'. Doing so assigns 'position<my.domain.com:my_lib:/p>' to that dimension point, running its Position Initialization Block.
+        However, 'position<box>::position</q>::action</destructor_empty>::position<item>' must be empty before that block runs, and it is not empty.
+        It was filled at:
+        File "q.dfn", line 7, column 37
+
+        This requirement happens because:
+          'position<my.domain.com:my_lib:/p>' destroys a dimension point, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
+            File "p.dfn", line 4, column 40
+          'action<my.domain.com:my_lib:/destructor_empty>' inferred this requirement:
+            File "destructor_empty.dfn", line 6, column 37""")

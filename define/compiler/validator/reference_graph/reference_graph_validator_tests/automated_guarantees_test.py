@@ -2108,7 +2108,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<local>::action</outer>::position<outer_iface>::action</inner>::position<item>"

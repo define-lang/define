@@ -65,18 +65,14 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert (
-        all_diags[0].create_target_name
-        == "position<box>::action</inner>::position<trigger_pos>"
-    )
-    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</inner>::position<iface>::position</q>"
@@ -150,18 +146,14 @@ def test_init_block_occupied_propagates_via_implied_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert (
-        all_diags[0].create_target_name
-        == "position<box>::action</inner>::position<trigger_pos>"
-    )
-    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied_pos>::position</q>"
@@ -246,18 +238,14 @@ def test_init_block_occupied_propagates_via_implied_action(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
+        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert (
-        all_diags[0].create_target_name
-        == "position<box>::action</inner>::position<trigger_pos>"
-    )
-    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
     assert (
         all_diags[0].position_name == "position<box>::position</carrier>::position</q>"
     )
@@ -338,7 +326,7 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
     assert all_diags[0].create_target_name == "position<box>"
     assert (
         all_diags[0].init_block_position_name
-        == "position<my.domain.com:my_lib:/inner_p>"
+        == "position<my.domain.com:my_lib:/outer_p>"
     )
     assert (
         all_diags[0].position_name
@@ -443,18 +431,14 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     assert all_diags[0].propagated_from_locations == []
     assert isinstance(
         all_diags[1],
-        diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
+        diagnostics.ActionRequiresOccupiedPositionDiagnostic,
     )
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.end_line == 12
     assert all_diags[1].location.end_column == 95
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert (
-        all_diags[1].create_target_name
-        == "position<outer_box>::action</inner>::position<trigger_pos>"
-    )
-    assert all_diags[1].init_block_position_name == "position<my.domain.com:my_lib:/p>"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/inner>"
     assert (
         all_diags[1].position_name
         == "position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>"
@@ -519,14 +503,15 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/implied_action>"
+    assert all_diags[0].create_target_name == "position<box>"
+    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<item>"
@@ -588,14 +573,15 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
+        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
     )
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 50
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/implied_action>"
+    assert all_diags[0].create_target_name == "position<box>"
+    assert all_diags[0].init_block_position_name == "position<my.domain.com:my_lib:/p>"
     assert all_diags[0].position_name == "position<box>::position</q>"
     assert all_diags[0].inferred_at.file_path == PurePosixPath("p.dfn")
     assert_propagation_chain(

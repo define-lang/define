@@ -167,7 +167,7 @@ def test_diamond_one_path_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].action_name == _SHARED
+    assert all_diags[0].action_name == _ACT_B
     assert (
         all_diags[0].position_name
         == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
@@ -222,7 +222,7 @@ def test_diamond_other_path_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].action_name == _SHARED
+    assert all_diags[0].action_name == _ACT_C
     assert (
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -320,7 +320,7 @@ def test_diamond_occupied_requirement_independent_per_path(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].action_name == _SHARED
+    assert all_diags[0].action_name == _ACT_C
     assert (
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -438,7 +438,7 @@ def test_diamond_one_path_violates_occupied_requirement(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].action_name == _SHARED
+    assert all_diags[0].action_name == _ACT_C
     assert (
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -507,7 +507,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert isinstance(
         all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[0].action_name == _SHARED
+    assert all_diags[0].action_name == _ACT_B
     assert (
         all_diags[0].position_name
         == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
@@ -530,7 +530,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert isinstance(
         all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
     )
-    assert all_diags[1].action_name == _SHARED
+    assert all_diags[1].action_name == _ACT_C
     assert (
         all_diags[1].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"

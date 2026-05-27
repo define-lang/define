@@ -1,6 +1,7 @@
 from pathlib import PurePosixPath
 
 from define.compiler import ast, diagnostics
+from define.compiler.validator.reference_graph import action_contract
 
 _LOC = ast.SourceLocation(line=3, column=5, end_line=3, end_column=12)
 
@@ -91,61 +92,89 @@ def test_move_from_empty_interface_position_with_inferred_at():
     )
 
 
-def test_formatted_inferred_at_without_propagation():
+def test_formatted_propagation_chain_with_single_root_step():
     diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
         location=_LOC,
         action_name="action<my.domain.com:my_lib:/other>",
         position_name="position<box>::action</other>::position<item>",
-        inferred_at=ast.SourceLocation(
-            line=7,
-            column=37,
-            end_line=7,
-            end_column=51,
-            file_path=PurePosixPath("other.dfn"),
-        ),
-        propagated_from_locations=[],
-        filled_at=_LOC,
-    )
-
-    assert diagnostic.formatted_inferred_at == (
-        'This requirement happens because of:\nFile "other.dfn", line 7, column 37'
-    )
-
-
-def test_formatted_inferred_at_with_propagated_from_locations():
-    diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
-        location=_LOC,
-        action_name="action<my.domain.com:my_lib:/inner>",
-        position_name="position<box>::action</outer>::position<iface>::action</inner>::position<item>",
-        inferred_at=ast.SourceLocation(
-            line=11,
-            column=37,
-            end_line=11,
-            end_column=91,
-            file_path=PurePosixPath("outer.dfn"),
-        ),
-        propagated_from_locations=[
-            ast.SourceLocation(
-                line=11,
-                column=37,
-                end_line=11,
-                end_column=95,
-                file_path=PurePosixPath("middle.dfn"),
-            ),
-            ast.SourceLocation(
-                line=7,
-                column=37,
-                end_line=7,
-                end_column=51,
-                file_path=PurePosixPath("inner.dfn"),
+        propagation_chain=[
+            action_contract.PropagationStep(
+                location=ast.SourceLocation(
+                    line=7,
+                    column=37,
+                    end_line=7,
+                    end_column=51,
+                    file_path=PurePosixPath("other.dfn"),
+                ),
+                kind=action_contract.PropagationKind.DIRECT_INFERENCE,
+                enclosing_quality_name="action<my.domain.com:my_lib:/other>",
+                triggered_quality_name=None,
             ),
         ],
         filled_at=_LOC,
     )
 
-    assert diagnostic.formatted_inferred_at == (
-        "This requirement happens because of:\n"
-        'File "outer.dfn", line 11, column 37\n'
-        '  File "middle.dfn", line 11, column 37\n'
+    assert diagnostic.formatted_propagation_chain == (
+        "This requirement happens because:\n"
+        "  'action<my.domain.com:my_lib:/other>' inferred this requirement:\n"
+        '    File "other.dfn", line 7, column 37'
+    )
+
+
+def test_formatted_propagation_chain_with_multi_step_trigger_chain():
+    diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
+        location=_LOC,
+        action_name="action<my.domain.com:my_lib:/inner>",
+        position_name="position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+        propagation_chain=[
+            action_contract.PropagationStep(
+                location=ast.SourceLocation(
+                    line=11,
+                    column=37,
+                    end_line=11,
+                    end_column=91,
+                    file_path=PurePosixPath("outer.dfn"),
+                ),
+                kind=action_contract.PropagationKind.ACTION_TRIGGER,
+                enclosing_quality_name="action<my.domain.com:my_lib:/outer>",
+                triggered_quality_name="action<my.domain.com:my_lib:/middle>",
+            ),
+            action_contract.PropagationStep(
+                location=ast.SourceLocation(
+                    line=11,
+                    column=37,
+                    end_line=11,
+                    end_column=95,
+                    file_path=PurePosixPath("middle.dfn"),
+                ),
+                kind=action_contract.PropagationKind.ACTION_TRIGGER,
+                enclosing_quality_name="action<my.domain.com:my_lib:/middle>",
+                triggered_quality_name="action<my.domain.com:my_lib:/inner>",
+            ),
+            action_contract.PropagationStep(
+                location=ast.SourceLocation(
+                    line=7,
+                    column=37,
+                    end_line=7,
+                    end_column=51,
+                    file_path=PurePosixPath("inner.dfn"),
+                ),
+                kind=action_contract.PropagationKind.DIRECT_INFERENCE,
+                enclosing_quality_name="action<my.domain.com:my_lib:/inner>",
+                triggered_quality_name=None,
+            ),
+        ],
+        filled_at=_LOC,
+    )
+
+    assert diagnostic.formatted_propagation_chain == (
+        "This requirement happens because:\n"
+        "  'action<my.domain.com:my_lib:/outer>' triggers"
+        " 'action<my.domain.com:my_lib:/middle>':\n"
+        '    File "outer.dfn", line 11, column 37\n'
+        "  'action<my.domain.com:my_lib:/middle>' triggers"
+        " 'action<my.domain.com:my_lib:/inner>':\n"
+        '    File "middle.dfn", line 11, column 37\n'
+        "  'action<my.domain.com:my_lib:/inner>' inferred this requirement:\n"
         '    File "inner.dfn", line 7, column 37'
     )

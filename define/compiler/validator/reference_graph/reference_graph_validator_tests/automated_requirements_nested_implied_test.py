@@ -122,7 +122,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].position_name == "position<box>::position</x>"
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
@@ -171,7 +171,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].position_name == "position<box>::position</x>"
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 37
@@ -259,7 +259,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].action_name == _MIDDLE
     assert (
         all_diags[0].position_name
         == "position<box>::position</x>::action</inner>::position<item>"
@@ -399,7 +399,7 @@ def test_doubly_nested_implied_action_chain_propagates(
     assert diag.location.line == 12
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.action_name == _OUTER
     assert diag.position_name == "position<box>::action</inner>::position<extra>"
     assert diag.inferred_at.line == 7
     assert diag.inferred_at.column == 37

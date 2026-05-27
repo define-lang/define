@@ -96,6 +96,7 @@ py_library(
     deps = [
         ":ast",
         ":constants",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -106,6 +107,7 @@ py_test(
     deps = [
         ":ast",
         ":diagnostics",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 

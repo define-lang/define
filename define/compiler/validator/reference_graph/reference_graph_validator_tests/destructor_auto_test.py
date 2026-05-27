@@ -11,6 +11,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _TEST_POS = "position<my.domain.com:my_lib:/test>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
@@ -762,7 +763,8 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
     assert diag.location.line == 14
     assert diag.location.column == 37
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _DESTRUCTOR_EMPTY
+    # action_name is the immediate triggered action (inner), not the destructor.
+    assert diag.action_name == _INNER
     assert diag.position_name == (
         "position<box>::action</inner>::position<incoming>"
         "::action</destructor_empty>::position<item>"

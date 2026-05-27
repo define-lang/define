@@ -87,7 +87,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 89
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
@@ -173,7 +173,7 @@ def test_inner_chained_action_empty_requirement_propagates(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
@@ -319,7 +319,7 @@ def test_inner_chained_action_occupied_requirement_propagates(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
@@ -502,7 +502,7 @@ def test_doubly_nested_action_requirement_propagates(
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[1].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
@@ -627,7 +627,7 @@ def test_four_deep_action_chain_requirement_propagates(
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/d>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/a>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</a>::position<a_iface>::action</b>::position<b_iface>::action</c>::position<c_iface>::action</d>::position<item>"
@@ -846,7 +846,7 @@ def test_trigger_position_child_empty_requirement_propagates(
     assert all_diags[2].location.line == 15
     assert all_diags[2].location.column == 37
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[2].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>"
@@ -933,7 +933,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>::position</x>"
@@ -1021,7 +1021,7 @@ def test_inner_action_requirement_propagates_after_move(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
@@ -1147,7 +1147,7 @@ def test_doubly_nested_requirement_propagates_after_move(
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/inner>"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[1].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
@@ -1341,7 +1341,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == f"action<{_DEP_FQUN}:/inner>"
+    assert all_diags[1].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
         all_diags[1].position_name
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
@@ -1519,7 +1519,7 @@ def test_cross_fqun_occupied_requirement_violated(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == f"action<{_DEP_FQUN}:/inner>"
+    assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/outer>"
     assert (
         all_diags[0].position_name
         == f"position<box>::action</outer>::position<iface>::action<{_DEP_FQUN}:/inner>::position<item>::position<{_DEP_FQUN}:/x>"
@@ -1633,7 +1633,7 @@ def test_complex_chain_same_fqun_position_name(
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/bar>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/foo>"
     assert (
         all_diags[0].position_name
         == "position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action</bar>::position<item>"
@@ -1767,7 +1767,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/middle>"
+    assert all_diags[0].action_name == f"action<{_MAIN_FQUN}:/foo>"
     assert (
         all_diags[0].position_name
         == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>"
@@ -1793,7 +1793,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 37
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == f"action<{_DEP_FQUN}:/bar>"
+    assert all_diags[1].action_name == f"action<{_MAIN_FQUN}:/foo>"
     assert (
         all_diags[1].position_name
         == f"position<local>::position</x>::action</foo>::position<iface>::action</middle>::position<mid_iface>::action<{_DEP_FQUN}:/bar>::position<item>::position<{_DEP_FQUN}:/x>"
