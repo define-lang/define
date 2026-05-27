@@ -351,6 +351,18 @@ py_test(
 )
 
 py_test(
+    name = "destructor_auto_test",
+    size = "small",
+    srcs = ["destructor_auto_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "destructor_cascade_test",
     size = "small",
     srcs = ["destructor_cascade_test.py"],
@@ -595,6 +607,7 @@ pyright_test(
         ":create_dimension_point_test",
         ":create_without_parent_test",
         ":destroy_dimension_point_test",
+        ":destructor_auto_test",
         ":destructor_cascade_test",
         ":destructor_triggering_test",
         ":dimension_point_conflict_test",

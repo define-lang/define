@@ -762,41 +762,99 @@ class ActionRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
     )
 
 
-@dataclass
-class DestructorRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
-    """Diagnostic for when a destructor requires a position to be empty but it is not."""
+@dataclass(kw_only=True)
+class DestructorRequirementDiagnostic(RequirementDiagnostic):
+    """Base class for destructor-requirement diagnostics.
+
+    Subclasses provide the `requirement_text` property describing what state the
+    contracted position should be in.
+    """
 
     destructor_name: str
     destroy_target_name: str
-    filled_at: ast.SourceLocation
-    message_format: ClassVar[str] = (
-        "destroying the dimension point in `{self.destroy_target_name}`"
-        " runs the destructor `{self.destructor_name}`.\n"
-        "However, '{self.position_name}' must be empty before that destructor runs,"
-        " and it is not empty.\n"
-        "It was filled at:\n{self.formatted_filled_at}\n\n"
-        "{self.formatted_inferred_at}"
-    )
+    destroy_target_origin_at: ast.SourceLocation
+    # These are only set for auto-destruction.
+    auto_destruction_local_position_name: str | None = None
+    containing_definition_name: str | None = None
 
     @property
-    def formatted_filled_at(self) -> str:
-        """Format the filled_at location as a human-readable string."""
-        return _format_location(self.filled_at)
+    def requirement_text(self) -> str:
+        """The "However, '<position>' must be ..." sentence(s)."""
+        raise NotImplementedError
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render the full destructor-requirement diagnostic body."""
+        lines: list[str] = []
+        if self.auto_destruction_local_position_name is None:
+            lines.append(
+                f"Destroying the dimension point in '{self.destroy_target_name}'"
+                + f" runs the destructor `{self.destructor_name}`."
+            )
+        else:
+            lines.append(
+                f"The dimension point in '{self.auto_destruction_local_position_name}'"
+                + " is being automatically destroyed at the end of"
+                + f" '{self.containing_definition_name}'."
+            )
+            if self.destroy_target_name != self.auto_destruction_local_position_name:
+                lines.append(
+                    f"This causes the dimension point in '{self.destroy_target_name}'"
+                    + " to be destroyed first."
+                )
+            lines.append(
+                "The above line shows how the dimension point in"
+                + f" '{self.destroy_target_name}' got into its current position."
+            )
+        lines.append("")
+        lines.append(
+            f"The dimension point in '{self.destroy_target_name}' was originally"
+            + " created at:"
+        )
+        lines.append(_format_location(self.destroy_target_origin_at))
+        lines.append("")
+        if self.auto_destruction_local_position_name is not None:
+            lines.append(
+                f"Destroying '{self.destroy_target_name}' runs the destructor"
+                + f" `{self.destructor_name}`."
+            )
+        lines.append(self.requirement_text)
+        lines.append("")
+        lines.append(self.formatted_inferred_at)
+        return "\n".join(lines)
 
 
-@dataclass
-class DestructorRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
+@dataclass(kw_only=True)
+class DestructorRequiresEmptyPositionDiagnostic(DestructorRequirementDiagnostic):
+    """Diagnostic for when a destructor requires a position to be empty but it is not."""
+
+    filled_at: ast.SourceLocation
+
+    @property
+    @typing.override
+    def requirement_text(self) -> str:
+        """The "However, ... must be empty" sentence and its filled-at location."""
+        return (
+            f"However, '{self.position_name}' must be empty before that destructor"
+            f" runs, and it is not empty.\n"
+            f"'{self.position_name}' was filled at:\n"
+            f"{_format_location(self.filled_at)}"
+        )
+
+
+@dataclass(kw_only=True)
+class DestructorRequiresOccupiedPositionDiagnostic(DestructorRequirementDiagnostic):
     """Diagnostic for when a destructor requires a position to be occupied but it is not."""
 
-    destructor_name: str
-    destroy_target_name: str
-    message_format: ClassVar[str] = (
-        "destroying the dimension point in `{self.destroy_target_name}`"
-        " runs the destructor `{self.destructor_name}`.\n"
-        "However, '{self.position_name}' must be occupied before that destructor runs,"
-        " and it is not occupied.\n\n"
-        "{self.formatted_inferred_at}"
-    )
+    @property
+    @typing.override
+    def requirement_text(self) -> str:
+        """The "However, ... must be occupied" sentence."""
+        return (
+            f"However, '{self.position_name}' must be occupied before that destructor"
+            f" runs, and it is not occupied."
+        )
 
 
 @dataclass

@@ -30,6 +30,15 @@ class PostorderValidationResult:
     contract: action_contract.ActionStatementsBlockContract | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _CascadeDestructor:
+    """One destructor in a destruction cascade, paired with the dimension point it fires on."""
+
+    quality: ast.GlobalTypedNameReference
+    position: ast.PositionReference
+    destroy_target_origin_at: ast.SourceLocation
+
+
 class DefinitionPostorderValidator(abc.ABC):
     """Validates a single definition during a DFS post-order walk of the reference graph."""
 
@@ -344,8 +353,8 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _collect_cascade_destructors(
         self, position: ast.PositionReference
-    ) -> list[tuple[ast.GlobalTypedNameReference, ast.PositionReference]]:
-        """Return the destructors the destruction cascade fires, each paired with the position of the dimension point it is assigned to, in firing order."""
+    ) -> list[_CascadeDestructor]:
+        """Return the destructors the destruction cascade fires, in firing order."""
         # An unknown-state position is opaque: we cannot claim its destructors
         # would fire and we cannot reason about its subtree, so the cascade
         # skips it entirely.
@@ -357,9 +366,7 @@ class DefinitionPostorderValidator(abc.ABC):
         # A dimension point keeps its own qualities across moves, so it is the source
         # of the qualities to check for destructors (not the position).
         dp = self._tracker.get_occupant(position)
-        destructors: list[
-            tuple[ast.GlobalTypedNameReference, ast.PositionReference]
-        ] = []
+        destructors: list[_CascadeDestructor] = []
         # Here, we walk the tree of dimension points in a depth-frst post-order traversal
         # as required by the destruction cascade.
         for quality in reversed(dp.qualities):
@@ -377,7 +384,13 @@ class DefinitionPostorderValidator(abc.ABC):
                     continue
                 definition = definition_result.definition
                 if definition.is_destructor:
-                    destructors.append((quality, position))
+                    destructors.append(
+                        _CascadeDestructor(
+                            quality=quality,
+                            position=position,
+                            destroy_target_origin_at=dp.origin_position.location,
+                        )
+                    )
                 for interface_position in reversed(definition.interface_positions):
                     child = ast.PositionReference(
                         location=position.location,
@@ -392,8 +405,9 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _run_destructors(
         self,
-        destructors: list[tuple[ast.GlobalTypedNameReference, ast.PositionReference]],
+        destructors: list[_CascadeDestructor],
         scope: scope_tracker.ScopeTracker,
+        auto_destruction_target: ast.PositionReference | None = None,
     ):
         """Trigger each destructor that fires during a destruction cascade."""
         # A destructor's requirements are checked as though it triggered
@@ -401,24 +415,27 @@ class DefinitionPostorderValidator(abc.ABC):
         # quality of the dimension point in `position`, so its interface positions
         # hang off position::action</destructor> while its implied qualities hang off
         # position itself; in_caller maps both correctly from this chain.
-        for quality, position in destructors:
-            contract = self._action_contracts.get(quality)
-            if contract is not None:
-                action_chain = ast.ChainedName(
-                    location=position.location,
-                    typed_names=[*position.typed_names, quality],
-                )
-                self._propagate_destructor_requirements(contract, action_chain, scope)
-                self._check_requirements(
-                    contract,
-                    action_chain,
-                    position,
-                    is_destructor=True,
-                )
+        for destructor in destructors:
+            # _collect_cascade_destructors already verified the destructor's
+            # definition loaded.
+            contract = self._action_contracts[destructor.quality]
+            action_chain = ast.ChainedName(
+                location=destructor.position.location,
+                typed_names=[*destructor.position.typed_names, destructor.quality],
+            )
+            self._propagate_destructor_requirements(contract, action_chain, scope)
+            self._check_requirements(
+                contract,
+                action_chain,
+                destructor.position,
+                is_destructor=True,
+                destroy_target_origin_at=destructor.destroy_target_origin_at,
+                auto_destruction_target=auto_destruction_target,
+            )
             self._action_edges.append(
                 action_call_graph.ActionGraphEdge(
                     source=self._definition.typed_name.source_typed_name,
-                    target=quality.full_typed_name,
+                    target=destructor.quality.full_typed_name,
                 )
             )
 
@@ -544,6 +561,8 @@ class DefinitionPostorderValidator(abc.ABC):
         acting_on_position: ast.PositionReference,
         *,
         is_destructor: bool = False,
+        destroy_target_origin_at: ast.SourceLocation | None = None,
+        auto_destruction_target: ast.PositionReference | None = None,
     ):
         """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position."""
         # Action trigger:
@@ -569,7 +588,12 @@ class DefinitionPostorderValidator(abc.ABC):
                 prefix_chain
             )
             self._check_one_requirement(
-                full_caller_chain, acting_on_position, req, is_destructor=is_destructor
+                full_caller_chain,
+                acting_on_position,
+                req,
+                is_destructor=is_destructor,
+                destroy_target_origin_at=destroy_target_origin_at,
+                auto_destruction_target=auto_destruction_target,
             )
 
     def _check_one_requirement(
@@ -579,98 +603,178 @@ class DefinitionPostorderValidator(abc.ABC):
         req: action_contract.PositionRequirement,
         *,
         is_destructor: bool,
+        destroy_target_origin_at: ast.SourceLocation | None = None,
+        auto_destruction_target: ast.PositionReference | None = None,
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
         key = full_caller_chain.canonical_chained_name_tuple
-        position_name = full_caller_chain.source_form_in_universe(self._enclosing_fqun)
-
         if self._tracker.has_unknown_state_by_key(key):
             return
-
-        if (
+        occupant = (
+            self._tracker.get_occupant_by_key(key)
+            if self._tracker.is_occupied_by_key(key)
+            else None
+        )
+        empty_violation = (
             req.required_state == action_contract.PositionOccupancyState.EMPTY
-            and self._tracker.is_occupied_by_key(key)
-        ):
-            occupant = self._tracker.get_occupant_by_key(key)
-            if is_destructor:
-                self._diagnostics.append(
-                    diagnostics.DestructorRequiresEmptyPositionDiagnostic(
-                        location=acting_on_position.location,
-                        destructor_name=req.root_cause_quality_name(),
-                        destroy_target_name=acting_on_position.source_form_in_universe(
-                            self._enclosing_fqun
-                        ),
-                        position_name=position_name,
-                        inferred_at=req.inferred_from.location,
-                        propagated_from_locations=req.propagated_from_locations(),
-                        filled_at=occupant.last_position.location,
-                    )
-                )
-            elif isinstance(req.root_cause_quality(), ast.ActionDefinition):
-                self._diagnostics.append(
-                    diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                        location=acting_on_position.location,
-                        action_name=req.root_cause_quality_name(),
-                        position_name=position_name,
-                        inferred_at=req.inferred_from.location,
-                        propagated_from_locations=req.propagated_from_locations(),
-                        filled_at=occupant.last_position.location,
-                    )
-                )
-            else:
-                self._diagnostics.append(
-                    diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic(
-                        location=acting_on_position.location,
-                        create_target_name=acting_on_position.source_form_in_universe(
-                            self._enclosing_fqun
-                        ),
-                        init_block_position_name=req.root_cause_quality_name(),
-                        position_name=position_name,
-                        inferred_at=req.inferred_from.location,
-                        propagated_from_locations=req.propagated_from_locations(),
-                        filled_at=occupant.last_position.location,
-                    )
-                )
-        elif (
+            and occupant is not None
+        )
+        occupied_violation = (
             req.required_state == action_contract.PositionOccupancyState.OCCUPIED
-            and not self._tracker.is_occupied_by_key(key)
-        ):
-            if is_destructor:
-                self._diagnostics.append(
-                    diagnostics.DestructorRequiresOccupiedPositionDiagnostic(
-                        location=acting_on_position.location,
-                        destructor_name=req.root_cause_quality_name(),
-                        destroy_target_name=acting_on_position.source_form_in_universe(
-                            self._enclosing_fqun
-                        ),
-                        position_name=position_name,
-                        inferred_at=req.inferred_from.location,
-                        propagated_from_locations=req.propagated_from_locations(),
-                    )
+            and occupant is None
+        )
+        if not (empty_violation or occupied_violation):
+            return
+        position_name = full_caller_chain.source_form_in_universe(self._enclosing_fqun)
+
+        if is_destructor:
+            if destroy_target_origin_at is None:
+                raise ValueError(
+                    "destroy_target_origin_at must be set when is_destructor=True"
                 )
-            elif isinstance(req.root_cause_quality(), ast.ActionDefinition):
-                self._diagnostics.append(
-                    diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                        location=acting_on_position.location,
-                        action_name=req.root_cause_quality_name(),
-                        position_name=position_name,
-                        inferred_at=req.inferred_from.location,
-                        propagated_from_locations=req.propagated_from_locations(),
-                    )
+            self._emit_destructor_violation(
+                req=req,
+                acting_on_position=acting_on_position,
+                position_name=position_name,
+                occupant=occupant,
+                destroy_target_origin_at=destroy_target_origin_at,
+                auto_destruction_target=auto_destruction_target,
+            )
+        elif isinstance(req.root_cause_quality(), ast.ActionDefinition):
+            self._emit_action_violation(
+                req=req,
+                acting_on_position=acting_on_position,
+                position_name=position_name,
+                occupant=occupant,
+            )
+        else:
+            self._emit_init_block_violation(
+                req=req,
+                acting_on_position=acting_on_position,
+                position_name=position_name,
+                occupant=occupant,
+            )
+
+    def _emit_destructor_violation(
+        self,
+        *,
+        req: action_contract.PositionRequirement,
+        acting_on_position: ast.PositionReference,
+        position_name: str,
+        occupant: dimension_point_tracker.DimensionPointInfo | None,
+        destroy_target_origin_at: ast.SourceLocation,
+        auto_destruction_target: ast.PositionReference | None,
+    ):
+        """Append a destructor-requirement violation diagnostic."""
+        if auto_destruction_target is None:
+            diag_location = acting_on_position.location
+            auto_local_name = None
+            containing_name = None
+        else:
+            diag_location = auto_destruction_target.location
+            auto_local_name = auto_destruction_target.source_form_in_universe(
+                self._enclosing_fqun
+            )
+            containing_name = self._definition.typed_name.source_typed_name
+        destroy_target_name = acting_on_position.source_form_in_universe(
+            self._enclosing_fqun
+        )
+        if occupant is not None:
+            self._diagnostics.append(
+                diagnostics.DestructorRequiresEmptyPositionDiagnostic(
+                    location=diag_location,
+                    destructor_name=req.root_cause_quality_name(),
+                    destroy_target_name=destroy_target_name,
+                    destroy_target_origin_at=destroy_target_origin_at,
+                    position_name=position_name,
+                    inferred_at=req.inferred_from.location,
+                    propagated_from_locations=req.propagated_from_locations(),
+                    filled_at=occupant.last_position.location,
+                    auto_destruction_local_position_name=auto_local_name,
+                    containing_definition_name=containing_name,
                 )
-            else:
-                self._diagnostics.append(
-                    diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic(
-                        location=acting_on_position.location,
-                        create_target_name=acting_on_position.source_form_in_universe(
-                            self._enclosing_fqun
-                        ),
-                        init_block_position_name=req.root_cause_quality_name(),
-                        position_name=position_name,
-                        inferred_at=req.inferred_from.location,
-                        propagated_from_locations=req.propagated_from_locations(),
-                    )
+            )
+        else:
+            self._diagnostics.append(
+                diagnostics.DestructorRequiresOccupiedPositionDiagnostic(
+                    location=diag_location,
+                    destructor_name=req.root_cause_quality_name(),
+                    destroy_target_name=destroy_target_name,
+                    destroy_target_origin_at=destroy_target_origin_at,
+                    position_name=position_name,
+                    inferred_at=req.inferred_from.location,
+                    propagated_from_locations=req.propagated_from_locations(),
+                    auto_destruction_local_position_name=auto_local_name,
+                    containing_definition_name=containing_name,
                 )
+            )
+
+    def _emit_action_violation(
+        self,
+        *,
+        req: action_contract.PositionRequirement,
+        acting_on_position: ast.PositionReference,
+        position_name: str,
+        occupant: dimension_point_tracker.DimensionPointInfo | None,
+    ):
+        """Append an action-requirement violation diagnostic."""
+        if occupant is not None:
+            self._diagnostics.append(
+                diagnostics.ActionRequiresEmptyPositionDiagnostic(
+                    location=acting_on_position.location,
+                    action_name=req.root_cause_quality_name(),
+                    position_name=position_name,
+                    inferred_at=req.inferred_from.location,
+                    propagated_from_locations=req.propagated_from_locations(),
+                    filled_at=occupant.last_position.location,
+                )
+            )
+        else:
+            self._diagnostics.append(
+                diagnostics.ActionRequiresOccupiedPositionDiagnostic(
+                    location=acting_on_position.location,
+                    action_name=req.root_cause_quality_name(),
+                    position_name=position_name,
+                    inferred_at=req.inferred_from.location,
+                    propagated_from_locations=req.propagated_from_locations(),
+                )
+            )
+
+    def _emit_init_block_violation(
+        self,
+        *,
+        req: action_contract.PositionRequirement,
+        acting_on_position: ast.PositionReference,
+        position_name: str,
+        occupant: dimension_point_tracker.DimensionPointInfo | None,
+    ):
+        """Append a position-init-block requirement violation diagnostic."""
+        create_target_name = acting_on_position.source_form_in_universe(
+            self._enclosing_fqun
+        )
+        if occupant is not None:
+            self._diagnostics.append(
+                diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic(
+                    location=acting_on_position.location,
+                    create_target_name=create_target_name,
+                    init_block_position_name=req.root_cause_quality_name(),
+                    position_name=position_name,
+                    inferred_at=req.inferred_from.location,
+                    propagated_from_locations=req.propagated_from_locations(),
+                    filled_at=occupant.last_position.location,
+                )
+            )
+        else:
+            self._diagnostics.append(
+                diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic(
+                    location=acting_on_position.location,
+                    create_target_name=create_target_name,
+                    init_block_position_name=req.root_cause_quality_name(),
+                    position_name=position_name,
+                    inferred_at=req.inferred_from.location,
+                    propagated_from_locations=req.propagated_from_locations(),
+                )
+            )
 
     def _analyze_statements(
         self,
@@ -691,12 +795,35 @@ class DefinitionPostorderValidator(abc.ABC):
                 case ast.DestroyDimensionPointStatement():
                     validity = next(validity_iter)
                     self._analyze_destroy(stmt, validity, scope)
-        # TODO: Per the spec's "Automatic Destruction", dimension points still
-        # occupying positions defined only locally within this Action Statements
-        # Block must be auto-destroyed in reverse definition order at block end,
-        # and that auto-destruction must fire their destructors via
-        # _run_destructors. Auto-destruction is not modeled yet; only explicit
-        # destroy statements fire destructors.
+        self._auto_destruct_locals(scope)
+
+    def _auto_destruct_locals(self, scope: scope_tracker.ScopeTracker):
+        """Destroy any dimension points still in positions defined locally in this block.
+
+        Per the spec's "Automatic Destruction" section: at block end, dimension points
+        still occupying positions defined only within this block are destroyed in
+        reverse definition order, firing destructors along the way.
+        """
+        for definition in reversed(scope.current_scope_definitions()):
+            if not isinstance(definition, ast.LocalPositionDefinition):
+                continue
+            position = ast.PositionReference(
+                typed_names=[definition.typed_name],
+                location=definition.location,
+            )
+            # Spec: "If the compiler is uncertain about whether a position still
+            # contains a dimension point, it only destroys the dimension point if
+            # one is present."
+            if self._tracker.has_unknown_state(position):
+                continue
+            if not self._tracker.is_occupied(position):
+                continue
+            auto_destruction_target = self._tracker.get_occupant(position).last_position
+            destructors = self._collect_cascade_destructors(position)
+            self._run_destructors(
+                destructors, scope, auto_destruction_target=auto_destruction_target
+            )
+            self._tracker.destroy(position)
 
     def _analyze_create(
         self,
@@ -1287,7 +1414,10 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         if definition.initialization is None:
             return None
         scope = scope_tracker.ScopeTracker()
+        # The self-position lives in the outer scope (so we don't try to auto-destroy
+        # it at the end of the init block).
         scope.add_definition(definition)
+        scope.enter_child_scope()
         self._analyze_statements(definition.initialization, scope)
         return action_contract.PositionInitBlockContract(
             requirements=self._inferred_requirements,

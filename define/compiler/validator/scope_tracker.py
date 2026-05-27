@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import typing
 from collections import ChainMap
+from typing import TYPE_CHECKING
 
 from define.compiler import ast
+
+if TYPE_CHECKING:
+    from collections.abc import Reversible
 
 
 class ScopeTracker:
@@ -22,6 +27,17 @@ class ScopeTracker:
         """Add a position definition to scope."""
         key = definition.typed_name.source_typed_name
         self._definitions[key] = definition
+
+    def current_scope_definitions(self) -> Reversible[ast.AnyPositionDefinition]:
+        """Return the position definitions added directly to the current (innermost) scope, in insertion order."""
+        # ChainMap.maps is typed as list[MutableMapping[...]], whose .values()
+        # returns a non-reversible ValuesView. In practice every layer is a real
+        # dict (ChainMap initializes maps[0] = {} and new_child() defaults the
+        # same way), so the underlying dict_values does support __reversed__.
+        inner = typing.cast(
+            "dict[str, ast.AnyPositionDefinition]", self._definitions.maps[0]
+        )
+        return inner.values()
 
     def defined_on_line(self, typed_name: ast.TypedName) -> int:
         """Return the line where a typed name was defined."""

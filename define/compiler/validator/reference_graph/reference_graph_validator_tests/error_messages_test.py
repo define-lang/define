@@ -1,5 +1,11 @@
 # pyright: reportUnusedCallResult=false
 
+# TODO: Convert all the other format-snapshot assertions in this file (and in
+# the parser_tests and program_validator_tests error_messages_test.py files)
+# to use textwrap.dedent triple-quoted strings, matching the pattern of the
+# destructor-format tests below.
+
+import textwrap
 from pathlib import PurePosixPath
 
 from define.compiler.conftest import (
@@ -627,107 +633,135 @@ def test_destroy_in_default_empty_interface_position_format(
 def test_destructor_requires_occupied_position_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    test_source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
-        "    } and it does {\n"
-        "        define the position<box> {\n"
-        "            it may only contain dimension points where {\n"
-        "                it has the action</destructor>.\n"
-        "            }\n"
-        "        }\n"
-        "        create a dimension point in position<box>.\n"
-        "        destroy the dimension point in position<box>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_project_with_reference_graph(
-        {
-            "destructor.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destructor> {\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<_holder>.\n"
-                "        move the dimension point in position<item> to position<_holder>.\n"
-                "        move the dimension point in position<_holder> to position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": test_source,
-        }
-    )
+    files = {
+        "child_q.dfn": (
+            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the action</destructor>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destructor.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<_holder>.\n"
+            "        move the dimension point in position<item> to position<_holder>.\n"
+            "        move the dimension point in position<_holder> to position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<staging> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<staging>.\n"
+            "        create a dimension point in position<staging>::position</child_q>.\n"
+            "        move the dimension point in position<staging> to position<box>.\n"
+            "        destroy the dimension point in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(test_source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 12, column 40\n'
-        "        destroy the dimension point in position<box>.\n"
-        "                                       ^\n"
-        "destroying the dimension point in `position<box>`"
-        " runs the destructor `action<my.domain.com:my_lib:/destructor>`.\n"
-        "However, 'position<box>::action</destructor>::position<item>'"
-        " must be occupied before that destructor runs, and it is not occupied.\n\n"
-        "This requirement happens because of:\n"
-        'File "destructor.dfn", line 7, column 37'
-    )
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 19, column 40
+                destroy the dimension point in position<box>.
+                                               ^
+        Destroying the dimension point in 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor>`.
+
+        The dimension point in 'position<box>::position</child_q>' was originally created at:
+        File "test.dfn", line 17, column 37
+
+        However, 'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before that destructor runs, and it is not occupied.
+
+        This requirement happens because of:
+        File "destructor.dfn", line 7, column 37""")
 
 
 def test_destructor_requires_empty_position_format(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    test_source = (
-        "define the potential action<my.domain.com:my_lib:/test> {\n"
-        "    define the position<run>.\n"
-        "    it happens when {\n"
-        "        the position<run> has a dimension point.\n"
-        "    } and it does {\n"
-        "        define the position<box> {\n"
-        "            it may only contain dimension points where {\n"
-        "                it has the action</destructor_empty>.\n"
-        "            }\n"
-        "        }\n"
-        "        create a dimension point in position<box>.\n"
-        "        create a dimension point in position<box>::action</destructor_empty>::position<item>.\n"
-        "        destroy the dimension point in position<box>.\n"
-        "    }\n"
-        "}\n"
-    )
-    result = validate_project_with_reference_graph(
-        {
-            "destructor_empty.dfn": (
-                "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        this dimension point is being destroyed.\n"
-                "    } and it does {\n"
-                "        create a dimension point in position<item>.\n"
-                "        destroy the dimension point in position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": test_source,
-        }
-    )
+    files = {
+        "child_q.dfn": (
+            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the action</destructor_empty>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destructor_empty.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<staging> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<staging>.\n"
+            "        create a dimension point in position<staging>::position</child_q>.\n"
+            "        move the dimension point in position<staging> to position<box>.\n"
+            "        create a dimension point in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
+            "        destroy the dimension point in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(test_source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 13, column 40\n'
-        "        destroy the dimension point in position<box>.\n"
-        "                                       ^\n"
-        "destroying the dimension point in `position<box>`"
-        " runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.\n"
-        "However, 'position<box>::action</destructor_empty>::position<item>'"
-        " must be empty before that destructor runs, and it is not empty.\n"
-        "It was filled at:\n"
-        'File "test.dfn", line 12, column 37\n\n'
-        "This requirement happens because of:\n"
-        'File "destructor_empty.dfn", line 6, column 37'
-    )
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 20, column 40
+                destroy the dimension point in position<box>.
+                                               ^
+        Destroying the dimension point in 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.
+
+        The dimension point in 'position<box>::position</child_q>' was originally created at:
+        File "test.dfn", line 17, column 37
+
+        However, 'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before that destructor runs, and it is not empty.
+        'position<box>::position</child_q>::action</destructor_empty>::position<item>' was filled at:
+        File "test.dfn", line 19, column 37
+
+        This requirement happens because of:
+        File "destructor_empty.dfn", line 6, column 37""")
 
 
 def test_destructor_moved_guarantee_names_contracted_origin_format(
@@ -807,3 +841,208 @@ def test_destructor_occupied_guarantee_format(
         "However, this line creates a new dimension point in 'position<item>' and then"
         " nothing removes it from that position."
     )
+
+
+def test_auto_destruction_destructor_requires_empty_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "child_q.dfn": (
+            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the action</destructor_empty>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destructor_empty.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<staging> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<staging>.\n"
+            "        create a dimension point in position<staging>::position</child_q>.\n"
+            "        move the dimension point in position<staging> to position<box>.\n"
+            "        create a dimension point in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 18, column 58
+                move the dimension point in position<staging> to position<box>.
+                                                                 ^
+        The dimension point in 'position<box>' is being automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>'.
+        This causes the dimension point in 'position<box>::position</child_q>' to be destroyed first.
+        The above line shows how the dimension point in 'position<box>::position</child_q>' got into its current position.
+
+        The dimension point in 'position<box>::position</child_q>' was originally created at:
+        File "test.dfn", line 17, column 37
+
+        Destroying 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.
+        However, 'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before that destructor runs, and it is not empty.
+        'position<box>::position</child_q>::action</destructor_empty>::position<item>' was filled at:
+        File "test.dfn", line 19, column 37
+
+        This requirement happens because of:
+        File "destructor_empty.dfn", line 6, column 37""")
+
+
+def test_auto_destruction_destructor_requires_occupied_position_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "child_q.dfn": (
+            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the action</destructor>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destructor.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<_holder>.\n"
+            "        move the dimension point in position<item> to position<_holder>.\n"
+            "        move the dimension point in position<_holder> to position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<run>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a dimension point.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<staging> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<staging>.\n"
+            "        create a dimension point in position<staging>::position</child_q>.\n"
+            "        move the dimension point in position<staging> to position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 18, column 58
+                move the dimension point in position<staging> to position<box>.
+                                                                 ^
+        The dimension point in 'position<box>' is being automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>'.
+        This causes the dimension point in 'position<box>::position</child_q>' to be destroyed first.
+        The above line shows how the dimension point in 'position<box>::position</child_q>' got into its current position.
+
+        The dimension point in 'position<box>::position</child_q>' was originally created at:
+        File "test.dfn", line 17, column 37
+
+        Destroying 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor>`.
+        However, 'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before that destructor runs, and it is not occupied.
+
+        This requirement happens because of:
+        File "destructor.dfn", line 7, column 37""")
+
+
+def test_auto_destruction_in_position_init_block_format(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    files = {
+        "child_q.dfn": (
+            "define the potential position<my.domain.com:my_lib:/child_q> {\n"
+            "    it may only contain dimension points where {\n"
+            "        it has the action</destructor_empty>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "destructor_empty.dfn": (
+            "define the potential action<my.domain.com:my_lib:/destructor_empty> {\n"
+            "    define the position<item>.\n"
+            "    it happens when {\n"
+            "        this dimension point is being destroyed.\n"
+            "    } and it does {\n"
+            "        create a dimension point in position<item>.\n"
+            "        destroy the dimension point in position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    after it is assigned {\n"
+            "        define the position<box> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        define the position<staging> {\n"
+            "            it may only contain dimension points where {\n"
+            "                it has the position</child_q>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a dimension point in position<staging>.\n"
+            "        create a dimension point in position<staging>::position</child_q>.\n"
+            "        move the dimension point in position<staging> to position<box>.\n"
+            "        create a dimension point in position<box>::position</child_q>::action</destructor_empty>::position<item>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project_with_reference_graph(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 15, column 58
+                move the dimension point in position<staging> to position<box>.
+                                                                 ^
+        The dimension point in 'position<box>' is being automatically destroyed at the end of 'position<my.domain.com:my_lib:/test>'.
+        This causes the dimension point in 'position<box>::position</child_q>' to be destroyed first.
+        The above line shows how the dimension point in 'position<box>::position</child_q>' got into its current position.
+
+        The dimension point in 'position<box>::position</child_q>' was originally created at:
+        File "test.dfn", line 14, column 37
+
+        Destroying 'position<box>::position</child_q>' runs the destructor `action<my.domain.com:my_lib:/destructor_empty>`.
+        However, 'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before that destructor runs, and it is not empty.
+        'position<box>::position</child_q>::action</destructor_empty>::position<item>' was filled at:
+        File "test.dfn", line 16, column 37
+
+        This requirement happens because of:
+        File "destructor_empty.dfn", line 6, column 37""")
