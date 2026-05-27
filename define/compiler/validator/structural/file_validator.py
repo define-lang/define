@@ -775,6 +775,7 @@ class DefinitionStructuralValidator:
                 reference_graph.ReferenceEdge(
                     enclosing_definition=self._definition,
                     global_name_reference=typed_global_name,
+                    is_same_file=True,
                 )
             )
             return
@@ -835,6 +836,7 @@ class DefinitionStructuralValidator:
             reference_graph.ReferenceEdge(
                 enclosing_definition=self._definition,
                 global_name_reference=typed_global_name,
+                is_same_file=False,
             )
         )
         key = (root_prefix, global_name.path.name)

@@ -472,6 +472,10 @@ class ProgramStructuralValidator:
 
         Returns True (and appends a diagnostic) when the edge should be skipped.
         """
+        # Same-file targets share the source's enclosing root by construction.
+        if edge.is_same_file:
+            return False
+
         # This check is only for current-universe references.
         if edge.global_name_reference.name_content.fqun is not None:
             return False
