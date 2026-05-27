@@ -16,15 +16,10 @@ if typing.TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class ReferenceEdge:
-    """A reference from one definition to a global name.
-
-    is_same_file is True when the target is defined in the same file as
-    enclosing_definition, so no separate file load is required to resolve it.
-    """
+    """A reference from one definition to a global name in another file."""
 
     enclosing_definition: ast.QualityDefinition
     global_name_reference: ast.GlobalTypedNameReference
-    is_same_file: bool
 
     @property
     def target_full_typed_name(self) -> str:

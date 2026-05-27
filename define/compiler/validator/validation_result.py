@@ -27,6 +27,11 @@ type AnyValidationException = exceptions.DefineError | lark_standalone.Unexpecte
 class DiscoveredFile:
     """A file discovered during validation that should be validated next."""
 
+    # TODO: DiscoveredFile mostly duplicates information already on
+    # ReferenceEdge (path/root_prefix/expected_fqun/location are all derivable
+    # from the edge's global_name_reference plus the validating file's
+    # context). It should be removed and the program_validator should drive
+    # file loading and FQUN→sub-root resolution directly off the edges.
     path: pathlib.PurePosixPath
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str

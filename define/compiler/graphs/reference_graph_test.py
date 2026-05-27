@@ -71,7 +71,6 @@ def _make_edge(
             enclosing_fqun=_FQUN,
             location=_LOC,
         ),
-        is_same_file=False,
     )
 
 

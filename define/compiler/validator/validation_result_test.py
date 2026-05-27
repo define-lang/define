@@ -50,7 +50,6 @@ def test_reference_edge_same_universe():
     edge = reference_graph.ReferenceEdge(
         enclosing_definition=pos_def,
         global_name_reference=constraint_ref,
-        is_same_file=False,
     )
     assert edge.target_full_typed_name == f"position<{_FQUN}:/a>"
 
@@ -70,6 +69,5 @@ def test_reference_edge_explicit_fqun():
     edge = reference_graph.ReferenceEdge(
         enclosing_definition=pos_def,
         global_name_reference=constraint_ref,
-        is_same_file=False,
     )
     assert edge.target_full_typed_name == "position<other.com:other_lib:/b>"
