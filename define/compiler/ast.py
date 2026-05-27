@@ -308,21 +308,38 @@ class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
     typed_names: list[TypedNameReference]
+    _canonical_chained_name_tuple: tuple[str, ...] = field(
+        init=False, repr=False, compare=False
+    )
+    _canonical_chained_name: str = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        """Reject empty chains: a chain must reference at least one typed name."""
+        """Reject empty chains and pre-compute canonical forms."""
         if not self.typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
+        self.refresh_canonical_cache()
+
+    def refresh_canonical_cache(self) -> None:
+        """Recompute cached canonical strings.
+
+        ChainedName presents an immutable interface, but file_validator
+        mutates typed_names in place when stripping a self-reference
+        prefix. Callers that do that must invoke this to keep the cached
+        canonical strings consistent with the live list.
+        """
+        canonical_tuple = tuple(elem.full_typed_name for elem in self.typed_names)
+        object.__setattr__(self, "_canonical_chained_name_tuple", canonical_tuple)
+        object.__setattr__(self, "_canonical_chained_name", "::".join(canonical_tuple))
 
     @property
     def canonical_chained_name(self) -> str:
         """Return the canonical chained name string."""
-        return "::".join(elem.full_typed_name for elem in self.typed_names)
+        return self._canonical_chained_name
 
     @property
     def canonical_chained_name_tuple(self) -> tuple[str, ...]:
         """Return the canonical chained name as a tuple of typed-name strings."""
-        return tuple(elem.full_typed_name for elem in self.typed_names)
+        return self._canonical_chained_name_tuple
 
     @property
     def source_chained_name(self) -> str:
