@@ -86,6 +86,39 @@ def test_non_filesystem_cross_universe_reference(
     assert result.file_results[1].diagnostics == []
 
 
+def test_forward_reference_within_non_filesystem_source_is_broken(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # Define requires definitions to appear before they are referenced; a forward
+    # ref within one source is not recognized as same-file and the validator
+    # mishandles it as an unconfigured cross-universe reference to the current
+    # universe.
+    test_helpers.write_project_config(tmp_path, "my.domain.com:my_lib")
+    monkeypatch.chdir(tmp_path)
+    source = (
+        "define the potential position<my.domain.com:my_lib:/a> {\n"
+        "    it may only contain dimension points where {\n"
+        "        it has the position</b>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential position<my.domain.com:my_lib:/b>.\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert len(result.file_results) == 1
+    diags = result.file_results[0].diagnostics
+    assert len(diags) == 1
+    diag = diags[0]
+    assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diag.universe == "my.domain.com:my_lib"
+    assert diag.current_universe_name == "my.domain.com:my_lib"
+    assert diag.location.line == 3
+    assert diag.location.column == 29
+
+
 # TODO: Both files get ReferencedFileNotFoundDiagnostic for the same missing
 # file. Ideally we would only emit it once.
 def test_referenced_file_not_found_via_already_completed_target(
