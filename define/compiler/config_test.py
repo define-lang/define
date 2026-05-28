@@ -78,7 +78,7 @@ class TestProjectConfig:
             "Invalid configuration:\n"
             "  - project.universe_name: value is required"
         )
-        assert exc_info.value.config_path == config.CONFIG_PATH
+        assert exc_info.value.config_path == config.CONFIG_PATH.as_posix_path()
         assert exc_info.value.violation_messages == [
             "project.universe_name: value is required"
         ]
@@ -129,8 +129,12 @@ class TestLocalDepsConfig:
 
         result = config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
         assert result == {
-            "mv:define-lang.org:lib": PurePosixPath("vendor/lib"),
-            "mv:define-lang.org:core": PurePosixPath("vendor/core"),
+            "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
+                PurePosixPath("vendor/lib")
+            ),
+            "mv:define-lang.org:core": define_path.DefinePathFromPosix(
+                PurePosixPath("vendor/core")
+            ),
         }
 
     def test_missing_file_returns_empty(
@@ -287,7 +291,7 @@ class TestLocalDepsConfig:
             "Invalid configuration:\n"
             "  - deps.local.path: value is required"
         )
-        assert exc_info.value.config_path == config.LOCAL_DEPS_PATH
+        assert exc_info.value.config_path == config.LOCAL_DEPS_PATH.as_posix_path()
         assert exc_info.value.violation_messages == [
             "deps.local.path: value is required"
         ]
@@ -402,7 +406,11 @@ class TestSubRoot:
         result = config.ConfigLoader(
             define_path.DefinePath("subroot")
         ).local_deps_config()
-        assert result == {"mv:define-lang.org:lib": PurePosixPath("vendor/lib")}
+        assert result == {
+            "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
+                PurePosixPath("vendor/lib")
+            )
+        }
 
     def test_local_deps_missing_returns_empty(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

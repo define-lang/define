@@ -14,10 +14,16 @@ from define.compiler.data_structures import define_path
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
 
-CONFIG_PATH = PurePosixPath(".define/project/config.defcl")
-LOCAL_DEPS_PATH = PurePosixPath(".define/deps/local.defcl")
+CONFIG_PATH = define_path.DefinePathFromPosix(
+    PurePosixPath(".define/project/config.defcl")
+)
+LOCAL_DEPS_PATH = define_path.DefinePathFromPosix(
+    PurePosixPath(".define/deps/local.defcl")
+)
 
-_EMPTY_DEPS: types.MappingProxyType[str, PurePosixPath] = types.MappingProxyType({})
+_EMPTY_DEPS: types.MappingProxyType[str, define_path.DefinePathFromPosix] = (
+    types.MappingProxyType({})
+)
 
 
 class ConfigLoader:
@@ -34,10 +40,10 @@ class ConfigLoader:
         return defcl_parser.Parser()
 
     def _load_config[M: message.Message](
-        self, subpath: PurePosixPath, message_type: type[M]
+        self, subpath: define_path.DefinePath, message_type: type[M]
     ) -> M:
         """Load and validate a defcl config file."""
-        path = Path(self._root.as_posix_path() / subpath)
+        path = Path((self._root / subpath).as_posix_path())
         try:
             result = self._parser.parse_file(path, message_type)
         except dcl_exceptions.DclSyntaxError as e:
@@ -61,7 +67,7 @@ class ConfigLoader:
 
     def assert_is_project_root(self) -> None:
         """Raise NotProjectRootError if the root is not a project root."""
-        config_path = Path(self._root.as_posix_path() / CONFIG_PATH)
+        config_path = Path((self._root / CONFIG_PATH).as_posix_path())
         if not config_path.exists():
             raise exceptions.NotProjectRootError(config_path, self._root)
 
@@ -69,21 +75,25 @@ class ConfigLoader:
         """Load and validate the project configuration."""
         return self._load_config(CONFIG_PATH, config_pb2.ProjectConfigFile)
 
-    def local_deps_config(self) -> types.MappingProxyType[str, PurePosixPath]:
+    def local_deps_config(
+        self,
+    ) -> types.MappingProxyType[str, define_path.DefinePathFromPosix]:
         """Load and validate the local dependency overrides.
 
         Returns an immutable mapping from universe name to relative path.
         """
-        deps_path = Path(self._root.as_posix_path() / LOCAL_DEPS_PATH)
+        deps_path = Path((self._root / LOCAL_DEPS_PATH).as_posix_path())
         if not deps_path.exists():
             return _EMPTY_DEPS
         result = self._load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)
-        deps: dict[str, PurePosixPath] = {}
+        deps: dict[str, define_path.DefinePathFromPosix] = {}
         for dep in result.deps.local:
             if dep.universe_name in deps:
                 raise exceptions.ConfigValidationError(
                     deps_path,
                     [f'deps.local: duplicate universe_name "{dep.universe_name}"'],
                 )
-            deps[dep.universe_name] = PurePosixPath(dep.path)
+            deps[dep.universe_name] = define_path.DefinePathFromPosix(
+                PurePosixPath(dep.path)
+            )
         return types.MappingProxyType(deps)

@@ -1,6 +1,6 @@
 """Exceptions raised by the Define compiler."""
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from defcl.python import exceptions as dcl_exceptions
 from define.compiler import constants
@@ -43,15 +43,15 @@ class DuplicateFqunError(ConfigError):
     """Two different sub-roots have the same fully-qualified universe name."""
 
     fqun: str
-    existing_config: PurePosixPath
-    new_config: PurePosixPath
+    existing_config: define_path.DefinePath
+    new_config: define_path.DefinePath
 
     def __init__(
         self,
         fqun: str,
-        existing_root: PurePosixPath,
-        new_root: PurePosixPath,
-        config_subpath: PurePosixPath,
+        existing_root: define_path.DefinePath,
+        new_root: define_path.DefinePath,
+        config_subpath: define_path.DefinePath,
     ):
         """Initialize with the duplicate FQUN and both root paths."""
         self.fqun = fqun

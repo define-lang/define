@@ -12,7 +12,12 @@ from typing import Final, override
 # compilation, all for functionality that we don't need in the compiler.
 @dataclass(frozen=True, slots=True, eq=False)
 class DefinePath:
-    """A POSIX-shaped path used in the compiler's internal data structures."""
+    """A POSIX-shaped path used in the compiler's internal data structures.
+
+    Note that this class does no validation of the input path; it expects well-formed
+    POSIX paths. If you need something that normalizes or validates paths, use
+    DefinePathFromPosix below.
+    """
 
     _path: str
 

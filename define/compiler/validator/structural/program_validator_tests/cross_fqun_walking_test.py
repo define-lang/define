@@ -66,8 +66,10 @@ def test_sub_root_redeclares_parent_fqun(
     assert diag.location.column == 29
     assert isinstance(diag.error, exceptions.DuplicateFqunError)
     assert diag.error.fqun == parent_fqun
-    assert diag.error.existing_config == PurePosixPath(".define/project/config.defcl")
-    assert diag.error.new_config == PurePosixPath(
+    assert diag.error.existing_config == define_path.DefinePath(
+        ".define/project/config.defcl"
+    )
+    assert diag.error.new_config == define_path.DefinePath(
         "lib/nested/.define/project/config.defcl"
     )
 

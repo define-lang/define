@@ -640,14 +640,11 @@ class ProgramStructuralValidator:
         if existing_root is not None and existing_root != root_prefix:
             raise exceptions.DuplicateFqunError(
                 fqun=fqun,
-                existing_root=existing_root.as_posix_path(),
-                new_root=root_prefix.as_posix_path(),
+                existing_root=existing_root,
+                new_root=root_prefix,
                 config_subpath=config.CONFIG_PATH,
             )
-        sub_root_mappings = {
-            k: define_path.DefinePathFromPosix(v)
-            for k, v in loader.local_deps_config().items()
-        }
+        sub_root_mappings = loader.local_deps_config()
         self._path_tracker.register_project_root(root_prefix, fqun, sub_root_mappings)
         return fqun, sub_root_mappings
 
