@@ -1,0 +1,66 @@
+"""A POSIX-style path used in the compiler's internal data structures."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import override
+
+
+# We used to use pathlib.PurePosixPath but it represented a significant amount
+# of our memory allocations and a significant amount of the CPU during
+# compilation, all for functionality that we don't need in the compiler.
+@dataclass(frozen=True, slots=True)
+class DefinePath:
+    """A POSIX-shaped path used in the compiler's internal data structures."""
+
+    _path: str
+
+    @override
+    def __str__(self) -> str:
+        return self._path
+
+    def __truediv__(self, other: DefinePath) -> DefinePath:
+        """Return a new DefinePath joining self with other.
+
+        If left ends with / and right starts with /, one slash is dropped
+        and the strings are concatenated. If only one side has a slash at
+        the join point, the strings are concatenated literally. Otherwise
+        a / is inserted between them.
+        """
+        if not self._path:
+            return other
+        if not other._path:
+            return self
+        left_ends_slash = self._path.endswith("/")
+        right_starts_slash = other._path.startswith("/")
+        if left_ends_slash and right_starts_slash:
+            return DefinePath(self._path + other._path[1:])
+        if left_ends_slash or right_starts_slash:
+            return DefinePath(self._path + other._path)
+        return DefinePath(f"{self._path}/{other._path}")
+
+    @property
+    def parts(self) -> list[str]:
+        """Return the path's segments as split on '/'."""
+        if not self._path:
+            return []
+        return self._path.split("/")
+
+    @property
+    def name(self) -> str:
+        """Return the path's last component."""
+        idx = self._path.rfind("/")
+        return self._path[idx + 1 :] if idx >= 0 else self._path
+
+    def with_suffix(self, suffix: str) -> DefinePath:
+        """Return a new DefinePath with suffix appended to the path."""
+        return DefinePath(self._path + suffix)
+
+    def as_relative_path(self) -> DefinePath:
+        """Return a DefinePath with the leading / removed, or self if absent."""
+        if self._path.startswith("/"):
+            return DefinePath(self._path[1:])
+        return self
+
+
+EMPTY = DefinePath("")
