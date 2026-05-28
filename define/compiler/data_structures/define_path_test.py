@@ -1,5 +1,9 @@
 # pyright: reportUnusedCallResult=false
 
+from pathlib import PurePosixPath
+
+import pytest
+
 from define.compiler.data_structures import define_path
 
 
@@ -153,6 +157,89 @@ class TestAsRelativePath:
             define_path.DefinePath("/foo")
             == define_path.DefinePath("//foo").as_relative_path()
         )
+
+
+class TestAsPosixPath:
+    def test_returns_pure_posix_path(self):
+        assert isinstance(
+            define_path.DefinePath("foo/bar").as_posix_path(), PurePosixPath
+        )
+
+    def test_relative(self):
+        assert (
+            PurePosixPath("foo/bar")
+            == define_path.DefinePath("foo/bar").as_posix_path()
+        )
+
+    def test_absolute(self):
+        assert (
+            PurePosixPath("/foo/bar")
+            == define_path.DefinePath("/foo/bar").as_posix_path()
+        )
+
+    def test_root(self):
+        assert PurePosixPath("/") == define_path.DefinePath("/").as_posix_path()
+
+
+class TestDefinePathFromPosix:
+    def test_str_matches_source(self):
+        assert str(define_path.DefinePathFromPosix(PurePosixPath("/foo/bar"))) == (
+            "/foo/bar"
+        )
+
+    def test_as_posix_path_returns_original_object(self):
+        source = PurePosixPath("/foo/bar")
+        assert source is define_path.DefinePathFromPosix(source).as_posix_path()
+
+    def test_inherits_parts(self):
+        assert define_path.DefinePathFromPosix(PurePosixPath("/foo/bar")).parts == [
+            "",
+            "foo",
+            "bar",
+        ]
+
+    def test_inherits_name(self):
+        assert define_path.DefinePathFromPosix(PurePosixPath("/foo/bar")).name == "bar"
+
+    def test_inherits_with_suffix(self):
+        assert define_path.DefinePath(
+            "/foo/bar.dfn"
+        ) == define_path.DefinePathFromPosix(PurePosixPath("/foo/bar")).with_suffix(
+            ".dfn"
+        )
+
+
+class TestInvalidDefinePath:
+    def test_str(self):
+        assert str(define_path.InvalidDefinePath("<string>")) == "<string>"
+
+    def test_name(self):
+        assert define_path.InvalidDefinePath("<string>").name == "<string>"
+
+    def test_truediv_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid / define_path.DefinePath("foo")
+
+    def test_parts_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid.parts
+
+    def test_with_suffix_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid.with_suffix(".dfn")
+
+    def test_as_relative_path_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid.as_relative_path()
+
+    def test_as_posix_path_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid.as_posix_path()
 
 
 class TestEquality:

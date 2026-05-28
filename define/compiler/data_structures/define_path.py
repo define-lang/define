@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import PurePosixPath
 from typing import override
 
 
@@ -61,6 +62,64 @@ class DefinePath:
         if self._path.startswith("/"):
             return DefinePath(self._path[1:])
         return self
+
+    def as_posix_path(self) -> PurePosixPath:
+        """Return a PurePosixPath for interop with code that takes one."""
+        return PurePosixPath(self._path)
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class DefinePathFromPosix(DefinePath):
+    """A DefinePath that caches the PurePosixPath it was built from."""
+
+    _path_obj: PurePosixPath
+
+    def __init__(self, path_obj: PurePosixPath):
+        """Initialize with a PurePosixPath, caching it for as_posix_path."""
+        super().__init__(str(path_obj))
+        object.__setattr__(self, "_path_obj", path_obj)
+
+    @override
+    def as_posix_path(self) -> PurePosixPath:
+        return self._path_obj
+
+
+class InvalidPathError(Exception):
+    """Raised when a path operation is invoked on an InvalidDefinePath."""
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidDefinePath(DefinePath):
+    """A DefinePath sentinel that rejects path operations.
+
+    Supports __str__ and name; every other path operation raises
+    InvalidPathError.
+    """
+
+    @override
+    def __truediv__(self, other: DefinePath) -> DefinePath:
+        raise InvalidPathError(f"cannot join invalid path: {self._path}")
+
+    @property
+    @override
+    def parts(self) -> list[str]:
+        raise InvalidPathError(f"cannot split invalid path: {self._path}")
+
+    @override
+    def with_suffix(self, suffix: str) -> DefinePath:
+        raise InvalidPathError(f"cannot add suffix to invalid path: {self._path}")
+
+    @override
+    def as_relative_path(self) -> DefinePath:
+        raise InvalidPathError(
+            f"cannot take relative form of invalid path: {self._path}"
+        )
+
+    @override
+    def as_posix_path(self) -> PurePosixPath:
+        raise InvalidPathError(
+            f"cannot convert invalid path to PurePosixPath: {self._path}"
+        )
 
 
 EMPTY = DefinePath("")
