@@ -33,7 +33,7 @@ class DiscoveredFile:
     # context). It should be removed and the program_validator should drive
     # file loading and FQUN→sub-root resolution directly off the edges.
     path: define_path.DefinePath
-    root_prefix: pathlib.PurePosixPath
+    root_prefix: define_path.DefinePath
     expected_fqun: str
     location: ast.SourceLocation
 

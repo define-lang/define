@@ -2,38 +2,36 @@
 
 from __future__ import annotations
 
-import pathlib
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, override
 
 import pygtrie
 
+from define.compiler.data_structures import define_path
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
-class _PathTrie[V](pygtrie.Trie[pathlib.PurePosixPath, V]):
-    """A trie keyed by PurePosixPath, with slash-separated path components."""
+class _PathTrie[V](pygtrie.Trie[define_path.DefinePath, V]):
+    """A trie keyed by DefinePath, with slash-separated path components."""
 
     @override
-    def _path_from_key(self, key: pathlib.PurePosixPath) -> list[str]:
-        posix = key.as_posix()
-        if posix == ".":
-            return [""]
-        return ["", *posix.split("/")]
+    def _path_from_key(self, key: define_path.DefinePath) -> list[str]:
+        return ["", *key.parts]
 
     @override
-    def _key_from_path(self, path: tuple[str, ...]) -> pathlib.PurePosixPath:
+    def _key_from_path(self, path: tuple[str, ...]) -> define_path.DefinePath:
         if len(path) <= 1:
-            return pathlib.PurePosixPath(".")
-        return pathlib.PurePosixPath("/".join(path[1:]))
+            return define_path.EMPTY
+        return define_path.DefinePath("/".join(path[1:]))
 
 
 @dataclass
 class _UniverseInfo:
     fqun: str
-    sub_roots: Mapping[str, pathlib.PurePosixPath]
+    sub_roots: Mapping[str, define_path.DefinePath]
 
 
 class PathTracker[T]:
@@ -49,31 +47,31 @@ class PathTracker[T]:
 
     def __init__(self):
         """Initialize empty path tracking state."""
-        self._results: OrderedDict[pathlib.PurePosixPath, T | None] = OrderedDict()
-        self._not_found: set[pathlib.PurePosixPath] = set()
+        self._results: OrderedDict[define_path.DefinePath, T | None] = OrderedDict()
+        self._not_found: set[define_path.DefinePath] = set()
         self._project_roots: _PathTrie[_UniverseInfo] = _PathTrie()
-        self._fqun_to_root: dict[str, pathlib.PurePosixPath] = {}
-        self._tracked_files: pygtrie.PrefixSet[pathlib.PurePosixPath] = (
+        self._fqun_to_root: dict[str, define_path.DefinePath] = {}
+        self._tracked_files: pygtrie.PrefixSet[define_path.DefinePath] = (
             pygtrie.PrefixSet(factory=_PathTrie)
         )
-        self._failed_roots: pygtrie.PrefixSet[pathlib.PurePosixPath] = (
+        self._failed_roots: pygtrie.PrefixSet[define_path.DefinePath] = (
             pygtrie.PrefixSet(factory=_PathTrie)
         )
 
-    def is_tracked(self, path: pathlib.PurePosixPath) -> bool:
+    def is_tracked(self, path: define_path.DefinePath) -> bool:
         """Return True if this path has been started or completed."""
         return path in self._results
 
-    def mark_in_progress(self, path: pathlib.PurePosixPath):
+    def mark_in_progress(self, path: define_path.DefinePath):
         """Record that validation of this path has begun."""
         self._results[path] = None
         self._tracked_files.add(path)
 
-    def set_result(self, path: pathlib.PurePosixPath, result: T):
+    def set_result(self, path: define_path.DefinePath, result: T):
         """Store the completed result for a previously-started path."""
         self._results[path] = result
 
-    def get_result(self, path: pathlib.PurePosixPath) -> T:
+    def get_result(self, path: define_path.DefinePath) -> T:
         """Return the completed result for a path.
 
         Raises KeyError if the path has no completed result.
@@ -83,11 +81,11 @@ class PathTracker[T]:
             raise KeyError(f"{path} has no completed result")
         return result
 
-    def try_get_result(self, path: pathlib.PurePosixPath) -> T | None:
+    def try_get_result(self, path: define_path.DefinePath) -> T | None:
         """Return the completed result for a path, or None if not yet completed."""
         return self._results.get(path)
 
-    def mark_not_found(self, path: pathlib.PurePosixPath):
+    def mark_not_found(self, path: define_path.DefinePath):
         """Record that this path was referenced but could not be loaded."""
         self._not_found.add(path)
 
@@ -102,25 +100,25 @@ class PathTracker[T]:
             if result is not None and path not in self._not_found
         ]
 
-    def mark_root_failed(self, root: pathlib.PurePosixPath):
+    def mark_root_failed(self, root: define_path.DefinePath):
         """Record that a project root's config failed to load."""
         self._failed_roots.add(root)
 
-    def is_under_failed_root(self, path: pathlib.PurePosixPath) -> bool:
+    def is_under_failed_root(self, path: define_path.DefinePath) -> bool:
         """Return True if path is under a root with a known-bad config."""
         return path in self._failed_roots
 
     def register_project_root(
         self,
-        root: pathlib.PurePosixPath,
+        root: define_path.DefinePath,
         fqun: str,
-        sub_roots: Mapping[str, pathlib.PurePosixPath],
+        sub_roots: Mapping[str, define_path.DefinePath],
     ):
         """Register a project root as existing at a certain path.
 
         Args:
             root: The filesystem path for a project root, relative to the
-              top-most project root. Can be PurePosixPath(".") for the
+              top-most project root. Can be define_path.EMPTY for the
               top-most root.
             fqun: The fully qualified universe name configured for the root
               specified in the root arg.
@@ -134,23 +132,23 @@ class PathTracker[T]:
         self._project_roots[root] = _UniverseInfo(fqun=fqun, sub_roots=sub_roots)
         self._fqun_to_root[fqun] = root
 
-    def project_root_loaded(self, root: pathlib.PurePosixPath) -> bool:
+    def project_root_loaded(self, root: define_path.DefinePath) -> bool:
         """Return True if a project root has been registered at this path."""
         return root in self._project_roots
 
-    def root_for_fqun(self, fqun: str) -> pathlib.PurePosixPath | None:
+    def root_for_fqun(self, fqun: str) -> define_path.DefinePath | None:
         """Return the root path registered for a given FQUN, or None."""
         return self._fqun_to_root.get(fqun)
 
-    def fqun_for_root(self, root: pathlib.PurePosixPath) -> str | None:
+    def fqun_for_root(self, root: define_path.DefinePath) -> str | None:
         """Return the FQUN registered for an exact project root path, or None."""
         if root not in self._project_roots:
             return None
         return self._project_roots[root].fqun
 
     def sub_roots_for(
-        self, root: pathlib.PurePosixPath
-    ) -> Mapping[str, pathlib.PurePosixPath]:
+        self, root: define_path.DefinePath
+    ) -> Mapping[str, define_path.DefinePath]:
         """Return the sub-root mappings registered for a project root.
 
         Raises:
@@ -158,13 +156,13 @@ class PathTracker[T]:
         """
         return self._project_roots[root].sub_roots
 
-    def has_sub_root(self, fqun: str, parent_root: pathlib.PurePosixPath) -> bool:
+    def has_sub_root(self, fqun: str, parent_root: define_path.DefinePath) -> bool:
         """Return True if fqun is a configured sub_root of parent_root."""
         return fqun in self._project_roots[parent_root].sub_roots
 
     def sub_root_location(
-        self, fqun: str, parent_root: pathlib.PurePosixPath
-    ) -> pathlib.PurePosixPath:
+        self, fqun: str, parent_root: define_path.DefinePath
+    ) -> define_path.DefinePath:
         """Return the configured path for fqun relative to parent_root.
 
         Raises:
@@ -174,7 +172,9 @@ class PathTracker[T]:
         info = self._project_roots[parent_root]
         return info.sub_roots[fqun]
 
-    def find_enclosing_root(self, path: pathlib.PurePosixPath) -> pathlib.PurePosixPath:
+    def find_enclosing_root(
+        self, path: define_path.DefinePath
+    ) -> define_path.DefinePath:
         """Find the innermost project root containing this path.
 
         At least one project root must be registered.
@@ -188,8 +188,8 @@ class PathTracker[T]:
         return step.key
 
     def first_tracked_file_under(
-        self, sub_root_path: pathlib.PurePosixPath
-    ) -> tuple[pathlib.PurePosixPath, str] | tuple[None, None]:
+        self, sub_root_path: define_path.DefinePath
+    ) -> tuple[define_path.DefinePath, str] | tuple[None, None]:
         """Find the first tracked file under sub_root_path and its owning universe.
 
         Returns (file_path, owner_universe) or None.

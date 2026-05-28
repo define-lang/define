@@ -269,6 +269,17 @@ class TestEquality:
         }
         assert s == {define_path.DefinePath("a"), define_path.DefinePath("b")}
 
+    def test_plain_equals_from_posix(self):
+        assert define_path.DefinePath("foo/bar") == define_path.DefinePathFromPosix(
+            PurePosixPath("foo/bar")
+        )
+
+    def test_dict_lookup_across_subclasses(self):
+        d: dict[define_path.DefinePath, int] = {
+            define_path.DefinePathFromPosix(PurePosixPath("foo")): 1
+        }
+        assert d[define_path.DefinePath("foo")] == 1
+
 
 class TestEmpty:
     def test_str(self):

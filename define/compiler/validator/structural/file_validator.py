@@ -25,7 +25,7 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
-from define.compiler.data_structures import typed_name_dict
+from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.lark import lark_standalone
 from define.compiler.validator import scope_tracker, stats, validation_result
@@ -844,7 +844,7 @@ class DefinitionStructuralValidator:
         self._discovered_files.append(
             validation_result.DiscoveredFile(
                 path=global_name.path.file_path(),
-                root_prefix=root_prefix,
+                root_prefix=define_path.DefinePathFromPosix(root_prefix),
                 expected_fqun=expected_fqun.canonical,
                 location=global_name.location,
             )

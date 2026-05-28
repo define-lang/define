@@ -10,7 +10,7 @@ from typing import override
 # We used to use pathlib.PurePosixPath but it represented a significant amount
 # of our memory allocations and a significant amount of the CPU during
 # compilation, all for functionality that we don't need in the compiler.
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class DefinePath:
     """A POSIX-shaped path used in the compiler's internal data structures."""
 
@@ -19,6 +19,21 @@ class DefinePath:
     @override
     def __str__(self) -> str:
         return self._path
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        # Equality and hash are string-based regardless of subclass: two paths
+        # with the same string are the same path, whether one carries a cached
+        # PurePosixPath sidecar or not. This lets PathTracker (and any dict
+        # keyed on DefinePath) round-trip plain and subclass instances
+        # interchangeably.
+        if not isinstance(other, DefinePath):
+            return NotImplemented
+        return self._path == other._path
+
+    @override
+    def __hash__(self) -> int:
+        return hash(self._path)
 
     def __truediv__(self, other: DefinePath) -> DefinePath:
         """Return a new DefinePath joining self with other.
@@ -68,7 +83,7 @@ class DefinePath:
         return PurePosixPath(self._path)
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@dataclass(frozen=True, slots=True, init=False, eq=False)
 class DefinePathFromPosix(DefinePath):
     """A DefinePath that caches the PurePosixPath it was built from."""
 
@@ -92,7 +107,7 @@ class InvalidPathError(Exception):
     """Raised when a path operation is invoked on an InvalidDefinePath."""
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class InvalidDefinePath(DefinePath):
     """A DefinePath sentinel that rejects path operations.
 

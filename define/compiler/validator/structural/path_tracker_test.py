@@ -1,97 +1,98 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import PurePosixPath
-
 import pytest
 
+from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import path_tracker
 
 
 class TestPathTracker:
     def test_is_tracked_unknown(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert not tracker.is_tracked(PurePosixPath("a.dfn"))
+        assert not tracker.is_tracked(define_path.DefinePath("a.dfn"))
 
     def test_mark_in_progress(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.dfn"))
-        assert tracker.is_tracked(PurePosixPath("a.dfn"))
+        tracker.mark_in_progress(define_path.DefinePath("a.dfn"))
+        assert tracker.is_tracked(define_path.DefinePath("a.dfn"))
 
     def test_set_and_get_result(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.dfn"))
-        tracker.set_result(PurePosixPath("a.dfn"), "ok")
-        assert tracker.get_result(PurePosixPath("a.dfn")) == "ok"
+        tracker.mark_in_progress(define_path.DefinePath("a.dfn"))
+        tracker.set_result(define_path.DefinePath("a.dfn"), "ok")
+        assert tracker.get_result(define_path.DefinePath("a.dfn")) == "ok"
 
     def test_get_result_raises_when_in_progress(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.dfn"))
+        tracker.mark_in_progress(define_path.DefinePath("a.dfn"))
         with pytest.raises(KeyError):
-            tracker.get_result(PurePosixPath("a.dfn"))
+            tracker.get_result(define_path.DefinePath("a.dfn"))
 
     def test_completed_results_excludes_in_progress(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.dfn"))
-        tracker.set_result(PurePosixPath("a.dfn"), "done")
-        tracker.mark_in_progress(PurePosixPath("b.dfn"))
+        tracker.mark_in_progress(define_path.DefinePath("a.dfn"))
+        tracker.set_result(define_path.DefinePath("a.dfn"), "done")
+        tracker.mark_in_progress(define_path.DefinePath("b.dfn"))
         assert tracker.completed_results() == ["done"]
 
     def test_completed_results_excludes_not_found(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_in_progress(PurePosixPath("a.dfn"))
-        tracker.set_result(PurePosixPath("a.dfn"), "done")
-        tracker.mark_not_found(PurePosixPath("a.dfn"))
+        tracker.mark_in_progress(define_path.DefinePath("a.dfn"))
+        tracker.set_result(define_path.DefinePath("a.dfn"), "done")
+        tracker.mark_not_found(define_path.DefinePath("a.dfn"))
         assert tracker.completed_results() == []
 
     def test_completed_results_preserves_order(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         for name in ["c.dfn", "a.dfn", "b.dfn"]:
-            tracker.mark_in_progress(PurePosixPath(name))
-            tracker.set_result(PurePosixPath(name), name)
+            tracker.mark_in_progress(define_path.DefinePath(name))
+            tracker.set_result(define_path.DefinePath(name), name)
         assert tracker.completed_results() == ["c.dfn", "a.dfn", "b.dfn"]
 
     def test_mark_not_found_does_not_affect_is_tracked(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.mark_not_found(PurePosixPath("a.dfn"))
-        assert not tracker.is_tracked(PurePosixPath("a.dfn"))
+        tracker.mark_not_found(define_path.DefinePath("a.dfn"))
+        assert not tracker.is_tracked(define_path.DefinePath("a.dfn"))
 
 
 class TestSubRootTracking:
     def test_project_root_loaded_false_when_not_registered(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert not tracker.project_root_loaded(PurePosixPath("ext/dep"))
+        assert not tracker.project_root_loaded(define_path.DefinePath("ext/dep"))
 
     def test_project_root_loaded_true_after_register(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        root = PurePosixPath("")
-        tracker.register_project_root(root, "my.universe", {})
-        assert tracker.project_root_loaded(root)
+        tracker.register_project_root(define_path.EMPTY, "my.universe", {})
+        assert tracker.project_root_loaded(define_path.EMPTY)
 
     def test_register_and_fqun_for_root_empty_path(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        root = PurePosixPath("")
         tracker.register_project_root(
-            root, "my.universe", {"dep": PurePosixPath("ext/dep")}
+            define_path.EMPTY,
+            "my.universe",
+            {"dep": define_path.DefinePath("ext/dep")},
         )
-        assert tracker.fqun_for_root(root) == "my.universe"
+        assert tracker.fqun_for_root(define_path.EMPTY) == "my.universe"
 
     def test_register_and_fqun_for_root_non_empty(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        root = PurePosixPath("ext/dep")
+        root = define_path.DefinePath("ext/dep")
         tracker.register_project_root(root, "dep.universe", {})
         assert tracker.fqun_for_root(root) == "dep.universe"
 
     def test_root_for_fqun_returns_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
-            PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
+            define_path.EMPTY,
+            "my.universe",
+            {"dep": define_path.DefinePath("ext/dep")},
         )
-        assert tracker.root_for_fqun("my.universe") == PurePosixPath(".")
+        assert tracker.root_for_fqun("my.universe") == define_path.EMPTY
 
     def test_root_for_fqun_returns_none_when_no_match(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "my.universe", {})
+        tracker.register_project_root(define_path.EMPTY, "my.universe", {})
         assert tracker.root_for_fqun("other.universe") is None
 
     def test_root_for_fqun_returns_none_when_empty(self):
@@ -100,82 +101,91 @@ class TestSubRootTracking:
 
     def test_fqun_for_root_none_when_not_registered(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        assert tracker.fqun_for_root(PurePosixPath("ext/dep")) is None
+        assert tracker.fqun_for_root(define_path.DefinePath("ext/dep")) is None
 
     def test_register_project_root_duplicate_root_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        root = PurePosixPath("")
-        tracker.register_project_root(root, "my.universe", {})
+        tracker.register_project_root(define_path.EMPTY, "my.universe", {})
         with pytest.raises(ValueError, match="already registered"):
-            tracker.register_project_root(root, "other.universe", {})
+            tracker.register_project_root(define_path.EMPTY, "other.universe", {})
 
     def test_sub_root_location(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         tracker.register_project_root(
-            PurePosixPath(""), "my.universe", {"dep": PurePosixPath("ext/dep")}
+            define_path.EMPTY,
+            "my.universe",
+            {"dep": define_path.DefinePath("ext/dep")},
         )
-        assert tracker.sub_root_location("dep", PurePosixPath("")) == PurePosixPath(
-            "ext/dep"
-        )
+        assert tracker.sub_root_location(
+            "dep", define_path.EMPTY
+        ) == define_path.DefinePath("ext/dep")
 
     def test_sub_root_location_unregistered_parent_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         with pytest.raises(KeyError):
-            tracker.sub_root_location("dep", PurePosixPath("not/registered"))
+            tracker.sub_root_location("dep", define_path.DefinePath("not/registered"))
 
     def test_sub_root_location_unknown_fqun_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "my.universe", {})
+        tracker.register_project_root(define_path.EMPTY, "my.universe", {})
         with pytest.raises(KeyError):
-            tracker.sub_root_location("unknown", PurePosixPath(""))
+            tracker.sub_root_location("unknown", define_path.EMPTY)
 
 
 class TestConflictDetection:
     def test_find_enclosing_root_no_roots_raises(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         with pytest.raises(KeyError, match="no project root registered"):
-            tracker.find_enclosing_root(PurePosixPath("foo/bar.dfn"))
+            tracker.find_enclosing_root(define_path.DefinePath("foo/bar.dfn"))
 
     def test_find_enclosing_root_returns_project_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        assert tracker.find_enclosing_root(
-            PurePosixPath("foo/bar.dfn")
-        ) == PurePosixPath(".")
+        tracker.register_project_root(define_path.EMPTY, "root.uni", {})
+        assert (
+            tracker.find_enclosing_root(define_path.DefinePath("foo/bar.dfn"))
+            == define_path.EMPTY
+        )
 
     def test_find_enclosing_root_returns_nested(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        tracker.register_project_root(PurePosixPath("lib"), "lib.uni", {})
+        tracker.register_project_root(define_path.EMPTY, "root.uni", {})
+        tracker.register_project_root(define_path.DefinePath("lib"), "lib.uni", {})
         assert tracker.find_enclosing_root(
-            PurePosixPath("lib/foo.dfn")
-        ) == PurePosixPath("lib")
+            define_path.DefinePath("lib/foo.dfn")
+        ) == define_path.DefinePath("lib")
 
     def test_find_enclosing_root_returns_most_specific(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        tracker.register_project_root(PurePosixPath("lib"), "lib.uni", {})
-        tracker.register_project_root(PurePosixPath("lib/inner"), "inner.uni", {})
+        tracker.register_project_root(define_path.EMPTY, "root.uni", {})
+        tracker.register_project_root(define_path.DefinePath("lib"), "lib.uni", {})
+        tracker.register_project_root(
+            define_path.DefinePath("lib/inner"), "inner.uni", {}
+        )
         assert tracker.find_enclosing_root(
-            PurePosixPath("lib/inner/x.dfn")
-        ) == PurePosixPath("lib/inner")
+            define_path.DefinePath("lib/inner/x.dfn")
+        ) == define_path.DefinePath("lib/inner")
 
     def test_first_tracked_file_under_no_files(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        assert tracker.first_tracked_file_under(PurePosixPath("lib")) == (None, None)
+        tracker.register_project_root(define_path.EMPTY, "root.uni", {})
+        assert tracker.first_tracked_file_under(define_path.DefinePath("lib")) == (
+            None,
+            None,
+        )
 
     def test_first_tracked_file_under_finds_conflict(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        tracker.mark_in_progress(PurePosixPath("lib/target.dfn"))
-        result = tracker.first_tracked_file_under(PurePosixPath("lib"))
-        assert result == (PurePosixPath("lib/target.dfn"), "root.uni")
+        tracker.register_project_root(define_path.EMPTY, "root.uni", {})
+        tracker.mark_in_progress(define_path.DefinePath("lib/target.dfn"))
+        result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
+        assert result == (define_path.DefinePath("lib/target.dfn"), "root.uni")
 
     def test_first_tracked_file_under_returns_nested_sub_root_owner(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        tracker.register_project_root(PurePosixPath(""), "root.uni", {})
-        tracker.register_project_root(PurePosixPath("lib/inner"), "inner.uni", {})
-        tracker.mark_in_progress(PurePosixPath("lib/inner/x.dfn"))
-        result = tracker.first_tracked_file_under(PurePosixPath("lib"))
-        assert result == (PurePosixPath("lib/inner/x.dfn"), "inner.uni")
+        tracker.register_project_root(define_path.EMPTY, "root.uni", {})
+        tracker.register_project_root(
+            define_path.DefinePath("lib/inner"), "inner.uni", {}
+        )
+        tracker.mark_in_progress(define_path.DefinePath("lib/inner/x.dfn"))
+        result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
+        assert result == (define_path.DefinePath("lib/inner/x.dfn"), "inner.uni")

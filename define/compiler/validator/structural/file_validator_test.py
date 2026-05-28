@@ -290,7 +290,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert len(_discovered_files(result)) == 1
         discovered = _discovered_files(result)[0]
         assert discovered.path == define_path.DefinePath("other.dfn")
-        assert discovered.root_prefix == PurePosixPath(str(tmp_path))
+        assert discovered.root_prefix == define_path.DefinePath(str(tmp_path))
         assert discovered.expected_fqun == "my.domain.com:my_lib"
 
     def test_cross_universe_reference_configured(
@@ -316,7 +316,9 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert len(_discovered_files(result)) == 1
         discovered = _discovered_files(result)[0]
         assert discovered.path == define_path.DefinePath("dep.dfn")
-        assert discovered.root_prefix == PurePosixPath(str(tmp_path)) / "deps/other"
+        assert discovered.root_prefix == define_path.DefinePath(
+            str(PurePosixPath(str(tmp_path)) / "deps/other")
+        )
         assert discovered.expected_fqun == "other.domain.com:other_lib"
 
     def test_cross_universe_reference_not_configured(

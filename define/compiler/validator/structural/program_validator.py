@@ -101,7 +101,7 @@ class ProgramStructuralValidator:
     _parser: parser.Parser
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
-    _deferred_edges: dict[pathlib.PurePosixPath, list[_DeferredReferenceEdge]]
+    _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ]
@@ -129,8 +129,9 @@ class ProgramStructuralValidator:
     ) -> validation_result.ProgramValidationResult:
         """Validate a program starting from the given file path."""
         root_prefix = constants.PROJECT_ROOT
+        root_prefix_dp = define_path.DefinePathFromPosix(root_prefix)
         try:
-            fqun, sub_root_mappings = self._load_root_config(root_prefix)
+            fqun, sub_root_mappings = self._load_root_config(root_prefix_dp)
         except exceptions.ConfigError as e:
             return self._build_program_result(
                 [_make_config_error_result(root_prefix / path, root_prefix, e)]
@@ -144,7 +145,9 @@ class ProgramStructuralValidator:
         )
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
-            self._path_tracker.mark_in_progress(root_prefix / path)
+            self._path_tracker.mark_in_progress(
+                root_prefix_dp / define_path.DefinePathFromPosix(path)
+            )
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
@@ -162,8 +165,9 @@ class ProgramStructuralValidator:
         if result.exception is not None:
             return self._build_program_result([result])
 
-        self._path_tracker.mark_in_progress(result.file_path)
-        self._path_tracker.set_result(result.file_path, result)
+        result_path_dp = define_path.DefinePathFromPosix(result.file_path)
+        self._path_tracker.mark_in_progress(result_path_dp)
+        self._path_tracker.set_result(result_path_dp, result)
 
         self._resolve_non_filesystem_discovered_files(result)
 
@@ -191,7 +195,9 @@ class ProgramStructuralValidator:
         """Run the coordinator loop for queued work."""
         while pool.has_pending():
             result = pool.wait_for_next()
-            self._path_tracker.set_result(result.file_path, result)
+            self._path_tracker.set_result(
+                define_path.DefinePathFromPosix(result.file_path), result
+            )
             self._process_completed_result(result, pool)
 
     def _process_completed_result(
@@ -210,7 +216,9 @@ class ProgramStructuralValidator:
         # Reference edges are file-scoped, but validating them still depends on
         # this file's definitions already being registered so wrong-type checks
         # don't race ahead of the completed file's real contents.
-        self._validate_incoming_reference_edges(result.file_path)
+        self._validate_incoming_reference_edges(
+            define_path.DefinePathFromPosix(result.file_path)
+        )
         result.stats.global_validation += time.perf_counter_ns() - started_at
 
     def _process_completed_definition(
@@ -229,7 +237,9 @@ class ProgramStructuralValidator:
             return
         self._definition_results[typed_name] = definition_result
         self._reference_graph.add_definition(definition_result.definition)
-        self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
+        self._validate_outgoing_reference_edges(
+            define_path.DefinePathFromPosix(result.root_prefix), definition_result
+        )
 
     def _submit_discovered_files(
         self,
@@ -239,7 +249,7 @@ class ProgramStructuralValidator:
     ):
         """Submit discovered files if not already tracked."""
         for discovered in definition_result.discovered_files:
-            full_path = discovered.root_prefix / discovered.path.as_posix_path()
+            full_path = discovered.root_prefix / discovered.path
             if self._path_tracker.is_tracked(full_path):
                 continue
             if self._path_tracker.is_under_failed_root(full_path):
@@ -265,7 +275,7 @@ class ProgramStructuralValidator:
 
             context = file_validator.FileValidationContext(
                 file_path=discovered.path.as_posix_path(),
-                root_prefix=discovered.root_prefix,
+                root_prefix=discovered.root_prefix.as_posix_path(),
                 expected_fqun=fqun,
                 sub_root_mappings=sub_root_mappings,
             )
@@ -316,7 +326,10 @@ class ProgramStructuralValidator:
                         )
                     )
                     continue
-                discovered.root_prefix = discovered.root_prefix / sub_root_rel
+                discovered.root_prefix = (
+                    discovered.root_prefix
+                    / define_path.DefinePathFromPosix(sub_root_rel)
+                )
                 resolved_discoveries.append(discovered)
             definition_result.discovered_files = resolved_discoveries
 
@@ -360,10 +373,11 @@ class ProgramStructuralValidator:
         first_discovered = self._first_discovered_file(result)
         if first_discovered is None:
             raise ValueError("expected at least one discovered file")
+        project_root_dp = define_path.DefinePathFromPosix(constants.PROJECT_ROOT)
         try:
-            return self._load_root_config(constants.PROJECT_ROOT)
+            return self._load_root_config(project_root_dp)
         except exceptions.NotProjectRootError as e:
-            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
+            self._path_tracker.mark_root_failed(project_root_dp)
             result.add_file_diagnostic(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
                     location=first_discovered.location,
@@ -373,7 +387,7 @@ class ProgramStructuralValidator:
             )
             return (None, None)
         except exceptions.ConfigError as e:
-            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
+            self._path_tracker.mark_root_failed(project_root_dp)
             result.add_file_diagnostic(
                 diagnostics.ConfigLoadErrorDiagnostic(
                     location=first_discovered.location,
@@ -384,7 +398,7 @@ class ProgramStructuralValidator:
 
     def _validate_outgoing_reference_edges(
         self,
-        enclosing_root: pathlib.PurePosixPath,
+        enclosing_root: define_path.DefinePath,
         source_definition: validation_result.DefinitionValidationResult,
     ):
         """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
@@ -415,9 +429,7 @@ class ProgramStructuralValidator:
             # A and C both reference file B, and B finishes before A's results
             # are processed, then target_result is already available when
             # processing A's edges.
-            target_result = self._path_tracker.try_get_result(
-                target_file.as_posix_path()
-            )
+            target_result = self._path_tracker.try_get_result(target_file)
             if target_result is not None:
                 self._validate_reference_against_target(
                     ref_edge,
@@ -426,14 +438,14 @@ class ProgramStructuralValidator:
                     source_definition,
                 )
             else:
-                self._deferred_edges.setdefault(target_file.as_posix_path(), []).append(
+                self._deferred_edges.setdefault(target_file, []).append(
                     _DeferredReferenceEdge(ref_edge, source_definition)
                 )
 
     def _resolve_target_file(
         self,
         global_name: ast.ReferenceGlobalNameContent,
-        enclosing_root: pathlib.PurePosixPath,
+        enclosing_root: define_path.DefinePath,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> define_path.DefinePath | None:
         """Determine the full file path for a global name reference.
@@ -441,9 +453,7 @@ class ProgramStructuralValidator:
         Returns None if the target is under a failed or nonexistent root.
         """
         if global_name.fqun is None:
-            return global_name.path.file_path(
-                define_path.DefinePathFromPosix(enclosing_root)
-            )
+            return global_name.path.file_path(enclosing_root)
 
         fqun_string = global_name.fqun.canonical
         if not self._path_tracker.has_sub_root(fqun_string, enclosing_root):
@@ -460,10 +470,8 @@ class ProgramStructuralValidator:
             return None
         sub_root_loc = self._path_tracker.sub_root_location(fqun_string, enclosing_root)
         sub_root_path = enclosing_root / sub_root_loc
-        target_file = global_name.path.file_path(
-            define_path.DefinePathFromPosix(sub_root_path)
-        )
-        if self._path_tracker.is_under_failed_root(target_file.as_posix_path()):
+        target_file = global_name.path.file_path(sub_root_path)
+        if self._path_tracker.is_under_failed_root(target_file):
             return None
         return target_file
 
@@ -471,7 +479,7 @@ class ProgramStructuralValidator:
         self,
         edge: reference_graph.ReferenceEdge,
         target_file: define_path.DefinePath,
-        enclosing_root: pathlib.PurePosixPath,
+        enclosing_root: define_path.DefinePath,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> bool:
         """Check if a same-universe reference lands inside another universe's sub-root.
@@ -488,9 +496,7 @@ class ProgramStructuralValidator:
         if not self._path_tracker.project_root_loaded(enclosing_root):
             return False
 
-        actual_root = self._path_tracker.find_enclosing_root(
-            target_file.as_posix_path()
-        )
+        actual_root = self._path_tracker.find_enclosing_root(target_file)
         if actual_root == enclosing_root:
             return False
 
@@ -521,7 +527,7 @@ class ProgramStructuralValidator:
                     file_path=str(target_file),
                 )
             )
-            self._path_tracker.mark_not_found(target_file.as_posix_path())
+            self._path_tracker.mark_not_found(target_file)
             return
 
         if edge.global_name_reference not in self._definition_results:
@@ -533,7 +539,9 @@ class ProgramStructuralValidator:
                 )
             )
 
-    def _validate_incoming_reference_edges(self, completed_file: pathlib.PurePosixPath):
+    def _validate_incoming_reference_edges(
+        self, completed_file: define_path.DefinePath
+    ):
         """Validate deferred reference edges waiting on a completed file."""
         # Reference edges have to wake up by file, not by definition name.
         #
@@ -553,11 +561,10 @@ class ProgramStructuralValidator:
         # satisfy or fail the deferred edge.
         deferred = self._deferred_edges.pop(completed_file, [])
         target_result = self._path_tracker.get_result(completed_file)
-        target_file = define_path.DefinePathFromPosix(completed_file)
         for deferred_edge in deferred:
             self._validate_reference_against_target(
                 deferred_edge.edge,
-                target_file,
+                completed_file,
                 target_result,
                 deferred_edge.source_definition,
             )
@@ -598,7 +605,7 @@ class ProgramStructuralValidator:
     # TODO: This should probably return a Config object.
     def _load_root_config(
         self,
-        root_prefix: pathlib.PurePosixPath,
+        root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
     ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]]:
         """Load project config for a root and register it.
@@ -613,7 +620,7 @@ class ProgramStructuralValidator:
 
     def _do_load_root_config(
         self,
-        root_prefix: pathlib.PurePosixPath,
+        root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
     ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]]:
         """Load project config for a root and register it without timing side effects."""
@@ -627,9 +634,12 @@ class ProgramStructuralValidator:
                     actual_fqun=existing,
                     sub_root_path=str(root_prefix),
                 )
-            return existing, self._path_tracker.sub_roots_for(root_prefix)
+            return existing, {
+                k: v.as_posix_path()
+                for k, v in self._path_tracker.sub_roots_for(root_prefix).items()
+            }
 
-        loader = config.ConfigLoader(root_prefix)
+        loader = config.ConfigLoader(root_prefix.as_posix_path())
         loader.assert_is_project_root()
         project_config = loader.project_config()
         fqun = project_config.project.universe_name or ""
@@ -643,15 +653,18 @@ class ProgramStructuralValidator:
         if existing_root is not None and existing_root != root_prefix:
             raise exceptions.DuplicateFqunError(
                 fqun=fqun,
-                existing_root=existing_root,
-                new_root=root_prefix,
+                existing_root=existing_root.as_posix_path(),
+                new_root=root_prefix.as_posix_path(),
                 config_subpath=config.CONFIG_PATH,
             )
         universe_locations = loader.local_deps_config()
         self._path_tracker.register_project_root(
             root_prefix,
             fqun,
-            universe_locations,
+            {
+                k: define_path.DefinePathFromPosix(v)
+                for k, v in universe_locations.items()
+            },
         )
         return fqun, universe_locations
 
