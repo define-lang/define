@@ -404,13 +404,13 @@ class TestPositionConstraintTypedNames:
 
     def test_no_constraints(self):
         position = _parse_position(f"define the potential position<{_FQUN}:/a>.\n")
-        assert position.constraint_typed_names == []
+        assert position.constraint_typed_names == ()
 
 
 class TestChainedNameConstruction:
     def test_empty_typed_names_rejected(self):
         with pytest.raises(ValueError, match="at least one typed name"):
-            _ = ast.ChainedName(location=_LOC, typed_names=[])
+            _ = ast.ChainedName(location=_LOC, typed_names=())
 
 
 class TestChainedNameCanonical:

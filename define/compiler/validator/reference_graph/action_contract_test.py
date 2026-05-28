@@ -440,7 +440,7 @@ def _make_chain(
 ) -> ast.ChainedName:
     return ast.ChainedName(
         location=location_from.location,
-        typed_names=list(typed_names),
+        typed_names=typed_names,
     )
 
 

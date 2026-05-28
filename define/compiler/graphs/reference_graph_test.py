@@ -41,15 +41,15 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
             fqun=_FQUN,
             location=_LOC,
         ),
-        quality_implications=[],
-        interface_positions=[],
+        quality_implications=(),
+        interface_positions=(),
         trigger_conditions=ast.TriggerConditionsBlock(
-            conditions=[
-                ast.PositionPresenceStatement(typed_name=_TRIGGER_REF, location=_LOC)
-            ],
+            conditions=(
+                ast.PositionPresenceStatement(typed_name=_TRIGGER_REF, location=_LOC),
+            ),
             location=_LOC,
         ),
-        action_statements=ast.ActionStatementsBlock(statements=[], location=_LOC),
+        action_statements=ast.ActionStatementsBlock(statements=(), location=_LOC),
         location=_LOC,
     )
 

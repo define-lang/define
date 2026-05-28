@@ -466,7 +466,7 @@ def test_action_statements_block_fields():
 
 def test_action_statements_block_empty_fields():
     block = _only_action(_DESTRUCTOR_ACTION).action_statements
-    assert block.statements == []
+    assert block.statements == ()
     assert block.location == ast.SourceLocation(
         line=4, column=6, end_line=6, end_column=1
     )
@@ -512,7 +512,7 @@ def test_local_position_definition_with_constraints_fields():
 def test_position_definition_bare_fields():
     definition = _only_position(_SIMPLE_POSITION)
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
-    assert definition.quality_implications == []
+    assert definition.quality_implications == ()
     assert definition.constraints is None
     assert definition.initialization is None
     assert definition.location == ast.SourceLocation(
@@ -538,8 +538,8 @@ def test_action_definition_minimal_fields():
     definition = _only_action(_DESTRUCTOR_ACTION)
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
     assert definition.typed_name.name_type == ast.NameType.ACTION
-    assert definition.quality_implications == []
-    assert definition.interface_positions == []
+    assert definition.quality_implications == ()
+    assert definition.interface_positions == ()
     assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
     assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
     assert definition.location == ast.SourceLocation(

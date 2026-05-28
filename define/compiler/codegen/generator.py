@@ -13,7 +13,7 @@ class CodeGenerator:
     def generate(
         self,
         graph: reference_graph.ReferenceGraph,
-        entry_file_definitions: list[ast.QualityDefinition],
+        entry_file_definitions: tuple[ast.QualityDefinition, ...],
         output_dir: Path,
     ) -> list[diagnostics.Diagnostic]:
         """Generate code for a validated Define program.

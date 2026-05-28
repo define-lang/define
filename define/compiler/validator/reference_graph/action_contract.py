@@ -163,7 +163,7 @@ class OccupiedByExistingGuarantee(PositionGuarantee):
 class OccupiedByNewGuarantee(PositionGuarantee):
     """The position contains a new particle created by the action."""
 
-    qualities: list[ast.GlobalTypedNameReference]
+    qualities: tuple[ast.GlobalTypedNameReference, ...]
 
 
 @dataclass(frozen=True)

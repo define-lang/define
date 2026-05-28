@@ -25,7 +25,7 @@ class Operation:
 class Create(Operation):
     """Create a new particle in a position, with the given qualities."""
 
-    qualities: list[ast.GlobalTypedNameReference]
+    qualities: tuple[ast.GlobalTypedNameReference, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +45,7 @@ class Move(Operation):
     """Move the particle in source to target."""
 
     source: ast.PositionReference
-    target_required_qualities: list[ast.GlobalTypedNameReference]
+    target_required_qualities: tuple[ast.GlobalTypedNameReference, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +53,7 @@ class Destroy(Operation):
     """Destroy the particle in a position."""
 
 
-def _name_set(typed_names: list[ast.GlobalTypedNameReference]) -> frozenset[str]:
+def _name_set(typed_names: tuple[ast.GlobalTypedNameReference, ...]) -> frozenset[str]:
     return frozenset(name.full_typed_name for name in typed_names)
 
 

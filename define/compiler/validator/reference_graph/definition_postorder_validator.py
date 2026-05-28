@@ -52,7 +52,9 @@ class DefinitionPostorderValidator(abc.ABC):
     _position_contracts: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_contract.PositionInitBlockContract
     ]
-    _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
+    _definition_quality_cache: dict[
+        tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
+    ]
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
@@ -70,7 +72,7 @@ class DefinitionPostorderValidator(abc.ABC):
             ast.GlobalTypedName, action_contract.PositionInitBlockContract
         ],
         definition_quality_cache: dict[
-            tuple[str, ...], list[ast.GlobalTypedNameReference]
+            tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
         ],
     ):
         """Initialize with the definition to validate and the full results map."""
@@ -100,10 +102,10 @@ class DefinitionPostorderValidator(abc.ABC):
         return particle_operation.ParticleOperationExecutor(self._tracker)
 
     @cached_property
-    def _implied_quality_list(self) -> list[ast.GlobalTypedNameReference]:
-        return [
+    def _implied_quality_list(self) -> tuple[ast.GlobalTypedNameReference, ...]:
+        return tuple(
             impl.typed_global_name for impl in self._definition.quality_implications
-        ]
+        )
 
     @abc.abstractmethod
     def analyze(self) -> PostorderValidationResult:
@@ -332,7 +334,7 @@ class DefinitionPostorderValidator(abc.ABC):
     def _run_position_init_blocks(
         self,
         position: ast.PositionReference,
-        qualities: list[ast.GlobalTypedNameReference],
+        qualities: tuple[ast.GlobalTypedNameReference, ...],
         scope: scope_tracker.ScopeTracker,
     ):
         """Run the caller-side effects of every implied position's init block."""
@@ -373,7 +375,7 @@ class DefinitionPostorderValidator(abc.ABC):
             if quality.name_type == ast.NameType.POSITION:
                 child = ast.PositionReference(
                     location=position.location,
-                    typed_names=[*position.typed_names, quality],
+                    typed_names=(*position.typed_names, quality),
                 )
                 destructors.extend(self._collect_cascade_destructors(child))
             elif quality.name_type == ast.NameType.ACTION:
@@ -394,11 +396,11 @@ class DefinitionPostorderValidator(abc.ABC):
                 for interface_position in reversed(definition.interface_positions):
                     child = ast.PositionReference(
                         location=position.location,
-                        typed_names=[
+                        typed_names=(
                             *position.typed_names,
                             quality,
                             interface_position.typed_name,
-                        ],
+                        ),
                     )
                     destructors.extend(self._collect_cascade_destructors(child))
         return destructors
@@ -421,7 +423,7 @@ class DefinitionPostorderValidator(abc.ABC):
             contract = self._action_contracts[destructor.quality]
             action_chain = ast.ChainedName(
                 location=destructor.position.location,
-                typed_names=[*destructor.position.typed_names, destructor.quality],
+                typed_names=(*destructor.position.typed_names, destructor.quality),
             )
             self._propagate_destructor_requirements(contract, action_chain, scope)
             self._check_requirements(
@@ -811,7 +813,7 @@ class DefinitionPostorderValidator(abc.ABC):
             if not isinstance(definition, ast.LocalPositionDefinition):
                 continue
             position = ast.PositionReference(
-                typed_names=[definition.typed_name],
+                typed_names=(definition.typed_name,),
                 location=definition.location,
             )
             # Spec: "If the compiler is uncertain about whether a position still
@@ -930,7 +932,7 @@ class DefinitionPostorderValidator(abc.ABC):
             particle_operation.Move(
                 source=from_pos,
                 target=to_pos,
-                target_required_qualities=target_required_qualities or [],
+                target_required_qualities=target_required_qualities or (),
             )
         )
         if move_diagnostics:
@@ -1020,7 +1022,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         chain: ast.PositionReference,
         child: ast.TypedNameReference,
-        elements: list[ast.TypedNameReference],
+        elements: tuple[ast.TypedNameReference, ...],
         child_index: int,
         action_def: ast.ActionDefinition,
         parent_name: str,
@@ -1054,7 +1056,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         chain: ast.PositionReference,
         element: ast.TypedNameReference,
-        constraints: list[ast.GlobalTypedNameReference],
+        constraints: tuple[ast.GlobalTypedNameReference, ...],
         parent_name: str,
     ):
         """Check if a chain element is declared in the parent's constraints (or transitively implied by one)."""
@@ -1096,7 +1098,7 @@ class DefinitionPostorderValidator(abc.ABC):
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ) -> tuple[
-        list[ast.GlobalTypedNameReference] | None,
+        tuple[ast.GlobalTypedNameReference, ...] | None,
         tuple[str, ...] | None,
     ]:
         """Resolve the constraint qualities required at a position, in source order.
@@ -1149,10 +1151,10 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> list[ast.GlobalTypedNameReference]:
+    ) -> tuple[ast.GlobalTypedNameReference, ...]:
         direct, cache_key = self._get_direct_required_qualities(position, scope)
         if direct is None:
-            return []
+            return ()
         if cache_key is None:
             return self._expand_with_implications_in_order(direct)
         cached = self._definition_quality_cache.get(cache_key)
@@ -1163,8 +1165,8 @@ class DefinitionPostorderValidator(abc.ABC):
         return result
 
     def _expand_with_implications_in_order(
-        self, direct: list[ast.GlobalTypedNameReference]
-    ) -> list[ast.GlobalTypedNameReference]:
+        self, direct: tuple[ast.GlobalTypedNameReference, ...]
+    ) -> tuple[ast.GlobalTypedNameReference, ...]:
         """Expand quality implications depth-first, implications before the implying quality.
 
         Order follows the spec: when a quality A implies B, B is assigned
@@ -1186,7 +1188,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         for typed_name in direct:
             visit(typed_name)
-        return result
+        return tuple(result)
 
 
 class ActionPostorderValidator(DefinitionPostorderValidator):
@@ -1425,7 +1427,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         return action_contract.PositionInitBlockContract(
             requirements=self._inferred_requirements,
             guarantees=self._tracker.generate_guarantees(
-                [definition.typed_name],
+                (definition.typed_name,),
                 self._implied_quality_list,
                 self._inferred_requirements,
             ),
@@ -1443,7 +1445,9 @@ def create_postorder_validator(
     position_contracts: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_contract.PositionInitBlockContract
     ],
-    definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],
+    definition_quality_cache: dict[
+        tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
+    ],
 ) -> DefinitionPostorderValidator:
     """Create the appropriate postorder validator for the given definition."""
     if isinstance(definition_result.definition, ast.ActionDefinition):

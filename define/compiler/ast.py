@@ -107,7 +107,7 @@ class ASTNode:
 class Program(ASTNode):
     """Represents the entire program."""
 
-    definitions: list[QualityDefinition]
+    definitions: tuple[QualityDefinition, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,7 +115,7 @@ class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
     typed_name: GlobalTypedNameInDefinition
-    quality_implications: list[QualityImplicationStatement]
+    quality_implications: tuple[QualityImplicationStatement, ...]
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -130,7 +130,7 @@ class PositionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        quality_implications: list[QualityImplicationStatement] | None = None,
+        quality_implications: tuple[QualityImplicationStatement, ...] | None = None,
         constraints: PositionConstraintBlock | None = None,
         initialization: PositionInitBlock | None = None,
     ):
@@ -141,18 +141,18 @@ class PositionDefinition(QualityDefinition):
                 name_content=name,
                 location=SourceLocation.from_definition_name(name, NameType.POSITION),
             ),
-            quality_implications=quality_implications or [],
+            quality_implications=quality_implications or (),
             location=location,
         )
         object.__setattr__(self, "constraints", constraints)
         object.__setattr__(self, "initialization", initialization)
 
     @property
-    def constraint_typed_names(self) -> list[GlobalTypedNameReference]:
+    def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
         """Return the typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
-            return []
-        return [req.typed_global_name for req in self.constraints.requirements]
+            return ()
+        return tuple(req.typed_global_name for req in self.constraints.requirements)
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,11 +218,11 @@ class LocalPositionDefinition(ASTNode):
         object.__setattr__(self, "constraints", constraints)
 
     @property
-    def constraint_typed_names(self) -> list[GlobalTypedNameReference]:
+    def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
         """Return the typed names of this position's constraint requirements, in source order."""
         if self.constraints is None:
-            return []
-        return [req.typed_global_name for req in self.constraints.requirements]
+            return ()
+        return tuple(req.typed_global_name for req in self.constraints.requirements)
 
 
 type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
@@ -308,7 +308,7 @@ def chain_starts_with_global(key: tuple[str, ...]) -> bool:
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
-    typed_names: list[TypedNameReference]
+    typed_names: tuple[TypedNameReference, ...]
     _canonical_chained_name_tuple: tuple[str, ...] = field(
         init=False, repr=False, compare=False
     )
@@ -421,7 +421,7 @@ class ChainedName(ASTNode):
         """
         return type(self)(
             location=self.location,
-            typed_names=[*prefix.typed_names, *self.typed_names],
+            typed_names=(*prefix.typed_names, *self.typed_names),
         )
 
     def in_caller(self, caller_chain: ChainedName) -> Self:
@@ -445,10 +445,10 @@ class ChainedName(ASTNode):
             )
         return type(self)(
             location=self.location,
-            typed_names=[
+            typed_names=(
                 *new_prefix.typed_names,
                 *self.typed_names[len(parent.typed_names) :],
-            ],
+            ),
         )
 
 
@@ -459,7 +459,7 @@ class PositionReference(ChainedName):
     def __init__(
         self,
         *,
-        typed_names: list[TypedNameReference],
+        typed_names: tuple[TypedNameReference, ...],
         location: SourceLocation,
         from_source: bool = False,
     ):
@@ -521,7 +521,7 @@ class QualityImplicationStatement(ASTNode):
 class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
-    requirements: list[PositionRequirementStatement]
+    requirements: tuple[PositionRequirementStatement, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -561,7 +561,7 @@ class PositionPresenceStatement(ASTNode):
             self,
             "position_reference",
             PositionReference(
-                typed_names=[self.typed_name],
+                typed_names=(self.typed_name,),
                 location=self.typed_name.location,
                 from_source=True,
             ),
@@ -582,14 +582,14 @@ type TriggerConditionStatement = (
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
-    conditions: list[TriggerConditionStatement]
+    conditions: tuple[TriggerConditionStatement, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
 
-    statements: list[ActionStatement]
+    statements: tuple[ActionStatement, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -601,7 +601,7 @@ class PositionInitBlock(ActionStatementsBlock):
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
-    interface_positions: list[LocalPositionDefinition]
+    interface_positions: tuple[LocalPositionDefinition, ...]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
 
@@ -615,8 +615,8 @@ class ActionDefinition(QualityDefinition):
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        quality_implications: list[QualityImplicationStatement],
-        interface_positions: list[LocalPositionDefinition],
+        quality_implications: tuple[QualityImplicationStatement, ...],
+        interface_positions: tuple[LocalPositionDefinition, ...],
         trigger_conditions: TriggerConditionsBlock,
         action_statements: ActionStatementsBlock,
     ):
@@ -651,9 +651,9 @@ class ActionDefinition(QualityDefinition):
         object.__setattr__(self, "trigger_position", self._compute_trigger_position())
 
     @property
-    def interface_position_names(self) -> list[TypedName]:
+    def interface_position_names(self) -> tuple[TypedName, ...]:
         """Return the TypedName objects for all interface positions."""
-        return [pos.typed_name for pos in self.interface_positions]
+        return tuple(pos.typed_name for pos in self.interface_positions)
 
     def _compute_interface_positions_by_name(
         self,

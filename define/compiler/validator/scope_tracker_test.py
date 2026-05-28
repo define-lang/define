@@ -171,7 +171,7 @@ def test_global_position_defined_on_line():
 def _make_position_ref(
     elements: list[ast.TypedNameReference],
 ) -> ast.PositionReference:
-    return ast.PositionReference(typed_names=elements, location=_LOC)
+    return ast.PositionReference(typed_names=tuple(elements), location=_LOC)
 
 
 def test_is_defined_local_single_local_in_scope():

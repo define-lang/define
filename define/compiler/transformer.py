@@ -10,8 +10,8 @@ from define.compiler.lark import lark_standalone
 
 @dataclass(frozen=True, slots=True)
 class _ActionDefinitionBlockData:
-    quality_implications: list[ast.QualityImplicationStatement]
-    interface_positions: list[ast.LocalPositionDefinition]
+    quality_implications: tuple[ast.QualityImplicationStatement, ...]
+    interface_positions: tuple[ast.LocalPositionDefinition, ...]
     trigger_conditions: ast.TriggerConditionsBlock
     action_statements: ast.ActionStatementsBlock
 
@@ -39,7 +39,7 @@ class DefineTransformer:
             )
             definitions.append(sub_transformer.transform(child))
         return ast.Program(
-            definitions=definitions,
+            definitions=tuple(definitions),
             location=ast.SourceLocation.from_meta(tree.meta, file_path=self._file_path),
         )
 
@@ -108,7 +108,7 @@ class DefinitionTransformer(
                     initialization = item
         return ast.PositionDefinition(
             name=name,
-            quality_implications=quality_implications,
+            quality_implications=tuple(quality_implications),
             constraints=constraints,
             initialization=initialization,
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
@@ -276,7 +276,7 @@ class DefinitionTransformer(
     ) -> ast.PositionInitBlock:
         """Transform a position init block."""
         return ast.PositionInitBlock(
-            statements=items,
+            statements=tuple(items),
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
@@ -286,7 +286,7 @@ class DefinitionTransformer(
     ) -> ast.PositionConstraintBlock:
         """Transform a position constraint block."""
         return ast.PositionConstraintBlock(
-            requirements=items,
+            requirements=tuple(items),
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
@@ -355,7 +355,7 @@ class DefinitionTransformer(
     ) -> ast.PositionReference:
         """Transform a position reference (possibly chained with ::)."""
         return ast.PositionReference(
-            typed_names=items,
+            typed_names=tuple(items),
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
             from_source=True,
         )
@@ -422,7 +422,7 @@ class DefinitionTransformer(
     ) -> ast.TriggerConditionsBlock:
         """Transform a trigger conditions block."""
         return ast.TriggerConditionsBlock(
-            conditions=items,
+            conditions=tuple(items),
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
@@ -432,7 +432,7 @@ class DefinitionTransformer(
     ) -> ast.ActionStatementsBlock:
         """Transform an action statements block."""
         return ast.ActionStatementsBlock(
-            statements=items,
+            statements=tuple(items),
             location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
         )
 
@@ -456,8 +456,8 @@ class DefinitionTransformer(
             else:
                 interface_positions.append(cast("ast.LocalPositionDefinition", item))
         return _ActionDefinitionBlockData(
-            quality_implications=quality_implications,
-            interface_positions=interface_positions,
+            quality_implications=tuple(quality_implications),
+            interface_positions=tuple(interface_positions),
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,
         )

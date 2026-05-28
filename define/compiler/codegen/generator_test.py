@@ -14,7 +14,7 @@ def _generate(
     tmp_path: Path,
 ) -> list[diagnostics.Diagnostic]:
     first_file = program_result.file_results[0]
-    entry_file_definitions = [r.definition for r in first_file.definition_results]
+    entry_file_definitions = tuple(r.definition for r in first_file.definition_results)
     return generator.CodeGenerator().generate(
         program_result.reference_graph, entry_file_definitions, tmp_path
     )

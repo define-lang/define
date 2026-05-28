@@ -38,7 +38,9 @@ class ReferenceGraphValidator:
     _position_contracts: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, action_contract.PositionInitBlockContract
     ]
-    _definition_quality_cache: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]]
+    _definition_quality_cache: dict[
+        tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
+    ]
 
     def __init__(
         self,

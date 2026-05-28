@@ -266,7 +266,7 @@ class TestDefinitionStructuralValidator:
             isinstance(result, validation_result.DefinitionValidationResult)
             for result in results
         )
-        assert [result.definition for result in results] == list(program.definitions)
+        assert tuple(result.definition for result in results) == program.definitions
         assert results[0].diagnostics == []
         assert [type(d) for d in results[1].diagnostics] == [
             diagnostics.DuplicateDefinitionDiagnostic,

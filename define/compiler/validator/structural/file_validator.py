@@ -570,6 +570,7 @@ class DefinitionStructuralValidator:
         Returns whether the caller may continue processing this reference.
         """
         first = chain.typed_names[0]
+        last_typed_name = chain.typed_names[-1]
         may_continue = True
 
         is_self_reference = (
@@ -636,10 +637,10 @@ class DefinitionStructuralValidator:
                 may_continue = False
             previous_element = typed_name
 
-        if chain.typed_names[-1].name_type != ast.NameType.POSITION:
+        if last_typed_name.name_type != ast.NameType.POSITION:
             self._diagnostics.append(
                 diagnostics.PositionReferenceChainEndDiagnostic(
-                    location=chain.typed_names[-1].location,
+                    location=last_typed_name.location,
                 )
             )
             may_continue = False
@@ -707,7 +708,7 @@ class DefinitionStructuralValidator:
 
     def _validate_quality_implications(
         self,
-        implications: list[ast.QualityImplicationStatement],
+        implications: tuple[ast.QualityImplicationStatement, ...],
     ):
         seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
             typed_name_dict.TypedNameDict()

@@ -19,7 +19,7 @@ class ParticleInfo:
     last_position: ast.PositionReference
     # The qualities we know that this particle has, in
     # assignment order.
-    qualities: list[ast.GlobalTypedNameReference]
+    qualities: tuple[ast.GlobalTypedNameReference, ...]
     # The position reference where this particle was first created.
     origin_position: ast.PositionReference
     # Whether this particle was passed in by the caller (trigger/inferred) vs created in the body.
@@ -141,7 +141,7 @@ class ParticleTracker:
     def create(
         self,
         in_position: ast.PositionReference,
-        qualities: list[ast.GlobalTypedNameReference],
+        qualities: tuple[ast.GlobalTypedNameReference, ...],
         *,
         from_caller: ast.PositionReference | None = None,
     ):
@@ -165,7 +165,7 @@ class ParticleTracker:
         self,
         key: tuple[str, ...],
         position: ast.PositionReference,
-        qualities: list[ast.GlobalTypedNameReference],
+        qualities: tuple[ast.GlobalTypedNameReference, ...],
         *,
         from_caller: ast.PositionReference | None = None,
     ):
@@ -256,8 +256,8 @@ class ParticleTracker:
 
     def generate_guarantees(
         self,
-        interface_names: list[ast.TypedName],
-        implied_quality_names: list[ast.GlobalTypedNameReference],
+        interface_names: tuple[ast.TypedName, ...],
+        implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> list[action_contract.GuaranteePair]:
         """Generate guarantees for keys whose first element matches an interface or implied quality.

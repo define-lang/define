@@ -84,7 +84,9 @@ class Driver:
             return driver_result
         program_result = driver_result.result
         first_file = program_result.file_results[0]
-        entry_file_definitions = [r.definition for r in first_file.definition_results]
+        entry_file_definitions = tuple(
+            r.definition for r in first_file.definition_results
+        )
         codegen = generator.CodeGenerator()
         gen_diagnostics = codegen.generate(
             program_result.reference_graph,

@@ -332,7 +332,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees[0][0] == ("position<item>",)
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -358,7 +358,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees[0][0] == ("position<dest>",)
         guarantee_dest = contract.guarantees[0][1]
         assert isinstance(guarantee_dest, action_contract.OccupiedByNewGuarantee)
-        assert guarantee_dest.qualities == []
+        assert guarantee_dest.qualities == ()
         assert guarantee_dest.caused_by.location.line == 9
         assert guarantee_dest.caused_by.location.column == 48
         assert guarantee_dest.caused_by.source_chained_name == "position<dest>"
@@ -382,7 +382,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees[0][0] == ("position<item>",)
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -472,7 +472,7 @@ class TestGuaranteeGeneration:
         assert contract.guarantees[0][0] == ("position<item>",)
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
 
@@ -641,7 +641,7 @@ class TestChainedGuaranteeGeneration:
         assert contract.guarantees[0][0] == chain_key
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>::position</x>"
@@ -772,7 +772,7 @@ class TestChainedGuaranteeGeneration:
         assert contract.guarantees[0][0] == chain_key
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 12
         assert guarantee.caused_by.location.column == 30
 
@@ -797,7 +797,7 @@ class TestNoOpGuaranteeSuppression:
         key, guarantee = contract.guarantees[0]
         assert key == ("position<item>",)
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 7
         assert guarantee.caused_by.location.column == 30
         assert guarantee.caused_by.source_chained_name == "position<item>"
@@ -926,7 +926,7 @@ class TestPositionInitBlockContract:
         assert contract.guarantees[0][0] == ("position<my.domain.com:my_lib:/test>",)
         guarantee = contract.guarantees[0][1]
         assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
-        assert guarantee.qualities == []
+        assert guarantee.qualities == ()
         assert guarantee.caused_by.location.line == 3
         assert guarantee.caused_by.location.column == 30
 
@@ -974,7 +974,7 @@ class TestPositionInitBlockContract:
         )
         dep_guarantee = contract.guarantees[1][1]
         assert isinstance(dep_guarantee, action_contract.OccupiedByNewGuarantee)
-        assert dep_guarantee.qualities == []
+        assert dep_guarantee.qualities == ()
         assert dep_guarantee.caused_by.location.line == 8
 
     def test_implied_position_create_target_infers_empty(self):
