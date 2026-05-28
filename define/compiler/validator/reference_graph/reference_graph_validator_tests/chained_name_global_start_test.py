@@ -39,7 +39,7 @@ class TestUnnecessarySelfReference:
             " because the code is already inside that definition"
         )
 
-    def test_self_reference_still_validates_remaining_chain(
+    def test_self_reference_stops_further_chain_validation(
         self,
         validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
     ):
@@ -55,22 +55,13 @@ class TestUnnecessarySelfReference:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 3
+        assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
-        assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
-        assert diags[1].local_name == "position<Bad>"
-        assert diags[1].location.line == 6
-        assert diags[1].location.column == 54
-        assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
-        assert diags[2].local_name == "Bad"
-        assert diags[2].char == "B"
-        assert diags[2].location.line == 6
-        assert diags[2].location.column == 54
 
-    def test_self_reference_removal_affects_downstream_validation(
+    def test_self_reference_suppresses_downstream_diagnostics(
         self,
         validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
     ):
@@ -88,17 +79,11 @@ class TestUnnecessarySelfReference:
         )
         results = validate_non_filesystem_with_reference_graph(source).file_results
         diags = results[0].diagnostics
-        assert len(diags) == 2
+        assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
         assert diags[0].location.column == 30
-        assert isinstance(diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
-        assert diags[1].position_name == "position<inner>"
-        assert diags[1].location.line == 8
-        assert diags[1].location.column == 30
-        assert diags[1].populated_at.line == 7
-        assert diags[1].populated_at.column == 30
 
     def test_single_element_self_reference_not_stripped(
         self,

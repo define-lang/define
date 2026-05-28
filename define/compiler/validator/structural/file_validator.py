@@ -583,13 +583,7 @@ class DefinitionStructuralValidator:
                     definition_name=self._definition.typed_name.source_typed_name,
                 )
             )
-            # NOTE: Mutates the AST so downstream validation sees the corrected chain.
-            # Otherwise things like duplicate detection would not correctly trigger.
-            del chain.typed_names[0]
-            # TODO: Delete refresh_canonical_cache, and instead just stop allowing mutations
-            # for typed_names.
-            chain.refresh_canonical_cache()
-            first = chain.typed_names[0]
+            return False
 
         if not scope.is_defined(first) and isinstance(
             first, ast.LocalTypedNameReference

@@ -318,16 +318,6 @@ class ChainedName(ASTNode):
         """Reject empty chains and pre-compute canonical forms."""
         if not self.typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
-        self.refresh_canonical_cache()
-
-    def refresh_canonical_cache(self) -> None:
-        """Recompute cached canonical strings.
-
-        ChainedName presents an immutable interface, but file_validator
-        mutates typed_names in place when stripping a self-reference
-        prefix. Callers that do that must invoke this to keep the cached
-        canonical strings consistent with the live list.
-        """
         canonical_tuple = tuple(elem.full_typed_name for elem in self.typed_names)
         object.__setattr__(self, "_canonical_chained_name_tuple", canonical_tuple)
         object.__setattr__(self, "_canonical_chained_name", "::".join(canonical_tuple))
