@@ -6,6 +6,7 @@ from pathlib import Path, PureWindowsPath
 import pytest
 
 from define.compiler import (
+    diagnostics,
     driver,
     exceptions,
     parser,
@@ -179,3 +180,60 @@ class TestPathResolution:
             d.validate_program(Path("../hello.dfn"))
         assert exc_info.value.input_path == Path("../hello.dfn")
         assert exc_info.value.project_root == tmp_path.resolve()
+
+
+class TestSourceValidation:
+    def test_clean_source_validates_with_no_errors(self):
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+        driver_result = driver.Driver(_PARSER).validate_source(source)
+        assert len(driver_result.result.file_results) == 1
+        assert_no_errors(driver_result.result)
+        assert driver_result.result.file_results[0].source == source
+
+    def test_duplicate_definition_reports_diagnostic(self):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+        )
+        driver_result = driver.Driver(_PARSER).validate_source(source)
+        assert driver_result.result.all_exceptions == []
+        all_diagnostics = driver_result.result.all_diagnostics
+        assert len(all_diagnostics) == 1
+        diagnostic = all_diagnostics[0]
+        assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+        assert diagnostic.definition_type == "position"
+        assert diagnostic.path == "/test"
+        assert diagnostic.first_definition_line == 1
+        assert diagnostic.location.line == 2
+        assert diagnostic.location.column == 1
+
+
+class TestSourceCompilation:
+    def test_position_entry_point_writes_output(self, tmp_path: Path):
+        source = "define the potential position<my.domain.com:my_lib:/test>.\n"
+        driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
+        assert_no_errors(driver_result.result)
+        main_file = tmp_path / "__main__.py"
+        assert main_file.exists()
+        assert main_file.stat().st_size > 0
+
+    def test_action_entry_point_reports_diagnostic(self, tmp_path: Path):
+        source = (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    define the position<pp>.\n"
+            "    it happens when {\n"
+            "        the position<pp> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<noop>.\n"
+            "        create a particle in position<noop>.\n"
+            "    }\n"
+            "}\n"
+        )
+        driver_result = driver.Driver(_PARSER).compile_source(source, tmp_path)
+        assert driver_result.result.all_exceptions == []
+        all_diagnostics = driver_result.result.all_diagnostics
+        assert len(all_diagnostics) == 1
+        diagnostic = all_diagnostics[0]
+        assert isinstance(diagnostic, diagnostics.EntryPointNotPositionDiagnostic)
+        assert diagnostic.location.line == 1
+        assert diagnostic.location.column == 1

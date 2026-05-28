@@ -1,6 +1,9 @@
 """Entry point for the Define compiler."""
 
 import functools
+import io
+import os
+import stat
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -13,8 +16,32 @@ type _CommandFunction = Callable[..., None]
 type _ClickWrappedFunction = Callable[..., None]
 
 
+def _stdin_is_piped() -> bool:
+    """Whether stdin is a pipe or redirected file, as opposed to a tty or device."""
+    try:
+        mode = os.fstat(sys.stdin.fileno()).st_mode
+    except io.UnsupportedOperation:
+        # Stdin has no inspectable OS file descriptor, so treat it as absent.
+        return False
+    return stat.S_ISFIFO(mode) or stat.S_ISREG(mode)
+
+
+def _resolve_input_source(file: Path | None) -> str | None:
+    """Resolve piped stdin into source text, rejecting ambiguous or absent input."""
+    piped = _stdin_is_piped()
+    if file is not None and piped:
+        raise click.UsageError(
+            "provide either a FILE argument or piped stdin, not both"
+        )
+    if file is None and not piped:
+        raise click.UsageError("no input: pass a FILE or pipe source on stdin")
+    # Only read stdin when it is the source; reading is skipped when a file is
+    # given, so a file argument never blocks on an open pipe.
+    return sys.stdin.read() if piped else None
+
+
 def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
-    @click.argument("file", type=click.Path(path_type=Path))
+    @click.argument("file", type=click.Path(path_type=Path), required=False)
     @click.option(
         "--stats",
         type=click.Choice([m.value for m in overall_stats.StatsMode]),
@@ -25,7 +52,9 @@ def _common_options(f: _CommandFunction) -> _ClickWrappedFunction:
     )
     @click.pass_context
     @functools.wraps(f)
-    def wrapper(ctx: click.Context, file: Path, stats: str | None, **kwargs: object):
+    def wrapper(
+        ctx: click.Context, file: Path | None, stats: str | None, **kwargs: object
+    ):
         f(ctx, file, stats, **kwargs)
 
     return wrapper
@@ -41,11 +70,12 @@ def main(ctx: click.Context):
 
 def _run(
     ctx: click.Context,
-    file: Path,
+    file: Path | None,
     stats: str | None,
     mode: driver.DriverMode,
     output_dir: Path | None = None,
 ):
+    source = _resolve_input_source(file)
     d = driver.Driver()
     stats_mode = overall_stats.StatsMode(stats) if stats else None
     stats_stream = sys.stdout if stats_mode is not None else None
@@ -56,13 +86,14 @@ def _run(
         stats_stream=stats_stream,
         stats_mode=stats_mode or overall_stats.StatsMode.OVERALL,
         output_dir=output_dir,
+        source=source,
     )
     ctx.exit(code)
 
 
 @main.command()
 @_common_options
-def validate(ctx: click.Context, file: Path, stats: str | None):
+def validate(ctx: click.Context, file: Path | None, stats: str | None):
     """Validate a Define source file."""
     _run(ctx, file, stats, driver.DriverMode.VALIDATE)
 
@@ -76,7 +107,7 @@ def validate(ctx: click.Context, file: Path, stats: str | None):
     show_default=True,
     help="Directory to write generated files into.",
 )
-def compile_cmd(ctx: click.Context, file: Path, stats: str | None, out: Path):
+def compile_cmd(ctx: click.Context, file: Path | None, stats: str | None, out: Path):
     """Compile a Define source file."""
     _run(ctx, file, stats, driver.DriverMode.COMPILE, output_dir=out)
 

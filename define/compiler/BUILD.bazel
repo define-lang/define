@@ -235,6 +235,15 @@ py_binary(
 )
 
 py_test(
+    name = "main_integration_test",
+    size = "small",
+    srcs = ["main_integration_test.py"],
+    data = [":main"],
+    env = {"MAIN_BINARY": "$(rlocationpath :main)"},
+    deps = ["@rules_python//python/runfiles"],
+)
+
+py_test(
     name = "main_test",
     size = "small",
     srcs = ["main_test.py"],
@@ -378,6 +387,7 @@ pyright_test(
         ":indentation_validator",
         ":indentation_validator_test",
         ":main",
+        ":main_integration_test",
         ":main_test",
         ":name_parser",
         ":name_parser_test",

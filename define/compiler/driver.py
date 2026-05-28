@@ -63,7 +63,17 @@ class Driver:
         """Validate a source file and all the files it references."""
         resolved_path = self._resolve_path(path)
         pv = program_validator.ProgramStructuralValidator(self._parser_instance)
-        program_result = pv.validate_program(path=resolved_path)
+        return self._assemble_result(pv.validate_program(path=resolved_path))
+
+    def validate_source(self, source: str) -> DriverResult:
+        """Validate source text in non-filesystem mode."""
+        pv = program_validator.ProgramStructuralValidator(self._parser_instance)
+        return self._assemble_result(pv.validate_program_non_filesystem(source))
+
+    def _assemble_result(
+        self, program_result: validation_result.ProgramValidationResult
+    ) -> DriverResult:
+        """Run reference-graph validation and wrap the program result."""
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?
         _ = reference_graph_validator.ReferenceGraphValidator(
@@ -79,7 +89,15 @@ class Driver:
 
     def compile_program(self, path: Path, output_dir: Path) -> DriverResult:
         """Validate and then run code generation on a source file."""
-        driver_result = self.validate_program(path)
+        return self._generate_code(self.validate_program(path), output_dir)
+
+    def compile_source(self, source: str, output_dir: Path) -> DriverResult:
+        """Validate source text in non-filesystem mode and run code generation."""
+        return self._generate_code(self.validate_source(source), output_dir)
+
+    @staticmethod
+    def _generate_code(driver_result: DriverResult, output_dir: Path) -> DriverResult:
+        """Run code generation on an already-validated result."""
         if driver_result.result.has_errors():
             return driver_result
         program_result = driver_result.result
@@ -126,17 +144,18 @@ class Driver:
 
     def run(
         self,
-        path: Path,
+        path: Path | None = None,
         mode: DriverMode = DriverMode.VALIDATE,
         error_stream: TextIO | None = None,
         stats_stream: TextIO | None = None,
         stats_mode: overall_stats.StatsMode = overall_stats.StatsMode.OVERALL,
         output_dir: Path | None = None,
+        source: str | None = None,
     ) -> ExitCode:
-        """Validate (and optionally compile) a Define source file.
+        """Validate (and optionally compile) a Define source file or source text.
 
         Args:
-            path: Path to the .dfn file to validate.
+            path: Path to the .dfn file to validate. Required unless source is given.
             mode: Whether to only validate or also compile.
             error_stream: Where to write error messages (syntax errors, diagnostics).
                 Defaults to sys.stderr.
@@ -145,6 +164,8 @@ class Driver:
             stats_mode: Level of detail for stats output.
             output_dir: Directory to write generated files into in compile mode.
                 Required when mode is COMPILE.
+            source: Source text to validate in non-filesystem mode instead of
+                reading from path.
         """
         if error_stream is None:
             error_stream = sys.stderr
@@ -152,8 +173,17 @@ class Driver:
             if mode == DriverMode.COMPILE:
                 if output_dir is None:
                     raise ValueError("output_dir is required when mode is COMPILE")
-                driver_result = self.compile_program(path, output_dir)
+                if source is not None:
+                    driver_result = self.compile_source(source, output_dir)
+                else:
+                    if path is None:
+                        raise ValueError("path is required when source is not given")
+                    driver_result = self.compile_program(path, output_dir)
+            elif source is not None:
+                driver_result = self.validate_source(source)
             else:
+                if path is None:
+                    raise ValueError("path is required when source is not given")
                 driver_result = self.validate_program(path)
         except exceptions.DefineError as e:
             print(str(e), file=error_stream)
