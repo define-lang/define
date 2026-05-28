@@ -97,6 +97,7 @@ py_library(
     visibility = [
         "//define/compiler:__pkg__",
         "//define/compiler:__subpackages__",
+        "//tools:__pkg__",
     ],
     deps = [
         ":file_validator",

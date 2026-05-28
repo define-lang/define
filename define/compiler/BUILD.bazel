@@ -97,7 +97,10 @@ py_test(
 py_library(
     name = "diagnostics",
     srcs = ["diagnostics.py"],
-    visibility = ["//define/compiler:__subpackages__"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//tools:__pkg__",
+    ],
     deps = [
         ":ast",
         ":constants",

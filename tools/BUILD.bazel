@@ -29,9 +29,11 @@ py_test(
     deps = [
         ":generate_large_define_source",
         "//define/compiler:ast",
-        "//define/compiler:driver",
+        "//define/compiler:diagnostics",
         "//define/compiler:parser",
         "//define/compiler:transformer",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
     ],
 )

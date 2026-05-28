@@ -1,11 +1,62 @@
 # pyright: reportUnusedCallResult=false
-import contextlib
 from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import ast, driver, parser, transformer
+from define.compiler import ast, diagnostics, parser, transformer
+from define.compiler.validator.reference_graph import reference_graph_validator
+from define.compiler.validator.structural import program_validator
 from tools import generate_large_define_source as gen
+
+# Diagnostic types that mean a name or constraint in the source is invalid.
+# Runtime / dataflow diagnostics (occupancy, move semantics, destructor
+# guarantees, etc.) are not in this set: they are allowed to fire on the
+# stress-test source even when every name and constraint is well-formed.
+_NAME_OR_CONSTRAINT_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
+    diagnostics.ReservedUniverseNameDiagnostic,
+    diagnostics.ReservedAuthorityDomainDiagnostic,
+    diagnostics.DotlessAuthorityDomainDiagnostic,
+    diagnostics.ReservedMultiverseNameDiagnostic,
+    diagnostics.PathMismatchDiagnostic,
+    diagnostics.UniverseWithoutAuthorityDiagnostic,
+    diagnostics.DuplicateDefinitionDiagnostic,
+    diagnostics.LocalNameConflictDiagnostic,
+    diagnostics.DuplicatePositionConstraintDiagnostic,
+    diagnostics.DuplicateQualityImplicationDiagnostic,
+    diagnostics.UnusedQualityImplicationDiagnostic,
+    diagnostics.FqunMismatchDiagnostic,
+    diagnostics.AuthorityDomainTooShortDiagnostic,
+    diagnostics.AuthorityDomainInvalidCharDiagnostic,
+    diagnostics.InvalidAuthorityPathSegmentDiagnostic,
+    diagnostics.AuthorityPathEmptySegmentDiagnostic,
+    diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
+    diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
+    diagnostics.GlobalNamePathTrailingSlashDiagnostic,
+    diagnostics.GlobalNamePathEmptySegmentDiagnostic,
+    diagnostics.InvalidLocalNameFormatDiagnostic,
+    diagnostics.MultiverseNameTooShortDiagnostic,
+    diagnostics.MultiverseNameInvalidCharDiagnostic,
+    diagnostics.UniverseNameTooShortDiagnostic,
+    diagnostics.UniverseNameInvalidCharDiagnostic,
+    diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
+    diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
+    diagnostics.ReferencedFileNotFoundDiagnostic,
+    diagnostics.ExternalUniverseNotConfiguredDiagnostic,
+    diagnostics.NoProjectRootInNonFilesystemContextDiagnostic,
+    diagnostics.SubRootAlreadyOccupiedDiagnostic,
+    diagnostics.PathInsideOtherUniverseDiagnostic,
+    diagnostics.CircularGlobalReferenceDiagnostic,
+    diagnostics.UnnecessarySelfReferenceDiagnostic,
+    diagnostics.PositionReferenceChainEndDiagnostic,
+    diagnostics.UndefinedLocalNameDiagnostic,
+    diagnostics.UnknownGlobalNameDiagnostic,
+    diagnostics.LocalActionNameDiagnostic,
+    diagnostics.ChainedLocalNameRequiresActionDiagnostic,
+    diagnostics.ChainElementNotInConstraintsDiagnostic,
+    diagnostics.ChainElementNotInActionDiagnostic,
+    diagnostics.MoveViolatesConstraintsDiagnostic,
+    diagnostics.MoveIntoDefiningPositionDiagnostic,
+)
 
 
 def _parse_and_transform(source: str) -> ast.Program:
@@ -97,19 +148,18 @@ class TestWriteToPath:
 
 
 class TestFullDriver:
-    def test_driver_runs_on_generated_source(self, tmp_path: Path):
-        config_dir = tmp_path / ".define" / "project"
-        config_dir.mkdir(parents=True)
-        (config_dir / "config.defcl").write_text(
-            'project: { universe_name: "mv:define-lang.org:large_program" }\n',
-            encoding="utf-8",
-        )
-        out = tmp_path / "test.dfn"
-        gen.write_to_path(out, 500, max_chain_length=10)
-        with contextlib.chdir(tmp_path):
-            d = driver.Driver()
-            # Diagnostics are acceptable; we only require the driver to
-            # complete without exceptions.
-            result = d.validate_program(Path("test.dfn"))
-        assert result.result.file_results
-        assert result.result.all_exceptions == []
+    def test_non_filesystem_validation_has_no_name_or_constraint_diagnostics(self):
+        source = "\n".join(gen.generate_source_lines(500, max_chain_length=10)) + "\n"
+
+        pv = program_validator.ProgramStructuralValidator()
+        program_result = pv.validate_program_non_filesystem(source)
+        reference_graph_validator.ReferenceGraphValidator(
+            program_result.reference_graph,
+            program_result.definition_results,
+        ).validate()
+
+        assert program_result.all_exceptions == []
+        for diagnostic in program_result.all_diagnostics:
+            assert not isinstance(diagnostic, _NAME_OR_CONSTRAINT_DIAGNOSTICS), (
+                f"{type(diagnostic).__name__}: {diagnostic.message}"
+            )

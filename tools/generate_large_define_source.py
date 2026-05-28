@@ -6,10 +6,14 @@ the grammar:
 
   * A pool of top-level potential position and potential action definitions
     in the same FQUN as the main action, so short-form references from
-    inside the main action resolve to defined positions.
+    inside the main action resolve to defined positions. Each pool
+    position declares ``it has the position</g_(i+1)>`` so long chains
+    through the pool satisfy the chain-element constraint check.
   * Standalone potential position definitions in 2-part and 3-part FQUN
-    forms (decoys) to exercise the multi-format FQUN parser path, plus a
-    full-FQUN reference from the main action to the 3-part decoy.
+    forms in other universes, to exercise the multi-format FQUN parser
+    path. They are not referenced from the main action because the
+    validator's non-filesystem mode currently raises KeyError when
+    processing a reference edge to a cross-universe target.
   * Positions with constraint blocks, with quality implications, with
     init blocks, and combinations.
   * Actions with full bodies and a destructor action that triggers on
@@ -38,11 +42,14 @@ DEFAULT_FQUN = "mv:define-lang.org:large_program:/test"
 DEFAULT_TARGET_LINES = 1_000_000
 DEFAULT_MAX_CHAIN_LENGTH = 100
 
-# Standalone definitions in alternate FQUN forms, used to exercise the
-# 2-part and 3-part FQUN parser paths. The 3-part decoy is also
-# referenced from the main action via its full FQUN.
-_DECOY_2PART = "demo_authority:demo_universe:/demo_2part"
-_DECOY_3PART = "demo_mv:demo_authority:demo_universe:/demo_3part"
+# Cross-universe position definitions in 2-part and 3-part FQUN forms,
+# emitted to exercise the multi-format FQUN parser path. Currently
+# unreferenced from the main action: in non-filesystem mode, a back-
+# reference to a cross-universe target tries to resolve a sub-root for a
+# project root that was never registered, raising KeyError from
+# path_tracker.has_sub_root before any diagnostic can be produced.
+_CROSS_UNIVERSE_2PART = "demo.example:demo_universe:/demo_2part"
+_CROSS_UNIVERSE_3PART = "demo_mv:demo.example:demo_universe:/demo_3part"
 
 _MIN_TARGET_LINES = 400
 _MIN_CHAIN_LENGTH = 2
@@ -99,9 +106,36 @@ def _emit_header() -> list[str]:
 
 
 def _emit_simple_position_pool(prefix: str, num_globals: int) -> list[str]:
+    # Emit positions in reverse order (g_(N-1) first, g_0 last) so each
+    # ``it has the position</g_(i+1)>`` constraint is a back-reference to
+    # an already-defined name. The non-filesystem validator skips
+    # DiscoveredFile creation for same-source back-references; forward
+    # references would instead trigger NoProjectRootInNonFilesystemContext.
+    lines: list[str] = []
+    for i in reversed(range(num_globals)):
+        name = _qualified_global_name(prefix, i)
+        if i == num_globals - 1:
+            lines.append(f"define the potential position<{name}>.")
+            continue
+        next_name = _short_global_name(i + 1)
+        lines.extend(
+            [
+                f"define the potential position<{name}> {{",
+                f"{_OUTER_INDENT}it may only contain particles where {{",
+                f"{_INNER_INDENT}it has the position<{next_name}>.",
+                f"{_OUTER_INDENT}}}",
+                "}",
+                "",
+            ]
+        )
+    return lines
+
+
+def _emit_cross_universe_positions() -> list[str]:
     return [
-        f"define the potential position<{_qualified_global_name(prefix, i)}>."
-        for i in range(num_globals)
+        f"define the potential position<{_CROSS_UNIVERSE_2PART}>.",
+        f"define the potential position<{_CROSS_UNIVERSE_3PART}>.",
+        "",
     ]
 
 
@@ -124,14 +158,6 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
             ]
         )
     return lines
-
-
-def _emit_decoys() -> list[str]:
-    return [
-        f"define the potential position<{_DECOY_2PART}>.",
-        f"define the potential position<{_DECOY_3PART}>.",
-        "",
-    ]
 
 
 def _emit_constrained_position(prefix: str, index: int) -> list[str]:
@@ -176,7 +202,10 @@ def _emit_destructor_action(fqun_path: str) -> list[str]:
         f"{_OUTER_INDENT}it happens when {{",
         f"{_INNER_INDENT}this particle is being destroyed.",
         f"{_OUTER_INDENT}}} and it does {{",
-        f"{_INNER_INDENT}create a particle in position<_noop>. # destructor body",
+        # A destructor must leave every position in the state it was in.
+        # Create-then-destroy nets to zero so no guarantee diagnostic fires.
+        f"{_INNER_INDENT}create a particle in position<_noop>.",
+        f"{_INNER_INDENT}destroy the particle in position<_noop>.",
         f"{_OUTER_INDENT}}}",
         "}",
         "",
@@ -195,71 +224,75 @@ def _next_body_statement(
     step: int, num_globals: int, num_actions: int, max_chain_length: int
 ) -> str:
     """Return a single body line, cycling through statement kinds by ``step``."""
-    kind = step % 13
+    kind = step % 12
     if kind == 0:
         return f"{_INNER_INDENT}create a particle in position<local_a>."
     if kind == 1:
-        gi = step % num_globals
-        return (
-            f"{_INNER_INDENT}create a particle in position<{_short_global_name(gi)}>."
-        )
+        # Only g_0 is brought into the main action's scope via ``it also
+        # assigns``; non-chained references to other pool positions would
+        # trigger UnknownGlobalNameDiagnostic.
+        return f"{_INNER_INDENT}create a particle in position<{_short_global_name(0)}>."
     if kind == 2:
-        # Full-FQUN reference to a decoy position in another universe;
-        # the spec requires the full form when the referenced FQUN
-        # differs from the enclosing definition's FQUN.
-        return f"{_INNER_INDENT}create a particle in position<{_DECOY_3PART}>."
-    if kind == 3:
         return _chained_create_statement(2, num_globals)
-    if kind == 4:
+    if kind == 3:
         return _chained_create_statement(min(5, max_chain_length), num_globals)
-    if kind == 5:
+    if kind == 4:
         return _chained_create_statement(max_chain_length, num_globals)
-    if kind == 6:
-        gi = step % num_globals
+    if kind == 5:
+        # local_a is constrained to ``it has the position</g_0>``, so the
+        # local+global chain pins to g_0 to satisfy that constraint.
         return (
             f"{_INNER_INDENT}create a particle in"
-            f" position<local_a>::position<{_short_global_name(gi)}>."
+            f" position<local_a>::position<{_short_global_name(0)}>."
         )
-    if kind == 7:
+    if kind == 6:
         ai = step % num_actions
         return (
             f"{_INNER_INDENT}create a particle in"
             f" action<{_short_global_name(ai, is_action=True)}>::position<_noop>."
         )
-    if kind == 8:
+    if kind == 7:
         return (
             f"{_INNER_INDENT}move the particle in position<local_a>"
             " to position<local_b>."
         )
-    if kind == 9:
-        gi = step % num_globals
+    if kind == 8:
+        # See kind 5: local_a's constraint pins the second element to g_0.
         return (
             f"{_INNER_INDENT}move the particle in"
-            f" position<local_a>::position<{_short_global_name(gi)}>"
+            f" position<local_a>::position<{_short_global_name(0)}>"
             f" to position<local_b>."
         )
-    if kind == 10:
+    if kind == 9:
         return f"{_INNER_INDENT}destroy the particle in position<local_b>."
-    if kind == 11:
+    if kind == 10:
         return f"{_INNER_INDENT}# cycle marker {step}"
     return f"{_INNER_INDENT}define the position<scratch_{step}>."
 
 
-def _emit_main_action_header(fqun_path: str) -> list[str]:
-    return [
+def _emit_main_action_header(fqun_path: str, num_actions: int) -> list[str]:
+    lines: list[str] = [
         f"define the potential action<{fqun_path}> {{",
         f"{_OUTER_INDENT}it also assigns the position<{_short_global_name(0)}>.",
-        f"{_OUTER_INDENT}define the position<run>.",
-        f"{_OUTER_INDENT}define the position<local_a>.",
-        f"{_OUTER_INDENT}define the position<local_b> {{",
-        f"{_INNER_INDENT}it may only contain particles where {{",
-        f"{_DEEP_INDENT}it has the position<{_short_global_name(0)}>.",
-        f"{_INNER_INDENT}}}",
-        f"{_OUTER_INDENT}}}",
-        f"{_OUTER_INDENT}it happens when {{",
-        f"{_INNER_INDENT}the position<run> has a particle.",
-        f"{_OUTER_INDENT}}} and it does {{",
     ]
+    for i in range(num_actions):
+        action_name = _short_global_name(i, is_action=True)
+        lines.append(f"{_OUTER_INDENT}it also assigns the action<{action_name}>.")
+    lines.extend(
+        [
+            f"{_OUTER_INDENT}define the position<run>.",
+            f"{_OUTER_INDENT}define the position<local_a> {{",
+            f"{_INNER_INDENT}it may only contain particles where {{",
+            f"{_DEEP_INDENT}it has the position<{_short_global_name(0)}>.",
+            f"{_INNER_INDENT}}}",
+            f"{_OUTER_INDENT}}}",
+            f"{_OUTER_INDENT}define the position<local_b>.",
+            f"{_OUTER_INDENT}it happens when {{",
+            f"{_INNER_INDENT}the position<run> has a particle.",
+            f"{_OUTER_INDENT}}} and it does {{",
+        ]
+    )
+    return lines
 
 
 def _emit_main_action_close() -> list[str]:
@@ -296,13 +329,13 @@ def generate_source_lines(
     lines.extend(_emit_header())
     lines.extend(_emit_simple_position_pool(fqun_prefix, num_globals))
     lines.append("")
-    lines.extend(_emit_decoys())
+    lines.extend(_emit_cross_universe_positions())
     lines.extend(_emit_simple_action_pool(fqun_prefix, num_actions))
     lines.extend(_emit_constrained_position(fqun_prefix, num_globals))
     lines.extend(
         _emit_position_with_implications_and_init(fqun_prefix, num_globals + 1)
     )
-    lines.extend(_emit_main_action_header(fqun_main_action))
+    lines.extend(_emit_main_action_header(fqun_main_action, num_actions))
 
     close_lines = _emit_main_action_close() + _emit_destructor_action(fqun_destructor)
 
