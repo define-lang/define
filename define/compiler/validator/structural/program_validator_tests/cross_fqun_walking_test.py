@@ -771,3 +771,32 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
     assert diags[1].location.column == 29
     assert diags[1].universe == foreign_universe
     assert diags[1].current_universe_name == _PARENT_UNIVERSE
+
+
+@pytest.mark.xfail(
+    raises=KeyError,
+    strict=True,
+    reason=(
+        "In non-filesystem mode, no project root is registered with the"
+        " path_tracker, so a back-reference to an in-source cross-universe"
+        " definition crashes in program_validator._resolve_target_file when"
+        " path_tracker.has_sub_root looks up the empty parent root in"
+        " self._project_roots and raises KeyError."
+    ),
+)
+def test_non_filesystem_cross_universe_back_reference():
+    foreign_universe = "demo_mv:demo.example:demo_universe"
+    source = (
+        f"define the potential position<{foreign_universe}:/target>.\n"
+        f"define the potential position<{_PARENT_UNIVERSE}:/test> {{\n"
+        "    it may only contain particles where {\n"
+        f"        it has the position<{foreign_universe}:/target>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    assert result.all_exceptions == []
