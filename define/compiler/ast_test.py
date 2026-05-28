@@ -8,6 +8,7 @@ import pytest
 
 from define.compiler import ast, parser, transformer
 from define.compiler.conftest import PositionReferenceFor
+from define.compiler.data_structures import define_path
 
 _LOC = ast.start_of_file_location()
 _FQUN = "my.domain.com:my_lib"
@@ -97,25 +98,25 @@ class TestFqunCanonical:
 class TestGlobalPathName:
     def test_relative_path_single_segment(self):
         path = ast.GlobalPathName(name="/foo", location=_LOC)
-        assert path.relative_path == PurePosixPath("foo")
+        assert path.relative_path == define_path.DefinePath("foo")
 
     def test_relative_path_multiple_segments(self):
         path = ast.GlobalPathName(name="/foo/bar/baz", location=_LOC)
-        assert path.relative_path == PurePosixPath("foo/bar/baz")
+        assert path.relative_path == define_path.DefinePath("foo/bar/baz")
 
     def test_file_path_default_root(self):
         path = ast.GlobalPathName(name="/foo", location=_LOC)
-        assert path.file_path() == PurePosixPath("foo.dfn")
+        assert path.file_path() == define_path.DefinePath("foo.dfn")
 
     def test_file_path_multiple_segments(self):
         path = ast.GlobalPathName(name="/foo/bar/baz", location=_LOC)
-        assert path.file_path() == PurePosixPath("foo/bar/baz.dfn")
+        assert path.file_path() == define_path.DefinePath("foo/bar/baz.dfn")
 
     def test_file_path_with_root(self):
         path = ast.GlobalPathName(name="/foo", location=_LOC)
-        assert path.file_path(PurePosixPath("lib/inner")) == PurePosixPath(
-            "lib/inner/foo.dfn"
-        )
+        assert path.file_path(
+            define_path.DefinePath("lib/inner")
+        ) == define_path.DefinePath("lib/inner/foo.dfn")
 
 
 class TestSourceLocationFromDefinitionName:

@@ -49,6 +49,7 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
     ],
 )
 
@@ -56,7 +57,10 @@ py_test(
     name = "naming_test",
     size = "small",
     srcs = ["naming_test.py"],
-    deps = [":naming"],
+    deps = [
+        ":naming",
+        "//define/compiler/data_structures:define_path",
+    ],
 )
 
 py_library(

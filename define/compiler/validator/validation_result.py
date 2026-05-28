@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
     import pathlib
     from collections.abc import Sequence
 
-    from define.compiler.data_structures import typed_name_dict
+    from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
 
@@ -32,7 +32,7 @@ class DiscoveredFile:
     # from the edge's global_name_reference plus the validating file's
     # context). It should be removed and the program_validator should drive
     # file loading and FQUN→sub-root resolution directly off the edges.
-    path: pathlib.PurePosixPath
+    path: define_path.DefinePath
     root_prefix: pathlib.PurePosixPath
     expected_fqun: str
     location: ast.SourceLocation

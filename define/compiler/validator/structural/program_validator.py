@@ -24,7 +24,7 @@ from define.compiler import (
     exceptions,
     parser,
 )
-from define.compiler.data_structures import typed_name_dict
+from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
@@ -239,7 +239,7 @@ class ProgramStructuralValidator:
     ):
         """Submit discovered files if not already tracked."""
         for discovered in definition_result.discovered_files:
-            full_path = discovered.root_prefix / discovered.path
+            full_path = discovered.root_prefix / discovered.path.as_posix_path()
             if self._path_tracker.is_tracked(full_path):
                 continue
             if self._path_tracker.is_under_failed_root(full_path):
@@ -264,7 +264,7 @@ class ProgramStructuralValidator:
                 continue
 
             context = file_validator.FileValidationContext(
-                file_path=discovered.path,
+                file_path=discovered.path.as_posix_path(),
                 root_prefix=discovered.root_prefix,
                 expected_fqun=fqun,
                 sub_root_mappings=sub_root_mappings,
@@ -415,7 +415,9 @@ class ProgramStructuralValidator:
             # A and C both reference file B, and B finishes before A's results
             # are processed, then target_result is already available when
             # processing A's edges.
-            target_result = self._path_tracker.try_get_result(target_file)
+            target_result = self._path_tracker.try_get_result(
+                target_file.as_posix_path()
+            )
             if target_result is not None:
                 self._validate_reference_against_target(
                     ref_edge,
@@ -424,7 +426,7 @@ class ProgramStructuralValidator:
                     source_definition,
                 )
             else:
-                self._deferred_edges.setdefault(target_file, []).append(
+                self._deferred_edges.setdefault(target_file.as_posix_path(), []).append(
                     _DeferredReferenceEdge(ref_edge, source_definition)
                 )
 
@@ -433,13 +435,15 @@ class ProgramStructuralValidator:
         global_name: ast.ReferenceGlobalNameContent,
         enclosing_root: pathlib.PurePosixPath,
         source_definition: validation_result.DefinitionValidationResult,
-    ) -> pathlib.PurePosixPath | None:
+    ) -> define_path.DefinePath | None:
         """Determine the full file path for a global name reference.
 
         Returns None if the target is under a failed or nonexistent root.
         """
         if global_name.fqun is None:
-            return global_name.path.file_path(enclosing_root)
+            return global_name.path.file_path(
+                define_path.DefinePathFromPosix(enclosing_root)
+            )
 
         fqun_string = global_name.fqun.canonical
         if not self._path_tracker.has_sub_root(fqun_string, enclosing_root):
@@ -456,15 +460,17 @@ class ProgramStructuralValidator:
             return None
         sub_root_loc = self._path_tracker.sub_root_location(fqun_string, enclosing_root)
         sub_root_path = enclosing_root / sub_root_loc
-        target_file = global_name.path.file_path(sub_root_path)
-        if self._path_tracker.is_under_failed_root(target_file):
+        target_file = global_name.path.file_path(
+            define_path.DefinePathFromPosix(sub_root_path)
+        )
+        if self._path_tracker.is_under_failed_root(target_file.as_posix_path()):
             return None
         return target_file
 
     def _check_if_current_universe_path_in_a_subroot(
         self,
         edge: reference_graph.ReferenceEdge,
-        target_file: pathlib.PurePosixPath,
+        target_file: define_path.DefinePath,
         enclosing_root: pathlib.PurePosixPath,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> bool:
@@ -482,7 +488,9 @@ class ProgramStructuralValidator:
         if not self._path_tracker.project_root_loaded(enclosing_root):
             return False
 
-        actual_root = self._path_tracker.find_enclosing_root(target_file)
+        actual_root = self._path_tracker.find_enclosing_root(
+            target_file.as_posix_path()
+        )
         if actual_root == enclosing_root:
             return False
 
@@ -499,7 +507,7 @@ class ProgramStructuralValidator:
     def _validate_reference_against_target(
         self,
         edge: reference_graph.ReferenceEdge,
-        target_file: pathlib.PurePosixPath,
+        target_file: define_path.DefinePath,
         target_result: validation_result.FileValidationResult,
         source_definition: validation_result.DefinitionValidationResult,
     ):
@@ -513,7 +521,7 @@ class ProgramStructuralValidator:
                     file_path=str(target_file),
                 )
             )
-            self._path_tracker.mark_not_found(target_file)
+            self._path_tracker.mark_not_found(target_file.as_posix_path())
             return
 
         if edge.global_name_reference not in self._definition_results:
@@ -545,10 +553,11 @@ class ProgramStructuralValidator:
         # satisfy or fail the deferred edge.
         deferred = self._deferred_edges.pop(completed_file, [])
         target_result = self._path_tracker.get_result(completed_file)
+        target_file = define_path.DefinePathFromPosix(completed_file)
         for deferred_edge in deferred:
             self._validate_reference_against_target(
                 deferred_edge.edge,
-                completed_file,
+                target_file,
                 target_result,
                 deferred_edge.source_definition,
             )

@@ -16,7 +16,7 @@ from define.compiler import (
     parser_exceptions,
     transformer,
 )
-from define.compiler.data_structures import typed_name_dict
+from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import file_validator
@@ -289,7 +289,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert len(_reference_edges(result)) == 1
         assert len(_discovered_files(result)) == 1
         discovered = _discovered_files(result)[0]
-        assert discovered.path == PurePosixPath("other.dfn")
+        assert discovered.path == define_path.DefinePath("other.dfn")
         assert discovered.root_prefix == PurePosixPath(str(tmp_path))
         assert discovered.expected_fqun == "my.domain.com:my_lib"
 
@@ -315,7 +315,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         assert len(_reference_edges(result)) == 1
         assert len(_discovered_files(result)) == 1
         discovered = _discovered_files(result)[0]
-        assert discovered.path == PurePosixPath("dep.dfn")
+        assert discovered.path == define_path.DefinePath("dep.dfn")
         assert discovered.root_prefix == PurePosixPath(str(tmp_path)) / "deps/other"
         assert discovered.expected_fqun == "other.domain.com:other_lib"
 
@@ -389,7 +389,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         )
         files = _discovered_files(result)
         assert len(files) == 1
-        assert files[0].path == PurePosixPath("shared.dfn")
+        assert files[0].path == define_path.DefinePath("shared.dfn")
 
 
 class TestParticleReferenceEdges:

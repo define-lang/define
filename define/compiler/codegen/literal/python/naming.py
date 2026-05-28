@@ -6,12 +6,13 @@ import builtins
 import keyword
 import typing
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from define.compiler import constants
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
+    from define.compiler.data_structures import define_path
 
 _PYTHON_BUILTINS: frozenset[str] = frozenset(vars(builtins))
 
@@ -55,7 +56,7 @@ _LOCAL_VAR_EXTRA_RESERVED: frozenset[str] = frozenset(
 )
 
 
-def _path_to_pascal(path: PurePosixPath) -> str:
+def _path_to_pascal(path: define_path.DefinePath) -> str:
     """Convert a definition path to a PascalCase class name."""
     return "".join(
         part.capitalize() for segment in path.parts for part in segment.split("_")
@@ -86,7 +87,7 @@ class NameConverter:
     class definition).
     """
 
-    _class_names: dict[PurePosixPath, str]
+    _class_names: dict[define_path.DefinePath, str]
     _used_class_names: set[str]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
@@ -98,7 +99,7 @@ class NameConverter:
         self._authority_names = {}
         self._used_authority_names = set()
 
-    def class_name(self, path: PurePosixPath) -> str:
+    def class_name(self, path: define_path.DefinePath) -> str:
         """Convert a definition path to a safe PascalCase class name.
 
         Results are cached so the same path always returns the same name.

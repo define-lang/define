@@ -1,39 +1,38 @@
-from pathlib import PurePosixPath
-
 from define.compiler.codegen.literal.python import naming
+from define.compiler.data_structures import define_path
 
 
 def test_class_name_normal():
     converter = naming.NameConverter()
-    assert converter.class_name(PurePosixPath("normal")) == "Normal"
+    assert converter.class_name(define_path.DefinePath("normal")) == "Normal"
 
 
 def test_class_name_multi_segment():
     converter = naming.NameConverter()
-    assert converter.class_name(PurePosixPath("my_action")) == "MyAction"
+    assert converter.class_name(define_path.DefinePath("my_action")) == "MyAction"
 
 
 def test_class_name_mangles_classvar():
     converter = naming.NameConverter()
-    assert converter.class_name(PurePosixPath("class_var")) == "ClassVar_"
+    assert converter.class_name(define_path.DefinePath("class_var")) == "ClassVar_"
 
 
 def test_class_name_mangles_builtin():
     converter = naming.NameConverter()
-    assert converter.class_name(PurePosixPath("type_error")) == "TypeError_"
+    assert converter.class_name(define_path.DefinePath("type_error")) == "TypeError_"
 
 
 def test_class_name_cached():
     converter = naming.NameConverter()
-    first = converter.class_name(PurePosixPath("class_var"))
-    second = converter.class_name(PurePosixPath("class_var"))
+    first = converter.class_name(define_path.DefinePath("class_var"))
+    second = converter.class_name(define_path.DefinePath("class_var"))
     assert first == second == "ClassVar_"
 
 
 def test_class_name_double_conflict():
     converter = naming.NameConverter()
-    first = converter.class_name(PurePosixPath("class_var"))
-    second = converter.class_name(PurePosixPath("class_var_"))
+    first = converter.class_name(define_path.DefinePath("class_var"))
+    second = converter.class_name(define_path.DefinePath("class_var_"))
     assert first == "ClassVar_"
     assert second == "ClassVar__"
 

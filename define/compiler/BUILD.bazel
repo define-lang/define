@@ -14,7 +14,7 @@ py_library(
     ],
     deps = [
         ":compiler",
-        ":constants",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/lark:lark_standalone",
     ],
 )
@@ -28,6 +28,7 @@ py_test(
         ":conftest",
         ":parser",
         ":transformer",
+        "//define/compiler/data_structures:define_path",
         "@pypi//pytest",
     ],
 )

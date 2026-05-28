@@ -6,13 +6,13 @@ import abc
 import enum
 import sys
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Self, override
 
-from define.compiler import constants
+from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import PurePosixPath
 
     from define.compiler.lark import lark_standalone
 
@@ -545,11 +545,14 @@ class GlobalPathName(ASTNode):
         object.__setattr__(self, "name", sys.intern(str(self.name)))
 
     @property
-    def relative_path(self) -> PurePosixPath:
-        """Return the path as a relative POSIX path object."""
-        return PurePosixPath(self.name[1:])
+    def relative_path(self) -> define_path.DefinePath:
+        """Return the path as a relative DefinePath."""
+        return define_path.DefinePath(self.name[1:])
 
-    def file_path(self, root: PurePosixPath = constants.PROJECT_ROOT) -> PurePosixPath:
+    def file_path(
+        self,
+        root: define_path.DefinePath = define_path.EMPTY,
+    ) -> define_path.DefinePath:
         """Return the .dfn file path, prefixed by root."""
         return root / self.relative_path.with_suffix(".dfn")
 
