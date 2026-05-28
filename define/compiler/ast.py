@@ -35,36 +35,46 @@ class SourceLocation:
     end_column: int
     file_path: PurePosixPath | None = None
 
+    # We use this instead of Lark's propagate_positions because propogate_positions
+    # was very slow (it was the #1 CPU consumer in compilation, overall).
     @classmethod
-    def from_meta(
-        cls, meta: lark_standalone.Meta, file_path: PurePosixPath | None = None
+    def from_ast_or_token(
+        cls,
+        *,
+        start: ASTNode | lark_standalone.Token,
+        end: ASTNode | lark_standalone.Token,
+        file_path: PurePosixPath | None = None,
+        end_column_offset: int = 0,
     ) -> Self:
-        """Create a SourceLocation from a Lark Meta object."""
-        return cls(
-            line=meta.line,
-            column=meta.column,
-            end_line=meta.end_line,
-            end_column=meta.end_column,
-            file_path=file_path,
-        )
+        """Build a SourceLocation spanning ``start`` through ``end``.
 
-    @classmethod
-    def from_token(
-        cls, token: lark_standalone.Token, file_path: PurePosixPath | None = None
-    ) -> Self:
-        """Create a SourceLocation from a Lark Token."""
-        if (
-            token.line is None
-            or token.column is None
-            or token.end_line is None
-            or token.end_column is None
-        ):
-            raise ValueError(f"Token {token} is missing location information")
+        Each argument is either an ``ASTNode`` (whose ``.location`` is read)
+        or a ``lark_standalone.Token`` (whose lexer-set
+        ``line``/``column``/``end_line``/``end_column`` are read). When
+        ``start`` and ``end`` are the same instance, the result is that
+        item's full span.
+        """
+        if isinstance(start, ASTNode):
+            start_line = start.location.line
+            start_column = start.location.column
+        else:
+            if start.line is None or start.column is None:
+                raise ValueError(f"token {start!r} has no line/column")
+            start_line = start.line
+            start_column = start.column
+        if isinstance(end, ASTNode):
+            end_line = end.location.end_line
+            end_column = end.location.end_column
+        else:
+            if end.end_line is None or end.end_column is None:
+                raise ValueError(f"token {end!r} has no end_line/end_column")
+            end_line = end.end_line
+            end_column = end.end_column
         return cls(
-            line=token.line,
-            column=token.column,
-            end_line=token.end_line,
-            end_column=token.end_column,
+            line=start_line,
+            column=start_column,
+            end_line=end_line,
+            end_column=end_column + end_column_offset,
             file_path=file_path,
         )
 

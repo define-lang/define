@@ -182,14 +182,14 @@ def raise_token_error(
                     raise parser_exceptions.MissingNewlineAfterOpenBrace(
                         e, source, file_path
                     )
-                case "RBRACE":
+                case "CLOSE_BRACE":
                     raise parser_exceptions.MissingNewlineAfterCloseBrace(
                         e, source, file_path
                     )
                 case _:
                     pass
 
-    if e.accepts == {"NEWLINE", "RBRACE"}:
+    if e.accepts == {"NEWLINE", "CLOSE_BRACE"}:
         # TODO: This may be fragile when we allow this in other places.
         if e.token.type == "DEFINE_THE_POSITION":
             raise parser_exceptions.InvalidPositionDefinitionLocationInAction(

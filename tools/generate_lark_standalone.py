@@ -23,7 +23,13 @@ def main():
         grammar,
         parser="lalr",
         regex=True,
-        propagate_positions=True,
+        # The transformer derives SourceLocation directly from each Tree's
+        # transformed children (Tokens carry line/column from the lexer;
+        # already-transformed ASTNode children carry .location), so we do
+        # not need lark's PropagatePositions to populate Tree.meta. Avoiding
+        # that pass is a measurable speedup -- it was the single hottest
+        # function in the profile.
+        propagate_positions=False,
         start="start",
     )
 

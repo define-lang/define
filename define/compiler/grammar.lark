@@ -57,8 +57,9 @@ COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 
 terminator: "." NEWLINE
 SPACE_AND_OPEN_BRACE: " {"
+CLOSE_BRACE: "}"
 _block_open: SPACE_AND_OPEN_BRACE NEWLINE
-_block_close: "}" NEWLINE
+_block_close: CLOSE_BRACE NEWLINE
 
 # Name Syntax
 
@@ -107,7 +108,7 @@ local_position_definition: DEFINE_THE_POSITION local_name_content position_defin
 position_presence_statement: THE typed_local_name_reference HAS_A_PARTICLE terminator
 destructor_condition_statement: DESTRUCTOR_STATEMENT terminator
 trigger_condition_statement: position_presence_statement | destructor_condition_statement
-trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* trigger_condition_statement NEWLINE* "}"
+trigger_conditions_block: IT_HAPPENS_WHEN _block_open NEWLINE* trigger_condition_statement NEWLINE* CLOSE_BRACE
 action_statements_block: AND_IT_DOES _block_open _action_statements _block_close
 _trigger_and_action: trigger_conditions_block action_statements_block
 _action_local_position_definitions: (local_position_definition NEWLINE*)*

@@ -1,8 +1,9 @@
 """Tests for the Define AST transformer.
 
 There is at least one test per concrete AST node the transformer can produce.
-Each such test asserts the node's stored data fields and its full source
-location (line, column, end_line, end_column).
+Each such test asserts the node's stored data fields, its full source location
+(line, column, end_line, end_column), and the substring of the original source
+that location addresses.
 """
 
 from define.compiler import ast, parser
@@ -21,6 +22,22 @@ def _parse_and_transform(source: str) -> ast.Program:
 def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:
     assert name.fqun is not None
     return name.fqun
+
+
+def _slice(source: str, location: ast.SourceLocation) -> str:
+    """Return the exact substring of ``source`` covered by ``location``.
+
+    Locations use 1-based ``line``/``column`` and an exclusive ``end_column``,
+    matching what lark's lexer produces.
+    """
+    lines = source.split("\n")
+    if location.line == location.end_line:
+        return lines[location.line - 1][location.column - 1 : location.end_column - 1]
+    parts = [lines[location.line - 1][location.column - 1 :]]
+    for line_idx in range(location.line, location.end_line - 1):
+        parts.append(lines[line_idx])
+    parts.append(lines[location.end_line - 1][: location.end_column - 1])
+    return "\n".join(parts)
 
 
 _SIMPLE_POSITION = "define the potential position<standard:/path>.\n"
@@ -158,6 +175,7 @@ def test_universe_fields():
     assert fqun.universe.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=39
     )
+    assert _slice(_SIMPLE_POSITION, fqun.universe.location) == "standard"
 
 
 def test_multiverse_fields():
@@ -167,6 +185,7 @@ def test_multiverse_fields():
     assert fqun.multiverse.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=36
     )
+    assert _slice(_FULL_FQUN_POSITION, fqun.multiverse.location) == "my_mv"
 
 
 def test_authority_fields():
@@ -176,6 +195,7 @@ def test_authority_fields():
     assert fqun.authority.location == ast.SourceLocation(
         line=1, column=37, end_line=1, end_column=48
     )
+    assert _slice(_FULL_FQUN_POSITION, fqun.authority.location) == "example.com"
 
 
 def test_authority_with_path_fields():
@@ -187,6 +207,10 @@ def test_authority_with_path_fields():
     assert fqun.authority.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=51
     )
+    assert (
+        _slice(_AUTHORITY_PATH_FQUN_POSITION, fqun.authority.location)
+        == "example.com/org/repo"
+    )
 
 
 def test_global_path_name_fields():
@@ -195,6 +219,7 @@ def test_global_path_name_fields():
     assert path.location == ast.SourceLocation(
         line=1, column=40, end_line=1, end_column=45
     )
+    assert _slice(_SIMPLE_POSITION, path.location) == "/path"
 
 
 def test_local_name_content_fields():
@@ -205,6 +230,7 @@ def test_local_name_content_fields():
     assert name_content.location == ast.SourceLocation(
         line=3, column=25, end_line=3, end_column=28
     )
+    assert _slice(_FULL_ACTION, name_content.location) == "run"
 
 
 # Fully-qualified universe names
@@ -218,6 +244,7 @@ def test_fqun_universe_only_fields():
     assert fqun.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=39
     )
+    assert _slice(_SIMPLE_POSITION, fqun.location) == "standard"
 
 
 def test_fqun_authority_universe_fields():
@@ -231,6 +258,7 @@ def test_fqun_authority_universe_fields():
     assert fqun.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=49
     )
+    assert _slice(_AUTHORITY_FQUN_POSITION, fqun.location) == "example.com:my_lib"
 
 
 def test_fqun_full_fields():
@@ -243,6 +271,7 @@ def test_fqun_full_fields():
     assert fqun.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=55
     )
+    assert _slice(_FULL_FQUN_POSITION, fqun.location) == "my_mv:example.com:my_lib"
 
 
 # Typed names
@@ -255,6 +284,7 @@ def test_global_typed_name_in_definition_fields():
     assert typed_name.location == ast.SourceLocation(
         line=1, column=22, end_line=1, end_column=46
     )
+    assert _slice(_SIMPLE_POSITION, typed_name.location) == "position<standard:/path>"
 
 
 def test_definition_global_name_content_fields():
@@ -264,6 +294,7 @@ def test_definition_global_name_content_fields():
     assert name_content.location == ast.SourceLocation(
         line=1, column=31, end_line=1, end_column=45
     )
+    assert _slice(_SIMPLE_POSITION, name_content.location) == "standard:/path"
 
 
 def test_reference_global_name_content_without_fqun_fields():
@@ -275,6 +306,7 @@ def test_reference_global_name_content_without_fqun_fields():
     assert name_content.location == ast.SourceLocation(
         line=4, column=29, end_line=4, end_column=35
     )
+    assert _slice(_FULL_POSITION, name_content.location) == "/child"
 
 
 def test_reference_global_name_content_with_fqun_fields():
@@ -288,6 +320,10 @@ def test_reference_global_name_content_with_fqun_fields():
     assert name_content.location == ast.SourceLocation(
         line=6, column=39, end_line=6, end_column=69
     )
+    assert (
+        _slice(_FULL_FQUN_CREATE, name_content.location)
+        == "mv:define-lang.org:parser:/run"
+    )
 
 
 def test_global_typed_name_reference_fields():
@@ -300,6 +336,7 @@ def test_global_typed_name_reference_fields():
     assert typed_name.location == ast.SourceLocation(
         line=4, column=20, end_line=4, end_column=36
     )
+    assert _slice(_FULL_POSITION, typed_name.location) == "position</child>"
 
 
 def test_local_typed_name_reference_fields():
@@ -309,6 +346,7 @@ def test_local_typed_name_reference_fields():
     assert typed_name.location == ast.SourceLocation(
         line=3, column=16, end_line=3, end_column=29
     )
+    assert _slice(_FULL_ACTION, typed_name.location) == "position<run>"
 
 
 # Position references
@@ -323,6 +361,7 @@ def test_position_reference_single_fields():
     assert reference.location == ast.SourceLocation(
         line=8, column=30, end_line=8, end_column=43
     )
+    assert _slice(_FULL_ACTION, reference.location) == "position<run>"
 
 
 def test_position_reference_chained_local_fields():
@@ -335,6 +374,10 @@ def test_position_reference_chained_local_fields():
     )
     assert reference.location == ast.SourceLocation(
         line=6, column=30, end_line=6, end_column=74
+    )
+    assert (
+        _slice(_LOCAL_CHAIN_CREATE, reference.location)
+        == "position<to>::action<deposit>::position<run>"
     )
 
 
@@ -349,6 +392,10 @@ def test_position_reference_chained_global_fields():
     assert reference.location == ast.SourceLocation(
         line=6, column=30, end_line=6, end_column=68
     )
+    assert (
+        _slice(_GLOBAL_CHAIN_CREATE, reference.location)
+        == "position</a>::action</b>::position</c>"
+    )
 
 
 # Particle statements
@@ -359,8 +406,9 @@ def test_create_particle_statement_fields():
     assert isinstance(stmt, ast.CreateParticleStatement)
     assert isinstance(stmt.target_position, ast.PositionReference)
     assert stmt.location == ast.SourceLocation(
-        line=8, column=9, end_line=9, end_column=1
+        line=8, column=9, end_line=8, end_column=44
     )
+    assert _slice(_FULL_ACTION, stmt.location) == "create a particle in position<run>."
 
 
 def test_move_particle_statement_fields():
@@ -375,7 +423,11 @@ def test_move_particle_statement_fields():
     assert isinstance(target_name, ast.LocalTypedNameReference)
     assert target_name.name_content.name == "dest"
     assert stmt.location == ast.SourceLocation(
-        line=9, column=9, end_line=10, end_column=1
+        line=9, column=9, end_line=9, end_column=62
+    )
+    assert (
+        _slice(_FULL_ACTION, stmt.location)
+        == "move the particle in position<src> to position<dest>."
     )
 
 
@@ -384,7 +436,10 @@ def test_destroy_particle_statement_fields():
     assert isinstance(stmt, ast.DestroyParticleStatement)
     assert isinstance(stmt.target_position, ast.PositionReference)
     assert stmt.location == ast.SourceLocation(
-        line=10, column=9, end_line=11, end_column=1
+        line=10, column=9, end_line=10, end_column=47
+    )
+    assert (
+        _slice(_FULL_ACTION, stmt.location) == "destroy the particle in position<run>."
     )
 
 
@@ -397,7 +452,10 @@ def test_position_presence_statement_fields():
     assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
     assert condition.typed_name.name_content.name == "run"
     assert condition.location == ast.SourceLocation(
-        line=6, column=9, end_line=7, end_column=1
+        line=6, column=9, end_line=6, end_column=42
+    )
+    assert (
+        _slice(_FULL_ACTION, condition.location) == "the position<run> has a particle."
     )
 
 
@@ -405,7 +463,11 @@ def test_destructor_condition_statement_fields():
     condition = _only_action(_DESTRUCTOR_ACTION).trigger_conditions.conditions[0]
     assert isinstance(condition, ast.DestructorConditionStatement)
     assert condition.location == ast.SourceLocation(
-        line=3, column=9, end_line=4, end_column=1
+        line=3, column=9, end_line=3, end_column=42
+    )
+    assert (
+        _slice(_DESTRUCTOR_ACTION, condition.location)
+        == "this particle is being destroyed."
     )
 
 
@@ -416,6 +478,13 @@ def test_trigger_conditions_block_fields():
     assert block.location == ast.SourceLocation(
         line=5, column=5, end_line=7, end_column=6
     )
+    # fmt: off
+    assert _slice(_FULL_ACTION, block.location) == (
+        "it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    }"
+    )
+    # fmt: on
 
 
 # Blocks
@@ -431,7 +500,13 @@ def test_position_constraint_block_fields():
         for requirement in block.requirements
     )
     assert block.location == ast.SourceLocation(
-        line=3, column=5, end_line=7, end_column=1
+        line=3, column=5, end_line=6, end_column=6
+    )
+    assert _slice(_FULL_POSITION, block.location) == (
+        "it may only contain particles where {\n"
+        "        it has the position</child>.\n"
+        "        it has the action</other>.\n"
+        "    }"
     )
 
 
@@ -441,7 +516,10 @@ def test_position_requirement_statement_fields():
     requirement = definition.constraints.requirements[0]
     assert isinstance(requirement.typed_global_name, ast.GlobalTypedNameReference)
     assert requirement.location == ast.SourceLocation(
-        line=4, column=9, end_line=5, end_column=1
+        line=4, column=9, end_line=4, end_column=37
+    )
+    assert (
+        _slice(_FULL_POSITION, requirement.location) == "it has the position</child>."
     )
 
 
@@ -449,7 +527,11 @@ def test_quality_implication_statement_fields():
     implication = _only_position(_FULL_POSITION).quality_implications[0]
     assert isinstance(implication.typed_global_name, ast.GlobalTypedNameReference)
     assert implication.location == ast.SourceLocation(
-        line=2, column=5, end_line=3, end_column=1
+        line=2, column=5, end_line=2, end_column=38
+    )
+    assert (
+        _slice(_FULL_POSITION, implication.location)
+        == "it also assigns the position</a>."
     )
 
 
@@ -460,7 +542,14 @@ def test_action_statements_block_fields():
     assert isinstance(block.statements[1], ast.MoveParticleStatement)
     assert isinstance(block.statements[2], ast.DestroyParticleStatement)
     assert block.location == ast.SourceLocation(
-        line=7, column=6, end_line=12, end_column=1
+        line=7, column=6, end_line=11, end_column=6
+    )
+    assert _slice(_FULL_ACTION, block.location) == (
+        " and it does {\n"
+        "        create a particle in position<run>.\n"
+        "        move the particle in position<src> to position<dest>.\n"
+        "        destroy the particle in position<run>.\n"
+        "    }"
     )
 
 
@@ -468,8 +557,14 @@ def test_action_statements_block_empty_fields():
     block = _only_action(_DESTRUCTOR_ACTION).action_statements
     assert block.statements == ()
     assert block.location == ast.SourceLocation(
-        line=4, column=6, end_line=6, end_column=1
+        line=4, column=6, end_line=5, end_column=6
     )
+    # fmt: off
+    assert _slice(_DESTRUCTOR_ACTION, block.location) == (
+        " and it does {\n"
+        "    }"
+    )
+    # fmt: on
 
 
 def test_position_init_block_fields():
@@ -479,8 +574,15 @@ def test_position_init_block_fields():
     assert len(block.statements) == 1
     assert isinstance(block.statements[0], ast.CreateParticleStatement)
     assert block.location == ast.SourceLocation(
-        line=7, column=5, end_line=10, end_column=1
+        line=7, column=5, end_line=9, end_column=6
     )
+    # fmt: off
+    assert _slice(_FULL_POSITION, block.location) == (
+        "after it is assigned {\n"
+        "        create a particle in position</other>.\n"
+        "    }"
+    )
+    # fmt: on
 
 
 # Local position definitions
@@ -492,8 +594,9 @@ def test_local_position_definition_without_constraints_fields():
     assert local_def.typed_name.name_content.name == "run"
     assert local_def.constraints is None
     assert local_def.location == ast.SourceLocation(
-        line=3, column=5, end_line=4, end_column=1
+        line=3, column=5, end_line=3, end_column=30
     )
+    assert _slice(_FULL_ACTION, local_def.location) == "define the position<run>."
 
 
 def test_local_position_definition_with_constraints_fields():
@@ -502,7 +605,14 @@ def test_local_position_definition_with_constraints_fields():
     assert local_def.typed_name.name_content.name == "my_pos"
     assert isinstance(local_def.constraints, ast.PositionConstraintBlock)
     assert local_def.location == ast.SourceLocation(
-        line=2, column=5, end_line=7, end_column=1
+        line=2, column=5, end_line=6, end_column=6
+    )
+    assert _slice(_LOCAL_CONSTRAINED_ACTION, local_def.location) == (
+        "define the position<my_pos> {\n"
+        "        it may only contain particles where {\n"
+        "            it has the action</child>.\n"
+        "        }\n"
+        "    }"
     )
 
 
@@ -516,7 +626,11 @@ def test_position_definition_bare_fields():
     assert definition.constraints is None
     assert definition.initialization is None
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=2, end_column=1
+        line=1, column=1, end_line=1, end_column=47
+    )
+    assert (
+        _slice(_SIMPLE_POSITION, definition.location)
+        == "define the potential position<standard:/path>."
     )
 
 
@@ -530,7 +644,19 @@ def test_position_definition_full_fields():
     assert isinstance(definition.constraints, ast.PositionConstraintBlock)
     assert isinstance(definition.initialization, ast.PositionInitBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=11, end_column=1
+        line=1, column=1, end_line=10, end_column=2
+    )
+    assert _slice(_FULL_POSITION, definition.location) == (
+        "define the potential position<standard:/path> {\n"
+        "    it also assigns the position</a>.\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</child>.\n"
+        "        it has the action</other>.\n"
+        "    }\n"
+        "    after it is assigned {\n"
+        "        create a particle in position</other>.\n"
+        "    }\n"
+        "}"
     )
 
 
@@ -543,7 +669,15 @@ def test_action_definition_minimal_fields():
     assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
     assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=7, end_column=1
+        line=1, column=1, end_line=6, end_column=2
+    )
+    assert _slice(_DESTRUCTOR_ACTION, definition.location) == (
+        "define the potential action<standard:/path> {\n"
+        "    it happens when {\n"
+        "        this particle is being destroyed.\n"
+        "    } and it does {\n"
+        "    }\n"
+        "}"
     )
 
 
@@ -562,7 +696,21 @@ def test_action_definition_full_fields():
     assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
     assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=13, end_column=1
+        line=1, column=1, end_line=12, end_column=2
+    )
+    assert _slice(_FULL_ACTION, definition.location) == (
+        "define the potential action<standard:/path> {\n"
+        "    it also assigns the position</a>.\n"
+        "    define the position<run>.\n"
+        "    define the position<other_pos>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    } and it does {\n"
+        "        create a particle in position<run>.\n"
+        "        move the particle in position<src> to position<dest>.\n"
+        "        destroy the particle in position<run>.\n"
+        "    }\n"
+        "}"
     )
 
 
@@ -574,7 +722,11 @@ def test_program_fields():
     assert len(program.definitions) == 1
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert program.location == ast.SourceLocation(
-        line=1, column=1, end_line=2, end_column=1
+        line=1, column=1, end_line=1, end_column=47
+    )
+    assert (
+        _slice(_SIMPLE_POSITION, program.location)
+        == "define the potential position<standard:/path>."
     )
 
 
@@ -584,7 +736,19 @@ def test_program_multiple_definitions_fields():
     assert isinstance(program.definitions[0], ast.PositionDefinition)
     assert isinstance(program.definitions[1], ast.PositionDefinition)
     assert program.location == ast.SourceLocation(
-        line=1, column=1, end_line=11, end_column=1
+        line=1, column=1, end_line=10, end_column=2
+    )
+    assert _slice(_TWO_DEFINITIONS, program.location) == (
+        "define the potential position<my_mv:example.com:lib_a:/pos_a> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</child>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential position<my_mv:example.com:lib_b:/pos_b> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</other>.\n"
+        "    }\n"
+        "}"
     )
 
 

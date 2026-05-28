@@ -19,7 +19,9 @@ def parse_local_name(
     """Parse local name content into an AST local-name node."""
     return ast.LocalNameContent(
         name=token,
-        location=ast.SourceLocation.from_token(token, file_path=file_path),
+        location=ast.SourceLocation.from_ast_or_token(
+            start=token, end=token, file_path=file_path
+        ),
     )
 
 
@@ -36,7 +38,9 @@ def parse_global_name_definition(
             file_path,
         )
     return ast.DefinitionGlobalNameContent(
-        location=ast.SourceLocation.from_token(token, file_path=file_path),
+        location=ast.SourceLocation.from_ast_or_token(
+            start=token, end=token, file_path=file_path
+        ),
         fqun=parsed.fqun,
         path=parsed.path,
     )
@@ -48,7 +52,9 @@ def parse_global_name_reference(
     """Parse reference-site global name content into an AST node."""
     parsed = _parse_global_name(token, file_path)
     return ast.ReferenceGlobalNameContent(
-        location=ast.SourceLocation.from_token(token, file_path=file_path),
+        location=ast.SourceLocation.from_ast_or_token(
+            start=token, end=token, file_path=file_path
+        ),
         fqun=parsed.fqun,
         path=parsed.path,
     )

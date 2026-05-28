@@ -7,6 +7,8 @@ from typing import cast
 from define.compiler import ast, name_parser
 from define.compiler.lark import lark_standalone
 
+type _LocatedItem = ast.ASTNode | lark_standalone.Token
+
 
 @dataclass(frozen=True, slots=True)
 class _ActionDefinitionBlockData:
@@ -14,6 +16,21 @@ class _ActionDefinitionBlockData:
     interface_positions: tuple[ast.LocalPositionDefinition, ...]
     trigger_conditions: ast.TriggerConditionsBlock
     action_statements: ast.ActionStatementsBlock
+    block_close: lark_standalone.Token
+
+
+@dataclass(frozen=True, slots=True)
+class _PotentialPositionBlockData:
+    quality_implications: tuple[ast.QualityImplicationStatement, ...]
+    constraints: ast.PositionConstraintBlock | None
+    initialization: ast.PositionInitBlock | None
+    block_close: lark_standalone.Token
+
+
+@dataclass(frozen=True, slots=True)
+class _LocalPositionBlockData:
+    constraints: ast.PositionConstraintBlock
+    block_close: lark_standalone.Token
 
 
 class DefineTransformer:
@@ -38,9 +55,17 @@ class DefineTransformer:
                 file_path=self._file_path, enclosing_fqun=enclosing_fqun
             )
             definitions.append(sub_transformer.transform(child))
+        if definitions:
+            location = ast.SourceLocation.from_ast_or_token(
+                start=definitions[0],
+                end=definitions[-1],
+                file_path=self._file_path,
+            )
+        else:
+            location = ast.start_of_file_location(self._file_path)
         return ast.Program(
             definitions=tuple(definitions),
-            location=ast.SourceLocation.from_meta(tree.meta, file_path=self._file_path),
+            location=location,
         )
 
 
@@ -76,60 +101,94 @@ class DefinitionTransformer(
         self._file_path = file_path
         self._enclosing_fqun = enclosing_fqun
 
-    @lark_standalone.v_args(meta=True)
-    def position_definition(
+    def _location(
         self,
-        meta: lark_standalone.Meta,
-        items: list[
-            ast.DefinitionGlobalNameContent
-            | list[
-                ast.QualityImplicationStatement
-                | ast.PositionConstraintBlock
-                | ast.PositionInitBlock
-            ]
-        ],
-    ) -> ast.PositionDefinition:
-        """Transform a position definition."""
-        name = cast("ast.DefinitionGlobalNameContent", items[0])
-        quality_implications: list[ast.QualityImplicationStatement] = []
-        constraints: ast.PositionConstraintBlock | None = None
-        initialization: ast.PositionInitBlock | None = None
-        if len(items) > 1:
-            block_contents = cast(
-                "list[ast.QualityImplicationStatement | ast.PositionConstraintBlock | ast.PositionInitBlock]",
-                items[1],
-            )
-            for item in block_contents:
-                if isinstance(item, ast.QualityImplicationStatement):
-                    quality_implications.append(item)
-                elif isinstance(item, ast.PositionConstraintBlock):
-                    constraints = item
-                else:
-                    initialization = item
-        return ast.PositionDefinition(
-            name=name,
-            quality_implications=tuple(quality_implications),
-            constraints=constraints,
-            initialization=initialization,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+        *,
+        start: _LocatedItem,
+        end: _LocatedItem,
+        end_column_offset: int = 0,
+    ) -> ast.SourceLocation:
+        return ast.SourceLocation.from_ast_or_token(
+            start=start,
+            end=end,
+            file_path=self._file_path,
+            end_column_offset=end_column_offset,
         )
 
-    @lark_standalone.v_args(meta=True)
+    def _location_with_terminator(
+        self, *, start: _LocatedItem, end: _LocatedItem
+    ) -> ast.SourceLocation:
+        """Span ``start..end`` plus the trailing ``.`` terminator.
+
+        The terminator rule returns ``Discard`` so the period is not in items;
+        extend ``end_column`` by one to include it.
+        """
+        return self._location(start=start, end=end, end_column_offset=1)
+
+    def _location_for_bare_definition(
+        self, *, start: _LocatedItem, name: ast.NameContent
+    ) -> ast.SourceLocation:
+        """Span a bare ``<keyword> <name>.`` definition.
+
+        ``NameContent.location`` covers only the inner name token, so two
+        extra columns are needed: one for the closing ``>`` of the name,
+        and one for the trailing ``.`` terminator.
+        """
+        return self._location(start=start, end=name, end_column_offset=2)
+
+    def position_definition(
+        self,
+        items: list[
+            lark_standalone.Token
+            | ast.DefinitionGlobalNameContent
+            | _PotentialPositionBlockData
+        ],
+    ) -> ast.PositionDefinition:
+        """Transform a position definition.
+
+        items: [DEFINE_THE_POTENTIAL_POSITION token, name, optional block data].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[1])
+        if len(items) > 2:
+            block_data = cast("_PotentialPositionBlockData", items[2])
+            return ast.PositionDefinition(
+                name=name,
+                quality_implications=block_data.quality_implications,
+                constraints=block_data.constraints,
+                initialization=block_data.initialization,
+                location=self._location(start=keyword, end=block_data.block_close),
+            )
+        return ast.PositionDefinition(
+            name=name,
+            quality_implications=(),
+            constraints=None,
+            initialization=None,
+            location=self._location_for_bare_definition(start=keyword, name=name),
+        )
+
     def action_definition(
         self,
-        meta: lark_standalone.Meta,
-        items: list[ast.DefinitionGlobalNameContent | _ActionDefinitionBlockData],
+        items: list[
+            lark_standalone.Token
+            | ast.DefinitionGlobalNameContent
+            | _ActionDefinitionBlockData
+        ],
     ) -> ast.ActionDefinition:
-        """Transform an action definition."""
-        name = cast("ast.DefinitionGlobalNameContent", items[0])
-        block_data = cast("_ActionDefinitionBlockData", items[1])
+        """Transform an action definition.
+
+        items: [DEFINE_THE_POTENTIAL_ACTION token, name, action block data].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[1])
+        block_data = cast("_ActionDefinitionBlockData", items[2])
         return ast.ActionDefinition(
             name=name,
             quality_implications=block_data.quality_implications,
             interface_positions=block_data.interface_positions,
             trigger_conditions=block_data.trigger_conditions,
             action_statements=block_data.action_statements,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            location=self._location(start=keyword, end=block_data.block_close),
         )
 
     def terminator(self, _items: list[object]) -> object:
@@ -146,65 +205,116 @@ class DefinitionTransformer(
         """Pass through raw local name content tokens for context-specific parsing."""
         return token
 
-    def DEFINE_THE_POSITION(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the local-position definition keyword token."""
-        return lark_standalone.Discard
+    # Keyword tokens are passed through (not discarded). Each one anchors the
+    # location of its enclosing rule's AST node: without lark's
+    # PropagatePositions to populate Tree.meta, the rule derives its
+    # SourceLocation by scanning items, and these tokens carry the line/column
+    # of the rule's leading keyword. Each rule reads its data from later items
+    # by index.
 
-    def DEFINE_THE_POTENTIAL_POSITION(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the potential-position definition keyword token."""
-        return lark_standalone.Discard
+    def CLOSE_BRACE(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the block-closing ``}`` token through.
 
-    def DEFINE_THE_POTENTIAL_ACTION(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the potential-action definition keyword token."""
-        return lark_standalone.Discard
+        Block rules use it as their end-location anchor.
+        """
+        return token
+
+    def DEFINE_THE_POSITION(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the local-position definition keyword token through."""
+        return token
+
+    def DEFINE_THE_POTENTIAL_POSITION(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the potential-position definition keyword token through."""
+        return token
+
+    def DEFINE_THE_POTENTIAL_ACTION(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the potential-action definition keyword token through."""
+        return token
 
     def IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE(  # noqa: N802
-        self, _token: lark_standalone.Token
-    ) -> object:
-        """Discard the position-constraint intro keyword token."""
-        return lark_standalone.Discard
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the position-constraint intro keyword token through."""
+        return token
 
-    def IT_HAS_THE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the position-requirement keyword token."""
-        return lark_standalone.Discard
+    def IT_HAS_THE(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the position-requirement keyword token through."""
+        return token
 
     def IT_ALSO_ASSIGNS_THE(  # noqa: N802
-        self, _token: lark_standalone.Token
-    ) -> object:
-        """Discard the quality-implication keyword token."""
-        return lark_standalone.Discard
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the quality-implication keyword token through."""
+        return token
 
-    def IT_HAPPENS_WHEN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the trigger-conditions keyword token."""
-        return lark_standalone.Discard
+    def IT_HAPPENS_WHEN(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the trigger-conditions keyword token through."""
+        return token
 
-    def THE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the trigger-condition 'the' keyword token."""
-        return lark_standalone.Discard
+    def THE(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the trigger-condition 'the' keyword token through."""
+        return token
 
-    def HAS_A_PARTICLE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the 'has a particle' keyword token."""
-        return lark_standalone.Discard
+    def HAS_A_PARTICLE(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the 'has a particle' keyword token through."""
+        return token
 
-    def DESTRUCTOR_STATEMENT(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the destructor-condition keyword token."""
-        return lark_standalone.Discard
+    def DESTRUCTOR_STATEMENT(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the destructor-condition keyword token through."""
+        return token
 
-    def AND_IT_DOES(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the action-statements keyword token."""
-        return lark_standalone.Discard
+    def AND_IT_DOES(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the action-statements keyword token through."""
+        return token
 
-    def CREATE_A_PARTICLE_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the create-particle keyword token."""
-        return lark_standalone.Discard
+    def CREATE_A_PARTICLE_IN(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the create-particle keyword token through."""
+        return token
 
-    def MOVE_THE_PARTICLE_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the move-particle keyword token."""
-        return lark_standalone.Discard
+    def MOVE_THE_PARTICLE_IN(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the move-particle keyword token through."""
+        return token
 
-    def DESTROY_THE_PARTICLE_IN(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the destroy-particle keyword token."""
-        return lark_standalone.Discard
+    def DESTROY_THE_PARTICLE_IN(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the destroy-particle keyword token through."""
+        return token
+
+    def AFTER_IT_IS_ASSIGNED(  # noqa: N802
+        self, token: lark_standalone.Token
+    ) -> lark_standalone.Token:
+        """Pass the init-block keyword token through."""
+        return token
+
+    # These three tokens never anchor a rule location: TO sits between the
+    # source and target of a move (the move keyword is the anchor),
+    # CHAIN_SEPARATOR sits between chain elements, and SPACE_AND_OPEN_BRACE
+    # is the body-block opener.
 
     def TO(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard the 'to' keyword token."""
@@ -214,29 +324,33 @@ class DefinitionTransformer(
         """Discard chain separator tokens."""
         return lark_standalone.Discard
 
-    def AFTER_IT_IS_ASSIGNED(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Discard the init-block keyword token."""
-        return lark_standalone.Discard
-
     def SPACE_AND_OPEN_BRACE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard opening braces."""
         return lark_standalone.Discard
 
-    @lark_standalone.v_args(meta=True)
     def local_position_definition(
         self,
-        meta: lark_standalone.Meta,
-        items: list[ast.LocalNameContent | ast.PositionConstraintBlock],
+        items: list[
+            lark_standalone.Token | ast.LocalNameContent | _LocalPositionBlockData
+        ],
     ) -> ast.LocalPositionDefinition:
-        """Transform a local position definition."""
-        local_name = cast("ast.LocalNameContent", items[0])
-        constraints = (
-            cast("ast.PositionConstraintBlock", items[1]) if len(items) > 1 else None
-        )
+        """Transform a local position definition.
+
+        items: [DEFINE_THE_POSITION token, local_name, optional block data].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        local_name = cast("ast.LocalNameContent", items[1])
+        if len(items) > 2:
+            block_data = cast("_LocalPositionBlockData", items[2])
+            return ast.LocalPositionDefinition(
+                local_name=local_name,
+                constraints=block_data.constraints,
+                location=self._location(start=keyword, end=block_data.block_close),
+            )
         return ast.LocalPositionDefinition(
             local_name=local_name,
-            constraints=constraints,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            constraints=None,
+            location=self._location_for_bare_definition(start=keyword, name=local_name),
         )
 
     def position_definition_terminator_or_block(
@@ -248,76 +362,127 @@ class DefinitionTransformer(
         return items[0]
 
     def local_position_definition_block(
-        self, items: list[ast.PositionConstraintBlock]
-    ) -> ast.PositionConstraintBlock:
-        """Unwrap a local position definition block."""
-        return items[0]
+        self,
+        items: list[lark_standalone.Token | ast.PositionConstraintBlock],
+    ) -> _LocalPositionBlockData:
+        """Bundle the inner constraint block with the outer ``}`` token.
+
+        items: [position_constraint_block, CLOSE_BRACE token].
+        """
+        return _LocalPositionBlockData(
+            constraints=cast("ast.PositionConstraintBlock", items[0]),
+            block_close=cast("lark_standalone.Token", items[1]),
+        )
 
     def potential_position_definition_block(
         self,
         items: list[
-            ast.QualityImplicationStatement
+            lark_standalone.Token
+            | ast.QualityImplicationStatement
             | ast.PositionConstraintBlock
             | ast.PositionInitBlock
+            | None
         ],
-    ) -> list[
-        ast.QualityImplicationStatement
-        | ast.PositionConstraintBlock
-        | ast.PositionInitBlock
-    ]:
-        """Pass through quality requirements and constraint/init blocks from a potential position definition."""
-        return items
+    ) -> _PotentialPositionBlockData:
+        """Bundle the block's contents with the outer ``}`` token.
 
-    @lark_standalone.v_args(meta=True)
+        items: [*quality_implications, position_constraint_block?, position_initialization_block?, CLOSE_BRACE token].
+        Lark's maybe_placeholders may insert ``None`` for the absent optional
+        position_initialization_block; those entries are skipped.
+        """
+        close_brace = cast("lark_standalone.Token", items[-1])
+        quality_implications: list[ast.QualityImplicationStatement] = []
+        constraints: ast.PositionConstraintBlock | None = None
+        initialization: ast.PositionInitBlock | None = None
+        for item in items[:-1]:
+            if item is None:
+                continue
+            if isinstance(item, ast.QualityImplicationStatement):
+                quality_implications.append(item)
+            elif isinstance(item, ast.PositionConstraintBlock):
+                constraints = item
+            elif isinstance(item, ast.PositionInitBlock):
+                initialization = item
+        return _PotentialPositionBlockData(
+            quality_implications=tuple(quality_implications),
+            constraints=constraints,
+            initialization=initialization,
+            block_close=close_brace,
+        )
+
     def position_initialization_block(
         self,
-        meta: lark_standalone.Meta,
-        items: list[ast.ActionStatement],
+        items: list[lark_standalone.Token | ast.ActionStatement],
     ) -> ast.PositionInitBlock:
-        """Transform a position init block."""
+        """Transform a position init block.
+
+        items: [AFTER_IT_IS_ASSIGNED token, *statements, CLOSE_BRACE token].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        close_brace = cast("lark_standalone.Token", items[-1])
+        statements = cast("list[ast.ActionStatement]", items[1:-1])
         return ast.PositionInitBlock(
-            statements=tuple(items),
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            statements=tuple(statements),
+            location=self._location(start=keyword, end=close_brace),
         )
 
-    @lark_standalone.v_args(meta=True)
     def position_constraint_block(
-        self, meta: lark_standalone.Meta, items: list[ast.PositionRequirementStatement]
+        self,
+        items: list[lark_standalone.Token | ast.PositionRequirementStatement],
     ) -> ast.PositionConstraintBlock:
-        """Transform a position constraint block."""
+        """Transform a position constraint block.
+
+        items: [IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE token, *requirements,
+        CLOSE_BRACE token].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        close_brace = cast("lark_standalone.Token", items[-1])
+        requirements = cast("list[ast.PositionRequirementStatement]", items[1:-1])
         return ast.PositionConstraintBlock(
-            requirements=tuple(items),
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            requirements=tuple(requirements),
+            location=self._location(start=keyword, end=close_brace),
         )
 
-    @lark_standalone.v_args(meta=True)
     def position_requirement_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.GlobalTypedNameReference]
+        self,
+        items: list[lark_standalone.Token | ast.GlobalTypedNameReference],
     ) -> ast.PositionRequirementStatement:
-        """Transform a position requirement statement."""
+        """Transform a position requirement statement.
+
+        items: [IT_HAS_THE token, typed_global_name_reference].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        typed_global_name = cast("ast.GlobalTypedNameReference", items[1])
         return ast.PositionRequirementStatement(
-            typed_global_name=items[0],
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            typed_global_name=typed_global_name,
+            location=self._location_with_terminator(
+                start=keyword, end=typed_global_name
+            ),
         )
 
-    @lark_standalone.v_args(meta=True)
     def quality_implication_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.GlobalTypedNameReference]
+        self,
+        items: list[lark_standalone.Token | ast.GlobalTypedNameReference],
     ) -> ast.QualityImplicationStatement:
-        """Transform a quality implication statement."""
+        """Transform a quality implication statement.
+
+        items: [IT_ALSO_ASSIGNS_THE token, typed_global_name_reference].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        typed_global_name = cast("ast.GlobalTypedNameReference", items[1])
         return ast.QualityImplicationStatement(
-            typed_global_name=items[0],
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            typed_global_name=typed_global_name,
+            location=self._location_with_terminator(
+                start=keyword, end=typed_global_name
+            ),
         )
 
     def NAME_TYPE(self, token: lark_standalone.Token) -> ast.NameType:  # noqa: N802
         """Transform a name-type token into a NameType enum."""
         return ast.NameType(token)
 
-    @lark_standalone.v_args(meta=True)
     def typed_global_name_reference(
         self,
-        meta: lark_standalone.Meta,
         items: list[ast.NameType | ast.ReferenceGlobalNameContent],
     ) -> ast.GlobalTypedNameReference:
         """Transform typed global name references."""
@@ -327,13 +492,11 @@ class DefinitionTransformer(
             name_type=name_type,
             name_content=name_content,
             enclosing_fqun=self._enclosing_fqun,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_definition_name(name_content, name_type),
         )
 
-    @lark_standalone.v_args(meta=True)
     def typed_local_name_reference(
         self,
-        meta: lark_standalone.Meta,
         items: list[ast.NameType | ast.LocalNameContent],
     ) -> ast.LocalTypedNameReference:
         """Transform typed local name references."""
@@ -342,72 +505,95 @@ class DefinitionTransformer(
         return ast.LocalTypedNameReference(
             name_type=name_type,
             name_content=name_content,
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            location=ast.SourceLocation.from_definition_name(name_content, name_type),
         )
 
     def typed_name_reference(self, items: list[ast.TypedName]) -> ast.TypedName:
         """Unwrap the typed name reference wrapper rule."""
         return items[0]
 
-    @lark_standalone.v_args(meta=True)
     def position_reference(
-        self, meta: lark_standalone.Meta, items: list[ast.TypedNameReference]
+        self, items: list[ast.TypedNameReference]
     ) -> ast.PositionReference:
         """Transform a position reference (possibly chained with ::)."""
         return ast.PositionReference(
             typed_names=tuple(items),
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            location=self._location(start=items[0], end=items[-1]),
             from_source=True,
         )
 
-    @lark_standalone.v_args(meta=True)
     def create_particle_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
+        self, items: list[lark_standalone.Token | ast.PositionReference]
     ) -> ast.CreateParticleStatement:
-        """Transform a create particle statement."""
+        """Transform a create particle statement.
+
+        items: [CREATE_A_PARTICLE_IN token, position_reference].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        target = cast("ast.PositionReference", items[1])
         return ast.CreateParticleStatement(
-            target_position=items[0],
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            target_position=target,
+            location=self._location_with_terminator(start=keyword, end=target),
         )
 
-    @lark_standalone.v_args(meta=True)
     def move_particle_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
+        self, items: list[lark_standalone.Token | ast.PositionReference]
     ) -> ast.MoveParticleStatement:
-        """Transform a move particle statement."""
+        """Transform a move particle statement.
+
+        items: [MOVE_THE_PARTICLE_IN token, source_position, target_position].
+        The TO separator between source and target is discarded.
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        source = cast("ast.PositionReference", items[1])
+        target = cast("ast.PositionReference", items[2])
         return ast.MoveParticleStatement(
-            target_position=items[1],
-            source_position=items[0],
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            source_position=source,
+            target_position=target,
+            location=self._location_with_terminator(start=keyword, end=target),
         )
 
-    @lark_standalone.v_args(meta=True)
     def destroy_particle_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.PositionReference]
+        self, items: list[lark_standalone.Token | ast.PositionReference]
     ) -> ast.DestroyParticleStatement:
-        """Transform a destroy particle statement."""
+        """Transform a destroy particle statement.
+
+        items: [DESTROY_THE_PARTICLE_IN token, position_reference].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        target = cast("ast.PositionReference", items[1])
         return ast.DestroyParticleStatement(
-            target_position=items[0],
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            target_position=target,
+            location=self._location_with_terminator(start=keyword, end=target),
         )
 
-    @lark_standalone.v_args(meta=True)
     def position_presence_statement(
-        self, meta: lark_standalone.Meta, items: list[ast.LocalTypedNameReference]
+        self, items: list[lark_standalone.Token | ast.LocalTypedNameReference]
     ) -> ast.PositionPresenceStatement:
-        """Transform a position presence statement."""
+        """Transform a position presence statement.
+
+        items: [THE token, typed_local_name_reference, HAS_A_PARTICLE token].
+        """
+        the_keyword = cast("lark_standalone.Token", items[0])
+        typed_name = cast("ast.LocalTypedNameReference", items[1])
+        has_a_particle = cast("lark_standalone.Token", items[2])
         return ast.PositionPresenceStatement(
-            typed_name=items[0],
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            typed_name=typed_name,
+            location=self._location_with_terminator(
+                start=the_keyword, end=has_a_particle
+            ),
         )
 
-    @lark_standalone.v_args(meta=True)
     def destructor_condition_statement(
-        self, meta: lark_standalone.Meta, _items: list[object]
+        self, items: list[lark_standalone.Token]
     ) -> ast.DestructorConditionStatement:
-        """Transform a destructor condition statement."""
+        """Transform a destructor condition statement.
+
+        items: [DESTRUCTOR_STATEMENT token] (the rule has no other content).
+        """
+        keyword = items[0]
         return ast.DestructorConditionStatement(
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            location=self._location_with_terminator(start=keyword, end=keyword),
         )
 
     def trigger_condition_statement(
@@ -416,41 +602,58 @@ class DefinitionTransformer(
         """Unwrap the trigger condition statement wrapper rule."""
         return items[0]
 
-    @lark_standalone.v_args(meta=True)
     def trigger_conditions_block(
-        self, meta: lark_standalone.Meta, items: list[ast.TriggerConditionStatement]
+        self,
+        items: list[lark_standalone.Token | ast.TriggerConditionStatement],
     ) -> ast.TriggerConditionsBlock:
-        """Transform a trigger conditions block."""
+        """Transform a trigger conditions block.
+
+        items: [IT_HAPPENS_WHEN token, *conditions, CLOSE_BRACE token].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        close_brace = cast("lark_standalone.Token", items[-1])
+        conditions = cast("list[ast.TriggerConditionStatement]", items[1:-1])
         return ast.TriggerConditionsBlock(
-            conditions=tuple(items),
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            conditions=tuple(conditions),
+            location=self._location(start=keyword, end=close_brace),
         )
 
-    @lark_standalone.v_args(meta=True)
     def action_statements_block(
-        self, meta: lark_standalone.Meta, items: list[ast.ActionStatement]
+        self, items: list[lark_standalone.Token | ast.ActionStatement]
     ) -> ast.ActionStatementsBlock:
-        """Transform an action statements block."""
+        """Transform an action statements block.
+
+        items: [AND_IT_DOES token, *statements, CLOSE_BRACE token].
+        """
+        keyword = cast("lark_standalone.Token", items[0])
+        close_brace = cast("lark_standalone.Token", items[-1])
+        statements = cast("list[ast.ActionStatement]", items[1:-1])
         return ast.ActionStatementsBlock(
-            statements=tuple(items),
-            location=ast.SourceLocation.from_meta(meta, file_path=self._file_path),
+            statements=tuple(statements),
+            location=self._location(start=keyword, end=close_brace),
         )
 
     def action_definition_block(
         self,
         items: list[
-            ast.QualityImplicationStatement
+            lark_standalone.Token
+            | ast.QualityImplicationStatement
             | ast.LocalPositionDefinition
             | ast.TriggerConditionsBlock
             | ast.ActionStatementsBlock
         ],
     ) -> _ActionDefinitionBlockData:
-        """Transform an action definition block."""
-        action_statements = cast("ast.ActionStatementsBlock", items[-1])
-        trigger_conditions = cast("ast.TriggerConditionsBlock", items[-2])
+        """Transform an action definition block.
+
+        items: [*quality_implications, *interface_positions, trigger_conditions,
+        action_statements, CLOSE_BRACE token].
+        """
+        close_brace = cast("lark_standalone.Token", items[-1])
+        action_statements = cast("ast.ActionStatementsBlock", items[-2])
+        trigger_conditions = cast("ast.TriggerConditionsBlock", items[-3])
         quality_implications: list[ast.QualityImplicationStatement] = []
         interface_positions: list[ast.LocalPositionDefinition] = []
-        for item in items[:-2]:
+        for item in items[:-3]:
             if isinstance(item, ast.QualityImplicationStatement):
                 quality_implications.append(item)
             else:
@@ -460,6 +663,7 @@ class DefinitionTransformer(
             interface_positions=tuple(interface_positions),
             trigger_conditions=trigger_conditions,
             action_statements=action_statements,
+            block_close=close_brace,
         )
 
     def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:

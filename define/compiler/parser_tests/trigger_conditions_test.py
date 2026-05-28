@@ -96,7 +96,7 @@ def test_trigger_block_same_line_no_space(parse: Parse) -> None:
             + "}\n"
         )
     assert exc_info.value.token == "}"
-    assert exc_info.value.token.type == "RBRACE"
+    assert exc_info.value.token.type == "CLOSE_BRACE"
     assert exc_info.value.line == 3
     assert exc_info.value.column == 22
 
@@ -125,7 +125,7 @@ def test_trigger_block_closing_brace_same_line(parse: Parse) -> None:
             + "}\n"
         )
     assert exc_info.value.token == "}"
-    assert exc_info.value.token.type == "RBRACE"
+    assert exc_info.value.token.type == "CLOSE_BRACE"
     assert exc_info.value.line == 3
     assert exc_info.value.column == 22
 
@@ -140,7 +140,7 @@ def test_empty_trigger_block_is_error(parse: Parse) -> None:
             + "}\n"
         )
     assert exc_info.value.token == "}"
-    assert exc_info.value.token.type == "RBRACE"
+    assert exc_info.value.token.type == "CLOSE_BRACE"
     assert exc_info.value.line == 3
     assert exc_info.value.column == 5
 
