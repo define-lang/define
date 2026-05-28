@@ -1,28 +1,43 @@
 """Generate a large, syntactically-diverse Define source file for stress testing.
 
-Emits a single ``.dfn`` whose contents are accepted by the parser and
-transformer (non-filesystem mode). The source exercises a broad slice of
-the grammar:
+Emits a single ``.dfn`` whose contents produce zero diagnostics when run
+through the non-filesystem validator. The body is a cycle of self-
+contained particle-state-conserving blocks: every create is paired with
+a destroy, and every move is followed by a destroy of the destination.
+The cycle's chain blocks deliberately never touch their chain heads
+(``position<interface_to_g0>``, ``position</g_0>``) outside of a chained
+reference, so those heads stay in their indeterminate initial state and
+remain valid chain entries for every iteration. The source exercises a
+broad slice of the grammar:
 
   * A pool of top-level potential position and potential action definitions
-    in the same FQUN as the main action, so short-form references from
-    inside the main action resolve to defined positions. Each pool
-    position declares ``it has the position</g_(i+1)>`` so long chains
-    through the pool satisfy the chain-element constraint check.
+    in the same FQUN as the main action. Each pool position declares
+    ``it has the position</g_(i+1)>`` so long chains through the pool
+    satisfy the chain-element constraint check. Pool actions have
+    net-zero bodies (create-then-destroy in ``_noop``).
   * Standalone potential position definitions in 2-part and 3-part FQUN
     forms in other universes, to exercise the multi-format FQUN parser
     path. They are not referenced from the main action because the
     validator's non-filesystem mode currently raises KeyError when
     processing a reference edge to a cross-universe target.
   * Positions with constraint blocks, with quality implications, with
-    init blocks, and combinations.
-  * Actions with full bodies and a destructor action that triggers on
+    init blocks (paired creates-and-destroys so the init block is also
+    net-zero), and combinations.
+  * A bulk action whose body interleaves blocks rooted in three kinds of
+    names -- the action's interface positions, fresh inner local
+    positions defined inside the action statements block, and implied
+    positions/actions on the action -- so no single root dominates. The
+    bulk action also has a destructor action that triggers on
     ``this particle is being destroyed``.
-  * Inside the bulk action: every ``ActionStatement`` kind -- local
-    position definitions (simple and constrained), ``create``, ``move``,
-    and ``destroy`` -- using a mix of local references, short global
-    references (``</path>``), a full-FQUN reference, and chained
-    references including very long chains (up to the configured maximum).
+  * Every ``ActionStatement`` kind -- inner local position definitions
+    (simple and constrained), ``create``, ``move``, and ``destroy`` --
+    using a mix of interface, inner-local, and implied references, plus
+    chained references including very long chains (up to the configured
+    maximum) rooted at implied positions. Long-chain blocks walk down
+    the chain populating each intermediate before the final create, then
+    walk back up destroying them, so the per-segment chain rule is
+    satisfied even when the same head is exercised by chain blocks of
+    different lengths in the same iteration.
   * Standalone comments, trailing comments, and blank lines.
 
 Run via:
@@ -56,6 +71,24 @@ _MIN_CHAIN_LENGTH = 2
 _OUTER_INDENT = "    "
 _INNER_INDENT = "        "
 _DEEP_INDENT = "            "
+_QUAD_INDENT = "                "
+
+# Interface positions defined in the main action body. Each pairs with a
+# distinct shape so blocks can be rooted at them without all chains
+# falling through the implied ``g_0`` constraint.
+_INTERFACE_SIMPLE = "interface_simple"
+_INTERFACE_TO_G0 = "interface_to_g0"
+_INTERFACE_TO_G2 = "interface_to_g2"
+_INTERFACE_DST = "interface_dst"
+
+# Implied-target indices on the main action and on the
+# position-with-implications definition.
+_IMPLIED_POSITION_INDEX = 0
+_IMPLIED_INTERFACE_TO_G2_INDEX = 2
+_IMPLIED_INNER_CONSTRAINT_INDEX = 4
+_POSITION_IMPLICATIONS_REQUIRES_INDEX = 2
+_POSITION_IMPLICATIONS_IMPLIED_POSITION_INDEX = 0
+_POSITION_IMPLICATIONS_IMPLIED_ACTION_INDEX = 1
 
 
 def _global_path(i: int) -> str:
@@ -143,6 +176,11 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
     lines: list[str] = []
     for i in range(num_actions):
         name = _qualified_global_name(prefix, i, is_action=True)
+        # Pool action bodies create and then destroy the particle so the
+        # action runs net-zero. External callers that chain through these
+        # actions (e.g. ``action</a_i>::position<_noop>``) can therefore
+        # pair their own create with a destroy without colliding with a
+        # state left behind by the pool action's own body.
         lines.extend(
             [
                 f"define the potential action<{name}> {{",
@@ -152,6 +190,7 @@ def _emit_simple_action_pool(prefix: str, num_actions: int) -> list[str]:
                 f"{_INNER_INDENT}the position<run> has a particle.",
                 f"{_OUTER_INDENT}}} and it does {{",
                 f"{_INNER_INDENT}create a particle in position<_noop>.",
+                f"{_INNER_INDENT}destroy the particle in position<_noop>.",
                 f"{_OUTER_INDENT}}}",
                 "}",
                 "",
@@ -175,20 +214,24 @@ def _emit_constrained_position(prefix: str, index: int) -> list[str]:
 
 def _emit_position_with_implications_and_init(prefix: str, index: int) -> list[str]:
     name = _qualified_global_name(prefix, index)
+    implied_position = _short_global_name(_POSITION_IMPLICATIONS_IMPLIED_POSITION_INDEX)
+    implied_action = _short_global_name(
+        _POSITION_IMPLICATIONS_IMPLIED_ACTION_INDEX, is_action=True
+    )
+    requires_position = _short_global_name(_POSITION_IMPLICATIONS_REQUIRES_INDEX)
     return [
         f"define the potential position<{name}> {{",
-        f"{_OUTER_INDENT}it also assigns the position<{_short_global_name(0)}>.",
-        f"{_OUTER_INDENT}it also assigns the action<{_short_global_name(1, is_action=True)}>.",
+        f"{_OUTER_INDENT}it also assigns the position<{implied_position}>.",
+        f"{_OUTER_INDENT}it also assigns the action<{implied_action}>.",
         f"{_OUTER_INDENT}it may only contain particles where {{",
-        f"{_INNER_INDENT}it has the position<{_short_global_name(2)}>.",
+        f"{_INNER_INDENT}it has the position<{requires_position}>.",
         f"{_OUTER_INDENT}}}",
         f"{_OUTER_INDENT}after it is assigned {{",
-        f"{_INNER_INDENT}create a particle in position<{_short_global_name(0)}>.",
+        f"{_INNER_INDENT}create a particle in position<{implied_position}>.",
+        f"{_INNER_INDENT}destroy the particle in position<{implied_position}>.",
         f"{_INNER_INDENT}# Trailing comment in init block",
-        (
-            f"{_INNER_INDENT}create a particle in"
-            f" action<{_short_global_name(1, is_action=True)}>::position<_noop>."
-        ),
+        f"{_INNER_INDENT}create a particle in action<{implied_action}>::position<_noop>.",
+        f"{_INNER_INDENT}destroy the particle in action<{implied_action}>::position<_noop>.",
         f"{_OUTER_INDENT}}}",
         "}",
         "",
@@ -212,68 +255,156 @@ def _emit_destructor_action(fqun_path: str) -> list[str]:
     ]
 
 
-def _chained_create_statement(chain_length: int, num_globals: int) -> str:
+def _chain_reference(length: int, num_globals: int) -> str:
     elements = [
-        f"position<{_short_global_name(i % num_globals)}>" for i in range(chain_length)
+        f"position<{_short_global_name(i % num_globals)}>" for i in range(length)
     ]
-    chain = "::".join(elements)
-    return f"{_INNER_INDENT}create a particle in {chain}."
+    return "::".join(elements)
 
 
-def _next_body_statement(
+def _create_destroy(reference: str) -> list[str]:
+    return [
+        f"{_INNER_INDENT}create a particle in {reference}.",
+        f"{_INNER_INDENT}destroy the particle in {reference}.",
+    ]
+
+
+def _block_interface_simple() -> list[str]:
+    return _create_destroy(f"position<{_INTERFACE_SIMPLE}>")
+
+
+def _block_inner_local_simple(step: int) -> list[str]:
+    name = f"inner_{step}"
+    return [
+        f"{_INNER_INDENT}define the position<{name}>.",
+        *_create_destroy(f"position<{name}>"),
+    ]
+
+
+def _block_inner_local_constrained(step: int) -> list[str]:
+    name = f"inner_c_{step}"
+    target = _short_global_name(_IMPLIED_INNER_CONSTRAINT_INDEX)
+    # Inner local positions start empty and the chain rule (spec
+    # "Position References") requires every intermediate position in a
+    # chain to already contain a particle. Populate the inner before the
+    # chain create, then drain it after the chain destroy.
+    return [
+        f"{_INNER_INDENT}define the position<{name}> {{",
+        f"{_DEEP_INDENT}it may only contain particles where {{",
+        f"{_QUAD_INDENT}it has the position<{target}>.",
+        f"{_DEEP_INDENT}}}",
+        f"{_INNER_INDENT}}}",
+        f"{_INNER_INDENT}create a particle in position<{name}>.",
+        f"{_INNER_INDENT}create a particle in position<{name}>::position<{target}>.",
+        f"{_INNER_INDENT}destroy the particle in position<{name}>::position<{target}>.",
+        f"{_INNER_INDENT}destroy the particle in position<{name}>.",
+    ]
+
+
+def _block_implied_action_chain(step: int, num_actions: int) -> list[str]:
+    ai = step % num_actions
+    return _create_destroy(
+        f"action<{_short_global_name(ai, is_action=True)}>::position<_noop>"
+    )
+
+
+# Chain blocks below never touch the chain's head position directly --
+# only as the first element of a chained name. The validator allows
+# chain access to an interface or implied position while its state is
+# indeterminate (the initial state at the top of the action body), but
+# once that position has been explicitly created or destroyed its state
+# becomes known and the chain rule fires. Keeping the head untouched
+# leaves it indeterminate for every iteration of the cycle.
+def _block_interface_to_implied_chain() -> list[str]:
+    target = _short_global_name(_IMPLIED_INTERFACE_TO_G2_INDEX)
+    return _create_destroy(f"position<{_INTERFACE_TO_G2}>::position<{target}>")
+
+
+def _block_implied_chain(length: int, num_globals: int) -> list[str]:
+    # Walk down the chain populating each intermediate, then walk back
+    # up destroying them. The chain rule (spec "Position References")
+    # requires every position in a chain except the last to already
+    # contain a particle, so a single ``create a particle in
+    # g_0::g_1::g_2::...`` would fail unless every shorter prefix is
+    # already populated.
+    lines: list[str] = []
+    for prefix_length in range(2, length + 1):
+        chain = _chain_reference(prefix_length, num_globals)
+        lines.append(f"{_INNER_INDENT}create a particle in {chain}.")
+    for prefix_length in range(length, 1, -1):
+        chain = _chain_reference(prefix_length, num_globals)
+        lines.append(f"{_INNER_INDENT}destroy the particle in {chain}.")
+    return lines
+
+
+def _block_move_interface() -> list[str]:
+    source = f"position<{_INTERFACE_SIMPLE}>"
+    destination = f"position<{_INTERFACE_DST}>"
+    return [
+        f"{_INNER_INDENT}create a particle in {source}.",
+        f"{_INNER_INDENT}move the particle in {source} to {destination}.",
+        f"{_INNER_INDENT}destroy the particle in {destination}.",
+    ]
+
+
+def _block_move_interface_chain() -> list[str]:
+    target = _short_global_name(_IMPLIED_POSITION_INDEX)
+    source = f"position<{_INTERFACE_TO_G0}>::position<{target}>"
+    destination = f"position<{_INTERFACE_DST}>"
+    return [
+        f"{_INNER_INDENT}create a particle in {source}.",
+        f"{_INNER_INDENT}move the particle in {source} to {destination}.",
+        f"{_INNER_INDENT}destroy the particle in {destination}.",
+    ]
+
+
+def _block_comment(step: int) -> list[str]:
+    return [f"{_INNER_INDENT}# cycle marker {step}"]
+
+
+_BODY_BLOCK_COUNT = 11
+
+
+def _next_body_block(
     step: int, num_globals: int, num_actions: int, max_chain_length: int
-) -> str:
-    """Return a single body line, cycling through statement kinds by ``step``."""
-    kind = step % 12
+) -> list[str]:
+    """Return one self-contained, state-conserving block of body lines."""
+    # ``_INTERFACE_TO_G0`` and ``position</g_0>`` are the chain heads
+    # used by later kinds in this cycle; the cycle therefore does not
+    # include a "direct create+destroy" block for either of them, since
+    # touching them once would transition them out of the indeterminate
+    # state the chain blocks rely on.
+    kind = step % _BODY_BLOCK_COUNT
     if kind == 0:
-        return f"{_INNER_INDENT}create a particle in position<local_a>."
+        return _block_interface_simple()
     if kind == 1:
-        # Only g_0 is brought into the main action's scope via ``it also
-        # assigns``; non-chained references to other pool positions would
-        # trigger UnknownGlobalNameDiagnostic.
-        return f"{_INNER_INDENT}create a particle in position<{_short_global_name(0)}>."
+        return _block_inner_local_simple(step)
     if kind == 2:
-        return _chained_create_statement(2, num_globals)
+        return _block_inner_local_constrained(step)
     if kind == 3:
-        return _chained_create_statement(min(5, max_chain_length), num_globals)
+        return _block_implied_action_chain(step, num_actions)
     if kind == 4:
-        return _chained_create_statement(max_chain_length, num_globals)
+        return _block_interface_to_implied_chain()
     if kind == 5:
-        # local_a is constrained to ``it has the position</g_0>``, so the
-        # local+global chain pins to g_0 to satisfy that constraint.
-        return (
-            f"{_INNER_INDENT}create a particle in"
-            f" position<local_a>::position<{_short_global_name(0)}>."
-        )
+        return _block_implied_chain(2, num_globals)
     if kind == 6:
-        ai = step % num_actions
-        return (
-            f"{_INNER_INDENT}create a particle in"
-            f" action<{_short_global_name(ai, is_action=True)}>::position<_noop>."
-        )
+        return _block_implied_chain(min(5, max_chain_length), num_globals)
     if kind == 7:
-        return (
-            f"{_INNER_INDENT}move the particle in position<local_a>"
-            " to position<local_b>."
-        )
+        return _block_implied_chain(max_chain_length, num_globals)
     if kind == 8:
-        # See kind 5: local_a's constraint pins the second element to g_0.
-        return (
-            f"{_INNER_INDENT}move the particle in"
-            f" position<local_a>::position<{_short_global_name(0)}>"
-            f" to position<local_b>."
-        )
+        return _block_move_interface()
     if kind == 9:
-        return f"{_INNER_INDENT}destroy the particle in position<local_b>."
-    if kind == 10:
-        return f"{_INNER_INDENT}# cycle marker {step}"
-    return f"{_INNER_INDENT}define the position<scratch_{step}>."
+        return _block_move_interface_chain()
+    return _block_comment(step)
 
 
 def _emit_main_action_header(fqun_path: str, num_actions: int) -> list[str]:
     lines: list[str] = [
         f"define the potential action<{fqun_path}> {{",
-        f"{_OUTER_INDENT}it also assigns the position<{_short_global_name(0)}>.",
+        (
+            f"{_OUTER_INDENT}it also assigns the"
+            f" position<{_short_global_name(_IMPLIED_POSITION_INDEX)}>."
+        ),
     ]
     for i in range(num_actions):
         action_name = _short_global_name(i, is_action=True)
@@ -281,12 +412,24 @@ def _emit_main_action_header(fqun_path: str, num_actions: int) -> list[str]:
     lines.extend(
         [
             f"{_OUTER_INDENT}define the position<run>.",
-            f"{_OUTER_INDENT}define the position<local_a> {{",
+            f"{_OUTER_INDENT}define the position<{_INTERFACE_SIMPLE}>.",
+            f"{_OUTER_INDENT}define the position<{_INTERFACE_TO_G0}> {{",
             f"{_INNER_INDENT}it may only contain particles where {{",
-            f"{_DEEP_INDENT}it has the position<{_short_global_name(0)}>.",
+            (
+                f"{_DEEP_INDENT}it has the"
+                f" position<{_short_global_name(_IMPLIED_POSITION_INDEX)}>."
+            ),
             f"{_INNER_INDENT}}}",
             f"{_OUTER_INDENT}}}",
-            f"{_OUTER_INDENT}define the position<local_b>.",
+            f"{_OUTER_INDENT}define the position<{_INTERFACE_TO_G2}> {{",
+            f"{_INNER_INDENT}it may only contain particles where {{",
+            (
+                f"{_DEEP_INDENT}it has the"
+                f" position<{_short_global_name(_IMPLIED_INTERFACE_TO_G2_INDEX)}>."
+            ),
+            f"{_INNER_INDENT}}}",
+            f"{_OUTER_INDENT}}}",
+            f"{_OUTER_INDENT}define the position<{_INTERFACE_DST}>.",
             f"{_OUTER_INDENT}it happens when {{",
             f"{_INNER_INDENT}the position<run> has a particle.",
             f"{_OUTER_INDENT}}} and it does {{",
@@ -341,9 +484,7 @@ def generate_source_lines(
 
     step = 0
     while len(lines) + len(close_lines) < target_lines:
-        lines.append(
-            _next_body_statement(step, num_globals, num_actions, max_chain_length)
-        )
+        lines.extend(_next_body_block(step, num_globals, num_actions, max_chain_length))
         step += 1
 
     lines.extend(close_lines)

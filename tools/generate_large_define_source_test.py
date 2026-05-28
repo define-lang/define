@@ -3,60 +3,10 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import ast, diagnostics, parser, transformer
+from define.compiler import ast, parser, transformer
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from tools import generate_large_define_source as gen
-
-# Diagnostic types that mean a name or constraint in the source is invalid.
-# Runtime / dataflow diagnostics (occupancy, move semantics, destructor
-# guarantees, etc.) are not in this set: they are allowed to fire on the
-# stress-test source even when every name and constraint is well-formed.
-_NAME_OR_CONSTRAINT_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
-    diagnostics.ReservedUniverseNameDiagnostic,
-    diagnostics.ReservedAuthorityDomainDiagnostic,
-    diagnostics.DotlessAuthorityDomainDiagnostic,
-    diagnostics.ReservedMultiverseNameDiagnostic,
-    diagnostics.PathMismatchDiagnostic,
-    diagnostics.UniverseWithoutAuthorityDiagnostic,
-    diagnostics.DuplicateDefinitionDiagnostic,
-    diagnostics.LocalNameConflictDiagnostic,
-    diagnostics.DuplicatePositionConstraintDiagnostic,
-    diagnostics.DuplicateQualityImplicationDiagnostic,
-    diagnostics.UnusedQualityImplicationDiagnostic,
-    diagnostics.FqunMismatchDiagnostic,
-    diagnostics.AuthorityDomainTooShortDiagnostic,
-    diagnostics.AuthorityDomainInvalidCharDiagnostic,
-    diagnostics.InvalidAuthorityPathSegmentDiagnostic,
-    diagnostics.AuthorityPathEmptySegmentDiagnostic,
-    diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
-    diagnostics.GlobalNamePathMissingLeadingSlashDiagnostic,
-    diagnostics.GlobalNamePathTrailingSlashDiagnostic,
-    diagnostics.GlobalNamePathEmptySegmentDiagnostic,
-    diagnostics.InvalidLocalNameFormatDiagnostic,
-    diagnostics.MultiverseNameTooShortDiagnostic,
-    diagnostics.MultiverseNameInvalidCharDiagnostic,
-    diagnostics.UniverseNameTooShortDiagnostic,
-    diagnostics.UniverseNameInvalidCharDiagnostic,
-    diagnostics.GlobalReferenceMustUseShortFormDiagnostic,
-    diagnostics.ReferencedGlobalNameWrongTypeDiagnostic,
-    diagnostics.ReferencedFileNotFoundDiagnostic,
-    diagnostics.ExternalUniverseNotConfiguredDiagnostic,
-    diagnostics.NoProjectRootInNonFilesystemContextDiagnostic,
-    diagnostics.SubRootAlreadyOccupiedDiagnostic,
-    diagnostics.PathInsideOtherUniverseDiagnostic,
-    diagnostics.CircularGlobalReferenceDiagnostic,
-    diagnostics.UnnecessarySelfReferenceDiagnostic,
-    diagnostics.PositionReferenceChainEndDiagnostic,
-    diagnostics.UndefinedLocalNameDiagnostic,
-    diagnostics.UnknownGlobalNameDiagnostic,
-    diagnostics.LocalActionNameDiagnostic,
-    diagnostics.ChainedLocalNameRequiresActionDiagnostic,
-    diagnostics.ChainElementNotInConstraintsDiagnostic,
-    diagnostics.ChainElementNotInActionDiagnostic,
-    diagnostics.MoveViolatesConstraintsDiagnostic,
-    diagnostics.MoveIntoDefiningPositionDiagnostic,
-)
 
 
 def _parse_and_transform(source: str) -> ast.Program:
@@ -148,8 +98,21 @@ class TestWriteToPath:
 
 
 class TestFullDriver:
-    def test_non_filesystem_validation_has_no_name_or_constraint_diagnostics(self):
-        source = "\n".join(gen.generate_source_lines(500, max_chain_length=10)) + "\n"
+    @pytest.mark.parametrize(
+        ("target_lines", "max_chain_length"),
+        [(500, 10), (1000, 50), (2000, 100)],
+    )
+    def test_non_filesystem_validation_produces_no_diagnostics(
+        self, target_lines: int, max_chain_length: int
+    ):
+        source = (
+            "\n".join(
+                gen.generate_source_lines(
+                    target_lines, max_chain_length=max_chain_length
+                )
+            )
+            + "\n"
+        )
 
         pv = program_validator.ProgramStructuralValidator()
         program_result = pv.validate_program_non_filesystem(source)
@@ -159,7 +122,4 @@ class TestFullDriver:
         ).validate()
 
         assert program_result.all_exceptions == []
-        for diagnostic in program_result.all_diagnostics:
-            assert not isinstance(diagnostic, _NAME_OR_CONSTRAINT_DIAGNOSTICS), (
-                f"{type(diagnostic).__name__}: {diagnostic.message}"
-            )
+        assert program_result.all_diagnostics == []
