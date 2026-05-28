@@ -12,6 +12,7 @@ from define.compiler import exceptions, parser_exceptions
 from define.compiler.conftest import (
     ParseAndValidateFile,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator import stats, test_helpers
 from define.compiler.validator.structural import program_validator
 
@@ -36,7 +37,7 @@ def test_returns_single_file_timing_stats(
     assert result.diagnostics == []
     assert result.exception is None
     assert result.source == source
-    assert result.file_path == PurePosixPath("test.dfn")
+    assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -59,7 +60,7 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.DefineSyntaxError)
     assert result.source is not None
-    assert result.file_path == PurePosixPath("test.dfn")
+    assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -97,7 +98,7 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
     assert result.source is None
-    assert result.file_path == PurePosixPath("test.dfn")
+    assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -123,7 +124,7 @@ def test_transform_error_from_name_parser_populates_exceptions(
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
     assert result.source == source
-    assert result.file_path == PurePosixPath("test.dfn")
+    assert result.file_path == define_path.DefinePath("test.dfn")
 
     timings = result.stats
     assert timings.overall_compile > 0
@@ -175,8 +176,8 @@ def test_config_error_sets_later_phases_to_zero(
     result = results[0]
 
     assert isinstance(result.exception, exceptions.ConfigError)
-    assert result.file_path == PurePosixPath("test.dfn")
-    assert result.root_prefix == PurePosixPath(".")
+    assert result.file_path == define_path.DefinePath("test.dfn")
+    assert result.root_prefix == define_path.EMPTY
 
     timings = result.stats
 

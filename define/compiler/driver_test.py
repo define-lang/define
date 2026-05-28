@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 """Tests for driver-only behavior."""
 
-from pathlib import Path, PurePosixPath, PureWindowsPath
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -10,6 +10,7 @@ from define.compiler import (
     exceptions,
     parser,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _PARSER = parser.Parser()
@@ -62,7 +63,7 @@ class TestPathResolution:
         driver_result = driver.Driver(_PARSER).validate_program(source_file)
         assert len(driver_result.result.file_results) == 1
         assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
             "hello.dfn"
         )
 
@@ -101,7 +102,7 @@ class TestPathResolution:
         )
         assert len(driver_result.result.file_results) == 1
         assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
             "hello.dfn"
         )
 
@@ -124,7 +125,7 @@ class TestPathResolution:
         driver_result = driver.Driver(_PARSER).validate_program(Path("link/hello.dfn"))
         assert len(driver_result.result.file_results) == 1
         assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
             "link/hello.dfn"
         )
 
@@ -163,7 +164,7 @@ class TestPathResolution:
         )
         assert len(driver_result.result.file_results) == 1
         assert_no_errors(driver_result.result)
-        assert driver_result.result.file_results[0].file_path == PurePosixPath(
+        assert driver_result.result.file_results[0].file_path == define_path.DefinePath(
             "real/hello.dfn"
         )
 

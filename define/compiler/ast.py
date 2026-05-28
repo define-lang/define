@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Self, override
 
+from define.compiler import constants
 from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
@@ -554,7 +555,7 @@ class GlobalPathName(ASTNode):
         root: define_path.DefinePath = define_path.EMPTY,
     ) -> define_path.DefinePath:
         """Return the .dfn file path, prefixed by root."""
-        return root / self.relative_path.with_suffix(".dfn")
+        return root / self.relative_path.with_suffix(constants.DEFINE_FILE_SUFFIX)
 
 
 @dataclass(frozen=True, slots=True)

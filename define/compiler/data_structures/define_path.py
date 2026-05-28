@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import override
+from typing import Final, override
 
 
 # We used to use pathlib.PurePosixPath but it represented a significant amount
@@ -72,11 +72,21 @@ class DefinePath:
         """Return a new DefinePath with suffix appended to the path."""
         return DefinePath(self._path + suffix)
 
+    def without_suffix(self, suffix: str) -> DefinePath:
+        """Return a new DefinePath with suffix stripped from the end if present."""
+        return DefinePath(self._path.removesuffix(suffix))
+
     def as_relative_path(self) -> DefinePath:
         """Return a DefinePath with the leading / removed, or self if absent."""
         if self._path.startswith("/"):
             return DefinePath(self._path[1:])
         return self
+
+    def as_absolute_path(self) -> DefinePath:
+        """Return a DefinePath with a leading / added, or self if already present."""
+        if self._path.startswith("/"):
+            return self
+        return DefinePath("/" + self._path)
 
     def as_posix_path(self) -> PurePosixPath:
         """Return a PurePosixPath for interop with code that takes one."""
@@ -129,9 +139,19 @@ class InvalidDefinePath(DefinePath):
         raise InvalidPathError(f"cannot add suffix to invalid path: {self._path}")
 
     @override
+    def without_suffix(self, suffix: str) -> DefinePath:
+        raise InvalidPathError(f"cannot strip suffix from invalid path: {self._path}")
+
+    @override
     def as_relative_path(self) -> DefinePath:
         raise InvalidPathError(
             f"cannot take relative form of invalid path: {self._path}"
+        )
+
+    @override
+    def as_absolute_path(self) -> DefinePath:
+        raise InvalidPathError(
+            f"cannot take absolute form of invalid path: {self._path}"
         )
 
     @override
@@ -141,4 +161,4 @@ class InvalidDefinePath(DefinePath):
         )
 
 
-EMPTY = DefinePath("")
+EMPTY: Final = DefinePath("")

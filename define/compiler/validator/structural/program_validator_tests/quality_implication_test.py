@@ -4,13 +4,12 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import PurePosixPath
-
 from define.compiler import diagnostics
 from define.compiler.conftest import (
     ValidateProject,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_action_calls, assert_no_errors
 
@@ -368,7 +367,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
         sub_roots={"lib": implied_fqun},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
@@ -376,7 +375,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
     assert diags[0].first_implication_line == 2
     assert diags[0].location.line == 3
     assert diags[0].location.column == 25
-    assert result.file_results[1].file_path == PurePosixPath("lib/foo.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/foo.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -535,9 +534,9 @@ def test_circular_implication_emits_diagnostic(validate_project: ValidateProject
         entry_file="foo.dfn",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("foo.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("foo.dfn")
     assert result.file_results[0].diagnostics == []
-    assert result.file_results[1].file_path == PurePosixPath("bar.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("bar.dfn")
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -693,7 +692,7 @@ def test_implication_for_nonexistent_quality_used_in_body(
         },
     )
     assert len(result.file_results) == 1
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)

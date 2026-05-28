@@ -4,10 +4,9 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import PurePosixPath
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
+from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import program_validator
 
 
@@ -128,7 +127,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
         }
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
@@ -136,7 +135,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
     assert diags[0].char == "B"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 30
-    assert result.file_results[1].file_path == PurePosixPath("valid.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("valid.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -167,7 +166,7 @@ def test_referenced_global_name_wrong_type_position(
         universe_name="mv:define-lang.org:test_walk_wrong_type",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
@@ -217,7 +216,7 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
         universe_name="mv:define-lang.org:test_walk_wrong_type",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)

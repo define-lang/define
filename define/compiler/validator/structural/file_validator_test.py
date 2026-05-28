@@ -31,11 +31,11 @@ def _make_context(
     tmp_path: Path,
     file_name: str = "test.dfn",
     fqun: str = "my.domain.com:my_lib",
-    sub_root_mappings: dict[str, PurePosixPath] | None = None,
+    sub_root_mappings: dict[str, define_path.DefinePath] | None = None,
 ) -> file_validator.FileValidationContext:
     return file_validator.FileValidationContext(
-        file_path=PurePosixPath(file_name),
-        root_prefix=PurePosixPath(str(tmp_path)),
+        file_path=define_path.DefinePath(file_name),
+        root_prefix=define_path.DefinePath(str(tmp_path)),
         expected_fqun=fqun,
         sub_root_mappings=types.MappingProxyType(sub_root_mappings or {}),
     )
@@ -307,7 +307,7 @@ class TestFileStructuralValidatorReferenceDiscovery:
         ctx = _make_context(
             tmp_path,
             sub_root_mappings={
-                "other.domain.com:other_lib": PurePosixPath("deps/other")
+                "other.domain.com:other_lib": define_path.DefinePath("deps/other")
             },
         )
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)

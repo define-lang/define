@@ -10,6 +10,7 @@ from unittest import mock
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
+from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import file_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -117,13 +118,13 @@ def test_wrong_type_detected_without_deferral(
         max_workers=1,
     )
     assert len(result.file_results) == 4
-    assert result.file_results[0].file_path == PurePosixPath("root.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("root.dfn")
     assert result.file_results[0].diagnostics == []
-    assert result.file_results[1].file_path == PurePosixPath("hub.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("hub.dfn")
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("target.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[2].diagnostics == []
-    assert result.file_results[3].file_path == PurePosixPath("checker.dfn")
+    assert result.file_results[3].file_path == define_path.DefinePath("checker.dfn")
     assert len(result.file_results[3].diagnostics) == 1
     diag = result.file_results[3].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
@@ -195,7 +196,7 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert diag1.location.line == 4
     assert diag1.location.column == 29
     assert diag1.file_path == "target.dfn"
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert len(result.file_results[1].diagnostics) == 1
     diag2 = result.file_results[1].diagnostics[0]
     assert isinstance(diag2, diagnostics.PathMismatchDiagnostic)

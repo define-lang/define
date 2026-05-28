@@ -2,6 +2,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProject
+from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import program_validator
 
 
@@ -84,7 +85,9 @@ def test_move_to_chained_prefix_position(validate_project: ValidateProject):
         }
     )
     test_result = next(
-        r for r in result.file_results if r.file_path == PurePosixPath("test.dfn")
+        r
+        for r in result.file_results
+        if r.file_path == define_path.DefinePath("test.dfn")
     )
     diags = test_result.diagnostics
     assert len(diags) == 1

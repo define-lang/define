@@ -6,12 +6,12 @@
 # destructor-format tests below.
 
 import textwrap
-from pathlib import PurePosixPath
 
 from define.compiler.conftest import (
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_action_calls
 
 _TEST = "action<my.domain.com:my_lib:/test>"
@@ -111,7 +111,7 @@ def test_deferred_position_chain_error_format(
     test_result = next(
         r
         for r in result.program_result.file_results
-        if r.file_path == PurePosixPath("test.dfn")
+        if r.file_path == define_path.DefinePath("test.dfn")
     )
     diags = test_result.diagnostics
     assert len(diags) == 1
@@ -162,7 +162,7 @@ def test_deferred_action_chain_error_format(
     test_result = next(
         r
         for r in result.program_result.file_results
-        if r.file_path == PurePosixPath("test.dfn")
+        if r.file_path == define_path.DefinePath("test.dfn")
     )
     diags = test_result.diagnostics
     assert len(diags) == 1

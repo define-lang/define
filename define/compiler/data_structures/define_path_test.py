@@ -135,6 +135,33 @@ class TestWithSuffix:
         )
 
 
+class TestWithoutSuffix:
+    def test_strips_matching_suffix(self):
+        assert define_path.DefinePath("foo/bar").without_suffix(
+            ".dfn"
+        ) == define_path.DefinePath("foo/bar")
+
+    def test_strips_matching_suffix_when_present(self):
+        assert define_path.DefinePath("foo/bar.dfn").without_suffix(
+            ".dfn"
+        ) == define_path.DefinePath("foo/bar")
+
+    def test_no_change_when_suffix_absent(self):
+        assert define_path.DefinePath("foo/bar.txt").without_suffix(
+            ".dfn"
+        ) == define_path.DefinePath("foo/bar.txt")
+
+    def test_empty_suffix_is_no_op(self):
+        assert define_path.DefinePath("foo/bar").without_suffix(
+            ""
+        ) == define_path.DefinePath("foo/bar")
+
+    def test_strips_only_last_occurrence(self):
+        assert define_path.DefinePath("a.dfn/b.dfn").without_suffix(
+            ".dfn"
+        ) == define_path.DefinePath("a.dfn/b")
+
+
 class TestAsRelativePath:
     def test_strips_leading_slash(self):
         assert (
@@ -157,6 +184,29 @@ class TestAsRelativePath:
             define_path.DefinePath("/foo")
             == define_path.DefinePath("//foo").as_relative_path()
         )
+
+
+class TestAsAbsolutePath:
+    def test_adds_leading_slash(self):
+        assert (
+            define_path.DefinePath("/foo/bar")
+            == define_path.DefinePath("foo/bar").as_absolute_path()
+        )
+
+    def test_absolute_returns_self(self):
+        path = define_path.DefinePath("/foo/bar")
+        assert path is path.as_absolute_path()
+
+    def test_empty_becomes_root(self):
+        assert define_path.EMPTY.as_absolute_path() == define_path.DefinePath("/")
+
+    def test_root_returns_self(self):
+        path = define_path.DefinePath("/")
+        assert path is path.as_absolute_path()
+
+    def test_preserves_double_leading_slash(self):
+        path = define_path.DefinePath("//foo")
+        assert path is path.as_absolute_path()
 
 
 class TestAsPosixPath:
@@ -231,10 +281,20 @@ class TestInvalidDefinePath:
         with pytest.raises(define_path.InvalidPathError):
             _ = invalid.with_suffix(".dfn")
 
+    def test_without_suffix_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid.without_suffix(".dfn")
+
     def test_as_relative_path_raises(self):
         invalid = define_path.InvalidDefinePath("<string>")
         with pytest.raises(define_path.InvalidPathError):
             _ = invalid.as_relative_path()
+
+    def test_as_absolute_path_raises(self):
+        invalid = define_path.InvalidDefinePath("<string>")
+        with pytest.raises(define_path.InvalidPathError):
+            _ = invalid.as_absolute_path()
 
     def test_as_posix_path_raises(self):
         invalid = define_path.InvalidDefinePath("<string>")

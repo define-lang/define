@@ -11,7 +11,6 @@ import pathlib
 import typing
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Final
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
@@ -37,44 +36,40 @@ SYNTAX_ERROR_TYPES = (
     lark_standalone.UnexpectedInput,
 )
 
-# Dataclass default; ruff RUF009 forbids function calls there, so this lives
-# at module scope rather than inline as a PurePosixPath(".") literal.
-_EMPTY_ROOT_PREFIX: Final = pathlib.PurePosixPath(".")
-
 
 @dataclass(frozen=True)
 class FileValidationContext:
     """Immutable input for validating a single file."""
 
-    file_path: pathlib.PurePosixPath
-    root_prefix: pathlib.PurePosixPath
+    file_path: define_path.DefinePath
+    root_prefix: define_path.DefinePath
     expected_fqun: str
-    sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
+    sub_root_mappings: Mapping[str, define_path.DefinePath] | None = None
     is_filesystem_context: bool = True
 
     @cached_property
-    def full_path(self) -> pathlib.PurePosixPath:
+    def full_path(self) -> define_path.DefinePath:
         """Return full filesystem path for this validation context."""
         return self.root_prefix / self.file_path
 
     @cached_property
-    def expected_definition_path(self) -> pathlib.PurePosixPath | None:
+    def expected_definition_path(self) -> define_path.DefinePath | None:
         """Return the expected definition path for filesystem-backed validation."""
-        return self.file_path.with_suffix("")
+        return self.file_path.without_suffix(constants.DEFINE_FILE_SUFFIX)
 
 
 @dataclass(frozen=True)
 class EmptyFileValidationContext(FileValidationContext):
     """Validation context for non-filesystem source validation."""
 
-    file_path: pathlib.PurePosixPath = constants.NON_FILESYSTEM_PATH
-    root_prefix: pathlib.PurePosixPath = _EMPTY_ROOT_PREFIX
+    file_path: define_path.DefinePath = constants.NON_FILESYSTEM_PATH
+    root_prefix: define_path.DefinePath = define_path.EMPTY
     expected_fqun: str = ""
-    sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
+    sub_root_mappings: Mapping[str, define_path.DefinePath] | None = None
     is_filesystem_context: bool = False
 
     @cached_property
-    def expected_definition_path(self) -> pathlib.PurePosixPath | None:
+    def expected_definition_path(self) -> define_path.DefinePath | None:
         """Return no expected definition path for source-only validation."""
         return None
 
@@ -138,7 +133,10 @@ class FileStructuralValidator:
         tracker: stats.ValidationStatsTracker,
     ) -> validation_result.FileValidationResult:
         """Parse, transform, and validate source text."""
-        parse_result = self._parser.parse(source, file_path=context.full_path)
+        parser_file_path = (
+            context.full_path.as_posix_path() if context.is_filesystem_context else None
+        )
+        parse_result = self._parser.parse(source, file_path=parser_file_path)
         tracker.mark_parse_finished()
 
         if parse_result.exception is not None:
@@ -160,7 +158,9 @@ class FileStructuralValidator:
             "lark_standalone.Tree[lark_standalone.Token]", parse_result.tree
         )
 
-        file_path = context.full_path if context.is_filesystem_context else None
+        file_path = (
+            context.full_path.as_posix_path() if context.is_filesystem_context else None
+        )
         try:
             program = transformer.DefineTransformer(file_path=file_path).transform(tree)
         except (
@@ -214,21 +214,22 @@ class FileStructuralValidator:
 
     def _load_file(
         self,
-        path: pathlib.PurePosixPath,
+        path: define_path.DefinePath,
     ) -> tuple[str, validation_result.AnyValidationException | None]:
         """Load a Define source file and return source and syntax errors."""
+        posix_path = path.as_posix_path()
         try:
-            with open(pathlib.Path(path), "rb") as source_file:
+            with open(pathlib.Path(posix_path), "rb") as source_file:
                 raw = source_file.read()
         except FileNotFoundError:
             return "", exceptions.SourceFileNotFoundError(
-                filesystem_path=pathlib.Path(path)
+                filesystem_path=pathlib.Path(posix_path)
             )
         try:
             source = raw.decode("utf-8")
         except UnicodeDecodeError as e:
             return "", parser_error_classification.make_invalid_encoding_error(
-                raw, e, path
+                raw, e, posix_path
             )
         return source, None
 
@@ -245,7 +246,7 @@ class DefinitionStructuralValidator:
     _reference_edges: list[reference_graph.ReferenceEdge]
     _seen_edge_targets: set[str]
     _discovered_files: list[validation_result.DiscoveredFile]
-    _discovered_file_keys: set[tuple[pathlib.PurePosixPath, str]]
+    _discovered_file_keys: set[tuple[define_path.DefinePath, str]]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _seen_definitions: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameInDefinition, ast.QualityDefinition
@@ -309,7 +310,7 @@ class DefinitionStructuralValidator:
         if self._context.expected_definition_path is None:
             return
         definition_path = self._definition.typed_name.name_content.path.name
-        expected_path = "/" + self._context.expected_definition_path.as_posix()
+        expected_path = str(self._context.expected_definition_path.as_absolute_path())
         if definition_path != expected_path:
             self._diagnostics.append(
                 diagnostics.PathMismatchDiagnostic(
@@ -833,7 +834,7 @@ class DefinitionStructuralValidator:
         self,
         typed_global_name: ast.GlobalTypedNameReference,
         global_name: ast.ReferenceGlobalNameContent,
-        root_prefix: pathlib.PurePosixPath,
+        root_prefix: define_path.DefinePath,
         expected_fqun: ast.Fqun,
     ):
         self._reference_edges.append(
@@ -849,7 +850,7 @@ class DefinitionStructuralValidator:
         self._discovered_files.append(
             validation_result.DiscoveredFile(
                 path=global_name.path.file_path(),
-                root_prefix=define_path.DefinePathFromPosix(root_prefix),
+                root_prefix=root_prefix,
                 expected_fqun=expected_fqun.canonical,
                 location=global_name.location,
             )

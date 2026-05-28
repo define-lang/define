@@ -129,29 +129,23 @@ class ProgramStructuralValidator:
     ) -> validation_result.ProgramValidationResult:
         """Validate a program starting from the given file path."""
         root_prefix = constants.PROJECT_ROOT
-        root_prefix_posix = root_prefix.as_posix_path()
+        path_dp = define_path.DefinePathFromPosix(path)
         try:
             fqun, sub_root_mappings = self._load_root_config(root_prefix)
         except exceptions.ConfigError as e:
             return self._build_program_result(
-                [
-                    _make_config_error_result(
-                        root_prefix_posix / path, root_prefix_posix, e
-                    )
-                ]
+                [_make_config_error_result(root_prefix / path_dp, root_prefix, e)]
             )
 
         initial_context = file_validator.FileValidationContext(
-            file_path=path,
-            root_prefix=root_prefix_posix,
+            file_path=path_dp,
+            root_prefix=root_prefix,
             expected_fqun=fqun,
             sub_root_mappings=sub_root_mappings,
         )
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
-            self._path_tracker.mark_in_progress(
-                root_prefix / define_path.DefinePathFromPosix(path)
-            )
+            self._path_tracker.mark_in_progress(root_prefix / path_dp)
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
@@ -169,9 +163,11 @@ class ProgramStructuralValidator:
         if result.exception is not None:
             return self._build_program_result([result])
 
-        result_path_dp = define_path.DefinePathFromPosix(result.file_path)
-        self._path_tracker.mark_in_progress(result_path_dp)
-        self._path_tracker.set_result(result_path_dp, result)
+        # The non-filesystem entry result lives in _results only — it isn't
+        # added to _tracked_files because its file_path is the InvalidDefinePath
+        # sentinel, which doesn't have segments. _tracked_files is only used
+        # for filesystem-prefix queries, so omitting it is harmless.
+        self._path_tracker.set_result(result.file_path, result)
 
         self._resolve_non_filesystem_discovered_files(result)
 
@@ -199,9 +195,7 @@ class ProgramStructuralValidator:
         """Run the coordinator loop for queued work."""
         while pool.has_pending():
             result = pool.wait_for_next()
-            self._path_tracker.set_result(
-                define_path.DefinePathFromPosix(result.file_path), result
-            )
+            self._path_tracker.set_result(result.file_path, result)
             self._process_completed_result(result, pool)
 
     def _process_completed_result(
@@ -220,9 +214,7 @@ class ProgramStructuralValidator:
         # Reference edges are file-scoped, but validating them still depends on
         # this file's definitions already being registered so wrong-type checks
         # don't race ahead of the completed file's real contents.
-        self._validate_incoming_reference_edges(
-            define_path.DefinePathFromPosix(result.file_path)
-        )
+        self._validate_incoming_reference_edges(result.file_path)
         result.stats.global_validation += time.perf_counter_ns() - started_at
 
     def _process_completed_definition(
@@ -241,9 +233,7 @@ class ProgramStructuralValidator:
             return
         self._definition_results[typed_name] = definition_result
         self._reference_graph.add_definition(definition_result.definition)
-        self._validate_outgoing_reference_edges(
-            define_path.DefinePathFromPosix(result.root_prefix), definition_result
-        )
+        self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
     def _submit_discovered_files(
         self,
@@ -278,8 +268,8 @@ class ProgramStructuralValidator:
                 continue
 
             context = file_validator.FileValidationContext(
-                file_path=discovered.path.as_posix_path(),
-                root_prefix=discovered.root_prefix.as_posix_path(),
+                file_path=discovered.path,
+                root_prefix=discovered.root_prefix,
                 expected_fqun=fqun,
                 sub_root_mappings=sub_root_mappings,
             )
@@ -310,7 +300,7 @@ class ProgramStructuralValidator:
         self,
         result: validation_result.FileValidationResult,
         current_fqun: str,
-        sub_root_mappings: Mapping[str, pathlib.PurePosixPath],
+        sub_root_mappings: Mapping[str, define_path.DefinePath],
     ):
         """Resolve discovered files/edges in non-filesystem mode after config load."""
         unknown_fquns: set[str] = set()
@@ -330,10 +320,7 @@ class ProgramStructuralValidator:
                         )
                     )
                     continue
-                discovered.root_prefix = (
-                    discovered.root_prefix
-                    / define_path.DefinePathFromPosix(sub_root_rel)
-                )
+                discovered.root_prefix = discovered.root_prefix / sub_root_rel
                 resolved_discoveries.append(discovered)
             definition_result.discovered_files = resolved_discoveries
 
@@ -372,7 +359,7 @@ class ProgramStructuralValidator:
     def _load_config_in_non_filesystem_context(
         self,
         result: validation_result.FileValidationResult,
-    ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]] | tuple[None, None]:
+    ) -> tuple[str, Mapping[str, define_path.DefinePath]] | tuple[None, None]:
         """Load root config and map loading errors to non-filesystem diagnostics."""
         first_discovered = self._first_discovered_file(result)
         if first_discovered is None:
@@ -610,7 +597,7 @@ class ProgramStructuralValidator:
         self,
         root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
-    ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]]:
+    ) -> tuple[str, Mapping[str, define_path.DefinePath]]:
         """Load project config for a root and register it.
 
         Returns (fqun, sub_root_mappings).
@@ -625,7 +612,7 @@ class ProgramStructuralValidator:
         self,
         root_prefix: define_path.DefinePath,
         expected_fqun: str | None = None,
-    ) -> tuple[str, Mapping[str, pathlib.PurePosixPath]]:
+    ) -> tuple[str, Mapping[str, define_path.DefinePath]]:
         """Load project config for a root and register it without timing side effects."""
         # TODO: When _path_tracker just stores Config objects, this
         # can just return a Config.
@@ -637,10 +624,7 @@ class ProgramStructuralValidator:
                     actual_fqun=existing,
                     sub_root_path=str(root_prefix),
                 )
-            return existing, {
-                k: v.as_posix_path()
-                for k, v in self._path_tracker.sub_roots_for(root_prefix).items()
-            }
+            return existing, self._path_tracker.sub_roots_for(root_prefix)
 
         loader = config.ConfigLoader(root_prefix)
         loader.assert_is_project_root()
@@ -660,21 +644,17 @@ class ProgramStructuralValidator:
                 new_root=root_prefix.as_posix_path(),
                 config_subpath=config.CONFIG_PATH,
             )
-        universe_locations = loader.local_deps_config()
-        self._path_tracker.register_project_root(
-            root_prefix,
-            fqun,
-            {
-                k: define_path.DefinePathFromPosix(v)
-                for k, v in universe_locations.items()
-            },
-        )
-        return fqun, universe_locations
+        sub_root_mappings = {
+            k: define_path.DefinePathFromPosix(v)
+            for k, v in loader.local_deps_config().items()
+        }
+        self._path_tracker.register_project_root(root_prefix, fqun, sub_root_mappings)
+        return fqun, sub_root_mappings
 
 
 def _make_config_error_result(
-    file_path: pathlib.PurePosixPath,
-    root_prefix: pathlib.PurePosixPath,
+    file_path: define_path.DefinePath,
+    root_prefix: define_path.DefinePath,
     error: exceptions.ConfigError,
 ) -> validation_result.FileValidationResult:
     """Create a FileValidationResult for a config loading failure."""

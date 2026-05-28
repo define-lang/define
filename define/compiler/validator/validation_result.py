@@ -13,7 +13,6 @@ from define.compiler import (
 from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
-    import pathlib
     from collections.abc import Sequence
 
     from define.compiler.data_structures import define_path, typed_name_dict
@@ -80,8 +79,8 @@ class FileValidationResult:
     exception: AnyValidationException | None
     # TODO: Should this just be source_lines?
     source: str | None
-    file_path: pathlib.PurePosixPath  # Full path: root_prefix / relative file path.
-    root_prefix: pathlib.PurePosixPath
+    file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
+    root_prefix: define_path.DefinePath
     stats: stats.ValidationTimingStats
     file_diagnostics: list[diagnostics.Diagnostic]
     _post_definition_diagnostics: list[diagnostics.Diagnostic] = field(

@@ -1,13 +1,12 @@
 # pyright: reportUnusedCallResult=false
 
-from pathlib import PurePosixPath
-
 from define.compiler import diagnostics
 from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateNonFilesystemWithReferenceGraph,
     ValidateProjectWithReferenceGraph,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_no_errors
 
 
@@ -298,7 +297,9 @@ def test_chained_name_starting_with_self_three_items_invalid(
         }
     )
     assert len(result.program_result.file_results) == 2
-    assert result.program_result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.program_result.file_results[0].file_path == define_path.DefinePath(
+        "test.dfn"
+    )
     test_diags = result.program_result.file_results[0].diagnostics
     assert len(test_diags) == 1
     assert isinstance(test_diags[0], diagnostics.ChainElementNotInActionDiagnostic)

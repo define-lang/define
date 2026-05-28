@@ -1,6 +1,5 @@
-from pathlib import PurePosixPath
-
 from define.compiler import overall_stats
+from define.compiler.data_structures import define_path
 from define.compiler.validator import stats, validation_result
 
 
@@ -17,8 +16,8 @@ def _make_result(
     return validation_result.FileValidationResult(
         exception=None,
         source=None,
-        file_path=PurePosixPath(file_path),
-        root_prefix=PurePosixPath("."),
+        file_path=define_path.DefinePath(file_path),
+        root_prefix=define_path.EMPTY,
         stats=stats.ValidationTimingStats(
             file_loading=file_loading,
             parse=parse,

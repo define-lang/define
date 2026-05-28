@@ -4,7 +4,7 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +13,7 @@ from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -28,7 +29,9 @@ def test_nested_file_path(validate_project: ValidateProject):
     )
     assert len(result.file_results) == 1
     assert_no_errors(result)
-    assert result.file_results[0].file_path == PurePosixPath("sub/dir/leaf.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath(
+        "sub/dir/leaf.dfn"
+    )
 
 
 def test_walk_returns_results_in_encounter_order(validate_project: ValidateProject):
@@ -53,9 +56,9 @@ def test_walk_returns_results_in_encounter_order(validate_project: ValidateProje
         universe_name="mv:define-lang.org:walk_order",
     )
     assert [r.file_path for r in result.file_results] == [
-        PurePosixPath("test.dfn"),
-        PurePosixPath("middle.dfn"),
-        PurePosixPath("leaf.dfn"),
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("middle.dfn"),
+        define_path.DefinePath("leaf.dfn"),
     ]
 
 
@@ -82,11 +85,11 @@ def test_duplicate_does_not_corrupt_reference_resolution(
         max_workers=1,
     )
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == PurePosixPath("root.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("root.dfn")
     assert result.file_results[0].diagnostics == []
-    assert result.file_results[1].file_path == PurePosixPath("target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("dup.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath("dup.dfn")
     assert len(result.file_results[2].diagnostics) == 1
     assert isinstance(
         result.file_results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic
@@ -179,10 +182,10 @@ def test_two_file_cycle_emits_diagnostic(validate_project: ValidateProject):
         universe_name="mv:define-lang.org:test_walk_cycle",
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert result.file_results[0].diagnostics == []
-    assert result.file_results[1].file_path == PurePosixPath("loop.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("loop.dfn")
     assert result.file_results[1].exception is None
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
@@ -466,10 +469,10 @@ def test_already_tracked_discovery_does_not_skip_remaining_files(
     )
     assert len(result.file_results) == 4
     assert [r.file_path for r in result.file_results] == [
-        PurePosixPath("test.dfn"),
-        PurePosixPath("middle.dfn"),
-        PurePosixPath("shared.dfn"),
-        PurePosixPath("leaf.dfn"),
+        define_path.DefinePath("test.dfn"),
+        define_path.DefinePath("middle.dfn"),
+        define_path.DefinePath("shared.dfn"),
+        define_path.DefinePath("leaf.dfn"),
     ]
     assert_no_errors(result)
 
@@ -501,7 +504,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
         },
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
@@ -516,7 +519,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[1].expected_type == "position"
     assert diags[1].location.line == 4
     assert diags[1].location.column == 29
-    assert result.file_results[1].file_path == PurePosixPath("wrong_type.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 
 

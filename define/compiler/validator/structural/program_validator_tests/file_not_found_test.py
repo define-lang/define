@@ -4,7 +4,7 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +13,7 @@ from define.compiler.conftest import (
     ParseAndValidateFile,
     ValidateProject,
 )
+from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
@@ -80,8 +81,8 @@ def test_non_filesystem_cross_universe_reference(
     assert diag.file_path == "lib/missing.dfn"
     assert diag.location.line == 4
     assert diag.location.column == 29
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
-    assert result.file_results[1].root_prefix == PurePosixPath("lib")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
+    assert result.file_results[1].root_prefix == define_path.DefinePath("lib")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -145,7 +146,7 @@ def test_referenced_file_not_found_via_already_completed_target(
         max_workers=1,
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -153,7 +154,7 @@ def test_referenced_file_not_found_via_already_completed_target(
         diagnostics.ReferencedFileNotFoundDiagnostic,
     )
     assert result.file_results[0].diagnostics[0].file_path == "missing.dfn"
-    assert result.file_results[1].file_path == PurePosixPath("target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[1].exception is None
     assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(

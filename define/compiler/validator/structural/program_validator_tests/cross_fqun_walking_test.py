@@ -10,6 +10,7 @@ import pytest
 
 from define.compiler import diagnostics, exceptions
 from define.compiler.conftest import ValidateProject
+from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -89,8 +90,8 @@ def test_cross_fqun_walks_into_sub_root(validate_project: ValidateProject):
     )
     assert len(result.file_results) == 2
     assert_no_errors(result)
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
 
 
 def test_cross_fqun_file_not_found(validate_project: ValidateProject):
@@ -255,7 +256,7 @@ def test_sub_root_conflict(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 2
     path_diag = result.file_results[0].diagnostics[0]
@@ -273,10 +274,14 @@ def test_sub_root_conflict(validate_project: ValidateProject):
     assert sub_root_diag.sub_root_path == "lib"
     assert sub_root_diag.existing_file == "lib/parent_target.dfn"
     assert sub_root_diag.existing_universe == _PARENT_UNIVERSE
-    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib/parent_target.dfn"
+    )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("lib/sub_root_target.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath(
+        "lib/sub_root_target.dfn"
+    )
     assert result.file_results[2].exception is None
     assert result.file_results[2].diagnostics == []
 
@@ -299,7 +304,7 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 3
     path_diag = result.file_results[0].diagnostics[0]
@@ -322,7 +327,9 @@ def test_sub_root_conflict_continues_validation(validate_project: ValidateProjec
     assert not_found_diag.location.line == 4
     assert not_found_diag.location.column == 29
     assert not_found_diag.file_path == "lib/missing_target.dfn"
-    assert result.file_results[1].file_path == PurePosixPath("lib/parent_target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib/parent_target.dfn"
+    )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -346,7 +353,7 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 3
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -358,10 +365,14 @@ def test_path_inside_other_universe(validate_project: ValidateProject):
     assert result.file_results[0].diagnostics[0].path.endswith("lib/parent_target.dfn")
     assert result.file_results[0].diagnostics[0].other_universe == _CHILD_UNIVERSE
     assert result.file_results[0].diagnostics[0].sub_root_path == "lib"
-    assert result.file_results[1].file_path == PurePosixPath("lib/sub_root_target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib/sub_root_target.dfn"
+    )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
-    assert result.file_results[2].file_path == PurePosixPath("lib/parent_target.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath(
+        "lib/parent_target.dfn"
+    )
     assert result.file_results[2].exception is None
     assert result.file_results[2].diagnostics == []
 
@@ -396,7 +407,7 @@ def test_path_inside_other_universe_skips_further_validation(
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 2
     wrong_type_diag = result.file_results[0].diagnostics[0]
@@ -414,7 +425,9 @@ def test_path_inside_other_universe_skips_further_validation(
     assert path_diag.path.endswith("lib/child_action.dfn")
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
-    assert result.file_results[1].file_path == PurePosixPath("lib/child_action.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib/child_action.dfn"
+    )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -437,7 +450,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -448,7 +461,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(validate_project: ValidateProjec
     assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path == "/target"
     assert result.file_results[0].diagnostics[0].expected_type == "position"
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].exception is None
     assert len(result.file_results[1].diagnostics) == 1
     assert isinstance(
@@ -487,7 +500,7 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
         sub_roots={"lib": _CHILD_UNIVERSE},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     assert len(result.file_results[0].diagnostics) == 1
     assert isinstance(
@@ -498,7 +511,7 @@ def test_cross_fqun_wrong_type_in_sub_root(validate_project: ValidateProject):
     assert result.file_results[0].diagnostics[0].location.column == 29
     assert result.file_results[0].diagnostics[0].path == "/target"
     assert result.file_results[0].diagnostics[0].expected_type == "position"
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -528,9 +541,9 @@ def test_same_fqun_reference_inside_sub_root(validate_project: ValidateProject):
     )
     assert len(result.file_results) == 3
     assert_no_errors(result)
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
-    assert result.file_results[1].file_path == PurePosixPath("lib/entry.dfn")
-    assert result.file_results[2].file_path == PurePosixPath("lib/leaf.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/entry.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath("lib/leaf.dfn")
 
 
 def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -574,9 +587,11 @@ def test_cross_fqun_nested_sub_roots(tmp_path: Path, monkeypatch: pytest.MonkeyP
     )
     assert len(result.file_results) == 3
     assert_no_errors(result)
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
-    assert result.file_results[1].file_path == PurePosixPath("lib/target.dfn")
-    assert result.file_results[2].file_path == PurePosixPath("lib/inner/leaf.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath(
+        "lib/inner/leaf.dfn"
+    )
 
 
 def test_partial_sub_root_failure_still_validates_successful_sub_roots(
@@ -601,7 +616,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
         sub_roots={"lib_a": child_a},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -609,7 +624,9 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
     assert diags[0].location.line == 4
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
-    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib_a/target_a.dfn"
+    )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -636,7 +653,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
         sub_roots={"lib_a": child_a},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[0].exception is None
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
@@ -645,7 +662,9 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     assert diags[0].location.column == 29
     assert diags[0].universe == child_b
     assert diags[0].current_universe_name == _PARENT_UNIVERSE
-    assert result.file_results[1].file_path == PurePosixPath("lib_a/target_a.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib_a/target_a.dfn"
+    )
     assert result.file_results[1].exception is None
     assert result.file_results[1].diagnostics == []
 
@@ -670,14 +689,14 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
-    assert result.file_results[1].file_path == PurePosixPath("local.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("local.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -700,7 +719,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
         local_deps={_CHILD_UNIVERSE: "lib"},
     )
     assert len(result.file_results) == 2
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedGlobalNameWrongTypeDiagnostic)
@@ -712,7 +731,7 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
     assert diags[1].location.line == 3
     assert diags[1].location.column == 29
     assert isinstance(diags[1].error, exceptions.NotProjectRootError)
-    assert result.file_results[1].file_path == PurePosixPath("wrong_type.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath("wrong_type.dfn")
     assert result.file_results[1].diagnostics == []
 
 
@@ -737,7 +756,7 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
     )
     assert result.all_exceptions == []
     assert len(result.file_results) == 1
-    assert result.file_results[0].file_path == PurePosixPath("test.dfn")
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)

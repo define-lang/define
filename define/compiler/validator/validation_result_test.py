@@ -1,9 +1,8 @@
 # pyright: reportUnusedCallResult=false
 # pyright: reportImplicitStringConcatenation=false
 
-from pathlib import PurePosixPath
-
 from define.compiler import ast, parser, transformer
+from define.compiler.data_structures import define_path
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import stats, validation_result
 
@@ -18,8 +17,8 @@ def _parse(source: str) -> validation_result.FileValidationResult:
     return validation_result.FileValidationResult(
         exception=None,
         source=source,
-        file_path=PurePosixPath("test.dfn"),
-        root_prefix=PurePosixPath("."),
+        file_path=define_path.DefinePath("test.dfn"),
+        root_prefix=define_path.EMPTY,
         stats=stats.ValidationTimingStats(),
         file_diagnostics=[],
         definition_results=[
