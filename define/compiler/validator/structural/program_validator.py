@@ -129,24 +129,28 @@ class ProgramStructuralValidator:
     ) -> validation_result.ProgramValidationResult:
         """Validate a program starting from the given file path."""
         root_prefix = constants.PROJECT_ROOT
-        root_prefix_dp = define_path.DefinePathFromPosix(root_prefix)
+        root_prefix_posix = root_prefix.as_posix_path()
         try:
-            fqun, sub_root_mappings = self._load_root_config(root_prefix_dp)
+            fqun, sub_root_mappings = self._load_root_config(root_prefix)
         except exceptions.ConfigError as e:
             return self._build_program_result(
-                [_make_config_error_result(root_prefix / path, root_prefix, e)]
+                [
+                    _make_config_error_result(
+                        root_prefix_posix / path, root_prefix_posix, e
+                    )
+                ]
             )
 
         initial_context = file_validator.FileValidationContext(
             file_path=path,
-            root_prefix=root_prefix,
+            root_prefix=root_prefix_posix,
             expected_fqun=fqun,
             sub_root_mappings=sub_root_mappings,
         )
 
         with _FileWorkPool(self._parser, max_workers=max_workers) as pool:
             self._path_tracker.mark_in_progress(
-                root_prefix_dp / define_path.DefinePathFromPosix(path)
+                root_prefix / define_path.DefinePathFromPosix(path)
             )
             pool.submit(initial_context)
             self._run_pool_loop(pool)
@@ -373,11 +377,10 @@ class ProgramStructuralValidator:
         first_discovered = self._first_discovered_file(result)
         if first_discovered is None:
             raise ValueError("expected at least one discovered file")
-        project_root_dp = define_path.DefinePathFromPosix(constants.PROJECT_ROOT)
         try:
-            return self._load_root_config(project_root_dp)
+            return self._load_root_config(constants.PROJECT_ROOT)
         except exceptions.NotProjectRootError as e:
-            self._path_tracker.mark_root_failed(project_root_dp)
+            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
                     location=first_discovered.location,
@@ -387,7 +390,7 @@ class ProgramStructuralValidator:
             )
             return (None, None)
         except exceptions.ConfigError as e:
-            self._path_tracker.mark_root_failed(project_root_dp)
+            self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
             result.add_file_diagnostic(
                 diagnostics.ConfigLoadErrorDiagnostic(
                     location=first_discovered.location,
@@ -639,7 +642,7 @@ class ProgramStructuralValidator:
                 for k, v in self._path_tracker.sub_roots_for(root_prefix).items()
             }
 
-        loader = config.ConfigLoader(root_prefix.as_posix_path())
+        loader = config.ConfigLoader(root_prefix)
         loader.assert_is_project_root()
         project_config = loader.project_config()
         fqun = project_config.project.universe_name or ""

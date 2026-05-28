@@ -5,6 +5,7 @@ import pytest
 
 from defcl.python import exceptions as dcl_exceptions
 from define.compiler import config, constants, exceptions
+from define.compiler.data_structures import define_path
 
 
 class TestAssertIsProjectRoot:
@@ -339,7 +340,7 @@ class TestSubRoot:
         self._write_project_config(tmp_path, "subroot", "")
         monkeypatch.chdir(tmp_path)
 
-        config.ConfigLoader(PurePosixPath("subroot")).assert_is_project_root()
+        config.ConfigLoader(define_path.DefinePath("subroot")).assert_is_project_root()
 
     def test_assert_is_project_root_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -348,7 +349,9 @@ class TestSubRoot:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.NotProjectRootError) as exc_info:
-            config.ConfigLoader(PurePosixPath("subroot")).assert_is_project_root()
+            config.ConfigLoader(
+                define_path.DefinePath("subroot")
+            ).assert_is_project_root()
 
         assert exc_info.value.config_path == Path(
             "subroot/.define/project/config.defcl"
@@ -363,7 +366,7 @@ class TestSubRoot:
         )
         monkeypatch.chdir(tmp_path)
 
-        result = config.ConfigLoader(PurePosixPath("subroot")).project_config()
+        result = config.ConfigLoader(define_path.DefinePath("subroot")).project_config()
         assert result.project.universe_name == "sub.example.com:lib"
 
     def test_project_config_validation_error(
@@ -373,7 +376,7 @@ class TestSubRoot:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError) as exc_info:
-            config.ConfigLoader(PurePosixPath("subroot")).project_config()
+            config.ConfigLoader(define_path.DefinePath("subroot")).project_config()
 
         assert exc_info.value.config_path == Path(
             "subroot/.define/project/config.defcl"
@@ -396,7 +399,9 @@ class TestSubRoot:
         )
         monkeypatch.chdir(tmp_path)
 
-        result = config.ConfigLoader(PurePosixPath("subroot")).local_deps_config()
+        result = config.ConfigLoader(
+            define_path.DefinePath("subroot")
+        ).local_deps_config()
         assert result == {"mv:define-lang.org:lib": PurePosixPath("vendor/lib")}
 
     def test_local_deps_missing_returns_empty(
@@ -405,7 +410,9 @@ class TestSubRoot:
         (tmp_path / "subroot").mkdir()
         monkeypatch.chdir(tmp_path)
 
-        result = config.ConfigLoader(PurePosixPath("subroot")).local_deps_config()
+        result = config.ConfigLoader(
+            define_path.DefinePath("subroot")
+        ).local_deps_config()
         assert result == {}
 
     def test_local_deps_validation_error(
@@ -419,6 +426,6 @@ class TestSubRoot:
         monkeypatch.chdir(tmp_path)
 
         with pytest.raises(exceptions.ConfigValidationError) as exc_info:
-            config.ConfigLoader(PurePosixPath("subroot")).local_deps_config()
+            config.ConfigLoader(define_path.DefinePath("subroot")).local_deps_config()
 
         assert exc_info.value.config_path == Path("subroot/.define/deps/local.defcl")

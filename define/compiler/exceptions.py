@@ -4,6 +4,7 @@ from pathlib import Path, PurePosixPath
 
 from defcl.python import exceptions as dcl_exceptions
 from define.compiler import constants
+from define.compiler.data_structures import define_path
 
 
 class DefineError(Exception):
@@ -20,7 +21,7 @@ class NotProjectRootError(ConfigError):
     config_path: Path
     root: str
 
-    def __init__(self, config_path: Path, root: PurePosixPath):
+    def __init__(self, config_path: Path, root: define_path.DefinePath):
         """Initialize with the config path that was not found."""
         self.config_path = config_path
         self.root = str(root)

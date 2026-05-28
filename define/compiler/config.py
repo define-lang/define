@@ -10,6 +10,7 @@ from google.protobuf import message
 from defcl.python import exceptions as dcl_exceptions
 from defcl.python import parser as defcl_parser
 from define.compiler import exceptions
+from define.compiler.data_structures import define_path
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
 
@@ -22,9 +23,9 @@ _EMPTY_DEPS: types.MappingProxyType[str, PurePosixPath] = types.MappingProxyType
 class ConfigLoader:
     """Loads and validates Define project configuration files."""
 
-    _root: PurePosixPath
+    _root: define_path.DefinePath
 
-    def __init__(self, root: PurePosixPath):
+    def __init__(self, root: define_path.DefinePath):
         """Initialize with the project root path."""
         self._root = root
 
@@ -36,7 +37,7 @@ class ConfigLoader:
         self, subpath: PurePosixPath, message_type: type[M]
     ) -> M:
         """Load and validate a defcl config file."""
-        path = Path(self._root / subpath)
+        path = Path(self._root.as_posix_path() / subpath)
         try:
             result = self._parser.parse_file(path, message_type)
         except dcl_exceptions.DclSyntaxError as e:
@@ -60,7 +61,7 @@ class ConfigLoader:
 
     def assert_is_project_root(self) -> None:
         """Raise NotProjectRootError if the root is not a project root."""
-        config_path = Path(self._root / CONFIG_PATH)
+        config_path = Path(self._root.as_posix_path() / CONFIG_PATH)
         if not config_path.exists():
             raise exceptions.NotProjectRootError(config_path, self._root)
 
@@ -73,7 +74,7 @@ class ConfigLoader:
 
         Returns an immutable mapping from universe name to relative path.
         """
-        deps_path = Path(self._root / LOCAL_DEPS_PATH)
+        deps_path = Path(self._root.as_posix_path() / LOCAL_DEPS_PATH)
         if not deps_path.exists():
             return _EMPTY_DEPS
         result = self._load_config(LOCAL_DEPS_PATH, local_pb2.LocalDepsFile)

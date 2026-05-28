@@ -11,6 +11,7 @@ import pathlib
 import typing
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Final
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
@@ -35,6 +36,10 @@ SYNTAX_ERROR_TYPES = (
     parser_exceptions.DefineSyntaxError,
     lark_standalone.UnexpectedInput,
 )
+
+# Dataclass default; ruff RUF009 forbids function calls there, so this lives
+# at module scope rather than inline as a PurePosixPath(".") literal.
+_EMPTY_ROOT_PREFIX: Final = pathlib.PurePosixPath(".")
 
 
 @dataclass(frozen=True)
@@ -63,7 +68,7 @@ class EmptyFileValidationContext(FileValidationContext):
     """Validation context for non-filesystem source validation."""
 
     file_path: pathlib.PurePosixPath = constants.NON_FILESYSTEM_PATH
-    root_prefix: pathlib.PurePosixPath = constants.PROJECT_ROOT
+    root_prefix: pathlib.PurePosixPath = _EMPTY_ROOT_PREFIX
     expected_fqun: str = ""
     sub_root_mappings: Mapping[str, pathlib.PurePosixPath] | None = None
     is_filesystem_context: bool = False
