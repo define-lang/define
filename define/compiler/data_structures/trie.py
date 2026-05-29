@@ -229,13 +229,13 @@ class StrictReparentingTrie[V]:
         """Return the longest prefix of key whose nodes all exist in the trie."""
         if not key:
             raise EmptyKeyError("key must not be empty")
-        present_length = 0
-        for length in range(1, len(key) + 1):
-            if key[:length] in self._values:
-                present_length = length
-            else:
-                break
-        return key[:present_length]
+        # Walking down from the full key lets us stop at the first hit, which is
+        # the most common case inside of the compiler.
+        for length in range(len(key), 0, -1):
+            prefix = key[:length]
+            if prefix in self._values:
+                return prefix
+        return ()
 
     def find_shortest_prefix_where(
         self, key: TrieKey, predicate: Callable[[V], bool]
