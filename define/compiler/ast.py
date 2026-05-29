@@ -328,6 +328,7 @@ class ChainedName(ASTNode):
         """Reject empty chains and pre-compute canonical forms."""
         if not self.typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
+        # TODO: this genexpr is the top hotspot inside of the compiler.
         canonical_tuple = tuple(elem.full_typed_name for elem in self.typed_names)
         object.__setattr__(self, "_canonical_chained_name_tuple", canonical_tuple)
         object.__setattr__(self, "_canonical_chained_name", "::".join(canonical_tuple))

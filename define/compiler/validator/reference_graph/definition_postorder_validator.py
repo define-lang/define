@@ -115,10 +115,11 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         required_state: action_contract.PositionOccupancyState,
         position: ast.PositionReference,
+        parent: ast.PositionReference | None,
         scope: scope_tracker.ScopeTracker,
     ):
         """Infer a requirement for a contracted position the first time it is referenced."""
-        inferred_from_chain = self._chain_for_inferred_requirement(position)
+        inferred_from_chain = self._chain_for_inferred_requirement(position, parent)
         if inferred_from_chain is None:
             return
         self._record_requirement(
@@ -223,9 +224,10 @@ class DefinitionPostorderValidator(abc.ABC):
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
+        parent: ast.PositionReference | None,
     ) -> ast.PositionReference | None:
         """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
-        parent_origin = self._parent_particle_comes_from_caller(position)
+        parent_origin = self._parent_particle_comes_from_caller(parent)
         if parent_origin is not None:
             # The particle was moved in from a contracted position, so we
             # put the requirement on that origin, not whatever position we are
@@ -279,10 +281,9 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _parent_particle_comes_from_caller(
         self,
-        position: ast.ChainedName,
+        parent: ast.PositionReference | None,
     ) -> ast.PositionReference | None:
         """Return the parent particle's contracted-position origin chain if it came from the caller."""
-        parent = position.parent_position()
         if parent is None:
             return None
         parent_key = parent.canonical_chained_name_tuple
@@ -309,7 +310,7 @@ class DefinitionPostorderValidator(abc.ABC):
             raise ValueError("not an action")
         return (
             action_chain,
-            self._parent_particle_comes_from_caller(action_chain),
+            self._parent_particle_comes_from_caller(action_chain.parent_position()),
         )
 
     def _maybe_infer_requirements_on_chain(
@@ -325,11 +326,19 @@ class DefinitionPostorderValidator(abc.ABC):
         accessible. Walks root-to-leaf so the tracker trie has parent nodes
         in place when children are inserted.
         """
+        previous_parent: ast.PositionReference | None = None
         for parent in position.walk_parent_positions():
+            # Note: We pass previous_parent down here because it avoids
+            # a lot of parent_position calls (a lot of allocations, avoids
+            # a lot of constructing new canonical_chained_name_tuple fields).
             self._maybe_infer_requirement(
-                action_contract.PositionOccupancyState.OCCUPIED, parent, scope
+                action_contract.PositionOccupancyState.OCCUPIED,
+                parent,
+                previous_parent,
+                scope,
             )
-        self._maybe_infer_requirement(required_state, position, scope)
+            previous_parent = parent
+        self._maybe_infer_requirement(required_state, position, previous_parent, scope)
 
     def _run_position_init_blocks(
         self,
@@ -448,7 +457,9 @@ class DefinitionPostorderValidator(abc.ABC):
         scope: scope_tracker.ScopeTracker,
     ):
         """Propagate the init block's requirements into the enclosing definition's contract."""
-        caller_path = self._chain_for_inferred_requirement(create_target)
+        caller_path = self._chain_for_inferred_requirement(
+            create_target, create_target.parent_position()
+        )
         if caller_path is None:
             return
         for inner_req in init_block_contract.requirements.values():
@@ -475,7 +486,9 @@ class DefinitionPostorderValidator(abc.ABC):
         #   position<incoming>
         # caller_path_to_destructor:
         #   position<incoming>::action</destructor>
-        parent_origin = self._parent_particle_comes_from_caller(action_chain)
+        parent_origin = self._parent_particle_comes_from_caller(
+            action_chain.parent_position()
+        )
         if parent_origin is None:
             return
         caller_path_to_destructor = action_chain.replace_parent_position_with_prefix(
@@ -1349,6 +1362,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
+        parent: ast.PositionReference | None,
     ) -> ast.PositionReference | None:
         """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
         # The population of the base trigger position itself is handled elsewhere
@@ -1356,7 +1370,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         # of the position still do create requirements.)
         if self._trigger_position_name == position.canonical_chained_name:
             return None
-        return super()._chain_for_inferred_requirement(position)
+        return super()._chain_for_inferred_requirement(position, parent)
 
     @typing.override
     def _starts_with_contracted_name(self, position: ast.PositionReference) -> bool:
@@ -1400,6 +1414,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
+        parent: ast.PositionReference | None,
     ) -> ast.PositionReference | None:
         """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
         # Doing things with the self-reference or any of its children
@@ -1411,7 +1426,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
             == self._definition.typed_name.full_typed_name
         ):
             return None
-        return super()._chain_for_inferred_requirement(position)
+        return super()._chain_for_inferred_requirement(position, parent)
 
     def _analyze_position_definition(
         self, definition: ast.PositionDefinition

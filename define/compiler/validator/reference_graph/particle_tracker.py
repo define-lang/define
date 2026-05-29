@@ -53,17 +53,9 @@ _ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
 
 
 class ParticleTracker:
-    """Tracks which positions contain particles.
+    """Tracks which positions contain particles and what qualities those particles currently have.
 
-    Handles both local positions (single-element chains) and external
-    action interface positions (multi-element chains through actions).
-
-    Uses two tries internally:
-    - A state trie tracking particle occupancy and emptied-by references.
-    - An unknown-state trie tracking positions with unknown occupancy.
-
-    Pure data structure with no diagnostics logic. The caller is responsible
-    for emitting diagnostics based on the tracker's query results.
+    Pure data structure with no diagnostics logic.
     """
 
     def __init__(self):
