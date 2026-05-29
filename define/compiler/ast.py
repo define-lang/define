@@ -319,29 +319,36 @@ class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
     typed_names: tuple[TypedNameReference, ...]
-    _canonical_chained_name_tuple: tuple[str, ...] = field(
+    # Filled lazily on first access by __getattr__ and cached in the slot.
+    canonical_chained_name_tuple: tuple[str, ...] = field(
         init=False, repr=False, compare=False
     )
-    _canonical_chained_name: str = field(init=False, repr=False, compare=False)
+    canonical_chained_name: str = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        """Reject empty chains and pre-compute canonical forms."""
+        """Reject empty chains."""
         if not self.typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
-        # TODO: this genexpr is the top hotspot inside of the compiler.
-        canonical_tuple = tuple(elem.full_typed_name for elem in self.typed_names)
-        object.__setattr__(self, "_canonical_chained_name_tuple", canonical_tuple)
-        object.__setattr__(self, "_canonical_chained_name", "::".join(canonical_tuple))
 
-    @property
-    def canonical_chained_name(self) -> str:
-        """Return the canonical chained name string."""
-        return self._canonical_chained_name
-
-    @property
-    def canonical_chained_name_tuple(self) -> tuple[str, ...]:
-        """Return the canonical chained name as a tuple of typed-name strings."""
-        return self._canonical_chained_name_tuple
+    # These are optimized because they were _the_ top hotspots in a CPU profile
+    # of compilation when they were just computed always in __post_init__.
+    #
+    # Computed on first read and stored into the slot so later reads are a bare
+    # slot read. The values are deterministic over the immutable typed_names, so
+    # a benign race across threads recomputes an equal value and the slot store
+    # is atomic. Anything other than these two names must raise so copy/pickle's
+    # dunder probing still fails cleanly.
+    def __getattr__(self, name: str) -> tuple[str, ...] | str:
+        """Lazily compute and cache the canonical chained-name forms."""
+        match name:
+            case "canonical_chained_name_tuple":
+                value = tuple(elem.full_typed_name for elem in self.typed_names)
+            case "canonical_chained_name":
+                value = "::".join(self.canonical_chained_name_tuple)
+            case _:
+                raise AttributeError(name)
+        object.__setattr__(self, name, value)
+        return value
 
     @property
     def source_chained_name(self) -> str:
