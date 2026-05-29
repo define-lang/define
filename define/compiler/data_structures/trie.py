@@ -1,13 +1,26 @@
-"""A trie supporting O(k) point ops, subtree reparenting, and ancestor traversal."""
+"""A hash-indexed trie supporting subtree reparenting and prefix scans.
+
+Keys are sequences of string segments (tuples) that form a prefix hierarchy.
+Every point operation (get/set/contains/delete) is a single tuple hash
+plus one dict probe; there is no walking the segments like a traditional trie
+data structure. A parallel ``children``index records each parent's immediate
+child segments so that subtree moves, subtree deletes, and prefix scans are
+cheap dictionary operations.
+
+The root's children live under the empty-tuple key ``()`` so that
+single-element keys have a parent entry to attach to.
+"""
 
 from __future__ import annotations
 
 import typing
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable, ItemsView
 
-type TrieKey = tuple[str, ...] | list[str]
+type TrieKey = tuple[str, ...]
+
+_MISSING: typing.Final = object()
 
 
 class TrieError(Exception):
@@ -15,279 +28,242 @@ class TrieError(Exception):
 
 
 class EmptyKeyError(TrieError):
-    """Raised when a trie operation receives an empty key."""
+    """Raised when an operation receives an empty key."""
 
 
 class TargetExistsError(TrieError):
     """Raised when a move or graft target key already exists."""
 
 
-class _Node[V]:
-    """Internal trie node. Every non-root node always has a value."""
-
-    __slots__: typing.ClassVar[tuple[str, ...]] = ("children", "value")
-
-    def __init__(self, value: V):
-        # Most nodes will have 1-2 children. If memory profiling shows trie
-        # node count is high enough that per-dict overhead matters, this could
-        # be replaced with adaptive storage: None for 0 children, a
-        # (str, _Node) tuple for 1 child, upgrading to dict at 2+. That saves
-        # ~48-64 bytes per single-child node at the cost of isinstance checks
-        # on every access. My suspicion is that our current trade off (memory
-        # in exchange for processing speed) is the right one, but future data
-        # could convince me otherwise.
-        self.children: dict[str, _Node[V]] = {}
-        self.value: V = value
-
-
 class StrictReparentingTrie[V]:
     """A trie keyed by string sequences, supporting subtree reparenting.
 
-    Keys are tuples or lists of strings. Each element represents one level
-    in the trie. Every node must have an existing parent (except
-    single-element keys, whose parent is the root). Deleting a node
-    deletes all of its descendants.
+    Every node must have an existing parent (except single-element keys, whose
+    parent is the root). Deleting a key deletes all of its descendants.
 
     Not thread-safe. Concurrent reads and writes will produce undefined
     behavior.
-
-    Key operations:
-    - Point lookup/insert/delete: O(k) where k is key length
-    - Subtree move: O(k) via node reparenting
-    - Ancestor traversal: O(k), yielding each intermediate node's value
     """
 
     def __init__(self):
         """Initialize an empty trie."""
-        self._root: dict[str, _Node[V]] = {}
-
-    def _validate_key(self, key: TrieKey):
-        if not key:
-            raise EmptyKeyError("key must not be empty")
-
-    def _walk(self, key: TrieKey) -> _Node[V] | None:
-        """Walk to the node for key, returning None if the path doesn't exist."""
-        children = self._root
-        node: _Node[V] | None = None
-        for element in key:
-            node = children.get(element)
-            if node is None:
-                return None
-            children = node.children
-        return node
-
-    def _walk_to_parent(self, key: TrieKey) -> dict[str, _Node[V]]:
-        """Walk to the parent's children dict for key.
-
-        For single-element keys, returns the root children dict.
-        Raises KeyError if any intermediate node doesn't exist.
-        """
-        children = self._root
-        for element in key[:-1]:
-            node = children.get(element)
-            if node is None:
-                raise KeyError(key)
-            children = node.children
-        return children
-
-    def __contains__(self, key: TrieKey) -> bool:
-        """Check if key has a value."""
-        self._validate_key(key)
-        return self._walk(key) is not None
-
-    def __getitem__(self, key: TrieKey) -> V:
-        """Get value at key. Raises KeyError if missing."""
-        result = self.get(key)
-        if result is None:
-            raise KeyError(key)
-        return result
-
-    def _walk_to_parent_for_setting(self, key: TrieKey) -> dict[str, _Node[V]]:
-        """Walk to the parent's children dict for a write operation.
-
-        Subclasses may override this to auto-create intermediate nodes.
-        """
-        return self._walk_to_parent(key)
-
-    def __setitem__(self, key: TrieKey, value: V):
-        """Set value at key. Parent must already exist (KeyError if not)."""
-        self._validate_key(key)
-        parent_children = self._walk_to_parent_for_setting(key)
-        last = key[-1]
-        existing = parent_children.get(last)
-        if existing is not None:
-            existing.value = value
-        else:
-            parent_children[last] = _Node[V](value)
-
-    def __delitem__(self, key: TrieKey):
-        """Remove node and all descendants. Raises KeyError if missing."""
-        self._validate_key(key)
-        parent_children = self._walk_to_parent(key)
-        last = key[-1]
-        if last not in parent_children:
-            raise KeyError(key)
-        del parent_children[last]
+        # This used to be a more traditional trie data structure where we had
+        # a dictionary of dictionaries that we would walk through for each item.
+        # However, that made lookups (our most common use case in the compiler)
+        # very expensive and a fairly large hotspot in large compiles. Our new
+        # structure optimizes for making lookups cheap, at the expense of making
+        # moves more expensive.
+        self._values: dict[TrieKey, V] = {}
+        self._children: dict[TrieKey, set[str]] = {}
 
     def get(self, key: TrieKey, default: V | None = None) -> V | None:
         """Get value at key, or default if missing."""
-        self._validate_key(key)
-        node = self._walk(key)
-        if node is None:
-            return default
-        return node.value
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        return self._values.get(key, default)
+
+    def __getitem__(self, key: TrieKey) -> V:
+        """Get value at key. Raises KeyError if missing."""
+        return self._values[key]
+
+    def __contains__(self, key: TrieKey) -> bool:
+        """Check if key has a value."""
+        return key in self._values
+
+    def _ensure_parent(self, key: TrieKey):
+        """Verify the parent path for a write; strict tries require it to exist."""
+        parent = key[:-1]
+        if parent and parent not in self._values:
+            raise KeyError(key)
+
+    def __setitem__(self, key: TrieKey, value: V):
+        """Set value at key. Parent must already exist (KeyError if not)."""
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        self._ensure_parent(key)
+        self._values[key] = value
+        self._children.setdefault(key[:-1], set()).add(key[-1])
+
+    def _collect_subtree(self, root: TrieKey) -> list[TrieKey]:
+        """Return root and all of its descendant keys."""
+        result = [root]
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            for segment in self._children.get(node, ()):
+                child = (*node, segment)
+                result.append(child)
+                stack.append(child)
+        return result
+
+    def _unlink_from_parent(self, key: TrieKey):
+        """Remove key's last segment from its parent's child set."""
+        parent = key[:-1]
+        siblings = self._children.get(parent)
+        if siblings is not None:
+            siblings.discard(key[-1])
+            if not siblings:
+                del self._children[parent]
+
+    def __delitem__(self, key: TrieKey):
+        """Remove key and all descendants. Raises KeyError if missing."""
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        if key not in self._values:
+            raise KeyError(key)
+        for node in self._collect_subtree(key):
+            del self._values[node]
+            _ = self._children.pop(node, None)
+        self._unlink_from_parent(key)
 
     def move_subtree(self, source: TrieKey, target: TrieKey):
         """Detach the subtree at source and reattach it at target.
 
         The source key must exist. The target key must not already exist.
-        The target's parent must exist. All descendants of source become
-        descendants of target.
+        The target's parent must exist (strict tries) or be auto-created
+        (lenient tries). All descendants of source become descendants of target.
 
         Raises KeyError if source doesn't exist or target's parent doesn't exist.
-        Raises ValueError if target already exists.
+        Raises TargetExistsError if target already exists.
         """
-        # This could be implemented as just pop_subtree and then graft_subtree,
-        # but this implementation is slightly more efficient, and since this
-        # is a core primitive of Define (it backs the particle tracker)
-        # I decided to care about efficiency (perhaps unnecessarily so, though, so
-        # open to changing this in the future).
-        self._validate_key(source)
-        self._validate_key(target)
-
-        # Validate source and target before modifying anything.
-        source_parent = self._walk_to_parent(source)
-        source_last = source[-1]
-        if source_last not in source_parent:
+        if not source:
+            raise EmptyKeyError("key must not be empty")
+        if not target:
+            raise EmptyKeyError("key must not be empty")
+        if source not in self._values:
             raise KeyError(source)
-        target_parent = self._walk_to_parent_for_setting(target)
-        target_last = target[-1]
-        if target_last in target_parent:
+        self._ensure_parent(target)
+        if target in self._values:
             raise TargetExistsError(f"target key already exists: {target}")
 
-        # Both validated — perform the move.
-        target_parent[target_last] = source_parent.pop(source_last)
+        source_len = len(source)
+        moved: list[tuple[TrieKey, V, set[str] | None]] = []
+        for old in self._collect_subtree(source):
+            value = self._values.pop(old)
+            child_segments = self._children.pop(old, None)
+            new = target + old[source_len:]
+            moved.append((new, value, child_segments))
+        for new, value, child_segments in moved:
+            self._values[new] = value
+            if child_segments is not None:
+                self._children[new] = child_segments
+
+        self._unlink_from_parent(source)
+        self._children.setdefault(target[:-1], set()).add(target[-1])
 
     def pop_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
         """Detach the subtree at key and return it as a new trie.
 
-        The returned trie has a single root entry keyed by the last element
-        of key, containing the popped node and all its descendants.
+        The returned trie has a single root entry keyed by the last element of
+        key, containing the popped value and all its descendants.
 
         Raises KeyError if key doesn't exist.
         """
-        self._validate_key(key)
-        parent_children = self._walk_to_parent(key)
-        last = key[-1]
-        if last not in parent_children:
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        if key not in self._values:
             raise KeyError(key)
         result: StrictReparentingTrie[V] = StrictReparentingTrie()
-        result._root[last] = parent_children.pop(last)
+        key_len = len(key)
+        root_segment = key[-1]
+        for old in self._collect_subtree(key):
+            value = self._values.pop(old)
+            child_segments = self._children.pop(old, None)
+            new = (root_segment, *old[key_len:])
+            result._values[new] = value
+            if child_segments is not None:
+                result._children[new] = child_segments
+        result._children.setdefault((), set()).add(root_segment)
+        self._unlink_from_parent(key)
         return result
 
     def root_children(self) -> StrictReparentingTrie[V]:
         """Return a trie whose root entries are the children of all root nodes."""
         result: StrictReparentingTrie[V] = StrictReparentingTrie()
-        for node in self._root.values():
-            result._root.update(node.children)
+        for root_segment in self._children.get((), ()):
+            root_key = (root_segment,)
+            for child_segment in self._children.get(root_key, ()):
+                child_key = (root_segment, child_segment)
+                child_len = len(child_key)
+                for old in self._collect_subtree(child_key):
+                    new = (child_segment, *old[child_len:])
+                    result._values[new] = self._values[old]
+                    existing = self._children.get(old)
+                    if existing is not None:
+                        result._children[new] = set(existing)
+                result._children.setdefault((), set()).add(child_segment)
         return result
 
     def graft_subtree(self, key: TrieKey, subtree: StrictReparentingTrie[V]):
         """Attach a subtree's root entries as children of key.
 
         Each root entry in the subtree becomes a child of the node at key.
-        The node at key must already exist. The child keys must _not_ already
+        The node at key must already exist. The child keys must not already
         exist.
 
         Raises KeyError if key doesn't exist.
         Raises TargetExistsError if any child already exists.
         """
-        self._validate_key(key)
-        node = self._walk(key)
-        if node is None:
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        if key not in self._values:
             raise KeyError(key)
-        for name, child in subtree._root.items():
-            if name in node.children:
-                raise TargetExistsError(f"child key already exists: {name}")
-            node.children[name] = child
+        root_segments = subtree._children.get((), set())
+        for segment in root_segments:
+            if (*key, segment) in self._values:
+                raise TargetExistsError(f"child key already exists: {segment}")
+        for sub_key, value in subtree._values.items():
+            new = key + sub_key
+            self._values[new] = value
+            existing = subtree._children.get(sub_key)
+            if existing is not None:
+                self._children[new] = set(existing)
+        if root_segments:
+            self._children.setdefault(key, set()).update(root_segments)
 
-    def items(self) -> Generator[tuple[list[str], V]]:
-        """Yield all (key, value) pairs in the trie.
+    def items(self) -> ItemsView[TrieKey, V]:
+        """Yield all (key, value) pairs in the trie."""
+        return self._values.items()
 
-        The yielded key list is reused across iterations. Callers must copy
-        it (e.g. ``tuple(key)``) if they need to keep it beyond the current
-        iteration step. Callers must not modify the list key.
-        """
-        # CPython may shrink the list's internal array when it falls below
-        # ~50% capacity after pops. In tries with widely varying branch depths
-        # this could cause repeated reallocation.
-        path: list[str] = []
-
-        def recurse(node: _Node[V]) -> Generator[tuple[list[str], V]]:
-            yield (path, node.value)
-            for element, child in node.children.items():
-                path.append(element)
-                yield from recurse(child)
-                _ = path.pop()
-
-        for element, child in self._root.items():
-            path.append(element)
-            yield from recurse(child)
-            _ = path.pop()
-
-    def existing_prefix(self, key: TrieKey) -> list[str]:
+    def existing_prefix(self, key: TrieKey) -> TrieKey:
         """Return the longest prefix of key whose nodes all exist in the trie."""
-        self._validate_key(key)
-        result: list[str] = []
-        children = self._root
-        for element in key:
-            node = children.get(element)
-            if node is None:
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        present_length = 0
+        for length in range(1, len(key) + 1):
+            if key[:length] in self._values:
+                present_length = length
+            else:
                 break
-            result.append(element)
-            children = node.children
-        return result
+        return key[:present_length]
 
     def find_shortest_prefix_where(
         self, key: TrieKey, predicate: Callable[[V], bool]
-    ) -> list[str] | None:
-        """Return the shortest prefix of key whose node satisfies predicate.
+    ) -> TrieKey | None:
+        """Return the shortest prefix of key whose value satisfies predicate.
 
-        Walks from the root toward the full key, checking each node's value.
-        Returns the key of the first node where predicate returns True,
-        or None if no prefix (including the full key) matches. Stops early
-        and returns None if a node along the path doesn't exist.
+        Walks from the root toward the full key. Returns the first prefix whose
+        value satisfies predicate, or None if no prefix matches. Stops early and
+        returns None if a node along the path doesn't exist.
         """
-        self._validate_key(key)
-        children = self._root
-        path: list[str] = []
-        for element in key:
-            node = children.get(element)
-            if node is None:
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        for length in range(1, len(key) + 1):
+            prefix = key[:length]
+            value = self._values.get(prefix, _MISSING)
+            if value is _MISSING:
                 return None
-            path.append(element)
-            if predicate(node.value):
-                return path
-            children = node.children
+            if predicate(typing.cast("V", value)):
+                return prefix
         return None
-
-    def keys(self) -> Generator[list[str]]:
-        """Yield all keys that have values.
-
-        The yielded key list is reused across iterations. Callers must copy
-        it if they need to keep it beyond the current iteration step. Callers
-        must not modify the returned list.
-        """
-        for key, _ in self.items():
-            yield key
 
 
 class LenientReparentingTrie[V](StrictReparentingTrie[V]):
     """A trie that auto-creates intermediate nodes on write operations.
 
-    When setting a value or moving a subtree to a target, missing
-    intermediate nodes are created with ``default_factory()`` values.
-    Reads, deletes, and move-source lookups remain strict.
+    When setting a value or moving a subtree to a target, missing intermediate
+    nodes are created with ``default_factory()`` values. Reads, deletes, and
+    move-source lookups remain strict.
     """
 
     _default_factory: typing.Callable[[], V]
@@ -298,13 +274,10 @@ class LenientReparentingTrie[V](StrictReparentingTrie[V]):
         self._default_factory = default_factory
 
     @typing.override
-    def _walk_to_parent_for_setting(self, key: TrieKey) -> dict[str, _Node[V]]:
-        """Walk to parent, auto-creating intermediate nodes with default values."""
-        children = self._root
-        for element in key[:-1]:
-            node = children.get(element)
-            if node is None:
-                node = _Node[V](self._default_factory())
-                children[element] = node
-            children = node.children
-        return children
+    def _ensure_parent(self, key: TrieKey):
+        """Auto-create any missing ancestors with default values."""
+        for length in range(1, len(key)):
+            ancestor = key[:length]
+            if ancestor not in self._values:
+                self._values[ancestor] = self._default_factory()
+                self._children.setdefault(ancestor[:-1], set()).add(ancestor[-1])

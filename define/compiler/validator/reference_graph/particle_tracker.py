@@ -266,10 +266,10 @@ class ParticleTracker:
         all_keys: set[tuple[str, ...]] = set()
         for key, state in self._state.items():
             if state.particle_info is not None or state.emptied_by is not None:
-                all_keys.add(tuple(key))
+                all_keys.add(key)
         for key, unknown_state in self._unknown.items():
             if unknown_state.caused_by is not None:
-                all_keys.add(tuple(key))
+                all_keys.add(key)
 
         guarantees: list[action_contract.GuaranteePair] = []
         for key in all_keys:

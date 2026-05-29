@@ -83,6 +83,14 @@ class TestDelete:
         assert ("a",) in t
         assert ("a", "c") in t
 
+    def test_delitem_then_reinsert_child(self):
+        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        t[("a",)] = 1
+        t[("a", "b")] = 2
+        del t[("a", "b")]
+        t[("a", "b")] = 3
+        assert t[("a", "b")] == 3
+
 
 class TestMoveSubtree:
     def test_move_leaf(self):
@@ -183,13 +191,6 @@ class TestIteration:
         result = sorted((tuple(k), v) for k, v in t.items())
         assert result == [(("a",), 1), (("a", "c"), 3), (("b",), 2)]
 
-    def test_keys(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        t[("a",)] = 1
-        t[("a", "b")] = 2
-        result = sorted(tuple(k) for k in t.keys())  # noqa: SIM118
-        assert result == [("a",), ("a", "b")]
-
 
 class TestPopSubtree:
     def test_returns_standalone_trie(self):
@@ -259,6 +260,16 @@ class TestGraftSubtree:
         assert target[("b", "x", "deep")] == 3
         assert target[("b", "y")] == 4
 
+    def test_grafted_child_can_be_moved(self):
+        source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        source[("x",)] = 2
+        target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        target[("b",)] = 99
+        target.graft_subtree(("b",), source)
+        target.move_subtree(("b", "x"), ("b", "z"))
+        assert ("b", "x") not in target
+        assert target[("b", "z")] == 2
+
     def test_existing_child_raises(self):
         source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         source[("x",)] = 2
@@ -282,26 +293,26 @@ class TestExistingPrefix:
         t[("a",)] = 1
         t[("a", "b")] = 2
         t[("a", "b", "c")] = 3
-        assert t.existing_prefix(("a", "b", "c")) == ["a", "b", "c"]
+        assert t.existing_prefix(("a", "b", "c")) == ("a", "b", "c")
 
     def test_partial_path(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 2
-        assert t.existing_prefix(("a", "b", "c", "d")) == ["a", "b"]
+        assert t.existing_prefix(("a", "b", "c", "d")) == ("a", "b")
 
     def test_no_path(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        assert t.existing_prefix(("a", "b")) == []
+        assert t.existing_prefix(("a", "b")) == ()
 
     def test_single_element_exists(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
-        assert t.existing_prefix(("a",)) == ["a"]
+        assert t.existing_prefix(("a",)) == ("a",)
 
     def test_single_element_missing(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        assert t.existing_prefix(("a",)) == []
+        assert t.existing_prefix(("a",)) == ()
 
     def test_empty_key_raises(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
@@ -320,28 +331,28 @@ class TestFindShortestPrefixWhere:
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 99
         t[("a", "b")] = 2
-        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) == ["a"]
+        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) == ("a",)
 
     def test_match_at_intermediate(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 50
         t[("a", "b", "c")] = 3
-        assert t.find_shortest_prefix_where(("a", "b", "c"), lambda v: v > 10) == [
+        assert t.find_shortest_prefix_where(("a", "b", "c"), lambda v: v > 10) == (
             "a",
             "b",
-        ]
+        )
 
     def test_match_at_leaf(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 2
         t[("a", "b", "c")] = 99
-        assert t.find_shortest_prefix_where(("a", "b", "c"), lambda v: v > 10) == [
+        assert t.find_shortest_prefix_where(("a", "b", "c"), lambda v: v > 10) == (
             "a",
             "b",
             "c",
-        ]
+        )
 
     def test_key_not_in_trie(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
@@ -351,7 +362,7 @@ class TestFindShortestPrefixWhere:
     def test_partial_path_match_before_missing(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 99
-        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) == ["a"]
+        assert t.find_shortest_prefix_where(("a", "b"), lambda v: v > 10) == ("a",)
 
     def test_partial_path_no_match(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
@@ -393,6 +404,13 @@ class TestLenientSetitem:
         assert t[("a", "b", "c")] == 42
         assert t[("a",)] == 0
         assert t[("a", "b")] == 0
+
+    def test_auto_created_intermediate_links_into_child_index(self):
+        t = _make_lenient()
+        t[("a", "b", "c")] = 42
+        del t[("a",)]
+        assert ("a", "b", "c") not in t
+        assert ("a", "b") not in t
 
     def test_does_not_overwrite_existing_intermediate(self):
         t = _make_lenient()
