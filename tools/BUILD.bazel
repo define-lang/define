@@ -11,6 +11,11 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 npm_link_all_packages()
 
 py_binary(
+    name = "analyze_profile",
+    srcs = ["analyze_profile.py"],
+)
+
+py_binary(
     name = "compile_jinja_templates",
     srcs = ["compile_jinja_templates.py"],
     visibility = ["//visibility:public"],
@@ -82,6 +87,14 @@ prettier_bin.prettier_binary(
         "BAZEL_BINDIR": ".",
     },
     visibility = ["//:__subpackages__"],
+)
+
+py_binary(
+    name = "run_profile",
+    srcs = ["run_profile.py"],
+    deps = [
+        "//define/compiler:driver",
+    ],
 )
 
 py_binary(
@@ -216,6 +229,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":analyze_profile",
         ":compile_jinja_templates",
         ":generate_large_define_source",
         ":generate_large_define_source_test",
@@ -224,6 +238,7 @@ pyright_test(
         ":git_commit_via_api",
         ":j2lint_runner",
         ":regenerate_codegen_testdata",
+        ":run_profile",
         ":setup_local_dev",
         ":sync_agent_permissions",
         ":update_toolchains",
