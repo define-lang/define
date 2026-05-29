@@ -276,8 +276,9 @@ class LenientReparentingTrie[V](StrictReparentingTrie[V]):
     @typing.override
     def _ensure_parent(self, key: TrieKey):
         """Auto-create any missing ancestors with default values."""
-        for length in range(1, len(key)):
+        for length in range(len(key) - 1, 0, -1):
             ancestor = key[:length]
-            if ancestor not in self._values:
-                self._values[ancestor] = self._default_factory()
-                self._children.setdefault(ancestor[:-1], set()).add(ancestor[-1])
+            if ancestor in self._values:
+                break
+            self._values[ancestor] = self._default_factory()
+            self._children.setdefault(ancestor[:-1], set()).add(ancestor[-1])
