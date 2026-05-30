@@ -353,14 +353,6 @@ class DefinitionTransformer(
             location=self._location_for_bare_definition(start=keyword, name=local_name),
         )
 
-    def position_definition_terminator_or_block(
-        self, items: list[ast.PositionConstraintBlock]
-    ) -> ast.PositionConstraintBlock | object:
-        """Unwrap an optional position-definition ending block."""
-        if not items:
-            return lark_standalone.Discard
-        return items[0]
-
     def local_position_definition_block(
         self,
         items: list[lark_standalone.Token | ast.PositionConstraintBlock],
@@ -508,10 +500,6 @@ class DefinitionTransformer(
             location=ast.SourceLocation.from_definition_name(name_content, name_type),
         )
 
-    def typed_name_reference(self, items: list[ast.TypedName]) -> ast.TypedName:
-        """Unwrap the typed name reference wrapper rule."""
-        return items[0]
-
     def position_reference(
         self, items: list[ast.TypedNameReference]
     ) -> ast.PositionReference:
@@ -595,12 +583,6 @@ class DefinitionTransformer(
         return ast.DestructorConditionStatement(
             location=self._location_with_terminator(start=keyword, end=keyword),
         )
-
-    def trigger_condition_statement(
-        self, items: list[ast.TriggerConditionStatement]
-    ) -> ast.TriggerConditionStatement:
-        """Unwrap the trigger condition statement wrapper rule."""
-        return items[0]
 
     def trigger_conditions_block(
         self,
