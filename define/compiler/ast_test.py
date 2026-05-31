@@ -6,8 +6,8 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import ast, parser, transformer
-from define.compiler.conftest import PositionReferenceFor
+from define.compiler import ast
+from define.compiler.conftest import PositionReferenceFor, parse_and_transform
 from define.compiler.data_structures import define_path
 
 _LOC = ast.start_of_file_location()
@@ -15,22 +15,14 @@ _FQUN = "my.domain.com:my_lib"
 
 
 def _parse_position(source: str) -> ast.PositionDefinition:
-    parse_result = parser.Parser().parse(source)
-    assert parse_result.diagnostics == []
-    assert parse_result.tree is not None
-    program = transformer.DefineTransformer().transform(parse_result.tree)
-    definition = program.definitions[0]
+    definition = parse_and_transform(source).definitions[0]
     if not isinstance(definition, ast.PositionDefinition):
         raise TypeError(f"Expected PositionDefinition, got {type(definition)}")
     return definition
 
 
 def _parse_action(source: str) -> ast.ActionDefinition:
-    parse_result = parser.Parser().parse(source)
-    assert parse_result.diagnostics == []
-    assert parse_result.tree is not None
-    program = transformer.DefineTransformer().transform(parse_result.tree)
-    definition = program.definitions[0]
+    definition = parse_and_transform(source).definitions[0]
     if not isinstance(definition, ast.ActionDefinition):
         raise TypeError(f"Expected ActionDefinition, got {type(definition)}")
     return definition

@@ -9,7 +9,7 @@ from typing import Protocol, overload
 
 import pytest
 
-from define.compiler import ast, diagnostics, parser, transformer
+from define.compiler import ast, diagnostics, parser
 from define.compiler.graphs import action_call_graph
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
@@ -19,6 +19,17 @@ _PARSER = parser.Parser()
 _TEST_FQUN = "my.domain.com:my_lib"
 
 type PositionReferenceFor = Callable[[str], ast.PositionReference]
+
+
+def parse_and_transform(
+    source: str, file_path: PurePosixPath | None = None
+) -> ast.Program:
+    """Parse and transform source into an AST Program via the shared parser."""
+    result = _PARSER.parse_and_transform(source, file_path=file_path)
+    assert result.diagnostics == []
+    assert result.exception is None
+    assert result.program is not None
+    return result.program
 
 
 def _make_position_reference(chained_name: str) -> ast.PositionReference:
@@ -48,10 +59,7 @@ def _make_position_reference(chained_name: str) -> ast.PositionReference:
         "    }\n"
         "}\n"
     )
-    parse_result = _PARSER.parse(source)
-    assert parse_result.diagnostics == []
-    assert parse_result.tree is not None
-    program = transformer.DefineTransformer().transform(parse_result.tree)
+    program = parse_and_transform(source)
     action_def = program.definitions[0]
     assert isinstance(action_def, ast.ActionDefinition)
     for stmt in action_def.action_statements.statements:

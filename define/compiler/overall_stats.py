@@ -27,7 +27,6 @@ class OverallStats:
     file_count: int = 0
     file_loading: int = 0
     parse: int = 0
-    transform: int = 0
     file_validation: int = 0
     global_validation: int = 0
     avg_queue_wait: int = 0
@@ -47,7 +46,6 @@ def calculate_overall_stats(
         fs = result.stats
         s.file_loading += fs.file_loading
         s.parse += fs.parse
-        s.transform += fs.transform
         s.file_validation += fs.file_validation
         s.global_validation += fs.global_validation
         total_queue_wait += fs.queue_wait
@@ -57,7 +55,7 @@ def calculate_overall_stats(
     s.file_count = len(results)
     s.avg_queue_wait = total_queue_wait // s.file_count if s.file_count > 0 else 0
     s.overall_compile = (
-        s.file_loading + s.parse + s.transform + s.file_validation + s.global_validation
+        s.file_loading + s.parse + s.file_validation + s.global_validation
     )
     return s
 
@@ -102,7 +100,6 @@ def _format_breakdown_section(stats: OverallStats) -> str:
         [
             ("File loading", format_ns(stats.file_loading)),
             ("Parse", format_ns(stats.parse)),
-            ("Transform", format_ns(stats.transform)),
             ("File validation", format_ns(stats.file_validation)),
             ("Global validation", format_ns(stats.global_validation)),
         ],
@@ -124,7 +121,6 @@ def _format_per_file_section(
             ("Overall compile", format_ns(s.overall_compile)),
             ("File loading", format_ns(s.file_loading)),
             ("Parse", format_ns(s.parse)),
-            ("Transform", format_ns(s.transform)),
             ("File validation", format_ns(s.file_validation)),
             ("Global validation", format_ns(s.global_validation)),
             ("Queue wait", format_ns(s.queue_wait)),

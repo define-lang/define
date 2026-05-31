@@ -1,13 +1,48 @@
 """Lark transformer to convert parse tree to AST nodes."""
 
+from __future__ import annotations
+
+import functools
+import threading
 from dataclasses import dataclass
-from pathlib import PurePosixPath
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from define.compiler import ast, name_parser
 from define.compiler.lark import lark_standalone
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import PurePosixPath
+
 type _LocatedItem = ast.ASTNode | lark_standalone.Token
+
+# Hoisted out of the per-item filter loop to avoid a global+attribute lookup on
+# every item across the millions of rule reductions in a large parse.
+_DISCARD = lark_standalone.Discard
+
+
+def _strip_discard[Items, Result](
+    method: Callable[[DefineTransformer, list[Items]], Result],
+) -> Callable[[DefineTransformer, list[Items]], Result]:
+    """Filter ``Discard`` out of a rule callback's items before it runs.
+
+    Lark's inline (parse-time) transform does not auto-filter the ``Discard``
+    singleton returned by token and ``terminator`` callbacks, so each rule
+    callback's body would otherwise see it in its items.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self: DefineTransformer, items: list[Items]) -> Result:
+        return method(self, [item for item in items if item is not _DISCARD])
+
+    return wrapper
+
+
+class _ParseContext(threading.local):
+    """Per-parse, per-thread context for the shared inline transformer."""
+
+    file_path: PurePosixPath | None = None
+    enclosing_fqun: ast.Fqun | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,73 +68,65 @@ class _LocalPositionBlockData:
     block_close: lark_standalone.Token
 
 
-class DefineTransformer:
-    """Top-level orchestrator that transforms a parse tree into an AST Program."""
+class DefineTransformer(
+    lark_standalone.Transformer[lark_standalone.Token, ast.Program]
+):
+    """Builds an AST inline as the Lark parser reduces each rule."""
 
-    _file_path: PurePosixPath | None
+    _context: _ParseContext
 
-    def __init__(self, file_path: PurePosixPath | None = None):
-        """Initialize with an optional file path for source locations."""
-        self._file_path = file_path
+    def __init__(self):
+        """Initialize the shared per-parse context."""
+        super().__init__()
+        self._context = _ParseContext()
 
-    def transform(
-        self, tree: lark_standalone.Tree[lark_standalone.Token]
-    ) -> ast.Program:
-        """Transform the parse tree into an AST Program."""
-        definitions: list[ast.QualityDefinition] = []
-        for child in tree.children:
-            if not isinstance(child, lark_standalone.Tree):
-                continue
-            enclosing_fqun = _extract_definition_fqun(child, self._file_path)
-            sub_transformer = DefinitionTransformer(
-                file_path=self._file_path, enclosing_fqun=enclosing_fqun
+    def set_file_path(self, file_path: PurePosixPath | None):
+        """Set the per-parse context immediately before a parse begins.
+
+        ``enclosing_fqun`` is reset so the namespace exists; the first
+        definition's name callback always overwrites it before any body
+        reference reads it.
+        """
+        self._context.file_path = file_path
+        self._context.enclosing_fqun = None
+
+    @property
+    def _enclosing_fqun(self) -> ast.Fqun:
+        """The FQUN of the definition currently being transformed."""
+        if self._context.enclosing_fqun is None:
+            raise ValueError(
+                "tried to transform a name refeence before reading the enclosing definition name"
             )
-            definitions.append(sub_transformer.transform(child))
-        if definitions:
+        return self._context.enclosing_fqun
+
+    @_strip_discard
+    def start(self, items: list[ast.QualityDefinition]) -> ast.Program:
+        """Assemble the top-level definitions into a Program."""
+        if items:
             location = ast.SourceLocation.from_ast_or_token(
-                start=definitions[0],
-                end=definitions[-1],
-                file_path=self._file_path,
+                start=items[0],
+                end=items[-1],
+                file_path=self._context.file_path,
             )
         else:
-            location = ast.start_of_file_location(self._file_path)
-        return ast.Program(
-            definitions=tuple(definitions),
-            location=location,
+            location = ast.start_of_file_location(self._context.file_path)
+        return ast.Program(definitions=tuple(items), location=location)
+
+    @_strip_discard
+    def global_name_definition_content(
+        self, items: list[lark_standalone.Token]
+    ) -> ast.DefinitionGlobalNameContent:
+        """Parse definition-site name content into a global definition node.
+
+        This rule reduces only at definition sites, before any of the
+        definition's body references reduce, so recording the enclosing FQUN
+        here is what makes it available to those later reference callbacks.
+        """
+        result = name_parser.parse_global_name_definition(
+            items[0], self._context.file_path
         )
-
-
-def _extract_definition_fqun(
-    definition_tree: lark_standalone.Tree[lark_standalone.Token],
-    file_path: PurePosixPath | None,
-) -> ast.Fqun:
-    """Extract the inline FQUN from a definition parse subtree."""
-    inner = cast(
-        "lark_standalone.Tree[lark_standalone.Token]", definition_tree.children[0]
-    )
-    name_tree = cast("lark_standalone.Tree[lark_standalone.Token]", inner.children[1])
-    name_token = cast("lark_standalone.Token", name_tree.children[0])
-    return name_parser.parse_global_name_definition(name_token, file_path).fqun
-
-
-class DefinitionTransformer(
-    lark_standalone.Transformer[lark_standalone.Token, ast.QualityDefinition]
-):
-    """Transforms a single definition subtree into an AST QualityDefinition."""
-
-    _file_path: PurePosixPath | None
-    _enclosing_fqun: ast.Fqun
-
-    def __init__(
-        self,
-        *,
-        file_path: PurePosixPath | None,
-        enclosing_fqun: ast.Fqun,
-    ):
-        """Initialize with the enclosing definition's FQUN and an optional file path."""
-        super().__init__()
-        self._file_path = file_path
-        self._enclosing_fqun = enclosing_fqun
+        self._context.enclosing_fqun = result.fqun
+        return result
 
     def _location(
         self,
@@ -111,7 +138,7 @@ class DefinitionTransformer(
         return ast.SourceLocation.from_ast_or_token(
             start=start,
             end=end,
-            file_path=self._file_path,
+            file_path=self._context.file_path,
             end_column_offset=end_column_offset,
         )
 
@@ -136,6 +163,7 @@ class DefinitionTransformer(
         """
         return self._location(start=start, end=name, end_column_offset=2)
 
+    @_strip_discard
     def position_definition(
         self,
         items: list[
@@ -167,6 +195,7 @@ class DefinitionTransformer(
             location=self._location_for_bare_definition(start=keyword, name=name),
         )
 
+    @_strip_discard
     def action_definition(
         self,
         items: list[
@@ -193,141 +222,32 @@ class DefinitionTransformer(
 
     def terminator(self, _items: list[object]) -> object:
         """Remove terminator trees from the parse tree."""
-        return lark_standalone.Discard
+        return _DISCARD
 
-    def GLOBAL_NAME_CONTENT(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass through raw name content tokens for context-specific parsing."""
-        return token
-
-    def LOCAL_NAME_CONTENT(self, token: lark_standalone.Token) -> lark_standalone.Token:  # noqa: N802
-        """Pass through raw local name content tokens for context-specific parsing."""
-        return token
-
-    # Keyword tokens are passed through (not discarded). Each one anchors the
-    # location of its enclosing rule's AST node: without lark's
-    # PropagatePositions to populate Tree.meta, the rule derives its
-    # SourceLocation by scanning items, and these tokens carry the line/column
-    # of the rule's leading keyword. Each rule reads its data from later items
-    # by index.
-
-    def CLOSE_BRACE(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the block-closing ``}`` token through.
-
-        Block rules use it as their end-location anchor.
-        """
-        return token
-
-    def DEFINE_THE_POSITION(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the local-position definition keyword token through."""
-        return token
-
-    def DEFINE_THE_POTENTIAL_POSITION(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the potential-position definition keyword token through."""
-        return token
-
-    def DEFINE_THE_POTENTIAL_ACTION(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the potential-action definition keyword token through."""
-        return token
-
-    def IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the position-constraint intro keyword token through."""
-        return token
-
-    def IT_HAS_THE(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the position-requirement keyword token through."""
-        return token
-
-    def IT_ALSO_ASSIGNS_THE(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the quality-implication keyword token through."""
-        return token
-
-    def IT_HAPPENS_WHEN(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the trigger-conditions keyword token through."""
-        return token
-
-    def THE(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the trigger-condition 'the' keyword token through."""
-        return token
-
-    def HAS_A_PARTICLE(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the 'has a particle' keyword token through."""
-        return token
-
-    def DESTRUCTOR_STATEMENT(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the destructor-condition keyword token through."""
-        return token
-
-    def AND_IT_DOES(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the action-statements keyword token through."""
-        return token
-
-    def CREATE_A_PARTICLE_IN(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the create-particle keyword token through."""
-        return token
-
-    def MOVE_THE_PARTICLE_IN(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the move-particle keyword token through."""
-        return token
-
-    def DESTROY_THE_PARTICLE_IN(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the destroy-particle keyword token through."""
-        return token
-
-    def AFTER_IT_IS_ASSIGNED(  # noqa: N802
-        self, token: lark_standalone.Token
-    ) -> lark_standalone.Token:
-        """Pass the init-block keyword token through."""
-        return token
-
-    # These three tokens never anchor a rule location: TO sits between the
-    # source and target of a move (the move keyword is the anchor),
-    # CHAIN_SEPARATOR sits between chain elements, and SPACE_AND_OPEN_BRACE
-    # is the body-block opener.
+    # Many terminals are used to get their locations, for SourceLocation construction.
+    # Those terminals all use the lark transformer __default__ method that just returns
+    # a new copy of the token (and thus have no method here).
+    #
+    # The tokens below are the exception -- they never anchor a location,
+    # so they are discarded.
 
     def TO(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard the 'to' keyword token."""
-        return lark_standalone.Discard
+        return _DISCARD
 
     def CHAIN_SEPARATOR(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard chain separator tokens."""
-        return lark_standalone.Discard
+        return _DISCARD
 
     def SPACE_AND_OPEN_BRACE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
         """Discard opening braces."""
-        return lark_standalone.Discard
+        return _DISCARD
 
+    def NEWLINE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+        """Drop newline tokens from the parse tree."""
+        return _DISCARD
+
+    @_strip_discard
     def local_position_definition(
         self,
         items: list[
@@ -353,6 +273,7 @@ class DefinitionTransformer(
             location=self._location_for_bare_definition(start=keyword, name=local_name),
         )
 
+    @_strip_discard
     def local_position_definition_block(
         self,
         items: list[lark_standalone.Token | ast.PositionConstraintBlock],
@@ -366,6 +287,7 @@ class DefinitionTransformer(
             block_close=cast("lark_standalone.Token", items[1]),
         )
 
+    @_strip_discard
     def potential_position_definition_block(
         self,
         items: list[
@@ -402,6 +324,7 @@ class DefinitionTransformer(
             block_close=close_brace,
         )
 
+    @_strip_discard
     def position_initialization_block(
         self,
         items: list[lark_standalone.Token | ast.ActionStatement],
@@ -418,6 +341,7 @@ class DefinitionTransformer(
             location=self._location(start=keyword, end=close_brace),
         )
 
+    @_strip_discard
     def position_constraint_block(
         self,
         items: list[lark_standalone.Token | ast.PositionRequirementStatement],
@@ -435,6 +359,7 @@ class DefinitionTransformer(
             location=self._location(start=keyword, end=close_brace),
         )
 
+    @_strip_discard
     def position_requirement_statement(
         self,
         items: list[lark_standalone.Token | ast.GlobalTypedNameReference],
@@ -452,6 +377,7 @@ class DefinitionTransformer(
             ),
         )
 
+    @_strip_discard
     def quality_implication_statement(
         self,
         items: list[lark_standalone.Token | ast.GlobalTypedNameReference],
@@ -473,6 +399,7 @@ class DefinitionTransformer(
         """Transform a name-type token into a NameType enum."""
         return ast.NameType(token)
 
+    @_strip_discard
     def typed_global_name_reference(
         self,
         items: list[ast.NameType | ast.ReferenceGlobalNameContent],
@@ -487,6 +414,7 @@ class DefinitionTransformer(
             location=ast.SourceLocation.from_definition_name(name_content, name_type),
         )
 
+    @_strip_discard
     def typed_local_name_reference(
         self,
         items: list[ast.NameType | ast.LocalNameContent],
@@ -500,6 +428,7 @@ class DefinitionTransformer(
             location=ast.SourceLocation.from_definition_name(name_content, name_type),
         )
 
+    @_strip_discard
     def position_reference(
         self, items: list[ast.TypedNameReference]
     ) -> ast.PositionReference:
@@ -510,6 +439,7 @@ class DefinitionTransformer(
             from_source=True,
         )
 
+    @_strip_discard
     def create_particle_statement(
         self, items: list[lark_standalone.Token | ast.PositionReference]
     ) -> ast.CreateParticleStatement:
@@ -524,6 +454,7 @@ class DefinitionTransformer(
             location=self._location_with_terminator(start=keyword, end=target),
         )
 
+    @_strip_discard
     def move_particle_statement(
         self, items: list[lark_standalone.Token | ast.PositionReference]
     ) -> ast.MoveParticleStatement:
@@ -541,6 +472,7 @@ class DefinitionTransformer(
             location=self._location_with_terminator(start=keyword, end=target),
         )
 
+    @_strip_discard
     def destroy_particle_statement(
         self, items: list[lark_standalone.Token | ast.PositionReference]
     ) -> ast.DestroyParticleStatement:
@@ -555,6 +487,7 @@ class DefinitionTransformer(
             location=self._location_with_terminator(start=keyword, end=target),
         )
 
+    @_strip_discard
     def position_presence_statement(
         self, items: list[lark_standalone.Token | ast.LocalTypedNameReference]
     ) -> ast.PositionPresenceStatement:
@@ -572,6 +505,7 @@ class DefinitionTransformer(
             ),
         )
 
+    @_strip_discard
     def destructor_condition_statement(
         self, items: list[lark_standalone.Token]
     ) -> ast.DestructorConditionStatement:
@@ -584,6 +518,7 @@ class DefinitionTransformer(
             location=self._location_with_terminator(start=keyword, end=keyword),
         )
 
+    @_strip_discard
     def trigger_conditions_block(
         self,
         items: list[lark_standalone.Token | ast.TriggerConditionStatement],
@@ -600,6 +535,7 @@ class DefinitionTransformer(
             location=self._location(start=keyword, end=close_brace),
         )
 
+    @_strip_discard
     def action_statements_block(
         self, items: list[lark_standalone.Token | ast.ActionStatement]
     ) -> ast.ActionStatementsBlock:
@@ -615,6 +551,7 @@ class DefinitionTransformer(
             location=self._location(start=keyword, end=close_brace),
         )
 
+    @_strip_discard
     def action_definition_block(
         self,
         items: list[
@@ -648,28 +585,23 @@ class DefinitionTransformer(
             block_close=close_brace,
         )
 
+    @_strip_discard
     def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:
         """Unwrap the definition wrapper rule."""
         return items[0]
 
-    def global_name_definition_content(
-        self, items: list[lark_standalone.Token]
-    ) -> ast.DefinitionGlobalNameContent:
-        """Parse definition-site name content into a global definition node."""
-        return name_parser.parse_global_name_definition(items[0], self._file_path)
-
+    @_strip_discard
     def global_name_reference_content(
         self, items: list[lark_standalone.Token]
     ) -> ast.ReferenceGlobalNameContent:
         """Parse reference-site name content into a global reference node."""
-        return name_parser.parse_global_name_reference(items[0], self._file_path)
+        return name_parser.parse_global_name_reference(
+            items[0], self._context.file_path
+        )
 
+    @_strip_discard
     def local_name_content(
         self, items: list[lark_standalone.Token]
     ) -> ast.LocalNameContent:
         """Parse local-name content into a local-name node."""
-        return name_parser.parse_local_name(items[0], self._file_path)
-
-    def NEWLINE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
-        """Drop newline tokens from the parse tree."""
-        return lark_standalone.Discard
+        return name_parser.parse_local_name(items[0], self._context.file_path)

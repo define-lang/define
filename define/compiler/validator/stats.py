@@ -12,7 +12,6 @@ class ValidationTimingStats:
 
     file_loading: int = 0
     parse: int = 0
-    transform: int = 0
     file_validation: int = 0
     global_validation: int = 0
     queue_wait: int = 0
@@ -23,7 +22,6 @@ class ValidationTimingStats:
         return (
             self.file_loading
             + self.parse
-            + self.transform
             + self.file_validation
             + self.global_validation
         )
@@ -37,7 +35,6 @@ class ValidationStatsTracker:
         self._started_at: int = time.perf_counter_ns()
         self._file_loading_finished_at: int | None = None
         self._parse_finished_at: int | None = None
-        self._transform_finished_at: int | None = None
         self._file_validation_finished_at: int | None = None
 
     def mark_file_loading_finished(self):
@@ -47,10 +44,6 @@ class ValidationStatsTracker:
     def mark_parse_finished(self):
         """Record the end of the parse phase."""
         self._parse_finished_at = time.perf_counter_ns()
-
-    def mark_transform_finished(self):
-        """Record the end of the transform phase."""
-        self._transform_finished_at = time.perf_counter_ns()
 
     def mark_file_validation_finished(self):
         """Record the end of the per-file validation phase."""
@@ -70,11 +63,6 @@ class ValidationStatsTracker:
             parse = self._parse_finished_at - last_timestamp
             last_timestamp = self._parse_finished_at
 
-        transform = 0
-        if self._transform_finished_at is not None:
-            transform = self._transform_finished_at - last_timestamp
-            last_timestamp = self._transform_finished_at
-
         file_validation = 0
         if self._file_validation_finished_at is not None:
             file_validation = self._file_validation_finished_at - last_timestamp
@@ -83,6 +71,5 @@ class ValidationStatsTracker:
         return ValidationTimingStats(
             file_loading=file_loading,
             parse=parse,
-            transform=transform,
             file_validation=file_validation,
         )

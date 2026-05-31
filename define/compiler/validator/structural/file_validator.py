@@ -22,19 +22,11 @@ from define.compiler import (
     exceptions,
     parser,
     parser_error_classification,
-    parser_exceptions,
-    transformer,
 )
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph
-from define.compiler.lark import lark_standalone
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
-
-SYNTAX_ERROR_TYPES = (
-    parser_exceptions.DefineSyntaxError,
-    lark_standalone.UnexpectedInput,
-)
 
 
 @dataclass(frozen=True)
@@ -136,7 +128,9 @@ class FileStructuralValidator:
         parser_file_path = (
             context.full_path.as_posix_path() if context.is_filesystem_context else None
         )
-        parse_result = self._parser.parse(source, file_path=parser_file_path)
+        parse_result = self._parser.parse_and_transform(
+            source, file_path=parser_file_path
+        )
         tracker.mark_parse_finished()
 
         if parse_result.exception is not None:
@@ -153,37 +147,9 @@ class FileStructuralValidator:
                 definition_results=[],
             )
 
-        # tree is guaranteed non-None when exception is None.
-        tree = typing.cast(
-            "lark_standalone.Tree[lark_standalone.Token]", parse_result.tree
-        )
-
-        file_path = (
-            context.full_path.as_posix_path() if context.is_filesystem_context else None
-        )
-        try:
-            program = transformer.DefineTransformer(file_path=file_path).transform(tree)
-        except (
-            lark_standalone.VisitError,
-            parser_exceptions.DefineSyntaxError,
-        ) as e:
-            if isinstance(e, lark_standalone.VisitError):
-                if not isinstance(e.orig_exc, SYNTAX_ERROR_TYPES):
-                    raise
-                syntax_error = e.orig_exc
-            else:
-                syntax_error = e
-            tracker.mark_transform_finished()
-            return validation_result.FileValidationResult(
-                exception=syntax_error,
-                source=source,
-                file_path=context.full_path,
-                root_prefix=context.root_prefix,
-                stats=tracker.build(),
-                file_diagnostics=[],
-                definition_results=[],
-            )
-        tracker.mark_transform_finished()
+        if parse_result.program is None:
+            raise ValueError("parse produced no program despite reporting no exception")
+        program = parse_result.program
 
         seen_definitions: typed_name_dict.TypedNameDict[
             ast.GlobalTypedNameInDefinition, ast.QualityDefinition

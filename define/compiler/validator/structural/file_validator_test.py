@@ -14,7 +14,6 @@ from define.compiler import (
     exceptions,
     parser,
     parser_exceptions,
-    transformer,
 )
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph
@@ -42,10 +41,12 @@ def _make_context(
 
 
 def _parse_program(source: str, lark_parser: parser.Parser) -> ast.Program:
-    parse_result = lark_parser.parse(source, file_path=PurePosixPath("/test.dfn"))
-    assert parse_result.exception is None
-    assert parse_result.tree is not None
-    return transformer.DefineTransformer().transform(parse_result.tree)
+    result = lark_parser.parse_and_transform(
+        source, file_path=PurePosixPath("/test.dfn")
+    )
+    assert result.exception is None
+    assert result.program is not None
+    return result.program
 
 
 def _reference_edges(
@@ -495,5 +496,4 @@ class TestFileStructuralValidatorTimingStats:
         assert result.stats.overall_compile > 0
         assert result.stats.file_loading > 0
         assert result.stats.parse > 0
-        assert result.stats.transform > 0
         assert result.stats.file_validation > 0

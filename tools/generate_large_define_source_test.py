@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from define.compiler import ast, parser, transformer
+from define.compiler import ast, parser
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from tools import generate_large_define_source as gen
@@ -11,13 +11,11 @@ from tools import generate_large_define_source as gen
 
 def _parse_and_transform(source: str) -> ast.Program:
     par = parser.Parser()
-    result = par.parse(source, file_path=PurePosixPath("generated.dfn"))
+    result = par.parse_and_transform(source, file_path=PurePosixPath("generated.dfn"))
     assert result.exception is None
     assert result.diagnostics == []
-    assert result.tree is not None
-    return transformer.DefineTransformer(
-        file_path=PurePosixPath("generated.dfn")
-    ).transform(result.tree)
+    assert result.program is not None
+    return result.program
 
 
 class TestGenerateSourceLines:

@@ -8,7 +8,6 @@ def _make_result(
     *,
     file_loading: int = 0,
     parse: int = 0,
-    transform: int = 0,
     file_validation: int = 0,
     global_validation: int = 0,
     queue_wait: int = 0,
@@ -21,7 +20,6 @@ def _make_result(
         stats=stats.ValidationTimingStats(
             file_loading=file_loading,
             parse=parse,
-            transform=transform,
             file_validation=file_validation,
             global_validation=global_validation,
             queue_wait=queue_wait,
@@ -59,7 +57,6 @@ class TestCalculateOverallStats:
                 "test.dfn",
                 file_loading=100,
                 parse=200,
-                transform=300,
                 file_validation=400,
                 global_validation=50,
                 queue_wait=25,
@@ -72,12 +69,11 @@ class TestCalculateOverallStats:
         assert overall.file_count == 1
         assert overall.file_loading == 100
         assert overall.parse == 200
-        assert overall.transform == 300
         assert overall.file_validation == 400
         assert overall.global_validation == 50
         assert overall.avg_queue_wait == 25
         assert overall.max_queue_wait == 25
-        assert overall.overall_compile == 100 + 200 + 300 + 400 + 50
+        assert overall.overall_compile == 100 + 200 + 400 + 50
 
     def test_multiple_files(self):
         results = [
@@ -123,7 +119,7 @@ def _format(
 
 class TestFormatStatsOverall:
     def test_contains_sections(self):
-        results = [_make_result("test.dfn", parse=5_000_000, transform=3_000_000)]
+        results = [_make_result("test.dfn", parse=5_000_000)]
         output = _format(results, 1_000_000, overall_stats.StatsMode.OVERALL)
         assert "--- Compilation Stats ---" in output
         assert "-- Overall --" in output
@@ -150,7 +146,6 @@ class TestFormatStatsOverall:
         assert "Config loading:" not in breakdown_section
         assert "File loading:" in breakdown_section
         assert "Parse:" in breakdown_section
-        assert "Transform:" in breakdown_section
         assert "File validation:" in breakdown_section
         assert "Global validation:" in breakdown_section
 
@@ -160,7 +155,6 @@ class TestFormatStatsOverall:
                 "test.dfn",
                 file_loading=2_000_000,
                 parse=5_000_000,
-                transform=3_000_000,
                 file_validation=4_000_000,
                 global_validation=1_500_000,
                 queue_wait=250_000,
@@ -172,7 +166,7 @@ class TestFormatStatsOverall:
             "\n"
             "-- Overall --\n"
             " Files compiled:  1\n"
-            "Overall compile:  15.50 ms\n"
+            "Overall compile:  12.50 ms\n"
             " Config loading:  1.00 ms\n"
             " Avg queue wait:  0.25 ms\n"
             " Max queue wait:  0.25 ms\n"
@@ -180,7 +174,6 @@ class TestFormatStatsOverall:
             "-- Breakdown --\n"
             "     File loading:  2.00 ms\n"
             "            Parse:  5.00 ms\n"
-            "        Transform:  3.00 ms\n"
             "  File validation:  4.00 ms\n"
             "Global validation:  1.50 ms\n"
         )
@@ -209,7 +202,6 @@ class TestFormatStatsPerFile:
         per_file_section = output[output.index("-- Per File") :]
         assert "File loading:" in per_file_section
         assert "Parse:" in per_file_section
-        assert "Transform:" in per_file_section
         assert "File validation:" in per_file_section
         assert "Global validation:" in per_file_section
         assert "Queue wait:" in per_file_section
@@ -221,7 +213,6 @@ class TestFormatStatsPerFile:
                 "fast.dfn",
                 file_loading=1_000_000,
                 parse=2_000_000,
-                transform=500_000,
                 file_validation=500_000,
                 global_validation=250_000,
                 queue_wait=125_000,
@@ -230,7 +221,6 @@ class TestFormatStatsPerFile:
                 "slow.dfn",
                 file_loading=4_000_000,
                 parse=8_000_000,
-                transform=2_000_000,
                 file_validation=3_000_000,
                 global_validation=1_000_000,
                 queue_wait=750_000,
@@ -242,7 +232,7 @@ class TestFormatStatsPerFile:
             "\n"
             "-- Overall --\n"
             " Files compiled:  2\n"
-            "Overall compile:  22.25 ms\n"
+            "Overall compile:  19.75 ms\n"
             " Config loading:  0.00 ms\n"
             " Avg queue wait:  0.44 ms\n"
             " Max queue wait:  0.75 ms\n"
@@ -250,24 +240,21 @@ class TestFormatStatsPerFile:
             "-- Breakdown --\n"
             "     File loading:  5.00 ms\n"
             "            Parse:  10.00 ms\n"
-            "        Transform:  2.50 ms\n"
             "  File validation:  3.50 ms\n"
             "Global validation:  1.25 ms\n"
             "\n"
             "-- Per File (slowest first) --\n"
             "  slow.dfn\n"
-            "      Overall compile:  18.00 ms\n"
+            "      Overall compile:  16.00 ms\n"
             "         File loading:  4.00 ms\n"
             "                Parse:  8.00 ms\n"
-            "            Transform:  2.00 ms\n"
             "      File validation:  3.00 ms\n"
             "    Global validation:  1.00 ms\n"
             "           Queue wait:  0.75 ms\n"
             "  fast.dfn\n"
-            "      Overall compile:  4.25 ms\n"
+            "      Overall compile:  3.75 ms\n"
             "         File loading:  1.00 ms\n"
             "                Parse:  2.00 ms\n"
-            "            Transform:  0.50 ms\n"
             "      File validation:  0.50 ms\n"
             "    Global validation:  0.25 ms\n"
             "           Queue wait:  0.12 ms\n"

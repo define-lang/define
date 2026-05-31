@@ -27,8 +27,6 @@ py_test(
     deps = [
         ":ast",
         ":conftest",
-        ":parser",
-        ":transformer",
         "//define/compiler/data_structures:define_path",
         "@pypi//pytest",
     ],
@@ -303,11 +301,13 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
+        ":ast",
         ":compiler",
         ":diagnostics",
         ":indentation_validator",
         ":parser_error_classification",
         ":parser_exceptions",
+        ":transformer",
         "//define/compiler/lark:lark_standalone",
     ],
 )
@@ -349,8 +349,8 @@ py_test(
     size = "small",
     srcs = ["transformer_test.py"],
     deps = [
-        ":parser",
-        ":transformer",
+        ":ast",
+        ":conftest",
     ],
 )
 

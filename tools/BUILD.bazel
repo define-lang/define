@@ -36,7 +36,6 @@ py_test(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler:parser",
-        "//define/compiler:transformer",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",

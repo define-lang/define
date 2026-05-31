@@ -18,7 +18,6 @@ class TestBuildWithNoPhases:
         result = tracker.build()
         assert result.file_loading == 0
         assert result.parse == 0
-        assert result.transform == 0
         assert result.file_validation == 0
         assert result.global_validation == 0
         assert result.queue_wait == 0
@@ -43,7 +42,6 @@ class TestBuildAfterFileLoading:
             tracker.mark_file_loading_finished()
         result = tracker.build()
         assert result.parse == 0
-        assert result.transform == 0
         assert result.file_validation == 0
 
     def test_overall_compile_equals_file_loading(self):
@@ -74,33 +72,6 @@ class TestBuildAfterParse:
             tracker.mark_file_loading_finished()
             tracker.mark_parse_finished()
         result = tracker.build()
-        assert result.transform == 0
-        assert result.file_validation == 0
-
-
-class TestBuildAfterTransform:
-    def test_phases_through_transform_are_set(self):
-        tracker = _make_tracker([100])
-        with patch.object(
-            time, "perf_counter_ns", autospec=True, side_effect=[250, 400, 600]
-        ):
-            tracker.mark_file_loading_finished()
-            tracker.mark_parse_finished()
-            tracker.mark_transform_finished()
-        result = tracker.build()
-        assert result.file_loading == 150
-        assert result.parse == 150
-        assert result.transform == 200
-
-    def test_file_validation_is_zero(self):
-        tracker = _make_tracker([100])
-        with patch.object(
-            time, "perf_counter_ns", autospec=True, side_effect=[250, 400, 600]
-        ):
-            tracker.mark_file_loading_finished()
-            tracker.mark_parse_finished()
-            tracker.mark_transform_finished()
-        result = tracker.build()
         assert result.file_validation == 0
 
 
@@ -111,16 +82,14 @@ class TestBuildAfterAllFilePhases:
             time,
             "perf_counter_ns",
             autospec=True,
-            side_effect=[250, 400, 600, 800],
+            side_effect=[250, 400, 600],
         ):
             tracker.mark_file_loading_finished()
             tracker.mark_parse_finished()
-            tracker.mark_transform_finished()
             tracker.mark_file_validation_finished()
         result = tracker.build()
         assert result.file_loading == 150
         assert result.parse == 150
-        assert result.transform == 200
         assert result.file_validation == 200
 
     def test_overall_compile_equals_file_phase_sum(self):
@@ -129,18 +98,14 @@ class TestBuildAfterAllFilePhases:
             time,
             "perf_counter_ns",
             autospec=True,
-            side_effect=[250, 400, 600, 800],
+            side_effect=[250, 400, 600],
         ):
             tracker.mark_file_loading_finished()
             tracker.mark_parse_finished()
-            tracker.mark_transform_finished()
             tracker.mark_file_validation_finished()
         result = tracker.build()
         assert result.overall_compile == (
-            result.file_loading
-            + result.parse
-            + result.transform
-            + result.file_validation
+            result.file_loading + result.parse + result.file_validation
         )
 
 
@@ -151,19 +116,18 @@ class TestOverallCompileProperty:
             time,
             "perf_counter_ns",
             autospec=True,
-            side_effect=[250, 400, 600, 800],
+            side_effect=[250, 400, 600],
         ):
             tracker.mark_file_loading_finished()
             tracker.mark_parse_finished()
-            tracker.mark_transform_finished()
             tracker.mark_file_validation_finished()
         result = tracker.build()
-        assert result.overall_compile == 700
+        assert result.overall_compile == 500
 
         result.queue_wait = 500
 
         assert result.queue_wait == 500
-        assert result.overall_compile == 700
+        assert result.overall_compile == 500
 
     def test_global_validation_is_included(self):
         tracker = _make_tracker([100])
@@ -171,14 +135,13 @@ class TestOverallCompileProperty:
             time,
             "perf_counter_ns",
             autospec=True,
-            side_effect=[250, 400, 600, 800],
+            side_effect=[250, 400, 600],
         ):
             tracker.mark_file_loading_finished()
             tracker.mark_parse_finished()
-            tracker.mark_transform_finished()
             tracker.mark_file_validation_finished()
         result = tracker.build()
         result.global_validation = 23
         result.queue_wait = 100
 
-        assert result.overall_compile == 723
+        assert result.overall_compile == 523

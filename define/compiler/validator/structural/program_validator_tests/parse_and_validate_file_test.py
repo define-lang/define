@@ -21,7 +21,6 @@ def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):
     phase_sum = (
         timings.file_loading
         + timings.parse
-        + timings.transform
         + timings.file_validation
         + timings.global_validation
     )
@@ -44,7 +43,6 @@ def test_returns_single_file_timing_stats(
 
     assert timings.file_loading > 0
     assert timings.parse > 0
-    assert timings.transform > 0
     assert timings.file_validation > 0
     assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
@@ -67,7 +65,6 @@ def test_parse_error_populates_exceptions_and_sets_later_phases_to_zero(
 
     assert timings.file_loading > 0
     assert timings.parse > 0
-    assert timings.transform == 0
     assert timings.file_validation == 0
     assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
@@ -105,13 +102,12 @@ def test_invalid_utf8_populates_exceptions_and_source_is_none(
 
     assert timings.file_loading > 0
     assert timings.parse == 0
-    assert timings.transform == 0
     assert timings.file_validation == 0
     assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
 
 
-def test_transform_error_from_name_parser_populates_exceptions(
+def test_name_parser_error_at_definition_populates_exceptions(
     parse_and_validate_file: ParseAndValidateFile,
 ):
     source = (
@@ -131,13 +127,12 @@ def test_transform_error_from_name_parser_populates_exceptions(
 
     assert timings.file_loading > 0
     assert timings.parse > 0
-    assert timings.transform > 0
     assert timings.file_validation == 0
     assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
 
 
-def test_transform_error_from_reference_unwraps_visit_error(
+def test_name_parser_error_at_reference_populates_exceptions(
     parse_and_validate_file: ParseAndValidateFile,
 ):
     source = (
@@ -183,7 +178,6 @@ def test_config_error_sets_later_phases_to_zero(
 
     assert timings.file_loading == 0
     assert timings.parse == 0
-    assert timings.transform == 0
     assert timings.file_validation == 0
     assert timings.queue_wait == 0
     _assert_overall_equals_phase_sum(timings)
@@ -209,7 +203,6 @@ def test_file_not_found_sets_later_phases_to_zero(
 
     assert timings.file_loading > 0
     assert timings.parse == 0
-    assert timings.transform == 0
     assert timings.file_validation == 0
     assert timings.queue_wait > 0
     _assert_overall_equals_phase_sum(timings)
