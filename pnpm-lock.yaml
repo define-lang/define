@@ -10,7 +10,7 @@ importers:
     devDependencies:
       basedpyright:
         specifier: latest
-        version: 1.39.5
+        version: 1.39.6
 
   tools:
     devDependencies:
@@ -30,8 +30,8 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
-  basedpyright@1.39.5:
-    resolution: {integrity: sha512-C8GQN3st7KlzXsY/OwLwJ9LUHfTadArG+ibKqSNSwzRXi5aUz/tUnEzjOyO37YgnLcqXs7ZIYyrtW9RBS1kLqQ==}
+  basedpyright@1.39.6:
+    resolution: {integrity: sha512-twJUCdCfqkGWhPBpFzt5sBraz9qRX+aRwDx4hpV+I4DRPYcGtRinrItusZX8dVG0s6j/vC9hJTkuNm/G0OnkMA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -40,8 +40,8 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  js-yaml@4.1.1:
-    resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
+  js-yaml@4.2.0:
+    resolution: {integrity: sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw==}
     hasBin: true
 
   prettier@3.8.3:
@@ -53,18 +53,18 @@ snapshots:
 
   '@a24z/mermaid-parser@1.0.0':
     dependencies:
-      js-yaml: 4.1.1
+      js-yaml: 4.2.0
 
   argparse@2.0.1: {}
 
-  basedpyright@1.39.5:
+  basedpyright@1.39.6:
     optionalDependencies:
       fsevents: 2.3.3
 
   fsevents@2.3.3:
     optional: true
 
-  js-yaml@4.1.1:
+  js-yaml@4.2.0:
     dependencies:
       argparse: 2.0.1
 
