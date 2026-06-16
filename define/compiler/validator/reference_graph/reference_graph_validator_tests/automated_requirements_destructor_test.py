@@ -14,6 +14,7 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_EMPTY = "action<my.domain.com:my_lib:/destructor_empty>"
 _NESTED_DESTRUCTOR = "action<my.domain.com:my_lib:/nested_destructor>"
+_MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
 _P = "position<my.domain.com:my_lib:/p>"
 
 # Moves its own interface position's particle out and back, so it requires
@@ -406,3 +407,87 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
         },
     )
     assert result.action_call_graph.unique_edges() == {(_P, _DESTRUCTOR)}
+
+
+def test_callee_attached_destructor_requirement_verified_at_owning_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """make_thing attaches a destructor in a local position and moves the particle into result without filling the destructor's required child; the destructor rides the guarantee to /test, which owns the result, so destroying it directly checks the requirement (a single DIRECT_INFERENCE step, no cascade or contract) and reports the unmet position."""
+    result = validate_project_with_reference_graph(
+        {
+            "destructor.dfn": _DESTRUCTOR_REQUIRES_OCCUPIED,
+            "make_thing.dfn": (
+                "define the potential action<my.domain.com:my_lib:/make_thing> {\n"
+                "    define the position<result>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<temp> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</destructor>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<temp>.\n"
+                "        move the particle in position<temp> to position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</make_thing>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</make_thing>::position<run>.\n"
+                "        destroy the particle in position<box>::action</make_thing>::position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 33
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].destructor_name == _DESTRUCTOR
+    assert (
+        all_diags[0].destroy_target_name
+        == "position<box>::action</make_thing>::position<result>"
+    )
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</make_thing>::position<result>::action</destructor>::position<item>"
+    )
+    assert all_diags[0].destroy_target_origin_at.line == 13
+    assert all_diags[0].destroy_target_origin_at.column == 48
+    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath(
+        "make_thing.dfn"
+    )
+    assert all_diags[0].auto_destruction_local_position_name is None
+    assert all_diags[0].containing_definition_name is None
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
+    )
+    assert result.action_call_graph.unique_edges() == {
+        (_TEST, _MAKE_THING),
+        (_TEST, _DESTRUCTOR),
+    }

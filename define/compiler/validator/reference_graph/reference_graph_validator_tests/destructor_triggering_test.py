@@ -11,6 +11,7 @@ _POS_TEST = "position<my.domain.com:my_lib:/test>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
+_MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
 
 
 _DESTRUCTOR_NOOP = (
@@ -367,6 +368,56 @@ def test_destroy_via_chained_interface_position_fires_destructor(
     )
     assert_no_errors(result.program_result)
     assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+
+
+def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """make_thing attaches a destructor in a local position then moves the particle into result, whose constraint omits the destructor; the destructor rides the OccupiedByNew guarantee up to /test, which owns the result and fires it on destroy."""
+    result = validate_project_with_reference_graph(
+        {
+            "destructor.dfn": _DESTRUCTOR_NOOP,
+            "make_thing.dfn": (
+                "define the potential action<my.domain.com:my_lib:/make_thing> {\n"
+                "    define the position<result>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<temp> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</destructor>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<temp>.\n"
+                "        move the particle in position<temp> to position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</make_thing>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</make_thing>::position<run>.\n"
+                "        destroy the particle in position<box>::action</make_thing>::position<result>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert_no_errors(result.program_result)
+    assert result.action_call_graph.unique_edges() == {
+        (_TEST, _MAKE_THING),
+        (_TEST, _DESTRUCTOR),
+    }
 
 
 def test_destroy_after_move_into_unconstrained_position_fires_destructor(
