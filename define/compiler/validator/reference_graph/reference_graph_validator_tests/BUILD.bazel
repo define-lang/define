@@ -381,6 +381,57 @@ py_test(
 )
 
 py_test(
+    name = "destruction_contract_caller_verification_test",
+    size = "small",
+    srcs = ["destruction_contract_caller_verification_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
+    name = "destruction_contract_propagation_test",
+    size = "small",
+    srcs = ["destruction_contract_propagation_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
+    name = "destruction_contract_recording_test",
+    size = "small",
+    srcs = ["destruction_contract_recording_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
+    name = "destruction_contract_test",
+    size = "small",
+    srcs = ["destruction_contract_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
     name = "destructor_auto_test",
     size = "small",
     srcs = ["destructor_auto_test.py"],
@@ -644,6 +695,10 @@ pyright_test(
         ":create_particle_test",
         ":create_without_parent_test",
         ":destroy_particle_test",
+        ":destruction_contract_caller_verification_test",
+        ":destruction_contract_propagation_test",
+        ":destruction_contract_recording_test",
+        ":destruction_contract_test",
         ":destructor_auto_test",
         ":destructor_cascade_test",
         ":destructor_triggering_test",

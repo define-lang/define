@@ -130,6 +130,32 @@ class ParticleTracker:
             raise KeyError(key)
         return state.particle_info
 
+    def snapshot_child_state(
+        self, for_position: ast.PositionReference
+    ) -> dict[tuple[str, ...], action_contract.ChildOccupancy]:
+        """Capture the occupancy of every descendant position, keyed relative to for_position.
+
+        The result is plain immutable data, decoupled from later tracker
+        mutation. Each key is the chained-name suffix below the snapshotted
+        particle, so a caller's snapshot of the same particle shares the key
+        space and merges directly.
+        """
+        key = self._key(for_position)
+        result: dict[tuple[str, ...], action_contract.ChildOccupancy] = {}
+        for relative_key, node in self._state.subtree_items(key):
+            if node.particle_info is not None:
+                result[relative_key] = action_contract.ChildOccupancy(
+                    action_contract.PositionOccupancyState.OCCUPIED,
+                    filled_at=node.particle_info.last_position.location,
+                )
+            elif node.emptied_by is not None:
+                result[relative_key] = action_contract.EMPTY_OCCUPANCY
+        # An unknown entry wins over a stale state entry, so it is applied last.
+        for relative_key, unknown_state in self._unknown.subtree_items(key):
+            if unknown_state.caused_by is not None:
+                result[relative_key] = action_contract.UNKNOWN_OCCUPANCY
+        return result
+
     def create(
         self,
         in_position: ast.PositionReference,

@@ -740,6 +740,11 @@ class RequirementDiagnostic(Diagnostic):
                     f"'{step.enclosing_quality_name}' destroys a particle,"
                     f" triggering the destructor '{step.triggered_quality_name}'"
                 )
+            case action_contract.PropagationKind.DESTRUCTOR_ATTACHED:
+                return (
+                    f"the destructor '{step.triggered_quality_name}' is attached to"
+                    f" the particle by a constraint on '{step.enclosing_quality_name}'"
+                )
             case action_contract.PropagationKind.ACTION_TRIGGER:
                 return (
                     f"'{step.enclosing_quality_name}' triggers"

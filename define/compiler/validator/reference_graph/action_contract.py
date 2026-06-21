@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
+from functools import cached_property
 
 from define.compiler import ast
 
@@ -16,6 +17,23 @@ class PositionOccupancyState(enum.Enum):
     UNKNOWN = enum.auto()
 
 
+@dataclass(frozen=True, slots=True)
+class ChildOccupancy:
+    """A child position's occupancy, plus where its particle was filled when occupied."""
+
+    state: PositionOccupancyState
+    # Where the occupying particle was last placed, so a caller that resolves an
+    # empty-requirement violation from this record (rather than from its own
+    # tracker) can still report the fill site. Only set when state is OCCUPIED.
+    filled_at: ast.SourceLocation | None = None
+
+
+# The empty and unknown states carry no fill site, so a single shared instance
+# serves every position. OCCUPIED must be constructed with its own filled_at.
+EMPTY_OCCUPANCY = ChildOccupancy(PositionOccupancyState.EMPTY)
+UNKNOWN_OCCUPANCY = ChildOccupancy(PositionOccupancyState.UNKNOWN)
+
+
 class PropagationKind(enum.Enum):
     """How a requirement reached a given step in its propagation chain."""
 
@@ -25,6 +43,9 @@ class PropagationKind(enum.Enum):
     # The current definition's body destroyed a caller-passed particle,
     # firing a destructor; the destructor's requirements propagated up.
     DESTRUCTOR_CASCADE = enum.auto()
+    # The current definition attached a destructor to a particle that a callee
+    # later destroyed.
+    DESTRUCTOR_ATTACHED = enum.auto()
     # The current definition's body triggered an action; the action's
     # requirements propagated up.
     ACTION_TRIGGER = enum.auto()
@@ -45,6 +66,21 @@ class PropagationStep:
     # For non-root steps: the quality (destructor / triggered action / position
     # whose init block ran) that the next step downward is inside.
     triggered_quality_name: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class DestructorAttachment:
+    """The position constraint that puts a destructor on the particle."""
+
+    # The constraint line that attaches the destructor: the
+    # `it has the action</D>.` line, or the directly-declared constraint whose
+    # implication adds it.
+    # TODO: When the destructor is added through implication, also explain how
+    # this constraint line leads to the implied destructor.
+    attached_at: ast.SourceLocation
+    # The position whose constraints attach the destructor (the position the
+    # particle was created in).
+    position: ast.TypedName
 
 
 @dataclass(frozen=True)
@@ -74,6 +110,7 @@ class PositionRequirement:
     inferred_from: ast.ChainedName
     enclosing_quality: ast.QualityDefinition
     propagated_from: PositionRequirement | None = None
+    destructor_attachment: DestructorAttachment | None = None
 
     def root_cause_quality(self) -> ast.QualityDefinition:
         """Return the quality definition that originally inferred this requirement."""
@@ -111,9 +148,30 @@ class PositionRequirement:
         chain: list[PropagationStep] = []
         current: PositionRequirement | None = self
         while current is not None:
-            chain.append(current._propagation_step())
+            chain.extend(current._propagation_steps())
             current = current.propagated_from
         return chain
+
+    def _propagation_steps(self) -> list[PropagationStep]:
+        steps = [self._propagation_step()]
+        if self.destructor_attachment is not None:
+            steps.append(self._destructor_attachment_step(self.destructor_attachment))
+        return steps
+
+    def _destructor_attachment_step(
+        self, attachment: DestructorAttachment
+    ) -> PropagationStep:
+        if self.propagated_from is None:
+            raise ValueError(
+                "destructor_attachment requires a propagated_from requirement"
+            )
+        destructor = self.propagated_from.enclosing_quality
+        return PropagationStep(
+            location=attachment.attached_at,
+            kind=PropagationKind.DESTRUCTOR_ATTACHED,
+            enclosing_quality_name=attachment.position.full_typed_name,
+            triggered_quality_name=destructor.typed_name.source_typed_name,
+        )
 
     def _propagation_step(self) -> PropagationStep:
         enclosing_name = self.enclosing_quality.typed_name.source_typed_name
@@ -175,11 +233,49 @@ GuaranteePair = tuple[tuple[str, ...], PositionGuarantee]
 
 
 @dataclass(frozen=True)
+class DestructionContract:
+    """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
+
+    Callers higher in the stack use this to verify destructors they attach
+    that the destroying action could not see.
+    """
+
+    # The contracted position whose particle was destroyed (its contracted
+    # origin), as a chained name within the action providing this DestructionContract.
+    destroyed_position_contracted: ast.PositionReference
+    # The position the destroying action actually destroyed, as a chained name
+    # within that action: the Destruction Statement target (or the local position
+    # that was auto-destroyed at the end of a block). Carries the DESTRUCTOR_CASCADE
+    # step location and, for auto-destruction, the local position name.
+    destroyed_position_local: ast.PositionReference
+    # The occupancy of every transitive child position immediately before
+    # destruction, keyed by canonical chained-name tuple relative to the
+    # destroyed particle (the suffix that you would put after the particle's
+    # position).
+    child_state: dict[tuple[str, ...], ChildOccupancy]
+    # The action that physically performed the destruction.
+    destroying_action: ast.GlobalTypedName
+    # Destructors we have already verified, so consumers do not re-verify.
+    verified_destructors: tuple[ast.GlobalTypedNameReference, ...]
+    # True when destroyed_position_local was auto-destroyed at block end rather
+    # than by an explicit destroy statement.
+    is_auto_destruction: bool
+
+    @cached_property
+    def verified_destructor_names(self) -> frozenset[str]:
+        """The full typed names of the destructors the recorder already verified."""
+        return frozenset(
+            quality.full_typed_name for quality in self.verified_destructors
+        )
+
+
+@dataclass(frozen=True)
 class ActionStatementsBlockContract:
     """Base contract for any block containing action statements."""
 
     requirements: dict[tuple[str, ...], PositionRequirement]
     guarantees: list[GuaranteePair]
+    destruction_contracts: list[DestructionContract]
 
 
 @dataclass(frozen=True)

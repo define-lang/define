@@ -1,75 +1,15 @@
 # pyright: reportUnusedCallResult=false
 
-import unittest.mock
-
 from define.compiler import ast
-from define.compiler.validator.reference_graph import (
-    action_contract,
-    definition_postorder_validator,
-    reference_graph_validator,
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.test_helpers import (
+    get_contracts,
+    get_results,
 )
-from define.compiler.validator.structural import program_validator
-from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
     return req.full_propagation_position_chain().source_form_in_universe(fqun)
-
-
-def _get_results(
-    source: str,
-) -> dict[str, definition_postorder_validator.PostorderValidationResult]:
-    results: dict[str, definition_postorder_validator.PostorderValidationResult] = {}
-    action_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
-    position_analyze = definition_postorder_validator.PositionPostorderValidator.analyze
-
-    def action_capture(
-        self: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
-        result = action_analyze(self)
-        results[self._definition.typed_name.full_typed_name] = result  # pyright: ignore[reportPrivateUsage]
-        return result
-
-    def position_capture(
-        self: definition_postorder_validator.PositionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
-        result = position_analyze(self)
-        results[self._definition.typed_name.full_typed_name] = result  # pyright: ignore[reportPrivateUsage]
-        return result
-
-    with (
-        unittest.mock.patch.object(
-            definition_postorder_validator.ActionPostorderValidator,
-            "analyze",
-            autospec=True,
-            side_effect=action_capture,
-        ),
-        unittest.mock.patch.object(
-            definition_postorder_validator.PositionPostorderValidator,
-            "analyze",
-            autospec=True,
-            side_effect=position_capture,
-        ),
-    ):
-        structural = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source
-        )
-        assert_no_errors(structural)
-        reference_graph_validator.ReferenceGraphValidator(
-            structural.reference_graph,
-            structural.definition_results,
-        ).validate()
-    return results
-
-
-def _get_contracts(
-    source: str,
-) -> dict[str, action_contract.ActionStatementsBlockContract]:
-    return {
-        name: result.contract
-        for name, result in _get_results(source).items()
-        if result.contract is not None
-    }
 
 
 class TestRequirementInference:
@@ -85,7 +25,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert ("position<item>",) in contract.requirements
@@ -110,7 +50,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
@@ -131,7 +71,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
@@ -151,7 +91,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert isinstance(contract, action_contract.ActionContract)
@@ -172,7 +112,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
@@ -192,7 +132,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert ("position<local_only>",) not in contract.requirements
@@ -224,7 +164,7 @@ class TestRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert contract.requirements == {}
@@ -244,7 +184,7 @@ class TestImpliedPositionRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         key = ("position<my.domain.com:my_lib:/implied>",)
@@ -267,7 +207,7 @@ class TestImpliedPositionRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         key = ("position<my.domain.com:my_lib:/implied>",)
@@ -299,7 +239,7 @@ class TestImpliedPositionRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {
             "action<my.domain.com:my_lib:/sub>",
             "action<my.domain.com:my_lib:/test>",
@@ -325,7 +265,7 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
@@ -351,7 +291,7 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
@@ -375,7 +315,7 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
@@ -400,7 +340,7 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
@@ -434,7 +374,7 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
@@ -465,7 +405,7 @@ class TestGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
@@ -495,7 +435,7 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
@@ -523,7 +463,7 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
@@ -551,7 +491,7 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert ("position<item>",) in contract.requirements
@@ -578,7 +518,7 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
@@ -605,7 +545,7 @@ class TestChainedRequirementInference:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
@@ -633,7 +573,7 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
@@ -664,7 +604,7 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
@@ -704,7 +644,7 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<dest>", "position<my.domain.com:my_lib:/x>")
@@ -742,7 +682,7 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert contract.guarantees == []
@@ -764,7 +704,7 @@ class TestChainedGuaranteeGeneration:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         chain_key = ("position<item>", "position<my.domain.com:my_lib:/x>")
@@ -790,7 +730,7 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
@@ -815,7 +755,7 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
@@ -836,7 +776,7 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
@@ -865,7 +805,7 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert (
@@ -886,7 +826,7 @@ class TestNoOpGuaranteeSuppression:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
@@ -908,7 +848,7 @@ class TestNoOpGuaranteeSuppression:
 class TestPositionInitBlockContract:
     def test_no_init_block_returns_no_contract(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts == {}
 
     def test_init_block_creates_in_self(self):
@@ -919,7 +859,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 1
@@ -939,7 +879,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert contract.guarantees == []
@@ -957,7 +897,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert len(contract.guarantees) == 2
@@ -989,7 +929,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
@@ -1015,7 +955,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
@@ -1043,7 +983,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
@@ -1074,7 +1014,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert ("position<my.domain.com:my_lib:/dep>",) in contract.requirements
@@ -1122,7 +1062,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert contract.requirements == {}
@@ -1136,7 +1076,7 @@ class TestPositionInitBlockContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"position<my.domain.com:my_lib:/test>"}
         contract = contracts["position<my.domain.com:my_lib:/test>"]
         assert contract.requirements == {}
@@ -1181,7 +1121,7 @@ def test_interface_position_requirement_integration():
         "    }\n"
         "}\n"
     )
-    contracts = _get_contracts(source)
+    contracts = get_contracts(source)
     assert contracts.keys() == {
         "action<my.domain.com:my_lib:/inner>",
         "action<my.domain.com:my_lib:/middle>",
@@ -1298,7 +1238,7 @@ def test_init_block_propagation_records_occupied_on_inner_contract():
         "    }\n"
         "}\n"
     )
-    contracts = _get_contracts(source)
+    contracts = get_contracts(source)
     assert contracts.keys() == {
         "position<my.domain.com:my_lib:/p>",
         "action<my.domain.com:my_lib:/inner>",
@@ -1394,7 +1334,7 @@ def test_init_block_propagation_records_empty_on_inner_contract():
         "    }\n"
         "}\n"
     )
-    contracts = _get_contracts(source)
+    contracts = get_contracts(source)
     assert contracts.keys() == {
         "position<my.domain.com:my_lib:/p>",
         "action<my.domain.com:my_lib:/inner>",
@@ -1477,7 +1417,7 @@ class TestDestructorContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert isinstance(contract, action_contract.ActionContract)
@@ -1494,7 +1434,7 @@ class TestDestructorContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert contract.requirements.keys() == {("position<victim>",)}
@@ -1514,7 +1454,7 @@ class TestDestructorContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert contract.requirements.keys() == {("position<slot>",)}
@@ -1534,7 +1474,7 @@ class TestDestructorContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert [type(guarantee) for _key, guarantee in contract.guarantees] == [
@@ -1555,7 +1495,7 @@ class TestDestructorContract:
             "    }\n"
             "}\n"
         )
-        contracts = _get_contracts(source)
+        contracts = get_contracts(source)
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert [type(guarantee) for _key, guarantee in contract.guarantees] == [
@@ -1597,7 +1537,7 @@ def test_destructors_fire_in_reverse_assignment_order():
         "    }\n"
         "}\n"
     )
-    results = _get_results(source)
+    results = get_results(source)
     test_result = results["action<my.domain.com:my_lib:/test>"]
     assert [edge.target for edge in test_result.edges] == [
         "action<my.domain.com:my_lib:/destructor_second>",

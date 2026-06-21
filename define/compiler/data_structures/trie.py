@@ -225,6 +225,26 @@ class StrictReparentingTrie[V]:
         """Yield all (key, value) pairs in the trie."""
         return self._values.items()
 
+    def subtree_items(self, key: TrieKey) -> list[tuple[TrieKey, V]]:
+        """Return (relative_key, value) for every descendant of key.
+
+        relative_key is the descendant's path below key; key itself is excluded.
+        Relative keys are built during the walk so callers can index without
+        re-slicing the shared prefix off every result.
+        """
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        result: list[tuple[TrieKey, V]] = []
+        stack: list[tuple[TrieKey, TrieKey]] = [(key, ())]
+        while stack:
+            full_node, relative_node = stack.pop()
+            for segment in self._children.get(full_node, ()):
+                full_child = (*full_node, segment)
+                relative_child = (*relative_node, segment)
+                result.append((relative_child, self._values[full_child]))
+                stack.append((full_child, relative_child))
+        return result
+
     def existing_prefix(self, key: TrieKey) -> TrieKey:
         """Return the longest prefix of key whose nodes all exist in the trie."""
         if not key:

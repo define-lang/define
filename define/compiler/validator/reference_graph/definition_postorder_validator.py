@@ -39,6 +39,15 @@ class _CascadeDestructor:
     destroy_target_origin_at: ast.SourceLocation
 
 
+@dataclass(frozen=True, slots=True)
+class _ResolvedRequirement:
+    """A destructor requirement whose required position's destruction-time occupancy is known here."""
+
+    requirement: action_contract.PositionRequirement
+    position: ast.PositionReference
+    occupancy: action_contract.ChildOccupancy
+
+
 class DefinitionPostorderValidator(abc.ABC):
     """Validates a single definition during a DFS post-order walk of the reference graph."""
 
@@ -58,6 +67,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _diagnostics: list[diagnostics.Diagnostic]
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
+    _destruction_contracts: list[action_contract.DestructionContract]
 
     def __init__(
         self,
@@ -84,6 +94,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._diagnostics = []
         self._action_edges = []
         self._inferred_requirements = {}
+        self._destruction_contracts = []
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -356,37 +367,59 @@ class DefinitionPostorderValidator(abc.ABC):
             self._propagate_init_block_requirements(
                 position, init_block_contract, scope
             )
-            self._check_init_block_requirements(position, init_block_contract)
+            self._check_init_block_requirements(position, init_block_contract, scope)
             self._tracker.apply_guarantees(
                 position,
                 init_block_contract.guarantees,
             )
 
-    def _collect_cascade_destructors(
-        self, position: ast.PositionReference
+    def _walk_destruction_cascade(
+        self,
+        destroyed_position: ast.PositionReference,
+        *,
+        is_auto_destruction: bool,
     ) -> list[_CascadeDestructor]:
-        """Return the destructors the destruction cascade fires, in firing order."""
+        """Walk a destruction cascade once: record a Destruction Contract per caller-passed particle, and return the destructors to fire."""
+        destructors: list[_CascadeDestructor] = []
+        self._walk_cascade_into(
+            destroyed_position,
+            destroyed_position,
+            destructors,
+            is_auto_destruction=is_auto_destruction,
+        )
+        return destructors
+
+    def _walk_cascade_into(
+        self,
+        position: ast.PositionReference,
+        explicitly_destroyed_position: ast.PositionReference,
+        destructors: list[_CascadeDestructor],
+        *,
+        is_auto_destruction: bool,
+    ):
         # An unknown-state position is opaque: we cannot claim its destructors
         # would fire and we cannot reason about its subtree, so the cascade
         # skips it entirely.
         if self._tracker.has_unknown_state(position):
-            return []
+            return
         if not self._tracker.is_occupied(position):
-            # Validation checks will throw an error later for this case.
-            return []
+            # Validation checks will throw an error later for this case,
+            # if this is the root particle we are explicitly destroying.
+            return
         # A particle keeps its own qualities across moves, so it is the source
         # of the qualities to check for destructors (not the position).
         particle = self._tracker.get_occupant(position)
-        destructors: list[_CascadeDestructor] = []
         # Here, we walk the tree of particles in a depth-frst post-order traversal
         # as required by the destruction cascade.
         for quality in reversed(particle.qualities):
             if quality.name_type == ast.NameType.POSITION:
-                child = ast.PositionReference(
-                    location=position.location,
-                    typed_names=(*position.typed_names, quality),
+                child = position.with_position_suffix(quality)
+                self._walk_cascade_into(
+                    child,
+                    explicitly_destroyed_position,
+                    destructors,
+                    is_auto_destruction=is_auto_destruction,
                 )
-                destructors.extend(self._collect_cascade_destructors(child))
             elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
                 if definition_result is None or not isinstance(
@@ -403,16 +436,46 @@ class DefinitionPostorderValidator(abc.ABC):
                         )
                     )
                 for interface_position in reversed(definition.interface_positions):
-                    child = ast.PositionReference(
-                        location=position.location,
-                        typed_names=(
-                            *position.typed_names,
-                            quality,
-                            interface_position.typed_name,
-                        ),
+                    child = position.with_position_suffix(
+                        quality, interface_position.typed_name
                     )
-                    destructors.extend(self._collect_cascade_destructors(child))
-        return destructors
+                    self._walk_cascade_into(
+                        child,
+                        explicitly_destroyed_position,
+                        destructors,
+                        is_auto_destruction=is_auto_destruction,
+                    )
+        if particle.from_caller:
+            self._destruction_contracts.append(
+                self._destruction_contract_for(
+                    position,
+                    particle,
+                    explicitly_destroyed_position,
+                    is_auto_destruction=is_auto_destruction,
+                )
+            )
+
+    def _destruction_contract_for(
+        self,
+        position: ast.PositionReference,
+        info: particle_tracker.ParticleInfo,
+        destroyed_position_local: ast.PositionReference,
+        *,
+        is_auto_destruction: bool,
+    ) -> action_contract.DestructionContract:
+        """Build the Destruction Contract for one caller-passed particle the cascade destroyed."""
+        return action_contract.DestructionContract(
+            destroyed_position_contracted=info.origin_position,
+            destroyed_position_local=destroyed_position_local,
+            child_state=self._tracker.snapshot_child_state(position),
+            destroying_action=self._definition.typed_name,
+            # We know these destructors exist at destruction time, so they are
+            # handled through the normal requirements mechanism (fired and
+            # propagated as this action's own requirements), not through the
+            # Destruction Contract's requirement-verification mechanism.
+            verified_destructors=self._destructor_qualities(info.qualities),
+            is_auto_destruction=is_auto_destruction,
+        )
 
     def _run_destructors(
         self,
@@ -430,10 +493,7 @@ class DefinitionPostorderValidator(abc.ABC):
             # _collect_cascade_destructors already verified the destructor's
             # definition loaded.
             contract = self._action_contracts[destructor.quality]
-            action_chain = ast.ChainedName(
-                location=destructor.position.location,
-                typed_names=(*destructor.position.typed_names, destructor.quality),
-            )
+            action_chain = destructor.position.with_suffix(destructor.quality)
             self._propagate_destructor_requirements(contract, action_chain, scope)
             self._check_requirements(
                 contract,
@@ -538,7 +598,7 @@ class DefinitionPostorderValidator(abc.ABC):
         # We only propagate inner requirements if actions actually get called.
         # (That's why this happens here in _check_trigger.)
         self._propagate_inner_requirements(contract, position, scope)
-        self._check_action_requirements(position, contract)
+        self._check_action_requirements(position, contract, scope)
         self._tracker.apply_guarantees(position, contract.guarantees)
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
@@ -551,8 +611,9 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         trigger_position: ast.PositionReference,
         contract: action_contract.ActionContract,
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Check that all action requirements are satisfied before triggering."""
+        """Check the triggered action's requirements and destruction contracts."""
         particle = self._tracker.get_occupant(trigger_position)
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
@@ -560,14 +621,21 @@ class DefinitionPostorderValidator(abc.ABC):
                 f"no action in chain: {trigger_position.source_chained_name}"
             )
         self._check_requirements(contract, action_chain, particle.last_position)
+        self._check_destructor_requirements_from_contracts(
+            contract, trigger_position, action_chain, scope
+        )
 
     def _check_init_block_requirements(
         self,
         create_target: ast.PositionReference,
         contract: action_contract.PositionInitBlockContract,
+        scope: scope_tracker.ScopeTracker,
     ):
-        """Check that all init-block requirements hold at the Create statement that assigns the position."""
+        """Check the init block's requirements and destruction contracts at the Create that assigns the position."""
         self._check_requirements(contract, create_target, create_target)
+        self._check_destructor_requirements_from_contracts(
+            contract, create_target, create_target, scope
+        )
 
     def _check_requirements(
         self,
@@ -700,34 +768,529 @@ class DefinitionPostorderValidator(abc.ABC):
         destroy_target_name = acting_on_position.source_form_in_universe(
             self._enclosing_fqun
         )
-        propagation_chain = req.propagation_chain()
-        if occupant is not None:
+        self._append_destructor_diagnostic(
+            required_empty=(
+                req.required_state == action_contract.PositionOccupancyState.EMPTY
+            ),
+            filled_at=(
+                occupant.last_position.location if occupant is not None else None
+            ),
+            location=diag_location,
+            destructor_name=req.root_cause_quality_name(),
+            destroy_target_name=destroy_target_name,
+            destroy_target_origin_at=destroy_target_origin_at,
+            position_name=position_name,
+            propagation_chain=req.propagation_chain(),
+            auto_destruction_local_position_name=auto_local_name,
+            containing_definition_name=containing_name,
+        )
+
+    def _append_destructor_diagnostic(
+        self,
+        *,
+        required_empty: bool,
+        filled_at: ast.SourceLocation | None,
+        location: ast.SourceLocation,
+        destructor_name: str,
+        destroy_target_name: str,
+        destroy_target_origin_at: ast.SourceLocation,
+        position_name: str,
+        propagation_chain: list[action_contract.PropagationStep],
+        auto_destruction_local_position_name: str | None,
+        containing_definition_name: str | None,
+    ):
+        """Append a destructor-requirement violation diagnostic.
+
+        required_empty selects the violation direction: the destructor required
+        the position empty but found it filled (at filled_at), or required it
+        occupied but found it empty.
+        """
+        if required_empty:
+            if filled_at is None:
+                raise ValueError(
+                    "an empty-requirement violation means the position is filled, "
+                    + "so its fill site must be known"
+                )
             self._diagnostics.append(
                 diagnostics.DestructorRequiresEmptyPositionDiagnostic(
-                    location=diag_location,
-                    destructor_name=req.root_cause_quality_name(),
+                    location=location,
+                    destructor_name=destructor_name,
                     destroy_target_name=destroy_target_name,
                     destroy_target_origin_at=destroy_target_origin_at,
                     position_name=position_name,
                     propagation_chain=propagation_chain,
-                    filled_at=occupant.last_position.location,
-                    auto_destruction_local_position_name=auto_local_name,
-                    containing_definition_name=containing_name,
+                    filled_at=filled_at,
+                    auto_destruction_local_position_name=auto_destruction_local_position_name,
+                    containing_definition_name=containing_definition_name,
                 )
             )
         else:
             self._diagnostics.append(
                 diagnostics.DestructorRequiresOccupiedPositionDiagnostic(
-                    location=diag_location,
-                    destructor_name=req.root_cause_quality_name(),
+                    location=location,
+                    destructor_name=destructor_name,
                     destroy_target_name=destroy_target_name,
                     destroy_target_origin_at=destroy_target_origin_at,
                     position_name=position_name,
                     propagation_chain=propagation_chain,
-                    auto_destruction_local_position_name=auto_local_name,
-                    containing_definition_name=containing_name,
+                    auto_destruction_local_position_name=auto_destruction_local_position_name,
+                    containing_definition_name=containing_definition_name,
                 )
             )
+
+    def _destructor_qualities(
+        self, qualities: tuple[ast.GlobalTypedNameReference, ...]
+    ) -> tuple[ast.GlobalTypedNameReference, ...]:
+        """Return the destructor-action qualities in firing order (reverse of assignment)."""
+        # TODO: This feels inefficient to do every time, but let's wait for actual
+        # profiling data to tell us if that's important.
+        result: list[ast.GlobalTypedNameReference] = []
+        for quality in reversed(qualities):
+            if quality.name_type != ast.NameType.ACTION:
+                continue
+            definition_result = self._definition_results.get(quality)
+            if definition_result is None or not isinstance(
+                definition_result.definition, ast.ActionDefinition
+            ):
+                continue
+            if definition_result.definition.is_destructor:
+                result.append(quality)
+        return tuple(result)
+
+    def _check_destructor_requirements_from_contracts(
+        self,
+        contract: action_contract.ActionStatementsBlockContract,
+        acting_position: ast.PositionReference,
+        prefix_chain: ast.ChainedName,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        """Verify caller-attached destructors that a triggered action's or init block's Destruction Contracts surfaced.
+
+        Args:
+            contract: The triggered action's or init block's contract, whose
+                ``destruction_contracts`` are processed.
+            acting_position: The position whose filling drove this check (the
+                trigger position for an action, the Create target for an init
+                block); used as the location of any diagnostic emitted here.
+            prefix_chain: The names in ``acting_position`` up to the triggered
+                action (or the Create target for an init block). Each contract's
+                contracted positions are remapped into this caller via
+                ``in_caller(prefix_chain)``.
+            scope: This definition's scope, used to resolve the position
+                constraints that attach each destructor.
+        """
+        for destruction_contract in contract.destruction_contracts:
+            self._check_one_destruction_contract(
+                destruction_contract, acting_position, prefix_chain, scope
+            )
+
+    def _check_one_destruction_contract(
+        self,
+        destruction_contract: action_contract.DestructionContract,
+        acting_position: ast.PositionReference,
+        prefix_chain: ast.ChainedName,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        caller_particle_position = (
+            destruction_contract.destroyed_position_contracted.in_caller(prefix_chain)
+        )
+        # The action's requirement check already handles missing or
+        # unknown-state particles, so there is nothing more to verify here.
+        if self._tracker.has_unknown_state(
+            caller_particle_position
+        ) or not self._tracker.is_occupied(caller_particle_position):
+            return
+        caller_particle = self._tracker.get_occupant(caller_particle_position)
+        destroying_definition_result = self._definition_results.get(
+            destruction_contract.destroying_action
+        )
+        destroying_definition = None
+        if destroying_definition_result is not None and isinstance(
+            destroying_definition_result.definition, ast.ActionDefinition
+        ):
+            destroying_definition = destroying_definition_result.definition
+        # Only the action that created the particle may treat an untouched child as
+        # empty; otherwise an untouched child's state is unknown, because a higher caller
+        # could have filled it before passing it.
+        created_in_this_action = not caller_particle.from_caller
+        if created_in_this_action:
+            # This action created the particle, so the child_state recorded in the
+            # contract contains everything the action itself doesn't already know
+            # (this is an optimization so we don't have to snapshot the child state
+            # again during the action that created the particle).
+            merged_child_state = destruction_contract.child_state
+        else:
+            # If this action is receiving a contract from an action it called,
+            # then the callee's child state overrides the caller's child state.
+            merged_child_state = self._tracker.snapshot_child_state(
+                caller_particle_position
+            )
+            merged_child_state.update(destruction_contract.child_state)
+        newly_verified: list[ast.GlobalTypedNameReference] = []
+        self._verify_destruction_cascade(
+            caller_particle_position,
+            destruction_contract=destruction_contract,
+            destroying_definition=destroying_definition,
+            caller_prefix_length=len(
+                caller_particle_position.canonical_chained_name_tuple
+            ),
+            acting_position=acting_position,
+            scope=scope,
+            merged_child_state=merged_child_state,
+            created_in_this_action=created_in_this_action,
+            newly_verified=newly_verified,
+        )
+        if not created_in_this_action:
+            self._re_record_destruction_contract(
+                destruction_contract,
+                caller_particle,
+                merged_child_state,
+                newly_verified,
+            )
+
+    def _re_record_destruction_contract(
+        self,
+        destruction_contract: action_contract.DestructionContract,
+        caller_particle: particle_tracker.ParticleInfo,
+        merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
+        newly_verified: list[ast.GlobalTypedNameReference],
+    ):
+        # Carry the merged destruction-time picture and the destructors checked
+        # so far upward; everything else describes the original destroyer and is
+        # fixed.
+        self._destruction_contracts.append(
+            action_contract.DestructionContract(
+                destroyed_position_contracted=caller_particle.origin_position,
+                destroyed_position_local=destruction_contract.destroyed_position_local,
+                child_state=merged_child_state,
+                destroying_action=destruction_contract.destroying_action,
+                verified_destructors=(
+                    *destruction_contract.verified_destructors,
+                    *newly_verified,
+                ),
+                is_auto_destruction=destruction_contract.is_auto_destruction,
+            )
+        )
+
+    def _verify_destruction_cascade(
+        self,
+        position: ast.PositionReference,
+        *,
+        destruction_contract: action_contract.DestructionContract,
+        destroying_definition: ast.ActionDefinition | None,
+        caller_prefix_length: int,
+        acting_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+        merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
+        created_in_this_action: bool,
+        newly_verified: list[ast.GlobalTypedNameReference],
+    ):
+        if self._tracker.has_unknown_state(position) or not self._tracker.is_occupied(
+            position
+        ):
+            return
+        relative_key = position.canonical_chained_name_tuple[caller_prefix_length:]
+        occupancy = merged_child_state.get(relative_key)
+        # A position the destruction-time picture records as empty was emptied
+        # before the destruction, so nothing there was destroyed and thus there
+        # is no more work to do.
+        if (
+            occupancy is not None
+            and occupancy.state == action_contract.PositionOccupancyState.EMPTY
+        ):
+            return
+        particle = self._tracker.get_occupant(position)
+        for quality in reversed(particle.qualities):
+            if quality.name_type == ast.NameType.POSITION:
+                child = position.with_position_suffix(quality)
+                self._verify_destruction_cascade(
+                    child,
+                    destruction_contract=destruction_contract,
+                    destroying_definition=destroying_definition,
+                    caller_prefix_length=caller_prefix_length,
+                    acting_position=acting_position,
+                    scope=scope,
+                    merged_child_state=merged_child_state,
+                    created_in_this_action=created_in_this_action,
+                    newly_verified=newly_verified,
+                )
+            elif quality.name_type == ast.NameType.ACTION:
+                definition_result = self._definition_results.get(quality)
+                if definition_result is None or not isinstance(
+                    definition_result.definition, ast.ActionDefinition
+                ):
+                    continue
+                definition = definition_result.definition
+                if (
+                    definition.is_destructor
+                    and quality.full_typed_name
+                    not in destruction_contract.verified_destructor_names
+                    and self._verify_one_cascade_destructor(
+                        destructor_quality=quality,
+                        particle_position=position,
+                        particle=particle,
+                        destruction_contract=destruction_contract,
+                        destroying_definition=destroying_definition,
+                        caller_prefix_length=caller_prefix_length,
+                        acting_position=acting_position,
+                        scope=scope,
+                        merged_child_state=merged_child_state,
+                        created_in_this_action=created_in_this_action,
+                    )
+                ):
+                    newly_verified.append(quality)
+                for interface_position in reversed(definition.interface_positions):
+                    child = position.with_position_suffix(
+                        quality, interface_position.typed_name
+                    )
+                    self._verify_destruction_cascade(
+                        child,
+                        destruction_contract=destruction_contract,
+                        destroying_definition=destroying_definition,
+                        caller_prefix_length=caller_prefix_length,
+                        acting_position=acting_position,
+                        scope=scope,
+                        merged_child_state=merged_child_state,
+                        created_in_this_action=created_in_this_action,
+                        newly_verified=newly_verified,
+                    )
+
+    def _verify_one_cascade_destructor(
+        self,
+        *,
+        destructor_quality: ast.GlobalTypedNameReference,
+        particle_position: ast.PositionReference,
+        particle: particle_tracker.ParticleInfo,
+        destruction_contract: action_contract.DestructionContract,
+        destroying_definition: ast.ActionDefinition | None,
+        caller_prefix_length: int,
+        acting_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+        merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
+        created_in_this_action: bool,
+    ) -> bool:
+        """Verify one destructor found in the cascade; return whether it was fully resolved here."""
+        destructor_contract = self._action_contracts.get(destructor_quality)
+        if destructor_contract is None or destroying_definition is None:
+            return False
+        # An auto-destroyed particle was last moved into the position it died in,
+        # so the diagnostic points at that move and names the local position and
+        # destroying action; an explicit destroy points at this caller's trigger.
+        if destruction_contract.is_auto_destruction:
+            diagnostic_location = particle.last_position.location
+            auto_destruction_local_position_name = (
+                destruction_contract.destroyed_position_local.source_form_in_universe(
+                    self._enclosing_fqun
+                )
+            )
+            containing_definition_name = (
+                destruction_contract.destroying_action.source_typed_name
+            )
+        else:
+            diagnostic_location = acting_position.location
+            auto_destruction_local_position_name = None
+            containing_definition_name = None
+        action_chain = particle_position.with_suffix(destructor_quality)
+        attachment = action_contract.DestructorAttachment(
+            attached_at=self._destructor_attachment_location(
+                destructor_quality, particle.origin_position, scope
+            ),
+            position=particle.origin_position.typed_names[-1],
+        )
+        # A destructor is checked exactly once: only at the action that knows the
+        # state of every position it requires. Resolve the state of all required positions
+        # first, before we attempt to check its requirements.
+        resolved_requirements: list[_ResolvedRequirement] = []
+        for inner_req in destructor_contract.requirements.values():
+            resolution = self._resolve_destructor_requirement(
+                inner_req=inner_req,
+                action_chain=action_chain,
+                caller_prefix_length=caller_prefix_length,
+                merged_child_state=merged_child_state,
+                created_in_this_action=created_in_this_action,
+            )
+            # If the state of any required position is not yet known, we
+            # defer verification to our caller.
+            if resolution is None:
+                return False
+            resolved_requirements.append(resolution)
+        # Every required state is known here, so this is where the destructor is
+        # actually verified; record the firing edge once, from the true destroyer.
+        self._action_edges.append(
+            action_call_graph.ActionGraphEdge(
+                source=destruction_contract.destroying_action.full_typed_name,
+                target=destructor_quality.full_typed_name,
+            )
+        )
+        for resolved_requirement in resolved_requirements:
+            self._emit_destructor_requirement_violation(
+                resolved_requirement=resolved_requirement,
+                attachment=attachment,
+                destroyed_position_local=destruction_contract.destroyed_position_local,
+                destroying_definition=destroying_definition,
+                destroy_target_name=particle_position.source_form_in_universe(
+                    self._enclosing_fqun
+                ),
+                destroy_target_origin_at=particle.origin_position.location,
+                diagnostic_location=diagnostic_location,
+                auto_destruction_local_position_name=auto_destruction_local_position_name,
+                containing_definition_name=containing_definition_name,
+            )
+        return True
+
+    def _destructor_attachment_location(
+        self,
+        destructor_quality: ast.GlobalTypedNameReference,
+        origin_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> ast.SourceLocation:
+        """Locate the constraint that puts the destructor on the particle created in origin_position.
+
+        Prefers a constraint that is the destructor itself, then one that
+        transitively implies it.
+        """
+        direct, _ = self._get_direct_required_qualities(origin_position, scope)
+        if direct is not None:
+            # A constraint that directly declares the destructor is the clearest
+            # attachment point, so it wins over one that only implies it.
+            for root in direct:
+                if root.full_typed_name == destructor_quality.full_typed_name:
+                    return root.location
+            for root in direct:
+                if self._quality_implies(root, destructor_quality.full_typed_name):
+                    return root.location
+        # The particle only carries this loaded destructor because the origin
+        # position's constraints (directly or via implication) put it there, so a
+        # loop above always returns. Reaching here means that invariant broke.
+        raise ValueError(
+            f"destructor {destructor_quality.full_typed_name} is on the particle "
+            + f"but no constraint on {origin_position.source_chained_name} attaches it"
+        )
+
+    def _quality_implies(
+        self, root: ast.GlobalTypedNameReference, target_full_typed_name: str
+    ) -> bool:
+        """Whether root transitively implies the named quality (not counting root itself)."""
+        # TODO: This feels inefficient; we already did this walk to determine
+        # the transitive qualities; we could preserve that informatiom somehow.
+        definition_result = self._definition_results.get(root)
+        if definition_result is None:
+            return False
+        seen = {root.full_typed_name}
+        stack = [
+            implication.typed_global_name
+            for implication in definition_result.definition.quality_implications
+        ]
+        while stack:
+            node = stack.pop()
+            name = node.full_typed_name
+            if name in seen:
+                continue
+            seen.add(name)
+            if name == target_full_typed_name:
+                return True
+            definition_result = self._definition_results.get(node)
+            if definition_result is not None:
+                for implication in definition_result.definition.quality_implications:
+                    stack.append(implication.typed_global_name)
+        return False
+
+    def _resolve_destructor_requirement(
+        self,
+        *,
+        inner_req: action_contract.PositionRequirement,
+        action_chain: ast.ChainedName,
+        caller_prefix_length: int,
+        merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
+        created_in_this_action: bool,
+    ) -> _ResolvedRequirement | None:
+        """Resolve one requirement's position to its destruction-time state, or None if this action cannot know it."""
+        # action_chain:
+        #   position<box>::action</close_file>::position<target>::action</delete_file_destructor>
+        # required_position:
+        #   position<box>::action</close_file>::position<target>::position</file>
+        # relative_key:
+        #   ("position</file>",)
+        required_position = inner_req.full_propagation_position_chain().in_caller(
+            action_chain
+        )
+        relative_key = required_position.canonical_chained_name_tuple[
+            caller_prefix_length:
+        ]
+        occupancy = merged_child_state.get(relative_key)
+        if occupancy is None:
+            # A passed-in particle's untouched position is decided higher up: this
+            # action cannot resolve it, so the destructor travels up unchecked.
+            if not created_in_this_action:
+                return None
+            # The owner created the particle, and we have optimized this case to
+            # not copy the whole subtree to update a new child_state and instead
+            # to just read the state out of the current tracker.
+            if self._tracker.has_unknown_state(required_position):
+                occupancy = action_contract.UNKNOWN_OCCUPANCY
+            elif self._tracker.is_occupied(required_position):
+                occupancy = action_contract.ChildOccupancy(
+                    action_contract.PositionOccupancyState.OCCUPIED,
+                    filled_at=self._tracker.get_occupant(
+                        required_position
+                    ).last_position.location,
+                )
+            else:
+                occupancy = action_contract.EMPTY_OCCUPANCY
+        return _ResolvedRequirement(
+            requirement=inner_req,
+            position=required_position,
+            occupancy=occupancy,
+        )
+
+    def _emit_destructor_requirement_violation(
+        self,
+        *,
+        resolved_requirement: _ResolvedRequirement,
+        attachment: action_contract.DestructorAttachment,
+        destroyed_position_local: ast.PositionReference,
+        destroying_definition: ast.ActionDefinition,
+        destroy_target_name: str,
+        destroy_target_origin_at: ast.SourceLocation,
+        diagnostic_location: ast.SourceLocation,
+        auto_destruction_local_position_name: str | None,
+        containing_definition_name: str | None,
+    ):
+        """Emit a diagnostic if this requirement's known state violates it."""
+        required_state = resolved_requirement.requirement.required_state
+        empty_violation = (
+            required_state == action_contract.PositionOccupancyState.EMPTY
+            and resolved_requirement.occupancy.state
+            == action_contract.PositionOccupancyState.OCCUPIED
+        )
+        occupied_violation = (
+            required_state == action_contract.PositionOccupancyState.OCCUPIED
+            and resolved_requirement.occupancy.state
+            == action_contract.PositionOccupancyState.EMPTY
+        )
+        if not (empty_violation or occupied_violation):
+            return
+        cascade_req = action_contract.PositionRequirement(
+            required_state=required_state,
+            inferred_from=destroyed_position_local,
+            enclosing_quality=destroying_definition,
+            propagated_from=resolved_requirement.requirement,
+            destructor_attachment=attachment,
+        )
+        self._append_destructor_diagnostic(
+            required_empty=empty_violation,
+            filled_at=resolved_requirement.occupancy.filled_at,
+            location=diagnostic_location,
+            destructor_name=cascade_req.root_cause_quality_name(),
+            destroy_target_name=destroy_target_name,
+            destroy_target_origin_at=destroy_target_origin_at,
+            position_name=resolved_requirement.position.source_form_in_universe(
+                self._enclosing_fqun
+            ),
+            propagation_chain=cascade_req.propagation_chain(),
+            auto_destruction_local_position_name=auto_destruction_local_position_name,
+            containing_definition_name=containing_definition_name,
+        )
 
     def _emit_action_violation(
         self,
@@ -837,7 +1400,9 @@ class DefinitionPostorderValidator(abc.ABC):
             if not self._tracker.is_occupied(position):
                 continue
             auto_destruction_target = self._tracker.get_occupant(position).last_position
-            destructors = self._collect_cascade_destructors(position)
+            destructors = self._walk_destruction_cascade(
+                position, is_auto_destruction=True
+            )
             self._run_destructors(
                 destructors, scope, auto_destruction_target=auto_destruction_target
             )
@@ -884,13 +1449,16 @@ class DefinitionPostorderValidator(abc.ABC):
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, stmt.target_position, scope
         )
-        # Destructors fire immediately before the particle is destroyed, and
-        # only when the destroy actually proceeds, so the firing runs as the
-        # executor's before_destroy hook.
-        destructors = self._collect_cascade_destructors(stmt.target_position)
+
+        def before_destroy():
+            destructors = self._walk_destruction_cascade(
+                stmt.target_position, is_auto_destruction=False
+            )
+            self._run_destructors(destructors, scope)
+
         diags = self._executor.execute_destroy(
             particle_operation.Destroy(target=stmt.target_position),
-            before_destroy=lambda: self._run_destructors(destructors, scope),
+            before_destroy=before_destroy,
         )
         self._diagnostics.extend(diags)
 
@@ -1302,6 +1870,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
             guarantees=guarantees,
+            destruction_contracts=self._destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
         )
 
@@ -1446,6 +2015,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
                 self._implied_quality_list,
                 self._inferred_requirements,
             ),
+            destruction_contracts=self._destruction_contracts,
         )
 
 

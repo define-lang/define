@@ -925,3 +925,85 @@ def test_generate_guarantees_emits_empty_when_inferred_occupied():
     assert key == ("position<x>",)
     assert isinstance(guarantee, action_contract.EmptyGuarantee)
     assert guarantee.caused_by.location == _LOC2
+
+
+def test_snapshot_child_state_captures_each_occupancy_kind():
+    tracker = particle_tracker.ParticleTracker()
+    parent = _make_position_ref([_make_local_ref("parent")])
+    child = _make_position_ref([_make_local_ref("parent"), _make_local_ref("child")])
+    grandchild = _make_position_ref(
+        [_make_local_ref("parent"), _make_local_ref("child"), _make_local_ref("gc")]
+    )
+    emptied = _make_position_ref(
+        [_make_local_ref("parent"), _make_local_ref("emptied")]
+    )
+    deep_unknown = _make_position_ref(
+        [_make_local_ref("parent"), _make_local_ref("branch"), _make_local_ref("leaf")]
+    )
+
+    tracker.create(parent, ())
+    tracker.create(child, ())
+    tracker.create(grandchild, (_make_global_ref("/x"),))
+    tracker.create(emptied, ())
+    tracker.destroy(emptied)
+    tracker.mark_unknown(deep_unknown)
+
+    parent_key = parent.canonical_chained_name_tuple
+    child_rel = child.canonical_chained_name_tuple[len(parent_key) :]
+    grandchild_rel = grandchild.canonical_chained_name_tuple[len(parent_key) :]
+    emptied_rel = emptied.canonical_chained_name_tuple[len(parent_key) :]
+    deep_rel = deep_unknown.canonical_chained_name_tuple[len(parent_key) :]
+
+    # `parent::branch` has no occupancy of its own (it exists only as an
+    # ancestor of the unknown leaf), so it is absent from the snapshot.
+    assert tracker.snapshot_child_state(parent) == {
+        child_rel: action_contract.ChildOccupancy(
+            action_contract.PositionOccupancyState.OCCUPIED, filled_at=child.location
+        ),
+        grandchild_rel: action_contract.ChildOccupancy(
+            action_contract.PositionOccupancyState.OCCUPIED,
+            filled_at=grandchild.location,
+        ),
+        emptied_rel: action_contract.EMPTY_OCCUPANCY,
+        deep_rel: action_contract.UNKNOWN_OCCUPANCY,
+    }
+
+
+def test_snapshot_child_state_is_decoupled_from_later_mutation():
+    tracker = particle_tracker.ParticleTracker()
+    parent = _make_position_ref([_make_local_ref("parent")])
+    child = _make_position_ref([_make_local_ref("parent"), _make_local_ref("child")])
+    grandchild = _make_position_ref(
+        [_make_local_ref("parent"), _make_local_ref("child"), _make_local_ref("gc")]
+    )
+
+    tracker.create(parent, ())
+    tracker.create(child, ())
+    tracker.create(grandchild, (_make_global_ref("/x"),))
+
+    parent_key = parent.canonical_chained_name_tuple
+    child_rel = child.canonical_chained_name_tuple[len(parent_key) :]
+    grandchild_rel = grandchild.canonical_chained_name_tuple[len(parent_key) :]
+
+    snapshot = tracker.snapshot_child_state(parent)
+
+    tracker.destroy(parent)
+    tracker.create(parent, ())
+    tracker.create(child, ())
+    tracker.mark_unknown(grandchild)
+
+    assert tracker.snapshot_child_state(parent) == {
+        child_rel: action_contract.ChildOccupancy(
+            action_contract.PositionOccupancyState.OCCUPIED, filled_at=child.location
+        ),
+        grandchild_rel: action_contract.UNKNOWN_OCCUPANCY,
+    }
+    assert snapshot == {
+        child_rel: action_contract.ChildOccupancy(
+            action_contract.PositionOccupancyState.OCCUPIED, filled_at=child.location
+        ),
+        grandchild_rel: action_contract.ChildOccupancy(
+            action_contract.PositionOccupancyState.OCCUPIED,
+            filled_at=grandchild.location,
+        ),
+    }

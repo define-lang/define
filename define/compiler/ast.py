@@ -318,6 +318,11 @@ def chain_starts_with_global(key: tuple[str, ...]) -> bool:
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
+    # TODO: We really need an ActionReference (a chain ending in an action) that
+    # we use internally, paralleling PositionReference, even though it is not a
+    # real AST object the parser produces. It would give the action-ending chains
+    # we synthesize (e.g. with_suffix) the same static type safety that
+    # PositionReference gives position-ending chains.
     typed_names: tuple[TypedNameReference, ...]
     # Filled lazily on first access by __getattr__ and cached in the slot.
     canonical_chained_name_tuple: tuple[str, ...] = field(
@@ -440,6 +445,33 @@ class ChainedName(ASTNode):
         return type(self)(
             location=self.location,
             typed_names=(*prefix.typed_names, *self.typed_names),
+        )
+
+    # TODO: There are likely other places in the codebase (including tests) that
+    # still construct a ChainedName/PositionReference by spreading
+    # ``(*chain.typed_names, ...)`` into the constructor; they should all use
+    # with_suffix / with_position_suffix instead.
+    def with_suffix(self, *names: TypedNameReference) -> ChainedName:
+        """Return a ChainedName extending this chain with ``names`` appended.
+
+        The result is a plain ChainedName regardless of what is appended; use
+        with_position_suffix when the chain ends in a position and a
+        PositionReference is wanted.
+        """
+        return ChainedName(
+            location=self.location,
+            typed_names=(*self.typed_names, *names),
+        )
+
+    def with_position_suffix(self, *names: TypedNameReference) -> PositionReference:
+        """Return a PositionReference extending this chain with ``names`` appended.
+
+        The appended chain must end in a position; the PositionReference
+        constructor enforces that.
+        """
+        return PositionReference(
+            location=self.location,
+            typed_names=(*self.typed_names, *names),
         )
 
     def in_caller(self, caller_chain: ChainedName) -> Self:
