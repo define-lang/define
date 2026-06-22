@@ -10,7 +10,7 @@ importers:
     devDependencies:
       basedpyright:
         specifier: latest
-        version: 1.39.7
+        version: 1.39.8
 
   tools:
     devDependencies:
@@ -30,8 +30,8 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
-  basedpyright@1.39.7:
-    resolution: {integrity: sha512-56DuO5nQ9EEIsWd/LoGgXjqWRSUeRWF6i9z7dxTWwUzpza0W7/4+QXJrZuJYHEyiXpgXeaf5P7W0j+ItB+WCLQ==}
+  basedpyright@1.39.8:
+    resolution: {integrity: sha512-GbAY3laHp4NKyfVahJsnHwYIyC3tWmn0XJvBquaUNpIlLIs20qPsERVPehYCsY699kfc6iAe9LrgLDnTm+9s0A==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -57,7 +57,7 @@ snapshots:
 
   argparse@2.0.1: {}
 
-  basedpyright@1.39.7:
+  basedpyright@1.39.8:
     optionalDependencies:
       fsevents: 2.3.3
 
