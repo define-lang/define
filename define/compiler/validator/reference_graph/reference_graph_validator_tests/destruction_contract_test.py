@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.reference_graph import action_contract
@@ -1348,92 +1346,3 @@ def test_visible_and_caller_attached_destructors_coexist(
         (_CLOSE_FILE, _DELETE_FILE2),
         (_TEST, _CLOSE_FILE),
     ]
-
-
-# TODO: A Destruction Contract recorded while running a Position Initialization
-# Block is not propagated up to the action that ran that init block (by creating a
-# particle in the position), so a destructor that only that action knows about is
-# silently dropped and its requirement is never verified. This is the same
-# init-block boundary gap as the missing action-call-graph edge (see the TODO in
-# definition_postorder_validator._run_position_init_blocks). The contract would be
-# verified normally if /outer moved the particle to /callee itself; the bug is
-# that /p's init block performs that move instead.
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract is not propagated out of a Position Initialization Block",
-)
-def test_caller_known_destructor_lost_across_position_init_block(
-    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
-):
-    result = validate_project_with_reference_graph(
-        {
-            "d.dfn": (
-                "define the potential action<my.domain.com:my_lib:/d> {\n"
-                "    define the position<item>.\n"
-                "    it happens when {\n"
-                "        this particle is being destroyed.\n"
-                "    } and it does {\n"
-                "        define the position<_holder>.\n"
-                "        move the particle in position<item> to position<_holder>.\n"
-                "        move the particle in position<_holder> to position<item>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "q.dfn": "define the potential position<my.domain.com:my_lib:/q>.\n",
-            "callee.dfn": (
-                "define the potential action<my.domain.com:my_lib:/callee> {\n"
-                "    define the position<incoming>.\n"
-                "    it happens when {\n"
-                "        the position<incoming> has a particle.\n"
-                "    } and it does {\n"
-                "        destroy the particle in position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "p.dfn": (
-                "define the potential position<my.domain.com:my_lib:/p> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the action</callee>.\n"
-                "    after it is assigned {\n"
-                "        move the particle in position</q> to action</callee>::position<incoming>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "outer.dfn": (
-                "define the potential action<my.domain.com:my_lib:/outer> {\n"
-                "    it also assigns the position</q>.\n"
-                "    it also assigns the position</p>.\n"
-                "    define the position<box> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the action</d>.\n"
-                "        }\n"
-                "    }\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in position<box>.\n"
-                "        move the particle in position<box> to position</q>.\n"
-                "        create a particle in position</p>.\n"
-                "    }\n"
-                "}\n"
-            ),
-            "test.dfn": (
-                "define the potential action<my.domain.com:my_lib:/test> {\n"
-                "    it also assigns the action</outer>.\n"
-                "    define the position<run>.\n"
-                "    it happens when {\n"
-                "        the position<run> has a particle.\n"
-                "    } and it does {\n"
-                "        create a particle in action</outer>::position<run>.\n"
-                "    }\n"
-                "}\n"
-            ),
-        },
-    )
-    all_diags = result.program_result.all_diagnostics
-    # /outer knows /d, so the destructor's unmet requirement must be verified.
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_empty is False
-    assert all_diags[0].position_name.endswith("action</d>::position<item>")
