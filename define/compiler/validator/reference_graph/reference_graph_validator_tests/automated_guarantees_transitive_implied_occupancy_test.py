@@ -624,24 +624,36 @@ def test_implied_position_self_create_init_block_fires_on_caller_create(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     first = all_diags[0]
-    assert isinstance(
-        first, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
+    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
+    assert (
+        first.runner_description
+        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/implier>'"
     )
-    assert first.create_target_name == "position<box>"
-    assert first.init_block_position_name == "position<my.domain.com:my_lib:/implier>"
+    assert first.required_empty is True
     assert first.position_name == "position<box>::position</first_implied>"
     assert first.location.line == 11
     assert first.location.column == 30
     assert first.location.end_line == 11
     assert first.location.end_column == 43
     assert first.location.file_path == PurePosixPath("test.dfn")
-    assert first.filled_at.line == 3
-    assert first.filled_at.column == 30
-    assert first.filled_at.end_line == 3
-    assert first.filled_at.end_column == 54
-    assert first.filled_at.file_path == PurePosixPath("first_implied.dfn")
     assert_propagation_chain(
         first,
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "position<my.domain.com:my_lib:/implier>",
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</first_implied>",
+            "triggered_quality_name": None,
+            "line": 3,
+            "column": 30,
+            "file_path": "first_implied.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/implier>",
@@ -717,27 +729,36 @@ def test_transitively_implied_position_self_create_init_block_fires_on_caller_cr
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     first = all_diags[0]
-    assert isinstance(
-        first, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
-    )
-    assert first.create_target_name == "position<box>"
+    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
-        first.init_block_position_name
-        == "position<my.domain.com:my_lib:/first_implied>"
+        first.runner_description
+        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/first_implied>'"
     )
+    assert first.required_empty is True
     assert first.position_name == "position<box>::position</second_implied>"
     assert first.location.line == 11
     assert first.location.column == 30
     assert first.location.end_line == 11
     assert first.location.end_column == 43
     assert first.location.file_path == PurePosixPath("test.dfn")
-    assert first.filled_at.line == 3
-    assert first.filled_at.column == 30
-    assert first.filled_at.end_line == 3
-    assert first.filled_at.end_column == 55
-    assert first.filled_at.file_path == PurePosixPath("second_implied.dfn")
     assert_propagation_chain(
         first,
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "position<my.domain.com:my_lib:/first_implied>",
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</second_implied>",
+            "triggered_quality_name": None,
+            "line": 3,
+            "column": 30,
+            "file_path": "second_implied.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/first_implied>",

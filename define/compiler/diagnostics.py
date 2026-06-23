@@ -6,13 +6,13 @@ import typing
 from dataclasses import dataclass
 from typing import ClassVar
 
-from define.compiler import constants
+from define.compiler import ast, constants
 from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import ast, exceptions
+    from define.compiler import exceptions
 
 
 def _format_location(location: ast.SourceLocation) -> str:
@@ -700,17 +700,39 @@ class IncorrectIndentationDiagnostic(Diagnostic):
     )
 
 
-# TODO: These diagnostics should show source context from inferred_at,
-# not just the file/line/column. This requires passing the other file's
-# source lines through to the diagnostic's format() method.
-
-
 @dataclass
-class RequirementDiagnostic(Diagnostic):
-    """Base class for diagnostics about a contracted position's occupancy requirement."""
+class InferredRequirementViolationDiagnostic(Diagnostic):
+    """Diagnostic for when an automatically inferred occupancy requirement is violated.
+
+    The same shape serves every case (action trigger, Position Initialization
+    Block, destructor, Destruction Contract): a uniform top sentence naming the
+    runner whose run the requirement gates, followed by the causal stack.
+    """
 
     position_name: str
     propagation_chain: list[action_contract.PropagationStep]
+    required_empty: bool
+    # The quality whose Action Statements Block we can't run because the requirement
+    # isn't satisfied.
+    runner_name: str
+    runner_name_type: ast.NameType
+    message_format: ClassVar[str] = (
+        "'{self.position_name}' must be {self.required_state} before"
+        " {self.runner_description} runs, and it is not {self.required_state}.\n\n"
+        "{self.formatted_propagation_chain}"
+    )
+
+    @property
+    def required_state(self) -> str:
+        """The word describing the state the position must be in."""
+        return "empty" if self.required_empty else "occupied"
+
+    @property
+    def runner_description(self) -> str:
+        """The phrase naming the runner whose run the requirement gates."""
+        if self.runner_name_type == ast.NameType.POSITION:
+            return f"the Position Initialization Block of '{self.runner_name}'"
+        return f"'{self.runner_name}'"
 
     # TODO: This really needs to be able to show all the relevant
     # source lines. I think we could do that by passing in a
@@ -724,7 +746,7 @@ class RequirementDiagnostic(Diagnostic):
         """Render the labeled propagation chain for the diagnostic message."""
         if not self.propagation_chain:
             return ""
-        lines = ["This requirement happens because:"]
+        lines = ["This error happens because:"]
         for step in self.propagation_chain:
             lines.append(f"  {self._format_propagation_step(step)}:")
             lines.append(f"    {_format_location(step.location)}")
@@ -734,7 +756,7 @@ class RequirementDiagnostic(Diagnostic):
         """Render a propagation step as a human-readable label line."""
         match step.kind:
             case action_contract.PropagationKind.DIRECT_INFERENCE:
-                return f"'{step.enclosing_quality_name}' inferred this requirement"
+                return f"'{step.enclosing_quality_name}' infers this requirement"
             case action_contract.PropagationKind.DESTRUCTOR_CASCADE:
                 return (
                     f"'{step.enclosing_quality_name}' destroys a particle,"
@@ -756,134 +778,18 @@ class RequirementDiagnostic(Diagnostic):
                     f" runs the Position Initialization Block of"
                     f" '{step.triggered_quality_name}'"
                 )
-
-
-@dataclass
-class ActionRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
-    """Diagnostic for when an action requires an interface position to be empty but it is not."""
-
-    action_name: str
-    filled_at: ast.SourceLocation
-    message_format: ClassVar[str] = (
-        "this line is triggering '{self.action_name}' to run.\n"
-        "However, '{self.position_name}' must be empty before that action runs,"
-        " and it is not empty.\n"
-        "It was filled at:\n{self.formatted_filled_at}\n\n"
-        "{self.formatted_propagation_chain}"
-    )
-
-    @property
-    def formatted_filled_at(self) -> str:
-        """Format the filled_at location as a human-readable string."""
-        return _format_location(self.filled_at)
-
-
-@dataclass
-class ActionRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
-    """Diagnostic for when an action requires an interface position to be occupied but it is not."""
-
-    action_name: str
-    message_format: ClassVar[str] = (
-        "this line is triggering '{self.action_name}' to run.\n"
-        "However, '{self.position_name}' must be occupied before that action runs,"
-        " and it is not occupied.\n\n"
-        "{self.formatted_propagation_chain}"
-    )
-
-
-@dataclass(kw_only=True)
-class DestructorRequirementDiagnostic(RequirementDiagnostic):
-    """Base class for destructor-requirement diagnostics.
-
-    Subclasses provide the `requirement_text` property describing what state the
-    contracted position should be in.
-    """
-
-    destructor_name: str
-    destroy_target_name: str
-    destroy_target_origin_at: ast.SourceLocation
-    # These are only set for auto-destruction.
-    auto_destruction_local_position_name: str | None = None
-    containing_definition_name: str | None = None
-
-    @property
-    def requirement_text(self) -> str:
-        """The "However, '<position>' must be ..." sentence(s)."""
-        raise NotImplementedError
-
-    @property
-    @typing.override
-    def message(self) -> str:
-        """Render the full destructor-requirement diagnostic body."""
-        lines: list[str] = []
-        if self.auto_destruction_local_position_name is None:
-            lines.append(
-                f"Destroying the particle in '{self.destroy_target_name}'"
-                + f" triggers the destructor '{self.destructor_name}'."
-            )
-        else:
-            lines.append(
-                f"The particle in '{self.auto_destruction_local_position_name}'"
-                + " is being automatically destroyed at the end of"
-                + f" '{self.containing_definition_name}'."
-            )
-            if self.destroy_target_name != self.auto_destruction_local_position_name:
-                lines.append(
-                    f"This causes the particle in '{self.destroy_target_name}'"
-                    + " to be destroyed first."
+            case action_contract.PropagationKind.PARTICLE_ORIGIN:
+                return (
+                    f"the particle in '{step.enclosing_quality_name}' is originally"
+                    f" created here"
                 )
-            lines.append(
-                "The above line shows how the particle in"
-                + f" '{self.destroy_target_name}' got into its current position."
-            )
-        lines.append("")
-        lines.append(
-            f"The particle in '{self.destroy_target_name}' was originally"
-            + " created at:"
-        )
-        lines.append(_format_location(self.destroy_target_origin_at))
-        lines.append("")
-        if self.auto_destruction_local_position_name is not None:
-            lines.append(
-                f"Destroying '{self.destroy_target_name}' triggers the destructor"
-                + f" '{self.destructor_name}'."
-            )
-        lines.append(self.requirement_text)
-        lines.append("")
-        lines.append(self.formatted_propagation_chain)
-        return "\n".join(lines)
-
-
-@dataclass(kw_only=True)
-class DestructorRequiresEmptyPositionDiagnostic(DestructorRequirementDiagnostic):
-    """Diagnostic for when a destructor requires a position to be empty but it is not."""
-
-    filled_at: ast.SourceLocation
-
-    @property
-    @typing.override
-    def requirement_text(self) -> str:
-        """The "However, ... must be empty" sentence and its filled-at location."""
-        return (
-            f"However, '{self.position_name}' must be empty before that destructor"
-            f" runs, and it is not empty.\n"
-            f"'{self.position_name}' was filled at:\n"
-            f"{_format_location(self.filled_at)}"
-        )
-
-
-@dataclass(kw_only=True)
-class DestructorRequiresOccupiedPositionDiagnostic(DestructorRequirementDiagnostic):
-    """Diagnostic for when a destructor requires a position to be occupied but it is not."""
-
-    @property
-    @typing.override
-    def requirement_text(self) -> str:
-        """The "However, ... must be occupied" sentence."""
-        return (
-            f"However, '{self.position_name}' must be occupied before that destructor"
-            f" runs, and it is not occupied."
-        )
+            case action_contract.PropagationKind.AUTO_DESTRUCTION:
+                return (
+                    f"the particle in '{step.enclosing_quality_name}' is automatically"
+                    f" destroyed at the end of '{step.triggered_quality_name}'"
+                )
+            case action_contract.PropagationKind.FILL_SITE:
+                return f"'{step.enclosing_quality_name}' is filled here"
 
 
 @dataclass
@@ -926,45 +832,6 @@ class DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
         "a destructor must leave every position in the state it was in when it started.\n"
         "However, this line moves a particle from '{self.origin_name}' into"
         " '{self.position_name}' and then nothing moves it back out of that position."
-    )
-
-
-@dataclass
-class PositionInitBlockRequiresEmptyPositionDiagnostic(RequirementDiagnostic):
-    """Diagnostic for when a position init block requires a position to be empty but it is not."""
-
-    create_target_name: str
-    init_block_position_name: str
-    filled_at: ast.SourceLocation
-    message_format: ClassVar[str] = (
-        "this line creates a particle in '{self.create_target_name}'."
-        " Doing so assigns '{self.init_block_position_name}' to that particle,"
-        " running its Position Initialization Block.\n"
-        "However, '{self.position_name}' must be empty before that block runs,"
-        " and it is not empty.\n"
-        "It was filled at:\n{self.formatted_filled_at}\n\n"
-        "{self.formatted_propagation_chain}"
-    )
-
-    @property
-    def formatted_filled_at(self) -> str:
-        """Format the filled_at location as a human-readable string."""
-        return _format_location(self.filled_at)
-
-
-@dataclass
-class PositionInitBlockRequiresOccupiedPositionDiagnostic(RequirementDiagnostic):
-    """Diagnostic for when a position init block requires a position to be occupied but it is not."""
-
-    create_target_name: str
-    init_block_position_name: str
-    message_format: ClassVar[str] = (
-        "this line creates a particle in '{self.create_target_name}'."
-        " Doing so assigns '{self.init_block_position_name}' to that particle,"
-        " running its Position Initialization Block.\n"
-        "However, '{self.position_name}' must be occupied before that block runs,"
-        " and it is not occupied.\n\n"
-        "{self.formatted_propagation_chain}"
     )
 
 

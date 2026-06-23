@@ -111,21 +111,36 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
@@ -192,22 +207,44 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is True
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>"
     )
-    assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 30
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
@@ -274,21 +311,36 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::position</marker>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
@@ -356,21 +408,36 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<holder>::position</leaf>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
@@ -438,21 +505,36 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 72
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::action</destructor>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,

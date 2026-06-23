@@ -52,6 +52,15 @@ class PropagationKind(enum.Enum):
     # The current definition's body created a particle in a position
     # with an init block; the init block's requirements propagated up.
     INIT_BLOCK_TRIGGER = enum.auto()
+    # The particle whose destructor requirement is violated was originally
+    # created here.
+    PARTICLE_ORIGIN = enum.auto()
+    # The particle is automatically destroyed at the end of a body, firing the
+    # destructor whose requirement is violated.
+    AUTO_DESTRUCTION = enum.auto()
+    # The contracted position was filled here, which is what violates an
+    # empty-requirement.
+    FILL_SITE = enum.auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,9 +162,12 @@ class PositionRequirement:
         return chain
 
     def _propagation_steps(self) -> list[PropagationStep]:
-        steps = [self._propagation_step()]
+        # The constraint that attaches the destructor is encountered before the
+        # destruction it eventually causes, so it is listed first.
+        steps: list[PropagationStep] = []
         if self.destructor_attachment is not None:
             steps.append(self._destructor_attachment_step(self.destructor_attachment))
+        steps.append(self._propagation_step())
         return steps
 
     def _destructor_attachment_step(

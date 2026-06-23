@@ -93,42 +93,21 @@ def test_intermediate_verifies_destructor_it_can_resolve(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     # The intermediate mid reports the violation, not the owner /test.
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[0].destructor_name == _DESTRUCTOR
-    assert (
-        all_diags[0].destroy_target_name
-        == "position<box>::action</close_file>::position<target>"
-    )
+    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::action</destructor>::position<item>"
     )
-    assert all_diags[0].destroy_target_origin_at.line == 17
-    assert all_diags[0].destroy_target_origin_at.column == 30
-    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[0].filled_at.line == 17
-    assert all_diags[0].filled_at.column == 30
-    assert all_diags[0].filled_at.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[0].auto_destruction_local_position_name is None
-    assert all_diags[0].containing_definition_name is None
     # Attribution is mid's own interface constraint, even though /test created
     # the particle.
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<incoming>",
@@ -136,6 +115,38 @@ def test_intermediate_verifies_destructor_it_can_resolve(
             "line": 4,
             "column": 24,
             "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 19,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::action</destructor>::position<item>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -222,39 +233,21 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].destructor_name == _DELETE_FILE_DESTRUCTOR
-    assert (
-        all_diags[0].destroy_target_name
-        == "position<box>::action</close_file>::position<target>"
-    )
+    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
     )
-    assert all_diags[0].destroy_target_origin_at.line == 18
-    assert all_diags[0].destroy_target_origin_at.column == 30
-    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].auto_destruction_local_position_name is None
-    assert all_diags[0].containing_definition_name is None
     # The attachment points at the directly-declared `it has the action</carrier>`
     # constraint that pulls in the carrier (which implies the destructor), not at
     # the carrier's implication clause.
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
@@ -262,6 +255,30 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
             "line": 14,
             "column": 28,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 20,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -461,39 +478,18 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     # d2 is carried past mid and resolved by the owner /test, attributed to my_file.
-    assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].destructor_name == _D2
-    assert (
-        all_diags[0].destroy_target_name
-        == "position<outer_box>::action</mid>::position<incoming>"
-    )
+    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::action</d2>::position<item2>"
     )
-    assert all_diags[0].destroy_target_origin_at.line == 18
-    assert all_diags[0].destroy_target_origin_at.column == 30
-    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].filled_at.line == 19
-    assert all_diags[0].filled_at.column == 30
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].auto_destruction_local_position_name is None
-    assert all_diags[0].containing_definition_name is None
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _D2,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
@@ -501,6 +497,38 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "line": 14,
             "column": 28,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>::action</d2>::position<item2>",
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _D2,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -512,39 +540,18 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
         },
     )
     # d1 is resolved low, by mid itself, attributed to mid's own interface.
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].location.line == 20
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[1].destructor_name == _D1
-    assert (
-        all_diags[1].destroy_target_name
-        == "position<box>::action</close_file>::position<target>"
-    )
+    assert all_diags[1].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name
         == "position<box>::action</close_file>::position<target>::action</d1>::position<item1>"
     )
-    assert all_diags[1].destroy_target_origin_at.line == 18
-    assert all_diags[1].destroy_target_origin_at.column == 30
-    assert all_diags[1].destroy_target_origin_at.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[1].filled_at.line == 18
-    assert all_diags[1].filled_at.column == 30
-    assert all_diags[1].filled_at.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[1].auto_destruction_local_position_name is None
-    assert all_diags[1].containing_definition_name is None
     assert_propagation_chain(
         all_diags[1],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _D1,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<incoming>",
@@ -552,6 +559,38 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
             "line": 4,
             "column": 24,
             "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 20,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>::action</d1>::position<item1>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _D1,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -640,38 +679,20 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].destructor_name == _DELETE_FILE_DESTRUCTOR
-    assert (
-        all_diags[0].destroy_target_name
-        == "position<box>::action</close_file>::position<target>"
-    )
+    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
     )
-    assert all_diags[0].destroy_target_origin_at.line == 19
-    assert all_diags[0].destroy_target_origin_at.column == 30
-    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].auto_destruction_local_position_name is None
-    assert all_diags[0].containing_definition_name is None
     # The attachment points at the directly-declared destructor constraint
     # (test.dfn line 15), not the carrier constraint listed before it (line 14).
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
@@ -679,6 +700,30 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
             "line": 15,
             "column": 28,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -925,36 +970,18 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].destructor_name == _DESTRUCTOR
-    assert (
-        all_diags[0].destroy_target_name
-        == "position<box>::action</middle>::position<incoming>"
-    )
+    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::action</middle>::position<incoming>::position</p1>"
     )
-    assert all_diags[0].destroy_target_origin_at.line == 17
-    assert all_diags[0].destroy_target_origin_at.column == 30
-    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].auto_destruction_local_position_name is None
-    assert all_diags[0].containing_definition_name is None
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<incoming>",
@@ -962,6 +989,30 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "line": 4,
             "column": 24,
             "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 20,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -972,41 +1023,20 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].location.line == 20
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[1].destructor_name == _DESTRUCTOR
-    assert (
-        all_diags[1].destroy_target_name
-        == "position<box>::action</middle>::position<incoming>"
-    )
+    assert all_diags[1].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name
         == "position<box>::action</middle>::position<incoming>::position</p2>"
     )
-    assert all_diags[1].destroy_target_origin_at.line == 17
-    assert all_diags[1].destroy_target_origin_at.column == 30
-    assert all_diags[1].destroy_target_origin_at.file_path == PurePosixPath("outer.dfn")
     # p2 was filled by middle; outer never touched it, so the fill site is the
     # one the contract carried up from middle.
-    assert all_diags[1].filled_at.line == 17
-    assert all_diags[1].filled_at.column == 30
-    assert all_diags[1].filled_at.file_path == PurePosixPath("middle.dfn")
-    assert all_diags[1].auto_destruction_local_position_name is None
-    assert all_diags[1].containing_definition_name is None
     assert_propagation_chain(
         all_diags[1],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<incoming>",
@@ -1014,6 +1044,38 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "line": 4,
             "column": 24,
             "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 20,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</middle>::position<incoming>::position</p2>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -1304,36 +1366,18 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].destructor_name == _DESTRUCTOR
-    assert (
-        all_diags[0].destroy_target_name
-        == "position<box>::action</middle>::position<incoming>"
-    )
+    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::action</middle>::position<incoming>::position</p1>"
     )
-    assert all_diags[0].destroy_target_origin_at.line == 17
-    assert all_diags[0].destroy_target_origin_at.column == 30
-    assert all_diags[0].destroy_target_origin_at.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].auto_destruction_local_position_name is None
-    assert all_diags[0].containing_definition_name is None
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<incoming>",
@@ -1341,6 +1385,30 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "line": 4,
             "column": 24,
             "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 18,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
@@ -1351,41 +1419,20 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[1].destructor_name == _DESTRUCTOR
-    assert (
-        all_diags[1].destroy_target_name
-        == "position<box>::action</middle>::position<incoming>"
-    )
+    assert all_diags[1].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name
         == "position<box>::action</middle>::position<incoming>::position</p2>"
     )
-    assert all_diags[1].destroy_target_origin_at.line == 17
-    assert all_diags[1].destroy_target_origin_at.column == 30
-    assert all_diags[1].destroy_target_origin_at.file_path == PurePosixPath("outer.dfn")
     # inner filled p2; outer never touched it, so the fill site is the one the
     # contract carried up from inner.
-    assert all_diags[1].filled_at.line == 18
-    assert all_diags[1].filled_at.column == 30
-    assert all_diags[1].filled_at.file_path == PurePosixPath("inner.dfn")
-    assert all_diags[1].auto_destruction_local_position_name is None
-    assert all_diags[1].containing_definition_name is None
     assert_propagation_chain(
         all_diags[1],
-        {
-            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": _CLOSE_FILE,
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<incoming>",
@@ -1393,6 +1440,38 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "line": 4,
             "column": 24,
             "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</middle>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _OUTER,
+            "triggered_quality_name": _MIDDLE,
+            "line": 18,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</middle>::position<incoming>::position</p2>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,

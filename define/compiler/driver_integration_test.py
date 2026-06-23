@@ -386,16 +386,16 @@ EXPECTED_PROJECT_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.ChainElementNotInConstraintsDiagnostic,
     ],
     "action_contracts/action_requires_empty": [
-        diagnostics.ActionRequiresEmptyPositionDiagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
     ],
     "action_contracts/action_requires_occupied": [
-        diagnostics.ActionRequiresOccupiedPositionDiagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
     ],
     "action_contracts/init_requires_empty": [
-        diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
     ],
     "action_contracts/init_requires_occupied": [
-        diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
     ],
     "destroy/destroy_empty_interface": [
         diagnostics.DestroyInEmptyInterfacePositionDiagnostic,

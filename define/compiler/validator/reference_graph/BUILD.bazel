@@ -53,6 +53,7 @@ py_library(
         ":action_contract",
         ":particle_operation",
         ":particle_tracker",
+        ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
@@ -118,6 +119,18 @@ py_library(
 )
 
 py_library(
+    name = "requirement_violation",
+    srcs = ["requirement_violation.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":action_contract",
+        ":particle_tracker",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+    ],
+)
+
+py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
@@ -153,6 +166,7 @@ pyright_test(
         ":particle_tracker_test",
         ":reference_graph",
         ":reference_graph_validator",
+        ":requirement_violation",
         ":test_helpers",
         "//define/compiler/validator:validation_result",
     ],

@@ -21,7 +21,7 @@ class ExpectedPropagationStep(TypedDict):
 
 
 def assert_propagation_chain(
-    diag: diagnostics.RequirementDiagnostic,
+    diag: diagnostics.InferredRequirementViolationDiagnostic,
     *expected_steps: ExpectedPropagationStep,
 ) -> None:
     """Assert a requirement diagnostic's full propagation chain, outer to inner."""

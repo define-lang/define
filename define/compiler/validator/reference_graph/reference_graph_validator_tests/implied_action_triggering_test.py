@@ -146,19 +146,26 @@ def test_implied_action_iface_requirement_propagates_to_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.location.line == 12
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_MIDDLE}'"
+    assert diag.required_empty is False
     assert (
-        all_diags[0].position_name
-        == "position<box>::action</implied_action>::position<extra>"
+        diag.position_name == "position<box>::action</implied_action>::position<extra>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
@@ -248,19 +255,27 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.location.line == 12
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_MIDDLE}'"
+    assert diag.required_empty is False
     assert (
-        all_diags[0].position_name
+        diag.position_name
         == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
@@ -345,19 +360,27 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.location.line == 13
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_MIDDLE}'"
+    assert diag.required_empty is False
     assert (
-        all_diags[0].position_name
+        diag.position_name
         == "position<box>::action</implied_outer>::position<iface>::action</inner>::position<extra>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,

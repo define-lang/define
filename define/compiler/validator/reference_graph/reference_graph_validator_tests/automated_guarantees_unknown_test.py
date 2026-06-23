@@ -947,16 +947,23 @@ def test_swap_guarantee_both_positions_unfilled(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
@@ -966,16 +973,23 @@ def test_swap_guarantee_both_positions_unfilled(
             "file_path": "other.dfn",
         },
     )
-    assert isinstance(
-        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].required_empty is False
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
     assert_propagation_chain(
         all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
@@ -1039,18 +1053,25 @@ def test_swap_guarantee_one_position_unfilled(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<b>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
@@ -1133,18 +1154,25 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 4
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
@@ -1154,15 +1182,14 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "file_path": "other.dfn",
         },
     )
-    assert isinstance(
-        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 12
     assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].required_empty is False
     assert (
         all_diags[1].position_name
         == "position<box>::action</other>::position<a>::position</c1>"
@@ -1170,6 +1197,14 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
     assert_propagation_chain(
         all_diags[1],
         {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
             "triggered_quality_name": None,
@@ -1178,18 +1213,25 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "file_path": "other.dfn",
         },
     )
-    assert isinstance(
-        all_diags[2], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[2], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[2].location.line == 12
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.end_line == 12
     assert all_diags[2].location.end_column == 82
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[2].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[2].required_empty is False
     assert all_diags[2].position_name == "position<box>::action</other>::position<b>"
     assert_propagation_chain(
         all_diags[2],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
@@ -1199,21 +1241,28 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
             "file_path": "other.dfn",
         },
     )
-    assert isinstance(
-        all_diags[3], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[3], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[3].location.line == 12
     assert all_diags[3].location.column == 30
     assert all_diags[3].location.end_line == 12
     assert all_diags[3].location.end_column == 82
     assert all_diags[3].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[3].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[3].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[3].required_empty is False
     assert (
         all_diags[3].position_name
         == "position<box>::action</other>::position<b>::position</c2>"
     )
     assert_propagation_chain(
         all_diags[3],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,
@@ -1270,18 +1319,25 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
+    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OTHER,

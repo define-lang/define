@@ -14,6 +14,7 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     particle_operation,
     particle_tracker,
+    requirement_violation,
 )
 
 if typing.TYPE_CHECKING:
@@ -36,7 +37,7 @@ class _CascadeDestructor:
 
     quality: ast.GlobalTypedNameReference
     position: ast.PositionReference
-    destroy_target_origin_at: ast.SourceLocation
+    origin_position: ast.PositionReference
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +150,7 @@ class DefinitionPostorderValidator(abc.ABC):
         local_chain: ast.ChainedName,
         propagated_from: action_contract.PositionRequirement | None,
         scope: scope_tracker.ScopeTracker,
+        destructor_attachment: action_contract.DestructorAttachment | None = None,
     ):
         """Record a requirement in this definition's contract and reflect it in the tracker.
 
@@ -211,6 +213,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 inferred_from=inferred_from,
                 enclosing_quality=self._definition,
                 propagated_from=propagated_from,
+                destructor_attachment=destructor_attachment,
             )
         )
         if required_state == action_contract.PositionOccupancyState.OCCUPIED:
@@ -364,6 +367,13 @@ class DefinitionPostorderValidator(abc.ABC):
             init_block_contract = self._position_contracts.get(quality)
             if init_block_contract is None:
                 continue
+            # TODO: Record an action-call-graph edge here from this definition to
+            # the position whose Position Initialization Block runs (source =
+            # self._definition.typed_name.source_typed_name, target =
+            # quality.full_typed_name), the way _check_trigger records one for an
+            # action trigger. Without it the call graph is disconnected at the
+            # init-block boundary: the position's own init-block edges have no
+            # incoming edge from the definition that ran them.
             self._propagate_init_block_requirements(
                 position, init_block_contract, scope
             )
@@ -432,7 +442,7 @@ class DefinitionPostorderValidator(abc.ABC):
                         _CascadeDestructor(
                             quality=quality,
                             position=position,
-                            destroy_target_origin_at=particle.origin_position.location,
+                            origin_position=particle.origin_position,
                         )
                     )
                 for interface_position in reversed(definition.interface_positions):
@@ -494,14 +504,20 @@ class DefinitionPostorderValidator(abc.ABC):
             # definition loaded.
             contract = self._action_contracts[destructor.quality]
             action_chain = destructor.position.with_suffix(destructor.quality)
-            self._propagate_destructor_requirements(contract, action_chain, scope)
+            attachment = self._destructor_attachment(
+                destructor.quality, destructor.origin_position, scope
+            )
+            self._propagate_destructor_requirements(
+                contract, action_chain, scope, attachment
+            )
             self._check_requirements(
                 contract,
                 action_chain,
                 destructor.position,
                 is_destructor=True,
-                destroy_target_origin_at=destructor.destroy_target_origin_at,
+                destroy_target_origin_at=destructor.origin_position.location,
                 auto_destruction_target=auto_destruction_target,
+                destructor_attachment=attachment,
             )
             self._action_edges.append(
                 action_call_graph.ActionGraphEdge(
@@ -536,6 +552,7 @@ class DefinitionPostorderValidator(abc.ABC):
         contract: action_contract.ActionContract,
         action_chain: ast.ChainedName,
         scope: scope_tracker.ScopeTracker,
+        attachment: action_contract.DestructorAttachment | None,
     ):
         """Propagate requirements into this action's contract when the destroyed particle itself was from a contracted position."""
         # For `move position<incoming> to position<local_box>.` followed by
@@ -561,6 +578,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 local_chain=action_chain,
                 propagated_from=inner_req,
                 scope=scope,
+                destructor_attachment=attachment,
             )
 
     def _check_trigger(
@@ -646,6 +664,7 @@ class DefinitionPostorderValidator(abc.ABC):
         is_destructor: bool = False,
         destroy_target_origin_at: ast.SourceLocation | None = None,
         auto_destruction_target: ast.PositionReference | None = None,
+        destructor_attachment: action_contract.DestructorAttachment | None = None,
     ):
         """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position."""
         # Action trigger:
@@ -677,6 +696,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 is_destructor=is_destructor,
                 destroy_target_origin_at=destroy_target_origin_at,
                 auto_destruction_target=auto_destruction_target,
+                destructor_attachment=destructor_attachment,
             )
 
     def _check_one_requirement(
@@ -688,6 +708,7 @@ class DefinitionPostorderValidator(abc.ABC):
         is_destructor: bool,
         destroy_target_origin_at: ast.SourceLocation | None = None,
         auto_destruction_target: ast.PositionReference | None = None,
+        destructor_attachment: action_contract.DestructorAttachment | None = None,
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
         key = full_caller_chain.canonical_chained_name_tuple
@@ -708,135 +729,29 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         if not (empty_violation or occupied_violation):
             return
-        position_name = full_caller_chain.source_form_in_universe(self._enclosing_fqun)
-
         if is_destructor:
-            if destroy_target_origin_at is None:
-                raise ValueError(
-                    "destroy_target_origin_at must be set when is_destructor=True"
+            self._diagnostics.append(
+                requirement_violation.direct_destructor(
+                    req=req,
+                    definition=self._definition,
+                    full_caller_chain=full_caller_chain,
+                    acting_on_position=acting_on_position,
+                    occupant=occupant,
+                    destroy_target_origin_at=destroy_target_origin_at,
+                    auto_destruction_target=auto_destruction_target,
+                    attachment=destructor_attachment,
                 )
-            self._emit_destructor_violation(
-                req=req,
-                acting_on_position=acting_on_position,
-                position_name=position_name,
-                occupant=occupant,
-                destroy_target_origin_at=destroy_target_origin_at,
-                auto_destruction_target=auto_destruction_target,
             )
             return
-        originating_quality = req.enclosing_quality
-        originating_quality_name = originating_quality.typed_name.source_typed_name
-        propagation_chain = req.propagation_chain()
-        if isinstance(originating_quality, ast.ActionDefinition):
-            self._emit_action_violation(
+        self._diagnostics.append(
+            requirement_violation.trigger_violation(
+                req=req,
+                definition=self._definition,
+                full_caller_chain=full_caller_chain,
                 acting_on_position=acting_on_position,
-                position_name=position_name,
                 occupant=occupant,
-                action_name=originating_quality_name,
-                propagation_chain=propagation_chain,
             )
-        else:
-            self._emit_init_block_violation(
-                acting_on_position=acting_on_position,
-                position_name=position_name,
-                occupant=occupant,
-                init_block_position_name=originating_quality_name,
-                propagation_chain=propagation_chain,
-            )
-
-    def _emit_destructor_violation(
-        self,
-        *,
-        req: action_contract.PositionRequirement,
-        acting_on_position: ast.PositionReference,
-        position_name: str,
-        occupant: particle_tracker.ParticleInfo | None,
-        destroy_target_origin_at: ast.SourceLocation,
-        auto_destruction_target: ast.PositionReference | None,
-    ):
-        """Append a destructor-requirement violation diagnostic."""
-        if auto_destruction_target is None:
-            diag_location = acting_on_position.location
-            auto_local_name = None
-            containing_name = None
-        else:
-            diag_location = auto_destruction_target.location
-            auto_local_name = auto_destruction_target.source_form_in_universe(
-                self._enclosing_fqun
-            )
-            containing_name = self._definition.typed_name.source_typed_name
-        destroy_target_name = acting_on_position.source_form_in_universe(
-            self._enclosing_fqun
         )
-        self._append_destructor_diagnostic(
-            required_empty=(
-                req.required_state == action_contract.PositionOccupancyState.EMPTY
-            ),
-            filled_at=(
-                occupant.last_position.location if occupant is not None else None
-            ),
-            location=diag_location,
-            destructor_name=req.root_cause_quality_name(),
-            destroy_target_name=destroy_target_name,
-            destroy_target_origin_at=destroy_target_origin_at,
-            position_name=position_name,
-            propagation_chain=req.propagation_chain(),
-            auto_destruction_local_position_name=auto_local_name,
-            containing_definition_name=containing_name,
-        )
-
-    def _append_destructor_diagnostic(
-        self,
-        *,
-        required_empty: bool,
-        filled_at: ast.SourceLocation | None,
-        location: ast.SourceLocation,
-        destructor_name: str,
-        destroy_target_name: str,
-        destroy_target_origin_at: ast.SourceLocation,
-        position_name: str,
-        propagation_chain: list[action_contract.PropagationStep],
-        auto_destruction_local_position_name: str | None,
-        containing_definition_name: str | None,
-    ):
-        """Append a destructor-requirement violation diagnostic.
-
-        required_empty selects the violation direction: the destructor required
-        the position empty but found it filled (at filled_at), or required it
-        occupied but found it empty.
-        """
-        if required_empty:
-            if filled_at is None:
-                raise ValueError(
-                    "an empty-requirement violation means the position is filled, "
-                    + "so its fill site must be known"
-                )
-            self._diagnostics.append(
-                diagnostics.DestructorRequiresEmptyPositionDiagnostic(
-                    location=location,
-                    destructor_name=destructor_name,
-                    destroy_target_name=destroy_target_name,
-                    destroy_target_origin_at=destroy_target_origin_at,
-                    position_name=position_name,
-                    propagation_chain=propagation_chain,
-                    filled_at=filled_at,
-                    auto_destruction_local_position_name=auto_destruction_local_position_name,
-                    containing_definition_name=containing_definition_name,
-                )
-            )
-        else:
-            self._diagnostics.append(
-                diagnostics.DestructorRequiresOccupiedPositionDiagnostic(
-                    location=location,
-                    destructor_name=destructor_name,
-                    destroy_target_name=destroy_target_name,
-                    destroy_target_origin_at=destroy_target_origin_at,
-                    position_name=position_name,
-                    propagation_chain=propagation_chain,
-                    auto_destruction_local_position_name=auto_destruction_local_position_name,
-                    containing_definition_name=containing_definition_name,
-                )
-            )
 
     def _destructor_qualities(
         self, qualities: tuple[ast.GlobalTypedNameReference, ...]
@@ -1073,29 +988,9 @@ class DefinitionPostorderValidator(abc.ABC):
         destructor_contract = self._action_contracts.get(destructor_quality)
         if destructor_contract is None or destroying_definition is None:
             return False
-        # An auto-destroyed particle was last moved into the position it died in,
-        # so the diagnostic points at that move and names the local position and
-        # destroying action; an explicit destroy points at this caller's trigger.
-        if destruction_contract.is_auto_destruction:
-            diagnostic_location = particle.last_position.location
-            auto_destruction_local_position_name = (
-                destruction_contract.destroyed_position_local.source_form_in_universe(
-                    self._enclosing_fqun
-                )
-            )
-            containing_definition_name = (
-                destruction_contract.destroying_action.source_typed_name
-            )
-        else:
-            diagnostic_location = acting_position.location
-            auto_destruction_local_position_name = None
-            containing_definition_name = None
         action_chain = particle_position.with_suffix(destructor_quality)
-        attachment = action_contract.DestructorAttachment(
-            attached_at=self._destructor_attachment_location(
-                destructor_quality, particle.origin_position, scope
-            ),
-            position=particle.origin_position.typed_names[-1],
+        attachment = self._destructor_attachment(
+            destructor_quality, particle.origin_position, scope
         )
         # A destructor is checked exactly once: only at the action that knows the
         # state of every position it requires. Resolve the state of all required positions
@@ -1123,18 +1018,31 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         )
         for resolved_requirement in resolved_requirements:
-            self._emit_destructor_requirement_violation(
-                resolved_requirement=resolved_requirement,
-                attachment=attachment,
-                destroyed_position_local=destruction_contract.destroyed_position_local,
-                destroying_definition=destroying_definition,
-                destroy_target_name=particle_position.source_form_in_universe(
-                    self._enclosing_fqun
-                ),
-                destroy_target_origin_at=particle.origin_position.location,
-                diagnostic_location=diagnostic_location,
-                auto_destruction_local_position_name=auto_destruction_local_position_name,
-                containing_definition_name=containing_definition_name,
+            occupancy = resolved_requirement.occupancy
+            required_state = resolved_requirement.requirement.required_state
+            empty_violation = (
+                required_state == action_contract.PositionOccupancyState.EMPTY
+                and occupancy.state == action_contract.PositionOccupancyState.OCCUPIED
+            )
+            occupied_violation = (
+                required_state == action_contract.PositionOccupancyState.OCCUPIED
+                and occupancy.state == action_contract.PositionOccupancyState.EMPTY
+            )
+            if not (empty_violation or occupied_violation):
+                continue
+            self._diagnostics.append(
+                requirement_violation.contract_destructor(
+                    propagated_requirement=resolved_requirement.requirement,
+                    resolved_position=resolved_requirement.position,
+                    occupancy=occupancy,
+                    definition=self._definition,
+                    destroying_definition=destroying_definition,
+                    destruction_contract=destruction_contract,
+                    particle_position=particle_position,
+                    particle=particle,
+                    acting_position=acting_position,
+                    attachment=attachment,
+                )
             )
         return True
 
@@ -1143,12 +1051,28 @@ class DefinitionPostorderValidator(abc.ABC):
         destructor_quality: ast.GlobalTypedNameReference,
         origin_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
-    ) -> ast.SourceLocation:
+    ) -> ast.SourceLocation | None:
         """Locate the constraint that puts the destructor on the particle created in origin_position.
 
         Prefers a constraint that is the destructor itself, then one that
-        transitively implies it.
+        transitively implies it. Returns None when this scope cannot see a
+        constraint that attaches the destructor: the particle arrived through a
+        position whose constraints do not assign it, or it was created in a
+        callee's local position this scope cannot resolve. In those cases no
+        attachment step is shown.
         """
+        last_origin_element = origin_position.typed_names[-1]
+        if (
+            isinstance(last_origin_element, ast.LocalTypedNameReference)
+            and len(origin_position.typed_names) == 1
+            and not scope.is_defined_local(origin_position)
+        ):
+            # The particle was created in a callee's local position, which this
+            # scope cannot resolve. Per the TODO on
+            # _get_transitive_required_qualities, the particle's carried
+            # qualities don't yet record where each one was attached, so we
+            # cannot point at the attaching constraint and show no attachment.
+            return None
         direct, _ = self._get_direct_required_qualities(origin_position, scope)
         if direct is not None:
             # A constraint that directly declares the destructor is the clearest
@@ -1159,12 +1083,23 @@ class DefinitionPostorderValidator(abc.ABC):
             for root in direct:
                 if self._quality_implies(root, destructor_quality.full_typed_name):
                     return root.location
-        # The particle only carries this loaded destructor because the origin
-        # position's constraints (directly or via implication) put it there, so a
-        # loop above always returns. Reaching here means that invariant broke.
-        raise ValueError(
-            f"destructor {destructor_quality.full_typed_name} is on the particle "
-            + f"but no constraint on {origin_position.source_chained_name} attaches it"
+        return None
+
+    def _destructor_attachment(
+        self,
+        destructor_quality: ast.GlobalTypedNameReference,
+        origin_position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> action_contract.DestructorAttachment | None:
+        """Build the destructor's attachment, or None when this scope cannot see it."""
+        attached_at = self._destructor_attachment_location(
+            destructor_quality, origin_position, scope
+        )
+        if attached_at is None:
+            return None
+        return action_contract.DestructorAttachment(
+            attached_at=attached_at,
+            position=origin_position.typed_names[-1],
         )
 
     def _quality_implies(
@@ -1242,120 +1177,6 @@ class DefinitionPostorderValidator(abc.ABC):
             position=required_position,
             occupancy=occupancy,
         )
-
-    def _emit_destructor_requirement_violation(
-        self,
-        *,
-        resolved_requirement: _ResolvedRequirement,
-        attachment: action_contract.DestructorAttachment,
-        destroyed_position_local: ast.PositionReference,
-        destroying_definition: ast.ActionDefinition,
-        destroy_target_name: str,
-        destroy_target_origin_at: ast.SourceLocation,
-        diagnostic_location: ast.SourceLocation,
-        auto_destruction_local_position_name: str | None,
-        containing_definition_name: str | None,
-    ):
-        """Emit a diagnostic if this requirement's known state violates it."""
-        required_state = resolved_requirement.requirement.required_state
-        empty_violation = (
-            required_state == action_contract.PositionOccupancyState.EMPTY
-            and resolved_requirement.occupancy.state
-            == action_contract.PositionOccupancyState.OCCUPIED
-        )
-        occupied_violation = (
-            required_state == action_contract.PositionOccupancyState.OCCUPIED
-            and resolved_requirement.occupancy.state
-            == action_contract.PositionOccupancyState.EMPTY
-        )
-        if not (empty_violation or occupied_violation):
-            return
-        cascade_req = action_contract.PositionRequirement(
-            required_state=required_state,
-            inferred_from=destroyed_position_local,
-            enclosing_quality=destroying_definition,
-            propagated_from=resolved_requirement.requirement,
-            destructor_attachment=attachment,
-        )
-        self._append_destructor_diagnostic(
-            required_empty=empty_violation,
-            filled_at=resolved_requirement.occupancy.filled_at,
-            location=diagnostic_location,
-            destructor_name=cascade_req.root_cause_quality_name(),
-            destroy_target_name=destroy_target_name,
-            destroy_target_origin_at=destroy_target_origin_at,
-            position_name=resolved_requirement.position.source_form_in_universe(
-                self._enclosing_fqun
-            ),
-            propagation_chain=cascade_req.propagation_chain(),
-            auto_destruction_local_position_name=auto_destruction_local_position_name,
-            containing_definition_name=containing_definition_name,
-        )
-
-    def _emit_action_violation(
-        self,
-        *,
-        acting_on_position: ast.PositionReference,
-        position_name: str,
-        occupant: particle_tracker.ParticleInfo | None,
-        action_name: str,
-        propagation_chain: list[action_contract.PropagationStep],
-    ):
-        """Append an action-requirement violation diagnostic."""
-        if occupant is not None:
-            self._diagnostics.append(
-                diagnostics.ActionRequiresEmptyPositionDiagnostic(
-                    location=acting_on_position.location,
-                    action_name=action_name,
-                    position_name=position_name,
-                    propagation_chain=propagation_chain,
-                    filled_at=occupant.last_position.location,
-                )
-            )
-        else:
-            self._diagnostics.append(
-                diagnostics.ActionRequiresOccupiedPositionDiagnostic(
-                    location=acting_on_position.location,
-                    action_name=action_name,
-                    position_name=position_name,
-                    propagation_chain=propagation_chain,
-                )
-            )
-
-    def _emit_init_block_violation(
-        self,
-        *,
-        acting_on_position: ast.PositionReference,
-        position_name: str,
-        occupant: particle_tracker.ParticleInfo | None,
-        init_block_position_name: str,
-        propagation_chain: list[action_contract.PropagationStep],
-    ):
-        """Append a position-init-block requirement violation diagnostic."""
-        create_target_name = acting_on_position.source_form_in_universe(
-            self._enclosing_fqun
-        )
-        if occupant is not None:
-            self._diagnostics.append(
-                diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic(
-                    location=acting_on_position.location,
-                    create_target_name=create_target_name,
-                    init_block_position_name=init_block_position_name,
-                    position_name=position_name,
-                    propagation_chain=propagation_chain,
-                    filled_at=occupant.last_position.location,
-                )
-            )
-        else:
-            self._diagnostics.append(
-                diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic(
-                    location=acting_on_position.location,
-                    create_target_name=create_target_name,
-                    init_block_position_name=init_block_position_name,
-                    position_name=position_name,
-                    propagation_chain=propagation_chain,
-                )
-            )
 
     def _analyze_statements(
         self,
@@ -1705,7 +1526,9 @@ class DefinitionPostorderValidator(abc.ABC):
             # Local position inside an action — look up the parent action's
             # interface position definition. Chain validation guarantees the
             # parent is a global action reference whose definition exists and
-            # contains this interface position.
+            # contains this interface position. A bare local from another scope
+            # has no parent action here; the only caller that can hold one,
+            # _destructor_attachment_location, filters it out before this point.
             parent = typing.cast(
                 "ast.GlobalTypedNameReference", position.typed_names[-2]
             )
@@ -1733,6 +1556,12 @@ class DefinitionPostorderValidator(abc.ABC):
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
     ) -> tuple[ast.GlobalTypedNameReference, ...]:
+        # TODO: This flattens the qualities into a list, discarding the tree of
+        # which constraint attached each one — directly, or transitively through
+        # which implying quality. Recording that structure here and carrying it
+        # on ParticleInfo.qualities would let _destructor_attachment_location
+        # resolve the attachment for a particle a callee created in a local
+        # position, which the destroying scope can no longer look up.
         direct, cache_key = self._get_direct_required_qualities(position, scope)
         if direct is None:
             return ()

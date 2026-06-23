@@ -15,6 +15,7 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
     assert_propagation_chain,
 )
 
+_TEST = "action<my.domain.com:my_lib:/test>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"
 _P = "position<my.domain.com:my_lib:/p>"
@@ -71,21 +72,28 @@ def test_init_block_occupied_propagates_to_action_caller_via_interface_position(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::action</inner>::position<iface>::position</q>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _INNER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
             "enclosing_quality_name": _INNER,
@@ -157,21 +165,28 @@ def test_init_block_occupied_propagates_via_implied_position(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied_pos>::position</q>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _INNER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
             "enclosing_quality_name": _INNER,
@@ -254,20 +269,27 @@ def test_init_block_occupied_propagates_via_implied_action(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name == "position<box>::position</carrier>::position</q>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _INNER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
@@ -343,22 +365,31 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].create_target_name == "position<box>"
-    assert all_diags[0].init_block_position_name == _OUTER_P
+    assert (
+        all_diags[0].runner_description
+        == "the Position Initialization Block of '" + _OUTER_P + "'"
+    )
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::position</something>::position</r>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER_P,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
             "enclosing_quality_name": _OUTER_P,
@@ -440,21 +471,28 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 88
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</inner>::position<iface>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _INNER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
@@ -466,20 +504,29 @@ def test_init_block_occupied_propagates_via_local_with_parent_from_caller(
     )
     assert isinstance(
         all_diags[1],
-        diagnostics.ActionRequiresOccupiedPositionDiagnostic,
+        diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 12
     assert all_diags[1].location.end_column == 88
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].action_name == _INNER
+    assert all_diags[1].runner_description == "'" + _INNER + "'"
+    assert all_diags[1].required_empty is False
     assert (
         all_diags[1].position_name
         == "position<outer_box>::action</inner>::position<iface>::position</box_target>::position</q>"
     )
     assert_propagation_chain(
         all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _INNER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
             "enclosing_quality_name": _INNER,
@@ -542,22 +589,31 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].create_target_name == "position<box>"
-    assert all_diags[0].init_block_position_name == _P
+    assert (
+        all_diags[0].runner_description
+        == "the Position Initialization Block of '" + _P + "'"
+    )
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::action</implied_action>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _P,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _P,
@@ -621,19 +677,28 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].create_target_name == "position<box>"
-    assert all_diags[0].init_block_position_name == _P
+    assert (
+        all_diags[0].runner_description
+        == "the Position Initialization Block of '" + _P + "'"
+    )
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</q>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _P,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _P,

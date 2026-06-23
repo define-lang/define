@@ -82,17 +82,34 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert all_diags[0].runner_description == f"'{_OUTER}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -181,20 +198,34 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert all_diags[0].runner_description == f"'{_OUTER}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<extra>"
     )
-    assert all_diags[0].filled_at.line == 13
-    assert all_diags[0].filled_at.column == 30
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<extra>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OUTER,
@@ -284,17 +315,31 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert diag.action_name == "action<my.domain.com:my_lib:/outer>"
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<trigger_pos>::action</inner>::position<extra>"
     )
-    assert diag.filled_at.line == 18
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<trigger_pos>::action</inner>::position<extra>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 19,
+            "column": 49,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OUTER,
@@ -375,20 +420,34 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 15
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>"
     )
-    assert diag.filled_at.line == 14
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -485,20 +544,34 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 16
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>"
     )
-    assert diag.filled_at.line == 15
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</intermediate>::position</child>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -611,20 +684,34 @@ def test_complex_chain_interaction_iface(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 18
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
     )
-    assert diag.filled_at.line == 17
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -708,17 +795,34 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _OUTER
+    assert all_diags[0].runner_description == f"'{_OUTER}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied>::action</inner>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -802,17 +906,34 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _OUTER
+    assert all_diags[0].runner_description == f"'{_OUTER}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box>::position</implied>::action</inner>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -904,20 +1025,34 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 15
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::position</implied>::position</child>::action</inner>::position<item>"
     )
-    assert diag.filled_at.line == 14
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>::position</child>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -1017,20 +1152,34 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 16
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>"
     )
-    assert diag.filled_at.line == 15
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>::position</intermediate>::position</child>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -1146,20 +1295,34 @@ def test_complex_chain_interaction_implied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 18
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>"
     )
-    assert diag.filled_at.line == 17
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>::position</child>::position</grand>::position</great>::position</double>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -1302,17 +1465,26 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresOccupiedPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is False
     assert (
         diag.position_name
         == "position<box>::action</outer>::position<source>::action</inner>::position<input>"
     )
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OUTER,
@@ -1388,17 +1560,34 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _OUTER
+    assert all_diags[0].runner_description == f"'{_OUTER}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
@@ -1553,17 +1742,26 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresOccupiedPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is False
     assert (
         diag.position_name
         == "position<box>::position</implied_a>::action</inner>::position<input>"
     )
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OUTER,

@@ -318,23 +318,57 @@ def test_auto_destruction_failing_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert diag.destroy_target_name == "position<box>"
-    assert diag.destroy_target_origin_at.line == 11
-    assert diag.destroy_target_origin_at.column == 30
-    assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name == "position<box>::action</destructor_empty>::position<item>"
     )
-    assert diag.filled_at.line == 12
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 8,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _TEST,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -344,8 +378,6 @@ def test_auto_destruction_failing_empty_requirement(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert diag.auto_destruction_local_position_name == "position<box>"
-    assert diag.containing_definition_name == _TEST
 
 
 def test_auto_destruction_failing_occupied_requirement(
@@ -387,18 +419,47 @@ def test_auto_destruction_failing_occupied_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestructorRequiresOccupiedPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.destructor_name == _DESTRUCTOR
-    assert diag.destroy_target_name == "position<box>"
-    assert diag.destroy_target_origin_at.line == 11
-    assert diag.destroy_target_origin_at.column == 30
-    assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_DESTRUCTOR}'"
+    assert diag.required_empty is False
     assert diag.position_name == "position<box>::action</destructor>::position<item>"
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 8,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _TEST,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR,
@@ -408,8 +469,6 @@ def test_auto_destruction_failing_occupied_requirement(
             "file_path": "destructor.dfn",
         },
     )
-    assert diag.auto_destruction_local_position_name == "position<box>"
-    assert diag.containing_definition_name == _TEST
 
 
 def test_init_block_auto_destruction_failing_requirement(
@@ -436,23 +495,57 @@ def test_init_block_auto_destruction_failing_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 8
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert diag.destroy_target_name == "position<box>"
-    assert diag.destroy_target_origin_at.line == 8
-    assert diag.destroy_target_origin_at.column == 30
-    assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name == "position<box>::action</destructor_empty>::position<item>"
     )
-    assert diag.filled_at.line == 9
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 5,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 9,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _TEST_POS,
+            "line": 8,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST_POS,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 8,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -462,8 +555,6 @@ def test_init_block_auto_destruction_failing_requirement(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert diag.auto_destruction_local_position_name == "position<box>"
-    assert diag.containing_definition_name == _TEST_POS
 
 
 def test_auto_destruction_failing_in_reverse_definition_order(
@@ -502,24 +593,58 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     # Diagnostics are sorted by source location, so box_a (line 16) precedes
     # box_b (line 18) even though box_b is destroyed first.
     box_a_diag = all_diags[0]
-    assert isinstance(box_a_diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert isinstance(box_a_diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert box_a_diag.location.line == 16
     assert box_a_diag.location.column == 30
     assert box_a_diag.location.file_path == PurePosixPath("test.dfn")
-    assert box_a_diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert box_a_diag.destroy_target_name == "position<box_a>"
-    assert box_a_diag.destroy_target_origin_at.line == 16
-    assert box_a_diag.destroy_target_origin_at.column == 30
-    assert box_a_diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert box_a_diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert box_a_diag.required_empty is True
     assert (
         box_a_diag.position_name
         == "position<box_a>::action</destructor_empty>::position<item>"
     )
-    assert box_a_diag.filled_at.line == 17
-    assert box_a_diag.filled_at.column == 30
-    assert box_a_diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         box_a_diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<box_a>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 8,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box_a>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box_a>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<box_a>",
+            "triggered_quality_name": _TEST,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -529,28 +654,60 @@ def test_auto_destruction_failing_in_reverse_definition_order(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert box_a_diag.auto_destruction_local_position_name == "position<box_a>"
-    assert box_a_diag.containing_definition_name == _TEST
 
     box_b_diag = all_diags[1]
-    assert isinstance(box_b_diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert isinstance(box_b_diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert box_b_diag.location.line == 18
     assert box_b_diag.location.column == 30
     assert box_b_diag.location.file_path == PurePosixPath("test.dfn")
-    assert box_b_diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert box_b_diag.destroy_target_name == "position<box_b>"
-    assert box_b_diag.destroy_target_origin_at.line == 18
-    assert box_b_diag.destroy_target_origin_at.column == 30
-    assert box_b_diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert box_b_diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert box_b_diag.required_empty is True
     assert (
         box_b_diag.position_name
         == "position<box_b>::action</destructor_empty>::position<item>"
     )
-    assert box_b_diag.filled_at.line == 19
-    assert box_b_diag.filled_at.column == 30
-    assert box_b_diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         box_b_diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<box_b>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 13,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box_b>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box_b>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<box_b>",
+            "triggered_quality_name": _TEST,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -560,8 +717,6 @@ def test_auto_destruction_failing_in_reverse_definition_order(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert box_b_diag.auto_destruction_local_position_name == "position<box_b>"
-    assert box_b_diag.containing_definition_name == _TEST
 
 
 def test_cascade_child_auto_destruction_failing_requirement(
@@ -599,25 +754,57 @@ def test_cascade_child_auto_destruction_failing_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
-    # The diagnostic location is where position<box> (the auto-destroyed local) was last filled.
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert diag.destroy_target_name == "position<box>::position</child_q>"
-    # Origin is where the cascaded child particle was created.
-    assert diag.destroy_target_origin_at.line == 12
-    assert diag.destroy_target_origin_at.column == 30
-    assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.required_empty is True
     assert diag.position_name == (
         "position<box>::position</child_q>::action</destructor_empty>::position<item>"
     )
-    assert diag.filled_at.line == 13
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child_q>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 3,
+            "column": 20,
+            "file_path": "child_q.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::position</child_q>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</child_q>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _TEST,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -627,8 +814,6 @@ def test_cascade_child_auto_destruction_failing_requirement(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert diag.auto_destruction_local_position_name == "position<box>"
-    assert diag.containing_definition_name == _TEST
 
 
 def test_interface_to_local_auto_destruction_failing_requirement(
@@ -663,26 +848,58 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
-    # The diagnostic location is the move target: where position<local> got its particle.
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 16
     assert diag.location.column == 52
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert diag.destroy_target_name == "position<local>"
-    # Origin is the move source: where the caller-passed particle first came from.
-    assert diag.destroy_target_origin_at.line == 16
-    assert diag.destroy_target_origin_at.column == 30
-    assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<local>::action</destructor_empty>::position<item>"
     )
-    assert diag.filled_at.line == 17
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 4,
+            "column": 24,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<local>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<local>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<local>",
+            "triggered_quality_name": _TEST,
+            "line": 16,
+            "column": 52,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 16,
+            "column": 52,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -692,8 +909,6 @@ def test_interface_to_local_auto_destruction_failing_requirement(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert diag.auto_destruction_local_position_name == "position<local>"
-    assert diag.containing_definition_name == _TEST
 
 
 def test_implied_to_local_auto_destruction_failing_requirement(
@@ -731,27 +946,58 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
-    # The diagnostic location is the move target: where position<local> got its particle.
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 12
     assert diag.location.column == 54
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.destructor_name == _DESTRUCTOR_EMPTY
-    assert diag.destroy_target_name == "position<local>"
-    # Origin is the move source (the implied position) where the caller-passed
-    # particle first came from.
-    assert diag.destroy_target_origin_at.line == 12
-    assert diag.destroy_target_origin_at.column == 30
-    assert diag.destroy_target_origin_at.file_path == PurePosixPath("test.dfn")
+    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.required_empty is True
     assert (
         diag.position_name
         == "position<local>::action</destructor_empty>::position<item>"
     )
-    assert diag.filled_at.line == 13
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/implied_q>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 3,
+            "column": 20,
+            "file_path": "implied_q.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<local>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<local>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<local>",
+            "triggered_quality_name": _TEST,
+            "line": 12,
+            "column": 54,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 12,
+            "column": 54,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _DESTRUCTOR_EMPTY,
@@ -761,8 +1007,6 @@ def test_implied_to_local_auto_destruction_failing_requirement(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert diag.auto_destruction_local_position_name == "position<local>"
-    assert diag.containing_definition_name == _TEST
 
 
 def test_destructor_requirement_propagates_to_caller_via_interface(
@@ -815,20 +1059,42 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 14
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _INNER
+    assert diag.runner_description == f"'{_INNER}'"
+    assert diag.required_empty is True
     assert diag.position_name == (
         "position<box>::action</inner>::position<incoming>"
         "::action</destructor_empty>::position<item>"
     )
-    assert diag.filled_at.line == 13
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</inner>::position<incoming>::action</destructor_empty>::position<item>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _INNER,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR_EMPTY,
+            "line": 4,
+            "column": 24,
+            "file_path": "inner.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _INNER,

@@ -499,24 +499,36 @@ def test_parent_and_child_implied_init_blocks_conflict(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(
-        diag, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_empty is True
+    assert (
+        diag.runner_description
+        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/implier>'"
     )
-    assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/implier>"
     assert diag.position_name == "position<box>::position</implied>"
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.end_line == 11
     assert diag.location.end_column == 43
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.filled_at.line == 3
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.end_line == 3
-    assert diag.filled_at.end_column == 48
-    assert diag.filled_at.file_path == PurePosixPath("implied.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "position<my.domain.com:my_lib:/implier>",
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>",
+            "triggered_quality_name": None,
+            "line": 3,
+            "column": 30,
+            "file_path": "implied.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/implier>",
@@ -571,13 +583,11 @@ def test_two_different_implier_init_blocks_conflict(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(
-        diag, diagnostics.PositionInitBlockRequiresEmptyPositionDiagnostic
-    )
-    assert diag.create_target_name == "position<box>"
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_empty is True
     assert (
-        diag.init_block_position_name
-        == "position<my.domain.com:my_lib:/second_implier>"
+        diag.runner_description
+        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/second_implier>'"
     )
     assert diag.position_name == "position<box>::position</implied>"
     assert diag.location.line == 12
@@ -585,13 +595,24 @@ def test_two_different_implier_init_blocks_conflict(
     assert diag.location.end_line == 12
     assert diag.location.end_column == 43
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.filled_at.line == 4
-    assert diag.filled_at.column == 30
-    assert diag.filled_at.end_line == 4
-    assert diag.filled_at.end_column == 48
-    assert diag.filled_at.file_path == PurePosixPath("first_implier.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "position<my.domain.com:my_lib:/second_implier>",
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</implied>",
+            "triggered_quality_name": None,
+            "line": 4,
+            "column": 30,
+            "file_path": "first_implier.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/second_implier>",
@@ -694,11 +715,12 @@ def test_sibling_init_block_empty_guarantee_violates_later_occupied_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(
-        diag, diagnostics.PositionInitBlockRequiresOccupiedPositionDiagnostic
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_empty is False
+    assert (
+        diag.runner_description
+        == "the Position Initialization Block of 'position<my.domain.com:my_lib:/requirer>'"
     )
-    assert diag.create_target_name == "position<box>"
-    assert diag.init_block_position_name == "position<my.domain.com:my_lib:/requirer>"
     assert diag.position_name == "position<box>::position</emptier>"
     assert diag.location.line == 11
     assert diag.location.column == 30
@@ -707,6 +729,14 @@ def test_sibling_init_block_empty_guarantee_violates_later_occupied_requirement(
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.INIT_BLOCK_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "position<my.domain.com:my_lib:/requirer>",
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/requirer>",

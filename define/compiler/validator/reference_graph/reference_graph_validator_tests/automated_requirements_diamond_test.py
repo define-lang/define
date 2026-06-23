@@ -128,7 +128,7 @@ def test_diamond_one_path_violates_empty_requirement(
     """/shared requires position<item> empty.
 
     /test pre-fills position<item> through /act_b's path but not through
-    /act_c's path. Only one ActionRequiresEmptyPositionDiagnostic appears,
+    /act_c's path. Only one requirement-violation diagnostic appears,
     for /act_b's instance. This proves B::/shared and C::/shared are
     independent instances.
     """
@@ -167,8 +167,9 @@ def test_diamond_one_path_violates_empty_requirement(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].action_name == _ACT_B
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].runner_description == f"'{_ACT_B}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
@@ -184,7 +185,7 @@ def test_diamond_other_path_violates_empty_requirement(
     """/shared requires position<item> empty.
 
     /test pre-fills position<item> through /act_c's path but not through
-    /act_b's path. Only one ActionRequiresEmptyPositionDiagnostic appears,
+    /act_b's path. Only one requirement-violation diagnostic appears,
     for /act_c's instance. A->B->D succeeds while A->C->D fails.
     """
     result = validate_project_with_reference_graph(
@@ -222,8 +223,9 @@ def test_diamond_other_path_violates_empty_requirement(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
-    assert all_diags[0].action_name == _ACT_C
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].runner_description == f"'{_ACT_C}'"
+    assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -318,10 +320,9 @@ def test_diamond_occupied_requirement_independent_per_path(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].action_name == _ACT_C
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].runner_description == f"'{_ACT_C}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -331,6 +332,14 @@ def test_diamond_occupied_requirement_independent_per_path(
     assert all_diags[0].location.column == 30
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _ACT_C,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _ACT_C,
@@ -406,7 +415,7 @@ def test_diamond_one_path_violates_occupied_requirement(
     """/shared requires position<item> occupied.
 
     /test fills position<item> for /act_b's path but not for /act_c's path.
-    One ActionRequiresOccupiedPositionDiagnostic for the /act_c path at /test.
+    One requirement-violation diagnostic for the /act_c path at /test.
     """
     result = validate_project_with_reference_graph(
         {
@@ -443,10 +452,9 @@ def test_diamond_one_path_violates_occupied_requirement(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].action_name == _ACT_C
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].runner_description == f"'{_ACT_C}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -456,6 +464,14 @@ def test_diamond_one_path_violates_occupied_requirement(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _ACT_C,
+            "line": 22,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _ACT_C,
@@ -483,7 +499,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     """/shared requires position<item> occupied.
 
     Neither /act_b nor /act_c fill position<item>, and /test doesn't fill it
-    for either path. Two ActionRequiresOccupiedPositionDiagnostics at /test.
+    for either path. Two requirement-violation diagnostics at /test.
     """
     result = validate_project_with_reference_graph(
         {
@@ -519,10 +535,9 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[0].action_name == _ACT_B
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].runner_description == f"'{_ACT_B}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box_b>::action</act_b>::position<gateway>::action</shared>::position<item>"
@@ -532,6 +547,14 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _ACT_B,
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _ACT_B,
@@ -549,10 +572,9 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert isinstance(
-        all_diags[1], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
-    assert all_diags[1].action_name == _ACT_C
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].runner_description == f"'{_ACT_C}'"
+    assert all_diags[1].required_empty is False
     assert (
         all_diags[1].position_name
         == "position<box_c>::action</act_c>::position<gateway>::action</shared>::position<item>"
@@ -562,6 +584,14 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _ACT_C,
+            "line": 21,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _ACT_C,

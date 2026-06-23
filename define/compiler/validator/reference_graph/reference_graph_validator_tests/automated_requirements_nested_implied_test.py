@@ -117,16 +117,23 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</x>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
@@ -175,17 +182,31 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ActionRequiresEmptyPositionDiagnostic)
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::position</x>"
-    assert all_diags[0].filled_at.line == 12
-    assert all_diags[0].filled_at.column == 30
-    assert all_diags[0].filled_at.file_path == PurePosixPath("test.dfn")
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::position</x>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
@@ -268,19 +289,26 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
         == "position<box>::position</x>::action</inner>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
@@ -341,16 +369,23 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    assert isinstance(
-        all_diags[0], diagnostics.ActionRequiresOccupiedPositionDiagnostic
-    )
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
-    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].runner_description == f"'{_INNER}'"
+    assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
     assert_propagation_chain(
         all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _INNER,
+            "line": 8,
+            "column": 30,
+            "file_path": "middle.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
@@ -424,14 +459,23 @@ def test_doubly_nested_implied_action_chain_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.ActionRequiresOccupiedPositionDiagnostic)
+    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.required_empty is False
     assert diag.position_name == "position<box>::action</inner>::position<extra>"
     assert_propagation_chain(
         diag,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OUTER,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,

@@ -92,9 +92,11 @@ def test_move_from_empty_interface_position_with_inferred_at():
 
 
 def test_formatted_propagation_chain_with_single_root_step():
-    diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
+    diagnostic = diagnostics.InferredRequirementViolationDiagnostic(
         location=_LOC,
-        action_name="action<my.domain.com:my_lib:/other>",
+        required_empty=True,
+        runner_name="action<my.domain.com:my_lib:/other>",
+        runner_name_type=ast.NameType.ACTION,
         position_name="position<box>::action</other>::position<item>",
         propagation_chain=[
             action_contract.PropagationStep(
@@ -110,20 +112,21 @@ def test_formatted_propagation_chain_with_single_root_step():
                 triggered_quality_name=None,
             ),
         ],
-        filled_at=_LOC,
     )
 
     assert diagnostic.formatted_propagation_chain == (
-        "This requirement happens because:\n"
-        "  'action<my.domain.com:my_lib:/other>' inferred this requirement:\n"
+        "This error happens because:\n"
+        "  'action<my.domain.com:my_lib:/other>' infers this requirement:\n"
         '    File "other.dfn", line 7, column 37'
     )
 
 
 def test_formatted_propagation_chain_with_multi_step_trigger_chain():
-    diagnostic = diagnostics.ActionRequiresEmptyPositionDiagnostic(
+    diagnostic = diagnostics.InferredRequirementViolationDiagnostic(
         location=_LOC,
-        action_name="action<my.domain.com:my_lib:/inner>",
+        required_empty=True,
+        runner_name="action<my.domain.com:my_lib:/inner>",
+        runner_name_type=ast.NameType.ACTION,
         position_name="position<box>::action</outer>::position<iface>::action</inner>::position<item>",
         propagation_chain=[
             action_contract.PropagationStep(
@@ -163,17 +166,16 @@ def test_formatted_propagation_chain_with_multi_step_trigger_chain():
                 triggered_quality_name=None,
             ),
         ],
-        filled_at=_LOC,
     )
 
     assert diagnostic.formatted_propagation_chain == (
-        "This requirement happens because:\n"
+        "This error happens because:\n"
         "  'action<my.domain.com:my_lib:/outer>' triggers"
         " 'action<my.domain.com:my_lib:/middle>':\n"
         '    File "outer.dfn", line 11, column 37\n'
         "  'action<my.domain.com:my_lib:/middle>' triggers"
         " 'action<my.domain.com:my_lib:/inner>':\n"
         '    File "middle.dfn", line 11, column 37\n'
-        "  'action<my.domain.com:my_lib:/inner>' inferred this requirement:\n"
+        "  'action<my.domain.com:my_lib:/inner>' infers this requirement:\n"
         '    File "inner.dfn", line 7, column 37'
     )
