@@ -18,7 +18,7 @@ from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
-_OUTER_IMPLIED2 = "position<my.domain.com:my_lib:/outer_implied2>"
+_OUTER_IMPLIED = "action<my.domain.com:my_lib:/outer_implied>"
 _TRIGGERED_BY_OUTER_IMPLIED = "action<my.domain.com:my_lib:/triggered_by_outer_implied>"
 _DO_NOTHING = "action<my.domain.com:my_lib:/do_nothing>"
 _EMPTY_P2 = "action<my.domain.com:my_lib:/empty_p2>"
@@ -72,21 +72,24 @@ _FILES = {
         "    }\n"
         "}\n"
     ),
-    "outer_implied1.dfn": (
-        "define the potential position<my.domain.com:my_lib:/outer_implied1> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the action</d1>.\n"
-        "        it has the position</p1>.\n"
-        "        it has the position</p2>.\n"
-        "    }\n"
-        "}\n"
-    ),
-    "outer_implied2.dfn": (
-        "define the potential position<my.domain.com:my_lib:/outer_implied2> {\n"
-        "    it also assigns the position</outer_implied1>.\n"
+    # outer_implied's interface position knows d1 (but not d2), so it is the
+    # first definition that hides d1 once it moves the particle on to
+    # triggered_by_outer_implied, which knows neither destructor.
+    "outer_implied.dfn": (
+        "define the potential action<my.domain.com:my_lib:/outer_implied> {\n"
         "    it also assigns the action</triggered_by_outer_implied>.\n"
-        "    after it is assigned {\n"
-        "        move the particle in position</outer_implied1> to action</triggered_by_outer_implied>::position<trigger_pos>.\n"
+        "    define the position<incoming> {\n"
+        "        it may only contain particles where {\n"
+        "            it has the action</d1>.\n"
+        "            it has the position</p1>.\n"
+        "            it has the position</p2>.\n"
+        "        }\n"
+        "    }\n"
+        "    define the position<run>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    } and it does {\n"
+        "        move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.\n"
         "    }\n"
         "}\n"
     ),
@@ -174,17 +177,19 @@ _FILES = {
         "    }\n"
         "}\n"
     ),
+    # /outer moves the carrier out of holder::iface (where it can still see d2)
+    # into outer_implied::incoming (which hides d2), so /outer is the first
+    # caller that must verify d2. It then triggers outer_implied.
     "outer.dfn": (
         "define the potential action<my.domain.com:my_lib:/outer> {\n"
         "    it also assigns the action</holder>.\n"
-        "    it also assigns the position</outer_implied1>.\n"
-        "    it also assigns the position</outer_implied2>.\n"
+        "    it also assigns the action</outer_implied>.\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
-        "        move the particle in action</holder>::position<iface> to position</outer_implied1>.\n"
-        "        create a particle in position</outer_implied2>.\n"
+        "        move the particle in action</holder>::position<iface> to action</outer_implied>::position<incoming>.\n"
+        "        create a particle in action</outer_implied>::position<run>.\n"
         "    }\n"
         "}\n"
     ),
@@ -207,8 +212,8 @@ _FILES = {
 # TODO: This currently fails: the Destruction Contract path collapses every
 # intermediate trigger hop between the verifying definition and the actual
 # destruction, so the emitted chain jumps straight from
-# 'outer_implied2 triggers triggered_by_outer_implied' to
-# 'do_destruction destroys a particle', omitting the do_nothing / empty_p2 /
+# 'outer triggers outer_implied' to 'do_destruction destroys a particle',
+# omitting the triggered_by_outer_implied / do_nothing / empty_p2 /
 # before_destructor hops. This test pins the full, execution-ordered chain that
 # the contract path should produce (mirroring ordinary requirement propagation).
 @pytest.mark.xfail(
@@ -220,20 +225,19 @@ def test_destruction_contract_traces_every_trigger_hop(
 ):
     result = validate_project_with_reference_graph(_FILES)
     # Per the Destruction Contract rules, each destructor is verified by the first
-    # caller up the stack that knows it is on the particle: d1 by outer_implied2's
-    # init block (which sees the particle through outer_implied1), and d2 by
-    # /outer (which moved the particle out of holder::iface). So both destructors
-    # must fire (do_destruction -> d1 and do_destruction -> d2), and /outer must
-    # record the init-block edge (outer -> outer_implied2).
+    # caller up the stack that knows it is on the particle: d1 by outer_implied
+    # (whose incoming position declares it), and d2 by /outer (which moved the
+    # particle out of holder::iface). So both destructors must fire
+    # (do_destruction -> d1 and do_destruction -> d2).
     assert result.action_call_graph.edges() == [
         (_BEFORE_DESTRUCTOR, _DO_DESTRUCTION),
         (_DO_DESTRUCTION, _D1),
+        (_DO_DESTRUCTION, _D2),
         (_EMPTY_P2, _BEFORE_DESTRUCTOR),
         (_DO_NOTHING, _EMPTY_P2),
         (_TRIGGERED_BY_OUTER_IMPLIED, _DO_NOTHING),
-        (_OUTER_IMPLIED2, _TRIGGERED_BY_OUTER_IMPLIED),
-        (_OUTER, _OUTER_IMPLIED2),
-        (_DO_DESTRUCTION, _D2),
+        (_OUTER_IMPLIED, _TRIGGERED_BY_OUTER_IMPLIED),
+        (_OUTER, _OUTER_IMPLIED),
         (_TEST, _OUTER),
     ]
     all_diags = result.program_result.all_diagnostics
@@ -248,23 +252,22 @@ def test_destruction_contract_traces_every_trigger_hop(
     d2_diag = by_state[False]
     d1_diag = by_state[True]
 
-    # d1 is hidden from every trigger position below outer_implied1, so its
-    # contract is verified at outer_implied2's init block (the first caller that
-    # knows d1). The full chain must trace all four trigger hops down to
-    # 'do_destruction'.
-    assert d1_diag.format(_FILES["outer_implied2.dfn"].splitlines()) == textwrap.dedent("""\
-        File "outer_implied2.dfn", line 5, column 59
-                move the particle in position</outer_implied1> to action</triggered_by_outer_implied>::position<trigger_pos>.
-                                                                  ^
+    # d1 is hidden from every trigger position below outer_implied::incoming, so
+    # its contract is verified at outer_implied (the first caller that knows d1).
+    # The full chain must trace all four trigger hops down to 'do_destruction'.
+    assert d1_diag.format(_FILES["outer_implied.dfn"].splitlines()) == textwrap.dedent("""\
+        File "outer_implied.dfn", line 14, column 52
+                move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
+                                                           ^
         'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be empty before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs, and it is not empty.
 
         This error happens because:
-          the destructor 'action<my.domain.com:my_lib:/d1>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/outer_implied1>':
-            File "outer_implied1.dfn", line 3, column 20
+          the destructor 'action<my.domain.com:my_lib:/d1>' is attached to the particle by a constraint on 'position<incoming>':
+            File "outer_implied.dfn", line 5, column 24
           the particle in 'action</triggered_by_outer_implied>::position<trigger_pos>' is originally created here:
-            File "outer_implied2.dfn", line 5, column 30
-          'position<my.domain.com:my_lib:/outer_implied2>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
-            File "outer_implied2.dfn", line 5, column 59
+            File "outer_implied.dfn", line 14, column 30
+          'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
+            File "outer_implied.dfn", line 14, column 52
           'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' is filled here:
             File "triggered_by_outer_implied.dfn", line 12, column 30
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
@@ -283,23 +286,23 @@ def test_destruction_contract_traces_every_trigger_hop(
     # d2 is invisible everywhere below holder::iface, so the first caller that
     # knows it is /outer (which moved the particle out of holder::iface). d2 must
     # therefore be verified at /outer, with the attachment traced back to the
-    # holder::iface constraint and the chain running through /outer's init-block
-    # trigger and on down to 'do_destruction'.
+    # holder::iface constraint and the chain running through every trigger hop
+    # down to 'do_destruction'.
     assert d2_diag.format(_FILES["outer.dfn"].splitlines()) == textwrap.dedent("""\
-        File "outer.dfn", line 10, column 30
-                create a particle in position</outer_implied2>.
+        File "outer.dfn", line 9, column 30
+                create a particle in action</outer_implied>::position<run>.
                                      ^
-        'position</outer_implied1>::position</p2>' must be occupied before the Position Initialization Block of 'position<my.domain.com:my_lib:/outer_implied2>' runs, and it is not occupied.
+        'action</outer_implied>::position<incoming>::position</p2>' must be occupied before 'action<my.domain.com:my_lib:/outer_implied>' runs, and it is not occupied.
 
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/d2>' is attached to the particle by a constraint on 'position<iface>':
             File "holder.dfn", line 5, column 24
-          the particle in 'position</outer_implied1>' is originally created here:
+          the particle in 'action</outer_implied>::position<incoming>' is originally created here:
+            File "outer.dfn", line 8, column 30
+          'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/outer_implied>':
             File "outer.dfn", line 9, column 30
-          'action<my.domain.com:my_lib:/outer>' creates a particle that runs the Position Initialization Block of 'position<my.domain.com:my_lib:/outer_implied2>':
-            File "outer.dfn", line 10, column 30
-          'position<my.domain.com:my_lib:/outer_implied2>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
-            File "outer_implied2.dfn", line 5, column 59
+          'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
+            File "outer_implied.dfn", line 14, column 52
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
             File "triggered_by_outer_implied.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
