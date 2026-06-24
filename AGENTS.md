@@ -193,3 +193,15 @@ BUILD file generator.
 
 - Run `uv run tools/update_toolchains.py` to update Go SDK version, buf
   toolchain (version + SHA256), node version, and multitool (ruff, uv).
+
+## Compute Performance and Memory Efficiency
+
+- We are building a compiler. It could involve millions of lines of code, a
+  million or more files, and an action call graph with a fan-in or fan-out of
+  tens of thousands of actions in a complex tree. It is designed for writing
+  real production code in a large enterprise setting.
+- Algorithms we implement must have a computational complexity that is actually
+  feasible for the scale we intend to work at.
+- We need to be very careful with memory efficiency in every place in the
+  compiler so that we do not require more memory than a computer has in order to
+  compile a very large program on a single machine.
