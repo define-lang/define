@@ -1,0 +1,13 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    after it is assigned {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</parent_destructor>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</child>.
+        destroy the particle in position<box>.
+    }
+}

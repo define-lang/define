@@ -8,24 +8,8 @@ filegroup(
 
 # --- Type-checking ---
 
-# The codegen emits invalid attribute accesses when an action's body or a
-# position's init block references an implied quality directly. The
-# generated files in these testdata directories are kept for shape coverage
-# and as regression points, but they cannot pass pyright until the codegen
-# bug is fixed.
 pyright_test(
     name = "pyright_test",
-    srcs = glob(
-        ["**/*.py"],
-        exclude = [
-            "action_implies_position/**",
-            "action_with_implied_qualities_and_multi_iface/**",
-            "action_with_multiple_implications/**",
-            "caller_overrides_implied_guarantee/**",
-            "destroy_from_implied/**",
-            "init_block_consumes_implied_action_interface/**",
-            "position_implies_action/**",
-        ],
-    ),
+    srcs = glob(["**/*.py"]),
     deps = ["//define/runtime:literal"],
 )

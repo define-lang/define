@@ -3,6 +3,9 @@
 
 class {{ definition.class_name }}(literal.Action):
     typed_name: ClassVar[str] = "{{ definition.typed_name }}"
+{% if definition.is_destructor %}
+    is_destructor: ClassVar[bool] = True
+{% endif %}
 {% if definition.implied_qualities %}
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
 {% for class_reference in definition.implied_qualities %}
@@ -30,7 +33,11 @@ class {{ definition.class_name }}(literal.Action):
 {% endif %}
 {% endfor %}
             ],
+{% if definition.is_destructor %}
+            trigger_position_name=None,
+{% else %}
             trigger_position_name="{{ definition.trigger_position_name }}",
+{% endif %}
         )
 
     @override

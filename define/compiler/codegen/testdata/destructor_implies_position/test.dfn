@@ -1,0 +1,12 @@
+define the potential position<my.domain.com:my_lib:/test> {
+    after it is assigned {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</marker>.
+        destroy the particle in position<box>.
+    }
+}

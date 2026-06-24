@@ -68,6 +68,7 @@ class ActionDefinitionGenerator:
             module_name=module_name,
             interface_positions=interface_positions,
             trigger_position_name=trigger_position_name,
+            is_destructor=self._definition.is_destructor,
             body_statements=block_gen.generate(),
             implied_qualities=implied_qualities,
         )
