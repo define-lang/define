@@ -75,6 +75,9 @@ class Quality:
         """Return the particle this quality is assigned to."""
         return self._on_particle
 
+    def before_parent_particle_destroyed(self):
+        """Run when the owning particle is being destroyed. Override in subclasses."""
+
 
 class Particle:
     """A particle in the Define universe."""
@@ -129,6 +132,11 @@ class Particle:
     def quality_types(self) -> frozenset[type[Quality]]:
         """Return the set of constraint types satisfied by this particle."""
         return frozenset(type(q) for q in self._assigned_qualities)
+
+    def destroy(self):
+        """Run the Destruction Cascade, unassigning qualities in reverse order."""
+        for quality in reversed(self._assigned_qualities):
+            quality.before_parent_particle_destroyed()
 
 
 class Position(ABC):
@@ -186,9 +194,10 @@ class Position(ABC):
         destination._after_particle_arrived()
 
     def destroy_particle(self):
-        """Destroy the particle in this position."""
+        """Destroy the particle in this position, running the Destruction Cascade."""
         if self._particle is None:
             raise NoParticleError(self.name)
+        self._particle.destroy()
         self._particle = None
 
     def _after_particle_arrived(self):  # noqa: B027
@@ -207,6 +216,11 @@ class GlobalPosition(Quality, Position):
 
     def after_assigned(self):
         """Run when this position is assigned as a quality. Override in subclasses."""
+
+    @override
+    def before_parent_particle_destroyed(self):
+        if self.has_particle:
+            self.destroy_particle()
 
 
 class LocalPosition(Position):
@@ -236,6 +250,8 @@ class LocalPosition(Position):
 
 class Action(Quality):
     """A globally-defined action with a class-level typed name."""
+
+    is_destructor: ClassVar[bool] = False
 
     def __init__(
         self,
@@ -267,6 +283,14 @@ class Action(Quality):
 
     def execute(self):
         """Execute the action body. Override in subclasses."""
+
+    @override
+    def before_parent_particle_destroyed(self):
+        if self.is_destructor:
+            self.execute()
+        for interface_position in reversed(self._interface_positions.values()):
+            if interface_position.has_particle:
+                interface_position.destroy_particle()
 
 
 class InterfacePosition(LocalPosition):

@@ -315,6 +315,292 @@ class TestDestroyParticle:
 
         assert pos.has_particle
 
+    def test_destroy_fires_destructor(self):
+        executed: list[str] = []
+
+        class MyDestructor(literal.Action):
+            typed_name: ClassVar[str] = "action<dtor>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                executed.append("destroyed")
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        pos.particle.assign_action(MyDestructor)
+
+        pos.destroy_particle()
+
+        assert executed == ["destroyed"]
+
+    def test_destroy_does_not_fire_non_destructor(self):
+        executed: list[str] = []
+
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<act>"
+
+            @override
+            def execute(self):
+                executed.append("ran")
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        pos.particle.assign_action(MyAction)
+
+        pos.destroy_particle()
+
+        assert executed == []
+
+    def test_destroy_cascades_into_child_position_destructor(self):
+        executed: list[str] = []
+
+        class ChildDestructor(literal.Action):
+            typed_name: ClassVar[str] = "action<child_dtor>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                executed.append("child destroyed")
+
+        class ChildPosition(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<child_pos>"
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        pos.particle.assign_position(ChildPosition)
+        child_position = pos.particle.get_position("position<child_pos>")
+        child_position.create_particle()
+        child_position.particle.assign_action(ChildDestructor)
+
+        pos.destroy_particle()
+
+        assert executed == ["child destroyed"]
+
+    def test_destroy_unassigns_qualities_in_reverse_order(self):
+        order: list[str] = []
+
+        class ChildDtorA(literal.Action):
+            typed_name: ClassVar[str] = "action<child_a>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("A")
+
+        class DtorB(literal.Action):
+            typed_name: ClassVar[str] = "action<b>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("B")
+
+        class ChildDtorC(literal.Action):
+            typed_name: ClassVar[str] = "action<child_c>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("C")
+
+        class PosA(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<a>"
+
+        class PosC(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<c>"
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        particle = pos.particle
+        particle.assign_position(PosA)
+        particle.get_position("position<a>").create_particle()
+        particle.get_position("position<a>").particle.assign_action(ChildDtorA)
+        particle.assign_action(DtorB)
+        particle.assign_position(PosC)
+        particle.get_position("position<c>").create_particle()
+        particle.get_position("position<c>").particle.assign_action(ChildDtorC)
+
+        pos.destroy_particle()
+
+        assert order == ["C", "B", "A"]
+
+    def test_destroy_tears_down_interface_positions_in_reverse_order(self):
+        order: list[str] = []
+
+        class IfaceDtor1(literal.Action):
+            typed_name: ClassVar[str] = "action<iface_dtor1>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("iface1")
+
+        class IfaceDtor2(literal.Action):
+            typed_name: ClassVar[str] = "action<iface_dtor2>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("iface2")
+
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<act>"
+
+            def __init__(self, on_particle: literal.Particle):
+                super().__init__(
+                    on_particle,
+                    interface_positions=[
+                        literal.InterfacePosition("position</iface1>"),
+                        literal.InterfacePosition("position</iface2>"),
+                    ],
+                )
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        pos.particle.assign_action(MyAction)
+        action = pos.particle.get_action("action<act>")
+        iface1 = action.get_interface_position("position</iface1>")
+        iface1.create_particle()
+        iface1.particle.assign_action(IfaceDtor1)
+        iface2 = action.get_interface_position("position</iface2>")
+        iface2.create_particle()
+        iface2.particle.assign_action(IfaceDtor2)
+
+        pos.destroy_particle()
+
+        assert order == ["iface2", "iface1"]
+
+    def test_destroy_with_empty_interface_position_does_not_raise(self):
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<act>"
+
+            def __init__(self, on_particle: literal.Particle):
+                super().__init__(
+                    on_particle,
+                    interface_positions=[
+                        literal.InterfacePosition("position</iface>"),
+                    ],
+                )
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        pos.particle.assign_action(MyAction)
+
+        pos.destroy_particle()
+
+        assert not pos.has_particle
+
+    def test_destructor_runs_before_its_interface_positions_destroyed(self):
+        order: list[str] = []
+
+        class IfaceChildDtor(literal.Action):
+            typed_name: ClassVar[str] = "action<iface_child>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("iface_torn_down")
+
+        class MyDestructor(literal.Action):
+            typed_name: ClassVar[str] = "action<dtor>"
+            is_destructor: ClassVar[bool] = True
+
+            def __init__(self, on_particle: literal.Particle):
+                super().__init__(
+                    on_particle,
+                    interface_positions=[
+                        literal.InterfacePosition("position</iface>"),
+                    ],
+                )
+
+            @override
+            def execute(self):
+                order.append("destructor")
+
+        pos = literal.LocalPosition("test")
+        pos.create_particle()
+        pos.particle.assign_action(MyDestructor)
+        action = pos.particle.get_action("action<dtor>")
+        iface = action.get_interface_position("position</iface>")
+        iface.create_particle()
+        iface.particle.assign_action(IfaceChildDtor)
+
+        pos.destroy_particle()
+
+        assert order == ["destructor", "iface_torn_down"]
+
+    def test_destroy_cascades_depth_first_not_breadth_first(self):
+        order: list[str] = []
+
+        class ChildPos(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<child>"
+
+        class Left(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<left>"
+
+        class Right(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<right>"
+
+        class DtorL1(literal.Action):
+            typed_name: ClassVar[str] = "action<l1>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("L1")
+
+        class DtorL2(literal.Action):
+            typed_name: ClassVar[str] = "action<l2>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("L2")
+
+        class DtorR1(literal.Action):
+            typed_name: ClassVar[str] = "action<r1>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("R1")
+
+        class DtorR2(literal.Action):
+            typed_name: ClassVar[str] = "action<r2>"
+            is_destructor: ClassVar[bool] = True
+
+            @override
+            def execute(self):
+                order.append("R2")
+
+        root = literal.LocalPosition("test")
+        root.create_particle()
+        particle = root.particle
+
+        particle.assign_position(Left)
+        left = particle.get_position("position<left>")
+        left.create_particle()
+        left.particle.assign_position(ChildPos)
+        left.particle.get_position("position<child>").create_particle()
+        left.particle.get_position("position<child>").particle.assign_action(DtorL2)
+        left.particle.assign_action(DtorL1)
+
+        particle.assign_position(Right)
+        right = particle.get_position("position<right>")
+        right.create_particle()
+        right.particle.assign_position(ChildPos)
+        right.particle.get_position("position<child>").create_particle()
+        right.particle.get_position("position<child>").particle.assign_action(DtorR2)
+        right.particle.assign_action(DtorR1)
+
+        root.destroy_particle()
+
+        # The right branch is fully destroyed (R1 then its grandchild R2) before
+        # the left branch is touched. Breadth-first would instead interleave the
+        # branches as ["R1", "L1", "R2", "L2"].
+        assert order == ["R1", "R2", "L1", "L2"]
+
 
 class TestStart:
     def test_start_triggers_after_assigned(self):
