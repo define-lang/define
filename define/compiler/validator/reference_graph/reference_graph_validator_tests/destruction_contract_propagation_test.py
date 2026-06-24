@@ -21,6 +21,7 @@ _DELETE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_destructor>"
 _PARENT_DESTRUCTOR = "action<my.domain.com:my_lib:/parent_destructor>"
 _CHILD_DESTRUCTOR = "action<my.domain.com:my_lib:/child_destructor>"
 _D = "action<my.domain.com:my_lib:/d>"
+_CALLEE = "action<my.domain.com:my_lib:/callee>"
 
 
 def test_inner_kept_child_occupied_requirement_satisfied(
@@ -617,6 +618,14 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
             "file_path": "test.dfn",
         },
         {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 14,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _DESTRUCTOR,
@@ -830,6 +839,112 @@ def test_init_block_attached_destructor_requirement_satisfied(
     ]
 
 
+def test_init_block_resolves_implied_action_destruction_contract(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """A position init block triggers an implied action that destroys a particle the action is blind to; the init block resolves the destructor it knows through the action's Destruction Contract, reporting its unmet requirement."""
+    result = validate_project_with_reference_graph(
+        {
+            "item.dfn": "define the potential position<my.domain.com:my_lib:/item>.\n",
+            "d.dfn": (
+                "define the potential action<my.domain.com:my_lib:/d> {\n"
+                "    it also assigns the position</item>.\n"
+                "    it happens when {\n"
+                "        this particle is being destroyed.\n"
+                "    } and it does {\n"
+                "        define the position<_holder>.\n"
+                "        move the particle in position</item> to position<_holder>.\n"
+                "        move the particle in position<_holder> to position</item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "callee.dfn": (
+                "define the potential action<my.domain.com:my_lib:/callee> {\n"
+                "    define the position<incoming>.\n"
+                "    it happens when {\n"
+                "        the position<incoming> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position<incoming>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</callee>.\n"
+                "    after it is assigned {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</d>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        move the particle in position<box> to action</callee>::position<incoming>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].runner_description == f"'{_CALLEE}'"
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.column == 47
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "action</callee>::position<incoming>::position</item>"
+    )
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _D,
+            "line": 6,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "action</callee>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 9,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _POS_TEST,
+            "triggered_quality_name": _CALLEE,
+            "line": 10,
+            "column": 47,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CALLEE,
+            "triggered_quality_name": _D,
+            "line": 6,
+            "column": 33,
+            "file_path": "callee.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _D,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "d.dfn",
+        },
+    )
+    assert result.action_call_graph.edges() == [
+        (_CALLEE, _D),
+        (_POS_TEST, _CALLEE),
+    ]
+
+
 def test_middle_knows_destructor_but_not_child_state_defers_to_owner_satisfied(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -1037,6 +1152,14 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
             "file_path": "test.dfn",
         },
         {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _DESTRUCTOR,
@@ -1221,17 +1344,17 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_DELETE_DESTRUCTOR}'"
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 19
-    assert all_diags[0].location.column == 51
+    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</file>"
     )
-    # The auto-destruction site (inner's local_box, inside inner) survives the
-    # re-record through mid.
+    # The chain traces every trigger hop (test -> mid -> inner) down to inner's
+    # block-end auto-destruction, just as an explicit destroy would.
     assert_propagation_chain(
         all_diags[0],
         {
@@ -1249,6 +1372,22 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "line": 18,
             "column": 30,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 20,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _INNER,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
         },
         {
             "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
@@ -1417,6 +1556,14 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
             "file_path": "test.dfn",
         },
         {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 14,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _CHILD_DESTRUCTOR,
@@ -1468,6 +1615,14 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
             "line": 21,
             "column": 30,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 14,
+            "column": 30,
+            "file_path": "mid.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,

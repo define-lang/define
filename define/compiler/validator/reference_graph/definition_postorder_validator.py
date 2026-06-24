@@ -105,6 +105,11 @@ class DefinitionPostorderValidator(abc.ABC):
     def _enclosing_fqun(self) -> ast.Fqun:
         return self._definition.typed_name.name_content.fqun
 
+    @property
+    def _records_destruction_contracts(self) -> bool:
+        """Whether this definition records Destruction Contracts for its callers."""
+        return True
+
     @cached_property
     def _tracker(self) -> particle_tracker.ParticleTracker:
         return particle_tracker.ParticleTracker()
@@ -377,7 +382,14 @@ class DefinitionPostorderValidator(abc.ABC):
             self._propagate_init_block_requirements(
                 position, init_block_contract, scope
             )
-            self._check_init_block_requirements(position, init_block_contract, scope)
+            # Only the init block's requirements are checked here, never its
+            # Destruction Contracts (unlike a triggered action, where
+            # _check_action_requirements also calls
+            # _check_destructor_requirements_from_contracts). A position init
+            # block can't possibly expose any: it always fully knows the
+            # destructor set of whatever it destroys, so it records none (see
+            # _records_destruction_contracts).
+            self._check_requirements(init_block_contract, position, position)
             self._tracker.apply_guarantees(
                 position,
                 init_block_contract.guarantees,
@@ -455,7 +467,7 @@ class DefinitionPostorderValidator(abc.ABC):
                         destructors,
                         is_auto_destruction=is_auto_destruction,
                     )
-        if particle.from_caller:
+        if particle.from_caller and self._records_destruction_contracts:
             self._destruction_contracts.append(
                 self._destruction_contract_for(
                     position,
@@ -640,19 +652,7 @@ class DefinitionPostorderValidator(abc.ABC):
             )
         self._check_requirements(contract, action_chain, particle.last_position)
         self._check_destructor_requirements_from_contracts(
-            contract, trigger_position, action_chain, scope
-        )
-
-    def _check_init_block_requirements(
-        self,
-        create_target: ast.PositionReference,
-        contract: action_contract.PositionInitBlockContract,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Check the init block's requirements and destruction contracts at the Create that assigns the position."""
-        self._check_requirements(contract, create_target, create_target)
-        self._check_destructor_requirements_from_contracts(
-            contract, create_target, create_target, scope
+            contract, action_chain, scope
         )
 
     def _check_requirements(
@@ -775,39 +775,47 @@ class DefinitionPostorderValidator(abc.ABC):
     def _check_destructor_requirements_from_contracts(
         self,
         contract: action_contract.ActionStatementsBlockContract,
-        acting_position: ast.PositionReference,
-        prefix_chain: ast.ChainedName,
+        action_chain: ast.ChainedName,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Verify caller-attached destructors that a triggered action's or init block's Destruction Contracts surfaced.
+        """Verify caller-attached destructors that a triggered action's Destruction Contracts surfaced.
+
+        Only action triggers reach this: a position init block exposes no
+        Destruction Contracts (see _analyze_position_definition).
 
         Args:
-            contract: The triggered action's or init block's contract, whose
+            contract: The triggered action's contract, whose
                 ``destruction_contracts`` are processed.
-            acting_position: The position whose filling drove this check (the
-                trigger position for an action, the Create target for an init
-                block); used as the location of any diagnostic emitted here.
-            prefix_chain: The names in ``acting_position`` up to the triggered
-                action (or the Create target for an init block). Each contract's
-                contracted positions are remapped into this caller via
-                ``in_caller(prefix_chain)``.
+            action_chain: The names up to and including the triggered action.
+                Each contract's contracted positions are remapped into this caller
+                via ``in_caller(action_chain)``.
             scope: This definition's scope, used to resolve the position
                 constraints that attach each destructor.
         """
+        # The hop recording that this definition triggered the action, used
+        # if its destruction contract has to be re-recorded and passed on to
+        # the caller action. Constructed once here for memory efficiency so it
+        # can be shared across mutliple destruction contracts as needed.
+        trigger_step = action_contract.PropagationStep(
+            location=action_chain.location,
+            kind=action_contract.PropagationKind.ACTION_TRIGGER,
+            enclosing_quality_name=self._definition.typed_name.source_typed_name,
+            triggered_quality_name=action_chain.typed_names[-1].full_typed_name,
+        )
         for destruction_contract in contract.destruction_contracts:
             self._check_one_destruction_contract(
-                destruction_contract, acting_position, prefix_chain, scope
+                destruction_contract, action_chain, trigger_step, scope
             )
 
     def _check_one_destruction_contract(
         self,
         destruction_contract: action_contract.DestructionContract,
-        acting_position: ast.PositionReference,
-        prefix_chain: ast.ChainedName,
+        action_chain: ast.ChainedName,
+        trigger_step: action_contract.PropagationStep,
         scope: scope_tracker.ScopeTracker,
     ):
         caller_particle_position = (
-            destruction_contract.destroyed_position_contracted.in_caller(prefix_chain)
+            destruction_contract.destroyed_position_contracted.in_caller(action_chain)
         )
         # The action's requirement check already handles missing or
         # unknown-state particles, so there is nothing more to verify here.
@@ -849,18 +857,19 @@ class DefinitionPostorderValidator(abc.ABC):
             caller_prefix_length=len(
                 caller_particle_position.canonical_chained_name_tuple
             ),
-            acting_position=acting_position,
+            trigger_step=trigger_step,
             scope=scope,
             merged_child_state=merged_child_state,
             created_in_this_action=created_in_this_action,
             newly_verified=newly_verified,
         )
-        if not created_in_this_action:
+        if not created_in_this_action and self._records_destruction_contracts:
             self._re_record_destruction_contract(
                 destruction_contract,
                 caller_particle,
                 merged_child_state,
                 newly_verified,
+                trigger_step,
             )
 
     def _re_record_destruction_contract(
@@ -869,10 +878,12 @@ class DefinitionPostorderValidator(abc.ABC):
         caller_particle: particle_tracker.ParticleInfo,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         newly_verified: list[ast.GlobalTypedNameReference],
+        trigger_step: action_contract.PropagationStep,
     ):
         # Carry the merged destruction-time picture and the destructors checked
         # so far upward; everything else describes the original destroyer and is
-        # fixed.
+        # fixed. This definition's trigger of the callee leads the trigger chain,
+        # since it runs before every hop already recorded below it.
         self._destruction_contracts.append(
             action_contract.DestructionContract(
                 destroyed_position_contracted=caller_particle.origin_position,
@@ -884,6 +895,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     *newly_verified,
                 ),
                 is_auto_destruction=destruction_contract.is_auto_destruction,
+                trigger_chain=(trigger_step, *destruction_contract.trigger_chain),
             )
         )
 
@@ -894,7 +906,7 @@ class DefinitionPostorderValidator(abc.ABC):
         destruction_contract: action_contract.DestructionContract,
         destroying_definition: ast.ActionDefinition | None,
         caller_prefix_length: int,
-        acting_position: ast.PositionReference,
+        trigger_step: action_contract.PropagationStep,
         scope: scope_tracker.ScopeTracker,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
@@ -923,7 +935,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     destruction_contract=destruction_contract,
                     destroying_definition=destroying_definition,
                     caller_prefix_length=caller_prefix_length,
-                    acting_position=acting_position,
+                    trigger_step=trigger_step,
                     scope=scope,
                     merged_child_state=merged_child_state,
                     created_in_this_action=created_in_this_action,
@@ -947,7 +959,7 @@ class DefinitionPostorderValidator(abc.ABC):
                         destruction_contract=destruction_contract,
                         destroying_definition=destroying_definition,
                         caller_prefix_length=caller_prefix_length,
-                        acting_position=acting_position,
+                        trigger_step=trigger_step,
                         scope=scope,
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
@@ -963,7 +975,7 @@ class DefinitionPostorderValidator(abc.ABC):
                         destruction_contract=destruction_contract,
                         destroying_definition=destroying_definition,
                         caller_prefix_length=caller_prefix_length,
-                        acting_position=acting_position,
+                        trigger_step=trigger_step,
                         scope=scope,
                         merged_child_state=merged_child_state,
                         created_in_this_action=created_in_this_action,
@@ -979,7 +991,7 @@ class DefinitionPostorderValidator(abc.ABC):
         destruction_contract: action_contract.DestructionContract,
         destroying_definition: ast.ActionDefinition | None,
         caller_prefix_length: int,
-        acting_position: ast.PositionReference,
+        trigger_step: action_contract.PropagationStep,
         scope: scope_tracker.ScopeTracker,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
@@ -1040,7 +1052,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     destruction_contract=destruction_contract,
                     particle_position=particle_position,
                     particle=particle,
-                    acting_position=acting_position,
+                    trigger_step=trigger_step,
                     attachment=attachment,
                 )
             )
@@ -1797,6 +1809,17 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 class PositionPostorderValidator(DefinitionPostorderValidator):
     """Validates a position definition during a DFS post-order walk."""
 
+    @property
+    @typing.override
+    def _records_destruction_contracts(self) -> bool:
+        # A position init block runs synchronously at creation, so any particle it
+        # destroys was either created in its own body (full state known) or reached
+        # through a contracted position whose constraint it fully sees -- a caller
+        # can never hand a richer particle into one of its contracted positions. So
+        # it always knows the complete destructor set of what it destroys and
+        # handles those destructors itself; nothing is left for a caller to verify.
+        return False
+
     @typing.override
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics and edges."""
@@ -1844,6 +1867,10 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
                 self._implied_quality_list,
                 self._inferred_requirements,
             ),
+            # Kept empty for a position init block by the
+            # _records_destruction_contracts guard. Exposing the real recorded
+            # list (rather than a literal []) keeps "records none" under test
+            # instead of hardcoded.
             destruction_contracts=self._destruction_contracts,
         )
 

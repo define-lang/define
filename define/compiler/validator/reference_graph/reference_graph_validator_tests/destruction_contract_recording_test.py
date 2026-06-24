@@ -276,12 +276,12 @@ def test_auto_destruction_records_contract_verified_by_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 19
-    assert all_diags[0].location.column == 51
+    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
-    # The auto-destruction happens inside mid, so the destructor runs directly.
-    assert all_diags[0].runner_description == f"'{_DELETE_DESTRUCTOR}'"
+    # /test triggers mid, whose block-end auto-destruction fires the destructor.
+    assert all_diags[0].runner_description == f"'{_MID}'"
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::position</file>"
@@ -301,6 +301,14 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
             "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },

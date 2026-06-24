@@ -1459,6 +1459,8 @@ def test_destruction_contract_requires_empty_format(
             File "test.dfn", line 19, column 30
           'position<box>::action</filler>::position<incoming>::position</p2>' is filled here:
             File "filler.dfn", line 17, column 30
+          'action<my.domain.com:my_lib:/filler>' triggers 'action<my.domain.com:my_lib:/close_file>':
+            File "filler.dfn", line 19, column 30
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d>':
             File "close_file.dfn", line 7, column 33
           'action<my.domain.com:my_lib:/d>' infers this requirement:
@@ -1532,16 +1534,18 @@ def test_destruction_contract_auto_destruction_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 19, column 51
-                move the particle in position<my_file> to position<box>::action</mid>::position<incoming>.
-                                                          ^
-        'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/delete_destructor>' runs, and it is not occupied.
+        File "test.dfn", line 20, column 30
+                create a particle in position<box>::action</mid>::position<run>.
+                                     ^
+        'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/mid>' runs, and it is not occupied.
 
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my_file>':
             File "test.dfn", line 14, column 28
           the particle in 'position<box>::action</mid>::position<incoming>' comes from here:
             File "test.dfn", line 18, column 30
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/mid>':
+            File "test.dfn", line 20, column 30
           the particle in 'position<local_box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/mid>':
             File "mid.dfn", line 11, column 9
           'action<my.domain.com:my_lib:/mid>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':

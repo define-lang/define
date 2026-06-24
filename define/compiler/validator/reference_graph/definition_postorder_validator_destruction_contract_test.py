@@ -51,6 +51,12 @@ def _destruction_contracts(source: str, action: str):
     ].destruction_contracts
 
 
+def _init_block_destruction_contracts(source: str, position: str):
+    return get_contracts(source)[
+        f"position<my.domain.com:my_lib:/{position}>"
+    ].destruction_contracts
+
+
 def _child_states(contract: action_contract.DestructionContract):
     # Occupancy state per child position; fill locations are covered by the
     # tracker snapshot test and the caller-verification diagnostic tests.
@@ -389,6 +395,49 @@ _OWNER_CREATES_AND_PASSES = (
 def test_owner_does_not_re_record():
     source = _CLOSE_BLIND + _OWNER_CREATES_AND_PASSES
     assert _destruction_contracts(source, "owner") == []
+
+
+def test_position_init_block_direct_destroy_records_no_contract():
+    # The same destroy in an action records a contract keyed on the implied origin
+    # (test_destroy_implied_position_keys_on_implied_origin). A position init block
+    # records none: it can never expose any, so it does not even build them.
+    source = (
+        "define the potential position<my.domain.com:my_lib:/slot>.\n"
+        "define the potential position<my.domain.com:my_lib:/p> {\n"
+        "    it also assigns the position</slot>.\n"
+        "    after it is assigned {\n"
+        "        destroy the particle in position</slot>.\n"
+        "    }\n"
+        "}\n"
+    )
+    assert _init_block_destruction_contracts(source, "p") == []
+
+
+def test_position_init_block_pass_through_records_no_contract():
+    # The init block triggers a blind closer that destroys a particle it passed
+    # in. An action in this position re-records the contract
+    # (test_pass_through_re_records_contract_with_carry_over_and_accumulation); a
+    # position init block re-records none.
+    source = (
+        _NOOP_D1
+        + _CLOSE_BLIND
+        + (
+            "define the potential position<my.domain.com:my_lib:/carrier> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the action</d1>.\n"
+            "    }\n"
+            "}\n"
+            "define the potential position<my.domain.com:my_lib:/p> {\n"
+            "    it also assigns the position</carrier>.\n"
+            "    it also assigns the action</close_file>.\n"
+            "    after it is assigned {\n"
+            "        move the particle in position</carrier> to action</close_file>::position<target>.\n"
+            "        create a particle in action</close_file>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        )
+    )
+    assert _init_block_destruction_contracts(source, "p") == []
 
 
 def test_auto_destructions_record_in_reverse_definition_order():

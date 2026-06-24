@@ -165,7 +165,7 @@ def contract_destructor(
     destruction_contract: action_contract.DestructionContract,
     particle_position: ast.PositionReference,
     particle: particle_tracker.ParticleInfo,
-    acting_position: ast.PositionReference,
+    trigger_step: action_contract.PropagationStep,
     attachment: action_contract.DestructorAttachment | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor surfaced via a Destruction Contract."""
@@ -190,14 +190,20 @@ def contract_destructor(
     leading_attachments, rest = _split_leading_attachments(
         cascade_req.propagation_chain()
     )
-    # The caller attaches the destructor and creates the particle, then triggers
-    # the action whose destruction (or auto-destruction) fires the destructor.
+    # The verifying definition's own trigger of the callee is the runner the
+    # requirement gates; it is the same step that would be prepended if this
+    # definition had instead carried the contract higher.
+    runner_name = trigger_step.triggered_quality_name
+    if runner_name is None:
+        raise ValueError(
+            "a Destruction Contract violation must name the triggered action"
+        )
+    # If the destroyer auto-destroyed the particle at its block's end, that
+    # happens after every trigger hop and just before the destructor fires (the
+    # same placement direct_destructor uses).
+    auto_step: list[action_contract.PropagationStep] = []
     if destruction_contract.is_auto_destruction:
-        # The particle is destroyed implicitly at the block's end, so the
-        # destructor itself is the runner the requirement gates.
-        runner_name = cascade_req.root_cause_quality_name()
-        diagnostic_location = particle.last_position.location
-        runner_step = _auto(
+        auto_step = _auto(
             _AutoDestruction(
                 local_position_name=destruction_contract.destroyed_position_local.source_form_in_universe(
                     enclosing_fqun
@@ -206,23 +212,6 @@ def contract_destructor(
                 location=destruction_contract.destroyed_position_local.location,
             )
         )
-    else:
-        diagnostic_location = acting_position.location
-        triggered_action = acting_position.get_last_action()
-        if triggered_action is None:
-            raise ValueError(
-                "an explicit Destruction Contract violation must name the"
-                + " triggered action"
-            )
-        runner_name = triggered_action.full_typed_name
-        runner_step = [
-            action_contract.PropagationStep(
-                location=diagnostic_location,
-                kind=action_contract.PropagationKind.ACTION_TRIGGER,
-                enclosing_quality_name=definition.typed_name.source_typed_name,
-                triggered_quality_name=runner_name,
-            )
-        ]
     steps = [
         *leading_attachments,
         action_contract.PropagationStep(
@@ -233,12 +222,14 @@ def contract_destructor(
             ),
             triggered_quality_name=None,
         ),
-        *runner_step,
+        trigger_step,
         *_fill(position_name, fill_at),
+        *destruction_contract.trigger_chain,
+        *auto_step,
         *rest,
     ]
     return _diagnostic(
-        location=diagnostic_location,
+        location=trigger_step.location,
         position_name=position_name,
         required_empty=required_empty,
         runner_name=runner_name,

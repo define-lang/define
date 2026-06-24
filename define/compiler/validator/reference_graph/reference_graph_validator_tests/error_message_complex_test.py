@@ -11,8 +11,6 @@ ordinary requirement propagation does.
 
 import textwrap
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 
@@ -209,17 +207,6 @@ _FILES = {
 }
 
 
-# TODO: This currently fails: the Destruction Contract path collapses every
-# intermediate trigger hop between the verifying definition and the actual
-# destruction, so the emitted chain jumps straight from
-# 'outer triggers outer_implied' to 'do_destruction destroys a particle',
-# omitting the triggered_by_outer_implied / do_nothing / empty_p2 /
-# before_destructor hops. This test pins the full, execution-ordered chain that
-# the contract path should produce (mirroring ordinary requirement propagation).
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract chain collapses intermediate trigger hops",
-)
 def test_destruction_contract_traces_every_trigger_hop(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

@@ -272,6 +272,12 @@ class DestructionContract:
     # True when destroyed_position_local was auto-destroyed at block end rather
     # than by an explicit destroy statement.
     is_auto_destruction: bool
+    # The trigger hops, in execution order, from the verifying definition's
+    # immediate callee down to the destroying action. One step is prepended each
+    # time the contract is re-recorded through a pass-through action that did not
+    # itself verify the destructor, so a destructor verified many hops above its
+    # destruction can render every hop in between.
+    trigger_chain: tuple[PropagationStep, ...] = ()
 
     @cached_property
     def verified_destructor_names(self) -> frozenset[str]:
