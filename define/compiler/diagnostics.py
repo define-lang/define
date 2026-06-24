@@ -780,8 +780,7 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
                 )
             case action_contract.PropagationKind.PARTICLE_ORIGIN:
                 return (
-                    f"the particle in '{step.enclosing_quality_name}' is originally"
-                    f" created here"
+                    f"the particle in '{step.enclosing_quality_name}' comes from here"
                 )
             case action_contract.PropagationKind.AUTO_DESTRUCTION:
                 return (

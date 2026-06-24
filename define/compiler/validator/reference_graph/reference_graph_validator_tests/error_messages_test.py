@@ -689,7 +689,7 @@ def test_destructor_requires_occupied_position_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-          the particle in 'position<box>::position</child_q>' is originally created here:
+          the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 17, column 30
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "test.dfn", line 19, column 33
@@ -757,7 +757,7 @@ def test_destructor_requires_empty_position_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-          the particle in 'position<box>::position</child_q>' is originally created here:
+          the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 17, column 30
           'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
             File "test.dfn", line 19, column 30
@@ -977,7 +977,7 @@ def test_auto_destruction_destructor_requires_empty_position_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-          the particle in 'position<box>::position</child_q>' is originally created here:
+          the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 17, column 30
           'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
             File "test.dfn", line 19, column 30
@@ -1048,7 +1048,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-          the particle in 'position<box>::position</child_q>' is originally created here:
+          the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 17, column 30
           the particle in 'position<box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>':
             File "test.dfn", line 18, column 51
@@ -1114,7 +1114,7 @@ def test_auto_destruction_in_position_init_block_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/destructor_empty>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-          the particle in 'position<box>::position</child_q>' is originally created here:
+          the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 14, column 30
           'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
             File "test.dfn", line 16, column 30
@@ -1355,7 +1355,7 @@ def test_destruction_contract_requires_occupied_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/delete_file_destructor>' is attached to the particle by a constraint on 'position<my_file>':
             File "test.dfn", line 14, column 28
-          the particle in 'position<box>::action</close_file>::position<target>' is originally created here:
+          the particle in 'position<box>::action</close_file>::position<target>' comes from here:
             File "test.dfn", line 18, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 20, column 30
@@ -1453,7 +1453,7 @@ def test_destruction_contract_requires_empty_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/d>' is attached to the particle by a constraint on 'position<my_file>':
             File "test.dfn", line 13, column 28
-          the particle in 'position<box>::action</filler>::position<incoming>' is originally created here:
+          the particle in 'position<box>::action</filler>::position<incoming>' comes from here:
             File "test.dfn", line 17, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/filler>':
             File "test.dfn", line 19, column 30
@@ -1540,7 +1540,7 @@ def test_destruction_contract_auto_destruction_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my_file>':
             File "test.dfn", line 14, column 28
-          the particle in 'position<box>::action</mid>::position<incoming>' is originally created here:
+          the particle in 'position<box>::action</mid>::position<incoming>' comes from here:
             File "test.dfn", line 18, column 30
           the particle in 'position<local_box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/mid>':
             File "mid.dfn", line 11, column 9
@@ -1620,7 +1620,7 @@ def test_destruction_contract_init_block_attacher_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/carrier>':
             File "carrier.dfn", line 4, column 20
-          the particle in 'position<box>::action</close_file>::position<target>' is originally created here:
+          the particle in 'position<box>::action</close_file>::position<target>' comes from here:
             File "test.dfn", line 10, column 30
           'position<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 12, column 30
@@ -1703,7 +1703,7 @@ def test_destruction_contract_cascade_child_format(
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/child_destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child>':
             File "child.dfn", line 3, column 20
-          the particle in 'position<box>::action</close_file>::position<target>::position</child>' is originally created here:
+          the particle in 'position<box>::action</close_file>::position<target>::position</child>' comes from here:
             File "test.dfn", line 18, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 20, column 30
