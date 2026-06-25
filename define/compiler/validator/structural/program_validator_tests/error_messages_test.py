@@ -3,6 +3,7 @@
 Follow program validator test authoring rules in program_validator_tests/AGENTS.md.
 """
 
+import textwrap
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -24,12 +25,11 @@ def test_reserved_universe_name_format():
     diags = results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        "line 1, column 31\n"
-        "define the potential position<standard:/path>.\n"
-        "                              ^\n"
-        "'standard' is a reserved universe name"
-    )
+    assert formatted == textwrap.dedent("""\
+        line 1, column 31
+        define the potential position<standard:/path>.
+                                      ^
+        'standard' is a reserved universe name""")
 
 
 def test_path_mismatch_format(validate_project: ValidateProject):
@@ -42,12 +42,11 @@ def test_path_mismatch_format(validate_project: ValidateProject):
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        'File "foo/bar.dfn", line 1, column 52\n'
-        "define the potential position<my.domain.com:my_lib:/wrong/path>.\n"
-        "                                                   ^\n"
-        "definition path '/wrong/path' does not match file path '/foo/bar'"
-    )
+    assert formatted == textwrap.dedent("""\
+        File "foo/bar.dfn", line 1, column 52
+        define the potential position<my.domain.com:my_lib:/wrong/path>.
+                                                           ^
+        definition path '/wrong/path' does not match file path '/foo/bar'""")
 
 
 def test_duplicate_definition_format():
@@ -63,13 +62,11 @@ def test_duplicate_definition_format():
     diags = results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        "line 2, column 1\n"
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "^\n"
-        "duplicate position definition for path '/same'; "
-        "first defined on line 1"
-    )
+    assert formatted == textwrap.dedent("""\
+        line 2, column 1
+        define the potential position<my.domain.com:my_lib:/same>.
+        ^
+        duplicate position definition for path '/same'; first defined on line 1""")
 
 
 def test_non_filesystem_diagnostics_have_no_file_name():
@@ -86,13 +83,11 @@ def test_non_filesystem_diagnostics_have_no_file_name():
     assert len(diags) == 1
     assert diags[0].location.file_path is None
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        "line 2, column 1\n"
-        "define the potential position<my.domain.com:my_lib:/same>.\n"
-        "^\n"
-        "duplicate position definition for path '/same'; "
-        "first defined on line 1"
-    )
+    assert formatted == textwrap.dedent("""\
+        line 2, column 1
+        define the potential position<my.domain.com:my_lib:/same>.
+        ^
+        duplicate position definition for path '/same'; first defined on line 1""")
 
 
 def test_move_to_same_position_format():
@@ -116,13 +111,13 @@ def test_move_to_same_position_format():
     diags = results[0].diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        "line 8, column 47\n"
-        "        move the particle in position<pos> to position<pos>.\n"
-        "                                              ^\n"
-        "source and destination cannot be identical when moving particles"
-        " ('position<pos>' is the name of both"
-        " the source and destination here)"
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        line 8, column 47
+                move the particle in position<pos> to position<pos>.
+                                                      ^
+        source and destination cannot be identical when moving particles ('position<pos>' is the name of both the source and destination here)""")
     )
 
 
@@ -162,15 +157,16 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     diags = test_result.diagnostics
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 10, column 74\n'
-        "        move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.\n"
-        "                                                                         ^\n"
-        "cannot move a particle\n"
-        "  from: position<local_pos>\n"
-        "    to: position<local_pos>::position</mid_pos>::position</end_pos>\n"
-        "because the source position defines the destination position"
-        " ('position<local_pos>' is the start of both positions)"
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 10, column 74
+                move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.
+                                                                                 ^
+        cannot move a particle
+          from: position<local_pos>
+            to: position<local_pos>::position</mid_pos>::position</end_pos>
+        because the source position defines the destination position ('position<local_pos>' is the start of both positions)""")
     )
 
 
@@ -205,14 +201,14 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     assert isinstance(diags[0].error, exceptions.SubRootFqunMismatchError)
 
     formatted = diags[0].format(source.splitlines())
-    assert formatted == (
-        'File "test.dfn", line 3, column 29\n'
-        + "        it has the position<mv:define-lang.org:child:/target>.\n"
-        + "                            ^\n"
-        + "an error occurred while loading the project configuration:\n"
-        + "Sub-root at 'lib' is configured as a dependency with universe "
-        + "'mv:define-lang.org:child' but the actual project root in that path "
-        + "says it has the universe name 'mv:define-lang.org:wrong_universe'"
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 3, column 29
+                it has the position<mv:define-lang.org:child:/target>.
+                                    ^
+        an error occurred while loading the project configuration:
+        Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'""")
     )
 
 
@@ -228,10 +224,12 @@ def test_not_project_root_error_message_for_project_root(
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, exceptions.NotProjectRootError)
-    assert str(error) == (
-        "The Define compiler must be run from a project root directory.\n"
-        "A project root is any directory containing .define/project/config.defcl.\n"
-        "For more information, see https://github.com/mkanat/define/define/docs/project-root.md"
+    assert (
+        str(error)
+        == textwrap.dedent("""\
+        The Define compiler must be run from a project root directory.
+        A project root is any directory containing .define/project/config.defcl.
+        For more information, see https://github.com/mkanat/define/define/docs/project-root.md""")
     )
 
 
@@ -259,11 +257,12 @@ def test_not_project_root_error_message_for_subroot(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert isinstance(diags[0].error, exceptions.NotProjectRootError)
-    assert str(diags[0].error) == (
-        "The referenced subroot (lib) is not a valid project root:"
-        " lib/.define/project/config.defcl not found.\n"
-        "A project root is any directory containing lib/.define/project/config.defcl.\n"
-        "For more information, see https://github.com/mkanat/define/define/docs/project-root.md"
+    assert (
+        str(diags[0].error)
+        == textwrap.dedent("""\
+        The referenced subroot (lib) is not a valid project root: lib/.define/project/config.defcl not found.
+        A project root is any directory containing lib/.define/project/config.defcl.
+        For more information, see https://github.com/mkanat/define/define/docs/project-root.md""")
     )
 
 
@@ -312,10 +311,10 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert isinstance(diags[0].error, exceptions.DuplicateFqunError)
-    assert str(diags[0].error) == (
-        "Universe 'mv:define-lang.org:parent' is already defined in"
-        " '.define/project/config.defcl'"
-        " and cannot be redefined in 'lib/nested/.define/project/config.defcl'"
+    assert (
+        str(diags[0].error)
+        == textwrap.dedent("""\
+        Universe 'mv:define-lang.org:parent' is already defined in '.define/project/config.defcl' and cannot be redefined in 'lib/nested/.define/project/config.defcl'""")
     )
 
 
@@ -371,8 +370,7 @@ def test_config_validation_error_message(
     assert len(results) == 1
     error = results[0].exception
     assert isinstance(error, exceptions.ConfigValidationError)
-    assert str(error) == (
-        'File ".define/project/config.defcl"\n'
-        "Invalid configuration:\n"
-        "  - project.universe_name: value is required"
-    )
+    assert str(error) == textwrap.dedent("""\
+        File ".define/project/config.defcl"
+        Invalid configuration:
+          - project.universe_name: value is required""")

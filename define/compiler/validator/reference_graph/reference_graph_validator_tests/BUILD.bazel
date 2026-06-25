@@ -479,13 +479,24 @@ py_test(
 )
 
 py_test(
-    name = "error_message_complex_test",
+    name = "error_messages_complex_test",
     size = "small",
-    srcs = ["error_message_complex_test.py"],
+    srcs = ["error_messages_complex_test.py"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "error_messages_destruction_test",
+    size = "small",
+    srcs = ["error_messages_destruction_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
     ],
 )
 
@@ -714,7 +725,8 @@ pyright_test(
         ":destructor_auto_test",
         ":destructor_cascade_test",
         ":destructor_triggering_test",
-        ":error_message_complex_test",
+        ":error_messages_complex_test",
+        ":error_messages_destruction_test",
         ":error_messages_test",
         ":implied_action_triggering_test",
         ":inferred_action_occupancy_test",
