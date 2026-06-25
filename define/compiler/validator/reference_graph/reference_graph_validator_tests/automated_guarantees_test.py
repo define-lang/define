@@ -2352,3 +2352,116 @@ def test_destroy_prunes_children_from_caller(
         == "position<box>::action</other>::position<item>"
     )
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
+
+
+def test_retriggering_same_action_reapplies_its_guarantee_over_a_later_body_change(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Triggering /inner fills out; the body empties out; re-triggering /inner re-fills out (the later guarantee wins), so a create there fails."""
+    result = validate_project_with_reference_graph(
+        {
+            "inner.dfn": (
+                "define the potential action<my.domain.com:my_lib:/inner> {\n"
+                "    define the position<t>.\n"
+                "    define the position<out>.\n"
+                "    it happens when {\n"
+                "        the position<t> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</inner>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</inner>::position<t>.\n"
+                "        destroy the particle in position<box>::action</inner>::position<out>.\n"
+                "        destroy the particle in position<box>::action</inner>::position<t>.\n"
+                "        create a particle in position<box>::action</inner>::position<t>.\n"
+                "        create a particle in position<box>::action</inner>::position<out>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diag.position_name == "position<box>::action</inner>::position<out>"
+    assert diag.location.line == 16
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")
+
+
+def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """Triggering /emptier then /filler, which give opposite guarantees on the same implied </shared>, leaves it occupied (the later /filler wins), so a create there fails."""
+    result = validate_project_with_reference_graph(
+        {
+            "shared.dfn": (
+                "define the potential position<my.domain.com:my_lib:/shared>.\n"
+            ),
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</shared>.\n"
+                "    define the position<trigger_f>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_f> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</shared>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "emptier.dfn": (
+                "define the potential action<my.domain.com:my_lib:/emptier> {\n"
+                "    it also assigns the position</shared>.\n"
+                "    define the position<trigger_e>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_e> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</shared>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the position</shared>.\n"
+                "            it has the action</filler>.\n"
+                "            it has the action</emptier>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</shared>.\n"
+                "        create a particle in position<box>::action</emptier>::position<trigger_e>.\n"
+                "        create a particle in position<box>::action</filler>::position<trigger_f>.\n"
+                "        create a particle in position<box>::position</shared>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diag = all_diags[0]
+    assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diag.position_name == "position<box>::position</shared>"
+    assert diag.location.line == 17
+    assert diag.location.column == 30
+    assert diag.location.file_path == PurePosixPath("test.dfn")

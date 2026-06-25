@@ -2,6 +2,8 @@
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -170,6 +172,113 @@ def test_move_out_and_back_produces_no_guarantees(
         },
     )
     assert_no_errors(result.program_result)
+
+
+def test_destructor_triggering_action_that_fills_a_contracted_position_is_forbidden(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<item>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position<item>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<box> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the action</other>.\n"
+                "        }\n"
+                "    }\n"
+                "    it happens when {\n"
+                "        this particle is being destroyed.\n"
+                "    } and it does {\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
+    assert all_diags[0].position_name == "position<item>"
+    assert isinstance(
+        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[1].location.line == 10
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</other>::position<trigger_pos>"
+    )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "A destructor that triggers an implied action which fills an implied"
+        " position is not forbidden."
+    ),
+)
+def test_destructor_triggering_implied_action_that_fills_an_implied_position_is_forbidden(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    result = validate_project_with_reference_graph(
+        {
+            "marker.dfn": "define the potential position<my.domain.com:my_lib:/marker>.\n",
+            "updater.dfn": (
+                "define the potential action<my.domain.com:my_lib:/updater> {\n"
+                "    it also assigns the position</marker>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</marker>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</updater>.\n"
+                "    it happens when {\n"
+                "        this particle is being destroyed.\n"
+                "    } and it does {\n"
+                "        create a particle in action</updater>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("updater.dfn")
+    assert all_diags[0].position_name == "position</marker>"
+    assert isinstance(
+        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[1].location.line == 6
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "action</updater>::position<trigger_pos>"
 
 
 def test_create_then_move_out_produces_no_guarantees(
