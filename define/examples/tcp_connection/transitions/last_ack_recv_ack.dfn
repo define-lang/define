@@ -1,0 +1,14 @@
+# LAST_ACK + receive ACK -> CLOSED. The connection is fully torn down.
+define the potential action<define-lang.org:tcp:/transitions/last_ack_recv_ack> {
+    it also assigns the position</states/last_ack>.
+    it also assigns the position</states/closed>.
+
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</states/last_ack> to position</states/closed>.
+        destroy the particle in position<run>.
+    }
+}

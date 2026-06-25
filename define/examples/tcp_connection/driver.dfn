@@ -1,0 +1,44 @@
+# Drives one connection through a full passive-open (server) lifecycle:
+#
+#   CLOSED -> LISTEN -> SYN_RECEIVED -> ESTABLISHED
+#          -> CLOSE_WAIT -> LAST_ACK -> CLOSED
+#
+# This is the main action of the example. It builds a connection particle that has
+# every state position and every transition used by this scenario, places the
+# token in CLOSED, then delivers each event by creating a particle in the matching
+# transition's <run> position, in lifecycle order.
+define the potential action<define-lang.org:tcp:/driver> {
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<conn> {
+            it may only contain particles where {
+                it has the action</transitions/closed_passive_open>.
+                it has the action</transitions/listen_recv_syn>.
+                it has the action</transitions/syn_received_recv_ack>.
+                it has the action</transitions/established_recv_fin>.
+                it has the action</transitions/close_wait_app_close>.
+                it has the action</transitions/last_ack_recv_ack>.
+            }
+        }
+        create a particle in position<conn>.
+
+        # Place the token in CLOSED.
+        create a particle in position<conn>::position</states/closed>.
+
+        # A peer connects: begin listening, receive its SYN, complete the
+        # handshake when its ACK arrives.
+        create a particle in position<conn>::action</transitions/closed_passive_open>::position<run>.
+        create a particle in position<conn>::action</transitions/listen_recv_syn>::position<run>.
+        create a particle in position<conn>::action</transitions/syn_received_recv_ack>::position<run>.
+
+        # The peer initiates teardown; we acknowledge, then close our own side.
+        create a particle in position<conn>::action</transitions/established_recv_fin>::position<run>.
+        create a particle in position<conn>::action</transitions/close_wait_app_close>::position<run>.
+        create a particle in position<conn>::action</transitions/last_ack_recv_ack>::position<run>.
+
+        # The connection is auto-destroyed at the end of the action.
+    }
+}

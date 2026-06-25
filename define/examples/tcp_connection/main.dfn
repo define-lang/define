@@ -1,0 +1,9 @@
+define the potential position<define-lang.org:tcp:/main> {
+    it may only contain particles where {
+        it has the action</driver>.
+    }
+    after it is assigned {
+        create a particle in position</main>.
+        create a particle in position</main>::action</driver>::position<run>.
+    }
+}

@@ -1,0 +1,14 @@
+# LISTEN + receive SYN -> SYN_RECEIVED.
+define the potential action<define-lang.org:tcp:/transitions/listen_recv_syn> {
+    it also assigns the position</states/listen>.
+    it also assigns the position</states/syn_received>.
+
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</states/listen> to position</states/syn_received>.
+        destroy the particle in position<run>.
+    }
+}

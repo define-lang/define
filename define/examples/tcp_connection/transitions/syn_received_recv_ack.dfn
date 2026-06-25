@@ -1,0 +1,14 @@
+# SYN_RECEIVED + receive ACK -> ESTABLISHED. The handshake completes.
+define the potential action<define-lang.org:tcp:/transitions/syn_received_recv_ack> {
+    it also assigns the position</states/syn_received>.
+    it also assigns the position</states/established>.
+
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</states/syn_received> to position</states/established>.
+        destroy the particle in position<run>.
+    }
+}

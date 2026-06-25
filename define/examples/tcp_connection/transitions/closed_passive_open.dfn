@@ -1,0 +1,18 @@
+# CLOSED + passive open -> LISTEN. A server begins listening.
+#
+# The states it connects are shared positions, reached by implying them. The
+# event that invokes this transition arrives as a particle in the local <run>
+# position; the action then moves the connection token from one state to the next.
+define the potential action<define-lang.org:tcp:/transitions/closed_passive_open> {
+    it also assigns the position</states/closed>.
+    it also assigns the position</states/listen>.
+
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</states/closed> to position</states/listen>.
+        destroy the particle in position<run>.
+    }
+}

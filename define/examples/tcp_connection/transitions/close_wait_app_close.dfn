@@ -1,0 +1,14 @@
+# CLOSE_WAIT + application close -> LAST_ACK. We close our own side.
+define the potential action<define-lang.org:tcp:/transitions/close_wait_app_close> {
+    it also assigns the position</states/close_wait>.
+    it also assigns the position</states/last_ack>.
+
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</states/close_wait> to position</states/last_ack>.
+        destroy the particle in position<run>.
+    }
+}

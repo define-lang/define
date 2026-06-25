@@ -1,0 +1,14 @@
+# ESTABLISHED + receive FIN -> CLOSE_WAIT. The peer is closing.
+define the potential action<define-lang.org:tcp:/transitions/established_recv_fin> {
+    it also assigns the position</states/established>.
+    it also assigns the position</states/close_wait>.
+
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position</states/established> to position</states/close_wait>.
+        destroy the particle in position<run>.
+    }
+}
