@@ -1493,6 +1493,16 @@ an action completing must use `wait until`.
 Upon completion, a destructor must leave all contracted positions in the state
 they were in when the action started.
 
+### Destructor Requirement Verification
+
+A destructor has [Automatic Action Requirements](#automatic-action-requirements)
+that work identically to how they work for any other action. This is what the
+compiler is verifying when it verifies a destructor.
+
+Each destructor's requirements are verified independently of every other
+destructor. It is not possible for one destructor to affect the requirements of
+another destructor on the same particle.
+
 ### Destruction Contracts
 
 When compiling any individual Action Statements Block, the compiler verifies
@@ -1535,15 +1545,14 @@ action in the call chain therefore maintains its own cumulative Child State,
 adding whatever it knows about the state of a child position immediately before
 the parent particle was destroyed.
 
-### Destructor Requirement Verification
+#### When Destructors in Contracts Are Verified
 
-A destructor has [Automatic Action Requirements](#automatic-action-requirements)
-that work identically to how they work for any other action. This is what the
-compiler is verifying when it verifies a destructor.
-
-Each destructor's requirements are verified independently of every other
-destructor. It is not possible for one destructor to affect the requirements of
-another destructor on the same particle.
+A destructor is verified as soon as the compiler knows the destructor is
+assigned to a particle and knows the state of all positions that destructor has
+[Automatic Action Requirements](#automatic-action-requirements) on. When the
+compiler is missing either of these pieces of information, it passes on any
+not-yet-verified destructor to an action's callers for verification, as part of
+the Destruction Contract.
 
 ## Starting Define Programs
 
