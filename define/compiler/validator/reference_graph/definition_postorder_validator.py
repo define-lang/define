@@ -372,13 +372,12 @@ class DefinitionPostorderValidator(abc.ABC):
             init_block_contract = self._position_contracts.get(quality)
             if init_block_contract is None:
                 continue
-            # TODO: Record an action-call-graph edge here from this definition to
-            # the position whose Position Initialization Block runs (source =
-            # self._definition.typed_name.source_typed_name, target =
-            # quality.full_typed_name), the way _check_trigger records one for an
-            # action trigger. Without it the call graph is disconnected at the
-            # init-block boundary: the position's own init-block edges have no
-            # incoming edge from the definition that ran them.
+            self._action_edges.append(
+                action_call_graph.ActionGraphEdge(
+                    source=self._definition.typed_name.source_typed_name,
+                    target=quality.full_typed_name,
+                )
+            )
             self._propagate_init_block_requirements(
                 position, init_block_contract, scope
             )

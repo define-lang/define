@@ -369,4 +369,7 @@ def test_destructor_in_init_block_checks_implied_requirement_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_P, _DESTRUCTOR)}
+    assert result.action_call_graph.unique_edges() == {
+        (_TEST, _P),
+        (_P, _DESTRUCTOR),
+    }

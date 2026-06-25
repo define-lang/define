@@ -521,7 +521,10 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.unique_edges() == {(_P, _DESTRUCTOR)}
+    assert result.action_call_graph.unique_edges() == {
+        (_TEST, _P),
+        (_P, _DESTRUCTOR),
+    }
 
 
 def test_callee_attached_destructor_requirement_verified_at_owning_caller(

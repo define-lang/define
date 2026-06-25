@@ -12,6 +12,7 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
+_MARKED = "position<my.domain.com:my_lib:/marked>"
 
 
 _DESTRUCTOR_NOOP = (
@@ -110,7 +111,10 @@ def test_destroy_fires_destructor_via_quality_implication(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.unique_edges() == {
+        (_TEST, _MARKED),
+        (_TEST, _DESTRUCTOR),
+    }
 
 
 def test_destroy_does_not_fire_non_destructor_action_quality(

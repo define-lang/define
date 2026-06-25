@@ -16,6 +16,7 @@ _OTHER = "action<my.domain.com:my_lib:/other>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
 _ACT_C = "action<my.domain.com:my_lib:/act_c>"
 _POS_TEST = "position<my.domain.com:my_lib:/test>"
+_POS_P = "position<my.domain.com:my_lib:/p>"
 
 
 class TestActionTriggering:
@@ -683,6 +684,41 @@ class TestPositionInitTriggering:
         assert_no_errors(result.program_result)
         assert _edge_pairs(result) == {(_POS_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _POS_TEST, _OTHER)
+
+    def test_constrained_position_init_block_records_edge(
+        self,
+        validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
+    ):
+        result = validate_project_with_reference_graph(
+            {
+                "p.dfn": (
+                    "define the potential position<my.domain.com:my_lib:/p> {\n"
+                    "    after it is assigned {\n"
+                    "        define the position<_noop>.\n"
+                    "        create a particle in position<_noop>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+                "test.dfn": (
+                    "define the potential action<my.domain.com:my_lib:/test> {\n"
+                    "    define the position<run>.\n"
+                    "    it happens when {\n"
+                    "        the position<run> has a particle.\n"
+                    "    } and it does {\n"
+                    "        define the position<box> {\n"
+                    "            it may only contain particles where {\n"
+                    "                it has the position</p>.\n"
+                    "            }\n"
+                    "        }\n"
+                    "        create a particle in position<box>.\n"
+                    "    }\n"
+                    "}\n"
+                ),
+            },
+        )
+        assert_no_errors(result.program_result)
+        assert _edge_pairs(result) == {(_TEST, _POS_P)}
+        assert_action_calls(result.action_call_graph, _TEST, _POS_P)
 
 
 class TestCircularDependencyTriggering:
