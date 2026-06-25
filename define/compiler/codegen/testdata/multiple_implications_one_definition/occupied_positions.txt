@@ -1,0 +1,4 @@
+position<my.domain.com:my_lib:/test>
+position<my.domain.com:my_lib:/test>::position<my.domain.com:my_lib:/first_marker>
+position<my.domain.com:my_lib:/test>::position<my.domain.com:my_lib:/second_marker>
+position<my.domain.com:my_lib:/test>::position<my.domain.com:my_lib:/combiner>

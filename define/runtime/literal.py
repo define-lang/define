@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from typing import ClassVar, override
+
+_REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
 
 
 class DefineRuntimeError(Exception):
@@ -137,6 +140,33 @@ class Particle:
         """Run the Destruction Cascade, unassigning qualities in reverse order."""
         for quality in reversed(self._assigned_qualities):
             quality.before_parent_particle_destroyed()
+
+    def occupied_position_names(self) -> list[str]:
+        """Return chained names of occupied positions reachable from this particle.
+
+        Names are returned depth-first, each parent position before the
+        positions nested within its particle, in quality-assignment order.
+        """
+        return self._occupied_position_names(())
+
+    def _occupied_position_names(self, prefix: tuple[str, ...]) -> list[str]:
+        names: list[str] = []
+        for quality in self._assigned_qualities:
+            if isinstance(quality, GlobalPosition):
+                chain = (*prefix, quality.name)
+                if quality.has_particle:
+                    names.append("::".join(chain))
+                    names.extend(quality.particle._occupied_position_names(chain))
+            elif isinstance(quality, Action):
+                action_chain = (*prefix, quality.name)
+                for interface_position in quality.interface_positions:
+                    chain = (*action_chain, interface_position.name)
+                    if interface_position.has_particle:
+                        names.append("::".join(chain))
+                        names.extend(
+                            interface_position.particle._occupied_position_names(chain)
+                        )
+        return names
 
 
 class Position(ABC):
@@ -275,6 +305,11 @@ class Action(Quality):
         return self._interface_positions[name]
 
     @property
+    def interface_positions(self) -> tuple[InterfacePosition, ...]:
+        """Return this action's interface positions, in declaration order."""
+        return tuple(self._interface_positions.values())
+
+    @property
     def should_execute(self) -> bool:
         """Return whether the trigger position has a particle."""
         if self._trigger_position_name is None:
@@ -323,3 +358,6 @@ def start(entry_point: type[GlobalPosition]):
     """
     view_point = Particle()
     view_point.assign_position(entry_point)
+    if os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR):
+        for chained_name in view_point.occupied_position_names():
+            print(chained_name)

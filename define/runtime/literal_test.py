@@ -617,6 +617,126 @@ class TestStart:
 
         assert triggered == ["position<entry>"]
 
+    def test_reports_occupied_positions_when_env_var_set(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ):
+        class Entry(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<entry>"
+
+            @override
+            def after_assigned(self):
+                self.create_particle()
+
+        monkeypatch.setenv("DEFINE_REPORT_OCCUPIED_POSITIONS", "1")
+        literal.start(Entry)
+
+        assert capsys.readouterr().out == "position<entry>\n"
+
+    def test_no_report_when_env_var_unset(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ):
+        class Entry(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<entry>"
+
+            @override
+            def after_assigned(self):
+                self.create_particle()
+
+        monkeypatch.delenv("DEFINE_REPORT_OCCUPIED_POSITIONS", raising=False)
+        literal.start(Entry)
+
+        assert capsys.readouterr().out == ""
+
+
+class TestOccupiedPositionNames:
+    def test_empty_when_nothing_occupied(self):
+        class Entry(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<entry>"
+
+        particle = literal.Particle()
+        particle.assign_position(Entry)
+
+        assert particle.occupied_position_names() == []
+
+    def test_reports_occupied_global_position(self):
+        class Entry(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<entry>"
+
+        particle = literal.Particle()
+        particle.assign_position(Entry)
+        particle.get_position("position<entry>").create_particle()
+
+        assert particle.occupied_position_names() == ["position<entry>"]
+
+    def test_reports_nested_occupied_positions_parent_first(self):
+        class Inner(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<inner>"
+
+        class Entry(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<entry>"
+
+        particle = literal.Particle()
+        particle.assign_position(Entry)
+        entry = particle.get_position("position<entry>")
+        entry.create_particle()
+        entry.particle.assign_position(Inner)
+        entry.particle.get_position("position<inner>").create_particle()
+
+        assert particle.occupied_position_names() == [
+            "position<entry>",
+            "position<entry>::position<inner>",
+        ]
+
+    def test_reports_occupied_interface_position(self):
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<act>"
+
+            def __init__(self, on_particle: literal.Particle):
+                super().__init__(
+                    on_particle,
+                    interface_positions=[
+                        literal.InterfacePosition("position<trigger_pos>"),
+                    ],
+                )
+
+        particle = literal.Particle()
+        particle.assign_action(MyAction)
+        particle.get_action("action<act>").get_interface_position(
+            "position<trigger_pos>"
+        ).create_particle()
+
+        assert particle.occupied_position_names() == [
+            "action<act>::position<trigger_pos>"
+        ]
+
+    def test_traverses_qualities_in_assignment_order(self):
+        class MyAction(literal.Action):
+            typed_name: ClassVar[str] = "action<act>"
+
+            def __init__(self, on_particle: literal.Particle):
+                super().__init__(
+                    on_particle,
+                    interface_positions=[
+                        literal.InterfacePosition("position<trigger_pos>"),
+                    ],
+                )
+
+        class Later(literal.GlobalPosition):
+            typed_name: ClassVar[str] = "position<later>"
+
+        particle = literal.Particle()
+        particle.assign_action(MyAction)
+        particle.get_action("action<act>").get_interface_position(
+            "position<trigger_pos>"
+        ).create_particle()
+        particle.assign_position(Later)
+        particle.get_position("position<later>").create_particle()
+
+        assert particle.occupied_position_names() == [
+            "action<act>::position<trigger_pos>",
+            "position<later>",
+        ]
+
 
 class TestAction:
     def test_name_from_class_var(self):

@@ -1,0 +1,8 @@
+position<my.domain.com:my_lib:/test>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<run>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<wrapper>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<wrapper>::action<my.domain.com:my_lib:/middle>::position<run>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<wrapper>::action<my.domain.com:my_lib:/middle>::position<box>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<wrapper>::action<my.domain.com:my_lib:/middle>::position<box>::action<my.domain.com:my_lib:/inner>::position<run>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<wrapper>::action<my.domain.com:my_lib:/middle>::position<final>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/runner>::position<wrapper>::action<my.domain.com:my_lib:/middle>::position<final>::position<my.domain.com:my_lib:/implied>

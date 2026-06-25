@@ -1,0 +1,4 @@
+position<my.domain.com:my_lib:/test>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/class_var>::position<trigger_pos>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/class_var_>::position<trigger_pos>
+position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/type_error>::position<pp>

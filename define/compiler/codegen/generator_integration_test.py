@@ -89,9 +89,21 @@ def test_expected_output_runs(test_case_dir: Path):
         [sys.executable, str(expected_dir / "__main__.py")],
         env={
             "PYTHONPATH": str(expected_dir) + ":" + ":".join(sys.path),
+            "DEFINE_REPORT_OCCUPIED_POSITIONS": "1",
         },
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
         pytest.fail(result.stderr)
+
+    occupied_file = test_case_dir / "occupied_positions.txt"
+    expected_occupied = occupied_file.read_text() if occupied_file.exists() else ""
+    if result.stdout != expected_occupied:
+        diff = difflib.unified_diff(
+            expected_occupied.splitlines(keepends=True),
+            result.stdout.splitlines(keepends=True),
+            fromfile="expected occupied_positions.txt",
+            tofile="actual program output",
+        )
+        pytest.fail("".join(diff))

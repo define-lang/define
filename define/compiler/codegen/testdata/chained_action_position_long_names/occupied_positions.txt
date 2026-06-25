@@ -1,0 +1,3 @@
+position<my.domain.com:my_library_collection:/test>
+position<my.domain.com:my_library_collection:/test>::action<my.domain.com:my_library_collection:/perform_operation>::position<operation_trigger>
+position<my.domain.com:my_library_collection:/test>::action<my.domain.com:my_library_collection:/perform_operation>::position<operation_trigger>::position<my.domain.com:my_library_collection:/inner_position>

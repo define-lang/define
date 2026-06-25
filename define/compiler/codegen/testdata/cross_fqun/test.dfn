@@ -3,4 +3,9 @@ define the potential position<my.domain.com:parent_lib:/test> {
         it has the action</do_thing>.
         it has the action<my.domain.com:child_lib:/do_thing>.
     }
+    after it is assigned {
+        create a particle in position</test>.
+        create a particle in position</test>::action</do_thing>::position<trigger_pos>.
+        create a particle in position</test>::action<my.domain.com:child_lib:/do_thing>::position<trigger_pos>.
+    }
 }

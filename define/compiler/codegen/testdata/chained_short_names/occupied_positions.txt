@@ -1,0 +1,3 @@
+position<a.b:cd:/test>
+position<a.b:cd:/test>::position<a.b:cd:/a>
+position<a.b:cd:/test>::position<a.b:cd:/a>::action<a.b:cd:/b>::position<t>

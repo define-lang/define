@@ -1,0 +1,5 @@
+position<a.b.c:the_lib:/test>
+position<a.b.c:the_lib:/test>::action<a.b.c:the_lib:/do_thing>::position<trigger_pos>
+position<a.b.c:the_lib:/test>::action<a-b.c:the_lib:/do_thing>::position<trigger_pos>
+position<a.b.c:the_lib:/test>::action<mv:a.b.c:the_lib:/do_thing>::position<trigger_pos>
+position<a.b.c:the_lib:/test>::action<a.b/c:the_lib:/do_thing>::position<trigger_pos>

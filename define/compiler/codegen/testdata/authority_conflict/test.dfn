@@ -5,4 +5,11 @@ define the potential position<a.b.c:the_lib:/test> {
         it has the action<mv:a.b.c:the_lib:/do_thing>.
         it has the action<a.b/c:the_lib:/do_thing>.
     }
+    after it is assigned {
+        create a particle in position</test>.
+        create a particle in position</test>::action</do_thing>::position<trigger_pos>.
+        create a particle in position</test>::action<a-b.c:the_lib:/do_thing>::position<trigger_pos>.
+        create a particle in position</test>::action<mv:a.b.c:the_lib:/do_thing>::position<trigger_pos>.
+        create a particle in position</test>::action<a.b/c:the_lib:/do_thing>::position<trigger_pos>.
+    }
 }
