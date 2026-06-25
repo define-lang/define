@@ -322,7 +322,7 @@ class DefinitionPostorderValidator(abc.ABC):
     def _action_parent_comes_from_contracted_position(
         self,
         trigger_position: ast.PositionReference,
-    ) -> tuple[ast.ChainedName, ast.PositionReference | None]:
+    ) -> tuple[ast.ActionReference, ast.PositionReference | None]:
         """Return the action's parent particle's contracted-position origin chain if it is from the caller."""
         action_chain = trigger_position.get_chain_to_last_action()
         if action_chain is None:
@@ -515,7 +515,7 @@ class DefinitionPostorderValidator(abc.ABC):
             # _collect_cascade_destructors already verified the destructor's
             # definition loaded.
             contract = self._action_contracts[destructor.quality]
-            action_chain = destructor.position.with_suffix(destructor.quality)
+            action_chain = destructor.position.with_action_suffix(destructor.quality)
             attachment = self._destructor_attachment(
                 destructor.quality, destructor.origin_position, scope
             )
@@ -562,7 +562,7 @@ class DefinitionPostorderValidator(abc.ABC):
     def _propagate_destructor_requirements(
         self,
         contract: action_contract.ActionContract,
-        action_chain: ast.ChainedName,
+        action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
         attachment: action_contract.DestructorAttachment | None,
     ):
@@ -775,7 +775,7 @@ class DefinitionPostorderValidator(abc.ABC):
     def _check_destructor_requirements_from_contracts(
         self,
         contract: action_contract.ActionStatementsBlockContract,
-        action_chain: ast.ChainedName,
+        action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
     ):
         """Verify caller-attached destructors that a triggered action's Destruction Contracts surfaced.
@@ -810,7 +810,7 @@ class DefinitionPostorderValidator(abc.ABC):
     def _check_one_destruction_contract(
         self,
         destruction_contract: action_contract.DestructionContract,
-        action_chain: ast.ChainedName,
+        action_chain: ast.ActionReference,
         trigger_step: action_contract.PropagationStep,
         scope: scope_tracker.ScopeTracker,
     ):
@@ -1000,7 +1000,7 @@ class DefinitionPostorderValidator(abc.ABC):
         destructor_contract = self._action_contracts.get(destructor_quality)
         if destructor_contract is None or destroying_definition is None:
             return False
-        action_chain = particle_position.with_suffix(destructor_quality)
+        action_chain = particle_position.with_action_suffix(destructor_quality)
         attachment = self._destructor_attachment(
             destructor_quality, particle.origin_position, scope
         )
@@ -1146,7 +1146,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self,
         *,
         inner_req: action_contract.PositionRequirement,
-        action_chain: ast.ChainedName,
+        action_chain: ast.ActionReference,
         caller_prefix_length: int,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,

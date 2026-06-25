@@ -318,11 +318,6 @@ def chain_starts_with_global(key: tuple[str, ...]) -> bool:
 class ChainedName(ASTNode):
     """A chain of typed name references joined by ::."""
 
-    # TODO: We really need an ActionReference (a chain ending in an action) that
-    # we use internally, paralleling PositionReference, even though it is not a
-    # real AST object the parser produces. It would give the action-ending chains
-    # we synthesize (e.g. with_suffix) the same static type safety that
-    # PositionReference gives position-ending chains.
     typed_names: tuple[TypedNameReference, ...]
     # Filled lazily on first access by __getattr__ and cached in the slot.
     canonical_chained_name_tuple: tuple[str, ...] = field(
@@ -374,11 +369,11 @@ class ChainedName(ASTNode):
                 return elem
         return None
 
-    def get_chain_to_last_action(self) -> ChainedName | None:
+    def get_chain_to_last_action(self) -> ActionReference | None:
         """Return everything up to and including the last action element, or None."""
         for i in range(len(self.typed_names) - 1, -1, -1):
             if self.typed_names[i].name_type == NameType.ACTION:
-                return ChainedName(
+                return ActionReference(
                     location=self.location,
                     typed_names=self.typed_names[: i + 1],
                 )
@@ -450,19 +445,7 @@ class ChainedName(ASTNode):
     # TODO: There are likely other places in the codebase (including tests) that
     # still construct a ChainedName/PositionReference by spreading
     # ``(*chain.typed_names, ...)`` into the constructor; they should all use
-    # with_suffix / with_position_suffix instead.
-    def with_suffix(self, *names: TypedNameReference) -> ChainedName:
-        """Return a ChainedName extending this chain with ``names`` appended.
-
-        The result is a plain ChainedName regardless of what is appended; use
-        with_position_suffix when the chain ends in a position and a
-        PositionReference is wanted.
-        """
-        return ChainedName(
-            location=self.location,
-            typed_names=(*self.typed_names, *names),
-        )
-
+    # with_position_suffix / with_action_suffix instead.
     def with_position_suffix(self, *names: TypedNameReference) -> PositionReference:
         """Return a PositionReference extending this chain with ``names`` appended.
 
@@ -470,6 +453,17 @@ class ChainedName(ASTNode):
         constructor enforces that.
         """
         return PositionReference(
+            location=self.location,
+            typed_names=(*self.typed_names, *names),
+        )
+
+    def with_action_suffix(self, *names: TypedNameReference) -> ActionReference:
+        """Return an ActionReference extending this chain with ``names`` appended.
+
+        The appended chain must end in an action; the ActionReference
+        constructor enforces that.
+        """
+        return ActionReference(
             location=self.location,
             typed_names=(*self.typed_names, *names),
         )
@@ -518,6 +512,28 @@ class PositionReference(ChainedName):
         if not from_source and typed_names[-1].name_type != NameType.POSITION:
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
+            )
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class ActionReference(ChainedName):
+    """Represents a chained name known to end with an action.
+
+    Unlike PositionReference, the parser never produces this directly; the
+    compiler synthesizes it for chains it has determined end in an action.
+    """
+
+    def __init__(
+        self,
+        *,
+        typed_names: tuple[TypedNameReference, ...],
+        location: SourceLocation,
+    ):
+        """Initialize, validating that the chain ends with an action."""
+        super().__init__(typed_names=typed_names, location=location)
+        if typed_names[-1].name_type != NameType.ACTION:
+            raise ValueError(
+                f"Last element of an ActionReference must be an action: {self.source_chained_name}"
             )
 
 

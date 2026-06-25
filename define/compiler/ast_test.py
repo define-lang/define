@@ -482,7 +482,7 @@ class TestGetChainToLastAction:
     def test_with_action(self, position_reference_for: PositionReferenceFor):
         pos = position_reference_for("position<local>::action</act>::position<iface>")
         result = pos.get_chain_to_last_action()
-        assert result is not None
+        assert isinstance(result, ast.ActionReference)
         assert result.source_chained_name == "position<local>::action</act>"
 
     def test_two_actions(self, position_reference_for: PositionReferenceFor):
@@ -490,7 +490,7 @@ class TestGetChainToLastAction:
             "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
         )
         result = pos.get_chain_to_last_action()
-        assert result is not None
+        assert isinstance(result, ast.ActionReference)
         assert (
             result.source_chained_name
             == "position<local>::action</outer>::position<iface>::action</inner>"
@@ -771,3 +771,68 @@ class TestWithPrefix:
         assert result.source_chained_name == (
             "position<box>::position</wrap>::position</x>::position</y>"
         )
+
+
+def _action_typed_name(path: str) -> ast.GlobalTypedNameReference:
+    fqun = _make_fqun("my_lib", authority="my.domain.com")
+    return ast.GlobalTypedNameReference(
+        location=_LOC,
+        name_type=ast.NameType.ACTION,
+        name_content=ast.ReferenceGlobalNameContent(
+            location=_LOC,
+            fqun=fqun,
+            path=ast.GlobalPathName(location=_LOC, name=path),
+        ),
+        enclosing_fqun=fqun,
+    )
+
+
+class TestActionReference:
+    def test_rejects_chain_ending_in_position(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        pos = position_reference_for("position<local>::position</x>")
+        with pytest.raises(ValueError, match="must be an action"):
+            _ = ast.ActionReference(location=pos.location, typed_names=pos.typed_names)
+
+    def test_accepts_chain_ending_in_action(self):
+        action = _action_typed_name("/act")
+        result = ast.ActionReference(location=_LOC, typed_names=(action,))
+        assert result.source_chained_name == "action<my.domain.com:my_lib:/act>"
+
+
+class TestWithSuffix:
+    def test_with_position_suffix_returns_position_reference(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        base = position_reference_for("position<box>::action</act>::position<iface>")
+        suffix = position_reference_for("position</child>")
+        result = base.with_position_suffix(*suffix.typed_names)
+        assert isinstance(result, ast.PositionReference)
+        assert result.source_chained_name == (
+            "position<box>::action</act>::position<iface>::position</child>"
+        )
+
+    def test_with_position_suffix_rejects_action_suffix(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        base = position_reference_for("position<box>")
+        with pytest.raises(ValueError, match="must be a position"):
+            _ = base.with_position_suffix(_action_typed_name("/act"))
+
+    def test_with_action_suffix_returns_action_reference(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        base = position_reference_for("position<box>")
+        result = base.with_action_suffix(_action_typed_name("/act"))
+        assert isinstance(result, ast.ActionReference)
+        assert result.source_chained_name == (
+            "position<box>::action<my.domain.com:my_lib:/act>"
+        )
+
+    def test_with_action_suffix_rejects_position_suffix(
+        self, position_reference_for: PositionReferenceFor
+    ):
+        base = position_reference_for("position<box>")
+        with pytest.raises(ValueError, match="must be an action"):
+            _ = base.with_action_suffix(*base.typed_names)
