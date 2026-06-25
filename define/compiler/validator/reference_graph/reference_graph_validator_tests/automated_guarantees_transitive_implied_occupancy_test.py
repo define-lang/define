@@ -582,6 +582,138 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
 
 
+def test_occupied_implied_position_guarantee_propagates_through_directly_implied_action_chain(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """An implied position filled by an action reached only through directly-implied actions still has its occupied guarantee propagated to the outermost caller."""
+    result = validate_project_with_reference_graph(
+        {
+            "implied_pos.dfn": "define the potential position<my.domain.com:my_lib:/implied_pos>.\n",
+            "implied_action.dfn": (
+                "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
+                "    it also assigns the position</implied_pos>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the action</implied_action>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</middle>.\n"
+                "    it also assigns the position</implied_pos>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</middle>::position<trigger_pos>.\n"
+                "        create a particle in position</implied_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 9
+    assert all_diags[0].location.end_column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</implied_pos>"
+    assert all_diags[0].populated_at.line == 7
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.end_line == 7
+    assert all_diags[0].populated_at.end_column == 52
+    assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
+    assert result.action_call_graph.edges() == [
+        (
+            "action<my.domain.com:my_lib:/middle>",
+            "action<my.domain.com:my_lib:/implied_action>",
+        ),
+        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/middle>"),
+    ]
+
+
+def test_empty_implied_position_guarantee_propagates_through_directly_implied_action_chain(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """An implied position emptied by an action reached only through directly-implied actions still has its empty guarantee propagated to the outermost caller."""
+    result = validate_project_with_reference_graph(
+        {
+            "implied_pos.dfn": "define the potential position<my.domain.com:my_lib:/implied_pos>.\n",
+            "implied_action.dfn": (
+                "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
+                "    it also assigns the position</implied_pos>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<_sink>.\n"
+                "        move the particle in position</implied_pos> to position<_sink>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the action</implied_action>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</middle>.\n"
+                "    it also assigns the position</implied_pos>.\n"
+                "    define the position<run>.\n"
+                "    define the position<dest>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied_pos>.\n"
+                "        create a particle in action</middle>::position<trigger_pos>.\n"
+                "        move the particle in position</implied_pos> to position<dest>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 11
+    assert all_diags[0].location.end_column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</implied_pos>"
+    assert result.action_call_graph.edges() == [
+        (
+            "action<my.domain.com:my_lib:/middle>",
+            "action<my.domain.com:my_lib:/implied_action>",
+        ),
+        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/middle>"),
+    ]
+
+
 def test_implied_position_self_create_init_block_fires_on_caller_create(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

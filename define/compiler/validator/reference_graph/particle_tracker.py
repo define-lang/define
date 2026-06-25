@@ -300,7 +300,11 @@ class ParticleTracker:
         guarantees: list[action_contract.GuaranteePair] = []
         for key in all_keys:
             first_element = key[0]
-            if first_element not in include_names:
+            # Any position that starts with a global is contracted, even if it was updated
+            # by an implied action and we can't see it directly.
+            if first_element not in include_names and not ast.chain_starts_with_global(
+                key
+            ):
                 continue
             guarantee = self._guarantee_for_key(key, requirements)
             if guarantee is None:

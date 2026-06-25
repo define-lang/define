@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -227,13 +225,6 @@ def test_destructor_triggering_action_that_fills_a_contracted_position_is_forbid
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "A destructor that triggers an implied action which fills an implied"
-        " position is not forbidden."
-    ),
-)
 def test_destructor_triggering_implied_action_that_fills_an_implied_position_is_forbidden(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
@@ -268,17 +259,17 @@ def test_destructor_triggering_implied_action_that_fills_an_implied_position_is_
     assert isinstance(
         all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )
-    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("updater.dfn")
-    assert all_diags[0].position_name == "position</marker>"
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "action</updater>::position<trigger_pos>"
     assert isinstance(
         all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )
-    assert all_diags[1].location.line == 6
+    assert all_diags[1].location.line == 7
     assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].position_name == "action</updater>::position<trigger_pos>"
+    assert all_diags[1].location.file_path == PurePosixPath("updater.dfn")
+    assert all_diags[1].position_name == "position</marker>"
 
 
 def test_create_then_move_out_produces_no_guarantees(
