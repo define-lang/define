@@ -18,7 +18,6 @@ def test_move_to_chained_dest_violates_constraints(
                 "    }\n"
                 "}\n"
             ),
-            # TODO: This should be failing because there is no particle in position<dest>.
             "test.dfn": (
                 "define the potential action<my.domain.com:my_lib:/test> {\n"
                 "    define the position<run>.\n"
