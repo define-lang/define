@@ -2,8 +2,6 @@
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -296,10 +294,6 @@ def test_create_then_move_out_produces_no_guarantees(
     assert_no_errors(result.program_result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="A destructor that restores every position it touches should generate no guarantees, but it currently produces spurious empty guarantees.",
-)
 def test_destructor_triggering_action_then_destroying_what_it_filled_generates_no_guarantees(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):

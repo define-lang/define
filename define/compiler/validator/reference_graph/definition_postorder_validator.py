@@ -1755,6 +1755,13 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             )
             match guarantee:
                 case action_contract.EmptyGuarantee():
+                    requirement = self._inferred_requirements.get(key)
+                    if (
+                        requirement is not None
+                        and requirement.required_state
+                        == action_contract.PositionOccupancyState.EMPTY
+                    ):
+                        continue
                     self._diagnostics.append(
                         diagnostics.DestructorProducesEmptyGuaranteeDiagnostic(
                             location=guarantee.caused_by.location,
