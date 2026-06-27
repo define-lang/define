@@ -1554,6 +1554,38 @@ compiler is missing either of these pieces of information, it passes on any
 not-yet-verified destructor to an action's callers for verification, as part of
 the Destruction Contract.
 
+## Dead Code
+
+Proposals:
+
+- [DLP 42: Dead Code Is Forbidden](../proposals/00042-dead-code-is-forbidden.md)
+
+Where the compiler is confident that code is dead, it must throw an error. The
+below sections define what code is considered to be dead.
+
+### Unreferenced Names
+
+The following are all dead code:
+
+- An action interface position that is never referenced within that action.
+- A local position never referenced within the block where it is defined.
+- An implied quality that is not referenced within the action or position that
+  implies it.
+
+### Dead Child Positions
+
+A position quality assigned to a local or interface position is dead if it is
+neither referenced within the same global definition nor required by any Move
+Particle Statement.
+
+### Untriggered Actions
+
+If an action is a directly-written constraint on a local or interface position
+but is never triggered inside of the same global definition that defines that
+position and is not needed to satisfy any Move Particle Statement, that
+constraint is dead code. Exception: destructors listed as constraints on a
+position are never dead code.
+
 ## Starting Define Programs
 
 Proposals:
