@@ -492,3 +492,55 @@ def test_init_block_applies_after_non_position_quality_in_constraints(
     assert all_diags[0].populated_at.end_line == 3
     assert all_diags[0].populated_at.end_column == 44
     assert all_diags[0].populated_at.file_path == PurePosixPath("bar.dfn")
+
+
+def test_constrained_position_init_block_assigns_implied_in_parent(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """An action assigns /p, /p constrains /q, and /q's init block assigns the implied /r. The /r guarantee reaches the caller on /q's parent particle, at /p::/r."""
+    result = validate_project_with_reference_graph(
+        {
+            "r.dfn": "define the potential position<my.domain.com:my_lib:/r>.\n",
+            "q.dfn": (
+                "define the potential position<my.domain.com:my_lib:/q> {\n"
+                "    it also assigns the position</r>.\n"
+                "    after it is assigned {\n"
+                "        create a particle in position</r>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "p.dfn": (
+                "define the potential position<my.domain.com:my_lib:/p> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</q>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</p>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</p>.\n"
+                "        create a particle in position</p>::position</r>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 8
+    assert all_diags[0].location.end_column == 56
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</p>::position</r>"
+    assert all_diags[0].populated_at.line == 4
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.end_line == 4
+    assert all_diags[0].populated_at.end_column == 42
+    assert all_diags[0].populated_at.file_path == PurePosixPath("q.dfn")
