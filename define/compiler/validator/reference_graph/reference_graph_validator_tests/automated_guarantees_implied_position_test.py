@@ -107,7 +107,7 @@ def test_destroy_in_implied_position_emits_empty(
     assert all_diags[0].position_name == "position<box>::position</implied>"
 
 
-def test_unknown_state_in_implied_position_propagates_to_caller(
+def test_error_state_in_implied_position_propagates_to_caller(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -147,9 +147,9 @@ def test_unknown_state_in_implied_position_propagates_to_caller(
     )
     all_diags = result.program_result.all_diagnostics
     # Inner's second destroy on empty /implied raises one
-    # DestroyInEmptyPositionDiagnostic and marks /implied unknown.
+    # DestroyInEmptyPositionDiagnostic and marks /implied error.
     # /test's subsequent destroy on box::/implied is suppressed because
-    # the unknown state propagated to the caller.
+    # the error state propagated to the caller.
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 9

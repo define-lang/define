@@ -18,10 +18,10 @@ _OTHER = "action<my.domain.com:my_lib:/other>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 
 
-def test_unknown_interface_position_stays_unknown_after_trigger(
+def test_error_interface_position_stays_error_after_trigger(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """An interface position with unknown state from conflicting moves stays unknown after trigger."""
+    """An interface position with error state from conflicting moves stays error after trigger."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -77,10 +77,10 @@ def test_unknown_interface_position_stays_unknown_after_trigger(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
+def test_post_trigger_error_guarantee_suppresses_create_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When an action's guarantee results in unknown state, creating after trigger is silently allowed."""
+    """When an action's guarantee results in error state, creating after trigger is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -126,10 +126,10 @@ def test_post_trigger_unknown_guarantee_suppresses_create_diagnostic(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
+def test_post_trigger_error_guarantee_suppresses_move_from_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When an action's guarantee results in unknown state, moving from it after trigger is silently allowed."""
+    """When an action's guarantee results in error state, moving from it after trigger is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -176,10 +176,10 @@ def test_post_trigger_unknown_guarantee_suppresses_move_from_diagnostic(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
+def test_post_trigger_error_guarantee_suppresses_move_to_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When an action's guarantee results in unknown state, moving to it after trigger is silently allowed."""
+    """When an action's guarantee results in error state, moving to it after trigger is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -227,10 +227,10 @@ def test_post_trigger_unknown_guarantee_suppresses_move_to_diagnostic(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
+def test_post_trigger_error_chain_guarantee_suppresses_create_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Unknown guarantee through a trigger chain suppresses create diagnostics."""
+    """Error guarantee through a trigger chain suppresses create diagnostics."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -280,10 +280,10 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_create_diagnostic(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
+def test_post_trigger_error_chain_guarantee_suppresses_move_from_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Unknown guarantee through a trigger chain suppresses move-from diagnostics."""
+    """Error guarantee through a trigger chain suppresses move-from diagnostics."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -334,10 +334,10 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_from_diagnostic(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
+def test_post_trigger_error_chain_guarantee_suppresses_move_to_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Unknown guarantee through a trigger chain suppresses move-to diagnostics."""
+    """Error guarantee through a trigger chain suppresses move-to diagnostics."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -389,10 +389,10 @@ def test_post_trigger_unknown_chain_guarantee_suppresses_move_to_diagnostic(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_unknown_from_move_to_occupied_interface_position(
+def test_error_from_move_to_occupied_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Moving to an already-occupied interface position makes the guarantee unknown but reports the internal error."""
+    """Moving to an already-occupied interface position makes the guarantee error but reports the internal error."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -437,10 +437,10 @@ def test_unknown_from_move_to_occupied_interface_position(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_unknown_from_constraint_violation_on_interface_position(
+def test_error_from_constraint_violation_on_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """A constraint violation on an interface position makes the guarantee unknown but reports the violation."""
+    """A constraint violation on an interface position makes the guarantee error but reports the violation."""
     result = validate_project_with_reference_graph(
         {
             "quality_a.dfn": "define the potential position<my.domain.com:my_lib:/quality_a>.\n",
@@ -489,10 +489,10 @@ def test_unknown_from_constraint_violation_on_interface_position(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_unknown_propagation_from_local_to_interface_position(
+def test_error_propagation_from_local_to_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Unknown state on a local position propagates to an interface position when the action moves it there."""
+    """Error state on a local position propagates to an interface position when the action moves it there."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -538,7 +538,7 @@ def test_unknown_propagation_from_local_to_interface_position(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_unknown_from_prefix_move_on_interface_position(
+def test_error_from_prefix_move_on_interface_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     """Moving an interface position particle into one of its own child positions reports MoveIntoDefiningPositionDiagnostic."""
@@ -606,10 +606,10 @@ def test_unknown_from_prefix_move_on_interface_position(
     assert_action_calls(result.action_call_graph, _TEST, _OUTER)
 
 
-def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
+def test_unknown_global_chain_start_treats_action_guarantees_as_error(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """An unknown global chain start treats all action guarantees as unknown."""
+    """An unknown global chain start treats all action guarantees as error."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -650,10 +650,10 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_unknown(
     assert all_diags[1].location.line == 7
 
 
-def test_post_trigger_unknown_guarantee_on_child_position(
+def test_post_trigger_error_guarantee_on_child_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Unknown state on a child position from conflicting moves allows creating in it after trigger."""
+    """Error state on a child position from conflicting moves allows creating in it after trigger."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -713,10 +713,10 @@ def test_post_trigger_unknown_guarantee_on_child_position(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_post_trigger_existing_guarantee_unknown_origin_with_children(
+def test_post_trigger_existing_guarantee_error_origin_with_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """Unknown state on a parent position allows creating in a child at the destination after trigger."""
+    """Error state on a parent position allows creating in a child at the destination after trigger."""
     result = validate_project_with_reference_graph(
         {
             "child_q.dfn": "define the potential position<my.domain.com:my_lib:/child_q>.\n",
@@ -785,9 +785,9 @@ def test_caller_prefills_child_without_parent_then_triggers(
 ):
     """Caller pre-fills a child interface position without the parent, then triggers.
 
-    The parent check fires for the child create, marking it unknown.
+    The parent check fires for the child create, marking it error.
     The subsequent trigger and guarantee application handle the
-    unknown state gracefully with no spurious errors.
+    error state gracefully with no spurious errors.
     """
     result = validate_project_with_reference_graph(
         {
@@ -903,7 +903,7 @@ def test_swap_guarantee_both_positions_unfilled(
 
     Both positions get OCCUPIED requirements. When guarantees apply,
     each OccupiedByExisting tries to read its origin (the other
-    position), which was never filled. Both should end up unknown.
+    position), which was never filled. Both should end up error.
     Subsequent operations on both positions are silently allowed.
     """
     result = validate_project_with_reference_graph(
@@ -1008,7 +1008,7 @@ def test_swap_guarantee_one_position_unfilled(
     """Swapping two interface positions when the caller fills only one.
 
     Only position<b> is unfilled. After the swap, position<a> should
-    be unknown (its origin position<b> was never filled) and
+    be error (its origin position<b> was never filled) and
     position<b> should contain what was in position<a>.
     """
     result = validate_project_with_reference_graph(
@@ -1097,10 +1097,10 @@ def test_swap_guarantee_one_position_unfilled(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_each_unfilled_required_parent_independently_makes_caller_position_unknown(
+def test_each_unfilled_required_parent_independently_makes_caller_position_error(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When an action's body touches children of two distinct interface positions, and the caller fills neither, the caller's view of *both* positions should be unknown afterwards.
+    """When an action's body touches children of two distinct interface positions, and the caller fills neither, the caller's view of *both* positions should be error afterwards.
 
     Subsequent operations on either are silently allowed rather than
     failing as if the position were empty.
@@ -1274,10 +1274,10 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_unkno
     )
 
 
-def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
+def test_move_from_emptied_origin_leaves_destination_error_in_caller(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When the caller destroys a particle before triggering an action that moves from that same position, the destination position should be treated as unknown.
+    """When the caller destroys a particle before triggering an action that moves from that same position, the destination position should be treated as error.
 
     The caller cannot know whether the action actually moved anything,
     so further operations on the destination are silently allowed.
@@ -1349,10 +1349,10 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
     )
 
 
-def test_occupied_by_existing_destination_the_caller_filled_becomes_unknown(
+def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When the caller has already put a particle in the position a triggered action moves a particle to, and never put one in the position it moves from, that position becomes unknown, so creating in it afterward is silently allowed."""
+    """When the caller has already put a particle in the position a triggered action moves a particle to, and never put one in the position it moves from, that position becomes error, so creating in it afterward is silently allowed."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -1457,12 +1457,12 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_unknown(
     )
 
 
-def test_swap_propagates_prior_unknown_state_from_origin_to_destination(
+def test_swap_propagates_prior_error_state_from_origin_to_destination(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When the caller has made one of two swap targets unknown before triggering the swap, the other target should also be unknown after the swap.
+    """When the caller has made one of two swap targets error before triggering the swap, the other target should also be error after the swap.
 
-    The swap moves whatever was in the unknown position into the other,
+    The swap moves whatever was in the error position into the other,
     and since the caller cannot know what arrived there, subsequent
     operations on the destination are silently allowed.
     """

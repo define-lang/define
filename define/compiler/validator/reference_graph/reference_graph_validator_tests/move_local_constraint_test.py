@@ -155,7 +155,7 @@ def test_local_move_round_trip_with_constraint_subset(
     assert_no_errors(result.program_result)
 
 
-def test_local_move_violates_constraints_marks_unknown(
+def test_local_move_violates_constraints_marks_error(
     validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(

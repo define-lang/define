@@ -1183,10 +1183,10 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     ]
 
 
-def test_required_position_unknown_in_child_state_skips_verification(
+def test_required_position_error_in_child_state_skips_verification(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """close_file leaves the destructor's required position</file> in an unknown state before destroying, so the Child State records UNKNOWN and the owner's verification short-circuits instead of falsely erroring."""
+    """close_file leaves the destructor's required position</file> in an error state before destroying, so the Child State records ERROR and the owner's verification short-circuits instead of falsely erroring."""
     result = validate_project_with_reference_graph(
         {
             "file.dfn": "define the potential position<my.domain.com:my_lib:/file>.\n",

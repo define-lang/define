@@ -2474,7 +2474,7 @@ _CHILD_TO_NEW_PARENT_BUG_REASON = (
     "loses the moved child's identity: the parent's guarantee sorts before the "
     "OccupiedByExisting (length-primary order) and its subtree cleanup deletes "
     "the origin child, which is only an origin (never a guarantee key) and so is "
-    "never saved. The destination resolves to UNKNOWN instead of the child."
+    "never saved. The destination resolves to ERROR instead of the child."
 )
 
 

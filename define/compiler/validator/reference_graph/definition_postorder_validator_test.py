@@ -1467,7 +1467,7 @@ class TestDestructorContract:
             == action_contract.PositionOccupancyState.EMPTY
         )
 
-    def test_destructor_guarantee_is_replaced_with_unknown(self):
+    def test_destructor_guarantee_is_replaced_with_error(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<slot>.\n"
@@ -1482,10 +1482,10 @@ class TestDestructorContract:
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert [type(guarantee) for _key, guarantee in contract.guarantees.own] == [
-            action_contract.UnknownGuarantee
+            action_contract.ErrorGuarantee
         ]
 
-    def test_destructor_preexisting_unknown_guarantee_passes_through(self):
+    def test_destructor_preexisting_error_guarantee_passes_through(self):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<item>.\n"
@@ -1503,7 +1503,7 @@ class TestDestructorContract:
         assert contracts.keys() == {"action<my.domain.com:my_lib:/test>"}
         contract = contracts["action<my.domain.com:my_lib:/test>"]
         assert [type(guarantee) for _key, guarantee in contract.guarantees.own] == [
-            action_contract.UnknownGuarantee
+            action_contract.ErrorGuarantee
         ]
 
 

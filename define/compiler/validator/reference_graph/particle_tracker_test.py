@@ -167,40 +167,38 @@ def test_move_from_empty_raises():
         )
 
 
-def test_mark_unknown_state():
+def test_mark_error_state():
     tracker = particle_tracker.ParticleTracker()
     ref = _make_position_ref([_make_local_ref("my_pos")])
 
-    tracker.mark_unknown(ref)
+    tracker.mark_error(ref)
 
-    assert tracker.has_unknown_state(ref) is True
+    assert tracker.has_error_state(ref) is True
 
 
-def test_no_unknown_state_initially():
+def test_no_error_state_initially():
     tracker = particle_tracker.ParticleTracker()
 
     assert (
-        tracker.has_unknown_state(_make_position_ref([_make_local_ref("my_pos")]))
+        tracker.has_error_state(_make_position_ref([_make_local_ref("my_pos")]))
         is False
     )
 
 
-def test_unknown_state_does_not_affect_other_keys():
+def test_error_state_does_not_affect_other_keys():
     tracker = particle_tracker.ParticleTracker()
 
-    tracker.mark_unknown(_make_position_ref([_make_local_ref("pos_a")]))
+    tracker.mark_error(_make_position_ref([_make_local_ref("pos_a")]))
 
     assert (
-        tracker.has_unknown_state(_make_position_ref([_make_local_ref("pos_a")]))
-        is True
+        tracker.has_error_state(_make_position_ref([_make_local_ref("pos_a")])) is True
     )
     assert (
-        tracker.has_unknown_state(_make_position_ref([_make_local_ref("pos_b")]))
-        is False
+        tracker.has_error_state(_make_position_ref([_make_local_ref("pos_b")])) is False
     )
 
 
-def test_unknown_state_propagates_to_descendants():
+def test_error_state_propagates_to_descendants():
     tracker = particle_tracker.ParticleTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
@@ -208,10 +206,10 @@ def test_unknown_state_propagates_to_descendants():
     )
 
     tracker.create(parent_ref, ())
-    tracker.mark_unknown(parent_ref)
+    tracker.mark_error(parent_ref)
 
-    assert tracker.has_unknown_state(parent_ref) is True
-    assert tracker.has_unknown_state(child_ref) is True
+    assert tracker.has_error_state(parent_ref) is True
+    assert tracker.has_error_state(child_ref) is True
 
 
 def test_move_to_occupied_raises():
@@ -476,16 +474,16 @@ def test_destroy_prunes_children():
     assert tracker.is_occupied(child_ref) is False
 
 
-def test_mark_unknown_at_chain():
+def test_mark_error_at_chain():
     tracker = particle_tracker.ParticleTracker()
     ref = _make_position_ref([_make_local_ref("pos_a"), _make_global_ref("/child")])
 
-    tracker.mark_unknown(ref)
+    tracker.mark_error(ref)
 
-    assert tracker.has_unknown_state(ref) is True
+    assert tracker.has_error_state(ref) is True
 
 
-def test_destroy_clears_unknown_children():
+def test_destroy_clears_error_children():
     tracker = particle_tracker.ParticleTracker()
     parent_ref = _make_position_ref([_make_local_ref("pos_a")])
     child_ref = _make_position_ref(
@@ -494,13 +492,13 @@ def test_destroy_clears_unknown_children():
 
     tracker.create(parent_ref, ())
     tracker.create(child_ref, ())
-    tracker.mark_unknown(child_ref)
+    tracker.mark_error(child_ref)
 
-    assert tracker.has_unknown_state(child_ref) is True
+    assert tracker.has_error_state(child_ref) is True
 
     tracker.destroy(parent_ref)
 
-    assert tracker.has_unknown_state(child_ref) is False
+    assert tracker.has_error_state(child_ref) is False
 
 
 def test_destroy_parent_also_destroys_child():
@@ -583,7 +581,7 @@ def test_apply_guarantees_empty():
 
     key = (*_ACTION_KEY_PREFIX, "position<item>")
     assert tracker.is_occupied_by_key(key) is False
-    assert tracker.has_unknown_state_by_key(key) is False
+    assert tracker.has_error_state_by_key(key) is False
 
 
 def test_apply_guarantees_occupied_by_new():
@@ -795,7 +793,7 @@ def test_apply_guarantees_occupied_by_existing_swap():
     )
 
 
-def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
+def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_error():
     tracker = particle_tracker.ParticleTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
@@ -822,11 +820,11 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
     )
 
     dest_key = (*_ACTION_KEY_PREFIX, "position<dest>")
-    assert tracker.has_unknown_state_by_key(dest_key) is True
+    assert tracker.has_error_state_by_key(dest_key) is True
     assert tracker.is_occupied_by_key(dest_key) is False
 
 
-def test_apply_guarantees_unknown():
+def test_apply_guarantees_error():
     tracker = particle_tracker.ParticleTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
     ref = _make_position_ref(
@@ -838,11 +836,11 @@ def test_apply_guarantees_unknown():
     _apply_guarantees(
         tracker,
         ref,
-        [(("position<item>",), action_contract.UnknownGuarantee(caused_by=_POS2_REF))],
+        [(("position<item>",), action_contract.ErrorGuarantee(caused_by=_POS2_REF))],
     )
 
     key = (*_ACTION_KEY_PREFIX, "position<item>")
-    assert tracker.has_unknown_state_by_key(key) is True
+    assert tracker.has_error_state_by_key(key) is True
     assert tracker.is_occupied_by_key(key) is False
 
 
@@ -959,7 +957,7 @@ def test_snapshot_child_state_captures_each_occupancy_kind():
     emptied = _make_position_ref(
         [_make_local_ref("parent"), _make_local_ref("emptied")]
     )
-    deep_unknown = _make_position_ref(
+    deep_error = _make_position_ref(
         [_make_local_ref("parent"), _make_local_ref("branch"), _make_local_ref("leaf")]
     )
 
@@ -968,16 +966,16 @@ def test_snapshot_child_state_captures_each_occupancy_kind():
     tracker.create(grandchild, (_make_global_ref("/x"),))
     tracker.create(emptied, ())
     tracker.destroy(emptied)
-    tracker.mark_unknown(deep_unknown)
+    tracker.mark_error(deep_error)
 
     parent_key = parent.canonical_chained_name_tuple
     child_rel = child.canonical_chained_name_tuple[len(parent_key) :]
     grandchild_rel = grandchild.canonical_chained_name_tuple[len(parent_key) :]
     emptied_rel = emptied.canonical_chained_name_tuple[len(parent_key) :]
-    deep_rel = deep_unknown.canonical_chained_name_tuple[len(parent_key) :]
+    deep_rel = deep_error.canonical_chained_name_tuple[len(parent_key) :]
 
     # `parent::branch` has no occupancy of its own (it exists only as an
-    # ancestor of the unknown leaf), so it is absent from the snapshot.
+    # ancestor of the error leaf), so it is absent from the snapshot.
     assert tracker.snapshot_child_state(parent) == {
         child_rel: action_contract.ChildOccupancy(
             action_contract.PositionOccupancyState.OCCUPIED, filled_at=child.location
@@ -987,7 +985,7 @@ def test_snapshot_child_state_captures_each_occupancy_kind():
             filled_at=grandchild.location,
         ),
         emptied_rel: action_contract.EMPTY_OCCUPANCY,
-        deep_rel: action_contract.UNKNOWN_OCCUPANCY,
+        deep_rel: action_contract.ERROR_OCCUPANCY,
     }
 
 
@@ -1012,13 +1010,13 @@ def test_snapshot_child_state_is_decoupled_from_later_mutation():
     tracker.destroy(parent)
     tracker.create(parent, ())
     tracker.create(child, ())
-    tracker.mark_unknown(grandchild)
+    tracker.mark_error(grandchild)
 
     assert tracker.snapshot_child_state(parent) == {
         child_rel: action_contract.ChildOccupancy(
             action_contract.PositionOccupancyState.OCCUPIED, filled_at=child.location
         ),
-        grandchild_rel: action_contract.UNKNOWN_OCCUPANCY,
+        grandchild_rel: action_contract.ERROR_OCCUPANCY,
     }
     assert snapshot == {
         child_rel: action_contract.ChildOccupancy(

@@ -402,7 +402,7 @@ class TestActionTriggering:
         assert _edge_pairs(result) == {(_TEST, _OTHER)}
         assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
-    def test_no_body_effect_when_create_target_has_unknown_state(
+    def test_no_body_effect_when_create_target_has_error_state(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
     ):
@@ -432,7 +432,7 @@ class TestActionTriggering:
         assert result.program_result.all_diagnostics[0].location.line == 8
         assert result.program_result.all_diagnostics[0].location.column == 30
 
-    def test_no_body_effect_when_move_target_has_unknown_state(
+    def test_no_body_effect_when_move_target_has_error_state(
         self,
         validate_project_with_reference_graph: conftest.ValidateProjectWithReferenceGraph,
     ):

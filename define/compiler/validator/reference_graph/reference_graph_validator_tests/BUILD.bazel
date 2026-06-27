@@ -26,6 +26,19 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_error_test",
+    size = "small",
+    srcs = ["automated_guarantees_error_test.py"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
     name = "automated_guarantees_implied_position_test",
     size = "small",
     srcs = ["automated_guarantees_implied_position_test.py"],
@@ -96,19 +109,6 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//pytest",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_unknown_test",
-    size = "small",
-    srcs = ["automated_guarantees_unknown_test.py"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -690,6 +690,7 @@ pyright_test(
     deps = [
         ":action_triggering_test",
         ":automated_guarantees_destructor_test",
+        ":automated_guarantees_error_test",
         ":automated_guarantees_implied_position_test",
         ":automated_guarantees_implied_to_interface_test",
         ":automated_guarantees_nested_action_test",
@@ -697,7 +698,6 @@ pyright_test(
         ":automated_guarantees_test",
         ":automated_guarantees_transitive_implied_identity_test",
         ":automated_guarantees_transitive_implied_occupancy_test",
-        ":automated_guarantees_unknown_test",
         ":automated_requirements_destructor_implied_test",
         ":automated_requirements_destructor_move_test",
         ":automated_requirements_destructor_test",

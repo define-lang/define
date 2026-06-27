@@ -297,7 +297,7 @@ def test_valid_global_to_position(
     assert all_diags[0].location.column == 53
 
 
-def test_move_to_same_position_does_not_mark_unknown(
+def test_move_to_same_position_does_not_mark_error(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
     source = (
@@ -327,7 +327,7 @@ def test_move_to_same_position_does_not_mark_unknown(
     assert diags[1].populated_at.line == 7
 
 
-def test_move_to_chained_prefix_marks_unknown(
+def test_move_to_chained_prefix_marks_error(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(

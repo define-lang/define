@@ -222,7 +222,7 @@ def test_position_init_create_child_without_self_create(
     assert all_diags[0].parent_position_name == "position</test>"
 
 
-def test_unknown_parent_suppresses_diagnostic(
+def test_error_parent_suppresses_diagnostic(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(
@@ -252,7 +252,7 @@ def test_unknown_parent_suppresses_diagnostic(
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
 
 
-def test_subsequent_create_after_unknown_child_does_not_cascade(
+def test_subsequent_create_after_error_child_does_not_cascade(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(

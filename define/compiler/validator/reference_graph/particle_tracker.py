@@ -43,8 +43,8 @@ class _NodeState:
 
 
 @dataclass
-class _UnknownState:
-    """Wrapper for unknown-state trie values.
+class _ErrorState:
+    """Wrapper for error-state trie values.
 
     LenientReparentingTrie can't use None as a value, so we wrap
     the caused_by reference in a dataclass.
@@ -189,8 +189,8 @@ _ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
 class _ParticleStateStore:
     """The internal position state store, which tracks both the state of a particle and how it's related to our callees' contracts.
 
-    Particle state lives in two tries (``state`` and ``uknown``). Particles
-    in ``unknown`` are in an error condition---the compiler detected a problem
+    Particle state lives in two tries (``state`` and ``error``). Particles
+    in ``error`` are in an error condition---the compiler detected a problem
     but wants to continue compiling to see if it can find more errors. We ignore
     all particles in error states.
 
@@ -210,8 +210,8 @@ class _ParticleStateStore:
         self._state: trie.StrictReparentingTrie[_NodeState] = (
             trie.StrictReparentingTrie()
         )
-        self._unknown: trie.LenientReparentingTrie[_UnknownState] = (
-            trie.LenientReparentingTrie(default_factory=_UnknownState)
+        self._error: trie.LenientReparentingTrie[_ErrorState] = (
+            trie.LenientReparentingTrie(default_factory=_ErrorState)
         )
         self._write_record: dict[tuple[str, ...], _WriteRecord] = {}
 
@@ -220,12 +220,10 @@ class _ParticleStateStore:
         """Return the known-occupancy trie (occupied or known-empty positions)."""
         return self._state
 
-    # TODO: Rename this "error" and the concept into "error state" instead of
-    # "unknown state" everywhere in the compiler.
     @property
-    def unknown(self) -> trie.LenientReparentingTrie[_UnknownState]:
-        """Return the unknown-occupancy trie."""
-        return self._unknown
+    def error(self) -> trie.LenientReparentingTrie[_ErrorState]:
+        """Return the error-occupancy trie."""
+        return self._error
 
     def is_occupied(self, key: tuple[str, ...]) -> bool:
         """Return whether a particle is known to exist at this position."""
@@ -251,10 +249,10 @@ class _ParticleStateStore:
             return False
         return state.particle_info is not None or state.emptied_by is not None
 
-    def has_unknown_in_chain(self, key: tuple[str, ...]) -> bool:
-        """Return whether this position or any ancestor has unknown occupancy state."""
+    def has_error_in_chain(self, key: tuple[str, ...]) -> bool:
+        """Return whether this position or any ancestor has error occupancy state."""
         return (
-            self._unknown.find_shortest_prefix_where(
+            self._error.find_shortest_prefix_where(
                 key, lambda state: state.caused_by is not None
             )
             is not None
@@ -263,7 +261,7 @@ class _ParticleStateStore:
     def keys_for_guarantees(
         self, *, include_callee_derived: bool
     ) -> set[tuple[str, ...]]:
-        """Return every position that we need to provide a guarantee for: occupied, known-empty, or marked unknown.
+        """Return every position that we need to provide a guarantee for: occupied, known-empty, or marked error.
 
         Positions set by our callees are included only when ``include_callee_derived`` is set.
         """
@@ -273,8 +271,8 @@ class _ParticleStateStore:
                 include_callee_derived or not self._is_from_callee(key)
             ):
                 keys.add(key)
-        for key, unknown_state in self._unknown.items():
-            if unknown_state.caused_by is not None and (
+        for key, error_state in self._error.items():
+            if error_state.caused_by is not None and (
                 include_callee_derived or not self._is_from_callee(key)
             ):
                 keys.add(key)
@@ -383,12 +381,12 @@ class ParticleTracker:
             self._body_operation_number += 1
         self._store.record_body_write(key, self._body_operation_number)
 
-    def mark_unknown(self, in_position: ast.PositionReference):
-        """Mark a position as having unknown occupancy state."""
+    def mark_error(self, in_position: ast.PositionReference):
+        """Mark a position as having error occupancy state."""
         key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         self._record_body_write(key)
-        self._store.unknown[key] = _UnknownState(caused_by=in_position)
+        self._store.error[key] = _ErrorState(caused_by=in_position)
 
     def mark_empty(self, in_position: ast.PositionReference):
         """Mark a position as known-empty without a prior particle existing."""
@@ -400,14 +398,14 @@ class ParticleTracker:
         self._record_body_write(key)
         self._store.state[key] = _NodeState(emptied_by=in_position)
 
-    def has_unknown_state(self, in_position: ast.PositionReference) -> bool:
-        """Return whether a position or any ancestor has unknown occupancy state."""
-        return self.has_unknown_state_by_key(in_position.canonical_chained_name_tuple)
+    def has_error_state(self, in_position: ast.PositionReference) -> bool:
+        """Return whether a position or any ancestor has error occupancy state."""
+        return self.has_error_state_by_key(in_position.canonical_chained_name_tuple)
 
-    def has_unknown_state_by_key(self, key: tuple[str, ...]) -> bool:
-        """Return whether a position or any ancestor has unknown occupancy state."""
+    def has_error_state_by_key(self, key: tuple[str, ...]) -> bool:
+        """Return whether a position or any ancestor has error occupancy state."""
         self._apply_pending_guarantees_up_to(key)
-        return self._store.has_unknown_in_chain(key)
+        return self._store.has_error_in_chain(key)
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
@@ -455,10 +453,10 @@ class ParticleTracker:
                 )
             elif node.emptied_by is not None:
                 result[relative_key] = action_contract.EMPTY_OCCUPANCY
-        # An unknown entry wins over a stale state entry, so it is applied last.
-        for relative_key, unknown_state in self._store.unknown.subtree_items(key):
-            if unknown_state.caused_by is not None:
-                result[relative_key] = action_contract.UNKNOWN_OCCUPANCY
+        # An error entry wins over a stale state entry, so it is applied last.
+        for relative_key, error_state in self._store.error.subtree_items(key):
+            if error_state.caused_by is not None:
+                result[relative_key] = action_contract.ERROR_OCCUPANCY
         return result
 
     def create(
@@ -533,8 +531,8 @@ class ParticleTracker:
             raise ValueError(f"position {key} is not occupied")
         del self._store.state[key]
         # Destroying puts all children back into a known state (they don't exist).
-        if key in self._store.unknown:
-            del self._store.unknown[key]
+        if key in self._store.error:
+            del self._store.error[key]
         self._record_body_write(key)
         self._store.state[key] = _NodeState(emptied_by=position)
 
@@ -559,11 +557,9 @@ class ParticleTracker:
         to_key = target.canonical_chained_name_tuple
         self._fully_resolve_pending_guarantees(from_key)
         self._apply_pending_guarantees_up_to(to_key)
-        if self.has_unknown_state_by_key(from_key) or self.has_unknown_state_by_key(
-            to_key
-        ):
+        if self.has_error_state_by_key(from_key) or self.has_error_state_by_key(to_key):
             raise RuntimeError(
-                f"cannot move between positions with unknown state: {from_key} -> {to_key}"
+                f"cannot move between positions with error state: {from_key} -> {to_key}"
             )
         self._ensure_action_parent(to_key)
         # Both positions are touched by this one move statement, so they share a
@@ -716,9 +712,9 @@ class ParticleTracker:
         or an empty position that was inferred-empty at the start and never set by
         a callee (with one exception: see the docstring of _WriteRecord.ever_set_by_callee).
         """
-        unknown_state = self._store.unknown.get(key)
-        if unknown_state is not None and unknown_state.caused_by is not None:
-            return action_contract.UnknownGuarantee(caused_by=unknown_state.caused_by)
+        error_state = self._store.error.get(key)
+        if error_state is not None and error_state.caused_by is not None:
+            return action_contract.ErrorGuarantee(caused_by=error_state.caused_by)
         state = self._store.state.get(key)
         if state is not None and state.particle_info is not None:
             info = state.particle_info
@@ -817,9 +813,7 @@ class ParticleTracker:
 
         # Saved subtrees for swap safety. Keyed by the origin's full key.
         saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]] = {}
-        saved_unknown: dict[
-            tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]
-        ] = {}
+        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]] = {}
 
         for name, guarantee in guarantees:
             key = pending_guarantee.key_for(name)
@@ -863,16 +857,16 @@ class ParticleTracker:
                 # already handled by caused_by sorting, above.)
                 if key in self._store.state:
                     saved_state[key] = self._store.state.pop_subtree(key)
-                if key in self._store.unknown:
-                    saved_unknown[key] = self._store.unknown.pop_subtree(key)
+                if key in self._store.error:
+                    saved_error[key] = self._store.error.pop_subtree(key)
             elif key in self._store.state:
                 # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
                 # or creates in position<item> (OccupiedByNewGuarantee), any children
                 # the caller had under position<item> must disappear. We achieve this
                 # by deleting each key's entire subtree before applying its guarantee.
                 del self._store.state[key]
-                if key in self._store.unknown:
-                    del self._store.unknown[key]
+                if key in self._store.error:
+                    del self._store.error[key]
 
             match guarantee:
                 case action_contract.OccupiedByExistingGuarantee():
@@ -881,7 +875,7 @@ class ParticleTracker:
                         pending_guarantee,
                         guarantee,
                         saved_state,
-                        saved_unknown,
+                        saved_error,
                     )
                 case action_contract.EmptyGuarantee():
                     self._store.state[key] = _NodeState(emptied_by=guarantee.caused_by)
@@ -892,10 +886,8 @@ class ParticleTracker:
                         origin_position=guarantee.caused_by,
                     )
                     self._store.state[key] = _NodeState(particle_info=new_info)
-                case action_contract.UnknownGuarantee():
-                    self._store.unknown[key] = _UnknownState(
-                        caused_by=guarantee.caused_by
-                    )
+                case action_contract.ErrorGuarantee():
+                    self._store.error[key] = _ErrorState(caused_by=guarantee.caused_by)
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 
@@ -909,7 +901,7 @@ class ParticleTracker:
         This happens only when the caller of an action did not fill a required
         position and now we are trying to apply a guarantee to a child of that
         position. If that happened for this key, we mark the first missing node
-        as unknown and return False to indicate the guarantee should be skipped.
+        as error and return False to indicate the guarantee should be skipped.
 
         Returns True when the parent path is fully in the state trie (or
         could be completed by _ensure_action_parent).
@@ -927,9 +919,9 @@ class ParticleTracker:
         if can_bridge:
             return True
         # The caller never filled a required position ancestor.
-        # Mark the first missing node as unknown.
+        # Mark the first missing node as error.
         missing_key = (*ancestor_key, first_missing)
-        self._store.unknown[missing_key] = _UnknownState(caused_by=guarantee.caused_by)
+        self._store.error[missing_key] = _ErrorState(caused_by=guarantee.caused_by)
         return False
 
     def _apply_existing_guarantee(
@@ -938,7 +930,7 @@ class ParticleTracker:
         pending_guarantee: _PendingGuarantee,
         guarantee: action_contract.OccupiedByExistingGuarantee,
         saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]],
-        saved_unknown: dict[tuple[str, ...], trie.StrictReparentingTrie[_UnknownState]],
+        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]],
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""
         origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
@@ -954,14 +946,14 @@ class ParticleTracker:
         else:
             # The caller never filled the position, and we are executing an OccupiedByExisting
             # guarnatee on the same position that a particle was passed in on.
-            self._store.unknown[dest_key] = _UnknownState(caused_by=guarantee.caused_by)
+            self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return
 
         # The caller never filled the input interface position. The callee moves the particle to
         # another position. Thus, the origin_state _exists_ but the position got EmptyGuarantee
         # instead of being filled by something (and there's nothing in saved_state).
         if origin_state.particle_info is None:
-            self._store.unknown[dest_key] = _UnknownState(caused_by=guarantee.caused_by)
+            self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return
 
         moved_info = origin_state.particle_info.move_to(guarantee.caused_by)
@@ -975,19 +967,17 @@ class ParticleTracker:
             self._store.state.move_subtree(origin_key, dest_key)
             self._store.state[dest_key] = _NodeState(particle_info=moved_info)
 
-        saved_unk = saved_unknown.pop(origin_key, None)
-        # Guarantees reset the unknown state of particles they touch directly.
+        saved_unk = saved_error.pop(origin_key, None)
+        # Guarantees reset the error state of particles they touch directly.
         # If we guarantee a particle in a position, then we know that it has a
-        # particle. However, its _children_ might still be in some unknown state.
-        # Exception: if the origin had pre-action unknown state (saved before the
+        # particle. However, its _children_ might still be in some error state.
+        # Exception: if the origin had pre-action error state (saved before the
         # guarantee loop began), the destination inherits that caused_by — the
         # guarantee fills it with whatever was at origin, including the uncertainty.
         if saved_unk is not None:
-            origin_unknown = saved_unk[origin_tuple[-1:]]
-            self._store.unknown[dest_key] = _UnknownState(
-                caused_by=origin_unknown.caused_by
-            )
-            self._store.unknown.graft_subtree(dest_key, saved_unk.root_children())
-        elif origin_key in self._store.unknown:
-            self._store.unknown.move_subtree(origin_key, dest_key)
-            self._store.unknown[dest_key] = _UnknownState()
+            origin_error = saved_unk[origin_tuple[-1:]]
+            self._store.error[dest_key] = _ErrorState(caused_by=origin_error.caused_by)
+            self._store.error.graft_subtree(dest_key, saved_unk.root_children())
+        elif origin_key in self._store.error:
+            self._store.error.move_subtree(origin_key, dest_key)
+            self._store.error[dest_key] = _ErrorState()

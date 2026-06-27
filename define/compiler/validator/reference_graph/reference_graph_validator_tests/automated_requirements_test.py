@@ -311,10 +311,10 @@ def test_caller_violates_empty_requirement(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_empty_requirement_with_unknown_state_is_silent(
+def test_empty_requirement_with_error_state_is_silent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When position state is unknown from a failed move, no empty requirement diagnostic is produced."""
+    """When position state is error from a failed move, no empty requirement diagnostic is produced."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -359,10 +359,10 @@ def test_empty_requirement_with_unknown_state_is_silent(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_occupied_requirement_with_unknown_state_is_silent(
+def test_occupied_requirement_with_error_state_is_silent(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When position state is unknown from a failed move, no occupied requirement diagnostic is produced."""
+    """When position state is error from a failed move, no occupied requirement diagnostic is produced."""
     result = validate_project_with_reference_graph(
         {
             "other.dfn": (
@@ -408,14 +408,14 @@ def test_occupied_requirement_with_unknown_state_is_silent(
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
-def test_unknown_requirement_does_not_skip_later_unsatisfied_requirement(
+def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """An unknown-state requirement does not skip subsequent requirements.
+    """An error-state requirement does not skip subsequent requirements.
 
-    When one inferred requirement's position is unknown, subsequent
+    When one inferred requirement's position is error, subsequent
     requirements must still be checked. Ensures `_check_requirements` uses
-    `continue` to skip the unknown one rather than `break` out of the loop.
+    `continue` to skip the error one rather than `break` out of the loop.
     """
     result = validate_project_with_reference_graph(
         {

@@ -157,7 +157,7 @@ def test_destroy_prunes_children_within_action(
     assert all_diags[0].parent_position_name == "position<parent>"
 
 
-def test_destroy_clears_unknown_state_on_children(
+def test_destroy_clears_error_state_on_children(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
     result = validate_project_with_reference_graph(

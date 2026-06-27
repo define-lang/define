@@ -344,10 +344,10 @@ def test_cascade_fires_child_destructor_before_parents_own(
     ]
 
 
-def test_cascade_skips_unknown_position_own_destructor(
+def test_cascade_skips_error_position_own_destructor(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """An error that marks a position's state unknown stops the cascade from firing its own destructor."""
+    """An error that marks a position's state error stops the cascade from firing its own destructor."""
     result = validate_project_with_reference_graph(
         {
             "child_destructor.dfn": _named_destructor_noop("child_destructor"),
@@ -394,10 +394,10 @@ def test_cascade_skips_unknown_position_own_destructor(
     assert result.action_call_graph.edges() == []
 
 
-def test_cascade_does_not_walk_subtree_of_unknown_position(
+def test_cascade_does_not_walk_subtree_of_error_position(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """An error that marks an intermediate position unknown stops the cascade from firing a descendant's destructor."""
+    """An error that marks an intermediate position error stops the cascade from firing a descendant's destructor."""
     result = validate_project_with_reference_graph(
         {
             "grandchild_destructor.dfn": _named_destructor_noop(

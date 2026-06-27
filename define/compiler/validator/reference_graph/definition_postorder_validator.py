@@ -313,7 +313,7 @@ class DefinitionPostorderValidator(abc.ABC):
         # situations where the developer has written a statement that operates on
         # the child of a non-existent particle. The executor's parent check
         # will later detect this situation, emit a diagnostic, and mark the
-        # relevant position unknown.
+        # relevant position error.
         if not self._tracker.is_occupied_by_key(parent_key):
             return None
         particle_info = self._tracker.get_occupant_by_key(parent_key)
@@ -419,10 +419,10 @@ class DefinitionPostorderValidator(abc.ABC):
         *,
         is_auto_destruction: bool,
     ):
-        # An unknown-state position is opaque: we cannot claim its destructors
+        # An error-state position is opaque: we cannot claim its destructors
         # would fire and we cannot reason about its subtree, so the cascade
         # skips it entirely.
-        if self._tracker.has_unknown_state(position):
+        if self._tracker.has_error_state(position):
             return
         if not self._tracker.is_occupied(position):
             # Validation checks will throw an error later for this case,
@@ -719,7 +719,7 @@ class DefinitionPostorderValidator(abc.ABC):
     ):
         """Emit a diagnostic if a single requirement is not satisfied."""
         key = full_caller_chain.canonical_chained_name_tuple
-        if self._tracker.has_unknown_state_by_key(key):
+        if self._tracker.has_error_state_by_key(key):
             return
         occupant = (
             self._tracker.get_occupant_by_key(key)
@@ -825,8 +825,8 @@ class DefinitionPostorderValidator(abc.ABC):
             destruction_contract.destroyed_position_contracted.in_caller(action_chain)
         )
         # The action's requirement check already handles missing or
-        # unknown-state particles, so there is nothing more to verify here.
-        if self._tracker.has_unknown_state(
+        # error-state particles, so there is nothing more to verify here.
+        if self._tracker.has_error_state(
             caller_particle_position
         ) or not self._tracker.is_occupied(caller_particle_position):
             return
@@ -840,7 +840,7 @@ class DefinitionPostorderValidator(abc.ABC):
         ):
             destroying_definition = destroying_definition_result.definition
         # Only the action that created the particle may treat an untouched child as
-        # empty; otherwise an untouched child's state is unknown, because a higher caller
+        # empty; otherwise an untouched child's state is error, because a higher caller
         # could have filled it before passing it.
         created_in_this_action = not caller_particle.from_caller
         if created_in_this_action:
@@ -919,7 +919,7 @@ class DefinitionPostorderValidator(abc.ABC):
         created_in_this_action: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
     ):
-        if self._tracker.has_unknown_state(position) or not self._tracker.is_occupied(
+        if self._tracker.has_error_state(position) or not self._tracker.is_occupied(
             position
         ):
             return
@@ -1180,8 +1180,8 @@ class DefinitionPostorderValidator(abc.ABC):
             # The owner created the particle, and we have optimized this case to
             # not copy the whole subtree to update a new child_state and instead
             # to just read the state out of the current tracker.
-            if self._tracker.has_unknown_state(required_position):
-                occupancy = action_contract.UNKNOWN_OCCUPANCY
+            if self._tracker.has_error_state(required_position):
+                occupancy = action_contract.ERROR_OCCUPANCY
             elif self._tracker.is_occupied(required_position):
                 occupancy = action_contract.ChildOccupancy(
                     action_contract.PositionOccupancyState.OCCUPIED,
@@ -1235,7 +1235,7 @@ class DefinitionPostorderValidator(abc.ABC):
             # Spec: "If the compiler is uncertain about whether a position still
             # contains a particle, it only destroys the particle if
             # one is present."
-            if self._tracker.has_unknown_state(position):
+            if self._tracker.has_error_state(position):
                 continue
             if not self._tracker.is_occupied(position):
                 continue
@@ -1258,7 +1258,7 @@ class DefinitionPostorderValidator(abc.ABC):
             return
         self._validate_chained_name(stmt.target_position, scope)
         position = stmt.target_position
-        if self._tracker.has_unknown_state(position):
+        if self._tracker.has_error_state(position):
             return
 
         self._maybe_infer_requirements_on_chain(
@@ -1283,7 +1283,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if not validity.target_ok:
             return
         self._validate_chained_name(stmt.target_position, scope)
-        if self._tracker.has_unknown_state(stmt.target_position):
+        if self._tracker.has_error_state(stmt.target_position):
             return
 
         self._maybe_infer_requirements_on_chain(
@@ -1311,8 +1311,8 @@ class DefinitionPostorderValidator(abc.ABC):
         if not (validity.source_ok and validity.target_ok):
             return
         if validity.from_is_prefix_of_to:
-            self._tracker.mark_unknown(stmt.source_position)
-            self._tracker.mark_unknown(stmt.target_position)
+            self._tracker.mark_error(stmt.source_position)
+            self._tracker.mark_error(stmt.target_position)
             return
         self._validate_chained_name(stmt.source_position, scope)
         self._validate_chained_name(stmt.target_position, scope)
@@ -1332,11 +1332,11 @@ class DefinitionPostorderValidator(abc.ABC):
         scope: scope_tracker.ScopeTracker,
     ):
         """Execute a move and update tracker state."""
-        if self._tracker.has_unknown_state(from_pos) or self._tracker.has_unknown_state(
+        if self._tracker.has_error_state(from_pos) or self._tracker.has_error_state(
             to_pos
         ):
-            self._tracker.mark_unknown(from_pos)
-            self._tracker.mark_unknown(to_pos)
+            self._tracker.mark_error(from_pos)
+            self._tracker.mark_error(to_pos)
             return
 
         self._maybe_infer_requirements_on_chain(
@@ -1368,7 +1368,7 @@ class DefinitionPostorderValidator(abc.ABC):
     ):
         """Validate chained name elements against their parent name's constraints.
 
-        Marks the chain's occupancy state as UNKNOWN in the tracker if validation fails.
+        Marks the chain's occupancy state as ERROR in the tracker if validation fails.
         """
         if len(chain.typed_names) < 2:
             return
@@ -1431,11 +1431,11 @@ class DefinitionPostorderValidator(abc.ABC):
         parent: ast.GlobalTypedNameReference,
         chain: ast.PositionReference,
     ) -> ast.QualityDefinition | None:
-        """Get the QualityDefinition for a chain element, or None on failure (and mark chain unknown)."""
+        """Get the QualityDefinition for a chain element, or None on failure (and mark chain error)."""
         parent_result = self._definition_results.get(parent)
         # This means the definition's file did not load or did not parse.
         if parent_result is None:
-            self._tracker.mark_unknown(chain)
+            self._tracker.mark_error(chain)
             return None
         return parent_result.definition
 
@@ -1496,7 +1496,7 @@ class DefinitionPostorderValidator(abc.ABC):
                     parent_name=parent_name,
                 )
             )
-            self._tracker.mark_unknown(chain)
+            self._tracker.mark_error(chain)
 
     def _emit_not_in_action_diagnostic(
         self,
@@ -1512,7 +1512,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 parent_name=parent_name,
             )
         )
-        self._tracker.mark_unknown(chain)
+        self._tracker.mark_error(chain)
 
     def _get_direct_required_qualities(
         self,
@@ -1731,7 +1731,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 
         A destructor may not change any contracted position's state (DLP 41), so
         each guarantee it produces is a violation. The returned contract may not
-        advertise such a guarantee, so each is replaced with an UnknownGuarantee
+        advertise such a guarantee, so each is replaced with an ErrorGuarantee
         that leaves the position's post-destructor state undetermined for any
         consumer of the contract. The destructor's guarantees are fully expanded
         (no nested references), so the returned contract has no nested guarantees.
@@ -1785,7 +1785,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                             ),
                         )
                     )
-                case action_contract.UnknownGuarantee():
+                case action_contract.ErrorGuarantee():
                     rewritten.append((key, guarantee))
                     continue
                 case _:
@@ -1793,7 +1793,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                         f"unexpected guarantee type {type(guarantee).__name__}"
                     )
             rewritten.append(
-                (key, action_contract.UnknownGuarantee(caused_by=guarantee.caused_by))
+                (key, action_contract.ErrorGuarantee(caused_by=guarantee.caused_by))
             )
         return action_contract.Guarantees(own=rewritten, nested=())
 

@@ -304,7 +304,7 @@ def test_two_actions_with_move_same_local_names(
     assert_no_errors(result)
 
 
-def test_move_from_empty_marks_both_positions_unknown(
+def test_move_from_empty_marks_both_positions_error(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
     source = (
@@ -330,7 +330,7 @@ def test_move_from_empty_marks_both_positions_unknown(
     assert diags[0].position_name == "position<a>"
 
 
-def test_move_to_occupied_marks_both_positions_unknown(
+def test_move_to_occupied_marks_both_positions_error(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
     source = (
@@ -361,7 +361,7 @@ def test_move_to_occupied_marks_both_positions_unknown(
     assert diags[0].occupied_at.line == 9
 
 
-def test_both_from_empty_and_to_occupied_marks_unknown(
+def test_both_from_empty_and_to_occupied_marks_error(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
     source = (
@@ -396,7 +396,7 @@ def test_both_from_empty_and_to_occupied_marks_unknown(
     assert diags[1].occupied_at.line == 8
 
 
-def test_unknown_state_does_not_affect_other_positions(
+def test_error_state_does_not_affect_other_positions(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
     source = (
@@ -431,7 +431,7 @@ def test_unknown_state_does_not_affect_other_positions(
     assert diags[1].occupied_at.line == 10
 
 
-def test_single_unknown_position_marks_both_unknown(
+def test_single_error_position_marks_both_error(
     validate_non_filesystem_with_reference_graph: ValidateNonFilesystemWithReferenceGraph,
 ):
     source = (

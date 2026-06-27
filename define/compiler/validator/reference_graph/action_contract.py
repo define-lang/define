@@ -14,7 +14,7 @@ class PositionOccupancyState(enum.Enum):
 
     EMPTY = enum.auto()
     OCCUPIED = enum.auto()
-    UNKNOWN = enum.auto()
+    ERROR = enum.auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,10 +28,10 @@ class ChildOccupancy:
     filled_at: ast.SourceLocation | None = None
 
 
-# The empty and unknown states carry no fill site, so a single shared instance
+# The empty and error states carry no fill site, so a single shared instance
 # serves every position. OCCUPIED must be constructed with its own filled_at.
 EMPTY_OCCUPANCY = ChildOccupancy(PositionOccupancyState.EMPTY)
-UNKNOWN_OCCUPANCY = ChildOccupancy(PositionOccupancyState.UNKNOWN)
+ERROR_OCCUPANCY = ChildOccupancy(PositionOccupancyState.ERROR)
 
 
 class PropagationKind(enum.Enum):
@@ -237,7 +237,7 @@ class OccupiedByNewGuarantee(PositionGuarantee):
 
 
 @dataclass(frozen=True)
-class UnknownGuarantee(PositionGuarantee):
+class ErrorGuarantee(PositionGuarantee):
     """The position's state could not be determined due to an error."""
 
 

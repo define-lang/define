@@ -70,7 +70,7 @@ class ParticleOperationExecutor:
         """Execute the Create operation."""
         parent_diags = self._check_parents_occupied(op.target)
         if parent_diags:
-            self._tracker.mark_unknown(op.target)
+            self._tracker.mark_error(op.target)
             return parent_diags
         if self._tracker.is_occupied(op.target):
             # Target is genuinely occupied — leave its known state intact so
@@ -105,8 +105,8 @@ class ParticleOperationExecutor:
             op.source
         ) + self._check_parents_occupied(op.target)
         if parent_diags:
-            self._tracker.mark_unknown(op.source)
-            self._tracker.mark_unknown(op.target)
+            self._tracker.mark_error(op.source)
+            self._tracker.mark_error(op.target)
             return parent_diags
         from_occupied = self._tracker.is_occupied(op.source)
         to_empty = not self._tracker.is_occupied(op.target)
@@ -139,8 +139,8 @@ class ParticleOperationExecutor:
                 )
             )
         if diags:
-            self._tracker.mark_unknown(op.source)
-            self._tracker.mark_unknown(op.target)
+            self._tracker.mark_error(op.source)
+            self._tracker.mark_error(op.target)
             return diags
         have = _name_set(self._tracker.get_occupant(op.source).qualities)
         missing = [
@@ -149,8 +149,8 @@ class ParticleOperationExecutor:
             if name.full_typed_name not in have
         ]
         if missing:
-            self._tracker.mark_unknown(op.source)
-            self._tracker.mark_unknown(op.target)
+            self._tracker.mark_error(op.source)
+            self._tracker.mark_error(op.target)
             return [
                 diagnostics.MoveViolatesConstraintsDiagnostic(
                     location=op.target.location,
@@ -173,10 +173,10 @@ class ParticleOperationExecutor:
         """
         parent_diags = self._check_parents_occupied(op.target)
         if parent_diags:
-            self._tracker.mark_unknown(op.target)
+            self._tracker.mark_error(op.target)
             return parent_diags
         if not self._tracker.is_occupied(op.target):
-            self._tracker.mark_unknown(op.target)
+            self._tracker.mark_error(op.target)
             from_action = op.target.get_last_action()
             if from_action is not None:
                 emptied_by = self._tracker.get_emptied_by(op.target)

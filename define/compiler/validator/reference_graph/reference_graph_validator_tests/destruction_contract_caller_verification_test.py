@@ -1547,10 +1547,10 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     ]
 
 
-def test_owner_with_unknown_required_position_skips_destructor_check(
+def test_owner_with_error_required_position_skips_destructor_check(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
-    """When the owner leaves a destructor's required position in an unknown state (here by moving from it while empty), the destructor cannot be verified and is skipped rather than reported, so only the move-from-empty diagnostic surfaces."""
+    """When the owner leaves a destructor's required position in an error state (here by moving from it while empty), the destructor cannot be verified and is skipped rather than reported, so only the move-from-empty diagnostic surfaces."""
     result = validate_project_with_reference_graph(
         {
             "x.dfn": "define the potential position<my.domain.com:my_lib:/x>.\n",
@@ -1610,7 +1610,7 @@ def test_owner_with_unknown_required_position_skips_destructor_check(
     )
     all_diags = result.program_result.all_diagnostics
     # Only the move-from-empty; the destructor's requirement on position</x> is
-    # unknown to the owner, so it is skipped rather than reported as a violation.
+    # error to the owner, so it is skipped rather than reported as a violation.
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
