@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 
 from define.compiler import diagnostics
 from define.compiler.conftest import ValidateProjectWithReferenceGraph
+from define.compiler.validator.test_helpers import assert_no_errors
 
 
 def test_create_in_implied_position_emits_occupied_by_new(
@@ -722,6 +723,120 @@ def test_cross_fqun_implied_position_init_block(
     assert all_diags[0].populated_at.end_line == 3
     assert all_diags[0].populated_at.end_column == 42
     assert all_diags[0].populated_at.file_path == PurePosixPath("lib/a.dfn")
+
+
+def test_callee_filled_then_destroyed_implied_position_reads_empty_in_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/middle destroys an implied position its callee /filler filled, so the outer caller sees it empty and destroying it there reports an empty position."""
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the action</filler>.\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</filler>::position<trigger_pos>.\n"
+                "        destroy the particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</middle>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
+                "        destroy the particle in position<box>::position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 33
+    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_column == 66
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<box>::position</implied>"
+
+
+def test_callee_filled_then_destroyed_implied_position_is_refillable_in_caller(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """/middle destroys an implied position its callee /filler filled, so the outer caller can create a particle there without a spurious occupied error."""
+    result = validate_project_with_reference_graph(
+        {
+            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
+            "filler.dfn": (
+                "define the potential action<my.domain.com:my_lib:/filler> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<trigger_pos>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "middle.dfn": (
+                "define the potential action<my.domain.com:my_lib:/middle> {\n"
+                "    it also assigns the action</filler>.\n"
+                "    it also assigns the position</implied>.\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        create a particle in action</filler>::position<trigger_pos>.\n"
+                "        destroy the particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</middle>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</middle>::position<run>.\n"
+                "        create a particle in position<box>::position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert_no_errors(result.program_result)
 
 
 def test_create_in_implied_action_interface_position_propagates(
