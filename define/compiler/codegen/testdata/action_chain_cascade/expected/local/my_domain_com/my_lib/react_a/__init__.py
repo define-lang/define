@@ -27,5 +27,16 @@ class ReactA(literal.Action):
 
     @override
     def execute(self):
-        local_result = literal.LocalPosition("position<local_result>")
-        local_result.create_particle()
+        self.get_interface_position(
+            "position<result>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<result>"
+        ).particle.get_action(
+            "action<my.domain.com:my_lib:/final>"
+        ).get_interface_position(
+            "position<trigger>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()

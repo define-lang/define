@@ -191,6 +191,7 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_unused>.\n"
+                "        create a particle in position<_unused>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -644,6 +645,7 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        define the position<_unused>.\n"
+                "        create a particle in position<_unused>.\n"
                 "    }\n"
                 "}\n"
             ),

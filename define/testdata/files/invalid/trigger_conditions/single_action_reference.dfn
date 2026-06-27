@@ -1,5 +1,4 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/trigger_conditions/single_action_reference> {
-    define the position<run>.
     it happens when {
         the action<act_other> has a particle.
     } and it does {

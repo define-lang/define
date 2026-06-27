@@ -223,6 +223,16 @@ py_test(
 )
 
 py_test(
+    name = "unreferenced_positions_test",
+    size = "small",
+    srcs = ["unreferenced_positions_test.py"],
+    deps = [
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_test(
     name = "universe_without_authority_test",
     size = "small",
     srcs = ["universe_without_authority_test.py"],
@@ -285,6 +295,7 @@ pyright_test(
         ":reserved_name_positions_test",
         ":trigger_conditions_test",
         ":universe_without_authority_test",
+        ":unreferenced_positions_test",
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
     ],

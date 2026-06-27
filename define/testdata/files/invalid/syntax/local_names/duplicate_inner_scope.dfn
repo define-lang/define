@@ -5,5 +5,6 @@ define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_
     } and it does {
         define the position<same_name>.
         define the position<same_name>.
+        create a particle in position<same_name>.
     }
 }

@@ -5,5 +5,6 @@ define the potential action<my.domain.com:my_lib:/react_b> {
     } and it does {
         define the position<local_result>.
         create a particle in position<local_result>.
+        destroy the particle in position<trigger>.
     }
 }

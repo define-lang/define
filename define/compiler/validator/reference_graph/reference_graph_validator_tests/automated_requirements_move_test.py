@@ -197,7 +197,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -235,6 +235,11 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
             "file_path": "outer.dfn",
         },
     )
+    assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[1].position_name == "position<extra>"
+    assert all_diags[1].location.line == 4
+    assert all_diags[1].location.column == 25
+    assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -313,7 +318,7 @@ def test_requirement_inferred_when_trigger_moved_to_local(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.runner_description == f"'{_OUTER}'"
@@ -349,6 +354,11 @@ def test_requirement_inferred_when_trigger_moved_to_local(
             "file_path": "outer.dfn",
         },
     )
+    assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[1].position_name == "position<extra>"
+    assert all_diags[1].location.line == 4
+    assert all_diags[1].location.column == 25
+    assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 
@@ -1355,6 +1365,7 @@ def test_caller_sees_requirement_when_interface_moved_to_sibling_interface(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
+                "        create a particle in position<input>.\n"
                 "        define the position<work>.\n"
                 "        create a particle in position<work>.\n"
                 "    }\n"
@@ -1417,6 +1428,7 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
+                "        create a particle in position<input>.\n"
                 "        define the position<work>.\n"
                 "        create a particle in position<work>.\n"
                 "    }\n"
@@ -1634,6 +1646,7 @@ def test_caller_sees_requirement_when_implied_moved_to_implied(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
+                "        create a particle in position<input>.\n"
                 "        define the position<work>.\n"
                 "        create a particle in position<work>.\n"
                 "    }\n"
@@ -1702,6 +1715,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
+                "        create a particle in position<input>.\n"
                 "        define the position<work>.\n"
                 "        create a particle in position<work>.\n"
                 "    }\n"

@@ -178,6 +178,18 @@ class UnusedQualityImplicationDiagnostic(Diagnostic):
 
 
 @dataclass
+class UnreferencedPositionDiagnostic(Diagnostic):
+    """Diagnostic for a position defined but never referenced in its definition."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "'{self.position_name}' is defined here, but it is never referenced "
+        "within this definition; either remove the definition or reference "
+        "'{self.position_name}'."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

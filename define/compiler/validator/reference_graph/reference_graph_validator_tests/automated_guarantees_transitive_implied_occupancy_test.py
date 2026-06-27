@@ -941,8 +941,8 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<iface>.\n"
+                "        destroy the particle in position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),

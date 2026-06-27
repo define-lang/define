@@ -4,5 +4,6 @@ define the potential action<mv:define-lang.org:test_files:/valid/action_with_out
         the position<outer_pos> has a particle.
     } and it does {
         define the position<inner_pos>.
+        create a particle in position<inner_pos>.
     }
 }

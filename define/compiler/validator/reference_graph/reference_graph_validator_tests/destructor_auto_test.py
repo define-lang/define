@@ -160,7 +160,13 @@ def test_empty_local_position_does_not_fire_destructor(
             ),
         },
     )
-    assert_no_errors(result.program_result)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<box>"
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 29
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert result.action_call_graph.edges() == []
 
 

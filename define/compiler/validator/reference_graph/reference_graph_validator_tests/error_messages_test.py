@@ -546,8 +546,7 @@ def test_destroy_in_emptied_interface_position_format(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -593,8 +592,7 @@ def test_destroy_in_default_empty_interface_position_format(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),

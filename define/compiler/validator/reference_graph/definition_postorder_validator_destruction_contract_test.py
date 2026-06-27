@@ -27,6 +27,7 @@ _NOOP_D1 = (
     "        this particle is being destroyed.\n"
     "    } and it does {\n"
     "        define the position<_x>.\n"
+    "        create a particle in position<_x>.\n"
     "    }\n"
     "}\n"
 )

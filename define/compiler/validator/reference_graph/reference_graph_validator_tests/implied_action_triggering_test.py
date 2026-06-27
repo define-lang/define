@@ -220,6 +220,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
                 "        create a particle in position<_noop>.\n"
+                "        create a particle in position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -325,6 +326,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
                 "        create a particle in position<_noop>.\n"
+                "        create a particle in position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -414,6 +416,7 @@ def test_caller_triggers_action_implied_by_constraint(
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
                 "        create a particle in position<_noop>.\n"
+                "        create a particle in position<spare_iface>.\n"
                 "    }\n"
                 "}\n"
             ),

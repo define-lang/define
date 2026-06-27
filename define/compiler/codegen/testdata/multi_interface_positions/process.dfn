@@ -7,5 +7,7 @@ define the potential action<my.domain.com:my_lib:/process> {
     } and it does {
         define the position<result>.
         create a particle in position<result>.
+        destroy the particle in position<input>.
+        create a particle in position<config>.
     }
 }

@@ -21,3 +21,6 @@ class Final(literal.Action):
     def execute(self):
         complete = literal.LocalPosition("position<complete>")
         complete.create_particle()
+        self.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()

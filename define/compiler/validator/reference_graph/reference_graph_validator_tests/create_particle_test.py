@@ -154,6 +154,7 @@ def test_local_position_defined_after_use(
         "    } and it does {\n"
         "        create a particle in position<later_pos>.\n"
         "        define the position<later_pos>.\n"
+        "        create a particle in position<later_pos>.\n"
         "    }\n"
         "}\n"
     )

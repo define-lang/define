@@ -1484,6 +1484,7 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
                 "                it has the action</inner>.\n"
                 "            }\n"
                 "        }\n"
+                "        destroy the particle in position<iface>.\n"
                 "        create a particle in position<local>.\n"
                 "        create a particle in position<local>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"

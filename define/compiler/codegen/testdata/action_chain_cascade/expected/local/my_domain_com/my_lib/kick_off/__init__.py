@@ -29,5 +29,23 @@ class KickOff(literal.Action):
 
     @override
     def execute(self):
-        done = literal.LocalPosition("position<done>")
-        done.create_particle()
+        self.get_interface_position(
+            "position<output>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<output>"
+        ).particle.get_action(
+            "action<my.domain.com:my_lib:/react_a>"
+        ).get_interface_position(
+            "position<trigger>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<output>"
+        ).particle.get_action(
+            "action<my.domain.com:my_lib:/react_b>"
+        ).get_interface_position(
+            "position<trigger>"
+        ).create_particle()
+        self.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()

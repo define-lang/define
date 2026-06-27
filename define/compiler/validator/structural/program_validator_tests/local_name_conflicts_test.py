@@ -15,6 +15,7 @@ def test_different_names_no_error():
         "    it happens when {\n"
         "        the position<alpha> has a particle.\n"
         "    } and it does {\n"
+        "        create a particle in position<beta>.\n"
         "        define the position<_noop>.\n"
         "        create a particle in position<_noop>.\n"
         "    }\n"
@@ -65,6 +66,7 @@ def test_three_locals_two_same_one_diagnostic():
         "    it happens when {\n"
         "        the position<alpha> has a particle.\n"
         "    } and it does {\n"
+        "        create a particle in position<beta>.\n"
         "        define the position<_noop>.\n"
         "        create a particle in position<_noop>.\n"
         "    }\n"
@@ -197,6 +199,7 @@ def test_action_statements_local_name_no_error():
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        define the position<alpha>.\n"
+        "        create a particle in position<alpha>.\n"
         "    }\n"
         "}\n"
     )
@@ -218,6 +221,7 @@ def test_action_statements_duplicate_name_error():
         "    } and it does {\n"
         "        define the position<alpha>.\n"
         "        define the position<alpha>.\n"
+        "        create a particle in position<alpha>.\n"
         "    }\n"
         "}\n"
     )

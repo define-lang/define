@@ -20,5 +20,12 @@ class Destructor(literal.Action):
 
     @override
     def execute(self):
-        _noop = literal.LocalPosition("position<_noop>")
-        _noop.create_particle()
+        _holder = literal.LocalPosition("position<_holder>")
+        self.get_interface_position(
+            "position<slot>"
+        ).move_particle_to(_holder)
+        _holder.move_particle_to(
+            self.get_interface_position(
+                "position<slot>"
+            )
+        )

@@ -5,10 +5,5 @@ define the potential position<my.domain.com:my_lib:/test> {
     after it is assigned {
         create a particle in position</test>.
         create a particle in position</test>::action</kick_off>::position<trigger>.
-        create a particle in position</test>::action</kick_off>::position<output>.
-        create a particle in position</test>::action</kick_off>::position<output>::action</react_a>::position<trigger>.
-        create a particle in position</test>::action</kick_off>::position<output>::action</react_b>::position<trigger>.
-        create a particle in position</test>::action</kick_off>::position<output>::action</react_a>::position<result>.
-        create a particle in position</test>::action</kick_off>::position<output>::action</react_a>::position<result>::action</final>::position<trigger>.
     }
 }

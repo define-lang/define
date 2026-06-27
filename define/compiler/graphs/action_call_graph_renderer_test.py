@@ -101,8 +101,7 @@ _ACTION_B_TRIGGERED = (
     "    it happens when {\n"
     "        the position<pp> has a particle.\n"
     "    } and it does {\n"
-    "        define the position<placeholder>.\n"
-    "        create a particle in position<placeholder>.\n"
+    "        create a particle in position<do_nothing>.\n"
     "    }\n"
     "}\n"
 )

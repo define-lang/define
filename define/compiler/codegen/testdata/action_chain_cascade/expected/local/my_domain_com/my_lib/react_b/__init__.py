@@ -21,3 +21,6 @@ class ReactB(literal.Action):
     def execute(self):
         local_result = literal.LocalPosition("position<local_result>")
         local_result.create_particle()
+        self.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()

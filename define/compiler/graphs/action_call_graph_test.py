@@ -347,8 +347,7 @@ class TestActionCallGraph:
                     "    it happens when {\n"
                     "        the position<trigger_pos> has a particle.\n"
                     "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<other_pos>.\n"
                     "    }\n"
                     "}\n"
                 ),

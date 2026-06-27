@@ -140,14 +140,22 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
     "syntax/local_names/duplicate_inner_scope.dfn": [
         diagnostics.LocalNameConflictDiagnostic,
     ],
-    "syntax/local_names/hyphen.dfn": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/local_names/hyphen.dfn": [
+        diagnostics.UnreferencedPositionDiagnostic,
+        diagnostics.InvalidLocalNameFormatDiagnostic,
+    ],
     "syntax/local_names/leading_digit.dfn": [
         diagnostics.InvalidLocalNameFormatDiagnostic,
+        diagnostics.UnreferencedPositionDiagnostic,
     ],
     "syntax/local_names/special_characters.dfn": [
+        diagnostics.UnreferencedPositionDiagnostic,
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
-    "syntax/local_names/uppercase.dfn": [diagnostics.InvalidLocalNameFormatDiagnostic],
+    "syntax/local_names/uppercase.dfn": [
+        diagnostics.InvalidLocalNameFormatDiagnostic,
+        diagnostics.UnreferencedPositionDiagnostic,
+    ],
     "syntax/paths/double_slash.dfn": [
         diagnostics.PathMismatchDiagnostic,
         diagnostics.GlobalNamePathEmptySegmentDiagnostic,

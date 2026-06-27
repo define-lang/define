@@ -6,5 +6,6 @@ define the potential action<mv:define-lang.org:test_local_pos:/test> {
     } and it does {
         define the position<_noop>.
         create a particle in position<_noop>.
+        create a particle in position<second_pos>.
     }
 }

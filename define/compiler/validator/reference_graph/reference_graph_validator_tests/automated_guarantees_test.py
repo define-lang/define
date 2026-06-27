@@ -35,8 +35,8 @@ def test_create_in_interface_position_starts_empty(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<item>.\n"
+                "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -74,8 +74,8 @@ def test_create_twice_in_interface_position(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<item>.\n"
+                "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -149,7 +149,7 @@ def test_untouched_interface_position_preserved_after_trigger(
         }
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -158,6 +158,11 @@ def test_untouched_interface_position_preserved_after_trigger(
     assert all_diags[0].populated_at.line == 12
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[1].position_name == "position<item>"
+    assert all_diags[1].location.line == 3
+    assert all_diags[1].location.column == 25
+    assert all_diags[1].location.file_path == PurePosixPath("other.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OTHER)
 
 
@@ -230,8 +235,8 @@ def test_post_trigger_guaranteed_empty_position_allows_create(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<item>.\n"
+                "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -787,8 +792,8 @@ def test_post_trigger_guaranteed_empty_position_allows_move_to(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<item>.\n"
+                "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -2273,6 +2278,7 @@ def test_destroy_produces_empty_guarantee(
                 "        define the position<dest>.\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<spare>.\n"
+                "        create a particle in position<dest>.\n"
                 "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"
                 "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
                 "        create a particle in position<box>::action</other>::position<item>.\n"

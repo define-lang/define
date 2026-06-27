@@ -222,6 +222,9 @@ class DefinitionStructuralValidator:
         ast.GlobalTypedNameReference, ast.QualityImplicationStatement
     ]
     _used_implied_qualities: set[str]
+    _unreferenced_positions: typed_name_dict.TypedNameDict[
+        ast.LocalTypedNameReference, ast.LocalPositionDefinition
+    ]
 
     def __init__(
         self,
@@ -244,6 +247,7 @@ class DefinitionStructuralValidator:
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
+        self._unreferenced_positions = typed_name_dict.TypedNameDict()
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
         """Validate one top-level definition and return its validation result."""
@@ -327,6 +331,7 @@ class DefinitionStructuralValidator:
             definition.action_statements,
             scope,
         )
+        self._check_unreferenced_positions()
         self._check_unused_quality_implications()
 
     def _validate_global_position_definition_block(
@@ -344,6 +349,7 @@ class DefinitionStructuralValidator:
                 scope,
                 allow_self_reference=True,
             )
+        self._check_unreferenced_positions()
         self._check_unused_quality_implications()
 
     def _validate_trigger_conditions(
@@ -424,6 +430,7 @@ class DefinitionStructuralValidator:
             )
             return
         scope.add_definition(local_def)
+        self._unreferenced_positions[local_def.typed_name] = local_def
 
     def _validate_create_particle(
         self,
@@ -538,6 +545,12 @@ class DefinitionStructuralValidator:
         first = chain.typed_names[0]
         last_typed_name = chain.typed_names[-1]
         may_continue = True
+
+        if (
+            isinstance(first, ast.LocalTypedNameReference)
+            and first in self._unreferenced_positions
+        ):
+            del self._unreferenced_positions[first]
 
         is_self_reference = (
             first.full_typed_name == self._definition.typed_name.source_typed_name
@@ -699,6 +712,15 @@ class DefinitionStructuralValidator:
             )
             self._implied_qualities[implication.typed_global_name] = implication
             self._process_reference(implication.typed_global_name)
+
+    def _check_unreferenced_positions(self):
+        for local_def in self._unreferenced_positions.values():
+            self._diagnostics.append(
+                diagnostics.UnreferencedPositionDiagnostic(
+                    location=local_def.typed_name.name_content.location,
+                    position_name=local_def.typed_name.source_typed_name,
+                )
+            )
 
     def _check_unused_quality_implications(self):
         for implied_name, implication in self._implied_qualities.items():

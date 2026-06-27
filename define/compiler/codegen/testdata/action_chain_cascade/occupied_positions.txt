@@ -1,7 +1,3 @@
 position<my.domain.com:my_lib:/test>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/kick_off>::position<trigger>
 position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/kick_off>::position<output>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/kick_off>::position<output>::action<my.domain.com:my_lib:/react_a>::position<trigger>
 position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/kick_off>::position<output>::action<my.domain.com:my_lib:/react_a>::position<result>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/kick_off>::position<output>::action<my.domain.com:my_lib:/react_a>::position<result>::action<my.domain.com:my_lib:/final>::position<trigger>
-position<my.domain.com:my_lib:/test>::action<my.domain.com:my_lib:/kick_off>::position<output>::action<my.domain.com:my_lib:/react_b>::position<trigger>

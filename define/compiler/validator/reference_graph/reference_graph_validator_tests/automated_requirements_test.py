@@ -842,6 +842,7 @@ def test_trigger_chain_occupied_requirement_satisfied(
                 "            }\n"
                 "        }\n"
                 "        define the position<spare2>.\n"
+                "        create a particle in position<spare2>.\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<spare>.\n"
                 "        move the particle in position<spare> to position<box>::action</other>::position<item>.\n"

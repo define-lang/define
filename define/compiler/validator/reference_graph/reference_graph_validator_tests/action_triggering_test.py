@@ -179,6 +179,7 @@ class TestActionTriggering:
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
                     "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -609,6 +610,7 @@ class TestPositionInitTriggering:
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
                     "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<non_trigger>.\n"
                     "    }\n"
                     "}\n"
                 ),

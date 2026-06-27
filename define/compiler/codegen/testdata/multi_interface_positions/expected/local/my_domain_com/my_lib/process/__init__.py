@@ -23,3 +23,9 @@ class Process(literal.Action):
     def execute(self):
         result = literal.LocalPosition("position<result>")
         result.create_particle()
+        self.get_interface_position(
+            "position<input>"
+        ).destroy_particle()
+        self.get_interface_position(
+            "position<config>"
+        ).create_particle()

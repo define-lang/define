@@ -852,8 +852,8 @@ def test_create_in_implied_action_interface_position_propagates(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
+                "        create a particle in position<iface>.\n"
+                "        destroy the particle in position<iface>.\n"
                 "    }\n"
                 "}\n"
             ),

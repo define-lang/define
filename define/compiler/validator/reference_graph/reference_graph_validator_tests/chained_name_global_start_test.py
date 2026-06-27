@@ -24,6 +24,7 @@ class TestUnnecessarySelfReference:
             "        the position<run> has a particle.\n"
             "    } and it does {\n"
             "        create a particle in action</test>::position<inner>.\n"
+            "        create a particle in position<inner>.\n"
             "    }\n"
             "}\n"
         )
@@ -231,6 +232,7 @@ class TestImpliedQualityChainStart:
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
                     "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<iface>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -264,6 +266,7 @@ class TestImpliedQualityChainStart:
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
                     "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<iface>.\n"
                     "    }\n"
                     "}\n"
                 ),
