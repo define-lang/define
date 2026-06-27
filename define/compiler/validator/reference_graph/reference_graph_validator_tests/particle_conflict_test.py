@@ -74,11 +74,11 @@ def test_undefined_position_not_tracked_for_duplicates(
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 39
+    assert diags[0].location.column == 30
     assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[1].local_name == "position<no_such_pos>"
     assert diags[1].location.line == 7
-    assert diags[1].location.column == 39
+    assert diags[1].location.column == 30
 
 
 def test_two_actions_same_local_position_create_no_error(

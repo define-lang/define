@@ -142,7 +142,7 @@ def test_undefined_from_position(
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 39
+    assert diags[0].location.column == 30
 
 
 def test_undefined_to_position(
@@ -165,7 +165,7 @@ def test_undefined_to_position(
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 61
+    assert diags[0].location.column == 52
 
 
 def test_both_positions_undefined(
@@ -188,11 +188,11 @@ def test_both_positions_undefined(
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<bad_from>"
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 39
+    assert diags[0].location.column == 30
     assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[1].local_name == "position<bad_to>"
     assert diags[1].location.line == 6
-    assert diags[1].location.column == 61
+    assert diags[1].location.column == 52
 
 
 def test_same_fqun_must_use_short_form_in_from(

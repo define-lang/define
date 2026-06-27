@@ -566,14 +566,14 @@ class TestChainActionValidation:
         )
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 2
-        assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(all_diags[0], diagnostics.LocalActionNameDiagnostic)
+        assert all_diags[0].local_name == "bad"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 55
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-        assert isinstance(all_diags[1], diagnostics.LocalActionNameDiagnostic)
-        assert all_diags[1].local_name == "bad"
+        assert isinstance(all_diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[1].location.line == 10
-        assert all_diags[1].location.column == 62
+        assert all_diags[1].location.column == 55
         assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
     def test_chain_through_action_with_constrained_local_position(

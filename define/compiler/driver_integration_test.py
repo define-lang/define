@@ -204,25 +204,25 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.IncorrectIndentationDiagnostic,
     ],
     "particles/create/chain_ending_with_action.dfn": [
+        diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
-        diagnostics.LocalActionNameDiagnostic,
     ],
     "particles/create/duplicate_local_particle.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
     ],
     "particles/create/single_action_reference.dfn": [
-        diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "particles/create/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,
     ],
     "particles/move/chain_ending_with_action.dfn": [
+        diagnostics.LocalActionNameDiagnostic,
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
         diagnostics.PositionReferenceChainEndDiagnostic,
-        diagnostics.LocalActionNameDiagnostic,
     ],
     "particles/move/dest_occupied_after_move.dfn": [
         diagnostics.CreateInOccupiedPositionDiagnostic,
@@ -242,9 +242,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.MoveToOccupiedPositionDiagnostic,
     ],
     "particles/move/single_action_reference.dfn": [
-        diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "particles/move/to_occupied_position.dfn": [
         diagnostics.MoveToOccupiedPositionDiagnostic,
@@ -271,9 +271,9 @@ EXPECTED_FILE_DIAGNOSTICS: dict[str, list[type[diagnostics.Diagnostic]]] = {
         diagnostics.InvalidLocalNameFormatDiagnostic,
     ],
     "trigger_conditions/single_action_reference.dfn": [
-        diagnostics.PositionReferenceChainEndDiagnostic,
         diagnostics.UndefinedLocalNameDiagnostic,
         diagnostics.LocalActionNameDiagnostic,
+        diagnostics.PositionReferenceChainEndDiagnostic,
     ],
     "trigger_conditions/undefined_local_position.dfn": [
         diagnostics.UndefinedLocalNameDiagnostic,

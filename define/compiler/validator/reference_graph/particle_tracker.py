@@ -476,29 +476,7 @@ class ParticleTracker:
 
         Raises ValueError if the position is already occupied.
         """
-        self.create_by_key(
-            in_position.canonical_chained_name_tuple,
-            in_position,
-            qualities,
-            from_caller=from_caller,
-        )
-
-    # TODO: The docstring here no longer makes sense now that AST nodes
-    # resolve their own FQUN.
-    def create_by_key(
-        self,
-        key: tuple[str, ...],
-        position: ast.PositionReference,
-        qualities: tuple[ast.GlobalTypedNameReference, ...],
-        *,
-        from_caller: ast.PositionReference | None = None,
-    ):
-        """Record a new particle using an explicit canonical key.
-
-        Use this instead of create() when the position's typed names contain
-        cross-universe relative references that would resolve incorrectly
-        against the tracker's own FQUN.
-        """
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         self._ensure_action_parent(key)
         self._record_body_write(key)
@@ -506,9 +484,9 @@ class ParticleTracker:
         if existing is not None and existing.particle_info is not None:
             raise ValueError(f"position {key} is already occupied")
         info = ParticleInfo(
-            last_position=position,
+            last_position=in_position,
             qualities=qualities,
-            origin_position=from_caller if from_caller is not None else position,
+            origin_position=from_caller if from_caller is not None else in_position,
             from_caller=from_caller is not None,
         )
         if existing is not None:
@@ -522,9 +500,7 @@ class ParticleTracker:
 
         Raises ValueError if the position is not occupied.
         """
-        self._destroy_by_key(in_position.canonical_chained_name_tuple, in_position)
-
-    def _destroy_by_key(self, key: tuple[str, ...], position: ast.PositionReference):
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         existing = self._store.state.get(key)
         if existing is None or existing.particle_info is None:
@@ -534,7 +510,7 @@ class ParticleTracker:
         if key in self._store.error:
             del self._store.error[key]
         self._record_body_write(key)
-        self._store.state[key] = _NodeState(emptied_by=position)
+        self._store.state[key] = _NodeState(emptied_by=in_position)
 
     def get_emptied_by(
         self, position: ast.PositionReference

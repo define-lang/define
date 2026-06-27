@@ -65,7 +65,7 @@ def test_undefined_local_name():
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<unknown>"
     assert diags[0].location.line == 3
-    assert diags[0].location.column == 22
+    assert diags[0].location.column == 13
 
 
 def test_action_type_in_trigger_condition_is_rejected():
@@ -86,14 +86,14 @@ def test_action_type_in_trigger_condition_is_rejected():
     )
     diags = results[0].diagnostics
     assert len(diags) == 3
-    assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].local_name == "action<my_act>"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 13
-    assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
-    assert diags[1].local_name == "action<my_act>"
+    assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+    assert diags[1].local_name == "my_act"
     assert diags[1].location.line == 3
-    assert diags[1].location.column == 20
-    assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
-    assert diags[2].local_name == "my_act"
+    assert diags[1].location.column == 13
+    assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[2].location.line == 3
-    assert diags[2].location.column == 20
+    assert diags[2].location.column == 13

@@ -442,10 +442,6 @@ class ChainedName(ASTNode):
             typed_names=(*prefix.typed_names, *self.typed_names),
         )
 
-    # TODO: There are likely other places in the codebase (including tests) that
-    # still construct a ChainedName/PositionReference by spreading
-    # ``(*chain.typed_names, ...)`` into the constructor; they should all use
-    # with_position_suffix / with_action_suffix instead.
     def with_position_suffix(self, *names: TypedNameReference) -> PositionReference:
         """Return a PositionReference extending this chain with ``names`` appended.
 

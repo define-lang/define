@@ -555,10 +555,9 @@ class DefinitionStructuralValidator:
         if not scope.is_defined(first) and isinstance(
             first, ast.LocalTypedNameReference
         ):
-            # TODO: Use first.location instead of name_content.location.
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
-                    location=first.name_content.location,
+                    location=first.location,
                     local_name=first.full_typed_name,
                 )
             )
@@ -635,10 +634,9 @@ class DefinitionStructuralValidator:
                 chain_element, allow_self_reference=allow_self_reference
             )
         elif chain_element.name_type == ast.NameType.ACTION:
-            # TODO: Use chain_element.location instead of name_content.location.
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
-                    location=chain_element.name_content.location,
+                    location=chain_element.location,
                     local_name=chain_element.name_content.name,
                 )
             )

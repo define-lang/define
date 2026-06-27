@@ -45,7 +45,7 @@ class TestTriggerConditionValidation:
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "position<unknown>"
         assert diags[0].location.line == 3
-        assert diags[0].location.column == 22
+        assert diags[0].location.column == 13
 
     def test_invalid_local_name_format(
         self,
@@ -67,7 +67,7 @@ class TestTriggerConditionValidation:
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "position<BAD>"
         assert diags[0].location.line == 3
-        assert diags[0].location.column == 22
+        assert diags[0].location.column == 13
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[1].local_name == "BAD"
         assert diags[1].char == "B"

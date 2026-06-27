@@ -140,7 +140,7 @@ def test_undefined_local_position(
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 39
+    assert diags[0].location.column == 30
 
 
 def test_local_position_defined_after_use(
@@ -163,7 +163,7 @@ def test_local_position_defined_after_use(
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<later_pos>"
     assert diags[0].location.line == 6
-    assert diags[0].location.column == 39
+    assert diags[0].location.column == 30
 
 
 def test_local_position_defined_in_action_statements_before_use(
@@ -227,17 +227,17 @@ def test_single_action_in_position_reference(
     result = validate_non_filesystem_with_reference_graph(source)
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
-    assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].local_name == "action<act_other>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
-    assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
-    assert diags[1].local_name == "action<act_other>"
+    assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+    assert diags[1].local_name == "act_other"
     assert diags[1].location.line == 6
-    assert diags[1].location.column == 37
-    assert isinstance(diags[2], diagnostics.LocalActionNameDiagnostic)
-    assert diags[2].local_name == "act_other"
+    assert diags[1].location.column == 30
+    assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
     assert diags[2].location.line == 6
-    assert diags[2].location.column == 37
+    assert diags[2].location.column == 30
 
 
 def test_create_in_local_chained_position(
