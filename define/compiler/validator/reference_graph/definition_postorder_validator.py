@@ -688,6 +688,11 @@ class DefinitionPostorderValidator(abc.ABC):
         #   full_caller_chain:
         #     position<box>::position</q>::position</q_child>
         for req in contract.requirements.values():
+            # TODO: This allocates a single-use ChainedName per requirement per
+            # caller just so _check_one_requirement can read its
+            # canonical_chained_name_tuple. Across a dense call graph this is one
+            # of the top compiler-own hotspots (the ChainedName.__getattr__ +
+            # in_caller cluster).
             full_caller_chain = req.full_propagation_position_chain().in_caller(
                 prefix_chain
             )

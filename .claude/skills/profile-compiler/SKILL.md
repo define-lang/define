@@ -48,30 +48,35 @@ validation).
 ### Source B — dense action call graph (validation-heavy)
 
 `tools/generate_action_graph_source.py` (default
-`--layers 6 --width 16 --fan-out 8 --destructor-fraction 0.5`, ~3,500 lines, ~96
-actions). A layered directed acyclic graph of potential actions rooted at the
-entry-point position `/test`; the root's Position Initialization Block triggers
-every layer-0 action, and each action wires up the next layer, so **every action
-is reachable from the init block** and gets validated. Each non-leaf action
-references `fan_out` next-layer actions through its `out` interface position's
-constraint (`it has the action</...>`) — a circulant target set, so every node
-has both fan-in and fan-out of exactly `fan_out`. Every action destroys the
-particle in its `src` interface position, which both infers an Action
-Requirement and records a Destruction Contract; `--destructor-fraction` of
-actions additionally carry a real destructor, exercising the destruction
-cascade.
+`--layers 18 --width 64 --fan-out 32 --destructor-fraction 0.5`, ~124,000 lines,
+~1,150 actions). A layered directed acyclic graph of potential actions rooted at
+the entry-point position `/test`; the root's Position Initialization Block
+triggers every layer-0 action, and each action wires up the next layer, so
+**every action is reachable from the init block** and gets validated. Each
+non-leaf action references `fan_out` next-layer actions through its `out`
+interface position's constraint (`it has the action</...>`) — a circulant target
+set, so every node has both fan-in and fan-out of exactly `fan_out`. Every
+action destroys the particle in its `src` interface position, which both infers
+an Action Requirement and records a Destruction Contract;
+`--destructor-fraction` of actions additionally carry a real destructor,
+exercising the destruction cascade.
 
-This profile is almost entirely the compiler's own code (~99%, barely any lark):
-the reference-graph post-order traversal, the particle tracker, guarantee
-propagation across triggers, requirement inference, and destruction-contract
-generation. Knobs: `--layers` (depth), `--width` (actions per layer),
-`--fan-out` (per-node fan-in **and** fan-out), `--destructor-fraction`.
+This profile is reference-graph-dominated: at the default size, validation
+(`reference_graph_validator.validate`) is ~70% of the run and parse only ~25%,
+with the compiler's own code ~82% of tottime and the bundled lark subtree only
+~18%. The dominant work is the reference-graph post-order traversal, the
+particle tracker, guarantee propagation across triggers (`_check_trigger`),
+requirement inference/checking, and destruction-contract generation. Knobs:
+`--layers` (depth), `--width` (actions per layer), `--fan-out` (per-node fan-in
+**and** fan-out), `--destructor-fraction`.
 
-> **Important:** Source B is ~50× heavier per line than Source A — its cost is
-> in cross-action validation, not line count. The ~3,500-line default already
-> profiles in ~40s under cProfile. Scale it up via `--layers` / `--width` (a
-> wider/deeper graph), **not** by chasing a line count. A 30,000-line graph
-> takes many minutes — only go there if the user explicitly asks.
+> **Important:** scale Source B via `--layers` / `--width` / `--fan-out` (a
+> wider/deeper/denser graph), not by chasing a line count — its cost is in
+> cross-action validation. The ~124,000-line default profiles in ~60s under
+> cProfile (~20s real) and is the validation-bound counterpart to Source A. Cost
+> scales roughly linearly in graph size (the earlier exponential blowup in
+> guarantee propagation was fixed), so larger sizes are tractable but
+> proportionally slower — only go bigger if the user explicitly asks.
 
 ### Common notes
 
@@ -101,7 +106,7 @@ the `.prof` files especially — so follow-up questions don't require re-running
    uv run tools/generate_large_define_source.py \
      --output tmp/profile/source.dfn --lines 50000 --max-chain-length 25
    uv run tools/generate_action_graph_source.py \
-     --output tmp/profile/graph.dfn --layers 6 --width 16 --fan-out 8 \
+     --output tmp/profile/graph.dfn --layers 18 --width 64 --fan-out 32 \
      --destructor-fraction 0.5
    ```
 
@@ -178,8 +183,8 @@ guarantee/requirement/contract rollup is the bulk of its run).
 
 Same columns. Note the headline split the analyze script prints: how much
 tottime is the lark subtree vs the compiler's own code. For Source A this is
-roughly half-and-half; for Source B it is almost entirely the compiler's own
-code.
+roughly half-and-half; for Source B at the default size it is roughly ~82%
+compiler's own code vs ~18% lark.
 
 After the tables for both sources, give a short, ranked list of the optimization
 opportunities the numbers point to — but only as observations. Do not change
