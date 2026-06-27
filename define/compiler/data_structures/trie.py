@@ -82,7 +82,12 @@ class StrictReparentingTrie[V]:
             raise EmptyKeyError("key must not be empty")
         self._ensure_parent(key)
         self._values[key] = value
-        self._children.setdefault(key[:-1], set()).add(key[-1])
+        parent = key[:-1]
+        siblings = self._children.get(parent)
+        if siblings is None:
+            self._children[parent] = {key[-1]}
+        else:
+            siblings.add(key[-1])
 
     def _collect_subtree(self, root: TrieKey) -> list[TrieKey]:
         """Return root and all of its descendant keys."""
