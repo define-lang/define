@@ -1349,6 +1349,114 @@ def test_move_from_emptied_origin_leaves_destination_unknown_in_caller(
     )
 
 
+def test_occupied_by_existing_destination_the_caller_filled_becomes_unknown(
+    validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
+):
+    """When the caller has already put a particle in the position a triggered action moves a particle to, and never put one in the position it moves from, that position becomes unknown, so creating in it afterward is silently allowed."""
+    result = validate_project_with_reference_graph(
+        {
+            "other.dfn": (
+                "define the potential action<my.domain.com:my_lib:/other> {\n"
+                "    define the position<trigger_pos>.\n"
+                "    define the position<src>.\n"
+                "    define the position<dst>.\n"
+                "    it happens when {\n"
+                "        the position<trigger_pos> has a particle.\n"
+                "    } and it does {\n"
+                "        move the particle in position<src> to position<dst>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    define the position<run>.\n"
+                "    it happens when {\n"
+                "        the position<run> has a particle.\n"
+                "    } and it does {\n"
+                "        define the position<box> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the action</other>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::action</other>::position<dst>.\n"
+                "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</other>::position<dst>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 13
+    assert all_diags[0].location.end_column == 82
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "other.dfn",
+        },
+    )
+
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.end_line == 13
+    assert all_diags[1].location.end_column == 82
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].required_empty is True
+    assert all_diags[1].position_name == "position<box>::action</other>::position<dst>"
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</other>::position<dst>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _OTHER,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _OTHER,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 47,
+            "file_path": "other.dfn",
+        },
+    )
+
+
 def test_swap_propagates_prior_unknown_state_from_origin_to_destination(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
 ):
