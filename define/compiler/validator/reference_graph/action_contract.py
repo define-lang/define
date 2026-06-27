@@ -244,6 +244,31 @@ class UnknownGuarantee(PositionGuarantee):
 GuaranteePair = tuple[tuple[str, ...], PositionGuarantee]
 
 
+@dataclass(frozen=True, slots=True)
+class Guarantees:
+    """An action block's own guarantees plus references to its callees' guarantees."""
+
+    own: list[GuaranteePair]
+    # Nested guarantees are referenced rather than folded in so that we don't
+    # get unbounded memory growth from re-copying guarantees as we walk up a
+    # call stack (and unbounded compute growth from having to iterate through
+    # them and copy them).
+    nested: tuple[NestedGuarantees, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class NestedGuarantees:
+    """A callee's guarantees, referenced at the position that triggers it.
+
+    ```triggered_action``` is the chained name path at the actual trigger
+    site, for the triggered action (or parent position that by being filled
+    triggered the init block).
+    """
+
+    triggered_action: tuple[str, ...]
+    guarantees: Guarantees
+
+
 @dataclass(frozen=True)
 class DestructionContract:
     """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
@@ -292,7 +317,7 @@ class ActionStatementsBlockContract:
     """Base contract for any block containing action statements."""
 
     requirements: dict[tuple[str, ...], PositionRequirement]
-    guarantees: list[GuaranteePair]
+    guarantees: Guarantees
     destruction_contracts: list[DestructionContract]
 
 

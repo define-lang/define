@@ -552,6 +552,20 @@ def _make_action_ref(path: str) -> ast.GlobalTypedNameReference:
 _ACTION_KEY_PREFIX = ("position<box>", "action<my.domain.com:my_lib:/other>")
 
 
+def _apply_guarantees(
+    tracker: particle_tracker.ParticleTracker,
+    for_position: ast.PositionReference,
+    guarantees: list[action_contract.GuaranteePair],
+):
+    """Apply a bare guarantee list (no triggered contracts) at for_position."""
+    action_chain = for_position.get_chain_to_last_action()
+    parent_chain = action_chain if action_chain is not None else for_position
+    tracker.apply_guarantees(
+        parent_chain,
+        action_contract.Guarantees(own=guarantees, nested=()),
+    )
+
+
 def test_apply_guarantees_empty():
     tracker = particle_tracker.ParticleTracker()
     box_ref = _make_position_ref([_make_local_ref("box")])
@@ -561,7 +575,8 @@ def test_apply_guarantees_empty():
     tracker.create(box_ref, ())
     tracker.create(ref, ())
 
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         ref,
         [(("position<item>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
     )
@@ -579,7 +594,8 @@ def test_apply_guarantees_occupied_by_new():
     )
 
     tracker.create(box_ref, ())
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         ref,
         [
             (
@@ -625,7 +641,8 @@ def test_apply_guarantees_occupied_by_existing():
     tracker.create(item_ref, (_make_global_ref("/q"),))
     tracker.create(trigger_ref, ())
 
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         ref,
         [
             (
@@ -668,7 +685,8 @@ def test_apply_guarantees_occupied_by_existing_moves_children():
     tracker.create(child_ref, (_make_global_ref("/r"),))
     tracker.create(trigger_ref, ())
 
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         trigger_ref,
         [
             (
@@ -727,7 +745,8 @@ def test_apply_guarantees_occupied_by_existing_swap():
     tracker.create(dest_child_ref, (_make_global_ref("/t"),))
     tracker.create(trigger_ref, ())
 
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         trigger_ref,
         [
             (
@@ -788,7 +807,8 @@ def test_apply_guarantees_occupied_by_existing_unfulfilled_becomes_unknown():
     )
 
     tracker.create(box_ref, ())
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         ref,
         [
             (
@@ -815,7 +835,8 @@ def test_apply_guarantees_unknown():
     tracker.create(box_ref, ())
     tracker.create(ref, ())
 
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         ref,
         [(("position<item>",), action_contract.UnknownGuarantee(caused_by=_POS2_REF))],
     )
@@ -845,7 +866,8 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
     tracker.create(box_ref, ())
     tracker.create(untouched_ref, ())
 
-    tracker.apply_guarantees(
+    _apply_guarantees(
+        tracker,
         ref,
         [(("position<trigger>",), action_contract.EmptyGuarantee(caused_by=_POS2_REF))],
     )
@@ -853,17 +875,17 @@ def test_apply_guarantees_does_not_touch_unmentioned_positions():
     assert tracker.is_occupied(untouched_ref) is True
 
 
-def test_generate_guarantees_skips_occupied_by_existing_at_origin():
+def test_generate_own_guarantees_skips_occupied_by_existing_at_origin():
     tracker = particle_tracker.ParticleTracker()
     run_name = _make_local_ref("run")
     run_ref = _make_position_ref([run_name])
 
     tracker.create(run_ref, (), from_caller=run_ref)
 
-    assert tracker.generate_guarantees((run_name,), (), {}) == []
+    assert tracker.generate_own_guarantees((run_name,), (), {}) == []
 
 
-def test_generate_guarantees_emits_occupied_by_existing_when_moved():
+def test_generate_own_guarantees_emits_occupied_by_existing_when_moved():
     tracker = particle_tracker.ParticleTracker()
     a_name = _make_local_ref("a")
     b_name = _make_local_ref("b")
@@ -873,7 +895,7 @@ def test_generate_guarantees_emits_occupied_by_existing_when_moved():
     tracker.create(a_ref, (), from_caller=a_ref)
     tracker.move(a_ref, b_ref)
 
-    guarantees = tracker.generate_guarantees((a_name, b_name), (), {})
+    guarantees = tracker.generate_own_guarantees((a_name, b_name), (), {})
 
     assert len(guarantees) == 2
     by_key = dict(guarantees)
@@ -886,7 +908,7 @@ def test_generate_guarantees_emits_occupied_by_existing_when_moved():
     assert occupied_guarantee.caused_by.location == _LOC2
 
 
-def test_generate_guarantees_skips_empty_when_inferred_empty():
+def test_generate_own_guarantees_skips_empty_when_inferred_empty():
     tracker = particle_tracker.ParticleTracker()
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
@@ -900,10 +922,10 @@ def test_generate_guarantees_skips_empty_when_inferred_empty():
         )
     }
 
-    assert tracker.generate_guarantees((x_name,), (), requirements) == []
+    assert tracker.generate_own_guarantees((x_name,), (), requirements) == []
 
 
-def test_generate_guarantees_emits_empty_when_inferred_occupied():
+def test_generate_own_guarantees_emits_empty_when_inferred_occupied():
     tracker = particle_tracker.ParticleTracker()
     x_name = _make_local_ref("x")
     x_ref = _make_position_ref([x_name])
@@ -918,7 +940,7 @@ def test_generate_guarantees_emits_empty_when_inferred_occupied():
         )
     }
 
-    guarantees = tracker.generate_guarantees((x_name,), (), requirements)
+    guarantees = tracker.generate_own_guarantees((x_name,), (), requirements)
 
     assert len(guarantees) == 1
     key, guarantee = guarantees[0]
@@ -1006,4 +1028,118 @@ def test_snapshot_child_state_is_decoupled_from_later_mutation():
             action_contract.PositionOccupancyState.OCCUPIED,
             filled_at=grandchild.location,
         ),
+    }
+
+
+def test_generate_flattened_guarantees_includes_callee_derived_key():
+    tracker = particle_tracker.ParticleTracker()
+    box_name = _make_local_ref("box")
+    box_ref = _make_position_ref([box_name])
+    item_ref = _make_position_ref(
+        [box_name, _make_action_ref("/other"), _make_local_ref("item")]
+    )
+    tracker.create(box_ref, (), from_caller=box_ref)
+    _apply_guarantees(
+        tracker,
+        item_ref,
+        [
+            (
+                ("position<item>",),
+                action_contract.OccupiedByNewGuarantee(
+                    qualities=(), caused_by=_POS2_REF
+                ),
+            )
+        ],
+    )
+    item_key = (*_ACTION_KEY_PREFIX, "position<item>")
+
+    assert tracker.generate_own_guarantees((box_name,), (), {}) == []
+
+    flattened = tracker.generate_flattened_guarantees((box_name,), (), {})
+    assert len(flattened) == 1
+    key, guarantee = flattened[0]
+    assert key == item_key
+    assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
+
+
+def test_generate_flattened_guarantees_flattens_pending_nested_guarantee():
+    tracker = particle_tracker.ParticleTracker()
+    box_name = _make_local_ref("box")
+    box_ref = _make_position_ref([box_name])
+    tracker.create(box_ref, (), from_caller=box_ref)
+    nested = action_contract.NestedGuarantees(
+        triggered_action=("action<my.domain.com:my_lib:/other>",),
+        guarantees=action_contract.Guarantees(
+            own=[
+                (
+                    ("position<item>",),
+                    action_contract.OccupiedByNewGuarantee(
+                        qualities=(), caused_by=_POS2_REF
+                    ),
+                )
+            ],
+            nested=(),
+        ),
+    )
+    tracker.apply_guarantees(
+        box_ref, action_contract.Guarantees(own=[], nested=(nested,))
+    )
+    item_key = (*_ACTION_KEY_PREFIX, "position<item>")
+
+    assert tracker.generate_own_guarantees((box_name,), (), {}) == []
+
+    flattened = tracker.generate_flattened_guarantees((box_name,), (), {})
+    assert len(flattened) == 1
+    key, guarantee = flattened[0]
+    assert key == item_key
+    assert isinstance(guarantee, action_contract.OccupiedByNewGuarantee)
+
+
+def _make_nested_level(
+    action_path: str,
+    item: str,
+    child_nested: tuple[action_contract.NestedGuarantees, ...],
+) -> action_contract.NestedGuarantees:
+    return action_contract.NestedGuarantees(
+        triggered_action=(f"action<my.domain.com:my_lib:{action_path}>",),
+        guarantees=action_contract.Guarantees(
+            own=[
+                (
+                    (item,),
+                    action_contract.OccupiedByNewGuarantee(
+                        qualities=(), caused_by=_POS2_REF
+                    ),
+                )
+            ],
+            nested=child_nested,
+        ),
+    )
+
+
+def test_generate_flattened_guarantees_flattens_many_nested_levels():
+    tracker = particle_tracker.ParticleTracker()
+    box_name = _make_local_ref("box")
+    box_ref = _make_position_ref([box_name])
+    tracker.create(box_ref, (), from_caller=box_ref)
+    marker_name = _make_local_ref("marker")
+    tracker.create(_make_position_ref([marker_name]), ())
+
+    # Three levels of nesting, each deferred behind the one above it.
+    level3 = _make_nested_level("/c", "position<item_c>", ())
+    level2 = _make_nested_level("/b", "position<item_b>", (level3,))
+    level1 = _make_nested_level("/a", "position<item_a>", (level2,))
+    tracker.apply_guarantees(
+        box_ref, action_contract.Guarantees(own=[], nested=(level1,))
+    )
+
+    interface_names = (box_name, marker_name)
+    own = tracker.generate_own_guarantees(interface_names, (), {})
+    assert [key for key, _ in own] == [("position<marker>",)]
+
+    flattened = tracker.generate_flattened_guarantees(interface_names, (), {})
+    assert {key for key, _ in flattened} == {
+        ("position<marker>",),
+        ("position<box>", "action<my.domain.com:my_lib:/a>", "position<item_a>"),
+        ("position<box>", "action<my.domain.com:my_lib:/b>", "position<item_b>"),
+        ("position<box>", "action<my.domain.com:my_lib:/c>", "position<item_c>"),
     }

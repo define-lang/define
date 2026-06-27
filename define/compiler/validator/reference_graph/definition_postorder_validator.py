@@ -69,6 +69,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
     _destruction_contracts: list[action_contract.DestructionContract]
+    _nested_guarantees: list[action_contract.NestedGuarantees]
 
     def __init__(
         self,
@@ -96,6 +97,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._action_edges = []
         self._inferred_requirements = {}
         self._destruction_contracts = []
+        self._nested_guarantees = []
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -389,9 +391,8 @@ class DefinitionPostorderValidator(abc.ABC):
             # destructor set of whatever it destroys, so it records none (see
             # _records_destruction_contracts).
             self._check_requirements(init_block_contract, position, position)
-            self._tracker.apply_guarantees(
-                position,
-                init_block_contract.guarantees,
+            self._nested_guarantees.append(
+                self._tracker.apply_guarantees(position, init_block_contract.guarantees)
             )
 
     def _walk_destruction_cascade(
@@ -624,11 +625,17 @@ class DefinitionPostorderValidator(abc.ABC):
         if trigger_element.full_typed_name != contract.trigger_position_name:
             return
 
+        action_chain = position.get_chain_to_last_action()
+        if action_chain is None:
+            raise ValueError(f"no action in chain: {position.source_chained_name}")
+
         # We only propagate inner requirements if actions actually get called.
         # (That's why this happens here in _check_trigger.)
         self._propagate_inner_requirements(contract, position, scope)
-        self._check_action_requirements(position, contract, scope)
-        self._tracker.apply_guarantees(position, contract.guarantees)
+        self._check_action_requirements(position, action_chain, contract, scope)
+        self._nested_guarantees.append(
+            self._tracker.apply_guarantees(action_chain, contract.guarantees)
+        )
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
                 source=self._definition.typed_name.source_typed_name,
@@ -639,16 +646,12 @@ class DefinitionPostorderValidator(abc.ABC):
     def _check_action_requirements(
         self,
         trigger_position: ast.PositionReference,
+        action_chain: ast.ActionReference,
         contract: action_contract.ActionContract,
         scope: scope_tracker.ScopeTracker,
     ):
         """Check the triggered action's requirements and destruction contracts."""
         particle = self._tracker.get_occupant(trigger_position)
-        action_chain = trigger_position.get_chain_to_last_action()
-        if action_chain is None:
-            raise ValueError(
-                f"no action in chain: {trigger_position.source_chained_name}"
-            )
         self._check_requirements(contract, action_chain, particle.last_position)
         self._check_destructor_requirements_from_contracts(
             contract, action_chain, scope
@@ -1700,13 +1703,17 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
 
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
-        guarantees = self._tracker.generate_guarantees(
-            self._action_definition.interface_position_names,
-            self._implied_quality_list,
-            self._inferred_requirements,
-        )
         if self._action_definition.is_destructor:
-            guarantees = self._check_destructor_guarantees(guarantees)
+            guarantees = self._check_destructor_guarantees()
+        else:
+            guarantees = action_contract.Guarantees(
+                own=self._tracker.generate_own_guarantees(
+                    self._action_definition.interface_position_names,
+                    self._implied_quality_list,
+                    self._inferred_requirements,
+                ),
+                nested=tuple(self._nested_guarantees),
+            )
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
             guarantees=guarantees,
@@ -1714,19 +1721,30 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             trigger_position_name=self._trigger_position_name or "",
         )
 
-    def _check_destructor_guarantees(
-        self, guarantees: list[action_contract.GuaranteePair]
-    ) -> list[action_contract.GuaranteePair]:
-        """Emit a diagnostic for each guarantee a destructor produces and replace it with an UnknownGuarantee.
+    def _check_destructor_guarantees(self) -> action_contract.Guarantees:
+        """Emit a diagnostic for each guarantee a destructor produces and return a contract that masks them.
 
         A destructor may not change any contracted position's state (DLP 41), so
-        each produced guarantee is a violation. The contract it returns may not
+        each guarantee it produces is a violation. The returned contract may not
         advertise such a guarantee, so each is replaced with an UnknownGuarantee
         that leaves the position's post-destructor state undetermined for any
-        consumer of the contract.
+        consumer of the contract. The destructor's guarantees are fully expanded
+        (no nested references), so the returned contract has no nested guarantees.
         """
+        produced = self._tracker.generate_flattened_guarantees(
+            self._action_definition.interface_position_names,
+            self._implied_quality_list,
+            self._inferred_requirements,
+        )
         rewritten: list[action_contract.GuaranteePair] = []
-        for key, guarantee in guarantees:
+        for key, guarantee in produced:
+            # TODO: caused_by names the position as it was written in the action
+            # where the guarantee originated, so a guarantee surfaced from a
+            # deeply-nested triggered action gets that callee's short chained name
+            # (e.g. "position<out>") instead of its full chained name relative to
+            # the destructor (e.g.
+            # "action</a>::position<box>::action</b>::position<out>"). ``key`` holds
+            # that full chained name, but only as canonical names, not a source form.
             position_name = guarantee.caused_by.source_form_in_universe(
                 self._enclosing_fqun
             )
@@ -1765,7 +1783,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             rewritten.append(
                 (key, action_contract.UnknownGuarantee(caused_by=guarantee.caused_by))
             )
-        return rewritten
+        return action_contract.Guarantees(own=rewritten, nested=())
 
     @typing.override
     def _chain_for_inferred_requirement(
@@ -1861,10 +1879,13 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         self._analyze_statements(definition.initialization, scope)
         return action_contract.PositionInitBlockContract(
             requirements=self._inferred_requirements,
-            guarantees=self._tracker.generate_guarantees(
-                (definition.typed_name,),
-                self._implied_quality_list,
-                self._inferred_requirements,
+            guarantees=action_contract.Guarantees(
+                own=self._tracker.generate_own_guarantees(
+                    (definition.typed_name,),
+                    self._implied_quality_list,
+                    self._inferred_requirements,
+                ),
+                nested=tuple(self._nested_guarantees),
             ),
             # Kept empty for a position init block by the
             # _records_destruction_contracts guard. Exposing the real recorded
