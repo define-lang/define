@@ -362,11 +362,6 @@ class ParticleTracker:
         # once per trigger.
         self._body_operation_number: int = 0
 
-    # TODO: We don't need this method anymore.
-    def _key(self, position: ast.PositionReference) -> tuple[str, ...]:
-        """Compute the canonical tuple key for a position reference."""
-        return position.canonical_chained_name_tuple
-
     def _ensure_action_parent(self, key: tuple[str, ...]):
         """Create the action intermediate trie node if needed."""
         if len(key) >= 2 and key[-2].startswith(_ACTION_KEY_PREFIX):
@@ -390,14 +385,14 @@ class ParticleTracker:
 
     def mark_unknown(self, in_position: ast.PositionReference):
         """Mark a position as having unknown occupancy state."""
-        key = self._key(in_position)
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         self._record_body_write(key)
         self._store.unknown[key] = _UnknownState(caused_by=in_position)
 
     def mark_empty(self, in_position: ast.PositionReference):
         """Mark a position as known-empty without a prior particle existing."""
-        key = self._key(in_position)
+        key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         if key in self._store.state:
             raise ValueError(f"position {key} already has tracker state")
@@ -407,7 +402,7 @@ class ParticleTracker:
 
     def has_unknown_state(self, in_position: ast.PositionReference) -> bool:
         """Return whether a position or any ancestor has unknown occupancy state."""
-        return self.has_unknown_state_by_key(self._key(in_position))
+        return self.has_unknown_state_by_key(in_position.canonical_chained_name_tuple)
 
     def has_unknown_state_by_key(self, key: tuple[str, ...]) -> bool:
         """Return whether a position or any ancestor has unknown occupancy state."""
@@ -416,7 +411,7 @@ class ParticleTracker:
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
-        return self.is_occupied_by_key(self._key(in_position))
+        return self.is_occupied_by_key(in_position.canonical_chained_name_tuple)
 
     def is_occupied_by_key(self, key: tuple[str, ...]) -> bool:
         """Return whether a particle exists at this position, by raw key."""
@@ -430,7 +425,7 @@ class ParticleTracker:
 
     def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
         """Return the info for the particle at this position."""
-        return self.get_occupant_by_key(self._key(in_position))
+        return self.get_occupant_by_key(in_position.canonical_chained_name_tuple)
 
     def get_occupant_by_key(self, key: tuple[str, ...]) -> ParticleInfo:
         """Return the info for the particle at this position, by raw key."""
@@ -447,7 +442,7 @@ class ParticleTracker:
         particle, so a caller's snapshot of the same particle shares the key
         space and merges directly.
         """
-        key = self._key(for_position)
+        key = for_position.canonical_chained_name_tuple
         # TODO: Not sure we actually need to fully resolve this; I think there's a world
         # in which we use references somehow here just like we do with normal guarantees.
         self._fully_resolve_pending_guarantees(key)
@@ -484,7 +479,10 @@ class ParticleTracker:
         Raises ValueError if the position is already occupied.
         """
         self.create_by_key(
-            self._key(in_position), in_position, qualities, from_caller=from_caller
+            in_position.canonical_chained_name_tuple,
+            in_position,
+            qualities,
+            from_caller=from_caller,
         )
 
     # TODO: The docstring here no longer makes sense now that AST nodes
@@ -526,7 +524,7 @@ class ParticleTracker:
 
         Raises ValueError if the position is not occupied.
         """
-        self._destroy_by_key(self._key(in_position), in_position)
+        self._destroy_by_key(in_position.canonical_chained_name_tuple, in_position)
 
     def _destroy_by_key(self, key: tuple[str, ...], position: ast.PositionReference):
         self._apply_pending_guarantees_up_to(key)
@@ -544,7 +542,7 @@ class ParticleTracker:
         self, position: ast.PositionReference
     ) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if any."""
-        return self.get_emptied_by_key(self._key(position))
+        return self.get_emptied_by_key(position.canonical_chained_name_tuple)
 
     def get_emptied_by_key(self, key: tuple[str, ...]) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, by raw key."""
@@ -557,8 +555,8 @@ class ParticleTracker:
         Children of the source position move with it. After the move,
         the source position is marked as emptied.
         """
-        from_key = self._key(source)
-        to_key = self._key(target)
+        from_key = source.canonical_chained_name_tuple
+        to_key = target.canonical_chained_name_tuple
         self._fully_resolve_pending_guarantees(from_key)
         self._apply_pending_guarantees_up_to(to_key)
         if self.has_unknown_state_by_key(from_key) or self.has_unknown_state_by_key(
