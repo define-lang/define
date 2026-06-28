@@ -74,6 +74,7 @@ class TestCreateParticle:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</wrong>::position<end>.\n"
+                    "        create a particle in position<x>::action</correct>::position<end>.\n"
                     "    }\n"
                     "}\n"
                 ),

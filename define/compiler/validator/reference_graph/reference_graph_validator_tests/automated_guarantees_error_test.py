@@ -458,6 +458,7 @@ def test_error_from_constraint_violation_on_interface_position(
                 "        define the position<unconstrained>.\n"
                 "        create a particle in position<unconstrained>.\n"
                 "        move the particle in position<unconstrained> to position<item>.\n"
+                "        create a particle in position<item>::position</quality_a>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -575,6 +576,7 @@ def test_error_from_prefix_move_on_interface_position(
                 "    } and it does {\n"
                 "        create a particle in position<iface>.\n"
                 "        move the particle in position<iface> to position<iface>::position</mid>::action</inner>::position<tp>.\n"
+                "        create a particle in position<iface>::position</mid>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -741,6 +743,8 @@ def test_post_trigger_existing_guarantee_error_origin_with_children(
                 "        move the particle in position<item> to position<_sink>.\n"
                 "        move the particle in position<item> to position<_sink2>.\n"
                 "        move the particle in position<item> to position<dest>.\n"
+                "        create a particle in position<item>::position</child_q>.\n"
+                "        create a particle in position<dest>::position</child_q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -804,6 +808,8 @@ def test_caller_prefills_child_without_parent_then_triggers(
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<item>.\n"
+                "        create a particle in position<item>::position</child_q>.\n"
+                "        destroy the particle in position<item>::position</child_q>.\n"
                 "        destroy the particle in position<item>.\n"
                 "    }\n"
                 "}\n"

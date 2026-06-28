@@ -29,6 +29,9 @@ def test_move_violates_dest_constraints(
                 "        }\n"
                 "        create a particle in position<from_pos>.\n"
                 "        move the particle in position<from_pos> to position<to_pos>.\n"
+                "        create a particle in position<from_pos>.\n"
+                "        create a particle in position<from_pos>::position</x>.\n"
+                "        create a particle in position<to_pos>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -66,6 +69,7 @@ def test_move_from_unconstrained_to_constrained(
                 "        }\n"
                 "        create a particle in position<from_pos>.\n"
                 "        move the particle in position<from_pos> to position<to_pos>.\n"
+                "        create a particle in position<to_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -109,6 +113,9 @@ def test_move_with_compatible_constraints(
                 "        }\n"
                 "        create a particle in position<from_pos>.\n"
                 "        move the particle in position<from_pos> to position<to_pos>.\n"
+                "        create a particle in position<from_pos>.\n"
+                "        create a particle in position<from_pos>::position</y>.\n"
+                "        create a particle in position<to_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -147,6 +154,9 @@ def test_local_move_round_trip_with_constraint_subset(
                 "        create a particle in position<a>.\n"
                 "        move the particle in position<a> to position<b>.\n"
                 "        move the particle in position<b> to position<a>.\n"
+                "        create a particle in position<b>.\n"
+                "        create a particle in position<b>::position</b>.\n"
+                "        create a particle in position<b>::position</c>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -182,6 +192,8 @@ def test_local_move_violates_constraints_marks_error(
                 "        move the particle in position<from_pos> to position<to_pos>.\n"
                 "        create a particle in position<from_pos>.\n"
                 "        create a particle in position<to_pos>.\n"
+                "        create a particle in position<from_pos>::position</x>.\n"
+                "        create a particle in position<to_pos>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -219,6 +231,8 @@ def test_move_to_unconstrained_position(
                 "        define the position<to_pos>.\n"
                 "        create a particle in position<from_pos>.\n"
                 "        move the particle in position<from_pos> to position<to_pos>.\n"
+                "        create a particle in position<from_pos>.\n"
+                "        create a particle in position<from_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -250,6 +264,9 @@ def test_definition_local_to_statement_local_violates(
                 "            }\n"
                 "        }\n"
                 "        move the particle in position<def_pos> to position<stmt_pos>.\n"
+                "        create a particle in position<def_pos>.\n"
+                "        create a particle in position<def_pos>::position</x>.\n"
+                "        create a particle in position<stmt_pos>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -289,6 +306,7 @@ def test_definition_local_to_statement_local_satisfies(
                 "            }\n"
                 "        }\n"
                 "        move the particle in position<def_pos> to position<stmt_pos>.\n"
+                "        create a particle in position<stmt_pos>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -322,6 +340,9 @@ def test_statement_local_to_definition_local_violates(
                 "        }\n"
                 "        create a particle in position<stmt_pos>.\n"
                 "        move the particle in position<stmt_pos> to position<def_pos>.\n"
+                "        create a particle in position<stmt_pos>.\n"
+                "        create a particle in position<stmt_pos>::position</x>.\n"
+                "        create a particle in position<def_pos>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -390,6 +411,9 @@ def test_definition_local_to_definition_local_violates(
                 "        the position<from_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position<from_pos> to position<to_pos>.\n"
+                "        create a particle in position<from_pos>.\n"
+                "        create a particle in position<from_pos>::position</x>.\n"
+                "        create a particle in position<to_pos>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),

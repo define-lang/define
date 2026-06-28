@@ -473,7 +473,7 @@ def test_4_depth_action_chain_via_moved_local_infers_occupied(
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        create a particle in position<item>.\n"
+                "        destroy the particle in position<item>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -496,6 +496,7 @@ def test_4_depth_action_chain_via_moved_local_infers_occupied(
                 "        move the particle in position<iface> to position<local>.\n"
                 "        create a particle in position<local>::action</inner>::position<item>::position</y>.\n"
                 "        create a particle in position<local>::action</inner>::position<item>.\n"
+                "        create a particle in position<local>::action</inner>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),

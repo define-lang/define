@@ -1453,7 +1453,8 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
     It only triggers /inner through position<local>, not through position<iface>.
     Even though action</inner> is a constraint on position<iface>, the requirement
     should NOT propagate through it because /inner was never triggered on that path.
-    The test pre-fills position<iface>::action</inner>::position<item> with no error.
+    The test pre-fills position<iface>::action</inner>::position<item> without a
+    propagation error; iface's never-triggered action</inner> is itself dead code.
     """
     result = validate_project_with_reference_graph(
         {
@@ -1510,7 +1511,16 @@ def test_no_propagation_when_action_not_triggered_on_interface_position(
             ),
         }
     )
-    assert_no_errors(result.program_result)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].constraint_name == "action</inner>"
+    assert all_diags[0].position_name == "position<iface>"
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.end_line == 5
+    assert all_diags[0].location.end_column == 38
+    assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert_action_calls(result.action_call_graph, _TEST, _OUTER, _INNER)
 
 

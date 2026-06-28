@@ -42,6 +42,7 @@ def test_init_block_occupied_violation_via_destroy_of_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -108,6 +109,7 @@ def test_init_block_occupied_violation_via_move_source_of_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -179,6 +181,7 @@ def test_init_block_empty_violation_via_create_in_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -258,6 +261,7 @@ def test_init_block_satisfied_requirement_emits_no_diagnostic(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -295,6 +299,7 @@ def test_init_block_multiple_implied_positions_each_check_runs(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -387,6 +392,7 @@ def test_self_reference_in_init_block_publishes_no_requirement(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        destroy the particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -431,6 +437,7 @@ def test_init_block_occupied_violation_via_destroy_of_child_of_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -507,6 +514,7 @@ def test_init_block_occupied_violation_via_move_source_of_child_of_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -583,6 +591,7 @@ def test_init_block_empty_violation_via_create_in_child_of_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -667,6 +676,7 @@ def test_init_block_satisfied_requirement_for_child_of_implied_emits_no_diagnost
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -719,6 +729,7 @@ def test_init_block_occupied_violation_via_destroy_of_grandchild_of_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -817,6 +828,7 @@ def test_init_block_occupied_violation_via_destroy_of_iface_of_action_in_implied
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -921,6 +933,7 @@ def test_init_block_occupied_violation_via_destroy_of_child_of_iface_of_action_i
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1008,6 +1021,7 @@ def test_init_block_action_requirement_violation_via_triggering_implied_action(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        destroy the particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

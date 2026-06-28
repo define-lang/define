@@ -447,6 +447,7 @@ def test_position_init_block_requires_empty_position_format(
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::position</p>.\n"
             "    }\n"
             "}\n"
         ),
@@ -495,6 +496,7 @@ def test_position_init_block_requires_occupied_position_format(
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::position</p>.\n"
             "    }\n"
             "}\n"
         ),

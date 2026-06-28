@@ -8,6 +8,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _DESTRUCTOR_C = "action<my.domain.com:my_lib:/destructor_c>"
@@ -87,8 +88,6 @@ def test_destroy_parent_fires_interface_position_child_destructor(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<slot>.\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -104,7 +103,7 @@ def test_destroy_parent_fires_interface_position_child_destructor(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<slot>.\n"
+                "        create a particle in position<box>::action</inner>::position<run>.\n"
                 "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
@@ -112,7 +111,7 @@ def test_destroy_parent_fires_interface_position_child_destructor(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert result.action_call_graph.edges() == [(_TEST, _INNER), (_TEST, _DESTRUCTOR)]
 
 
 def test_cascade_destroys_interface_positions_in_reverse_definition_order(
@@ -148,8 +147,6 @@ def test_cascade_destroys_interface_positions_in_reverse_definition_order(
                 "        create a particle in position<slot_a>.\n"
                 "        create a particle in position<slot_b>.\n"
                 "        create a particle in position<slot_c>.\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -165,9 +162,7 @@ def test_cascade_destroys_interface_positions_in_reverse_definition_order(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<slot_a>.\n"
-                "        create a particle in position<box>::action</inner>::position<slot_b>.\n"
-                "        create a particle in position<box>::action</inner>::position<slot_c>.\n"
+                "        create a particle in position<box>::action</inner>::position<run>.\n"
                 "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
@@ -176,6 +171,7 @@ def test_cascade_destroys_interface_positions_in_reverse_definition_order(
     )
     assert_no_errors(result.program_result)
     assert result.action_call_graph.edges() == [
+        (_TEST, _INNER),
         (_TEST, _DESTRUCTOR_C),
         (_TEST, _DESTRUCTOR_B),
         (_TEST, _DESTRUCTOR_A),
@@ -487,5 +483,12 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
             ),
         },
     )
-    assert_no_errors(result.program_result)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].constraint_name == "position</child>"
+    assert all_diags[0].position_name == "position<box>"
     assert result.action_call_graph.edges() == []

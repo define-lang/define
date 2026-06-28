@@ -350,6 +350,7 @@ class TestMoveParticle:
                     "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
                     "        move the particle in position<pos_a>::action</act_b> to position<dest>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<run>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -390,6 +391,7 @@ class TestMoveParticle:
                     "        the position<pos_from> has a particle.\n"
                     "    } and it does {\n"
                     "        move the particle in position<pos_from> to position<pos_a>::action</act_b>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<run>.\n"
                     "    }\n"
                     "}\n"
                 ),

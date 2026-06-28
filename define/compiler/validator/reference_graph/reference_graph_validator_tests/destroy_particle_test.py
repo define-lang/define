@@ -240,6 +240,7 @@ def test_destroy_chained_name_not_in_constraints(
                 "        the position<x> has a particle.\n"
                 "    } and it does {\n"
                 "        destroy the particle in position<x>::action</wrong>::position<end>.\n"
+                "        create a particle in position<x>::action</correct>::position<end>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -293,6 +294,7 @@ def test_destroy_chained_name_not_in_action(
                 "        the position<pos_a> has a particle.\n"
                 "    } and it does {\n"
                 "        destroy the particle in position<pos_a>::action</child>::position<no_such>.\n"
+                "        create a particle in position<pos_a>::action</child>::position<pos_end>.\n"
                 "    }\n"
                 "}\n"
             ),

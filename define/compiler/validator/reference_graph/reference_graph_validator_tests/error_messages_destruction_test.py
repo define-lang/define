@@ -631,6 +631,7 @@ def test_destructor_cascade_through_position_init_block_format(
             "            }\n"
             "        }\n"
             "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::position</p>.\n"
             "    }\n"
             "}\n"
         ),

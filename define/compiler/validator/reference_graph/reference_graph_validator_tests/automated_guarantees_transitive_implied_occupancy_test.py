@@ -14,12 +14,6 @@ _IMPLIED = "action<my.domain.com:my_lib:/implied_action>"
 _IMPLIER = "action<my.domain.com:my_lib:/implier>"
 _FORWARDER = "action<my.domain.com:my_lib:/forwarder>"
 
-_TRANSITIVE_EDGES = {
-    (_TEST, _IMPLIED),
-    (_IMPLIER, _FORWARDER),
-    (_FORWARDER, _IMPLIED),
-}
-
 
 def test_occupied_guarantee_propagates_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
@@ -34,6 +28,7 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<output>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -45,6 +40,7 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -56,6 +52,7 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -74,13 +71,19 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</implied_action>::position<output> to position<sink>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_empty_guarantee_propagates_through_transitive_implication(
@@ -97,6 +100,7 @@ def test_empty_guarantee_propagates_through_transitive_implication(
                 "    } and it does {\n"
                 "        define the position<_sink>.\n"
                 "        move the particle in position<input> to position<_sink>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -108,6 +112,7 @@ def test_empty_guarantee_propagates_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -119,6 +124,7 @@ def test_empty_guarantee_propagates_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -137,13 +143,19 @@ def test_empty_guarantee_propagates_through_transitive_implication(
                 "        create a particle in position<box>::action</implied_action>::position<input>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<input>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_occupied_guarantee_blocks_create_through_transitive_implication(
@@ -159,6 +171,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<output>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -170,6 +183,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -181,6 +195,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -198,6 +213,8 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<output>.\n"
+                "        destroy the particle in position<box>::action</implied_action>::position<output>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -220,7 +237,12 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 46
     assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_empty_guarantee_blocks_move_through_transitive_implication(
@@ -237,6 +259,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
                 "    } and it does {\n"
                 "        define the position<_sink>.\n"
                 "        move the particle in position<input> to position<_sink>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -249,6 +272,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<input>.\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -260,6 +284,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -279,6 +304,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
                 "        create a particle in position<box>::action</implied_action>::position<input>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</implied_action>::position<input> to position<dest>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -304,7 +330,12 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     assert all_diags[0].inferred_at.end_line == 8
     assert all_diags[0].inferred_at.end_column == 45
     assert all_diags[0].inferred_at.file_path == PurePosixPath("implied_action.dfn")
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_occupied_implied_position_guarantee_propagates_through_transitive_implication(
@@ -321,6 +352,7 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position</implied_pos>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -332,6 +364,7 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -343,6 +376,7 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -361,13 +395,19 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::position</implied_pos> to position<sink>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_empty_implied_position_guarantee_propagates_through_transitive_implication(
@@ -385,6 +425,7 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
                 "    } and it does {\n"
                 "        define the position<_sink>.\n"
                 "        move the particle in position</implied_pos> to position<_sink>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -396,6 +437,7 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -407,6 +449,7 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -425,13 +468,19 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
                 "        create a particle in position<box>::position</implied_pos>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        create a particle in position<box>::position</implied_pos>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_occupied_implied_position_guarantee_blocks_create_through_transitive_implication(
@@ -448,6 +497,7 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position</implied_pos>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -459,6 +509,7 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -470,6 +521,7 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -487,6 +539,8 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        create a particle in position<box>::position</implied_pos>.\n"
+                "        destroy the particle in position<box>::position</implied_pos>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -506,7 +560,12 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 52
     assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_empty_implied_position_guarantee_blocks_move_through_transitive_implication(
@@ -524,6 +583,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
                 "    } and it does {\n"
                 "        define the position<_sink>.\n"
                 "        move the particle in position</implied_pos> to position<_sink>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -535,6 +595,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -546,6 +607,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -565,6 +627,8 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
                 "        create a particle in position<box>::position</implied_pos>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::position</implied_pos> to position<dest>.\n"
+                "        create a particle in position<box>::position</implied_pos>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -579,7 +643,12 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert all_diags[0].location.end_column == 67
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_occupied_implied_position_guarantee_propagates_through_directly_implied_action_chain(
@@ -942,6 +1011,7 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<iface>.\n"
+                "        create a particle in position<iface>::position</x>.\n"
                 "        destroy the particle in position<iface>.\n"
                 "    }\n"
                 "}\n"

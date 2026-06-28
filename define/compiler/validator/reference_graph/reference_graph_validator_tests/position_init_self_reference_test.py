@@ -128,6 +128,7 @@ def test_move_from_self_violates_constraints(
                 "        }\n"
                 "        create a particle in position</test>.\n"
                 "        move the particle in position</test> to position<local>.\n"
+                "        create a particle in position<local>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),

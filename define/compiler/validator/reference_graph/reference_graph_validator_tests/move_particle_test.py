@@ -344,6 +344,7 @@ def test_move_to_chained_prefix_marks_error(
                 "    } and it does {\n"
                 "        move the particle in position<local_pos> to position<local_pos>::position</target_pos>.\n"
                 "        create a particle in position<local_pos>.\n"
+                "        create a particle in position<local_pos>::position</target_pos>.\n"
                 "    }\n"
                 "}\n"
             ),

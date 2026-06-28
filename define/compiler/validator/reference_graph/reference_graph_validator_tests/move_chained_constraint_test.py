@@ -147,6 +147,9 @@ def test_move_from_chained_to_local_violates_constraints(
                 "        create a particle in position<b>.\n"
                 "        move the particle in position<a> to position<b>::position</x>.\n"
                 "        move the particle in position<b>::position</x> to position<c>.\n"
+                "        create a particle in position<a>.\n"
+                "        create a particle in position<a>::position</x>.\n"
+                "        create a particle in position<c>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -199,6 +202,9 @@ def test_move_from_chained_to_local_satisfies_constraints(
                 "        create a particle in position<b>.\n"
                 "        move the particle in position<a> to position<b>::position</x>.\n"
                 "        move the particle in position<b>::position</x> to position<c>.\n"
+                "        create a particle in position<a>.\n"
+                "        create a particle in position<a>::position</x>.\n"
+                "        create a particle in position<c>::position</q>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -357,6 +363,9 @@ def test_chained_to_definition_local_violates(
                 "        create a particle in position<b>.\n"
                 "        move the particle in position<a> to position<b>::position</x>.\n"
                 "        move the particle in position<b>::position</x> to position<dest>.\n"
+                "        create a particle in position<a>.\n"
+                "        create a particle in position<a>::position</x>.\n"
+                "        create a particle in position<dest>::position</y>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -409,6 +418,8 @@ def test_chained_to_definition_local_satisfies(
                 "        create a particle in position<b>.\n"
                 "        move the particle in position<a> to position<b>::position</x>.\n"
                 "        move the particle in position<b>::position</x> to position<dest>.\n"
+                "        create a particle in position<a>.\n"
+                "        create a particle in position<a>::position</x>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -494,6 +505,7 @@ def test_move_from_multi_element_chain_to_constrained_local(
                 "        create a particle in position<src>::position</x>.\n"
                 "        create a particle in position<src>::position</x>::position</y>.\n"
                 "        move the particle in position<src>::position</x>::position</y> to position<a>.\n"
+                "        create a particle in position<a>::position</z>.\n"
                 "    }\n"
                 "}\n"
             ),

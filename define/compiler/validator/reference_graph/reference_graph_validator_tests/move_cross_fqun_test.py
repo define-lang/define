@@ -31,6 +31,7 @@ def test_cross_fqun_local_to_local_satisfies(
                 f"        }}\n"
                 f"        create a particle in position<from_pos>.\n"
                 f"        move the particle in position<from_pos> to position<to_pos>.\n"
+                f"        create a particle in position<to_pos>::position<{_CHILD}:/x>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -67,6 +68,9 @@ def test_cross_fqun_local_to_local_violates(
                 f"        }}\n"
                 f"        create a particle in position<from_pos>.\n"
                 f"        move the particle in position<from_pos> to position<to_pos>.\n"
+                f"        create a particle in position<to_pos>::position<{_CHILD}:/y>.\n"
+                f"        create a particle in position<from_pos>.\n"
+                f"        create a particle in position<from_pos>::position<{_CHILD}:/x>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -202,6 +206,7 @@ def test_cross_fqun_chained_to_local_satisfies(
                 f"        create a particle in position<src>.\n"
                 f"        create a particle in position<src>::position<{_CHILD}:/x>.\n"
                 f"        move the particle in position<src>::position<{_CHILD}:/x> to position<dest>.\n"
+                f"        create a particle in position<dest>::position<{_CHILD}:/y>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -239,6 +244,7 @@ def test_cross_fqun_chained_to_local_violates(
                 f"        create a particle in position<src>.\n"
                 f"        create a particle in position<src>::position<{_CHILD}:/x>.\n"
                 f"        move the particle in position<src>::position<{_CHILD}:/x> to position<dest>.\n"
+                f"        create a particle in position<dest>::position<{_CHILD}:/y>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -295,6 +301,8 @@ def test_cross_fqun_move_to_chained_action_local_satisfies(
                 f"        create a particle in position<src>.\n"
                 f"        create a particle in position<gateway>.\n"
                 f"        move the particle in position<src> to position<gateway>::action<{_CHILD}:/act>::position<local_dest>.\n"
+                f"        destroy the particle in position<gateway>::action<{_CHILD}:/act>::position<local_dest>.\n"
+                f"        create a particle in position<gateway>::action<{_CHILD}:/act>::position<trigger>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -342,6 +350,7 @@ def test_cross_fqun_move_to_chained_action_local_violates(
                 f"        create a particle in position<src>.\n"
                 f"        create a particle in position<gateway>.\n"
                 f"        move the particle in position<src> to position<gateway>::action<{_CHILD}:/act>::position<local_dest>.\n"
+                f"        create a particle in position<gateway>::action<{_CHILD}:/act>::position<trigger>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),
@@ -393,6 +402,8 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_constrained(
                 f"        }}\n"
                 f"        create a particle in position<src>.\n"
                 f"        move the particle in position<src>::action<{_CHILD}:/act>::position<no_such> to position<dest>.\n"
+                f"        create a particle in position<dest>.\n"
+                f"        create a particle in position<dest>::position<{_CHILD}:/quality>.\n"
                 f"    }}\n"
                 f"}}\n"
             ),

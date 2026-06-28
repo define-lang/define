@@ -469,6 +469,7 @@ def test_destructor_in_init_block_checks_interface_requirement_locally(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

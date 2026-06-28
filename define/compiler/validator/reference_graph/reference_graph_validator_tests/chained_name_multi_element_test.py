@@ -173,6 +173,7 @@ class TestCreateParticle:
                     "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<pos_a>::action</act_b>::position<no_such>::position</later>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -219,6 +220,7 @@ class TestCreateParticle:
                     "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<pos_a>::action</act_b>::position<no_such>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -260,6 +262,7 @@ class TestCreateParticle:
                     "        the position<pos_a> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
+                    "        create a particle in position<pos_a>::action</act_b>::position<_noop>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -315,8 +318,7 @@ class TestCreateParticle:
                     "    it happens when {\n"
                     "        the position<pos_c> has a particle.\n"
                     "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<pos_c>::action</act_d>::position<pos_e>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -326,8 +328,7 @@ class TestCreateParticle:
                     "    it happens when {\n"
                     "        the position<pos_e> has a particle.\n"
                     "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
+                    "        destroy the particle in position<pos_e>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -391,6 +392,7 @@ class TestCreateParticle:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</foo>::action</bar>::position<y>.\n"
+                    "        create a particle in position<x>::action</foo>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -443,6 +445,7 @@ class TestCreateParticle:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</a>::action</b>::position<bogus>.\n"
+                    "        create a particle in position<x>::action</a>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -495,6 +498,7 @@ class TestCreateParticle:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</a>::action</b>.\n"
+                    "        create a particle in position<x>::action</a>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -547,6 +551,7 @@ class TestChainActionValidation:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</a>::action<bad>.\n"
+                    "        create a particle in position<x>::action</a>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -592,6 +597,7 @@ class TestChainActionValidation:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</act>::position<inner>::position</wrong>.\n"
+                    "        create a particle in position<x>::action</act>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -605,8 +611,7 @@ class TestChainActionValidation:
                     "    it happens when {\n"
                     "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<inner>::position</allowed>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -658,6 +663,7 @@ class TestChainActionValidation:
                     "    } and it does {\n"
                     "        define the position<_noop>.\n"
                     "        create a particle in position<_noop>.\n"
+                    "        destroy the particle in position<inner>::position</deeper>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -683,6 +689,7 @@ class TestChainActionValidation:
                     "        the position<x> has a particle.\n"
                     "    } and it does {\n"
                     "        create a particle in position<x>::action</act>::position<inner>::position</target>::position</leaf>.\n"
+                    "        create a particle in position<x>::action</act>::position<inner>.\n"
                     "    }\n"
                     "}\n"
                 ),
@@ -696,8 +703,7 @@ class TestChainActionValidation:
                     "    it happens when {\n"
                     "        the position<inner> has a particle.\n"
                     "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<inner>::position</target>.\n"
                     "    }\n"
                     "}\n"
                 ),

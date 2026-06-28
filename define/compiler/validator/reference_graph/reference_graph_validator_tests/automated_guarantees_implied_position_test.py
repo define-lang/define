@@ -465,6 +465,7 @@ def test_init_block_create_in_transitive_implied(
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::position</transitive_implied>.\n"
+                "        create a particle in position<box>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -516,6 +517,7 @@ def test_init_block_move_between_implied_positions(
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::position</implied_b>.\n"
+                "        create a particle in position<box>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),

@@ -152,6 +152,7 @@ def test_init_block_occupied_overrides_triggered_action_empty(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -199,6 +200,7 @@ def test_init_block_empty_overrides_triggered_action_occupied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

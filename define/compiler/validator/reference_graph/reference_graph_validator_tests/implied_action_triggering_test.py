@@ -23,8 +23,7 @@ _IMPLIED_ACTION_NOOP = (
     "    it happens when {\n"
     "        the position<trigger_pos> has a particle.\n"
     "    } and it does {\n"
-    "        define the position<_noop>.\n"
-    "        create a particle in position<_noop>.\n"
+    "        destroy the particle in position<trigger_pos>.\n"
     "    }\n"
     "}\n"
 )
@@ -410,13 +409,10 @@ def test_caller_triggers_action_implied_by_constraint(
             "implied_action.dfn": (
                 "define the potential action<my.domain.com:my_lib:/implied_action> {\n"
                 "    define the position<trigger_pos>.\n"
-                "    define the position<spare_iface>.\n"
                 "    it happens when {\n"
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
-                "        create a particle in position<spare_iface>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -427,7 +423,7 @@ def test_caller_triggers_action_implied_by_constraint(
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
-                "        create a particle in action</implied_action>::position<spare_iface>.\n"
+                "        create a particle in action</implied_action>::position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -443,14 +439,20 @@ def test_caller_triggers_action_implied_by_constraint(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        # This line is the point of this test.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _IMPLIED)}
+    assert result.action_call_graph.edges() == [
+        (_IMPLIER, _IMPLIED),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_implied_action_guarantees_propagate_to_caller(
@@ -529,14 +531,16 @@ def test_transitive_implication_triggers_action(
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {
-        (_TEST, _IMPLIED),
-        (_IMPLIER, _FORWARDER),
+    assert result.action_call_graph.edges() == [
         (_FORWARDER, _IMPLIED),
-    }
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]

@@ -291,8 +291,10 @@ def test_round_trip_local_to_implied_back_to_local_preserves_quality(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<local_a>.\n"
+                "        create a particle in position<local_a>::position</implier>.\n"
                 "        move the particle in position<local_a> to position</implier>.\n"
                 "        move the particle in position</implier> to position<local_b>.\n"
+                "        destroy the particle in position<local_b>::position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -416,7 +418,9 @@ def test_move_respects_direct_implied_qualities(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<source>.\n"
+                "        create a particle in position<source>::position</implier>.\n"
                 "        move the particle in position<source> to position<destination>.\n"
+                "        destroy the particle in position<destination>::position</implied>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -450,7 +454,9 @@ def test_move_respects_transitive_implied_qualities(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<source>.\n"
+                "        create a particle in position<source>::position</implier>.\n"
                 "        move the particle in position<source> to position<destination>.\n"
+                "        destroy the particle in position<destination>::position</transitive_implied>.\n"
                 "    }\n"
                 "}\n"
             ),

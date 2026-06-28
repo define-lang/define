@@ -10,12 +10,6 @@ _IMPLIED = "action<my.domain.com:my_lib:/implied_action>"
 _IMPLIER = "action<my.domain.com:my_lib:/implier>"
 _FORWARDER = "action<my.domain.com:my_lib:/forwarder>"
 
-_TRANSITIVE_EDGES = {
-    (_TEST, _IMPLIED),
-    (_IMPLIER, _FORWARDER),
-    (_FORWARDER, _IMPLIED),
-}
-
 
 def test_implied_to_implied_identity_preserved_through_transitive_implication(
     validate_project_with_reference_graph: ValidateProjectWithReferenceGraph,
@@ -34,6 +28,7 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position</implied_a> to position</implied_b>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -45,6 +40,7 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -56,6 +52,7 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -85,13 +82,21 @@ def test_implied_to_implied_identity_preserved_through_transitive_implication(
                 "        move the particle in position<my_secret_holder> to position<box>::position</implied_a>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::position</implied_b> to position<verify_dest>.\n"
+                "        create a particle in position<verify_dest>::position</secret>.\n"
+                "        create a particle in position<box>::position</implied_a>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_transitive_implication(
@@ -112,6 +117,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position</implied_a> to position</implied_b>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -123,6 +129,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -134,6 +141,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -163,6 +171,12 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
                 "        move the particle in position<my_secret_holder> to position<box>::position</implied_a>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::position</implied_b> to position<fail_dest>.\n"
+                "        create a particle in position<my_secret_holder>.\n"
+                "        create a particle in position<my_secret_holder>::position</secret>.\n"
+                "        create a particle in position<fail_dest>.\n"
+                "        create a particle in position<fail_dest>::position</other>.\n"
+                "        create a particle in position<box>::position</implied_a>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -181,7 +195,12 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/other>",
     ]
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_implied_to_interface_identity_preserved_through_transitive_implication(
@@ -200,6 +219,7 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position</implied_a> to position<out>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -211,6 +231,7 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -222,6 +243,7 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -251,13 +273,21 @@ def test_implied_to_interface_identity_preserved_through_transitive_implication(
                 "        move the particle in position<my_secret_holder> to position<box>::position</implied_a>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</implied_action>::position<out> to position<verify_dest>.\n"
+                "        create a particle in position<verify_dest>::position</secret>.\n"
+                "        create a particle in position<box>::position</implied_a>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_transitive_implication(
@@ -277,6 +307,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position</implied_a> to position<out>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -288,6 +319,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -299,6 +331,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -328,6 +361,12 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
                 "        move the particle in position<my_secret_holder> to position<box>::position</implied_a>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</implied_action>::position<out> to position<fail_dest>.\n"
+                "        create a particle in position<my_secret_holder>.\n"
+                "        create a particle in position<my_secret_holder>::position</secret>.\n"
+                "        create a particle in position<fail_dest>.\n"
+                "        create a particle in position<fail_dest>::position</other>.\n"
+                "        create a particle in position<box>::position</implied_a>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -349,7 +388,12 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/other>",
     ]
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_interface_to_interface_identity_preserved_through_transitive_implication(
@@ -367,6 +411,7 @@ def test_interface_to_interface_identity_preserved_through_transitive_implicatio
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position<in> to position<out>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -379,6 +424,7 @@ def test_interface_to_interface_identity_preserved_through_transitive_implicatio
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<in>.\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -390,6 +436,7 @@ def test_interface_to_interface_identity_preserved_through_transitive_implicatio
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -419,13 +466,20 @@ def test_interface_to_interface_identity_preserved_through_transitive_implicatio
                 "        move the particle in position<my_secret_holder> to position<box>::action</implied_action>::position<in>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</implied_action>::position<out> to position<verify_dest>.\n"
+                "        create a particle in position<verify_dest>::position</secret>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]
 
 
 def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_through_transitive_implication(
@@ -444,6 +498,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
                 "        the position<trigger_pos> has a particle.\n"
                 "    } and it does {\n"
                 "        move the particle in position<in> to position<out>.\n"
+                "        destroy the particle in position<trigger_pos>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -456,6 +511,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
                 "    } and it does {\n"
                 "        create a particle in action</implied_action>::position<in>.\n"
                 "        create a particle in action</implied_action>::position<trigger_pos>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -467,6 +523,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in action</forwarder>::position<run>.\n"
+                "        destroy the particle in position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -496,6 +553,11 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
                 "        move the particle in position<my_secret_holder> to position<box>::action</implied_action>::position<in>.\n"
                 "        create a particle in position<box>::action</implied_action>::position<trigger_pos>.\n"
                 "        move the particle in position<box>::action</implied_action>::position<out> to position<fail_dest>.\n"
+                "        create a particle in position<my_secret_holder>.\n"
+                "        create a particle in position<my_secret_holder>::position</secret>.\n"
+                "        create a particle in position<fail_dest>.\n"
+                "        create a particle in position<fail_dest>::position</other>.\n"
+                "        create a particle in position<box>::action</implier>::position<run>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -517,4 +579,9 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     assert all_diags[0].missing_qualities == [
         "position<my.domain.com:my_lib:/other>",
     ]
-    assert result.action_call_graph.unique_edges() == _TRANSITIVE_EDGES
+    assert result.action_call_graph.edges() == [
+        (_FORWARDER, _IMPLIED),
+        (_IMPLIER, _FORWARDER),
+        (_TEST, _IMPLIED),
+        (_TEST, _IMPLIER),
+    ]

@@ -53,6 +53,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -165,6 +166,7 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -256,6 +258,7 @@ def test_init_block_occupied_requirement_via_destroy_of_child_of_moved_to_implie
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -340,6 +343,7 @@ def test_init_block_empty_requirement_via_create_in_child_of_moved_to_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -432,6 +436,7 @@ def test_init_block_occupied_requirement_satisfied_for_moved_to_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -485,6 +490,7 @@ def test_init_block_empty_requirement_satisfied_for_moved_to_implied(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

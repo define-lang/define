@@ -713,6 +713,7 @@ class TestPositionInitTriggering:
                     "            }\n"
                     "        }\n"
                     "        create a particle in position<box>.\n"
+                    "        create a particle in position<box>::position</p>.\n"
                     "    }\n"
                     "}\n"
                 ),

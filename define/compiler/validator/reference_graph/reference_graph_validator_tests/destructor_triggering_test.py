@@ -9,6 +9,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 _TEST = "action<my.domain.com:my_lib:/test>"
 _POS_TEST = "position<my.domain.com:my_lib:/test>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
+_INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _MAKE_THING = "action<my.domain.com:my_lib:/make_thing>"
@@ -107,6 +108,7 @@ def test_destroy_fires_destructor_via_quality_implication(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</marked>.\n"
                 "        destroy the particle in position<box>.\n"
                 "    }\n"
                 "}\n"
@@ -154,7 +156,14 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
             ),
         },
     )
-    assert_no_errors(result.program_result)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].constraint_name == "action</worker>"
+    assert all_diags[0].position_name == "position<box>"
     assert result.action_call_graph.unique_edges() == set()
 
 
@@ -290,13 +299,19 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
         },
     )
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 33
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "position<box>::action</inner>::position<slot>"
-    assert all_diags[0].parent_position_name == "position<box>"
+    assert all_diags[0].constraint_name == "action</inner>"
+    assert all_diags[0].position_name == "position<box>"
+    assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert all_diags[1].location.line == 11
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
+    assert all_diags[1].parent_position_name == "position<box>"
     assert result.action_call_graph.unique_edges() == set()
 
 
@@ -351,8 +366,6 @@ def test_destroy_via_chained_interface_position_fires_destructor(
                 "        the position<run> has a particle.\n"
                 "    } and it does {\n"
                 "        create a particle in position<slot>.\n"
-                "        define the position<_noop>.\n"
-                "        create a particle in position<_noop>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -368,7 +381,7 @@ def test_destroy_via_chained_interface_position_fires_destructor(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
-                "        create a particle in position<box>::action</inner>::position<slot>.\n"
+                "        create a particle in position<box>::action</inner>::position<run>.\n"
                 "        destroy the particle in position<box>::action</inner>::position<slot>.\n"
                 "    }\n"
                 "}\n"
@@ -376,7 +389,7 @@ def test_destroy_via_chained_interface_position_fires_destructor(
         },
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.unique_edges() == {(_TEST, _DESTRUCTOR)}
+    assert result.action_call_graph.edges() == [(_TEST, _INNER), (_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_fires_destructor_attached_in_callee_and_surfaced_via_guarantee(
