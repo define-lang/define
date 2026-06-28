@@ -631,12 +631,19 @@ class PositionPresenceStatement(ASTNode):
 
 
 @dataclass(frozen=True, slots=True)
+class ConstructorConditionStatement(ASTNode):
+    """Represents a constructor condition statement."""
+
+
+@dataclass(frozen=True, slots=True)
 class DestructorConditionStatement(ASTNode):
     """Represents a destructor condition statement."""
 
 
 type TriggerConditionStatement = (
-    PositionPresenceStatement | DestructorConditionStatement
+    PositionPresenceStatement
+    | ConstructorConditionStatement
+    | DestructorConditionStatement
 )
 
 

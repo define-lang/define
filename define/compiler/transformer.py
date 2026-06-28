@@ -506,6 +506,19 @@ class DefineTransformer(
         )
 
     @_strip_discard
+    def constructor_condition_statement(
+        self, items: list[lark_standalone.Token]
+    ) -> ast.ConstructorConditionStatement:
+        """Transform a constructor condition statement.
+
+        items: [CONSTRUCTOR_STATEMENT token] (the rule has no other content).
+        """
+        keyword = items[0]
+        return ast.ConstructorConditionStatement(
+            location=self._location_with_terminator(start=keyword, end=keyword),
+        )
+
+    @_strip_discard
     def destructor_condition_statement(
         self, items: list[lark_standalone.Token]
     ) -> ast.DestructorConditionStatement:

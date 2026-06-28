@@ -82,6 +82,15 @@ _DESTRUCTOR_ACTION = (
     + "}\n"
 )
 
+_CONSTRUCTOR_ACTION = (
+    "define the potential action<standard:/path> {\n"
+    + "    it happens when {\n"
+    + "        this particle is created.\n"
+    + "    } and it does {\n"
+    + "    }\n"
+    + "}\n"
+)
+
 _LOCAL_CONSTRAINED_ACTION = (
     "define the potential action<standard:/path> {\n"
     + "    define the position<my_pos> {\n"
@@ -447,6 +456,17 @@ def test_position_presence_statement_fields():
     )
     assert (
         _slice(_FULL_ACTION, condition.location) == "the position<run> has a particle."
+    )
+
+
+def test_constructor_condition_statement_fields():
+    condition = _only_action(_CONSTRUCTOR_ACTION).trigger_conditions.conditions[0]
+    assert isinstance(condition, ast.ConstructorConditionStatement)
+    assert condition.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=34
+    )
+    assert (
+        _slice(_CONSTRUCTOR_ACTION, condition.location) == "this particle is created."
     )
 
 
