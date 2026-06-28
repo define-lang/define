@@ -40,6 +40,18 @@ py_test(
 )
 
 py_test(
+    name = "constructor_condition_test",
+    size = "small",
+    srcs = ["constructor_condition_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+    ],
+)
+
+py_test(
     name = "destroy_particle_test",
     size = "small",
     srcs = ["destroy_particle_test.py"],
@@ -236,6 +248,7 @@ pyright_test(
         ":blocks_test",
         ":comments_test",
         ":conftest",
+        ":constructor_condition_test",
         ":destroy_particle_test",
         ":destructor_condition_test",
         ":error_messages_test",
