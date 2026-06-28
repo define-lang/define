@@ -8,10 +8,8 @@
 # token in CLOSED, then delivers each event by creating a particle in the matching
 # transition's <run> position, in lifecycle order.
 define the potential action<define-lang.org:tcp:/driver> {
-    define the position<run>.
-
     it happens when {
-        the position<run> has a particle.
+        this particle is created.
     } and it does {
         define the position<conn> {
             it may only contain particles where {
