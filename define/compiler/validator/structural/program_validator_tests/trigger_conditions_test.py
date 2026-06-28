@@ -44,6 +44,26 @@ def test_valid_destructor():
     assert diags == []
 
 
+def test_valid_constructor():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<_noop>.\n"
+        "        create a particle in position<_noop>.\n"
+        "    }\n"
+        "}\n"
+    )
+    results = (
+        program_validator.ProgramStructuralValidator()
+        .validate_program_non_filesystem(source)
+        .file_results
+    )
+    diags = results[0].diagnostics
+    assert diags == []
+
+
 def test_undefined_local_name():
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
