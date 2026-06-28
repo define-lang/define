@@ -64,6 +64,14 @@ It also violates the general principle of Define that there is only one way to
 do things. Although we can't enforce that everywhere, it does seem like this
 pattern in particular should be clamped down on.
 
+### 6: Complex Action Triggering
+
+Theoretically, Define's syntax allows one action to fill an interface position
+of an action and then have a _different_ action trigger it. This is
+indistinguishable from the "action container" pattern, and also is very
+confusing---why would you basically pass an argument to a function and then not
+call it?
+
 ## Solution
 
 In Define, the compiler will detect and forbid all forms of dead code that it
@@ -84,38 +92,51 @@ local context where they are supposed to be referenced.
   that are never referenced within _that_ action. (Even if they are referenced
   outside of the action, because this is how we forbid the "actions are
   containers" pattern.)
-- **Unrefrenced Local Positions**: A position defined inside of an Action
+- **Unreferenced Local Positions**: A position defined inside of an Action
   Statements Block that is never referenced inside of that Action Statements
   Block.
 - **Unreferenced Quality Implications**: Already forbidden in
   [DLP 22 (Atomic Qualities)](00022-atomic-qualities.md).
 
-### Unnecessary Quality Assignments on Local and Interface Positions
+### Unnecessary Quality Assignments
 
 The compiler can sometimes detect that a quality constraint has been placed upon
-a position that is not necessary. The is the simplest on local positions inside
-of Action Statements Blocks.
+a position that is not necessary. However, this is a bit more complex, so there
+are more rules to describe.
+
+There are a few different rules below. The rules about a constraint being alive
+override the rules about it being dead.
+
+#### Only Direct Constraints Can Be Dead
+
+Only actual lines of code written inside of an action can be dead code.
+Constraints that are assigned _only_ transitively via Quality Implication
+Statements are never dead code.
+
+#### Move Targets Make Source Constraints Alive
 
 The first thing to know about constraints is that if a _move_ requires the
 constraint it is always alive. That is, if I move a particle from position A to
 position B, and position B requires a particular constraint to exist on the
-particle, that constraint cannot be dead.
+particle, that constraint is alive on A.
 
-The easiest thing to be confident about, in terms of dead code, on a local
-position is **untriggered actions**: If an action is explicitly assigned to a
-particle and it can be triggered but never is. For example, `action</foo>` has a
-trigger on `action</foo>::position<run>` being filled, but that position is
-never filled. Actions that get transitively assigned by quality implications
-would not be considered to be dead. Destructors also would never be considered
-dead, since all particles will eventually be destroyed. Deadness is about what's
-written in code.
+#### Output Interface Positions Are Alive
 
-Dead **child positions** are also detectable: they are not directly referenced
-within the action's code and are not required by any moves.
+If an interface position is part of an action's _output_, then _all_ constraints
+on that position are alive. An interface position is an "output position" if it
+contains a particle that was created or moved by the action, when the action
+ends.
 
-Since we forbid dead interface positions, we can also make these same statements
-about an action's interface positions (otherwise we couldn't, because code
-outside of the action could be using the interface position as storage).
+#### Dead Child Positions
+
+Any directly-declared position constraint that is not referenced inside of that
+same action is dead code.
+
+#### Untriggered Actions
+
+If an action is directly assigned to a particle and it can be triggered but
+never is, it is a dead constraint. For example, `action</foo>` has a trigger on
+`action</foo>::position<run>` being filled, but that position is never filled.
 
 ### Qualities on Global Positions
 
@@ -201,11 +222,22 @@ my view is that the long-term benefits outweigh the minor inconvenience or
 annoyance, here.
 
 Another downside here is that this affects the performance of the compiler,
-especially in temrs of memory, because it has to track whether things actually
+especially in terms of memory, because it has to track whether things actually
 get referenced or not. My view is that this is a reasonable trade-off,
 especially because most names _should_ be referenced, and thus the data
 structures required to track whether something is referenced or not can actually
 shrink over time as the compiler runs.
+
+### Forcing Action Triggering
+
+Forcing action triggering fixes Problem 6 from above, about different actions
+filling in the interface positions of an action but only one of those actions
+actually triggering the action.
+
+I'm not 100% confident that this is the right restriction; there could be some
+legitimate reason to allow that (very weird) pattern. However, at the moment it
+doesn't make sense to me to allow it. If you're going to pass arguments to a
+function, you should actually call that function.
 
 ## Forward Compatibility
 
