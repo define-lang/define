@@ -61,17 +61,6 @@ If the compiler can prove that it is safe to do so, the compiler may choose to
 apply qualities to the particle concurrently. "Safe" means that applying them
 concurrently would have the same outcome as applying them in sequence.
 
-### Recursion
-
-In the future, we will have syntax that causes quality assignment to create
-other particles and assign them qualities. That happens exactly the same way as
-this syntax and resolves in the same way. Each creation resolves and constraints
-are enforced when each block ends.
-
-In order to guarantee logical constraint safety, we _may_ have to enforce that
-all such triggers happen synchronously and atomically in sequence, but we will
-cross that bridge when we get there.
-
 ### Implications for Position Definitions
 
 Note that there's an important point here: this gives semantics and side effects

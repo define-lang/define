@@ -228,9 +228,10 @@ essentially all actions triggered during a destructor will require appropriate
 `wait until` blocks, because actions can only reference positions the action
 knows about (which are inherently positions assigned to this particle).
 
-Note that these semantics make position initialization and particle destruction
-very different: init runs when a _position_ is _assigned_, and destructors run
-when a _particle_ is _destroyed_.
+Note that these semantics make constructors and destructors somewhat mirror each
+other: constructors run _after_ a particle is _created_, and destructors run
+_before_ a particle is _destroyed_. So there's always a particle taking an
+action.
 
 ### Static Analysis Requirement
 
