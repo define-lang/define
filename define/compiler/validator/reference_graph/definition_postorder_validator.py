@@ -12,6 +12,7 @@ from define.compiler.graphs import action_call_graph
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
+    dead_constraint_tracker,
     particle_operation,
     particle_tracker,
     requirement_violation,
@@ -70,6 +71,7 @@ class DefinitionPostorderValidator(abc.ABC):
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
     _destruction_contracts: list[action_contract.DestructionContract]
     _nested_guarantees: list[action_contract.NestedGuarantees]
+    _dead_tracker: dead_constraint_tracker.DeadConstraintTracker
 
     def __init__(
         self,
@@ -98,6 +100,7 @@ class DefinitionPostorderValidator(abc.ABC):
         self._inferred_requirements = {}
         self._destruction_contracts = []
         self._nested_guarantees = []
+        self._dead_tracker = dead_constraint_tracker.DeadConstraintTracker()
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -629,6 +632,7 @@ class DefinitionPostorderValidator(abc.ABC):
         if action_chain is None:
             raise ValueError(f"no action in chain: {position.source_chained_name}")
 
+        self._dead_tracker.mark_alive(action_chain)
         # We only propagate inner requirements if actions actually get called.
         # (That's why this happens here in _check_trigger.)
         self._propagate_inner_requirements(contract, position, scope)
@@ -1207,6 +1211,9 @@ class DefinitionPostorderValidator(abc.ABC):
             match stmt:
                 case ast.LocalPositionDefinition():
                     scope.add_definition(stmt)
+                    self._dead_tracker.register_position_constraints(
+                        stmt, self._definition_results
+                    )
                 case ast.CreateParticleStatement():
                     validity = next(validity_iter)
                     self._analyze_create(stmt, validity, scope)
@@ -1349,6 +1356,11 @@ class DefinitionPostorderValidator(abc.ABC):
         target_required_qualities, _ = self._get_direct_required_qualities(
             to_pos, scope
         )
+        # DLP 42: a constraint the destination requires is required for the
+        # move, so it is marked alive against the moved particle's origin position.
+        self._mark_move_required_constraints_alive(
+            from_pos, target_required_qualities or ()
+        )
         move_diagnostics = self._executor.execute_move(
             particle_operation.Move(
                 source=from_pos,
@@ -1370,6 +1382,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
         Marks the chain's occupancy state as ERROR in the tracker if validation fails.
         """
+        self._dead_tracker.mark_alive(chain)
         if len(chain.typed_names) < 2:
             return
         elements = chain.typed_names
@@ -1514,6 +1527,37 @@ class DefinitionPostorderValidator(abc.ABC):
         )
         self._tracker.mark_error(chain)
 
+    def _mark_move_required_constraints_alive(
+        self,
+        from_pos: ast.PositionReference,
+        target_required: tuple[ast.GlobalTypedNameReference, ...],
+    ):
+        """Tell the ledger which of the moved particle's origin constraints the destination requires (DLP 42)."""
+        if not self._dead_tracker.has_pending():
+            return
+        if self._tracker.has_error_state(from_pos) or not self._tracker.is_occupied(
+            from_pos
+        ):
+            return
+        origin = self._tracker.get_occupant(from_pos).origin_position
+        self._dead_tracker.mark_move_required(origin, target_required)
+
+    def _check_dead_constraints(self):
+        """Emit a diagnostic for each constraint left dead per DLP 42's child-position and untriggered-action rules."""
+        for candidate in self._dead_tracker.dead_constraints():
+            diagnostic_class = (
+                diagnostics.UntriggeredActionDiagnostic
+                if candidate.constraint.name_type == ast.NameType.ACTION
+                else diagnostics.DeadChildPositionDiagnostic
+            )
+            self._diagnostics.append(
+                diagnostic_class(
+                    location=candidate.constraint.location,
+                    constraint_name=candidate.constraint.source_typed_name,
+                    position_name=candidate.position.source_typed_name,
+                )
+            )
+
     def _get_direct_required_qualities(
         self,
         position: ast.PositionReference,
@@ -1631,6 +1675,32 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
         return self._action_definition.interface_positions_by_name
 
+    def _mark_output_interface_constraints_alive(
+        self, own_guarantees: list[action_contract.GuaranteePair]
+    ):
+        """Mark alive the constraints of every interface position the action exposes as output (DLP 42).
+
+        An interface position is output iff the action's own contract guarantees
+        it holds a particle at the end (OccupiedByNew or OccupiedByExisting); its
+        constraints then define a particle a caller consumes. Reading the actual
+        first-level guarantees is correct however the position was filled, with no
+        separate occupancy bookkeeping.
+        """
+        if not self._dead_tracker.has_pending():
+            return
+        for key, guarantee in own_guarantees:
+            if len(key) != 1 or not isinstance(
+                guarantee,
+                action_contract.OccupiedByNewGuarantee
+                | action_contract.OccupiedByExistingGuarantee,
+            ):
+                continue
+            interface_def = self._interface_positions.get(key[0])
+            if interface_def is not None:
+                self._dead_tracker.mark_constraints_alive(
+                    interface_def.typed_name, interface_def.constraint_typed_names
+                )
+
     @property
     def _trigger_position_name(self) -> str | None:
         if self._action_definition.trigger_position is not None:
@@ -1682,6 +1752,9 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             # matching file_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
                 scope.add_definition(pos)
+                self._dead_tracker.register_position_constraints(
+                    pos, self._definition_results
+                )
 
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
@@ -1704,7 +1777,12 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
         scope.enter_child_scope()
         self._analyze_statements(definition.action_statements, scope)
 
-        return self._generate_contract()
+        # The contract's own guarantees tell us which interface positions the
+        # action exposes as output, which keeps their constraints alive (DLP 42).
+        contract = self._generate_contract()
+        self._mark_output_interface_constraints_alive(contract.guarantees.own)
+        self._check_dead_constraints()
+        return contract
 
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
@@ -1889,6 +1967,7 @@ class PositionPostorderValidator(DefinitionPostorderValidator):
         scope.add_definition(definition)
         scope.enter_child_scope()
         self._analyze_statements(definition.initialization, scope)
+        self._check_dead_constraints()
         return action_contract.PositionInitBlockContract(
             requirements=self._inferred_requirements,
             guarantees=action_contract.Guarantees(

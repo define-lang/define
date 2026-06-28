@@ -57,6 +57,10 @@ def _name_set(typed_names: tuple[ast.GlobalTypedNameReference, ...]) -> frozense
     return frozenset(name.full_typed_name for name in typed_names)
 
 
+# TODO: I want to change Define's semantics so that you can only directly
+# reference a direct child constraint (or have it satisfy a move) if it is
+# directly written in the source. It's too confusing to have child positions
+# magically appear, and I think also dangerous for maintainability.
 class ParticleOperationExecutor:
     """Creates, destroys, and moves particles, including enforcing the rules on doing so."""
 

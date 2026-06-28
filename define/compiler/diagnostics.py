@@ -190,6 +190,37 @@ class UnreferencedPositionDiagnostic(Diagnostic):
 
 
 @dataclass
+class DeadConstraintDiagnostic(Diagnostic):
+    """Base class for an unused constraint on a local or interface position."""
+
+    constraint_name: str
+    position_name: str
+
+
+@dataclass
+class DeadChildPositionDiagnostic(DeadConstraintDiagnostic):
+    """Diagnostic for a position constraint on a local or interface position that is never used."""
+
+    message_format: ClassVar[str] = (
+        "'{self.constraint_name}' is a constraint of '{self.position_name}' here, "
+        "but the child position it creates is never referenced within this "
+        "definition and no move requires it; either reference "
+        "'{self.position_name}::{self.constraint_name}' or remove the constraint."
+    )
+
+
+@dataclass
+class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
+    """Diagnostic for an action constraint on a local or interface position that is never triggered."""
+
+    message_format: ClassVar[str] = (
+        "'{self.constraint_name}' is a constraint of '{self.position_name}' here, "
+        "but the action it creates is never triggered within this definition and "
+        "no move requires it; either trigger it or remove the constraint."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

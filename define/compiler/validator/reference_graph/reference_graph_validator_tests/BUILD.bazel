@@ -370,6 +370,17 @@ py_test(
 )
 
 py_test(
+    name = "dead_constraints_test",
+    size = "small",
+    srcs = ["dead_constraints_test.py"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "destroy_particle_test",
     size = "small",
     srcs = ["destroy_particle_test.py"],
@@ -717,6 +728,7 @@ pyright_test(
         ":chained_name_test",
         ":create_particle_test",
         ":create_without_parent_test",
+        ":dead_constraints_test",
         ":destroy_particle_test",
         ":destruction_contract_caller_verification_test",
         ":destruction_contract_propagation_test",
