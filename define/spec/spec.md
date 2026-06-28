@@ -925,6 +925,8 @@ potential_position_definition_block =
 
 ### Position Initialization
 
+<!-- TODO: Delete this after we remove it from the compiler. -->
+
 Proposals:
 
 - [DLP 32: Position Initialization](../proposals/00032-position-initialization.md)
@@ -1048,8 +1050,11 @@ A Trigger Conditions Block contains one Trigger Condition Statement.
 
 <!-- TODO: Update for multiple statements. -->
 
-A Trigger Condition Statement is one of two types: a Position Presence Statement
-or a Destructor Condition Statement (defined later in this spec).
+A Trigger Condition Statement is one of three types:
+
+- A Position Presence Statement
+- A Constructor Condition Statement (defined later in this spec)
+- A Destructor Condition Statement (defined later in this spec).
 
 A Position Presence Statement is `the position<name> has a particle.` It may
 only refer to a single local name that is an interface position of the current
@@ -1060,7 +1065,10 @@ action's Trigger Conditions Block as being satisfied.
 
 ```ebnf
 trigger_conditions = trigger_condition_statement ;
-trigger_condition_statement = position_presence_statement | destructor_condition_statement ;
+trigger_condition_statement =
+    position_presence_statement
+    | constructor_condition_statement
+    | destructor_condition_statement ;
 position_presence_statement = "the", " ", typed_local_name, " has a particle", terminator ;
 ```
 
@@ -1112,7 +1120,7 @@ action_statement =
 
 ## Action Contracts
 
-Actions provie a "contract" indicating what state must be true before they are
+Actions provide a "contract" indicating what state must be true before they are
 run and what state will be true when they complete.
 
 For the rest of this section, when we refer to "contracted position" we mean an
@@ -1319,6 +1327,28 @@ only after all required quality assignments for that creation are complete.
 The compiler may choose to re-order quality assignments or perform them
 concurrently if doing so is guaranteed to produce the same result as assigning
 them in sequence.
+
+## Constructors
+
+Proposals:
+
+- [DLP 32: Constructors](../proposals/00032-constructors.md)
+
+The Constructor Condition Statement is `this particle is created` followed by a
+statement terminator. An action whose Trigger Conditions Block contains a
+Constructor Condition Statement is called a "constructor."
+
+```ebnf
+constructor_condition_statement =
+    "this particle is created", terminator ;
+```
+
+### When Constructors Run
+
+A constructor runs whenever a particle is created via a Create Particle
+Statement targeting the position to which it is assigned.
+
+Constructors run in the order in which they are assigned to a position.
 
 ## Moving Particles
 
