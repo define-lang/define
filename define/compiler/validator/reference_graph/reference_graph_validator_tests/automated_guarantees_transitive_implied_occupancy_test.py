@@ -817,6 +817,7 @@ def test_implied_position_self_create_init_block_fires_on_caller_create(
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::position</first_implied>.\n"
+                "        create a particle in position<box>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -922,6 +923,7 @@ def test_transitively_implied_position_self_create_init_block_fires_on_caller_cr
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<box>::position</second_implied>.\n"
+                "        create a particle in position<box>::position</implier>.\n"
                 "    }\n"
                 "}\n"
             ),

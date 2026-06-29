@@ -358,6 +358,7 @@ def test_init_block_occupied_propagates_from_init_block_to_init_block(
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</outer_p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -582,6 +583,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_init_
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -670,6 +672,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_init_blo
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
+                "        create a particle in position<box>::position</p>.\n"
                 "    }\n"
                 "}\n"
             ),

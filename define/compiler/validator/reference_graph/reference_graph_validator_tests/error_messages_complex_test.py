@@ -116,7 +116,6 @@ _FILES = {
         "    it also assigns the action</empty_p2>.\n"
         "    define the position<trigger_pos> {\n"
         "        it may only contain particles where {\n"
-        "            it has the position</p1>.\n"
         "            it has the position</p2>.\n"
         "        }\n"
         "    }\n"
@@ -132,7 +131,6 @@ _FILES = {
         "    it also assigns the action</before_destructor>.\n"
         "    define the position<trigger_pos> {\n"
         "        it may only contain particles where {\n"
-        "            it has the position</p1>.\n"
         "            it has the position</p2>.\n"
         "        }\n"
         "    }\n"
@@ -148,12 +146,7 @@ _FILES = {
     "before_destructor.dfn": (
         "define the potential action<my.domain.com:my_lib:/before_destructor> {\n"
         "    it also assigns the action</do_destruction>.\n"
-        "    define the position<trigger_pos> {\n"
-        "        it may only contain particles where {\n"
-        "            it has the position</p1>.\n"
-        "            it has the position</p2>.\n"
-        "        }\n"
-        "    }\n"
+        "    define the position<trigger_pos>.\n"
         "    it happens when {\n"
         "        the position<trigger_pos> has a particle.\n"
         "    } and it does {\n"
@@ -164,12 +157,7 @@ _FILES = {
     ),
     "do_destruction.dfn": (
         "define the potential action<my.domain.com:my_lib:/do_destruction> {\n"
-        "    define the position<to_destroy> {\n"
-        "        it may only contain particles where {\n"
-        "            it has the position</p1>.\n"
-        "            it has the position</p2>.\n"
-        "        }\n"
-        "    }\n"
+        "    define the position<to_destroy>.\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
         "        the position<run> has a particle.\n"
@@ -263,13 +251,13 @@ def test_destruction_contract_traces_every_trigger_hop(
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
             File "triggered_by_outer_implied.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
-            File "do_nothing.dfn", line 12, column 55
+            File "do_nothing.dfn", line 11, column 55
           'action<my.domain.com:my_lib:/empty_p2>' triggers 'action<my.domain.com:my_lib:/before_destructor>':
-            File "empty_p2.dfn", line 14, column 55
+            File "empty_p2.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/before_destructor>' triggers 'action<my.domain.com:my_lib:/do_destruction>':
-            File "before_destructor.dfn", line 13, column 30
+            File "before_destructor.dfn", line 8, column 30
           'action<my.domain.com:my_lib:/do_destruction>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d1>':
-            File "do_destruction.dfn", line 12, column 33
+            File "do_destruction.dfn", line 7, column 33
           'action<my.domain.com:my_lib:/d1>' infers this requirement:
             File "d1.dfn", line 6, column 30""")
 
@@ -296,12 +284,12 @@ def test_destruction_contract_traces_every_trigger_hop(
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
             File "triggered_by_outer_implied.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
-            File "do_nothing.dfn", line 12, column 55
+            File "do_nothing.dfn", line 11, column 55
           'action<my.domain.com:my_lib:/empty_p2>' triggers 'action<my.domain.com:my_lib:/before_destructor>':
-            File "empty_p2.dfn", line 14, column 55
+            File "empty_p2.dfn", line 13, column 55
           'action<my.domain.com:my_lib:/before_destructor>' triggers 'action<my.domain.com:my_lib:/do_destruction>':
-            File "before_destructor.dfn", line 13, column 30
+            File "before_destructor.dfn", line 8, column 30
           'action<my.domain.com:my_lib:/do_destruction>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d2>':
-            File "do_destruction.dfn", line 12, column 33
+            File "do_destruction.dfn", line 7, column 33
           'action<my.domain.com:my_lib:/d2>' infers this requirement:
             File "d2.dfn", line 7, column 30""")

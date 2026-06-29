@@ -134,6 +134,7 @@ def test_deferred_action_chain_error_format(
         "        the position<pos_a> has a particle.\n"
         "    } and it does {\n"
         "        create a particle in position<pos_a>::action</act_b>::position<no_such>.\n"
+        "        create a particle in position<pos_a>::action</act_b>::position<pos_c>.\n"
         "    }\n"
         "}\n"
     )
@@ -379,6 +380,10 @@ def test_move_violates_constraints_error_message(
         "                it has the action</y>.\n"
         "            }\n"
         "        }\n"
+        "        create a particle in position<to_pos>.\n"
+        "        create a particle in position<to_pos>::action</y>::position<run>.\n"
+        "        create a particle in position<to_pos>::position</x>.\n"
+        "        destroy the particle in position<to_pos>.\n"
         "        create a particle in position<from_pos>.\n"
         "        move the particle in position<from_pos> to position<to_pos>.\n"
         "    }\n"
@@ -405,7 +410,7 @@ def test_move_violates_constraints_error_message(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(source.splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 14, column 52
+        File "test.dfn", line 18, column 52
                 move the particle in position<from_pos> to position<to_pos>.
                                                            ^
         cannot move a particle
@@ -533,6 +538,9 @@ def test_destroy_in_emptied_interface_position_format(
         "            }\n"
         "        }\n"
         "        create a particle in position<box>.\n"
+        "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+        "        destroy the particle in position<box>.\n"
+        "        create a particle in position<box>.\n"
         "        create a particle in position<box>::action</other>::position<item>.\n"
         "        destroy the particle in position<box>::action</other>::position<item>.\n"
         "        destroy the particle in position<box>::action</other>::position<item>.\n"
@@ -559,11 +567,11 @@ def test_destroy_in_emptied_interface_position_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(test_source.splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 14, column 33
+        File "test.dfn", line 17, column 33
                 destroy the particle in position<box>::action</other>::position<item>.
                                         ^
         cannot destroy a particle in 'position<box>::action</other>::position<item>' because it does not contain one; it was emptied at:
-        File "test.dfn", line 13, column 33""")
+        File "test.dfn", line 16, column 33""")
 
 
 def test_destroy_in_default_empty_interface_position_format(
@@ -580,6 +588,9 @@ def test_destroy_in_default_empty_interface_position_format(
         "                it has the action</other>.\n"
         "            }\n"
         "        }\n"
+        "        create a particle in position<box>.\n"
+        "        create a particle in position<box>::action</other>::position<trigger_pos>.\n"
+        "        destroy the particle in position<box>.\n"
         "        create a particle in position<box>.\n"
         "        destroy the particle in position<box>::action</other>::position<item>.\n"
         "    }\n"
@@ -607,7 +618,7 @@ def test_destroy_in_default_empty_interface_position_format(
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 12, column 33
+        File "test.dfn", line 15, column 33
                 destroy the particle in position<box>::action</other>::position<item>.
                                         ^
         cannot destroy a particle in 'position<box>::action</other>::position<item>' because it does not contain one; action interface positions are empty by default""")

@@ -39,11 +39,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             ),
             "mid.dfn": (
                 "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<incoming>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -67,7 +63,6 @@ def test_contract_keyed_on_contracted_origin_after_move(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -83,7 +78,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
@@ -99,7 +94,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -107,7 +102,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -115,7 +110,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -123,7 +118,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 13,
+            "line": 9,
             "column": 33,
             "file_path": "mid.dfn",
         },
@@ -163,11 +158,7 @@ def test_moved_in_contracted_origin_requirement_satisfied(
             ),
             "mid.dfn": (
                 "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<incoming>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -233,11 +224,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             ),
             "mid.dfn": (
                 "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<incoming>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -260,7 +247,6 @@ def test_auto_destruction_records_contract_verified_by_caller(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -276,7 +262,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
@@ -292,7 +278,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -300,7 +286,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -308,7 +294,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -316,7 +302,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": "position<local_box>",
             "triggered_quality_name": _MID,
-            "line": 11,
+            "line": 7,
             "column": 9,
             "file_path": "mid.dfn",
         },
@@ -324,7 +310,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 11,
+            "line": 7,
             "column": 9,
             "file_path": "mid.dfn",
         },
@@ -364,11 +350,7 @@ def test_auto_destruction_contract_requirement_satisfied(
             ),
             "mid.dfn": (
                 "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<incoming>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"

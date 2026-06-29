@@ -44,11 +44,7 @@ def test_caller_known_child_state_requirement_satisfied(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -70,7 +66,6 @@ def test_caller_known_child_state_requirement_satisfied(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_file_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -112,11 +107,7 @@ def test_caller_known_child_state_requirement_violated(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -138,7 +129,6 @@ def test_caller_known_child_state_requirement_violated(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_file_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -155,7 +145,7 @@ def test_caller_known_child_state_requirement_violated(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     # The violation is observed at the line that triggered close_file.
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -170,7 +160,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -178,7 +168,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -186,7 +176,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -194,7 +184,7 @@ def test_caller_known_child_state_requirement_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 11,
+            "line": 7,
             "column": 33,
             "file_path": "close_file.dfn",
         },
@@ -999,11 +989,7 @@ def test_position_init_block_consumer_caller_known_satisfied(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -1022,7 +1008,6 @@ def test_position_init_block_consumer_caller_known_satisfied(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_file_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -1064,11 +1049,7 @@ def test_position_init_block_consumer_caller_known_violated(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -1087,7 +1068,6 @@ def test_position_init_block_consumer_caller_known_violated(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_file_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -1103,7 +1083,7 @@ def test_position_init_block_consumer_caller_known_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -1119,7 +1099,7 @@ def test_position_init_block_consumer_caller_known_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 11,
+            "line": 10,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1127,7 +1107,7 @@ def test_position_init_block_consumer_caller_known_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 15,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1135,7 +1115,7 @@ def test_position_init_block_consumer_caller_known_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _POS_TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 17,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1143,7 +1123,7 @@ def test_position_init_block_consumer_caller_known_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 11,
+            "line": 7,
             "column": 33,
             "file_path": "close_file.dfn",
         },
@@ -1222,8 +1202,6 @@ def test_visible_and_caller_attached_destructors_coexist(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file1>.\n"
-                "                it has the position</file2>.\n"
                 "                it has the action</delete_file1>.\n"
                 "                it has the action</delete_file2>.\n"
                 "            }\n"
@@ -1242,7 +1220,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     # The visible destructor: close_file knows it, so its requirement propagates
     # with the destructor attached on close_file's own target (no my_file step).
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
@@ -1257,7 +1235,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 22,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1289,7 +1267,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     # The caller-attached destructor: close_file is blind to it, so /test verifies
     # it through the contract, attributed to my_file.
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 22
+    assert all_diags[1].location.line == 20
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].required_empty is False
@@ -1304,7 +1282,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE2,
-            "line": 16,
+            "line": 14,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1312,7 +1290,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 20,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1320,7 +1298,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 22,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },

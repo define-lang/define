@@ -45,11 +45,7 @@ def test_inner_kept_child_occupied_requirement_satisfied(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -566,7 +562,6 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -584,7 +579,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].runner_description == f"'{_MID}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -597,7 +592,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -605,7 +600,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -613,7 +608,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -678,11 +673,7 @@ def test_init_block_attaches_destructor_and_verifies_via_contract(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -752,7 +743,7 @@ def test_init_block_attaches_destructor_and_verifies_via_contract(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _CLOSE_FILE,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 11,
+            "line": 7,
             "column": 33,
             "file_path": "close_file.dfn",
         },
@@ -800,11 +791,7 @@ def test_init_block_attached_destructor_requirement_satisfied(
             ),
             "close_file.dfn": (
                 "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-                "    define the position<target> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<target>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -1097,7 +1084,6 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -1115,7 +1101,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].runner_description == f"'{_MID}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1131,7 +1117,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1139,7 +1125,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1147,7 +1133,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1279,11 +1265,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             ),
             "inner.dfn": (
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<incoming>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -1295,11 +1277,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             ),
             "mid.dfn": (
                 "define the potential action<my.domain.com:my_lib:/mid> {\n"
-                "    define the position<incoming> {\n"
-                "        it may only contain particles where {\n"
-                "            it has the position</file>.\n"
-                "        }\n"
-                "    }\n"
+                "    define the position<incoming>.\n"
                 "    define the position<run>.\n"
                 "    it happens when {\n"
                 "        the position<run> has a particle.\n"
@@ -1328,7 +1306,6 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</delete_destructor>.\n"
                 "            }\n"
                 "        }\n"
@@ -1346,7 +1323,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].runner_description == f"'{_MID}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1361,7 +1338,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1369,7 +1346,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1377,7 +1354,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1385,7 +1362,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MID,
             "triggered_quality_name": _INNER,
-            "line": 18,
+            "line": 14,
             "column": 30,
             "file_path": "mid.dfn",
         },
@@ -1393,7 +1370,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
             "enclosing_quality_name": "position<local_box>",
             "triggered_quality_name": _INNER,
-            "line": 11,
+            "line": 7,
             "column": 9,
             "file_path": "inner.dfn",
         },
@@ -1401,7 +1378,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
             "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _DELETE_DESTRUCTOR,
-            "line": 11,
+            "line": 7,
             "column": 9,
             "file_path": "inner.dfn",
         },
@@ -1698,7 +1675,6 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
                 "        }\n"
                 "        define the position<staging> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</d>.\n"
                 "            }\n"
                 "        }\n"
@@ -1720,7 +1696,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
     assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -1733,7 +1709,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<staging>",
             "triggered_quality_name": _D,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1741,7 +1717,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>::position</c>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1749,7 +1725,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 21,
+            "line": 20,
             "column": 30,
             "file_path": "test.dfn",
         },

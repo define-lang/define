@@ -741,8 +741,7 @@ class TestCircularDependencyTriggering:
                     "    it happens when {\n"
                     "        the position<run> has a particle.\n"
                     "    } and it does {\n"
-                    "        define the position<_noop>.\n"
-                    "        create a particle in position<_noop>.\n"
+                    "        create a particle in position<run>::position</pos>.\n"
                     "    }\n"
                     "}\n"
                 ),

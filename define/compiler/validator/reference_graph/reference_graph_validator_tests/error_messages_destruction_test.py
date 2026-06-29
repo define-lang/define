@@ -38,11 +38,7 @@ def test_destructor_requires_occupied_position_format(
             "    it happens when {\n"
             "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
+            "        define the position<box>.\n"
             "        define the position<staging> {\n"
             "            it may only contain particles where {\n"
             "                it has the position</child_q>.\n"
@@ -61,7 +57,7 @@ def test_destructor_requires_occupied_position_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 19, column 33
+        File "test.dfn", line 15, column 33
                 destroy the particle in position<box>.
                                         ^
         'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
@@ -70,9 +66,9 @@ def test_destructor_requires_occupied_position_format(
           the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
           the particle in 'position<box>::position</child_q>' comes from here:
-            File "test.dfn", line 17, column 30
+            File "test.dfn", line 13, column 30
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
-            File "test.dfn", line 19, column 33
+            File "test.dfn", line 15, column 33
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30""")
 
@@ -400,11 +396,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
             "    it happens when {\n"
             "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        define the position<box> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the position</child_q>.\n"
-            "            }\n"
-            "        }\n"
+            "        define the position<box>.\n"
             "        define the position<staging> {\n"
             "            it may only contain particles where {\n"
             "                it has the position</child_q>.\n"
@@ -422,7 +414,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 18, column 51
+        File "test.dfn", line 14, column 51
                 move the particle in position<staging> to position<box>.
                                                           ^
         'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
@@ -431,11 +423,11 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
           the destructor 'action<my.domain.com:my_lib:/destructor>' is attached to the particle by a constraint on 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
           the particle in 'position<box>::position</child_q>' comes from here:
-            File "test.dfn", line 17, column 30
+            File "test.dfn", line 13, column 30
           the particle in 'position<box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>':
-            File "test.dfn", line 18, column 51
+            File "test.dfn", line 14, column 51
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
-            File "test.dfn", line 18, column 51
+            File "test.dfn", line 14, column 51
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30""")
 
@@ -687,11 +679,7 @@ def test_destruction_contract_requires_occupied_format(
         ),
         "close_file.dfn": (
             "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-            "    define the position<target> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</file>.\n"
-            "        }\n"
-            "    }\n"
+            "    define the position<target>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
             "        the position<run> has a particle.\n"
@@ -713,7 +701,6 @@ def test_destruction_contract_requires_occupied_format(
             "        }\n"
             "        define the position<my_file> {\n"
             "            it may only contain particles where {\n"
-            "                it has the position</file>.\n"
             "                it has the action</delete_file_destructor>.\n"
             "            }\n"
             "        }\n"
@@ -730,20 +717,20 @@ def test_destruction_contract_requires_occupied_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 20, column 30
+        File "test.dfn", line 19, column 30
                 create a particle in position<box>::action</close_file>::position<run>.
                                      ^
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
 
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/delete_file_destructor>' is attached to the particle by a constraint on 'position<my_file>':
-            File "test.dfn", line 14, column 28
+            File "test.dfn", line 13, column 28
           the particle in 'position<box>::action</close_file>::position<target>' comes from here:
-            File "test.dfn", line 18, column 30
+            File "test.dfn", line 17, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
-            File "test.dfn", line 20, column 30
+            File "test.dfn", line 19, column 30
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_file_destructor>':
-            File "close_file.dfn", line 11, column 33
+            File "close_file.dfn", line 7, column 33
           'action<my.domain.com:my_lib:/delete_file_destructor>' infers this requirement:
             File "delete_file_destructor.dfn", line 7, column 30""")
 
@@ -873,11 +860,7 @@ def test_destruction_contract_auto_destruction_format(
         ),
         "mid.dfn": (
             "define the potential action<my.domain.com:my_lib:/mid> {\n"
-            "    define the position<incoming> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</file>.\n"
-            "        }\n"
-            "    }\n"
+            "    define the position<incoming>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
             "        the position<run> has a particle.\n"
@@ -900,7 +883,6 @@ def test_destruction_contract_auto_destruction_format(
             "        }\n"
             "        define the position<my_file> {\n"
             "            it may only contain particles where {\n"
-            "                it has the position</file>.\n"
             "                it has the action</delete_destructor>.\n"
             "            }\n"
             "        }\n"
@@ -917,22 +899,22 @@ def test_destruction_contract_auto_destruction_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 20, column 30
+        File "test.dfn", line 19, column 30
                 create a particle in position<box>::action</mid>::position<run>.
                                      ^
         'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/mid>' runs, and it is not occupied.
 
         This error happens because:
           the destructor 'action<my.domain.com:my_lib:/delete_destructor>' is attached to the particle by a constraint on 'position<my_file>':
-            File "test.dfn", line 14, column 28
+            File "test.dfn", line 13, column 28
           the particle in 'position<box>::action</mid>::position<incoming>' comes from here:
-            File "test.dfn", line 18, column 30
+            File "test.dfn", line 17, column 30
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/mid>':
-            File "test.dfn", line 20, column 30
+            File "test.dfn", line 19, column 30
           the particle in 'position<local_box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/mid>':
-            File "mid.dfn", line 11, column 9
+            File "mid.dfn", line 7, column 9
           'action<my.domain.com:my_lib:/mid>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':
-            File "mid.dfn", line 11, column 9
+            File "mid.dfn", line 7, column 9
           'action<my.domain.com:my_lib:/delete_destructor>' infers this requirement:
             File "delete_destructor.dfn", line 7, column 30""")
 
@@ -964,11 +946,7 @@ def test_destruction_contract_init_block_attacher_format(
         ),
         "close_file.dfn": (
             "define the potential action<my.domain.com:my_lib:/close_file> {\n"
-            "    define the position<target> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</file>.\n"
-            "        }\n"
-            "    }\n"
+            "    define the position<target>.\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
             "        the position<run> has a particle.\n"
@@ -1012,7 +990,7 @@ def test_destruction_contract_init_block_attacher_format(
           'position<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 12, column 30
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':
-            File "close_file.dfn", line 11, column 33
+            File "close_file.dfn", line 7, column 33
           'action<my.domain.com:my_lib:/delete_destructor>' infers this requirement:
             File "delete_destructor.dfn", line 7, column 30""")
 

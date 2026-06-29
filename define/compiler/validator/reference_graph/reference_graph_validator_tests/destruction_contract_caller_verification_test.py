@@ -17,6 +17,7 @@ _INNER = "action<my.domain.com:my_lib:/inner>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DELETE_FILE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_file_destructor>"
+_CARRIER = "action<my.domain.com:my_lib:/carrier>"
 _D1 = "action<my.domain.com:my_lib:/d1>"
 _D2 = "action<my.domain.com:my_lib:/d2>"
 
@@ -219,12 +220,12 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</carrier>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<my_file>.\n"
+                "        create a particle in position<my_file>::action</carrier>::position<run>.\n"
                 "        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.\n"
                 "        create a particle in position<box>::action</close_file>::position<run>.\n"
                 "    }\n"
@@ -253,7 +254,7 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 14,
+            "line": 13,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -261,7 +262,7 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -302,8 +303,9 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
     assert all_diags[1].location.file_path == PurePosixPath("carrier.dfn")
     assert all_diags[1].implication_name == "action</delete_file_destructor>"
     assert result.action_call_graph.edges() == [
-        (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
+        (_TEST, _CARRIER),
         (_TEST, _CLOSE_FILE),
+        (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
     ]
 
 
@@ -673,13 +675,13 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
                 "        }\n"
                 "        define the position<my_file> {\n"
                 "            it may only contain particles where {\n"
-                "                it has the position</file>.\n"
                 "                it has the action</carrier>.\n"
                 "                it has the action</delete_file_destructor>.\n"
                 "            }\n"
                 "        }\n"
                 "        create a particle in position<box>.\n"
                 "        create a particle in position<my_file>.\n"
+                "        create a particle in position<my_file>::action</carrier>::position<run>.\n"
                 "        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.\n"
                 "        create a particle in position<box>::action</close_file>::position<run>.\n"
                 "    }\n"
@@ -707,7 +709,7 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
             "kind": action_contract.PropagationKind.DESTRUCTOR_ATTACHED,
             "enclosing_quality_name": "position<my_file>",
             "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
-            "line": 15,
+            "line": 14,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -715,7 +717,7 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
             "triggered_quality_name": None,
-            "line": 19,
+            "line": 18,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -752,8 +754,9 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
     assert all_diags[1].location.file_path == PurePosixPath("carrier.dfn")
     assert all_diags[1].implication_name == "action</delete_file_destructor>"
     assert result.action_call_graph.edges() == [
-        (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
+        (_TEST, _CARRIER),
         (_TEST, _CLOSE_FILE),
+        (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
     ]
 
 
@@ -1158,7 +1161,6 @@ def test_six_level_destructor_knower_separate_from_resolvers_satisfied(
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<incoming> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</p1>.\n"
                 "            it has the position</p2>.\n"
                 "        }\n"
                 "    }\n"
@@ -1298,7 +1300,6 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
                 "define the potential action<my.domain.com:my_lib:/inner> {\n"
                 "    define the position<incoming> {\n"
                 "        it may only contain particles where {\n"
-                "            it has the position</p1>.\n"
                 "            it has the position</p2>.\n"
                 "        }\n"
                 "    }\n"
@@ -1440,7 +1441,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -1503,7 +1504,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</middle>::position<incoming>::position</p2>",
             "triggered_quality_name": None,
-            "line": 18,
+            "line": 17,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -1519,7 +1520,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": _CLOSE_FILE,
-            "line": 20,
+            "line": 19,
             "column": 30,
             "file_path": "inner.dfn",
         },
@@ -1611,9 +1612,9 @@ def test_owner_with_error_required_position_skips_destructor_check(
         },
     )
     all_diags = result.program_result.all_diagnostics
-    # Only the move-from-empty; the destructor's requirement on position</x> is
-    # error to the owner, so it is skipped rather than reported as a violation.
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
+    # The move-from-empty: the destructor's requirement on position</x> is error to
+    # the owner, so it is skipped rather than reported as a violation.
     assert isinstance(
         all_diags[0], diagnostics.MoveFromEmptyInterfacePositionDiagnostic
     )
@@ -1625,6 +1626,15 @@ def test_owner_with_error_required_position_skips_destructor_check(
         == "position<box>::action</close_file>::position<target>::position</x>"
     )
     assert all_diags[0].inferred_at is None
+    # close_file declares target's position</x> constraint but its own body never
+    # references it; only the caller's move does, which is a different definition,
+    # so within close_file the constraint is dead.
+    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[1].location.line == 4
+    assert all_diags[1].location.column == 24
+    assert all_diags[1].location.file_path == PurePosixPath("close_file.dfn")
+    assert all_diags[1].constraint_name == "position</x>"
+    assert all_diags[1].position_name == "position<target>"
     assert result.action_call_graph.edges() == [
         (_CLOSE_FILE, _DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
