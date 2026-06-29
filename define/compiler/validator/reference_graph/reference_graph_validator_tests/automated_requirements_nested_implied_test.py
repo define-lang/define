@@ -121,7 +121,7 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</x>"
     assert_propagation_chain(
@@ -186,7 +186,7 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::position</x>"
     assert_propagation_chain(
@@ -293,7 +293,7 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -373,7 +373,7 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
-    assert all_diags[0].runner_description == f"'{_INNER}'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
     assert_propagation_chain(
@@ -463,7 +463,7 @@ def test_doubly_nested_implied_action_chain_propagates(
     assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_OUTER}'"
+    assert diag.action_name == _OUTER
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::action</inner>::position<extra>"
     assert_propagation_chain(

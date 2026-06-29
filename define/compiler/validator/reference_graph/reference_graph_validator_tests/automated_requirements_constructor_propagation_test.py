@@ -71,7 +71,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_const
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _P + "'"
+    assert all_diags[0].action_name == _P
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -158,7 +158,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
     assert all_diags[0].location.end_line == 11
     assert all_diags[0].location.end_column == 43
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _P + "'"
+    assert all_diags[0].action_name == _P
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</q>"
     assert_propagation_chain(

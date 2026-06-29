@@ -148,7 +148,7 @@ def test_caller_known_child_state_requirement_violated(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
@@ -325,7 +325,7 @@ def test_caller_known_empty_requirement_violated(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
@@ -466,7 +466,7 @@ def test_two_caller_attached_destructors_verified_independently(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</b>"
@@ -691,7 +691,7 @@ def test_three_destructors_with_two_violated(
     # before destructor_b.
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</c>"
@@ -741,7 +741,7 @@ def test_three_destructors_with_two_violated(
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].required_empty is False
-    assert all_diags[1].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[1].action_name == _CLOSE_FILE
     assert (
         all_diags[1].position_name
         == "position<box>::action</close_file>::position<target>::position</b>"
@@ -860,7 +860,7 @@ def test_declared_quality_destructor_verified_once(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
@@ -1090,7 +1090,7 @@ def test_constructor_consumer_caller_known_violated(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file>"
@@ -1227,7 +1227,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</file1>"
@@ -1274,7 +1274,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].required_empty is False
-    assert all_diags[1].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[1].action_name == _CLOSE_FILE
     assert (
         all_diags[1].position_name
         == "position<box>::action</close_file>::position<target>::position</file2>"

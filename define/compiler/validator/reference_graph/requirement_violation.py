@@ -68,8 +68,7 @@ def trigger_violation(
         position_name=position_name,
         required_empty=req.required_state
         == action_contract.PositionOccupancyState.EMPTY,
-        runner_name=runner_name,
-        runner_name_type=ast.NameType.ACTION,
+        action_name=runner_name,
         steps=steps,
     )
 
@@ -135,8 +134,7 @@ def direct_destructor(
         position_name=position_name,
         required_empty=req.required_state
         == action_contract.PositionOccupancyState.EMPTY,
-        runner_name=destructor_name,
-        runner_name_type=ast.NameType.ACTION,
+        action_name=destructor_name,
         steps=steps,
     )
 
@@ -218,8 +216,7 @@ def contract_destructor(
         location=trigger_step.location,
         position_name=position_name,
         required_empty=required_empty,
-        runner_name=runner_name,
-        runner_name_type=ast.NameType.ACTION,
+        action_name=runner_name,
         steps=steps,
     )
 
@@ -291,8 +288,7 @@ def _diagnostic(
     location: ast.SourceLocation,
     position_name: str,
     required_empty: bool,
-    runner_name: str,
-    runner_name_type: ast.NameType,
+    action_name: str,
     steps: list[action_contract.PropagationStep],
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     return diagnostics.InferredRequirementViolationDiagnostic(
@@ -300,6 +296,5 @@ def _diagnostic(
         position_name=position_name,
         propagation_chain=steps,
         required_empty=required_empty,
-        runner_name=runner_name,
-        runner_name_type=runner_name_type,
+        action_name=action_name,
     )

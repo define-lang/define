@@ -329,7 +329,7 @@ def test_auto_destruction_failing_empty_requirement(
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.action_name == _DESTRUCTOR_EMPTY
     assert diag.required_empty is True
     assert (
         diag.position_name == "position<box>::action</destructor_empty>::position<item>"
@@ -430,7 +430,7 @@ def test_auto_destruction_failing_occupied_requirement(
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_DESTRUCTOR}'"
+    assert diag.action_name == _DESTRUCTOR
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::action</destructor>::position<item>"
     assert_propagation_chain(
@@ -508,7 +508,7 @@ def test_constructor_auto_destruction_failing_requirement(
     assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.action_name == _DESTRUCTOR_EMPTY
     assert diag.required_empty is True
     assert (
         diag.position_name == "position<box>::action</destructor_empty>::position<item>"
@@ -606,7 +606,7 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     assert box_a_diag.location.line == 16
     assert box_a_diag.location.column == 30
     assert box_a_diag.location.file_path == PurePosixPath("test.dfn")
-    assert box_a_diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert box_a_diag.action_name == _DESTRUCTOR_EMPTY
     assert box_a_diag.required_empty is True
     assert (
         box_a_diag.position_name
@@ -669,7 +669,7 @@ def test_auto_destruction_failing_in_reverse_definition_order(
     assert box_b_diag.location.line == 18
     assert box_b_diag.location.column == 30
     assert box_b_diag.location.file_path == PurePosixPath("test.dfn")
-    assert box_b_diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert box_b_diag.action_name == _DESTRUCTOR_EMPTY
     assert box_b_diag.required_empty is True
     assert (
         box_b_diag.position_name
@@ -767,7 +767,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.action_name == _DESTRUCTOR_EMPTY
     assert diag.required_empty is True
     assert diag.position_name == (
         "position<box>::position</child_q>::action</destructor_empty>::position<item>"
@@ -861,7 +861,7 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     assert diag.location.line == 16
     assert diag.location.column == 52
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.action_name == _DESTRUCTOR_EMPTY
     assert diag.required_empty is True
     assert (
         diag.position_name
@@ -959,7 +959,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     assert diag.location.line == 12
     assert diag.location.column == 54
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert diag.action_name == _DESTRUCTOR_EMPTY
     assert diag.required_empty is True
     assert (
         diag.position_name
@@ -1072,7 +1072,7 @@ def test_destructor_requirement_propagates_to_caller_via_interface(
     assert diag.location.line == 14
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_INNER}'"
+    assert diag.action_name == _INNER
     assert diag.required_empty is True
     assert diag.position_name == (
         "position<box>::action</inner>::position<incoming>"

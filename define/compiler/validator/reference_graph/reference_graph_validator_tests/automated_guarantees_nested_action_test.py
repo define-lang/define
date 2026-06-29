@@ -199,7 +199,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/outer>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name

@@ -152,7 +152,7 @@ def test_inner_emptied_child_overrides_caller_knowledge_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     # Observed at the line that triggered close_file (line 21).
     assert all_diags[0].location.line == 21
@@ -359,7 +359,7 @@ def test_cascade_verifies_child_destructor_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
@@ -576,7 +576,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
@@ -704,7 +704,7 @@ def test_constructor_attaches_destructor_and_verifies_via_contract(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -879,7 +879,7 @@ def test_constructor_resolves_implied_action_destruction_contract(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_CALLEE}'"
+    assert all_diags[0].action_name == _CALLEE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 47
@@ -1104,7 +1104,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
@@ -1326,7 +1326,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
@@ -1502,7 +1502,7 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     assert len(all_diags) == 2
     # Post-order: the child's destructor is reported before the parent's.
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
@@ -1563,7 +1563,7 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].runner_description == f"'{_MID}'"
+    assert all_diags[1].action_name == _MID
     assert all_diags[1].required_empty is False
     assert all_diags[1].location.line == 21
     assert all_diags[1].location.column == 30
@@ -1699,7 +1699,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
     # the parent's cascade (which skips the now-empty position</c>).
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30

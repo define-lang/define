@@ -343,7 +343,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/outer>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>"
@@ -380,7 +380,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].required_empty is True
-    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/outer>'"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
     assert (
         all_diags[1].position_name
         == "position<box>::action</outer>::position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"
@@ -417,7 +417,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[2].required_empty is True
-    assert all_diags[2].runner_description == "'action<my.domain.com:my_lib:/middle>'"
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/middle>"
     assert (
         all_diags[2].position_name
         == "position<out_iface>::action</middle>::position<mid_iface>::action</inner>::position<item>"

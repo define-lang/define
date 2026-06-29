@@ -523,7 +523,7 @@ def test_two_different_implier_constructors_conflict(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.required_empty is True
-    assert diag.runner_description == "'action<my.domain.com:my_lib:/second_implier>'"
+    assert diag.action_name == "action<my.domain.com:my_lib:/second_implier>"
     assert diag.position_name == "position<box>::position</implied>"
     assert diag.location.line == 12
     assert diag.location.column == 30
@@ -667,7 +667,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.required_empty is False
-    assert diag.runner_description == "'action<my.domain.com:my_lib:/requirer>'"
+    assert diag.action_name == "action<my.domain.com:my_lib:/requirer>"
     assert diag.position_name == "position<box>::position</slot>"
     assert diag.location.line == 12
     assert diag.location.column == 30

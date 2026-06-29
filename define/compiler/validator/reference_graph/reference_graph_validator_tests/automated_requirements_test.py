@@ -102,7 +102,7 @@ def test_violate_occupied_requirement(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
@@ -169,7 +169,7 @@ def test_caller_violates_occupied_requirement(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
@@ -277,7 +277,7 @@ def test_caller_violates_empty_requirement(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
@@ -481,7 +481,7 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     assert all_diags[2].location.end_line == 16
     assert all_diags[2].location.end_column == 82
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[2].runner_description == "'action<my.domain.com:my_lib:/inner>'"
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/inner>"
     assert all_diags[2].required_empty is False
     assert all_diags[2].position_name == "position<box>::action</inner>::position<b>"
     assert_propagation_chain(
@@ -650,7 +650,7 @@ def test_constructor_violates_occupied_requirement(
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
@@ -706,7 +706,7 @@ def test_constructor_violates_empty_requirement(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(
@@ -916,7 +916,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert_propagation_chain(
         all_diags[0],
@@ -945,7 +945,7 @@ def test_trigger_chain_occupied_requirement_violated(
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is False
     assert_propagation_chain(
         all_diags[1],
@@ -1064,7 +1064,7 @@ def test_trigger_chain_empty_requirement_violated(
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 49
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
@@ -1143,7 +1143,7 @@ def test_trigger_chain_parent_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name == "position<box>::action</other>::position<iface>"
@@ -1217,7 +1217,7 @@ def test_destroy_infers_occupied_requirement(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert_propagation_chain(

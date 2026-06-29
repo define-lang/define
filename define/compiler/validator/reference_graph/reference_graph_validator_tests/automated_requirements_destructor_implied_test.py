@@ -100,7 +100,7 @@ def test_occupied_implied_requirement_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert all_diags[0].position_name == "position<box>::position</marker>"
     assert_propagation_chain(
         all_diags[0],
@@ -222,7 +222,7 @@ def test_empty_implied_requirement_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert all_diags[0].action_name == _DESTRUCTOR_EMPTY
     assert all_diags[0].position_name == "position<box>::position</marker>"
     assert_propagation_chain(
         all_diags[0],
@@ -334,7 +334,7 @@ def test_destructor_in_constructor_checks_implied_requirement_locally(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert all_diags[0].position_name == "position</carrier>::position</marker>"
     assert_propagation_chain(
         all_diags[0],

@@ -738,21 +738,20 @@ class IncorrectIndentationDiagnostic(Diagnostic):
 class InferredRequirementViolationDiagnostic(Diagnostic):
     """Diagnostic for when an automatically inferred occupancy requirement is violated.
 
-    The same shape serves every case (action trigger, Position Initialization
-    Block, destructor, Destruction Contract): a uniform top sentence naming the
-    runner whose run the requirement gates, followed by the causal stack.
+    The same shape serves every case (action trigger, destructor, Destruction
+    Contract): a uniform top sentence naming the runner whose run the requirement
+    gates, followed by the causal stack.
     """
 
     position_name: str
     propagation_chain: list[action_contract.PropagationStep]
     required_empty: bool
-    # The quality whose Action Statements Block we can't run because the requirement
+    # The action whose Action Statements Block we can't run because the requirement
     # isn't satisfied.
-    runner_name: str
-    runner_name_type: ast.NameType
+    action_name: str
     message_format: ClassVar[str] = (
         "'{self.position_name}' must be {self.required_state} before"
-        " {self.runner_description} runs, and it is not {self.required_state}.\n\n"
+        " '{self.action_name}' runs, and it is not {self.required_state}.\n\n"
         "{self.formatted_propagation_chain}"
     )
 
@@ -760,13 +759,6 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
     def required_state(self) -> str:
         """The word describing the state the position must be in."""
         return "empty" if self.required_empty else "occupied"
-
-    @property
-    def runner_description(self) -> str:
-        """The phrase naming the runner whose run the requirement gates."""
-        if self.runner_name_type == ast.NameType.POSITION:
-            return f"the Position Initialization Block of '{self.runner_name}'"
-        return f"'{self.runner_name}'"
 
     # TODO: This really needs to be able to show all the relevant
     # source lines. I think we could do that by passing in a

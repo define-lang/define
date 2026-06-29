@@ -122,7 +122,7 @@ def test_interface_to_local_occupied_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
@@ -220,7 +220,7 @@ def test_interface_to_local_empty_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
@@ -329,7 +329,7 @@ def test_implied_to_local_occupied_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::position</marker>::position</child>"
@@ -430,7 +430,7 @@ def test_implied_to_local_empty_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::position</marker>::position</child>"
@@ -539,7 +539,7 @@ def test_interface_to_implied_occupied_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
@@ -643,7 +643,7 @@ def test_implied_to_implied_occupied_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::position</source_marker>::position</child>"

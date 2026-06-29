@@ -99,7 +99,7 @@ def test_intermediate_verifies_destructor_it_can_resolve(
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
@@ -239,7 +239,7 @@ def test_transitively_implied_destructor_attributes_to_implying_constraint(
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -485,7 +485,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
@@ -555,7 +555,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     assert all_diags[1].location.line == 20
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("mid.dfn")
-    assert all_diags[1].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[1].action_name == _CLOSE_FILE
     assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name
@@ -695,7 +695,7 @@ def test_directly_declared_destructor_attribution_wins_over_implication(
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -987,7 +987,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -1048,7 +1048,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     assert all_diags[1].location.line == 20
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[1].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[1].action_name == _MIDDLE
     assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name
@@ -1397,7 +1397,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[0].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[0].action_name == _MIDDLE
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -1466,7 +1466,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
-    assert all_diags[1].runner_description == f"'{_MIDDLE}'"
+    assert all_diags[1].action_name == _MIDDLE
     assert all_diags[1].required_empty is True
     assert (
         all_diags[1].position_name

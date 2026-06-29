@@ -95,8 +95,7 @@ def test_formatted_propagation_chain_with_single_root_step():
     diagnostic = diagnostics.InferredRequirementViolationDiagnostic(
         location=_LOC,
         required_empty=True,
-        runner_name="action<my.domain.com:my_lib:/other>",
-        runner_name_type=ast.NameType.ACTION,
+        action_name="action<my.domain.com:my_lib:/other>",
         position_name="position<box>::action</other>::position<item>",
         propagation_chain=[
             action_contract.PropagationStep(
@@ -125,8 +124,7 @@ def test_formatted_propagation_chain_with_multi_step_trigger_chain():
     diagnostic = diagnostics.InferredRequirementViolationDiagnostic(
         location=_LOC,
         required_empty=True,
-        runner_name="action<my.domain.com:my_lib:/inner>",
-        runner_name_type=ast.NameType.ACTION,
+        action_name="action<my.domain.com:my_lib:/inner>",
         position_name="position<box>::action</outer>::position<iface>::action</inner>::position<item>",
         propagation_chain=[
             action_contract.PropagationStep(

@@ -151,7 +151,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
     assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_MIDDLE}'"
+    assert diag.action_name == _MIDDLE
     assert diag.required_empty is False
     assert (
         diag.position_name == "position<box>::action</implied_action>::position<extra>"
@@ -261,7 +261,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_MIDDLE}'"
+    assert diag.action_name == _MIDDLE
     assert diag.required_empty is False
     assert (
         diag.position_name
@@ -367,7 +367,7 @@ def test_inner_action_through_implied_action_iface_propagates_when_intermediate_
     assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.runner_description == f"'{_MIDDLE}'"
+    assert diag.action_name == _MIDDLE
     assert diag.required_empty is False
     assert (
         diag.position_name

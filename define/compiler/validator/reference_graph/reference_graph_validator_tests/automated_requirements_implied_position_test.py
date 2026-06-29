@@ -56,7 +56,7 @@ def test_caller_violates_empty_via_create_in_implied_position(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::position</implied>"
     assert_propagation_chain(
@@ -131,7 +131,7 @@ def test_caller_violates_occupied_via_move_from_implied_position(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</implied>"
     assert_propagation_chain(
@@ -197,7 +197,7 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::position</implied>"
     assert_propagation_chain(
@@ -351,7 +351,7 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
@@ -437,7 +437,7 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -514,7 +514,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -691,7 +691,7 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
     assert_propagation_chain(
@@ -778,7 +778,7 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
     assert_propagation_chain(
@@ -856,7 +856,7 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
     assert_propagation_chain(
@@ -941,7 +941,7 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
@@ -1037,7 +1037,7 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
@@ -1124,7 +1124,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'" + _INNER + "'"
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name

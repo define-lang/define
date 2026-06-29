@@ -449,7 +449,7 @@ def test_second_trigger_fails_when_guarantee_filled_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 13
@@ -533,7 +533,7 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
     assert all_diags[0].position_name == "position<box>::action</other>::position<dest>"
     assert all_diags[0].location.line == 19
@@ -614,7 +614,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<item>"
     assert all_diags[0].location.line == 16
@@ -640,7 +640,7 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is True
     assert all_diags[1].position_name == "position<box>::action</other>::position<dest>"
     assert all_diags[1].location.line == 16
@@ -2261,7 +2261,7 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/outer>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name

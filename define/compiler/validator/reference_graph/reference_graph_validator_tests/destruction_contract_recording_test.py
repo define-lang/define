@@ -83,7 +83,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
     # Surfaced via mid, which destroys the particle in its local position.
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::position</file>"
@@ -267,7 +267,7 @@ def test_auto_destruction_records_contract_verified_by_caller(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
     # /test triggers mid, whose block-end auto-destruction fires the destructor.
-    assert all_diags[0].runner_description == f"'{_MID}'"
+    assert all_diags[0].action_name == _MID
     assert (
         all_diags[0].position_name
         == "position<box>::action</mid>::position<incoming>::position</file>"
@@ -536,7 +536,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert not all_diags[0].required_empty
     # Surfaced via close_file, which destroys the particle in its implied slot.
-    assert all_diags[0].runner_description == f"'{_CLOSE_FILE}'"
+    assert all_diags[0].action_name == _CLOSE_FILE
     # Implied position remaps under position<box>, not under action</close_file>.
     assert (
         all_diags[0].position_name == "position<box>::position</slot>::position</file>"
@@ -660,7 +660,7 @@ def test_destruction_contracts_verified_in_execution_order(
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     # target1 is destroyed before target2, so its diagnostic comes first.
     assert not all_diags[0].required_empty
-    assert all_diags[0].runner_description == f"'{_CLOSE_TWO}'"
+    assert all_diags[0].action_name == _CLOSE_TWO
     assert (
         all_diags[0].position_name
         == "position<box>::action</close_two>::position<target1>::position</file>"
@@ -712,7 +712,7 @@ def test_destruction_contracts_verified_in_execution_order(
         },
     )
     assert not all_diags[1].required_empty
-    assert all_diags[1].runner_description == f"'{_CLOSE_TWO}'"
+    assert all_diags[1].action_name == _CLOSE_TWO
     assert (
         all_diags[1].position_name
         == "position<box>::action</close_two>::position<target2>::position</file>"

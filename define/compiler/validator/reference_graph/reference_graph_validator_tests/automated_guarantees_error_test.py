@@ -957,7 +957,7 @@ def test_swap_guarantee_both_positions_unfilled(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
     assert_propagation_chain(
@@ -983,7 +983,7 @@ def test_swap_guarantee_both_positions_unfilled(
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is False
     assert all_diags[1].position_name == "position<box>::action</other>::position<b>"
     assert_propagation_chain(
@@ -1065,7 +1065,7 @@ def test_swap_guarantee_one_position_unfilled(
     assert all_diags[0].location.end_line == 15
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<b>"
     assert_propagation_chain(
@@ -1166,7 +1166,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[0].location.end_line == 12
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<a>"
     assert_propagation_chain(
@@ -1194,7 +1194,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[1].location.end_line == 12
     assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is False
     assert (
         all_diags[1].position_name
@@ -1225,7 +1225,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[2].location.end_line == 12
     assert all_diags[2].location.end_column == 82
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[2].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[2].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[2].required_empty is False
     assert all_diags[2].position_name == "position<box>::action</other>::position<b>"
     assert_propagation_chain(
@@ -1253,7 +1253,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     assert all_diags[3].location.end_line == 12
     assert all_diags[3].location.end_column == 82
     assert all_diags[3].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[3].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[3].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[3].required_empty is False
     assert (
         all_diags[3].position_name
@@ -1331,7 +1331,7 @@ def test_move_from_emptied_origin_leaves_destination_error_in_caller(
     assert all_diags[0].location.end_line == 14
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
     assert_propagation_chain(
@@ -1402,7 +1402,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     assert all_diags[0].location.end_line == 13
     assert all_diags[0].location.end_column == 82
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].position_name == "position<box>::action</other>::position<src>"
     assert_propagation_chain(
@@ -1431,7 +1431,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     assert all_diags[1].location.end_line == 13
     assert all_diags[1].location.end_column == 82
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].runner_description == "'action<my.domain.com:my_lib:/other>'"
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is True
     assert all_diags[1].position_name == "position<box>::action</other>::position<dst>"
     assert_propagation_chain(

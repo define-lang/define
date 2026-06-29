@@ -56,7 +56,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 11
@@ -124,7 +124,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>"
     assert diag.location.line == 11
@@ -229,7 +229,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     diag_q = all_diags[0]
     diag_r = all_diags[1]
     assert isinstance(diag_q, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag_q.runner_description == f"'{_P}'"
+    assert diag_q.action_name == _P
     assert diag_q.required_empty is False
     assert diag_q.position_name == "position<box>::position</q>"
     assert diag_q.location.line == 11
@@ -255,7 +255,7 @@ def test_constructor_multiple_implied_positions_each_check_runs(
         },
     )
     assert isinstance(diag_r, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diag_r.runner_description == f"'{_P}'"
+    assert diag_r.action_name == _P
     assert diag_r.required_empty is False
     assert diag_r.position_name == "position<box>::position</r>"
     assert diag_r.location.line == 11
@@ -330,7 +330,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 11
@@ -406,7 +406,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert diag.position_name == "position<box>::position</q>::position</child>"
     assert diag.location.line == 11
@@ -534,7 +534,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert (
         diag.position_name
@@ -632,7 +632,7 @@ def test_constructor_occupied_violation_via_destroy_of_iface_of_action_in_implie
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert (
         diag.position_name
@@ -736,7 +736,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_iface_of_action_
         diag,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert diag.runner_description == f"'{_P}'"
+    assert diag.action_name == _P
     assert diag.required_empty is False
     assert (
         diag.position_name
@@ -826,7 +826,7 @@ def test_constructor_action_requirement_violation_via_triggering_implied_action(
     assert diag.location.end_line == 7
     assert diag.location.end_column == 96
     assert diag.location.file_path == PurePosixPath("p.dfn")
-    assert diag.runner_description == f"'{_IMPLIED_ACTION}'"
+    assert diag.action_name == _IMPLIED_ACTION
     assert diag.required_empty is False
     assert (
         diag.position_name

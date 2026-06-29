@@ -107,7 +107,7 @@ def test_occupied_interface_requirement_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::action</destructor>::position<item>"
@@ -210,7 +210,7 @@ def test_empty_interface_requirement_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is True
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR_EMPTY}'"
+    assert all_diags[0].action_name == _DESTRUCTOR_EMPTY
     assert (
         all_diags[0].position_name
         == "position<box>::action</destructor_empty>::position<item>"
@@ -311,7 +311,7 @@ def test_intermediate_position_requirement_violated(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_NESTED_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _NESTED_DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::action</nested_destructor>::position<holder>::position</leaf>"
@@ -388,7 +388,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<iface>::action</destructor>::position<item>"
@@ -483,7 +483,7 @@ def test_destructor_in_constructor_checks_interface_requirement_locally(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position</carrier>::action</destructor>::position<item>"
@@ -579,7 +579,7 @@ def test_callee_attached_destructor_requirement_verified_at_owning_caller(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
-    assert all_diags[0].runner_description == f"'{_DESTRUCTOR}'"
+    assert all_diags[0].action_name == _DESTRUCTOR
     assert (
         all_diags[0].position_name
         == "position<box>::action</make_thing>::position<result>::action</destructor>::position<item>"
