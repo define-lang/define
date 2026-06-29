@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import abc
 import typing
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import cached_property
 
 from define.compiler import ast, diagnostics
@@ -27,9 +26,9 @@ if typing.TYPE_CHECKING:
 class PostorderValidationResult:
     """Result of validating a single definition during the DFS post-order walk."""
 
-    diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
-    edges: list[action_call_graph.ActionGraphEdge] = field(default_factory=list)
-    contract: action_contract.ActionStatementsBlockContract | None = None
+    diagnostics: list[diagnostics.Diagnostic]
+    edges: list[action_call_graph.ActionGraphEdge]
+    contract: action_contract.ActionContract
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,8 +49,8 @@ class _ResolvedRequirement:
     occupancy: action_contract.ChildOccupancy
 
 
-class DefinitionPostorderValidator(abc.ABC):
-    """Validates a single definition during a DFS post-order walk of the reference graph."""
+class ActionPostorderValidator:
+    """Validates an action definition during a DFS post-order walk of the reference graph."""
 
     _definition_result: validation_result.DefinitionValidationResult
     _definition_results: typed_name_dict.TypedNameDict[
@@ -103,11 +102,6 @@ class DefinitionPostorderValidator(abc.ABC):
     def _enclosing_fqun(self) -> ast.Fqun:
         return self._definition.typed_name.name_content.fqun
 
-    @property
-    def _records_destruction_contracts(self) -> bool:
-        """Whether this definition records Destruction Contracts for its callers."""
-        return True
-
     @cached_property
     def _tracker(self) -> particle_tracker.ParticleTracker:
         return particle_tracker.ParticleTracker()
@@ -121,10 +115,6 @@ class DefinitionPostorderValidator(abc.ABC):
         return tuple(
             impl.typed_global_name for impl in self._definition.quality_implications
         )
-
-    @abc.abstractmethod
-    def analyze(self) -> PostorderValidationResult:
-        """Run post-order validation and return diagnostics, edges, and contract."""
 
     def _maybe_infer_requirement(
         self,
@@ -237,34 +227,6 @@ class DefinitionPostorderValidator(abc.ABC):
             self._executor.execute_assume_empty(
                 particle_operation.AssumeEmpty(target=local_position)
             )
-
-    def _chain_for_inferred_requirement(
-        self,
-        position: ast.PositionReference,
-        parent: ast.PositionReference | None,
-    ) -> ast.PositionReference | None:
-        """Return the chain to record as ``inferred_from``, or None if this isn't a contracted position."""
-        parent_origin = self._parent_particle_comes_from_caller(parent)
-        if parent_origin is not None:
-            # The particle was moved in from a contracted position, so we
-            # put the requirement on that origin, not whatever position we are
-            # inferring a requirement for.
-            return position.replace_parent_position_with_prefix(parent_origin)
-        if self._starts_with_contracted_name(position):
-            return position
-        return None
-
-    def _starts_with_contracted_name(self, position: ast.PositionReference) -> bool:
-        """Whether the chain's first name is a contracted name of this definition."""
-        # Implied quality.
-        return position.starts_with_global
-
-    def _local_definition_cache_key(
-        self,
-        _local_name: ast.LocalTypedNameReference,
-    ) -> tuple[str, ...] | None:
-        """Return the cache key for a local-scope position, or None if uncacheable."""
-        return None
 
     def _propagate_action_requirements(
         self,
@@ -442,7 +404,7 @@ class DefinitionPostorderValidator(abc.ABC):
                         destructors,
                         is_auto_destruction=is_auto_destruction,
                     )
-        if particle.from_caller and self._records_destruction_contracts:
+        if particle.from_caller:
             self._destruction_contracts.append(
                 self._destruction_contract_for(
                     position,
@@ -547,7 +509,7 @@ class DefinitionPostorderValidator(abc.ABC):
                 destructor_attachment=attachment,
             )
 
-    def _check_trigger(
+    def _check_interface_fill_trigger(
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
@@ -614,7 +576,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _check_requirements(
         self,
-        contract: action_contract.ActionStatementsBlockContract,
+        contract: action_contract.ActionContract,
         prefix_chain: ast.ChainedName,
         acting_on_position: ast.PositionReference,
         *,
@@ -727,7 +689,7 @@ class DefinitionPostorderValidator(abc.ABC):
 
     def _check_destructor_requirements_from_contracts(
         self,
-        contract: action_contract.ActionStatementsBlockContract,
+        contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
     ):
@@ -813,7 +775,7 @@ class DefinitionPostorderValidator(abc.ABC):
             created_in_this_action=created_in_this_action,
             newly_verified=newly_verified,
         )
-        if not created_in_this_action and self._records_destruction_contracts:
+        if not created_in_this_action:
             self._re_record_destruction_contract(
                 destruction_contract,
                 caller_particle,
@@ -1326,10 +1288,9 @@ class DefinitionPostorderValidator(abc.ABC):
             return
         elements = chain.typed_names
         first = elements[0]
-        # An interface position (or position-self reference in an init
-        # block) at index 0 is in scope and provides its own constraints;
-        # every other parent name in the chain must be a global definition
-        # that we have to look up.
+        # An interface position at index 0 is in scope and provides its own
+        # constraints; every other parent name in the chain must be a global
+        # definition that we have to look up.
         index = 0
         if scope.is_defined(first):
             self._check_chain_element_in_constraints(
@@ -1602,10 +1563,6 @@ class DefinitionPostorderValidator(abc.ABC):
             visit(typed_name)
         return tuple(result)
 
-
-class ActionPostorderValidator(DefinitionPostorderValidator):
-    """Validates an action definition during a DFS post-order walk."""
-
     @property
     def _action_definition(self) -> ast.ActionDefinition:
         return typing.cast("ast.ActionDefinition", self._definition)
@@ -1646,7 +1603,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             return self._action_definition.trigger_position.typed_name.full_typed_name
         return None
 
-    @typing.override
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, edges, and contract."""
         action_def = self._action_definition
@@ -1657,7 +1613,6 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             contract=contract,
         )
 
-    @typing.override
     def _check_trigger(
         self,
         position: ast.PositionReference,
@@ -1665,7 +1620,7 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
     ):
         """Check trigger, detecting self-triggering as an error."""
         if position.get_last_action_children() is not None:
-            super()._check_trigger(position, scope)
+            self._check_interface_fill_trigger(position, scope)
             return
         if self._trigger_position_name is None:
             return
@@ -1814,31 +1769,37 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
             )
         return action_contract.Guarantees(own=rewritten, nested=())
 
-    @typing.override
     def _chain_for_inferred_requirement(
         self,
         position: ast.PositionReference,
         parent: ast.PositionReference | None,
     ) -> ast.PositionReference | None:
         """Return the chain to record as `inferred_from`, or None if this isn't a contracted position."""
-        # The population of the base trigger position itself is handled elsewhere
-        # and doesn't create a requirement. (However, actions on children
-        # of the position still do create requirements.)
+        # The population of the trigger position itself is handled elsewhere and
+        # doesn't create a requirement. (However, actions on children of the
+        # position still do create requirements.)
         if self._trigger_position_name == position.canonical_chained_name:
             return None
-        return super()._chain_for_inferred_requirement(position, parent)
+        parent_origin = self._parent_particle_comes_from_caller(parent)
+        if parent_origin is not None:
+            # The particle was moved in from a contracted position, so we
+            # put the requirement on that origin, not whatever position we are
+            # inferring a requirement for.
+            return position.replace_parent_position_with_prefix(parent_origin)
+        if self._starts_with_contracted_name(position):
+            return position
+        return None
 
-    @typing.override
     def _starts_with_contracted_name(self, position: ast.PositionReference) -> bool:
         """Whether the chain's first name is a contracted name of this action."""
         # The structural validator guarantees the name is defined, so we don't
-        # re-check. An action's own interface positions are contracted.
+        # re-check. An action's own interface positions are contracted; an
+        # implied quality is global.
         return (
-            super()._starts_with_contracted_name(position)
+            position.starts_with_global
             or position.typed_names[0].full_typed_name in self._interface_positions
         )
 
-    @typing.override
     def _local_definition_cache_key(
         self,
         local_name: ast.LocalTypedNameReference,
@@ -1850,45 +1811,3 @@ class ActionPostorderValidator(DefinitionPostorderValidator):
                 local_name.full_typed_name,
             )
         return None
-
-
-class PositionPostorderValidator(DefinitionPostorderValidator):
-    """Validates a position definition during a DFS post-order walk."""
-
-    @typing.override
-    def analyze(self) -> PostorderValidationResult:
-        """Run post-order validation and return diagnostics and edges."""
-        return PostorderValidationResult(
-            diagnostics=self._diagnostics,
-            edges=self._action_edges,
-        )
-
-
-def create_postorder_validator(
-    definition_result: validation_result.DefinitionValidationResult,
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, validation_result.DefinitionValidationResult
-    ],
-    action_contracts: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, action_contract.ActionContract
-    ],
-    definition_quality_cache: dict[
-        tuple[str, ...], tuple[ast.GlobalTypedNameReference, ...]
-    ],
-) -> DefinitionPostorderValidator:
-    """Create the appropriate postorder validator for the given definition."""
-    if isinstance(definition_result.definition, ast.ActionDefinition):
-        return ActionPostorderValidator(
-            definition_result,
-            definition_results,
-            action_contracts,
-            definition_quality_cache,
-        )
-    if isinstance(definition_result.definition, ast.PositionDefinition):
-        return PositionPostorderValidator(
-            definition_result,
-            definition_results,
-            action_contracts,
-            definition_quality_cache,
-        )
-    raise TypeError(f"Unexpected definition type: {type(definition_result.definition)}")

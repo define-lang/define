@@ -310,17 +310,11 @@ class DestructionContract:
 
 
 @dataclass(frozen=True)
-class ActionStatementsBlockContract:
-    """Base contract for any block containing action statements."""
+class ActionContract:
+    """The automatically inferred requirements and guarantees for an action."""
 
     requirements: dict[tuple[str, ...], PositionRequirement]
     guarantees: Guarantees
     destruction_contracts: list[DestructionContract]
-
-
-@dataclass(frozen=True)
-class ActionContract(ActionStatementsBlockContract):
-    """The automatically inferred requirements and guarantees for an action."""
-
     # TODO: Support triggering on chained names?
     trigger_position_name: str

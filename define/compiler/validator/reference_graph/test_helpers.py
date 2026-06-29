@@ -18,7 +18,6 @@ def get_results(
     """Validate source and return each definition's post-order result, keyed by full typed name."""
     results: dict[str, definition_postorder_validator.PostorderValidationResult] = {}
     action_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
-    position_analyze = definition_postorder_validator.PositionPostorderValidator.analyze
 
     def action_capture(
         self: definition_postorder_validator.ActionPostorderValidator,
@@ -27,26 +26,11 @@ def get_results(
         results[self._definition.typed_name.full_typed_name] = result  # pyright: ignore[reportPrivateUsage]
         return result
 
-    def position_capture(
-        self: definition_postorder_validator.PositionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
-        result = position_analyze(self)
-        results[self._definition.typed_name.full_typed_name] = result  # pyright: ignore[reportPrivateUsage]
-        return result
-
-    with (
-        mock.patch.object(
-            definition_postorder_validator.ActionPostorderValidator,
-            "analyze",
-            autospec=True,
-            side_effect=action_capture,
-        ),
-        mock.patch.object(
-            definition_postorder_validator.PositionPostorderValidator,
-            "analyze",
-            autospec=True,
-            side_effect=position_capture,
-        ),
+    with mock.patch.object(
+        definition_postorder_validator.ActionPostorderValidator,
+        "analyze",
+        autospec=True,
+        side_effect=action_capture,
     ):
         structural = program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
             source
@@ -61,10 +45,6 @@ def get_results(
 
 def get_contracts(
     source: str,
-) -> dict[str, action_contract.ActionStatementsBlockContract]:
+) -> dict[str, action_contract.ActionContract]:
     """Validate source and return each definition's contract, keyed by full typed name."""
-    return {
-        name: result.contract
-        for name, result in get_results(source).items()
-        if result.contract is not None
-    }
+    return {name: result.contract for name, result in get_results(source).items()}

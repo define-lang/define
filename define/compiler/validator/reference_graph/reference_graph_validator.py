@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler import ast
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import action_call_graph, reference_graph
 from define.compiler.validator.reference_graph import (
@@ -12,7 +13,6 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
     from define.compiler.validator import validation_result
 
 
@@ -59,17 +59,18 @@ class ReferenceGraphValidator:
         # that is not referenced by anything else creates a new graph).
         for definition in self._reference_graph.dfs_postorder_all():
             definition_result = self._definition_results[definition.typed_name]
-            analyzer = definition_postorder_validator.create_postorder_validator(
+            # Only actions need post-order validation; positions contribute nothing.
+            if not isinstance(definition_result.definition, ast.ActionDefinition):
+                continue
+            result = definition_postorder_validator.ActionPostorderValidator(
                 definition_result,
                 self._definition_results,
                 self._action_contracts,
                 self._definition_quality_cache,
-            )
-            result = analyzer.analyze()
+            ).analyze()
             for d in result.diagnostics:
                 definition_result.add_diagnostic(d)
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
-            if isinstance(result.contract, action_contract.ActionContract):
-                self._action_contracts[definition.typed_name] = result.contract
+            self._action_contracts[definition.typed_name] = result.contract
         return call_graph
